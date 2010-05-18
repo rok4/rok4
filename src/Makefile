@@ -6,6 +6,8 @@ CXXFLAGS = -O3  -mfpmath=sse -msse -msse2
 LDFLAGS =
 LDLIBS = -lpthread -lz -lproj -ljpeg
 
+CCFLAGS = -g -ansi
+
 
 all: clean WMSServer
 
@@ -13,8 +15,19 @@ WMSServer: Logger.o Listener.o ResponseSender.o Layer.o Pyramid.o PNGEncoder.o I
 
 Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
 
+# CppUnit Stuff
+LDCPPUNITLIBS= -lcppunit
+CPPUNIT = $(wildcard CppUnit*.cpp)
+CPPUNITO  = $(patsubst %.cpp,%.o,  $(CPPUNIT))
+
+uobjects= cppunit.o ${CPPUNITO}
+
+cppunit : $(uobjects)
+	${CXX} -o CppUnitTests $(uobjects) ${LDCPPUNITLIBS} ${LDLIBS}
+	./CppUnitTests
+
 doc : 
 	doxygen ../docs/doxygen.cfg
 
 clean:
-	rm -f *.o
+	rm -f *.o CppUnitTests
