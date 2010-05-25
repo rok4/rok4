@@ -1,8 +1,8 @@
 CXX = g++
 CC  = g++
-CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
+#CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
 #conf de debug:
-#CXXFLAGS = -g -O0 -msse2
+CXXFLAGS = -g -O0 -msse2
 LDFLAGS =
 LDLIBS = -lpthread -lz -lproj -ljpeg
 LDCPPUNITLIBS= -lcppunit
@@ -31,7 +31,6 @@ WMSServer: bindir $(WMSSOBJ)
 	$(CXX) $(WMSSOBJ) -o WMSServer $(LDLIBS)
 	rm -f WMSServer.o
 	mv WMSServer *.o $(BINDIR)
-
 
 Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
 

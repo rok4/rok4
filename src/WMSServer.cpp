@@ -62,7 +62,7 @@
   
   
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
-      Logger(DEBUG) << "wmsserver:getMap" << std::endl;
+      LOGGER(DEBUG) << "wmsserver:getMap" << std::endl;
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;
       Pyramid* P = it->second;
@@ -77,7 +77,7 @@
 
 
     HttpResponse* WMSServer::getTile(WMSRequest* request) {
-      Logger(DEBUG) << "wmsserver:getTile" << std::endl;
+      LOGGER(DEBUG) << "wmsserver:getTile" << std::endl;
 
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;

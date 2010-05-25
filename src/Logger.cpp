@@ -7,6 +7,13 @@
 #include <cstdio>
 #include <iostream>
 
+/*FIXME: est la bonne facon de definir NBLEVEL en C++?*/
+const int NB_ACTION = 2;
+typedef enum{IGNORE = 0, WRITE = 1} Action;
+
+const int NBLEVEL = 5;
+const char* LogLevelText[NBLEVEL] = { "DEBUG", "INFO ", "WARN ", "ERROR", "FATAL" };
+
 
 /** L'objet de cette classe est de permettre des écritures concurentes sur le
  * flux de log. De sorte qu'il n'est pas possible que plusieurs threads écrivent
@@ -23,8 +30,7 @@ protected:
 	virtual int sync();
 
 public:
-	LogBuffer(LogLevel level) :	std::stringbuf(std::ios_base::out) {};
-	void setOut(std::ostream *out);
+	LogBuffer(LogLevel level) :	std::stringbuf(std::ios_base::out) {}
 };
 
 /* TODO NV: cette valeur est à conservée jusqu'a ce qu'on ai pu lire dans le fichier
@@ -79,37 +85,25 @@ static void init_key() {
 
 LogLevel Logger::minLevel = WARN;
 
-const int NBLEVEL = 5;
-const char* logLevelName[NBLEVEL] = { "DEBUG", "INFO ", "WARN ", "ERROR", "FATAL" };
-
 LogLevel Logger::getMinLevel() {
 	return minLevel;
 }
 
 void Logger::setMinLevel(LogLevel const minLevel) {
 	Logger::minLevel = minLevel;
-}
 
-string Logger::getLogFileName(){
-	return logFileName;
-}
-
-void Logger::setLogFileName(string fileName){
-	logFileName=fileName;
-	/*TODO: tester l'accès au fichier*/
 }
 
 /** Renvoie une référence sur le std::ostream qui correspond -pour le processus
  * en cours- au niveau de log "level". Il est alors possible d'écrire dedans
  * simplement ainsi:
- *  Logger(WARN) << "message du warning" << std::endl;     */
+ *  Logger(WARN) << "message du warning" << std::endl;
+ */
 std::ostream &Logger::logStream(LogLevel level) {
 	pthread_once(&key_once, init_key); // initialize une seule fois logger_key
 
 	std::ostream *L;
 	Action action;
-	timeVal time;
-	tm *now;
 
 	if (level>=minLevel) action=WRITE; else action=IGNORE;
 
@@ -122,17 +116,17 @@ std::ostream &Logger::logStream(LogLevel level) {
 		pthread_setspecific(logger_key[action], (void*) L);
 	}
 
-	if (action==WRITE){
-		/* mise en forme des informations affichées par défaut */
-		gettimeofday(&time, NULL);
-		now = localtime(&time.tv_sec);
-		char date[26 + 1];
-		sprintf(date, "%04d/%02d/%02d %02d:%02d:%02d.%06d",
+	/* mise en forme des informations affichées par défaut */
+
+	timeval tim;
+	gettimeofday(&tim, NULL);
+	char date[26 + 1];
+	tm *now = localtime(&tim.tv_sec);
+	sprintf(date, "%04d/%02d/%02d %02d:%02d:%02d.%06d",
 			now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour,
 			now->tm_min, now->tm_sec, (int) (tim.tv_usec));
 
-		*L << logLevelName[level] <<" "<< date << " " << pthread_self() << " ";
-	}
+	*L << LogLevelText[level] <<" "<< date << " " << pthread_self() << " ";
 
 	return *L;
 
