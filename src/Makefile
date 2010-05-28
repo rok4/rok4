@@ -2,14 +2,15 @@ CXX = g++
 CC  = g++
 #CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
 #conf de debug:
-CXXFLAGS = -g -O0 -msse2
+CXXFLAGS = -g -O0 -msse2 -I"."
 LDFLAGS =
 LDLIBS = -lpthread -lz -lproj -ljpeg
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
 
-BINDIR=../bin
+TGTDIR=../target
+BINDIR=$(TGTDIR)/bin
 DOCSDIR=../docs
 #
 #
@@ -46,10 +47,12 @@ cppubin: $(CPPUNITOBJ)
 	mv $(CPPUNITOBJ) $(BINDIR)
 
 bindir:
+	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 
-doc : 
+doc : clean bindir
 	doxygen $(DOCSDIR)/doxygen.cfg
 
 clean:
-	rm -f *.o $(CPPUNITDIR)/*.o $(BINDIR)/* WMSServer
+	rm -f *.o $(CPPUNITDIR)/*.o WMSServer
+	rm -fr $(TGTDIR)

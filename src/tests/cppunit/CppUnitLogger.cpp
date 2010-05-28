@@ -39,7 +39,7 @@ void CppUnitLogger::setUp()
 void CppUnitLogger::Test1()
 {
 
-  LOGGER(INFO) << "Logger works " ;
+//  LOGGER(INFO) << "Logger works " ;
   CPPUNIT_ASSERT_DOUBLES_EQUAL( someValue, 2.0f, 0.005f );
   someValue = 0;
   
