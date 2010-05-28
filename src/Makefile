@@ -50,7 +50,7 @@ bindir:
 	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 
-doc : clean bindir
+doc : 
 	doxygen $(DOCSDIR)/doxygen.cfg
 
 clean:
