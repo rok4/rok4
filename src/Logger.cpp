@@ -1,5 +1,6 @@
 #include "Logger.h"
 
+#include <fstream>
 #include <sstream>
 #include <ostream>
 #include "sys/time.h"
@@ -37,7 +38,8 @@ public:
  *           de config le fichier de log voulu par l'utilisateur et qu'on a eu
  *           confirmation qu'on peut écrire dedans.
  */
-std::ostream *LogBuffer::out = &std::cerr; // Définition du flux de sortie des log
+//std::ostream *LogBuffer::out = &std::cerr; // Définition du flux de sortie des log
+std::ostream *LogBuffer::out = new std::ofstream("/var/tmp/rok4.log", std::ios_base::app); // Définition du flux de sortie des log
 
 pthread_mutex_t LogBuffer::mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Cette fonction est appelée automatiquement lors du flush.
