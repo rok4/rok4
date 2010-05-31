@@ -4,7 +4,7 @@ CC  = g++
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"."
 LDFLAGS =
-LDLIBS = -lpthread -lz -lproj -ljpeg
+LDLIBS = -lpthread -lz -lproj -ljpeg -lfcgi
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi

@@ -19,6 +19,7 @@ class WMSServer {
   int nbthread;
   pthread_t Thread[128];
   Listener L;
+  int fd;
   ResponseSender S; 
 
   std::map<std::string, Pyramid*> Pyramids;

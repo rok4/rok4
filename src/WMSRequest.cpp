@@ -1,6 +1,5 @@
 #include "WMSRequest.h"
 #include "Logger.h"
-#include <cstdio>
   
   /*
    * Cette fonction décode une url
@@ -118,84 +117,30 @@ void WMSRequest::url_decode(char *src) {
 
   }
 
-  WMSRequest::WMSRequest(int conn_fd) : query(0), width(-1), height(-1), bbox(0), service(0), request(0), crs(0), layers(0), styles(0), format(0), transparent(false), tilerow(-1), tilecol(-1), tilematrix(-1), tilematrixset(0) {
+  WMSRequest::WMSRequest(char* strquery) :  /*query(0),*/ width(-1), height(-1), bbox(0), service(0), request(0), crs(0), layers(0), styles(0), format(0), transparent(false), tilerow(-1), tilecol(-1), tilematrix(-1), tilematrixset(0) {
 
-    if(load(conn_fd) < 0) {
-      return; // charge les données depuis conn_fd et retourne si erreur.
-    }
-    url_decode(query);
-    LOGGER(DEBUG) << query << " " << int(conn_fd) << std::endl;
+    url_decode(strquery);
+  //  LOGGER(DEBUG) << query << " " << strquery << std::endl;
 
-    for(int pos = 0; query[pos];) {
-      char* key = query + pos;
-      for(;query[pos] && query[pos] != '=' && query[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0
-      char* value = query + pos;
-      for(;query[pos] && query[pos] != '&'; pos++); // on trouve le suivant "&" ou 0
+    for(int pos = 0; strquery[pos];) {
+      char* key = strquery + pos;
+      for(;strquery[pos] && strquery[pos] != '=' && strquery[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0
+      char* value = strquery + pos;
+      for(;strquery[pos] && strquery[pos] != '&'; pos++); // on trouve le suivant "&" ou 0
       if(*value == '=') *value++ = 0;  // on met un 0 à la place du '=' entre key et value
-      if(query[pos]) query[pos++] = 0; // on met un 0 à la fin du char* value
+      if(strquery[pos]) strquery[pos++] = 0; // on met un 0 à la fin du char* value
       parseparam(key, value);
     }
   }
 
-
 WMSRequest::~WMSRequest() {
-  delete[] buffer;
-  if(bbox) delete[] bbox;
-}
-
-
-
-// spec SCGI http://python.ca/scgi/protocol.txt
-int WMSRequest::load(int conn_fd) {
-  int buffer_size = 655361;
-  buffer = new char[buffer_size];
-
-  int pos = 0; // index de lecture dans les données brutes recues de conn_fd;
-  int data_read = 0;
-
-  // lire un début de données, normaleemnt on ne passe qu'une seule fois ici.
-  while(data_read < 6) {
-    int r = read(conn_fd, buffer + data_read, buffer_size - data_read);    
-    if(r < 0) {
-      perror("HTTPReaquest (read)");
-      return r;
-    }
-    data_read += r;
-  }
-
-  for(; pos < 6 && pos < data_read && buffer[pos] >= '0' && buffer[pos] <= '9'; pos++); // identifier les premiers caractère chiffre (0-9)
-  if(pos >= 6) return -1;                       // erreur SCGI header >= 100000 octets
-  if(buffer[pos++] != ':') return -1;           // cf spec 
-  int header_size = atoi(buffer);                // le debut doit être la taille du header
-  if(header_size <= 0 || header_size + pos >= buffer_size) return -1; // header trop gros ou nul
-
-  while(data_read < header_size + pos) {         // On lit suffisament de données pour avoir tout le header scgi
-    int r = read(conn_fd, buffer + data_read, buffer_size - data_read);    
-    if(r < 0) {
-      perror("HTTPReaquest (read)");
-      return r;
-    }
-    data_read += r;
-  }
-  
-  LOGGER(DEBUG) << "Reader: " << pos << " " << header_size << " " << data_read << std::endl;
-
-
-  for(int header_end = header_size + pos; pos < header_end; pos++) { // initialise les variables d'environement CGI.
-    //      LOGGER(DEBUG) << buffer + pos << std::endl;
-    uint32_t h; // calculer un hash des la variable
-    for(h = 0; pos < header_end && buffer[pos]; pos++) h = h*13 ^ buffer[pos];
-    pos++;
-
-    switch(h) {
-      //      case 0xd1bef2e0: break; // hash("REQUEST_URI") 
-      case 0xa56ea420: query = buffer + pos; break; // hash("QUERY_STRING")
-      default: break;
-    }
-    for(;pos < header_end && buffer[pos]; pos++); // on lit la valeur du champs
-  }
-
-  if(!query) return -1;  
-  return 1;
+  if(bbox) delete bbox;
+  if (service) delete service;
+  if (request) delete request;
+  if (crs) delete crs;
+  if (layers) delete layers;
+  if (styles) delete styles;
+  if (format) delete format;
+  if (tilematrixset) delete tilematrixset;
 }
 

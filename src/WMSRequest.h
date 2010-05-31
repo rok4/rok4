@@ -7,14 +7,11 @@
 
 class WMSRequest {
   private:
-  char* buffer;
-
   void url_decode(char *src);
   void parseparam(char* key, char* value);
   int load(int conn_fd);
 
-  public:  
-  char* query;
+  public:
   int width, height;
   BoundingBox<double> *bbox;
   char* service;
@@ -60,6 +57,7 @@ class WMSRequest {
 
 
   WMSRequest(int conn_fd);
+  WMSRequest(char * strquery);
   ~WMSRequest();
 };
 
