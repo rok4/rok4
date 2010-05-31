@@ -66,7 +66,7 @@
 Construction du serveur
 */
 
-  WMSServer::WMSServer(int nbthread, int port) : nbthread(nbthread), L(port) {
+  WMSServer::WMSServer(int nbthread, int port) : nbthread(nbthread) {
 
 	//S.C.
 	int init=FCGX_Init();

@@ -21,7 +21,7 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= WMSServer.o Logger.o Listener.o ResponseSender.o Layer.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o CompoundImage.o ResampledImage.o
+WMSSOBJ= WMSServer.o Logger.o ResponseSender.o Layer.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o CompoundImage.o ResampledImage.o
 
 
 all: clean WMSServer
