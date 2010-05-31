@@ -39,7 +39,7 @@ class WMSServer {
 
   public:
   void run();
-  WMSServer(int nbthread, int port);
+  WMSServer(int nbthread);
 };
 
 

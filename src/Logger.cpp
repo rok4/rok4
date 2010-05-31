@@ -85,7 +85,7 @@ static void init_key() {
 
 /* -----------implémentation de la classe principale: Logger -----------------*/
 
-LogLevel Logger::minLevel = WARN;
+LogLevel Logger::minLevel = DEBUG;
 
 LogLevel Logger::getMinLevel() {
 	return minLevel;

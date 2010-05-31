@@ -19,6 +19,5 @@
 
 
 #define NB_THREAD 10
-#define PORT_WMSSERVER 8080
 
 #endif

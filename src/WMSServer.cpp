@@ -66,7 +66,7 @@
 Construction du serveur
 */
 
-  WMSServer::WMSServer(int nbthread, int port) : nbthread(nbthread) {
+  WMSServer::WMSServer(int nbthread) : nbthread(nbthread) {
 
 	//S.C.
 	int init=FCGX_Init();
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
     LOGGER(DEBUG) << "Lancement du serveur" << std::endl;
 
-    WMSServer W(NB_THREAD,PORT_WMSSERVER);
+    WMSServer W(NB_THREAD);
 
     W.run(); 
   }
