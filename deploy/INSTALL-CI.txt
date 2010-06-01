@@ -37,7 +37,7 @@ apt-get install libfcgi-dev
 install manuelle version 4.7.0 => /usr/local/lib/
 
 # montage exanet
-adduser --help
+addgroup --gid 501 geop
 adduser --uid 501 --gid 501 geopo
 	# modif /etc/fstab
 	172.20.1.61:/exavol/geoportail /mnt/geoportail nfs tcp,rw,addr=172.20.1.61 0 0
