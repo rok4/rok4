@@ -2,6 +2,7 @@
 #define _LOGGER_
 
 #include <ostream>
+#include <iostream>
 
 
 typedef enum{DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3, FATAL = 4} LogLevel;
@@ -17,7 +18,8 @@ public:
 	static std::ostream &logStream(LogLevel level);
 };
 
-
+#if 0
 #define LOGGER(x) (Logger::getMinLevel()==DEBUG ? Logger::logStream(x) << "["<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<"]:" : Logger::logStream(x) )
-
+#endif
+#define LOGGER(x) std::cerr << "["<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<"]:"
 #endif
