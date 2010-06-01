@@ -24,22 +24,23 @@ const char* LogLevelText[NBLEVEL] = { "DEBUG", "INFO ", "WARN ", "ERROR", "FATAL
 /*----------------------------------------------------------------------------*/
 class LogBuffer: public std::stringbuf {
 private:
-	static std::ostream *out;
+	std::ostream &out;
 	static pthread_mutex_t mutex;
 
 protected:
 	virtual int sync();
 
 public:
-	LogBuffer(LogLevel level) :	std::stringbuf(std::ios_base::out) {}
+	LogBuffer(std::ostream & out) :	std::stringbuf(std::ios_base::out), out(out) {}
 };
 
 /* TODO NV: cette valeur est à conservée jusqu'a ce qu'on ai pu lire dans le fichier
  *           de config le fichier de log voulu par l'utilisateur et qu'on a eu
  *           confirmation qu'on peut écrire dedans.
  */
-//std::ostream *LogBuffer::out = &std::cerr; // Définition du flux de sortie des log
-std::ostream *LogBuffer::out = new std::ofstream("/var/tmp/rok4.log", std::ios_base::app); // Définition du flux de sortie des log
+//std::ostream LogBuffer::out = std::cerr; // Définition du flux de sortie des log
+//std::ostream LogBuffer::out = std::ofstream ("/var/tmp/rok4.log", std::ios_base::app); // Définition du flux de sortie des log
+
 
 pthread_mutex_t LogBuffer::mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Cette fonction est appelée automatiquement lors du flush.
@@ -50,7 +51,7 @@ pthread_mutex_t LogBuffer::mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 int LogBuffer::sync() {
 	pthread_mutex_lock(&mutex);
-	out->write(pbase(), pptr() - pbase());
+	out.write(pbase(), pptr() - pbase());
 	pthread_mutex_unlock(&mutex);
 
 	str(""); //vide le stringBuffer (puisqu'on l'a copié)
@@ -104,6 +105,8 @@ void Logger::setMinLevel(LogLevel const minLevel) {
 std::ostream &Logger::logStream(LogLevel level) {
 	pthread_once(&key_once, init_key); // initialize une seule fois logger_key
 
+	static std::ofstream out ("/var/tmp/rok4.log", std::ios_base::app); 
+
 	std::ostream *L;
 	Action action;
 
@@ -113,7 +116,7 @@ std::ostream &Logger::logStream(LogLevel level) {
 		if (action==IGNORE){
 			L = new NullStream;
 		}else{
-			L = new std::ostream(new LogBuffer(level));
+			L = new std::ostream(new LogBuffer(out));
 		}
 		pthread_setspecific(logger_key[action], (void*) L);
 	}
