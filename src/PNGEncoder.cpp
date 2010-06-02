@@ -100,7 +100,7 @@ PNGEncoder::PNGEncoder(Image* image) : HttpResponse("image/png"), image(image), 
 }
 
 PNGEncoder::~PNGEncoder() {
-  LOGGER(DEBUG) << "Destructeur PNGEncoder" << std::endl;
+  LOGGER_DEBUG( "Destructeur PNGEncoder" );
   deflateEnd(&zstream);
   if(linebuffer) delete[] linebuffer;
   delete image;

@@ -8,7 +8,7 @@ template<typename pixel_t>
 size_t BilEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
   size_t offset = 0;
 
-  LOGGER(DEBUG) << "Encodage BIL : height " <<image->height<< " image->linesize" <<image->linesize<<std::endl;
+  LOGGER_DEBUG( "Encodage BIL : height " <<image->height<< " image->linesize" <<image->linesize);
 
   for(; line < image->height && offset + image->linesize <= size; line++) {
     image->getline((typename pixel_t::data_t*)(buffer + offset), line);    
@@ -20,7 +20,7 @@ size_t BilEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
 
 template<typename pixel_t>
 BilEncoder<pixel_t>::~BilEncoder() {
-  LOGGER(DEBUG) << "delete BilEncoder" << std::endl;
+  LOGGER_DEBUG( "delete BilEncoder");
   delete image;
 }
 

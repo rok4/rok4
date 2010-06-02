@@ -1,6 +1,7 @@
 #ifndef TILE_H
 #define TILE_H
 
+#include <iostream>
 //#include "config.h"
 #include "HttpResponse.h"
 #include "Logger.h"
@@ -11,9 +12,10 @@ class RawDecoder {
   public:
   typedef uint8_t data_t;
   static void decode(const uint8_t* encoded_data, size_t encoded_size, data_t* raw_data) {
-    LOGGER(DEBUG) << " decode " << encoded_size << std::endl;
+    std::stringstream msg(std::ios_base::in);
+    LOGGER_DEBUG( " decode " <<  encoded_size );
     memcpy(raw_data, encoded_data, encoded_size);
-    LOGGER(DEBUG) << " decode " << encoded_size << std::endl;
+    LOGGER_DEBUG( " decode " << (int) encoded_size );
   }
 
 };
@@ -43,14 +45,14 @@ class Tile : public Image {
 
   Tile(int tile_width, int tile_height, int channels, StaticHttpResponse* data, int left, int top, int right, int bottom) :
   Image(tile_width - left - right, tile_height - top - bottom, channels), data(data), tile_width(tile_width), tile_height(tile_height), left(left), top(top) {
-    LOGGER(DEBUG) << " Tile " << tile_width << " " << left << " " << right << std::endl;    
-    LOGGER(DEBUG) << " Tile " << width << " " << height << " " << channels << std::endl;    
+    LOGGER_DEBUG( " Tile " << tile_width << " " << left << " " << right );    
+    LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels );    
     raw_data = new data_t[tile_width * tile_height * channels];
     size_t encoded_size;
     const uint8_t* encoded_data = data->get_data(encoded_size);
-    LOGGER(DEBUG) << " Tile " << width << " " << height << " " << channels << " " << (void *) encoded_data << " " << encoded_size << std::endl;
+    LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels << " " << (void *) encoded_data << " " << encoded_size );
     Decoder::decode(encoded_data, encoded_size, raw_data);
-    LOGGER(DEBUG) << " Tile " << width << " " << height << " " << channels << " " << encoded_size << std::endl;    
+    LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels << " " << encoded_size );    
   }
 };
 

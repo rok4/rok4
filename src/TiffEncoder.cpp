@@ -22,10 +22,10 @@ size_t TiffEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
   }
   
   for(; line < image->height && offset + image->linesize <= size; line++) {
-//   LOGGER(DEBUG) << "line : " << line << " " << offset << std::endl;
+//   LOGGER_DEBUG( "line : " << line << " " << offset);
     image->getline((typename pixel_t::data_t*)(buffer + offset), line);    
     offset += image->linesize*sizeof(typename pixel_t::data_t);
-  //  LOGGER(DEBUG) << "line : " << line << " " << offset << std::endl;
+  //  LOGGER_DEBUG( "line : " << line << " " << offset);
   }
 
   return offset;
@@ -33,7 +33,7 @@ size_t TiffEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
 
 template<typename pixel_t>
 TiffEncoder<pixel_t>::~TiffEncoder() {
-  LOGGER(DEBUG) << "delete TiffEncoder" << std::endl;
+  LOGGER_DEBUG("delete TiffEncoder");
   delete image;
 }
 

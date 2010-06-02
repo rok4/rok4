@@ -4,7 +4,7 @@
 #include "Layer.h"
 #include "Pyramid.h"
 
-//#include <iostream>
+#include <iostream>
 //#include <fstream>
 //#include "pixel_type.h"
 //#include "TiffEncoder.h"
@@ -24,6 +24,8 @@
 // S.C.
 #include "fcgiapp.h"
 #include "fcgi_stdio.h"
+
+
   /**
    * Boucle principale exécuté par un thread dédié
    */
@@ -79,7 +81,7 @@ Construction du serveur
       std::ostringstream ss;
       //ss << "/mnt/geoportail/ppons/ortho/cache/" << s;
       ss << "/mnt/geoportail/ppons/ortho-jpeg/" << s;
-      LOGGER(DEBUG) << ss.str() << std::endl;
+      LOGGER_DEBUG( ss.str() );
       Layer *TL = new TiledLayer<RawDecoder>("EPSG:2154", 256, 256, 3, res, res, 0, 16777216, ss.str(),16, 16, 2); //IGNF:LAMB93
       L1.push_back(TL);
       s *= 2;   
@@ -96,7 +98,8 @@ Construction du serveur
 
 int main(int argc, char** argv) {
 
-    LOGGER(DEBUG) << "Lancement du serveur" << std::endl;
+    Logger::configure("../config/logConfig.xml");
+    LOGGER_DEBUG( "Lancement du serveur");
 
     WMSServer W(NB_THREAD);
 
@@ -129,7 +132,7 @@ int main(int argc, char** argv) {
   
   
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
-      LOGGER(DEBUG) << "wmsserver:getMap" << std::endl;
+      LOGGER_DEBUG( "wmsserver:getMap" );
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;
       Pyramid* P = it->second;
@@ -144,13 +147,15 @@ int main(int argc, char** argv) {
 
 
     HttpResponse* WMSServer::getTile(WMSRequest* request) {
-      LOGGER(DEBUG) << "wmsserver:getTile" << std::endl;
+      LOGGER_DEBUG ("wmsserver:getTile" );
 
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;
       Pyramid* P = it->second;
-
-      LOGGER(DEBUG) << " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format << std::endl;
+      //std::stringstream msg(std::ios_base::in);
+      //msg << " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format;
+      //LOGGER_DEBUG( msg.str() );
+      LOGGER_DEBUG(  " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format );
       return P->gettile(request->tilecol, request->tilerow, request->tilematrix);
     }
 

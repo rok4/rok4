@@ -41,7 +41,7 @@ class StaticHttpResponse : public HttpResponse {
   public:
   /** D */
   StaticHttpResponse(const char* type, const uint8_t* data, size_t size) : HttpResponse(type), data(data), size(size), pos(0) {
-      LOGGER(DEBUG) << " StaticHttpResponse " << size << " " << (void*) data << std::endl;
+      LOGGER_DEBUG( " StaticHttpResponse " << size << " " << (void*) data );
     }
 
   /** D */
@@ -50,13 +50,13 @@ class StaticHttpResponse : public HttpResponse {
   /** D */
   const uint8_t* get_data(size_t &sz) {    
     sz = size;
-    LOGGER(DEBUG) << " StaticHttpResponse " << size << " " << (void*) data << std::endl;
+    LOGGER_DEBUG( " StaticHttpResponse " << size << " " << (void*) data );
     return data;
   }
 
   /** D */
   size_t getdata(uint8_t *buffer, size_t sz) {    
-      LOGGER(DEBUG) << " StaticHttpResponse geline " << sz << std::endl;  
+      LOGGER_DEBUG( " StaticHttpResponse geline " << sz );  
     if(sz > size - pos) sz = size - pos;
     memcpy(buffer, data + pos, sz);
     pos += sz;

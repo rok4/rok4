@@ -46,7 +46,7 @@ int Pyramid::best_scale(double resolution_x, double resolution_y) {
 
 Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const char *dst_crs) {
 /*  if(dst_crs) {
-    LOGGER(DEBUG) << "crs dest=" <<dst_crs << " crs ini=" << crs << std::endl;
+    LOGGER_DEBUG( "crs dest=" <<dst_crs << " crs ini=" << crs);
     if(strcmp(crs, dst_crs) == 0) dst_crs = 0;
     else { // reprojection
 
@@ -60,7 +60,7 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   Layers[h]->getbbox(bbox, width, height);
 
 /*
-  LOGGER(DEBUG) << "best_scale=" << h << " resolution requete=" << resolution << std::endl;
+  LOGGER_DEBUG( "best_scale=" << h << " resolution requete=" << resolution );
   
   if(!dst_crs) return Layers[h]->getbbox(bbox, width, height);
   else return Layers[h]->getbbox(bbox, width, height, dst_crs);

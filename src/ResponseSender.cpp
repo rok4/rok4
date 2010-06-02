@@ -27,20 +27,20 @@ int ResponseSender::sendresponse(HttpResponse* response, FCGX_Request* request) 
       int w = FCGX_PutStr((char*)(buffer + wr), nb,request->out);
 
       if(w < 0) {
-        LOGGER(DEBUG) << "error" << std::endl;
+        LOGGER_DEBUG( "error" );
         perror("write");
         break;
       }
       wr += w;
     }
     if(wr != nb) {
-        LOGGER(DEBUG) << "error" << std::endl;
+        LOGGER_DEBUG( "error" );
         perror("write");
       break;
     }
 
     pos += nb;
-    LOGGER(DEBUG) << "pos " << pos << std::endl;
+    LOGGER_DEBUG( "pos " << pos);
     if(nb == 0) break;
   }
   delete response;

@@ -4,13 +4,15 @@ CC  = g++
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"."
 LDFLAGS =
-LDLIBS = -lpthread -lz -lproj -ljpeg -lfcgi
+LDLIBS = -lpthread -lz -lproj -ljpeg -lfcgi -llog4cxx
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
 
 TGTDIR=../target
 BINDIR=$(TGTDIR)/bin
+SRCCONFDIR=../config
+TGTCONFDIR=$(TGTDIR)/config
 DOCSDIR=../docs
 #
 #
@@ -32,6 +34,7 @@ WMSServer: bindir $(WMSSOBJ)
 	$(CXX) $(WMSSOBJ) -o WMSServer $(LDLIBS)
 	rm -f WMSServer.o
 	mv WMSServer *.o $(BINDIR)
+	cp $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
 
@@ -45,9 +48,11 @@ cpputest: clean WMSServer cppubin
 cppubin: $(CPPUNITOBJ)
 	$(CXX) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(LDCPPUNITLIBS) $(LDLIBS)
 	mv $(CPPUNITOBJ) $(BINDIR)
+	mv 
 
 bindir:
 	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
+	if [ ! -d $(TGTCONFDIR) ] ; then mkdir $(TGTCONFDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 
 doc : 

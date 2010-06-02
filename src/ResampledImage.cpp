@@ -11,12 +11,12 @@ ResampledImage<NearestNeighbour>::ResampledImage(Image *image, int width, int he
       assert(right > left && right <= image->width);
       assert(bottom > top && bottom <= image->height);    
 */
-    LOGGER(DEBUG) << "Constructeur NearestNeighbourResampledImage" << std::endl;
+    LOGGER_DEBUG( "Constructeur NearestNeighbourResampledImage" );
     }
 
 
 ResampledImage<NearestNeighbour>::~ResampledImage() {
-    LOGGER(DEBUG) << "delete NearestNeighbourResampledImage" << std::endl;
+    LOGGER_DEBUG( "delete NearestNeighbourResampledImage");
 //    assert(image);
     delete image;
   }
@@ -31,7 +31,7 @@ int Resample<Kernel>::getline(float* buffer, int line) {return 1;}
 template<class T>
 int ResampledImage<NearestNeighbour>::_getline(T *buffer, int line) {    
 
-//  LOGGER(DEBUG) << " Resample: _getline " << line << std::endl;  
+//  LOGGER_DEBUG(" Resample: _getline " << line);  
  //   assert(line >= 0 && line < this->height);
     int l = (int) (top + line * ratio_y + 0.5);
  //   assert(l >= 0 && l < image->height);

@@ -17,7 +17,7 @@ class FileManager {
   public:
 
     static const uint8_t* gettile(std::string filename, uint32_t &tile_size, uint32_t posoff, uint32_t posindex) {
-      LOGGER(DEBUG) << "gettile: " << filename << " " << posoff << " " << posindex << " " << std::endl;
+      LOGGER_DEBUG( "gettile: " << filename << " " << posoff << " " << posindex << " ");
       uint8_t *data = 0;
       int fildes = open(filename.c_str(), O_RDONLY);
       if(fildes < 0) {
@@ -27,11 +27,11 @@ class FileManager {
       uint32_t pos;
       if(pread(fildes, &pos, sizeof(pos), posoff) < 0) {
         perror("read");
-        LOGGER(DEBUG) << " Erreur pread " <<std::endl;
+        LOGGER_DEBUG( " Erreur pread " );
         close(fildes);
         return 0;
       }
-      LOGGER(DEBUG) << "fildes=" << fildes << " tile_size= "<<tile_size<< " size="<< sizeof(tile_size) << "offset="<<posoff    <<" pos=" << pos <<std::endl;
+      LOGGER_DEBUG("fildes=" << fildes << " tile_size= "<<tile_size<< " size="<< sizeof(tile_size) << "offset="<<posoff    <<" pos=" << pos );
       if(pread(fildes, &tile_size, sizeof(tile_size), posindex) < 0){
         perror("read");
         close(fildes);
@@ -39,13 +39,13 @@ class FileManager {
       }
       if(tile_size > 1048576)
 	{
-	LOGGER(DEBUG) << " erreur : tile_size trop grand " << std::endl ;
+	LOGGER_DEBUG( " erreur : tile_size trop grand " ) ;
 	close(fildes);
 	return 0;  // max 1Mo / tuile
 	}
       data = new uint8_t[tile_size];
       if(pread(fildes, data, tile_size, pos) < 0) {
-      LOGGER(DEBUG) << " erreur pread " << std::endl;
+      LOGGER_DEBUG( " erreur pread " );
         delete[] data;
         close(fildes);
         perror("read");

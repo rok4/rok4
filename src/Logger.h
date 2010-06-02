@@ -1,7 +1,8 @@
 #ifndef _LOGGER_
 #define _LOGGER_
 
-#include <ostream>
+#include <log4cxx/logger.h>
+#include <log4cxx/xml/domconfigurator.h>
 #include <iostream>
 
 
@@ -9,17 +10,18 @@ typedef enum{DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3, FATAL = 4} LogLevel;
 
 class Logger {
 private:
-	static LogLevel minLevel; // niveau de log minimum écrit dans le fichier de log.
-	//TODO: fichier de sortie
 public:
-	static LogLevel getMinLevel();
-	static void setMinLevel(LogLevel const minLevel);
+        static log4cxx::LoggerPtr logger;
 
-	static std::ostream &logStream(LogLevel level);
+public:
+        static void configure(std::string confFileName);
 };
 
-#if 0
-#define LOGGER(x) (Logger::getMinLevel()==DEBUG ? Logger::logStream(x) << "["<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<"]:" : Logger::logStream(x) )
-#endif
-#define LOGGER(x) std::cerr << "["<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<"]:"
+#define LOGGER_DEBUG(m) LOG4CXX_DEBUG(Logger::logger,m)
+#define LOGGER_INFO(m)  LOG4CXX_INFO( Logger::logger,m)
+#define LOGGER_WARN(m)  LOG4CXX_WARN( Logger::logger,m)
+#define LOGGER_ERROR(m) LOG4CXX_ERROR(Logger::logger,m)
+#define LOGGER_FATAL(m) LOG4CXX_FATAL(Logger::logger,m)
+ 
+
 #endif

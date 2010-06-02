@@ -49,7 +49,7 @@ Image* TiledLayer<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
   int tile_xmin = bbox.xmin / tile_width;
   int tile_xmax = (bbox.xmax -1)/ tile_width;
   int nbx = tile_xmax - tile_xmin + 1; 
-  LOGGER(DEBUG) << " getwindow " << tile_xmin << " " << tile_xmax << " " << nbx << " " << tile_width << " " << std::endl; 
+  LOGGER_DEBUG(" getwindow " << tile_xmin << " " << tile_xmax << " " << nbx << " " << tile_width << " " ); 
 
   int tile_ymin = bbox.ymin / tile_height;
   int tile_ymax = (bbox.ymax-1) / tile_height;
@@ -63,7 +63,7 @@ Image* TiledLayer<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
   std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
   for(int y = 0; y < nby; y++)
     for(int x = 0; x < nbx; x++) {
-      LOGGER(DEBUG) << " getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] << std::endl;      
+      LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );      
       StaticHttpResponse* tile = gettile(tile_xmin + x, tile_ymin + y);
       T[y][x] = new Tile<Decoder>(tile_width, tile_height, channels, tile, left[x], top[y], right[x], bottom[y]);
     }
@@ -88,7 +88,7 @@ static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
  */
 template<class Decoder>
 std::string TiledLayer<Decoder>::getfilepath(int tilex, int tiley) {
-  LOGGER(DEBUG) << " getfilepath " << tilex << " " << tiley << std::endl;
+  LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley) ;
 
   int x = tilex / tiles_per_width;
   int y = tiley / tiles_per_height;
@@ -115,7 +115,7 @@ std::string TiledLayer<Decoder>::getfilepath(int tilex, int tiley) {
   } while(x || y);
   path[pos] = '/';
 
-  LOGGER(DEBUG) << " getfilepath " << (path +pos)<< std::endl;
+  LOGGER_DEBUG(" getfilepath " << (path +pos));
 
 
   return basedir + (path + pos);
@@ -125,7 +125,7 @@ std::string TiledLayer<Decoder>::getfilepath(int tilex, int tiley) {
 template<class Decoder>
 StaticHttpResponse* TiledLayer<Decoder>::gettile(int x, int y) 
 {
-  LOGGER(DEBUG) << " TiledLayer: gettile " << x << " " << y << std::endl;  
+  LOGGER_DEBUG( " TiledLayer: gettile " << x << " " << y );  
   
   if(x < 0 || y < 0) {
     data_t* T = new data_t[tile_width*tile_height*channels];    
@@ -134,19 +134,19 @@ StaticHttpResponse* TiledLayer<Decoder>::gettile(int x, int y)
 
   std::string file_path = getfilepath(x, y);
 
-//  LOGGER(DEBUG) << " TiledLayer: gettile " << file_path << std::endl;  
+//  LOGGER_DEBUG( " TiledLayer: gettile " << file_path );  
 
   uint32_t size;
   int n=(y%tiles_per_height)*tiles_per_width + (x%tiles_per_width); // Index de la tuile
   uint32_t posoff=1024+4*n, possize=1024+4*n +tiles_per_width*tiles_per_height*4;
 
-  LOGGER(DEBUG) << " TiledLayer: gettile " << posoff << " " <<  possize << std::endl;  
+  LOGGER_DEBUG( " TiledLayer: gettile " << posoff << " " <<  possize );  
   const uint8_t *data = FileManager::gettile(file_path, size, posoff, possize);
-  LOGGER(DEBUG) << " TiledLayer: gettile " << size << std::endl;  
+  LOGGER_DEBUG( " TiledLayer: gettile " << size );  
 
   if(data) return new StaticHttpResponse("bubu", data, size);
   else {
-    LOGGER(DEBUG) << " TiledLayer: gettile " << size << std::endl;
+    LOGGER_DEBUG( " TiledLayer: gettile " << size );
 
     data_t* T = new data_t[tile_width*tile_height*channels];    
     return new StaticHttpResponse("bubu", T, tile_width*tile_height*channels*sizeof(data_t));

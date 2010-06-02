@@ -20,4 +20,6 @@
 
 #define NB_THREAD 10
 
+#define LOG_LEVEL "WARN"
+
 #endif

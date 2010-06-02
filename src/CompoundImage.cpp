@@ -51,6 +51,6 @@ CompoundImage::~CompoundImage() {
     for(int x = 0; x < images[y].size(); x++)
       delete images[y][x];
 
-  LOGGER(DEBUG) << " Destructeur CompoundImage"  << std::endl;  
+  LOGGER_DEBUG( " Destructeur CompoundImage");  
 }
 

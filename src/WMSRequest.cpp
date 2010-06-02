@@ -66,9 +66,9 @@ void WMSRequest::url_decode(char *src) {
 //    url_decode(key);
     uint32_t h = 0;
     for(int i = 0; key[i]; i++) h = h*13 ^ tolower(key[i]);
-    LOGGER(DEBUG) << key << " ";
+    LOGGER_DEBUG(key << " ");
     std::cerr.setf(std::ios::hex);
-    LOGGER(DEBUG) << h << std::endl;
+    LOGGER_DEBUG( h );
     std::cerr.setf(std::ios::dec);
 
 
@@ -83,7 +83,7 @@ void WMSRequest::url_decode(char *src) {
           pos++;
         }
         if(bbox) delete bbox;
-	LOGGER(DEBUG) << "Box = " <<bb[0] << " " <<  bb[1] << " "<< bb[2] << " "<< bb[3] << std::endl;
+	LOGGER_DEBUG( "Box = " <<bb[0] << " " <<  bb[1] << " "<< bb[2] << " "<< bb[3] );
         bbox = new BoundingBox<double>(bb[0], bb[1], bb[2], bb[3]);
         break;
       case 0x00000077 :                                 // w
@@ -120,7 +120,7 @@ void WMSRequest::url_decode(char *src) {
   WMSRequest::WMSRequest(char* strquery) :  /*query(0),*/ width(-1), height(-1), bbox(0), service(0), request(0), crs(0), layers(0), styles(0), format(0), transparent(false), tilerow(-1), tilecol(-1), tilematrix(-1), tilematrixset(0) {
 
     url_decode(strquery);
-  //  LOGGER(DEBUG) << query << " " << strquery << std::endl;
+  //  LOGGER_DEBUG( query << " " << strquery );
 
     for(int pos = 0; strquery[pos];) {
       char* key = strquery + pos;
