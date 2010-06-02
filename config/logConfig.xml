@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/"> 
+ 	<!-- On decrit ici ce qu'on veut voir sur la sortie standard. On retrouvera ces informations
+             dans les logs du serveur HTTP (en tout cas pour apache). Pour ne pas poluer les logs 
+             d'apache, j'ai limite le niveau de log a INFO, et je prefixe les lignes par ROK4:
+ 	-->
+ 	<appender name="MyConsoleAppender" class="org.apache.log4j.ConsoleAppender"> 
+                <level value="info" />
+ 		<param name="Target" value="System.out"/> 
+ 		<layout class="org.apache.log4j.PatternLayout"> 
+ 			<param name="ConversionPattern" value="ROK4: %-5p - %m%n"/> 
+ 		</layout> 
+ 	</appender> 
+ 
+ 
+ 	<!-- the following appender with the name "TimeBasedLog.log", every night a few seconds after
+ 	     12::00PM the old log will be renamed with append the date in filename, and a new log file
+ 	     with the name "TimeBasedLog.log" will be create. 
+ 	     notice the RollingFileAppender is under "org.apache.log4j.rolling" namespace
+ 	-->
+ 	<appender name="MyRollingAppenderDaily" class="org.apache.log4j.rolling.RollingFileAppender">
+ 		<rollingPolicy class="org.apache.log4j.rolling.TimeBasedRollingPolicy">
+ 			<param name="FileNamePattern" value="/var/tmp/rok4.%d{yyyy-MM-dd}.log"/>
+ 			<param name="activeFileName" value="/var/tmp/rok4cxx.log"/>
+ 		</rollingPolicy>
+ 
+ 		<layout class="org.apache.log4j.PatternLayout">
+ 			<param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss,SSS} %x [%p] (%F:%L) %m%n"/>
+ 		</layout> 
+ 		<param name="file" value="/var/tmp/rok4cxx.log"/>
+ 		<param name="append" value="true"/>
+ 	</appender>
+ 
+ 
+ 	<root>
+		<level value="debug" />
+ 		<priority value="all" />
+ 		<appender-ref ref="MyRollingAppenderDaily"/>
+ 		<appender-ref ref="MyConsoleAppender"/>
+ 	</root> 
+ 
+ </log4j:configuration>
