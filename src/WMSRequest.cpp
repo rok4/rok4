@@ -66,11 +66,7 @@ void WMSRequest::url_decode(char *src) {
 //    url_decode(key);
     uint32_t h = 0;
     for(int i = 0; key[i]; i++) h = h*13 ^ tolower(key[i]);
-    LOGGER_DEBUG(key << " ");
-    std::cerr.setf(std::ios::hex);
-    LOGGER_DEBUG( h );
-    std::cerr.setf(std::ios::dec);
-
+    LOGGER_DEBUG(key << " " << h);
 
     switch(h) {
       case 0x00000062 : // b
@@ -135,12 +131,5 @@ void WMSRequest::url_decode(char *src) {
 
 WMSRequest::~WMSRequest() {
   if(bbox) delete bbox;
-  if (service) delete service;
-  if (request) delete request;
-  if (crs) delete crs;
-  if (layers) delete layers;
-  if (styles) delete styles;
-  if (format) delete format;
-  if (tilematrixset) delete tilematrixset;
 }
 
