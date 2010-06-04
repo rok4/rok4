@@ -35,7 +35,9 @@
     int rc;
     FCGX_Request request;
 
-    FCGX_InitRequest(&request, 0, 0);
+    if (FCGX_InitRequest(&request, 0, 0)!=0){
+    	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
+    }
 
     while(true)
     {
@@ -46,8 +48,10 @@
         rc = FCGX_Accept_r(&request);
         pthread_mutex_unlock(&accept_mutex);
 
-        if (rc < 0)
+        if (rc < 0){
+            LOGGER_DEBUG("FCGX_InitRequest renvoie un code d'erreur");
             break;
+        }
 
 	WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
 
@@ -97,13 +101,19 @@ Construction du serveur
 #include <fstream>
 
 int main(int argc, char** argv) {
+    int stopSleep = 0;
+    while (getenv("SLEEP") != NULL && stopSleep == 0) {
+        sleep(2);
+    }
 
     Logger::configure("../config/logConfig.xml");
-    LOGGER_DEBUG( "Lancement du serveur");
+
+    LOGGER_INFO( "Lancement du serveur ROK4");
 
     WMSServer W(NB_THREAD);
 
     W.run(); 
+    LOGGER_INFO( "Extinction du serveur ROK4");
   }
 
   void WMSServer::run() {
