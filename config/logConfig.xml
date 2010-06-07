@@ -9,11 +9,11 @@
  	<appender name="MyConsoleAppender" class="org.apache.log4j.ConsoleAppender"> 
  		<param name="Target" value="System.out"/> 
  		<layout class="org.apache.log4j.PatternLayout"> 
- 			<!-- <param name="ConversionPattern" value="ROK4: %-5p - %m%n"/>  
+ 			<!-- <param name="ConversionPattern" value="ROK4: %-5p - %m%n"/> -->  
                         <!-- exemple:
                              ROK4: INFO  - <message> 
                          -->
-             -->
+             
              <param name="ConversionPattern" value="ROK4: %d{yyyy-MM-dd HH:mm:ss,SSS} thread:%t [%p] (%F:%L) %m%n"/>
                         <!-- exemple:
                              2010-06-02 10:18:07,393 null [DEBUG] (WMSServer.cpp:84) /mnt/geoportail/ppons/ortho-jpeg/262144
