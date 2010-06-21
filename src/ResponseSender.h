@@ -2,7 +2,7 @@
 #define _SENDER_
 
 #include "HttpResponse.h"
-#include "fcgiapp.h"
+#include "libfcgi/fcgiapp.h"
 
 class ResponseSender {
   private:

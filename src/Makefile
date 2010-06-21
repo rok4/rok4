@@ -1,10 +1,10 @@
 CXX = g++
-CC  = g++
+CC  = gcc
 #CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"."
 LDFLAGS =
-LDLIBS = -lpthread -lz -lproj -ljpeg -lfcgi -llog4cxx
+LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
@@ -23,15 +23,16 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
+FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
 WMSSOBJ= WMSServer.o Logger.o ResponseSender.o Layer.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o CompoundImage.o ResampledImage.o
-
 
 all: clean WMSServer
 #
 # WMSServer
 # compile et genere le serveur WMS
 WMSServer: bindir $(WMSSOBJ)
-	$(CXX) $(WMSSOBJ) -o WMSServer $(LDLIBS)
+	make -C libfcgi
+	$(CXX) $(WMSSOBJ) $(FCGIOBJ) -o WMSServer $(LDLIBS)
 	rm -f WMSServer.o
 	mv WMSServer *.o $(BINDIR)
 	cp $(SRCCONFDIR)/* $(TGTCONFDIR)
@@ -47,8 +48,7 @@ cpputest: clean WMSServer cppubin
 
 cppubin: $(CPPUNITOBJ)
 	$(CXX) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(LDCPPUNITLIBS) $(LDLIBS)
-	mv $(CPPUNITOBJ) $(BINDIR)
-	mv 
+	mv $(CPPUNITOBJ) $(BINDIR)	
 
 bindir:
 	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
@@ -59,5 +59,6 @@ doc :
 	doxygen $(DOCSDIR)/doxygen.cfg
 
 clean:
-	rm -f *.o $(CPPUNITDIR)/*.o WMSServer
+	rm -f *.o $(CPPUNITDIR)/*.o libfcgi/*.o WMSServer	
 	rm -fr $(TGTDIR)
+	make -C libfcgi clean
