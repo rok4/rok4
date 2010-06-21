@@ -7,10 +7,18 @@ export LD_LIBRARY_PATH=/usr/local/lib
 cd src
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
 make cpputest
+if [ $? -ne 0 ] ; then
+  exit 1
+fi
+
 
 # documentation
 echo "\n\n\n\n***  DOCUMENTATION    *****"
 make doc
+if [ $? -ne 0 ] ; then
+  exit 2
+fi
+
 
 # deploiement
 ROK4BASE=/var/www/hudson/rok4
