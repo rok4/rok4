@@ -34,7 +34,7 @@ WMSServer: bindir $(WMSSOBJ)
 	make -C libfcgi
 	$(CXX) $(WMSSOBJ) $(FCGIOBJ) -o WMSServer $(LDLIBS)
 	rm -f WMSServer.o
-	mv WMSServer *.o $(BINDIR)
+	mv WMSServer *.o $(FCGIOBJ) $(BINDIR)
 	cp $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
