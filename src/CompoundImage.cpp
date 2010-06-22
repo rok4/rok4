@@ -47,10 +47,10 @@ int CompoundImage::getline(float *buffer, int line) {
 
 
 CompoundImage::~CompoundImage() {
+  LOGGER_DEBUG( " Destructeur CompoundImage");  
   for(int y = 0; y < images.size(); y++)
     for(int x = 0; x < images[y].size(); x++)
       delete images[y][x];
 
-  LOGGER_DEBUG( " Destructeur CompoundImage");  
 }
 

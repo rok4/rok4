@@ -29,7 +29,7 @@ class CompoundImage : public Image {
   CompoundImage(std::vector<std::vector<Image*> >& images);
   
   /** D */
-  ~CompoundImage();
+  virtual ~CompoundImage();
 };
 
 #endif

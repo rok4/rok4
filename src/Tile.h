@@ -54,6 +54,11 @@ class Tile : public Image {
     Decoder::decode(encoded_data, encoded_size, raw_data);
     LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels << " " << encoded_size );    
   }
+
+  ~Tile() {
+    delete[] raw_data;
+    delete data;
+  }
 };
 
 template class Tile<RawDecoder>;

@@ -103,6 +103,7 @@ PNGEncoder::~PNGEncoder() {
   LOGGER_DEBUG( "Destructeur PNGEncoder" );
   deflateEnd(&zstream);
   if(linebuffer) delete[] linebuffer;
+  LOGGER_DEBUG( "Destructeur PNGEncoder" );
   delete image;
 }
 

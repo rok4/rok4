@@ -45,7 +45,7 @@ class StaticHttpResponse : public HttpResponse {
     }
 
   /** D */
-  ~StaticHttpResponse() {if(data) delete[] data;}
+  ~StaticHttpResponse() {delete[] data;}
 
   /** D */
   const uint8_t* get_data(size_t &sz) {    
