@@ -82,8 +82,9 @@ Construction du serveur
       for(int l = 0, s = 2048; s <= 2097152; l++) {
       double res = double(s)/4096.;
       std::ostringstream ss;
-      ss << "/mnt/geoportail/ppons/ortho/cache/" << s;
-      //ss << "/mnt/geoportail/ppons/ortho-jpeg/" << s;
+//      ss << "/data/cache/" << s;
+      ss << /mnt/geoportail/ppons/ortho/cache << s;
+       //ss << "/mnt/geoportail/ppons/ortho-jpeg/" << s;
       LOGGER_DEBUG( ss.str() );
       Layer *TL = new TiledLayer<RawDecoder>("EPSG:2154", 256, 256, 3, res, res, 0, 16777216, ss.str(),16, 16, 2); //IGNF:LAMB93
       L1.push_back(TL);
@@ -94,7 +95,7 @@ Construction du serveur
     for(int i = 0; i < L1.size(); i++) LL[i] = L1[i];
     Pyramid* P1 = new Pyramid(LL, L1.size());
     //Pyramids["ORTHO"] = P1;
-    Pyramids["ORTHO_JPEG"] = P1;
+    Pyramids["ORTHO"] = P1;
   }
 	
 #include <fstream>
