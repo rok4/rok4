@@ -115,9 +115,11 @@ int ResampledImage<Kernel>::getline(float* buffer, int line) {
 
 template<class Kernel>
 ResampledImage<Kernel>::~ResampledImage() {
+  LOGGER_DEBUG( "Destructeur ResampledImage" );
   delete[] resampled_src_line;
   delete[] src_line; 
   delete[] float_buffer;
+  delete image; 
 }
 
 
