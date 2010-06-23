@@ -26,7 +26,7 @@
 
 
   /**
-   * Boucle principale exécuté par un thread dédié
+   * Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
    */
   void* WMSServer::thread_loop(void* arg) {
     WMSServer* server = (WMSServer*) (arg);   
@@ -38,8 +38,7 @@
     	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
     }
 
-    while(true)
-    {
+    while(true){
         static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
 
         /* Some platforms require accept() serialization, some don't.. */
@@ -48,18 +47,16 @@
         pthread_mutex_unlock(&accept_mutex);
 
         if (rc < 0){
-            LOGGER_DEBUG("FCGX_InitRequest renvoie un code d'erreur");
+            LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
             break;
         }
 
-	WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
+	    WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
 
-      	HttpResponse* response = server->dispatch(wmsrequest);
+      	HttpResponse* response = server->processRequest(wmsrequest);
 
       	server->S.sendresponse(response, &request);
       	delete wmsrequest;
-
-        sleep(2);
 
         FCGX_Finish_r(&request);
     }
@@ -73,13 +70,12 @@ Construction du serveur
 
   WMSServer::WMSServer(int nbthread) : nbthread(nbthread) {
 
-	//S.C.
 	int init=FCGX_Init();
 
     std::vector<Layer*> L1;
 
-//    for(int l = 0, s = 8192; s <= 2097152; l++) {
-      for(int l = 0, s = 2048; s <= 2097152; l++) {
+    // s est la dimention en m de l'image
+    for(int l = 0, s = 2048; s <= 2097152; l++, s *= 2) {
       double res = double(s)/4096.;
       std::ostringstream ss;
 //      ss << "/data/cache/" << s;
@@ -88,31 +84,30 @@ Construction du serveur
       LOGGER_DEBUG( ss.str() );
       Layer *TL = new TiledLayer<RawDecoder>("EPSG:2154", 256, 256, 3, res, res, 0, 16777216, ss.str(),16, 16, 2); //IGNF:LAMB93
       L1.push_back(TL);
-      s *= 2;   
     }
 
     Layer** LL = new Layer*[L1.size()];
     for(int i = 0; i < L1.size(); i++) LL[i] = L1[i];
     Pyramid* P1 = new Pyramid(LL, L1.size());
-    //Pyramids["ORTHO"] = P1;
     Pyramids["ORTHO"] = P1;
   }
 	
 #include <fstream>
 
 int main(int argc, char** argv) {
+
+	/* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
     while (getenv("SLEEP") != NULL && stopSleep == 0) {
         sleep(2);
     }
 
     Logger::configure("../config/logConfig.xml");
-
     LOGGER_INFO( "Lancement du serveur ROK4");
 
     WMSServer W(NB_THREAD);
+    W.run();
 
-    W.run(); 
     LOGGER_INFO( "Extinction du serveur ROK4");
   }
 
@@ -124,31 +119,12 @@ int main(int argc, char** argv) {
       pthread_join(Thread[i], NULL);
   }
 
-  HttpResponse* WMSServer::checkWMSrequest(WMSRequest* request) {
-    if(request->layers == 0)    return new Error("Missing parameter: layers/l");
-    if(request->bbox   == 0)    return new Error("Missing parameter: bbox");
-    if(request->width > 10000)  return new Error("Invalid parameter (too large): width/w");
-    if(request->height > 10000) return new Error("Invalid parameter (too large): height/h");
-    return 0;
-  }
-
-  HttpResponse* WMSServer::checkWMTSrequest(WMSRequest* request) {
-    if(request->layers == 0)      return new Error("Missing parameter: layers/l");
-    if(request->tilecol < 0)      return new Error("Missing or invalid parameter: tilecol/x");
-    if(request->tilerow < 0)      return new Error("Missing or invalid parameter: tilerow/y");
-    if(request->tilematrix == 0)  return new Error("Missing or invalid parameter: tilematrix/z");    
-    return 0;
-  }
-  
-  
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
       LOGGER_DEBUG( "wmsserver:getMap" );
+
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;
       Pyramid* P = it->second;
-
-//      if(!P.transparent) request->transparent = false; // Si la couche ne supporte pas de transparence, forcer transparent = false;
-//      if(!request.format) request->format     = P.format;
 
       Image* image = P->getbbox(*request->bbox, request->width, request->height, request->crs);
       if (image == 0) return 0;
@@ -162,14 +138,12 @@ int main(int argc, char** argv) {
       std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
       if(it == Pyramids.end()) return 0;
       Pyramid* P = it->second;
-      //std::stringstream msg(std::ios_base::in);
-      //msg << " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format;
-      //LOGGER_DEBUG( msg.str() );
+
       LOGGER_DEBUG(  " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format );
       return P->gettile(request->tilecol, request->tilerow, request->tilematrix);
     }
 
-
+  /** traite les requêtes de type WMTS */
   HttpResponse* WMSServer::processWMTS(WMSRequest* request) {
     HttpResponse* response;
     response = getTile(request);
@@ -177,6 +151,7 @@ int main(int argc, char** argv) {
     else return new Error("Unknown layer: " + std::string(request->layers));
   }
 
+  /** Traite les requêtes de type WMS */
   HttpResponse* WMSServer::processWMS(WMSRequest* request) {
     HttpResponse* response;
     response = getMap(request);
@@ -184,8 +159,10 @@ int main(int argc, char** argv) {
     else return new Error("Unknown layer: " + std::string(request->layers));
   }
 
-
-  HttpResponse* WMSServer::dispatch(WMSRequest* request) {
+  /**
+   * Renvoie la réponse à la requête.
+   */
+  HttpResponse* WMSServer::processRequest(WMSRequest* request) {
     if(request->isWMSRequest()) {
       HttpResponse* response = request->checkWMS();
       if(response) return response;
