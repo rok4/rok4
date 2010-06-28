@@ -1,6 +1,6 @@
 CXX = g++
 CC  = gcc
-#CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
+#CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"." `xml2-config --cflags`
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"." `xml2-config --cflags`
 LDFLAGS = `xml2-config --libs`
