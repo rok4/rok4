@@ -81,7 +81,7 @@ Pyramid* PyramidFactory::make(std::string configFileName) {
 	xmlNodePtr racine;
     racine = xmlDocGetRootElement(doc);
 
-    std::vector<Layer*> layerList;
+    std::vector<Level*> levelList;
 
     xmlNodePtr srsNode=racine->children;
     while (strcmp ((char*)srsNode->name, "srs")){
@@ -144,7 +144,7 @@ Pyramid* PyramidFactory::make(std::string configFileName) {
     			continue;
     		}
 
-	    	Layer *TL = new TiledLayer<RawDecoder>(srs.c_str(),
+	    	Level *TL = new TiledLevel<RawDecoder>(srs.c_str(),
 	    			                               tile_width, tile_height,
 	    			                               channels,
 	    			                               resolution_x, resolution_y,
@@ -152,7 +152,7 @@ Pyramid* PyramidFactory::make(std::string configFileName) {
 	    			                               dir_name,
 	    			                               image_width/tile_width, image_height/tile_height,
 	    			                               path_depth);
-	    	layerList.push_back(TL);
+	    	levelList.push_back(TL);
     	}
 
     }// boucle sur les levels
@@ -162,16 +162,16 @@ Pyramid* PyramidFactory::make(std::string configFileName) {
     xmlFreeDoc(doc);
 
     // on crée enfin la Pyramid
-    if (layerList.size()==0){
+    if (levelList.size()==0){
     	LOGGER_ERROR("La config "<< configFileName << " ne contient aucun level valide, la pyramide n'est pas prise en compte");
     	return NULL;
     }
-    Layer** LL = new Layer*[layerList.size()];
-    LOGGER_DEBUG("Nombre de level valides dans cette pyramide: " << layerList.size());
-    for(int i = 0; i < layerList.size(); i++){
-    	LL[i] = layerList[i];
+    Level** LL = new Level*[levelList.size()];
+    LOGGER_DEBUG("Nombre de levels valides dans cette pyramide: " << levelList.size());
+    for(int i = 0; i < levelList.size(); i++){
+    	LL[i] = levelList[i];
     }
-    Pyramid* Pyr = new Pyramid(LL, layerList.size());
+    Pyramid* Pyr = new Pyramid(LL, levelList.size());
 
     return Pyr;
 

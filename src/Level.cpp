@@ -1,5 +1,5 @@
 
-#include "Layer.h"
+#include "Level.h"
 #include "FileManager.h"
 
 #include "CompoundImage.h"
@@ -10,7 +10,7 @@
 
 #define EPS 1./256.
 
-Image* Layer::getbbox(BoundingBox<double> bbox, int width, int height) {
+Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
   // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0  
   bbox.xmin = (bbox.xmin - X0)/resolution_x;
   bbox.xmax = (bbox.xmax - X0)/resolution_x;
@@ -44,7 +44,7 @@ Image* Layer::getbbox(BoundingBox<double> bbox, int width, int height) {
 
 
 template<class Decoder>
-Image* TiledLayer<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
+Image* TiledLevel<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
 
   int tile_xmin = bbox.xmin / tile_width;
   int tile_xmax = (bbox.xmax -1)/ tile_width;
@@ -87,7 +87,7 @@ static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
  *
  */
 template<class Decoder>
-std::string TiledLayer<Decoder>::getfilepath(int tilex, int tiley) {
+std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
   LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley) ;
 
   int x = tilex / tiles_per_width;
@@ -123,9 +123,9 @@ std::string TiledLayer<Decoder>::getfilepath(int tilex, int tiley) {
 
 
 template<class Decoder>
-StaticHttpResponse* TiledLayer<Decoder>::gettile(int x, int y) 
+StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
 {
-  LOGGER_DEBUG( " TiledLayer: gettile " << x << " " << y );  
+  LOGGER_DEBUG( " TiledLevel: gettile " << x << " " << y );
   
   if(x < 0 || y < 0) {
     data_t* T = new data_t[tile_width*tile_height*channels];    
@@ -134,19 +134,19 @@ StaticHttpResponse* TiledLayer<Decoder>::gettile(int x, int y)
 
   std::string file_path = getfilepath(x, y);
 
-//  LOGGER_DEBUG( " TiledLayer: gettile " << file_path );  
+//  LOGGER_DEBUG( " TiledLevel: gettile " << file_path );
 
   uint32_t size;
   int n=(y%tiles_per_height)*tiles_per_width + (x%tiles_per_width); // Index de la tuile
   uint32_t posoff=1024+4*n, possize=1024+4*n +tiles_per_width*tiles_per_height*4;
 
-  LOGGER_DEBUG( " TiledLayer: gettile " << posoff << " " <<  possize );  
+  LOGGER_DEBUG( " TiledLevel: gettile " << posoff << " " <<  possize );
   const uint8_t *data = FileManager::gettile(file_path, size, posoff, possize);
-  LOGGER_DEBUG( " TiledLayer: gettile " << size );  
+  LOGGER_DEBUG( " TiledLevel: gettile " << size );
 
   if(data) return new StaticHttpResponse("bubu", data, size);
   else {
-    LOGGER_DEBUG( " TiledLayer: gettile " << size );
+    LOGGER_DEBUG( " TiledLevel: gettile " << size );
 
     data_t* T = new data_t[tile_width*tile_height*channels];    
     return new StaticHttpResponse("bubu", T, tile_width*tile_height*channels*sizeof(data_t));
@@ -156,25 +156,25 @@ StaticHttpResponse* TiledLayer<Decoder>::gettile(int x, int y)
 
 
 
-template class TiledLayer<RawDecoder>;
-//template class Layer<pixel_gray>;
-//template class Layer<pixel_float>;
+template class TiledLevel<RawDecoder>;
+//template class Level<pixel_gray>;
+//template class Level<pixel_float>;
 
-//template class TiledFileLayer<RawTile ,pixel_rgb>;
-//template class TiledFileLayer<RawTile ,pixel_float>;
-//template class TiledFileLayer<PngTile ,pixel_rgb>;
-//template class TiledFileLayer<JpegTile,pixel_rgb>;
+//template class TiledFileLevel<RawTile ,pixel_rgb>;
+//template class TiledFileLevel<RawTile ,pixel_float>;
+//template class TiledFileLevel<PngTile ,pixel_rgb>;
+//template class TiledFileLevel<JpegTile,pixel_rgb>;
 
-//template class TiledFileLayer<RawTile ,pixel_gray>;
-//template class TiledFileLayer<PngTile ,pixel_gray>;
-//template class TiledFileLayer<JpegTile,pixel_gray>;
+//template class TiledFileLevel<RawTile ,pixel_gray>;
+//template class TiledFileLevel<PngTile ,pixel_gray>;
+//template class TiledFileLevel<JpegTile,pixel_gray>;
 
 
 /*
-template class TiledFileLayer<pixel_rgb>;
-template class RawTiffLayer<pixel_rgb>;
-template class JpegTiffLayer<pixel_rgb>;
-template class PngTiffLayer<pixel_gray>;
+template class TiledFileLevel<pixel_rgb>;
+template class RawTiffLevel<pixel_rgb>;
+template class JpegTiffLevel<pixel_rgb>;
+template class PngTiffLevel<pixel_gray>;
 */
 
 

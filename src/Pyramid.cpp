@@ -6,9 +6,9 @@ HttpResponse* Pyramid::gettile(int x, int y, int z) {
 /*  assert(x >= 0);
   assert(y >= 0);
   assert(z >= 0);
-  assert(z < (int) Layers.size());
+  assert(z < (int) Levels.size());
 */
-  return Layers[z]->gettile(x, y);
+  return Levels[z]->gettile(x, y);
 }
 
 
@@ -24,10 +24,10 @@ int Pyramid::best_scale(double resolution_x, double resolution_y) {
   double resolution = sqrt(resolution_x * resolution_y);
 
   int best_h = 0;
-  double best = resolution_x / sqrt(Layers[0]->resolution_x * Layers[0]->resolution_y);
+  double best = resolution_x / sqrt(Levels[0]->resolution_x * Levels[0]->resolution_y);
 
-  for(unsigned int h = 1; h < nb_layers; h++) {    
-    double d = resolution / sqrt(Layers[h]->resolution_x * Layers[h]->resolution_y);
+  for(unsigned int h = 1; h < nb_levels; h++) {
+    double d = resolution / sqrt(Levels[h]->resolution_x * Levels[h]->resolution_y);
 
 
     if(best < 0.8 && d > best) {
@@ -56,13 +56,13 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   double resolution_x = (bbox.xmax - bbox.xmin) / width;
   double resolution_y = (bbox.ymax - bbox.ymin) / height;
   int h = best_scale(resolution_x, resolution_y);
-  return Layers[h]->getbbox(bbox, width, height);
+  return Levels[h]->getbbox(bbox, width, height);
 
 /*
   LOGGER_DEBUG( "best_scale=" << h << " resolution requete=" << resolution );
   
-  if(!dst_crs) return Layers[h]->getbbox(bbox, width, height);
-  else return Layers[h]->getbbox(bbox, width, height, dst_crs);
+  if(!dst_crs) return Levels[h]->getbbox(bbox, width, height);
+  else return Levels[h]->getbbox(bbox, width, height, dst_crs);
   */
 }
 

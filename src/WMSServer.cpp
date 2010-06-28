@@ -1,7 +1,6 @@
 #include "WMSServer.h"
 
 #include "Image.h"
-#include "Layer.h"
 #include "Pyramid.h"
 
 #include <iostream>

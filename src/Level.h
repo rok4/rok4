@@ -1,5 +1,5 @@
-#ifndef LAYER_H
-#define LAYER_H
+#ifndef LEVEL_H
+#define LEVEL_H
 
 #include "Image.h"
 #include "HttpResponse.h"
@@ -8,7 +8,7 @@
 #include "BoundingBox.h"
 
   /** D */
-class Layer {  
+class Level {
   protected:
   /**
    * Renvoie une image de taille width, height
@@ -58,7 +58,7 @@ class Layer {
   virtual HttpResponse* gettile(int x, int y) = 0;
 
   /** D */
-   Layer(const char *crs, int channels, double resolution_x, double resolution_y, double X0, double Y0) : crs(crs), channels(channels), resolution_x(resolution_x), resolution_y(resolution_y), X0(X0), Y0(Y0) {};
+   Level(const char *crs, int channels, double resolution_x, double resolution_y, double X0, double Y0) : crs(crs), channels(channels), resolution_x(resolution_x), resolution_y(resolution_y), X0(X0), Y0(Y0) {};
 };
 
 
@@ -66,7 +66,7 @@ class Layer {
 
 /** D */
 template<class Decoder>
-class TiledLayer : public Layer {
+class TiledLevel : public Level {
   private:
 
   typedef typename Decoder::data_t data_t;
@@ -118,7 +118,7 @@ class TiledLayer : public Layer {
 
    
 /** D */
- TiledLayer(const char *crs, int tile_width, int tile_height, int channels, double resolution_x, double resolution_y, double X0, double Y0, std::string basedir, int tpw, int tph, int path_depth) : Layer(crs, channels, resolution_x, resolution_y, X0, Y0), tile_width(tile_width), tile_height(tile_height), basedir(basedir), tiles_per_width(tpw), tiles_per_height(tph), path_depth(path_depth) {}
+ TiledLevel(const char *crs, int tile_width, int tile_height, int channels, double resolution_x, double resolution_y, double X0, double Y0, std::string basedir, int tpw, int tph, int path_depth) : Level(crs, channels, resolution_x, resolution_y, X0, Y0), tile_width(tile_width), tile_height(tile_height), basedir(basedir), tiles_per_width(tpw), tiles_per_height(tph), path_depth(path_depth) {}
 
 /** D */
 

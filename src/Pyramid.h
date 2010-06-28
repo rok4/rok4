@@ -1,7 +1,7 @@
 #ifndef PYRAMID_H
 #define PYRAMID_H
 
-#include "Layer.h"
+#include "Level.h"
 
   /**
    * D
@@ -11,8 +11,8 @@ class Pyramid {
   
   private:
 
-  const int nb_layers;
-  Layer** Layers;
+  const int nb_levels;
+  Level** Levels;
 
   /**
    * D
@@ -37,7 +37,7 @@ class Pyramid {
   /**
    * D
    */
-  Pyramid(Layer** Layers, int nb_layers) : Layers(Layers), nb_layers(nb_layers) {}
+  Pyramid(Level** Levels, int nb_levels) : Levels(Levels), nb_levels(nb_levels) {}
 
 
   ~Pyramid() {}
