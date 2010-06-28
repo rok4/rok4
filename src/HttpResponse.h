@@ -42,7 +42,7 @@ class StaticHttpResponse : public HttpResponse {
   /** D */
   StaticHttpResponse(const char* type, const uint8_t* data, size_t size) : HttpResponse(type), data(data), size(size), pos(0) {
       LOGGER_DEBUG( " StaticHttpResponse " << size << " " << (void*) data );
-    }
+  }
 
   /** D */
   ~StaticHttpResponse() {delete[] data;}
@@ -63,12 +63,6 @@ class StaticHttpResponse : public HttpResponse {
     return sz;   
   };
 
-
-
-
 };
-
-
-
 
 #endif

@@ -18,7 +18,7 @@ class WMSServer {
   pthread_t Thread[128]; /* tableau des threads => 128 thread max! */
   ResponseSender S; 
 
-  std::map<std::string, Pyramid*> Pyramids;
+  std::map<std::string, Pyramid*> pyramids;
 
   static void* thread_loop(void* arg);
 

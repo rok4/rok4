@@ -39,6 +39,7 @@ class Pyramid {
    */
   Pyramid(Layer** Layers, int nb_layers) : Layers(Layers), nb_layers(nb_layers) {}
 
+
   ~Pyramid() {}
 };
 

@@ -20,6 +20,7 @@
 
 #include <signal.h>
 #include "Logger.h"
+#include "PyramidFactory.h"
 
 // S.C.
 #include "libfcgi/fcgiapp.h"
@@ -71,25 +72,28 @@ Construction du serveur
   WMSServer::WMSServer(int nbthread) : nbthread(nbthread) {
 
 	int init=FCGX_Init();
+	/* TODO: c'est là qu'on va charger le fichier de conf du contenu servi par le serveur */
 
-    std::vector<Layer*> L1;
+	/* TODO on obtient une liste des fichier de conf des pyramides à servir */
+	std::map<std::string, std::string> PyramidConfs;
+	PyramidConfs["ORTHO"] = "/mnt/geoportail/ppons/ortho-jpeg/pyramid.xml";
+	PyramidConfs["ORTHO_TIFF"] = "/mnt/geoportail/ppons/ortho/cache/pyramid.xml";
 
-    // s est la dimention en m de l'image
-    for(int l = 0, s = 2048; s <= 2097152; l++, s *= 2) {
-      double res = double(s)/4096.;
-      std::ostringstream ss;
-//      ss << "/data/cache/" << s;
-      ss << "/mnt/geoportail/ppons/ortho/cache/" << s;
-       //ss << "/mnt/geoportail/ppons/ortho-jpeg/" << s;
-      LOGGER_DEBUG( ss.str() );
-      Layer *TL = new TiledLayer<RawDecoder>("EPSG:2154", 256, 256, 3, res, res, 0, 16777216, ss.str(),16, 16, 2); //IGNF:LAMB93
-      L1.push_back(TL);
-    }
-
-    Layer** LL = new Layer*[L1.size()];
-    for(int i = 0; i < L1.size(); i++) LL[i] = L1[i];
-    Pyramid* P1 = new Pyramid(LL, L1.size());
-    Pyramids["ORTHO"] = P1;
+	/* Pour chaque fichier on crée la pyramide décrite */
+	std::map<std::string, std::string>::iterator iter = PyramidConfs.begin();
+	while (iter != PyramidConfs.end()){
+		Pyramid* P = PyramidFactory::make(iter->second);
+		if (P==NULL){
+			LOGGER_ERROR("La description de pyramide n'a pu être chargée " << iter->second);
+			++iter;
+			continue;
+		}
+		pyramids[iter->first] = P;
+		++iter;
+	}
+	if (pyramids.empty()){
+		LOGGER_FATAL("Le serveur n'a pu charger aucune pyramide: aucune image ne pourra être servie.")
+	}
   }
 	
 #include <fstream>
@@ -122,8 +126,8 @@ int main(int argc, char** argv) {
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
       LOGGER_DEBUG( "wmsserver:getMap" );
 
-      std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
-      if(it == Pyramids.end()) return 0;
+      std::map<std::string, Pyramid*>::iterator it = pyramids.find(std::string(request->layers));
+      if(it == pyramids.end()) return 0;
       Pyramid* P = it->second;
 
       Image* image = P->getbbox(*request->bbox, request->width, request->height, request->crs);
@@ -135,8 +139,8 @@ int main(int argc, char** argv) {
     HttpResponse* WMSServer::getTile(WMSRequest* request) {
       LOGGER_DEBUG ("wmsserver:getTile" );
 
-      std::map<std::string, Pyramid*>::iterator it = Pyramids.find(std::string(request->layers));
-      if(it == Pyramids.end()) return 0;
+      std::map<std::string, Pyramid*>::iterator it = pyramids.find(std::string(request->layers));
+      if(it == pyramids.end()) return 0;
       Pyramid* P = it->second;
 
       LOGGER_DEBUG(  " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format );

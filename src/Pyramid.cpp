@@ -1,4 +1,3 @@
-
 #include "Pyramid.h"
 #include <cmath>
 #include "Logger.h"
@@ -57,7 +56,7 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   double resolution_x = (bbox.xmax - bbox.xmin) / width;
   double resolution_y = (bbox.ymax - bbox.ymin) / height;
   int h = best_scale(resolution_x, resolution_y);
-  Layers[h]->getbbox(bbox, width, height);
+  return Layers[h]->getbbox(bbox, width, height);
 
 /*
   LOGGER_DEBUG( "best_scale=" << h << " resolution requete=" << resolution );
