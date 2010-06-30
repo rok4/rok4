@@ -1,6 +1,6 @@
 CXX = g++
 CC  = gcc
-#CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"." `xml2-config --cflags`
+#CXXFLAGS = -O3  -mfpmath=sse -msse2 -I"." `xml2-config --cflags`
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"." `xml2-config --cflags`
 LDFLAGS = `xml2-config --libs`
@@ -24,7 +24,7 @@ CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
-WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o CompoundImage.o ResampledImage.o
+WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o
 
 all: clean WMSServer
 #
@@ -36,8 +36,6 @@ WMSServer: bindir $(WMSSOBJ)
 	rm -f WMSServer.o
 	mv WMSServer *.o $(FCGIOBJ) $(BINDIR)
 	cp $(SRCCONFDIR)/* $(TGTCONFDIR)
-
-Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
 
 
 #
