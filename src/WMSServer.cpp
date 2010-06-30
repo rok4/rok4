@@ -39,12 +39,12 @@
     }
 
     while(true){
-        static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
+//        static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
 
         /* Some platforms require accept() serialization, some don't.. */
-        pthread_mutex_lock(&accept_mutex);
+//        pthread_mutex_lock(&accept_mutex);
         rc = FCGX_Accept_r(&request);
-        pthread_mutex_unlock(&accept_mutex);
+//        pthread_mutex_unlock(&accept_mutex);
 
         if (rc < 0){
             LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);

@@ -36,11 +36,13 @@ class Tile : public Image {
 
   public:
   int getline(uint8_t* buffer, int line) {
-    return convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    return width * channels;
   }
 
   int getline(float* buffer, int line) {
-    return convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    return width * channels;
   }
 
   Tile(int tile_width, int tile_height, int channels, StaticHttpResponse* data, int left, int top, int right, int bottom) :
