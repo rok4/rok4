@@ -2,13 +2,14 @@
 #define CONVERT_H
 
 #include <xmmintrin.h>
+#include <stdint.h>
+#include <cstring> // pour memcpy
 
 
 /**
  * Converti et copie count éléments du tableau from
  * vers le tableau to.
  */
-
 /*
 template<typename T, typename F>
 void convert(T* to, const F* from, size_t count)
