@@ -29,6 +29,7 @@ inline void convert(uint8_t* to, const uint8_t* from, size_t length) {
 
 
 /**
+ * Convertir des int8 en float
  */
 inline void convert(float* to, const uint8_t* from, size_t count) {
 

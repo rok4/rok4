@@ -24,7 +24,7 @@ CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
-WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o
+WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o Kernel.o
 
 all: clean WMSServer
 #

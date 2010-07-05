@@ -27,6 +27,10 @@ int Pyramid::best_scale(double resolution_x, double resolution_y) {
   double best = resolution_x / sqrt(Levels[0]->resolution_x * Levels[0]->resolution_y);
 
   for(unsigned int h = 1; h < nb_levels; h++) {
+
+  LOGGER_DEBUG(h << " " << best_h << " " << nb_levels << " " << Levels[h]->resolution_x);
+
+
     double d = resolution / sqrt(Levels[h]->resolution_x * Levels[h]->resolution_y);
 
 
@@ -48,7 +52,7 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
     LOGGER_DEBUG( "crs dest=" <<dst_crs << " crs ini=" << crs);
     if(strcmp(crs, dst_crs) == 0) dst_crs = 0;
     else { // reprojection
-
+resolution_x
     }
   }
 */
@@ -58,9 +62,9 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   int h = best_scale(resolution_x, resolution_y);
   return Levels[h]->getbbox(bbox, width, height);
 
-/*
-  LOGGER_DEBUG( "best_scale=" << h << " resolution requete=" << resolution );
-  
+
+  LOGGER_DEBUG( "best_scale=" << h << " resolution requete=" << resolution_x << " " << resolution_y);
+/*  
   if(!dst_crs) return Levels[h]->getbbox(bbox, width, height);
   else return Levels[h]->getbbox(bbox, width, height, dst_crs);
   */

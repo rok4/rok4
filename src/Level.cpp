@@ -34,11 +34,13 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
   double ratio_x = (bbox.xmax - bbox.xmin) / width;
   double ratio_y = (bbox.ymax - bbox.ymin) / height;
 
-  bbox_int.xmin = floor(bbox.xmin - Lanczos<2>::size(ratio_x));
-  bbox_int.xmax = ceil (bbox.xmax + Lanczos<2>::size(ratio_x));
-  bbox_int.ymin = floor(bbox.ymin - Lanczos<2>::size(ratio_y));
-  bbox_int.ymax = ceil (bbox.ymax + Lanczos<2>::size(ratio_y));   
-  return new ResampledImage<Lanczos<2> >(getwindow(bbox_int), width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y);
+  const Kernel& kk = Kernel::getInstance("Lanczos_2");
+
+  bbox_int.xmin = floor(bbox.xmin - kk.size(ratio_x));
+  bbox_int.xmax = ceil (bbox.xmax + kk.size(ratio_x));
+  bbox_int.ymin = floor(bbox.ymin - kk.size(ratio_y));
+  bbox_int.ymax = ceil (bbox.ymax + kk.size(ratio_y));   
+  return new ResampledImage(getwindow(bbox_int), width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y);
 //    return new ResampledImage<NearestNeighbour>(getwindow(bbox_int), width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y);
 }
 

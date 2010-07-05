@@ -10,10 +10,11 @@
 
 #include "Logger.h"
 
-template<class Kernel>
 class ResampledImage : public Image {
   private:
   Image* image;
+
+  const Kernel& K;
 
 
   /**
@@ -57,32 +58,6 @@ class ResampledImage : public Image {
   }
 
 };
-
-
-/** D */
-template<>
-class ResampledImage<NearestNeighbour> : public Image {
-  private:
-  Image* image;     // image source  
-  double top, left, ratio_x, ratio_y;
-
-  template<typename T> 
-  int _getline(T* buffer, int line);
-
-  public:
-/** D */
-  ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y);
-/** D */
-  ~ResampledImage();
-
-/** D */
-  int getline(uint8_t *buffer, int line) {return _getline(buffer, line);}
-/** D */
-  int getline(float *buffer, int line) {return _getline(buffer, line);}
-
-};
-
-
 
 #endif
 
