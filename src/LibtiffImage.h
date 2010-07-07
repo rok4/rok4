@@ -15,7 +15,7 @@ class LibtiffImage : public Image {
   int getline(uint8_t* buffer, int line);
 
   /** D */
-  int getline(float* buffer, int line) {return 0;}
+  int getline(float* buffer, int line) {return 1;}
 
   /** D */
   bool isValid();
