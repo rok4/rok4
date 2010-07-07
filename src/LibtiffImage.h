@@ -6,7 +6,7 @@
 
 class LibtiffImage : public Image {
   private:
-  TIFF* tiff;
+  TIFF* tif;
   int planarconfig;
 
   public:

@@ -4,7 +4,7 @@ CXXFLAGS = -O3  -mfpmath=sse -msse2 -I"." `xml2-config --cflags`
 #conf de debug:
 #CXXFLAGS = -g -O0 -msse2 -I"." `xml2-config --cflags`
 LDFLAGS = `xml2-config --libs`
-LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx -lxml2
+LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx -lxml2 -ltiff
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
@@ -24,7 +24,7 @@ CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
-WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o Kernel.o
+WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o Kernel.o LibtiffImage.o
 
 all: clean WMSServer
 #
