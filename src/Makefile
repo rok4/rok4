@@ -1,10 +1,10 @@
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3  -mfpmath=sse -msse2 -I"." `xml2-config --cflags`
+#CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"." 
 #conf de debug:
-#CXXFLAGS = -g -O0 -msse2 -I"." `xml2-config --cflags`
-LDFLAGS = `xml2-config --libs`
-LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx -lxml2 -ltiff
+CXXFLAGS = -g -O0 -msse2 -I"." 
+LDFLAGS = 
+LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
@@ -24,7 +24,8 @@ CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
-WMSSOBJ= WMSServer.o PyramidFactory.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o Kernel.o LibtiffImage.o
+TIXMLOBJ= tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
+WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o
 
 all: clean WMSServer
 #
@@ -32,10 +33,13 @@ all: clean WMSServer
 # compile et genere le serveur WMS
 WMSServer: bindir $(WMSSOBJ)
 	make -C libfcgi
-	$(CXX) $(WMSSOBJ) $(FCGIOBJ) -o WMSServer $(LDLIBS)
+	make -C tinyxml
+	$(CXX) $(WMSSOBJ) $(FCGIOBJ) $(TIXMLOBJ) -o WMSServer $(LDLIBS)
 	rm -f WMSServer.o
-	mv WMSServer *.o $(FCGIOBJ) $(BINDIR)
-	cp $(SRCCONFDIR)/* $(TGTCONFDIR)
+	mv WMSServer *.o $(FCGIOBJ) $(TIXMLOBJ) $(BINDIR)
+	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
+
+Test : Test.o Image.o Tile.o pixel_type.o Logger.o PNGEncoder.o 
 
 
 #
