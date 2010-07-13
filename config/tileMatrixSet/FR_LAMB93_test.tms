@@ -1,0 +1,103 @@
+<TileMatrixSet>
+	<CRS>epsg:2154</CRS>
+	<TileMatrix>
+		<id>0_5</id>
+		<Resolution>0.5</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>938</MatrixWidth>
+		<MatrixHeight>84197</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>1</id>
+		<Resolution>1</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>469</MatrixWidth>
+		<MatrixHeight>42099</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>2</id>
+		<Resolution>2</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>235</MatrixWidth>
+		<MatrixHeight>21050</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>4</id>
+		<Resolution>4</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>118</MatrixWidth>
+		<MatrixHeight>10525</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>8</id>
+		<Resolution>8</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>59</MatrixWidth>
+		<MatrixHeight>5263</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>16</id>
+		<Resolution>16</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>30</MatrixWidth>
+		<MatrixHeight>2632</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>32</id>
+		<Resolution>32</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>15</MatrixWidth>
+		<MatrixHeight>1316</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>64</id>
+		<Resolution>64</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>8</MatrixWidth>
+		<MatrixHeight>658</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>128</id>
+		<Resolution>128</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>4</MatrixWidth>
+		<MatrixHeight>329</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>256</id>
+		<Resolution>256</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>2</MatrixWidth>
+		<MatrixHeight>165</MatrixHeight>
+	</TileMatrix>
+	<TileMatrix>
+		<id>512</id>
+		<Resolution>512</Resolution>
+		<TopLeftCorner> 0 16777216 </TopLeftCorner>
+		<TileWidth>256</TileWidth>
+		<TileHeight>256</TileHeight>
+		<MatrixWidth>1</MatrixWidth>
+		<MatrixHeight>83</MatrixHeight>
+	</TileMatrix>
+</TileMatrixSet>
+

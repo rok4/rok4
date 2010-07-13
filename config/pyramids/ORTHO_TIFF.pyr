@@ -1,0 +1,178 @@
+<Pyramid>
+<tileMatrixSet>FR_LAMB93_test</tileMatrixSet> 
+<level> 
+	<tileMatrix>0_5</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/2048</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>1</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/4096</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>2</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/8192</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>4</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/16384</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>8</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/32768</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>16</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/65536</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>32</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/131072</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>64</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/262144</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>128</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/524288</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>1</minTileRow>
+		<maxTileRow>10</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>10</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>256</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/1048576</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>164</minTileRow>
+		<maxTileRow>165</maxTileRow>
+		<minTileCol>2</minTileCol>
+		<maxTileCol>2</maxTileCol>
+	</TMSLimits>
+</level>
+
+<level> 
+	<tileMatrix>512</tileMatrix>
+	<baseDir>/mnt/geoportail/ppons/ortho/cache/2097152</baseDir>
+	<format>TIFF_INT8</format>
+	<channels>3</channels>
+	<blockWidth>16</blockWidth>
+	<blockHeight>16</blockHeight>
+	<pathDepth>2</pathDepth>
+	<TMSLimits>
+		<minTileRow>83</minTileRow>
+		<maxTileRow>83</maxTileRow>
+		<minTileCol>1</minTileCol>
+		<maxTileCol>1</maxTileCol>
+	</TMSLimits>
+</level>
+</Pyramid>
