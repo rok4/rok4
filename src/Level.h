@@ -6,44 +6,24 @@
 #include "Tile.h"
 
 #include "BoundingBox.h"
+#include "TileMatrix.h"
 
-  /** D */
+  /** La classe Level est une interface permettant d'utiliser les différents TiledLevel<Decoder>
+   *  de façon unifié. Cette interface à vocation à disparaitre au profit d'un TiledLevel unique
+   *  sans template. */
 class Level {
   protected:
   /**
    * Renvoie une image de taille width, height
    *
-   * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tilex.
-   * Toutes les coordonnées sont entière depuis le coin haut gauche.
+   * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tiley.
+   * Toutes les coordonnées sont entières depuis le coin haut gauche.
    */
   virtual Image* getwindow(BoundingBox<int64_t> src_bbox) = 0;
 
   public:
-  /**
-   * Système de coordonnées de la couche.
-   * Correspond au code RIG, doit être compréhensible par proj.4
-   * Exemple : "IGNF:LAMB93"
-   */
-  const char *crs;
-
-
-  const int channels;
-
-  /**
-   * Résolutions X et Y des données en unité de projection par pixel
-   */
-  const double resolution_x;
-  const double resolution_y;
-
-  /**
-   * La grille de tuile est alignée sur une origine (Point haut gauche)
-   * Coordonnées X et Y de l'origine dans le SRS 
-   */
-  const double X0;
-  const double Y0;
-
   /** D */
-  Image* getbbox(BoundingBox<double> bbox, int width, int height);
+  virtual Image* getbbox(BoundingBox<double> bbox, int width, int height)=0;
 
   /**
    * Renvoie la tuile x, y numéroté depuis l'origine.
@@ -56,32 +36,46 @@ class Level {
    * y = floor((Y - Y0) / (tile_height * resolution_y))
    */
   virtual HttpResponse* gettile(int x, int y) = 0;
+  virtual double        getRes()=0;
 
-  /** D */
-   Level(const char *crs, int channels, double resolution_x, double resolution_y, double X0, double Y0) : crs(crs), channels(channels), resolution_x(resolution_x), resolution_y(resolution_y), X0(X0), Y0(Y0) {};
+  /**
+   * Destructeur virtuel. Permet de lancer les destructeurs des classes filles
+   * lors de la destruction d'un pointeur Level.
+   */
+   virtual ~Level(){};
 };
 
 
 
 
-/** D */
+/** La classe TiledLevel utilise un template <Decoder>.
+ *  C'est pour en simplifié l'utilisation que la classe Level a été créée.
+ *  Il ne s'agit pas d'un type de Level particulier, il n'y aura pas de Level
+ *  non tuilé.
+ *  Il est prévu de simplifier cela en supprimant le template et en ne faisant
+ *  qu'une seule classe Level. Cette modification n'étant pas simple, elle est
+ *  prévue pour plus tard.*/
 template<class Decoder>
 class TiledLevel : public Level {
   private:
 
   typedef typename Decoder::data_t data_t;
 
- // RawTile<data_t> nodataTile;
-
-  std::string basedir;
-  int path_depth;
-
+  std::string baseDir;
+  int pathDepth;
+  TileMatrix  & tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
+  const std::string format; //format d'image des block de tuiles du cache.
+  const int channels;
+  const int32_t maxTileRow;
+  const int32_t minTileRow;
+  const int32_t maxTileCol;
+  const int32_t minTileCol;
   /**
    * Nombre de tuiles par block est carré et est composé de 
    * tileblocksize * tileblocksize tuiles
    */
-  uint32_t tiles_per_width;
-  uint32_t tiles_per_height;
+  uint32_t blockW; //largeur des blocs du cache en tuiles
+  uint32_t blockH; //hauteur des blocs du cache en tuiles
 
   std::string getfilepath(int tilex, int tiley);
 
@@ -94,16 +88,18 @@ class TiledLevel : public Level {
    */
    Image* getwindow(BoundingBox<int64_t> src_bbox);
 
+
   public:
+  TileMatrix const & getTm();
+  std::string getFormat();
+  uint32_t    getMaxTileRow();
+  uint32_t    getMinTileRow();
+  uint32_t    getMaxTileCol();
+  uint32_t    getMinTileCol();
+  double      getRes();
+  std::string getId();
 
-  /*
-   * Dimensions (largeur et hauteur) des tuiles en nombre de pixel
-   * Nous ne supportons que des tuiles carrées
-   * Les tailles typiques seront 256*256 ou 512*512
-   */
-  const int tile_width;
-  const int tile_height;
-
+  Image* getbbox(BoundingBox<double> bbox, int width, int height);
   /**
    * Renvoie la tuile x, y numéroté depuis l'origine.
    * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
@@ -118,11 +114,14 @@ class TiledLevel : public Level {
 
    
 /** D */
- TiledLevel(const char *crs, int tile_width, int tile_height, int channels, double resolution_x, double resolution_y, double X0, double Y0, std::string basedir, int tpw, int tph, int path_depth) : Level(crs, channels, resolution_x, resolution_y, X0, Y0), tile_width(tile_width), tile_height(tile_height), basedir(basedir), tiles_per_width(tpw), tiles_per_height(tph), path_depth(path_depth) {}
-
-/** D */
-
-
+ TiledLevel(TileMatrix &tm, int channels, std::string baseDir,
+		    int blockW, int blockH,
+		    uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
+		    int pathDepth) :
+	        Level(), tm(tm), channels(channels), baseDir(baseDir),
+	        blockW(blockW), blockH(blockH),
+		    maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol),
+	        pathDepth(pathDepth) {}
 
 };
 

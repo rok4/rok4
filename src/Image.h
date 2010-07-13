@@ -5,7 +5,7 @@
 
 /**
  * Interface de base des classes Image.
- * Les implémentations définiront des images avec différents strcuture de pixel
+ * Les implémentations définiront des images avec différentes structures de pixel
  * (type et nombre de canaux). Cette interface basique permet de définir des
  * fonctions prenant en paramètre tout type d'image.
  */

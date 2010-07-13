@@ -8,16 +8,16 @@
 ResampledImage::ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y) :
   Image(width, height, image->channels), image(image) , left(left), top(top), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance("lanczos_2")) {
 
-  LOGGER_DEBUG( "ResampledImage Constructeur ");
+  LOGGER_DEBUG( "ResampledImage => Constructeur ");
 
     Kx = ceil(2 * K.size(ratio_x));
     Ky = ceil(2 * K.size(ratio_y));
 
-    int sz1 = 4*((image->width*channels + 3)/4);       // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
-    int sz2 = 4*((width*channels + 3)/4);                     // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
+    int sz1 = 4*((image->width*channels + 3)/4);  // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
+    int sz2 = 4*((width*channels + 3)/4);         // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
 
     int sz = sz1 * sizeof(float)             // place pour src_line_buffer;
-           + sz2 * (Ky+5) * sizeof(float);    // place pour (Ky+4) lignes de resampled_src_line + dst_line_buffer
+           + sz2 * (Ky+5) * sizeof(float);   // place pour (Ky+4) lignes de resampled_src_line + dst_line_buffer
 
 
     resampled_line = new float*[Ky+4];
@@ -44,7 +44,7 @@ ResampledImage::ResampledImage(Image *image, int width, int height, double left,
       int nb = Kx;
       xmin[x] = K.weight(Wx + x*Kx, nb, left + x * ratio_x, ratio_x);
     }
-  LOGGER_DEBUG( "ResampledImage Constructeur ");
+  LOGGER_DEBUG( "ResampledImage Constructeur => ");
 
   }
 

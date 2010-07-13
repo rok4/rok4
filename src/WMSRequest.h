@@ -1,6 +1,6 @@
 #ifndef _WMSREQUEST_
 #define _WMSREQUEST_
-
+#include <cstring>
 #include "config.h"
 #include "BoundingBox.h"
 #include "Error.h"
@@ -24,13 +24,13 @@ class WMSRequest {
  
   int tilerow;
   int tilecol;
-  int tilematrix;
+  std::string tilematrix;
   char* tilematrixset;
 
 
   bool isWMTSRequest() {
     if(service) return (strcmp(service, "WMTS") == 0);
-    if(tilecol >= 0 && tilerow >= 0 && tilematrix >= 0) return true;
+    if(tilecol >= 0 && tilerow >= 0 && tilematrix != "") return true;
     return false;
   }
   bool isWMSRequest() {
@@ -51,7 +51,7 @@ class WMSRequest {
     if(layers == 0)     return new Error("Missing parameter: layers/l");
     if(tilerow < 0)     return new Error("Invalid parameter: tilerow/x");
     if(tilecol < 0)     return new Error("Invalid parameter: tilecol/y");
-    if(tilematrix < 0)  return new Error("Invalid parameter: tilematrix/z");
+    if(tilematrix == "")  return new Error("Invalid parameter: tilematrix/z");
     return 0;
   }
 

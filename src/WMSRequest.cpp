@@ -105,7 +105,7 @@ void WMSRequest::url_decode(char *src) {
       case 0x00000079 :                                 // y
       case 0x1f8262ba : tilerow = atoi(value); break;   // tilerow
       case 0x0000007a :                                 // z
-      case 0x6a672ebf : tilematrix = atoi(value); break;// tilematrix
+      case 0x6a672ebf : tilematrix = value; break;      // tilematrix
       case 0x27843415 : tilematrixset = value; break;   // tilematrixset
       default         : break;
     }
@@ -113,7 +113,7 @@ void WMSRequest::url_decode(char *src) {
 
   }
 
-  WMSRequest::WMSRequest(char* strquery) :  /*query(0),*/ width(-1), height(-1), bbox(0), service(0), request(0), crs(0), layers(0), styles(0), format(0), transparent(false), tilerow(-1), tilecol(-1), tilematrix(-1), tilematrixset(0) {
+  WMSRequest::WMSRequest(char* strquery) :  /*query(0),*/ width(-1), height(-1), bbox(0), service(0), request(0), crs(0), layers(0), styles(0), format(0), transparent(false), tilerow(-1), tilecol(-1), tilematrix(""), tilematrixset(0) {
 
     url_decode(strquery);
   //  LOGGER_DEBUG( query << " " << strquery );
