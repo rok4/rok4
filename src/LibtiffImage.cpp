@@ -1,5 +1,6 @@
 #include "LibtiffImage.h"
 #include "Logger.h"
+#include "Convert.h"
 
 /**
 Creation d'une LibtiffImage a partir d un fichier TIFF filename
@@ -58,8 +59,19 @@ int LibtiffImage::getline(uint8_t* buffer, int line)
 	return width*channels;
 }
 
+int LibtiffImage::getline(float* buffer, int line)
+{
+	uint8_t* buffer_t = new uint8_t[width*channels];
+	getline(buffer_t,line);
+	convert(buffer,buffer_t,width*channels);
+	delete [] buffer_t;
+        return width*channels;
+}
+
 LibtiffImage::~LibtiffImage()
 {
-	if (tif)
-		TIFFClose(tif);
+//	if (tif)
+//		TIFFClose(tif);
+//	LOGGER_DEBUG("Destructeur LibtiffImage");
+
 }
