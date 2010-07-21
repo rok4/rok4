@@ -25,7 +25,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
 TIXMLOBJ= tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
-WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o LibtiffImage.o ExtendedCompoundImage.o
+WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o LibtiffImage.o
 
 all: clean WMSServer
 #
