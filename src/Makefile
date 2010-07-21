@@ -4,7 +4,7 @@ CC  = gcc
 #conf de debug:
 CXXFLAGS = -g -O0 -msse2 -I"." 
 LDFLAGS = 
-LDLIBS = -lpthread -lz -lproj -ljpeg -llog4cxx
+LDLIBS = -lpthread -lz -lproj -ljpeg -ltiff -llog4cxx
 LDCPPUNITLIBS= -lcppunit
 
 # CCFLAGS = -g -ansi
@@ -25,7 +25,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
 TIXMLOBJ= tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
-WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o
+WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o LibtiffImage.o ExtendedCompoundImage.o
 
 all: clean WMSServer
 #

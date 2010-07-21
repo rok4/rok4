@@ -52,6 +52,7 @@ class ResampledImage : public Image {
   ~ResampledImage();
   int getline(float* buffer, int line);
   int getline(uint8_t* buffer, int line) {
+//    LOGGER_DEBUG( "ResampledImage getline uint8_t" );
     float* dst = compute_dst_line(line);
     convert(buffer, dst, width*channels);
     return width*channels;

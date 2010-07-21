@@ -21,7 +21,6 @@ class Image {
   const int channels;
 
   /** Constructeur */
-  Image() : width(0), height(0), channels(0) {}
   Image(int width, int height, int channels) :
         width(width), height(height), channels(channels) {}
   /** 

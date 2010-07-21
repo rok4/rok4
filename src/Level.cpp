@@ -102,7 +102,8 @@ Image* TiledLevel<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
 /*
  * Tableau statique des caractères Base64 (pour système de fichier)
  */
-static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+// static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
  *
@@ -123,15 +124,15 @@ std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
   int pos = sizeof(path) - 6;
 
   for(int d = 0; d < pathDepth; d++) {
-    path[pos--] = Base64[y & 63];
-    path[pos--] = Base64[x & 63];
+    path[pos--] = Base36[y & 35];
+    path[pos--] = Base36[x & 35];
     path[pos--] = '/';
     x >>= 6;
     y >>= 6;
   }
   do {
-    path[pos--] = Base64[y & 63];
-    path[pos--] = Base64[x & 63];
+    path[pos--] = Base36[y & 35];
+    path[pos--] = Base36[x & 35];
     x >>= 6;
     y >>= 6;
   } while(x || y);
