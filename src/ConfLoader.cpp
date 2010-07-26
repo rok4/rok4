@@ -29,8 +29,8 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 		LOGGER_ERROR(fileName << " impossible de recuperer la racine.");
 		return NULL;
 	}
-	if (strcmp(pElem->Value(),"TileMatrixSet")){
-		LOGGER_ERROR(fileName << " La racine n'est pas un TileMatrixSet.");
+	if (strcmp(pElem->Value(),"tileMatrixSet")){
+		LOGGER_ERROR(fileName << " La racine n'est pas un tileMatrixSet.");
 		return NULL;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -48,28 +48,28 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	}
 	id=fileName.substr(idBegin+1, idEnd-idBegin-1);
 
-	pElem=hRoot.FirstChild("CRS").Element();
+	pElem=hRoot.FirstChild("crs").Element();
 	if (!pElem){
-		LOGGER_ERROR("Pas de CRS!!");
+		LOGGER_ERROR("TileMaxtrixSet " << id <<" pas de crs!!");
 		return NULL;
 	}
 	crs = pElem->GetText();
 	//FIXME: controle et normalisation du nom du CRS à faire
 
-	pElem=hRoot.FirstChild("Abstract").Element();
+	pElem=hRoot.FirstChild("abstract").Element();
 	if (pElem) abstract = pElem->GetText();
 
-	pElem=hRoot.FirstChild("Title").Element();
+	pElem=hRoot.FirstChild("title").Element();
 	if (pElem) title = pElem->GetText();
 
-	pElem=hRoot.FirstChild("KeywordList").FirstChild("Keyword").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("Keyword")){
+	pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element();
+	for (pElem; pElem; pElem=pElem->NextSiblingElement("keyword")){
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
 
-	pElem=hRoot.FirstChild( "TileMatrix" ).Element();
-	for( pElem; pElem; pElem=pElem->NextSiblingElement( "TileMatrix")){
+	pElem=hRoot.FirstChild( "tileMatrix" ).Element();
+	for( pElem; pElem; pElem=pElem->NextSiblingElement( "tileMatrix")){
 		std::string tmId;
 		double res;
 		double x0;
@@ -81,48 +81,55 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 		TiXmlHandle hTM(pElem);
 		TiXmlElement* pElemTM = hTM.FirstChild("id").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans id!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMatrix sans id!!"); return NULL; }
 		tmId=pElemTM->GetText();
 
-		pElemTM = hTM.FirstChild("Resolution").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans Resolution!!"); return NULL; }
+		pElemTM = hTM.FirstChild("resolution").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans resolution!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&res)){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": La resolution est inexploitable.");
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": La resolution est inexploitable.");
 			return NULL;
 		}
 
-		pElemTM = hTM.FirstChild("TopLeftCorner").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans TopLeftCorner!!"); return NULL; }
-		if (sscanf(pElemTM->GetText(),"%lf %lf",&x0,&y0)!=2){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": Le TopLeftCorner est inexploitable.");
+		pElemTM = hTM.FirstChild("topLeftCornerX").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans topLeftCornerX!!"); return NULL; }
+		if (!sscanf(pElemTM->GetText(),"%lf",&x0)){
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerX est inexploitable.");
 			return NULL;
 		}
 
-		pElemTM = hTM.FirstChild("TileWidth").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans TileWidth!!"); return NULL; }
+		pElemTM = hTM.FirstChild("topLeftCornerY").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans topLeftCornerY!!"); return NULL; }
+		if (!sscanf(pElemTM->GetText(),"%lf",&y0)){
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerY est inexploitable.");
+			return NULL;
+		}
+
+		pElemTM = hTM.FirstChild("tileWidth").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans tileWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileW)){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": Le TileWidth est inexploitable.");
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileWidth est inexploitable.");
 			return NULL;
 		}
 
-		pElemTM = hTM.FirstChild("TileHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans TileHeight!!"); return NULL; }
+		pElemTM = hTM.FirstChild("tileHeight").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans tileHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileH)){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": Le TileHeight est inexploitable.");
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileHeight est inexploitable.");
 			return NULL;
 		}
 
-		pElemTM = hTM.FirstChild("MatrixWidth").Element();
+		pElemTM = hTM.FirstChild("matrixWidth").Element();
 		if (!pElemTM){LOGGER_ERROR("TileMatrix sans MatrixWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixW)){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": Le MatrixWidth est inexploitable.");
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le MatrixWidth est inexploitable.");
 			return NULL;
 		}
 
-		pElemTM = hTM.FirstChild("MatrixHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans MatrixHeight!!"); return NULL; }
+		pElemTM = hTM.FirstChild("matrixHeight").Element();
+		if (!pElemTM){LOGGER_ERROR("tileMatrix sans matrixHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixH)){
-			LOGGER_ERROR("TileMaxtrix " << tmId <<": Le MatrixHeight est inexploitable.");
+			LOGGER_ERROR("TileMaxtrixSet " << id <<", tileMaxtrix " << tmId <<": Le matrixHeight est inexploitable.");
 			return NULL;
 		}
 
@@ -132,7 +139,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	}// boucle sur le TileMatrix
 
 	if (listTM.size()==0){
-		LOGGER_ERROR("Aucun TileMatrix trouvé dans le TileMatrixSet: il est invalide!!");
+		LOGGER_ERROR("Aucun tileMatrix trouvé dans le tileMatrixSet: il est invalide!!");
 		return NULL;
 	}
 
@@ -344,8 +351,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		LOGGER_ERROR(fileName << " impossible de recuperer la racine.");
 		return NULL;
 	}
-	if (strcmp(pElem->Value(),"Layer")){
-		LOGGER_ERROR(fileName << " La racine n'est pas un Layer.");
+	if (strcmp(pElem->Value(),"layer")){
+		LOGGER_ERROR(fileName << " La racine n'est pas un layer.");
 		return NULL;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -473,7 +480,7 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 		LOGGER_ERROR(SERVER_CONF_PATH << " impossible de recuperer la racine.");
 		return false;
 	}
-	if (strcmp(pElem->Value(),"ServerConf")){
+	if (strcmp(pElem->Value(),"serverConf")){
 		LOGGER_ERROR(SERVER_CONF_PATH << " La racine n'est pas un ServerConf.");
 		return false;
 	}
