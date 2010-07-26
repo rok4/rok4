@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="serverConf">
+		<xs:complexType>
+			<xs:sequence>
+			<!-- nombre de thread exploité pour l'ecoute et le calcul-->
+			<xs:element name="nbThread"         type="xs:positiveInteger"/>
+			<!-- répertoire des configs des layers -->
+			<xs:element name="layerDir"         type="xs:string"/>
+			<!-- répertoire des configs des tileMatrixSet -->
+			<xs:element name="tileMatrixSetDir" type="xs:string"/>
+			</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

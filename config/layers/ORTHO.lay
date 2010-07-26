@@ -1,4 +1,4 @@
-<Layer>
+<layer>
 	<title>Ortho IGN en jpeg</title>
 	<abstract>Blablabla...</abstract>
 	<keywordList>
@@ -17,4 +17,4 @@
 	<pyramidList>
 		<pyramid>../config/pyramids/ORTHO_JPEG.pyr</pyramid>
 	</pyramidList>
-</Layer>
+</layer>
