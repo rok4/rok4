@@ -5,7 +5,7 @@
 #include "tinyxml/tinystr.h"
 
 TileMatrixSet* buildTileMatrixSet(std::string fileName){
-	LOGGER_DEBUG("buildTileMatrixSet");
+	LOGGER_DEBUG("=>buildTileMatrixSet");
 
 	std::string id;
 	std::string title="";
@@ -85,49 +85,49 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 		tmId=pElemTM->GetText();
 
 		pElemTM = hTM.FirstChild("resolution").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans resolution!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans resolution!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&res)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": La resolution est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("topLeftCornerX").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans topLeftCornerX!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerX!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&x0)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerX est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("topLeftCornerY").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans topLeftCornerY!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerY!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&y0)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerY est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("tileWidth").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans tileWidth!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileW)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileWidth est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("tileHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans tileHeight!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileH)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileHeight est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("matrixWidth").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMatrix sans MatrixWidth!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans MatrixWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixW)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le MatrixWidth est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("matrixHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("tileMatrix sans matrixHeight!!"); return NULL; }
+		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans matrixHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixH)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", tileMaxtrix " << tmId <<": Le matrixHeight est inexploitable.");
 			return NULL;
@@ -139,16 +139,18 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	}// boucle sur le TileMatrix
 
 	if (listTM.size()==0){
-		LOGGER_ERROR("Aucun tileMatrix trouvé dans le tileMatrixSet: il est invalide!!");
+		LOGGER_ERROR("Aucun tileMatrix trouvé dans le tileMatrixSet" << id <<" : il est invalide!!");
 		return NULL;
 	}
 
-	return new TileMatrixSet(id,title,abstract,keyWords,crs,listTM);
+	TileMatrixSet * tms = new TileMatrixSet(id,title,abstract,keyWords,crs,listTM);
+	LOGGER_DEBUG("<=buildTileMatrixSet");
+	return tms;
 
 }//buildTileMatrixSet(std::string)
 
 Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("buildPyramid");
+	LOGGER_DEBUG("=>buildPyramid");
 	TileMatrixSet *tms;
 	std::map<std::string, Level *> levels;
 
@@ -204,60 +206,60 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 
 		TiXmlHandle hLvl(pElem);
 		TiXmlElement* pElemLvl = hLvl.FirstChild("tileMatrix").Element();
-		if (!pElemLvl){LOGGER_ERROR("level "<<id<<" sans tileMatrix!!"); return NULL; }
+		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<id<<" sans tileMatrix!!"); return NULL; }
 		std::string tmName(pElemLvl->GetText());
 		id=tmName;
 		std::map<std::string, TileMatrix>::iterator it = tms->tmList.find(tmName);
 		if(it == tms->tmList.end()){
-			LOGGER_ERROR("Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
+			LOGGER_ERROR(fileName <<" Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
 			return NULL;
 		}
 		tm = &(it->second);
 
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
-   		if (!pElemLvl){LOGGER_ERROR("Level "<< id <<" sans baseDir!!"); return NULL; }
+   		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
    		baseDir=pElemLvl->GetText();
 
 		pElemLvl = hLvl.FirstChild("format").Element();
-			if (!pElemLvl){LOGGER_ERROR("Level "<< id <<" sans format!!"); return NULL; }
+			if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans format!!"); return NULL; }
 			format=pElemLvl->GetText(); // FIXME: controle de la valeur a faire
 
 		pElemLvl = hLvl.FirstChild("channels").Element();
    		if (!pElemLvl){
-   			LOGGER_ERROR("Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
+   			LOGGER_ERROR(fileName <<" Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
    			channels=DEFAULT_CHANNELS;
    		}else if (!sscanf(pElemLvl->GetText(),"%d",&channels)){
-   			LOGGER_ERROR("Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+   			LOGGER_ERROR(fileName <<" Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
    			return NULL;
    		}
 
 	    pElemLvl = hLvl.FirstChild("blockWidth").Element();
    		if (!pElemLvl){
-   			LOGGER_ERROR("Level "<< id << ": Pas de blockWidth !!");
+   			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de blockWidth !!");
    			return NULL;
    		}
    		if (!sscanf(pElemLvl->GetText(),"%d",&blockW)){
-   			LOGGER_ERROR("Level "<< id <<": blockWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+   			LOGGER_ERROR(fileName <<" Level "<< id <<": blockWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
    			return NULL;
    		}
 
 	    pElemLvl = hLvl.FirstChild("blockHeight").Element();
    		if (!pElemLvl){
-   			LOGGER_ERROR("Level "<< id << ": Pas de blockHeight !!");
+   			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de blockHeight !!");
    			return NULL;
    		}
    		if (!sscanf(pElemLvl->GetText(),"%d",&blockH)){
-   			LOGGER_ERROR("Level "<< id <<": blockHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+   			LOGGER_ERROR(fileName <<" Level "<< id <<": blockHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
    			return NULL;
    		}
 
 		pElemLvl = hLvl.FirstChild("pathDepth").Element();
 		if (!pElemLvl){
-			LOGGER_ERROR("Level "<< id << ": Pas de pathDepth !!");
+			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de pathDepth !!");
 			return NULL;
 		}
 		if (!sscanf(pElemLvl->GetText(),"%d",&pathDepth)){
-			LOGGER_ERROR("Level "<< id <<": pathDepth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			LOGGER_ERROR(fileName <<" Level "<< id <<": pathDepth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
 			return NULL;
 		}
 
@@ -266,21 +268,21 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 			TiXmlHandle hTMSL(pElem);
 			TiXmlElement* pElemTMSL = hTMSL.FirstChild("minTileRow").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR("Level "<< id << ": Pas de minTileRow dans le bloc TMSLimits !!");
+				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de minTileRow dans le bloc TMSLimits !!");
 				return NULL;
 			}
 			if (!sscanf(pElemTMSL->GetText(),"%d",&minTileRow)){
-				LOGGER_ERROR("Level "<< id <<": minTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
 				return NULL;
 			}
 
 			pElemTMSL = hTMSL.FirstChild("maxTileRow").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR("Level "<< id << ": Pas de maxTileRow dans le bloc TMSLimits !!");
+				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de maxTileRow dans le bloc TMSLimits !!");
 				return NULL;
 			}
 			if (!sscanf(pElemTMSL->GetText(),"%d",&maxTileRow)){
-				LOGGER_ERROR("Level "<< id <<": maxTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
 				return NULL;
 			}
 
@@ -290,17 +292,17 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 				return NULL;
 			}
 			if (!sscanf(pElemTMSL->GetText(),"%d",&minTileCol)){
-				LOGGER_ERROR("Level "<< id <<": minTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
 				return NULL;
 			}
 
 			pElemTMSL = hTMSL.FirstChild("maxTileCol").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR("Level "<< id << ": Pas de maxTileCol dans le bloc TMSLimits !!");
+				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de maxTileCol dans le bloc TMSLimits !!");
 				return NULL;
 			}
 			if (!sscanf(pElemTMSL->GetText(),"%d",&maxTileCol)){
-				LOGGER_ERROR("Level "<< id <<": maxTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
 				return NULL;
 			}
 		}
@@ -315,13 +317,15 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		return NULL;
 	}
 
-	return new Pyramid(levels, *tms);
+	Pyramid *pyr = new Pyramid(levels, *tms);
+	LOGGER_DEBUG("=>buildPyramid");
+	return pyr;
 
 
 }// buildPyramid()
 
 Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("buildLayer");
+	LOGGER_DEBUG("=> buildLayer");
 	std::string id;
 	std::string title="";
 	std::string abstract="";
@@ -395,7 +399,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	if (!pElem){
 		minRes=0; //convention pour non contraint...
 	}else if (!sscanf(pElem->GetText(),"%lf",&minRes)){
-		LOGGER_ERROR("La resolution min est inexploitable:[" << minRes << "]");
+		LOGGER_ERROR("La resolution min est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
 	}
 
@@ -403,7 +407,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	if (!pElem){
 		maxRes=0; //convention pour non contraint...
 	}else if (!sscanf(pElem->GetText(),"%lf",&maxRes)){
-		LOGGER_ERROR("La resolution max est inexploitable:[" << minRes << "]");
+		LOGGER_ERROR("La resolution max est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
 	}
 
@@ -424,7 +428,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		std::string opaStr=pElem->GetText();
 		if (opaStr=="true"){
 			opaque = true;
-		}else if(opaStr=="false"){
+		}else if(opaStr=="NULL"){
 			opaque = false;
 		}else{
 			LOGGER_ERROR("le param opaque n'est pas exploitable:[" << opaStr <<"]");
@@ -459,12 +463,18 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		return NULL;
 	}
 
-	return new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
+    Layer *layer;
+
+	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
 			         WMSCRSList, opaque, authority, resampling);
+
+	LOGGER_DEBUG("<= buildLayer");
+
+	return layer;
 }//buildLayer
 
 bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::string &tmsDir){
-	LOGGER_DEBUG("getTechnicalParam");
+	LOGGER_DEBUG("=>getTechnicalParam");
 	TiXmlDocument doc(SERVER_CONF_PATH);
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVER_CONF_PATH);
@@ -511,12 +521,13 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 		tmsDir=pElem->GetText();
 	}
 
+	LOGGER_DEBUG("<=getTechnicalParam");
     return true;
 }//getTechnicalParam
 
 
 bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("buildTMSList");
+	LOGGER_DEBUG("=>buildTMSList");
 
 	// lister les fichier du répertoire tmsDir
 	std::vector<std::string> tmsFiles;
@@ -560,11 +571,12 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
         return false;
     }
 
+    LOGGER_DEBUG("<=buildTMSList");
     return true;
 }
 
 bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers){
-	LOGGER_DEBUG("buildLayersList");
+	LOGGER_DEBUG("=>buildLayersList");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
 	std::string layerFileName;
@@ -604,5 +616,98 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
         return false;
     }
 
+	LOGGER_DEBUG("<=buildLayersList");
     return true;
+}
+
+ServicesConf * ConfLoader::buildServicesConf(){
+	LOGGER_DEBUG("=> buildServicesConf");
+	TiXmlDocument doc(SERVICES_CONF_PATH);
+	if (!doc.LoadFile()){
+		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVICES_CONF_PATH);
+		return NULL;
+	}
+
+	TiXmlHandle hDoc(&doc);
+	TiXmlElement* pElem;
+	TiXmlHandle hRoot(0);
+
+	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
+	if (!pElem){
+		LOGGER_ERROR(SERVICES_CONF_PATH << " impossible de recuperer la racine.");
+		return NULL;
+	}
+	if (strcmp(pElem->Value(),"servicesConf")){
+		LOGGER_ERROR(SERVICES_CONF_PATH << " La racine n'est pas un servicesConf.");
+		return NULL;
+	}
+	hRoot=TiXmlHandle(pElem);
+
+	std::string name="";
+	std::string title="";
+	std::string abstract="";
+	std::vector<std::string> keyWords;
+	std::string serviceProvider;
+	std::string fee;
+	std::string accessConstraint;
+	unsigned int layerLimit;
+	unsigned int maxWidth;
+	unsigned int maxHeight;
+	std::vector<std::string> formatList;
+
+
+	pElem=hRoot.FirstChild("name").Element();
+	if (pElem) name = pElem->GetText();
+
+	pElem=hRoot.FirstChild("title").Element();
+	if (pElem) title = pElem->GetText();
+
+	pElem=hRoot.FirstChild("abstract").Element();
+	if (pElem) abstract = pElem->GetText();
+
+	pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element();
+	for (pElem; pElem; pElem=pElem->NextSiblingElement("keyword")){
+		std::string keyword(pElem->GetText());
+		keyWords.push_back(keyword);
+	}
+
+	pElem=hRoot.FirstChild("serviceProvider").Element();
+	if (pElem) serviceProvider = pElem->GetText();
+
+	pElem=hRoot.FirstChild("fee").Element();
+	if (pElem) fee = pElem->GetText();
+
+	pElem=hRoot.FirstChild("accessConstraint").Element();
+	if (pElem) accessConstraint = pElem->GetText();
+
+	pElem = hRoot.FirstChild("layerLimit").Element();
+	if (!pElem){
+		layerLimit=1;  // un seul layer à la fois.
+	}else if (!sscanf(pElem->GetText(),"%d",&layerLimit)){
+		LOGGER_ERROR(SERVICES_CONF_PATH << "Le layerLimit est inexploitable:[" << pElem->GetText() << "]");
+		return NULL;
+	}
+
+	pElem = hRoot.FirstChild("maxWidth").Element();
+	if (!pElem){
+		maxWidth=MAX_IMAGE_WIDTH;
+	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
+		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
+		return NULL;
+	}
+
+	pElem = hRoot.FirstChild("maxHeight").Element();
+	if (!pElem){
+		maxHeight=MAX_IMAGE_HEIGHT;
+	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
+		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
+		return false;
+	}
+
+	ServicesConf * servicesConf;
+	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
+			                       accessConstraint, layerLimit, maxWidth, maxHeight, formatList);
+
+	LOGGER_DEBUG("<= buildServicesConf");
+    return servicesConf;
 }

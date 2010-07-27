@@ -74,8 +74,8 @@
 Construction du serveur
 */
 
-  WMSServer::WMSServer(int nbThread, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList) :
-		               nbThread(nbThread), layers(layers), tmsList(tmsList) {
+  WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList) :
+		               nbThread(nbThread), servicesConf(servicesConf), layers(layers), tmsList(tmsList) {
 	int init=FCGX_Init();
   }
 	
@@ -163,7 +163,7 @@ Construction du serveur
       std::string layerDir;
       std::string tmsDir;
       if(!ConfLoader::getTechnicalParam(nbThread, layerDir, tmsDir)){
-    	  LOGGER_FATAL("Impossible d'interpréter le de conf server.conf");
+    	  LOGGER_FATAL("Impossible d'interpréter le fichier de conf server.conf");
     	  LOGGER_FATAL("Extinction du serveur ROK4");
     	  // On attend 10s pour eviter que le serveur web nele relance tout de suite
     	  // avec les mêmes conséquences et sature les logs trop rapidement.
@@ -171,12 +171,24 @@ Construction du serveur
     	  return 1;
       }
 
+      //chargement de la conf services
+      ServicesConf *servicesConf=ConfLoader::buildServicesConf();
+      if(!servicesConf){
+    	  LOGGER_FATAL("Impossible d'interpréter le fichier de conf services.conf");
+    	  LOGGER_FATAL("Extinction du serveur ROK4");
+    	  // On attend 10s pour eviter que le serveur web ne le relance tout de suite
+    	  // avec les mêmes conséquences et sature les logs trop rapidement.
+    	  //sleep(10);
+    	  return 1;
+      }
+
+
       //chargement des TMS
       std::map<std::string,TileMatrixSet*> tmsList;
       if(!ConfLoader::buildTMSList(tmsDir,tmsList)){
     	  LOGGER_FATAL("Impossible de charger la conf des TileMatrix");
     	  LOGGER_FATAL("Extinction du serveur ROK4");
-      	  // On attend 10s pour eviter que le serveur web nele relance tout de suite
+      	  // On attend 10s pour eviter que le serveur web ne le relance tout de suite
       	  // avec les mêmes conséquences et sature les logs trop rapidement.
       	  /* DEBUG
       	   sleep(10);*/
@@ -196,7 +208,7 @@ Construction du serveur
       }
 
       //construction du serveur.
-      WMSServer W(nbThread,layers,tmsList);
+      WMSServer W(nbThread, *servicesConf, layers, tmsList);
 
       W.run();
 

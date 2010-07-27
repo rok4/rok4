@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <map>
 
-
+#include "ServicesConf.h"
 #include "Layer.h"
 #include "TileMatrixSet.h"
 
@@ -21,6 +21,7 @@ class WMSServer {
   pthread_t Thread[128]; /* tableau des threads => 128 thread max! */
   ResponseSender S;
 
+  ServicesConf &servicesConf;
   std::map<std::string, Layer*> layers;
   std::map<std::string,TileMatrixSet*> tmsList;
 
@@ -38,7 +39,7 @@ class WMSServer {
 
   public:
   void run();
-  WMSServer(int nbThread, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList);
+  WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 
