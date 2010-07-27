@@ -20,9 +20,9 @@
 					<!-- hauteur des images (conteneur) en nombre de tuiles --> 
 					<xs:element name="blockHeight"    type="xs:positiveInteger"/>
 					<!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
-					<xs:element name="path_pathDepth" type="xs:nonNegativeInteger"/>
+					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
 					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-					<xs:element ref="TMSLimits"/>
+					<xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
@@ -41,7 +41,7 @@
 	</xs:simpleType>
 	
 	<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-	<xs:element name="TMSLimits" minOccurs="0" maxOccurs="1">
+	<xs:element name="TMSLimits" >
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element name="minTileRow"  type="xs:nonNegativeInteger"/>

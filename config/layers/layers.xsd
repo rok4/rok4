@@ -13,8 +13,8 @@
 				</xs:complexType>
 			</xs:element>
 			<xs:element name="style" type="xs:string"/>
-			<xs:element name="minRes" type="xs:"/>
-			<xs:element name="maxRes" type="xs:"/>
+			<xs:element name="minRes" type="xs:double"/>
+			<xs:element name="maxRes" type="xs:double"/>
 			<xs:element name="WMSCRSList">
 				<xs:complexType>
 				<xs:sequence>
@@ -22,54 +22,16 @@
 				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
-			<xs:element name="opaque" type="xs:"/>
+			<xs:element name="opaque" type="xs:boolean"/>
 			<xs:element name="authority" type="xs:string"/>
 			<xs:element name="resampling" type="xs:string"/>
-
-			<xs:element name="level" minOccurs="1" maxOccurs="unbounded">
+			<xs:element name="pyramidList">
 				<xs:complexType>
 				<xs:sequence>
-					<!-- id du tilMatrix utilisé -->
-					<xs:element name="tileMatrix"     type="xs:string"/>
-					<!-- repertoire racine des données du level -->
-					<xs:element name="baseDir"        type="xs:string"/>
-					<!-- format des images du cache (ne pas confondre avec celui des tuiles) -->
-					<xs:element name="format"         type="imageFormat"/>
-					<!-- nombre de cannaux utilisés dans les images (et tuiles) -->
-					<xs:element name="channels"       type="xs:positiveInteger"/>
-					<!-- largeur des images (conteneur) en nombre de tuiles --> 
-					<xs:element name="blockWidth"     type="xs:positiveInteger"/>
-					<!-- hauteur des images (conteneur) en nombre de tuiles --> 
-					<xs:element name="blockHeight"    type="xs:positiveInteger"/>
-					<!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
-					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
-					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-					<xs:element ref="TMSLimits"/>
-					</xs:sequence>
+					<xs:element name="pyramid" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-
-	<!-- liste des formats autorisés pour les images du cache -->
-	<xs:simpleType name="imageFormat">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="TIFF_INT8"/>
-			<xs:enumeration value="TIFF_JPG_INT8"/>
-			<xs:enumeration value="TIFF_PNG_INT8"/>
-			<xs:enumeration value="TIFF_LZW_INT8"/>
-		</xs:restriction>
-	</xs:simpleType>
-	
-	<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-	<xs:element name="TMSLimits" minOccurs="0" maxOccurs="1">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="minTileRow"  type="xs:nonNegativeInteger"/>
-				<xs:element name="maxTileRow"  type="xs:nonNegativeInteger"/>
-				<xs:element name="minTileCol"  type="xs:nonNegativeInteger"/>
-				<xs:element name="maxTileCol"  type="xs:nonNegativeInteger"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>

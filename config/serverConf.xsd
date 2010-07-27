@@ -9,7 +9,6 @@
 			<xs:element name="layerDir"         type="xs:string"/>
 			<!-- répertoire des configs des tileMatrixSet -->
 			<xs:element name="tileMatrixSetDir" type="xs:string"/>
-			</xs:element>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
