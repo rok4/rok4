@@ -2,7 +2,7 @@
 <tileMatrixSet>FR_LAMB93_test</tileMatrixSet> 
 <level> 
 	<tileMatrix>0_5</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/2048</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/2048</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -18,7 +18,7 @@
 
 <level> 
 	<tileMatrix>1</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/4096</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/4096</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -34,7 +34,7 @@
 
 <level> 
 	<tileMatrix>2</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/8192</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/8192</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -50,7 +50,7 @@
 
 <level> 
 	<tileMatrix>4</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/16384</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/16384</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -66,7 +66,7 @@
 
 <level> 
 	<tileMatrix>8</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/32768</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/32768</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -82,7 +82,7 @@
 
 <level> 
 	<tileMatrix>16</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/65536</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/65536</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -98,7 +98,7 @@
 
 <level> 
 	<tileMatrix>32</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/131072</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/131072</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -114,7 +114,7 @@
 
 <level> 
 	<tileMatrix>64</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/262144</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/262144</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -130,7 +130,7 @@
 
 <level> 
 	<tileMatrix>128</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/524288</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/524288</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -146,7 +146,7 @@
 
 <level> 
 	<tileMatrix>256</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/1048576</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/1048576</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
@@ -162,7 +162,7 @@
 
 <level> 
 	<tileMatrix>512</tileMatrix>
-	<baseDir>/mnt/geoportail/ppons/ortho-jpeg/2097152</baseDir>
+	<baseDir>/mnt/geoportail/ppons/ortho-jpeg36/2097152</baseDir>
 	<format>TIFF_JPG_INT8</format>
 	<channels>3</channels>
 	<blockWidth>16</blockWidth>
