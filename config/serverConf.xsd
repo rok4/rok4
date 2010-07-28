@@ -3,7 +3,7 @@
 	<xs:element name="serverConf">
 		<xs:complexType>
 			<xs:sequence>
-			<!-- nombre de thread exploité pour l'ecoute et le calcul-->
+			<!-- nombre de threads exploités pour l'ecoute et le calcul-->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
 			<!-- répertoire des configs des layers -->
 			<xs:element name="layerDir"         type="xs:string"/>
