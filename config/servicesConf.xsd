@@ -3,10 +3,15 @@
 	<xs:element name="servicesConf">
 		<xs:complexType>
 			<xs:sequence>
+				<!-- Un nom simple pour faire référence au service. Ex : WMS_IGN -->
 				<xs:element name="name"     type="xs:string"/>
+				<!-- Une dénomination plus explicite -->
 				<xs:element name="title"    type="xs:string"/>
+				<!-- Une présentation du service -->
 				<xs:element name="abstract" type="xs:string"/>
+				<!-- Qui fournit le service -->
 				<xs:element name="serviceProvider" type="xs:string"/>
+				<!-- Des mots clefs -->
 				<xs:element name="keywordList">
 					<xs:complexType>
 					<xs:sequence>
@@ -14,11 +19,15 @@
 					</xs:sequence>
 					</xs:complexType>
 				</xs:element>
+				<!-- Info relative à la facturation du service -->
 				<xs:element name="fee" type="xs:string"/>
+				<!-- Info sur les contraintes d’accès -->
 				<xs:element name="accessConstraint" type="xs:string"/>
-				<xs:element name="layerLimit"       type="xs:positiveInteger"/>
+				<!-- -->
 				<xs:element name="maxWidth"         type="xs:positiveInteger"/>
+				<!-- -->
 				<xs:element name="maxHeight"        type="xs:positiveInteger"/>
+				<!-- -->
 				<xs:element name="formatList">
 					<xs:complexType>
 						<xs:sequence>
