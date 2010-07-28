@@ -650,7 +650,6 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	std::string serviceProvider;
 	std::string fee;
 	std::string accessConstraint;
-	unsigned int layerLimit;
 	unsigned int maxWidth;
 	unsigned int maxHeight;
 	std::vector<std::string> formatList;
@@ -680,14 +679,6 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	pElem=hRoot.FirstChild("accessConstraint").Element();
 	if (pElem) accessConstraint = pElem->GetText();
 
-	pElem = hRoot.FirstChild("layerLimit").Element();
-	if (!pElem){
-		layerLimit=1;  // un seul layer à la fois.
-	}else if (!sscanf(pElem->GetText(),"%d",&layerLimit)){
-		LOGGER_ERROR(SERVICES_CONF_PATH << "Le layerLimit est inexploitable:[" << pElem->GetText() << "]");
-		return NULL;
-	}
-
 	pElem = hRoot.FirstChild("maxWidth").Element();
 	if (!pElem){
 		maxWidth=MAX_IMAGE_WIDTH;
@@ -706,7 +697,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			                       accessConstraint, layerLimit, maxWidth, maxHeight, formatList);
+			                       accessConstraint, maxWidth, maxHeight, formatList);
 
 	LOGGER_DEBUG("<= buildServicesConf");
     return servicesConf;
