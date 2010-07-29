@@ -1,5 +1,5 @@
 <layer>
-	<title>Ortho Charlotte test en tiff brut</title>
+	<title>Ortho Paris test en tiff brut</title>
 	<abstract>Blablabla...</abstract>
 	<keywordList>
 		<keyword>Photo</keyword>
@@ -15,6 +15,6 @@
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>
 	<pyramidList>
-		<pyramid>../config/pyramids/ORTHO_CHARLOTTE.pyr</pyramid>
+		<pyramid>../config/pyramids/ORTHO_PARIS_RAW.pyr</pyramid>
 	</pyramidList>
 </layer>
