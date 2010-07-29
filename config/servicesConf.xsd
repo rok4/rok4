@@ -23,11 +23,14 @@
 				<xs:element name="fee" type="xs:string"/>
 				<!-- Info sur les contraintes d’accès -->
 				<xs:element name="accessConstraint" type="xs:string"/>
-				<!-- -->
+				<!-- Largeur maximum des images requêtées -->
 				<xs:element name="maxWidth"         type="xs:positiveInteger"/>
-				<!-- -->
+				<!-- Hauteur maximum des images requêtées -->
 				<xs:element name="maxHeight"        type="xs:positiveInteger"/>
-				<!-- -->
+				<!-- Liste des formats des images en sortie qu’il est possible de demander. 
+				     Ne sert que pour le getCapabilies. Cette liste imposée par la spec WMS pose un 
+				     problème parce qu’elle impose les même formats pour tous les layers alors que 
+				     dans notre cas il dépendent des layers.-->
 				<xs:element name="formatList">
 					<xs:complexType>
 						<xs:sequence>

@@ -5,8 +5,11 @@
 			<xs:sequence>
 			<!-- CRS communs à l'ensemble des TM -->
 			<xs:element name="crs"      type="xs:string"/>
+			<!-- Un nom plus explicite que celui du fichier. -->
 			<xs:element name="title"    type="xs:string"/>
+			<!-- Une description -->
 			<xs:element name="abstract" type="xs:string"/>
+			<!-- Liste des mots clefs -->
 			<xs:element name="keywordList">
 				<xs:complexType>
 				<xs:sequence>
@@ -15,6 +18,7 @@
 				</xs:complexType>
 			</xs:element>
 
+			<!-- Liste des tileMatrix -->
 			<xs:element name="tileMatrix" minOccurs="1" maxOccurs="unbounded">
 				<xs:complexType>
 				<xs:sequence>

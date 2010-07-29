@@ -3,8 +3,11 @@
 	<xs:element name="layer">
 		<xs:complexType>
 			<xs:sequence>
+			<!-- Un nom plus explicite que celui du fichier. -->
 			<xs:element name="title"    type="xs:string"/>
+			<!-- Une description -->
 			<xs:element name="abstract" type="xs:string"/>
+			<!-- Liste des mots clefs -->
 			<xs:element name="keywordList">
 				<xs:complexType>
 				<xs:sequence>
@@ -12,9 +15,13 @@
 				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
+			<!-- identifiants des styles applicables au layer. (non utilisé au 07/2010)
+			     FIXME: une liste est a prévoir -->
 			<xs:element name="style" type="xs:string"/>
+			<!-- Les résolutions min et max acceptables pour les requêtes WMS -->
 			<xs:element name="minRes" type="xs:double"/>
 			<xs:element name="maxRes" type="xs:double"/>
+			<!-- Liste des CRS accepté pour les requêtes WMS -->
 			<xs:element name="WMSCRSList">
 				<xs:complexType>
 				<xs:sequence>
@@ -22,9 +29,13 @@
 				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
+			<!--  -->
 			<xs:element name="opaque" type="xs:boolean"/>
+			<!--  -->
 			<xs:element name="authority" type="xs:string"/>
+			<!-- Identifiant de l’algo de rééchantillonage (spécifique ROK4) -->
 			<xs:element name="resampling" type="xs:string"/>
+			<!-- Liste des pyramides du layer (une seule au 07/2010) -->
 			<xs:element name="pyramidList">
 				<xs:complexType>
 				<xs:sequence>
