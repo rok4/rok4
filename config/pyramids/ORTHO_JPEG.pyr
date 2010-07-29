@@ -8,12 +8,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -24,12 +18,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -40,12 +28,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -56,12 +38,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -72,12 +48,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -88,12 +58,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -104,12 +68,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -120,12 +78,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -136,12 +88,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>1</minTileRow>
-		<maxTileRow>10</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>10</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -152,12 +98,6 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>164</minTileRow>
-		<maxTileRow>165</maxTileRow>
-		<minTileCol>2</minTileCol>
-		<maxTileCol>2</maxTileCol>
-	</TMSLimits>
 </level>
 
 <level> 
@@ -168,11 +108,5 @@
 	<blockWidth>16</blockWidth>
 	<blockHeight>16</blockHeight>
 	<pathDepth>2</pathDepth>
-	<TMSLimits>
-		<minTileRow>83</minTileRow>
-		<maxTileRow>83</maxTileRow>
-		<minTileCol>1</minTileCol>
-		<maxTileCol>1</maxTileCol>
-	</TMSLimits>
 </level>
 </Pyramid>
