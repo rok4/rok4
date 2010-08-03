@@ -8,7 +8,7 @@
 /** D */
 class JPEGEncoder : public HttpResponse {  
   private:
-  ImageBase *image;
+  Image *image;
 
   int status;
   uint8_t *linebuffer;
@@ -24,7 +24,7 @@ class JPEGEncoder : public HttpResponse {
 
   public:
 /** D */
-  JPEGEncoder(ImageBase* image) : HttpResponse("image/jpeg", -1), image(image), status(-1) {   
+  JPEGEncoder(Image* image) : HttpResponse("image/jpeg"), image(image), status(-1) {   
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
     cinfo.dest = new jpeg_destination_mgr;

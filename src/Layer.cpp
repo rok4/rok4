@@ -6,6 +6,7 @@
  */
 
 #include "Layer.h"
+#include "Logger.h"
 
 HttpResponse* Layer::gettile(int x, int y, std::string tmId) {
 	//TODO: Ici il faudrait choisir la pyramide à utiliser en fonction

@@ -1,14 +1,17 @@
 #include <cmath>
 #include "Pyramid.h"
 #include "Logger.h"
+#include "Error.h"
 
 HttpResponse* Pyramid::gettile(int x, int y, std::string tmId) {
-/*  assert(x >= 0);
-  assert(y >= 0);
-  assert(z >= 0);
-  assert(z < (int) levels.size());
-*/
-  return levels[tmId]->gettile(x, y);
+
+std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
+
+if (it==levels.end())
+	LOGGER_DEBUG("Erreur WMTS : no such level");
+//	return new Error("Erreur WMTS : no such level");
+
+return it->second->gettile(x, y);
 }
 
 std::string Pyramid::best_level(double resolution_x, double resolution_y) {
@@ -39,7 +42,6 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   double resolution_y = (bbox.ymax - bbox.ymin) / height;
   std::string l = best_level(resolution_x, resolution_y);
   return levels[l]->getbbox(bbox, width, height);
-
 
   LOGGER_DEBUG( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y);
 /*  

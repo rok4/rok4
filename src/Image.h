@@ -53,7 +53,7 @@ class Image {
 
   /** 
    * Destructeur virtuel. Permet de lancer les destructeurs des classes filles
-   * lors de la destruction d'un pointeur ImageBase.
+   * lors de la destruction d'un pointeur Image.
    */
   virtual ~Image() {};
 };

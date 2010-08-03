@@ -43,6 +43,13 @@ int ResponseSender::sendresponse(HttpResponse* response, FCGX_Request* request) 
     LOGGER_DEBUG( "pos " << pos);
     if(nb == 0) break;
   }
+
+	if (response)
+	        LOGGER_DEBUG( "OK" );
+	if (!response)
+	        LOGGER_DEBUG( "pas OK" );
+
+
   delete response;
 
   delete[] buffer;

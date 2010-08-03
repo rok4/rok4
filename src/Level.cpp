@@ -71,7 +71,7 @@ Image* TiledLevel<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
   int tile_xmin = bbox.xmin / tm.getTileW();
   int tile_xmax = (bbox.xmax -1)/ tm.getTileW();
   int nbx = tile_xmax - tile_xmin + 1; 
-  LOGGER_DEBUG(" getwindow tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " );
+  LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " );
 
   int tile_ymin = bbox.ymin / tm.getTileH();
   int tile_ymax = (bbox.ymax-1) / tm.getTileH();
@@ -111,10 +111,11 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  */
 template<class Decoder>
 std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
-  LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley) ;
+  LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley << " " << blockW << " " << blockH) ;
 
   int x = tilex / blockW;
   int y = tiley / blockH;
+
   char path[32];
   path[sizeof(path) - 5] = '.';
   path[sizeof(path) - 4] = 't';
@@ -123,7 +124,7 @@ std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
   path[sizeof(path) - 1] = 0;
   int pos = sizeof(path) - 6;
 
-  for(int d = 0; d < pathDepth; d++) {
+  for(int d = 0; d < pathDepth; d++) {;
     path[pos--] = Base36[y % 36];
     path[pos--] = Base36[x % 36];
     path[pos--] = '/';
@@ -139,7 +140,6 @@ std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
   path[pos] = '/';
 
   LOGGER_DEBUG(" getfilepath " << (path +pos));
-
 
   return baseDir + (path + pos);
 }
@@ -157,7 +157,7 @@ StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
 
   std::string file_path = getfilepath(x, y);
 
-//  LOGGER_DEBUG( " TiledLevel: gettile " << file_path );
+  LOGGER_DEBUG( " TiledLevel: gettile " << file_path );
 
   uint32_t size;
   int n=(y%blockH)*blockW + (x%blockW); // Index de la tuile
@@ -180,6 +180,7 @@ StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
 
 
 template class TiledLevel<RawDecoder>;
+template class TiledLevel<JpegDecoder>;
 //template class Level<pixel_gray>;
 //template class Level<pixel_float>;
 

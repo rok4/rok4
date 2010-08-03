@@ -4,6 +4,7 @@
 #include "config.h"
 #include "BoundingBox.h"
 #include "Error.h"
+#include "Logger.h"
 
 class WMSRequest {
   private:
@@ -29,8 +30,10 @@ class WMSRequest {
 
 
   bool isWMTSRequest() {
+LOGGER_DEBUG("1111");
     if(service) return (strcmp(service, "WMTS") == 0);
     if(tilecol >= 0 && tilerow >= 0 && tilematrix != "") return true;
+LOGGER_DEBUG("2222");
     return false;
   }
   bool isWMSRequest() {
@@ -39,19 +42,20 @@ class WMSRequest {
     return false;
   }
   HttpResponse* checkWMS() {   
-    if(layers == 0)    return new Error("Missing parameter: layers/l");
-    if(bbox   == 0)    return new Error("Missing parameter: bbox");
-    if(width > 10000)  return new Error("Invalid parameter (too large): width/w");
-    if(height > 10000) return new Error("Invalid parameter (too large): height/h");
-    if(width <= 0)     return new Error("Invalid parameter: width/w");
-    if(height <= 0)    return new Error("Invalid parameter: height/h");
+    if(layers == 0)    LOGGER_DEBUG("Missing parameter: layers/l");//return new Error("Missing parameter: layers/l");
+    if(bbox   == 0)    LOGGER_DEBUG("Missing parameter: bbox");//return new Error("Missing parameter: bbox");
+    if(width > 10000)  LOGGER_DEBUG("Invalid parameter (too large): width/w");//return new Error("Invalid parameter (too large): width/w");
+    if(height > 10000) LOGGER_DEBUG("Invalid parameter (too large): height/h");//return new Error("Invalid parameter (too large): height/h");
+    if(width <= 0)     LOGGER_DEBUG("Invalid parameter: width/w");//return new Error("Invalid parameter: width/w");
+    if(height <= 0)    LOGGER_DEBUG("Invalid parameter: height/h");//return new Error("Invalid parameter: height/h")
+
     return 0;
   }
   HttpResponse* checkWMTS() {   
-    if(layers == 0)     return new Error("Missing parameter: layers/l");
-    if(tilerow < 0)     return new Error("Invalid parameter: tilerow/x");
-    if(tilecol < 0)     return new Error("Invalid parameter: tilecol/y");
-    if(tilematrix == "")  return new Error("Invalid parameter: tilematrix/z");
+    if(layers == 0)     LOGGER_DEBUG("Missing parameter: layers/l");//return new Error("Missing parameter: layers/l");
+    if(tilerow < 0)     LOGGER_DEBUG("Invalid parameter: tilerow/x");//return new Error("Invalid parameter: tilerow/x");
+    if(tilecol < 0)     LOGGER_DEBUG("Invalid parameter: tilecol/y");//return new Error("Invalid parameter: tilecol/y");
+    if(tilematrix == "")  LOGGER_DEBUG("Invalid parameter: tilematrix/z");//return new Error("Invalid parameter: tilematrix/z");
     return 0;
   }
 

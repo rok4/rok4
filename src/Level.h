@@ -49,7 +49,7 @@ class Level {
 
 
 /** La classe TiledLevel utilise un template <Decoder>.
- *  C'est pour en simplifié l'utilisation que la classe Level a été créée.
+ *  C'est pour en simplifier l'utilisation que la classe Level a été créée.
  *  Il ne s'agit pas d'un type de Level particulier, il n'y aura pas de Level
  *  non tuilé.
  *  Il est prévu de simplifier cela en supprimant le template et en ne faisant

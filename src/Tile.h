@@ -20,6 +20,14 @@ class RawDecoder {
 
 };
 
+class JpegDecoder {
+  public:
+  typedef uint8_t data_t;
+  static void decode(const uint8_t* encoded_data, size_t encoded_size, data_t* raw_data) {
+    LOGGER_DEBUG( " decode " << (int) encoded_size );
+  }
+
+};
 
 template<class Decoder>
 class Tile : public Image {
@@ -64,5 +72,6 @@ class Tile : public Image {
 };
 
 template class Tile<RawDecoder>;
+template class Tile<JpegDecoder>;
 
 #endif

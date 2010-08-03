@@ -5,9 +5,9 @@
 
 //#include <fstream>
 //#include "pixel_type.h"
-//#include "TiffEncoder.h"
+#include "TiffEncoder.h"
 #include "PNGEncoder.h"
-//#include "JPEGEncoder.h"
+#include "JPEGEncoder.h"
 //#include "BilEncoder.h"
 //#include "Encoder.h"
 
@@ -56,14 +56,16 @@
             LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
             break;
         }
-
-	    WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
-
+	LOGGER_DEBUG("Creation requete");
+	WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
+	LOGGER_DEBUG("Traitement requete");
       	HttpResponse* response = server->processRequest(wmsrequest);
-
+	
+	LOGGER_DEBUG("Send response");
       	server->S.sendresponse(response, &request);
+	LOGGER_DEBUG("Delete request");
       	delete wmsrequest;
-
+	LOGGER_DEBUG("Finish");
         FCGX_Finish_r(&request);
     }
 
@@ -89,15 +91,30 @@ Construction du serveur
   }
 
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
-      LOGGER_DEBUG( "wmsserver:getMap" );
+      LOGGER_DEBUG( "wmsserver:getMap" << request->layers );
 
       std::map<std::string, Layer*>::iterator it = layers.find(std::string(request->layers));
-      if(it == layers.end()) return 0;
+     LOGGER_DEBUG( "it");
+      if(it == layers.end())
+	{	
+		LOGGER_DEBUG( "Pas de tel layer");
+		return 0;
+	}
       Layer* L = it->second;
-
+     LOGGER_DEBUG( "it1");
       Image* image = L->getbbox(*request->bbox, request->width, request->height, request->crs);
+     LOGGER_DEBUG( "it2");
       if (image == 0) return 0;
-      return new PNGEncoder(image);
+
+      LOGGER_DEBUG( "wmsserver:getMap : format : " << request->format);
+      if(strncmp(request->format, "image/png", 9) == 0)
+	return new PNGEncoder(image);
+      else if(strncmp(request->format, "image/tiff", 10) == 0)
+        return new TiffEncoder(image);
+      else if(strncmp(request->format, "image/jpeg", 10) == 0)
+        return new JPEGEncoder(image);
+      else
+	return new PNGEncoder(image);
   }
 
 
@@ -105,7 +122,11 @@ Construction du serveur
       LOGGER_DEBUG ("wmsserver:getTile" );
 
       std::map<std::string, Layer*>::iterator it = layers.find(std::string(request->layers));
-      if(it == layers.end()) return 0;
+      if(it == layers.end())
+	{
+		LOGGER_DEBUG("Erreur layer inexistante : "<<request->layers);
+		return 0;
+	}
       Layer* L = it->second;
 
       LOGGER_DEBUG(  " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format );
@@ -132,17 +153,32 @@ Construction du serveur
    * Renvoie la réponse à la requête.
    */
   HttpResponse* WMSServer::processRequest(WMSRequest* request) {
+        LOGGER_DEBUG("Debut Traitement Requete");
     if(request->isWMSRequest()) {
+        LOGGER_DEBUG("Requete WMS");
       HttpResponse* response = request->checkWMS();
-      if(response) return response;
+      if(response)
+      {
+	LOGGER_DEBUG("Requete WMS invalide");
+	return response;
+      }
       return processWMS(request);
     }
     else if(request->isWMTSRequest()) {
+	LOGGER_DEBUG("Requete WMTS");
       HttpResponse* response = request->checkWMTS();
-      if(response) return response;
+      if(response)
+	{
+		LOGGER_DEBUG("Requete WMTS invalide");
+		return response;
+	}
       return processWMTS(request);
     }
-    else return new Error("Invalid request");
+    else 
+	{
+	LOGGER_DEBUG("Requete invalide");
+	return new Error("Invalid request");
+	}
   }
 
 
