@@ -124,17 +124,17 @@ std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
   int pos = sizeof(path) - 6;
 
   for(int d = 0; d < pathDepth; d++) {
-    path[pos--] = Base36[y & 35];
-    path[pos--] = Base36[x & 35];
+    path[pos--] = Base36[y % 36];
+    path[pos--] = Base36[x % 36];
     path[pos--] = '/';
-    x >>= 6;
-    y >>= 6;
+    x = x / 36;
+    y = y / 36;
   }
   do {
-    path[pos--] = Base36[y & 35];
-    path[pos--] = Base36[x & 35];
-    x >>= 6;
-    y >>= 6;
+    path[pos--] = Base36[y % 36];
+    path[pos--] = Base36[x % 36];
+    x = x / 36;
+    y = y / 36;
   } while(x || y);
   path[pos] = '/';
 
