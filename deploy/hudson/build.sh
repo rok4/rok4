@@ -26,7 +26,7 @@ echo "\n\n\n\n***  DEPLOIEMENT    *****"
 cd ../target
 rm -f $ROK4BASE/bin/WMSServer
 cp bin/WMSServer $ROK4BASE/bin/
-cp config/* $ROK4BASE/config/
+cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/WMSServer docs
