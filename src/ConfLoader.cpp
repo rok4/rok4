@@ -200,8 +200,8 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
                 int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignÃ©e.
                 int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignÃ©e.
                 int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignÃ©e.
-                int blockW;
-                int blockH;
+                int tilesPerWidth;
+                int tilesPerHeight;
                 int pathDepth;
 
                 TiXmlHandle hLvl(pElem);
@@ -233,23 +233,23 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
                         return NULL;
                 }
 
-            pElemLvl = hLvl.FirstChild("blockWidth").Element();
+            pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
                 if (!pElemLvl){
-                        LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de blockWidth !!");
+                        LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerWidth !!");
                         return NULL;
                 }
-                if (!sscanf(pElemLvl->GetText(),"%d",&blockW)){
-                        LOGGER_ERROR(fileName <<" Level "<< id <<": blockWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+                if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerWidth)){
+                        LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
                         return NULL;
                 }
 
-            pElemLvl = hLvl.FirstChild("blockHeight").Element();
+            pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
                 if (!pElemLvl){
-                        LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de blockHeight !!");
+                        LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerHeight !!");
                         return NULL;
                 }
-                if (!sscanf(pElemLvl->GetText(),"%d",&blockH)){
-                        LOGGER_ERROR(fileName <<" Level "<< id <<": blockHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+                if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerHeight)){
+                        LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
                         return NULL;
                 }
 
@@ -307,7 +307,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
                         }
                 }
 
-                Level *TL = new TiledLevel<RawDecoder>(*tm, channels, baseDir, blockW, blockH,
+                Level *TL = new TiledLevel<RawDecoder>(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
                                            maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth);
                 levels.insert(std::pair<std::string, Level *> (id, TL));
         }// boucle sur les levels

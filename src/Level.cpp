@@ -111,10 +111,10 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  */
 template<class Decoder>
 std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
-  LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley << " " << blockW << " " << blockH) ;
+  LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley << " " << tilesPerWidth << " " << tilesPerHeight) ;
 
-  int x = tilex / blockW;
-  int y = tiley / blockH;
+  int x = tilex / tilesPerWidth;
+  int y = tiley / tilesPerHeight;
 
   char path[32];
   path[sizeof(path) - 5] = '.';
@@ -160,8 +160,8 @@ StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
   LOGGER_DEBUG( " TiledLevel: gettile " << file_path );
 
   uint32_t size;
-  int n=(y%blockH)*blockW + (x%blockW); // Index de la tuile
-  uint32_t posoff=1024+4*n, possize=1024+4*n +blockW*blockH*4;
+  int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth); // Index de la tuile
+  uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
 
   LOGGER_DEBUG( " TiledLevel: gettile " << posoff << " " <<  possize );
   const uint8_t *data = FileManager::gettile(file_path, size, posoff, possize);

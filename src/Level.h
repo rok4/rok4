@@ -70,12 +70,8 @@ class TiledLevel : public Level {
   const int32_t minTileRow;
   const int32_t maxTileCol;
   const int32_t minTileCol;
-  /**
-   * Nombre de tuiles par block est carré et est composé de 
-   * tileblocksize * tileblocksize tuiles
-   */
-  uint32_t blockW; //largeur des blocs du cache en tuiles
-  uint32_t blockH; //hauteur des blocs du cache en tuiles
+  uint32_t tilesPerWidth; //nombre de tuiles par dalle dans le sens de la largeur
+  uint32_t tilesPerHeight; //nombre de tuiles par dalle dans le sens de la hauteur
 
   std::string getfilepath(int tilex, int tiley);
 
@@ -115,11 +111,11 @@ class TiledLevel : public Level {
    
 /** D */
  TiledLevel(TileMatrix &tm, int channels, std::string baseDir,
-		    int blockW, int blockH,
+		    int tilesPerWidth, int tilesPerHeight,
 		    uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
 		    int pathDepth) :
 	        Level(), tm(tm), channels(channels), baseDir(baseDir),
-	        blockW(blockW), blockH(blockH),
+	        tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight),
 		    maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol),
 	        pathDepth(pathDepth) {}
 
