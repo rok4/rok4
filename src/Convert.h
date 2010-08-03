@@ -4,7 +4,7 @@
 #include <xmmintrin.h>
 #include <stdint.h>
 #include <cstring> // pour memcpy
-
+#include <cmath>
 
 /**
  * Converti et copie count éléments du tableau from
@@ -32,7 +32,7 @@ inline void convert(uint8_t* to, const uint8_t* from, size_t length) {
  * Convertir des int8 en float
  */
 inline void convert(float* to, const uint8_t* from, size_t count) {
-
+/*
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
   while( (intptr_t)to & 0x0f && count--) *to++ = (float) *from++;
 
@@ -45,7 +45,14 @@ inline void convert(float* to, const uint8_t* from, size_t count) {
   _mm_empty();
 
   // On traite les derniers éléments si count n'est pas un multuple de 4.
-  while(count-- & 0x03) to[count] = (float) from[count];    
+  while(count-- & 0x03) to[count] = (float) from[count];
+*/
+/*
+ * Si rien ne va plus, on peut toujours faire simplement ceci:*/
+  for (size_t i=0; i<count; ++i){
+	  to[i]=from[i];
+  }
+
 }
 
 
@@ -57,6 +64,7 @@ inline void convert(float* to, const uint8_t* from, size_t count) {
  * Convertir de float à int8 en seuillant les valeur <0 et >255
  */
 inline void convert(uint8_t* to, const float* from, size_t count) {
+
   //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
