@@ -27,7 +27,7 @@
                 Order allow,deny
                 Allow from all
         </Directory>
-        FastCgiServer /var/www/hudson/rok4/bin/WMSServer -init-start-delay 5 -port 1998 
+        FastCgiServer /var/www/hudson/rok4/bin/WMSServer -initial-env LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:/var/www/hudson/rok4/lib -init-start-delay 5 -port 1998 
 
 
         #
