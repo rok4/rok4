@@ -4,7 +4,6 @@ CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"."
 #conf de debug:
 #CXXFLAGS = -g -O0 -msse2 -I"." 
 LDFLAGS = 
-LDLIBS = -lpthread -lz -ljpeg -ltiff -llog4cxx
 LDLIBS = -lpthread -lz -ljpeg -llog4cxx
 LDCPPUNITLIBS= -lcppunit
 
@@ -26,7 +25,6 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 FCGIOBJ= libfcgi/fcgiapp.o libfcgi/os_unix.o
 TIXMLOBJ= tinyxml/tinystr.o tinyxml/tinyxml.o tinyxml/tinyxmlerror.o tinyxml/tinyxmlparser.o
-WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o LibtiffImage.o
 WMSSOBJ= WMSServer.o Kernel.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o Logger.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Image.o WMSRequest.o ResampledImage.o 
 
 all: clean WMSServer
