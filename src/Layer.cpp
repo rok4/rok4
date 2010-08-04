@@ -1,10 +1,3 @@
-/*
- * Layer.cpp
- *
- *  Created on: 6 juil. 2010
- *      Author: nico
- */
-
 #include "Layer.h"
 #include "Logger.h"
 
