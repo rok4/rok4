@@ -200,8 +200,8 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
-		int tilePerWidth;
-		int tilePerHeight;
+		int tilesPerWidth;
+		int tilesPerHeight;
 		int pathDepth;
 
 		TiXmlHandle hLvl(pElem);
