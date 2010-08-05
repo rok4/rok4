@@ -307,17 +307,10 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 			}
 		}
 
-<<<<<<< .mine
-                Level *TL = new TiledLevel(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                           maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth,format);
-                levels.insert(std::pair<std::string, Level *> (id, TL));
-        }// boucle sur les levels
-=======
-		Level *TL = new TiledLevel<RawDecoder>(*tm, channels, baseDir, blockW, blockH,
-				           maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth);
+		Level *TL = new TiledLevel(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
+									maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth,format);
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels
->>>>>>> .r139
 
 	if (levels.size()==0){
 		LOGGER_ERROR("Aucun level n'a pu être chargé pour la pyramide "<< fileName);
@@ -427,21 +420,21 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		LOGGER_WARN(fileName << ": Aucun CRS autorisé pour le WMS");
 	}
 
-        pElem=hRoot.FirstChild("opaque").Element();
-        if (!pElem){
-                LOGGER_ERROR("Pas de opaque => opaque = " << DEFAULT_OPAQUE);
-                opaque = DEFAULT_OPAQUE;
-        }else{
-                std::string opaStr=pElem->GetText();
-                if (opaStr=="true"){
-                        opaque = true;
-                }else if(opaStr=="false"){
-                        opaque = false;
-                }else{
-                        LOGGER_ERROR("le param opaque n'est pas exploitable:[" << opaStr <<"]");
-                        return NULL;
-                }
-        }
+    pElem=hRoot.FirstChild("opaque").Element();
+    if (!pElem){
+      LOGGER_ERROR("Pas de opaque => opaque = " << DEFAULT_OPAQUE);
+      opaque = DEFAULT_OPAQUE;
+    }else{
+      std::string opaStr=pElem->GetText();
+      if (opaStr=="true"){
+        opaque = true;
+      }else if(opaStr=="false"){
+        opaque = false;
+      }else{
+        LOGGER_ERROR("le param opaque n'est pas exploitable:[" << opaStr <<"]");
+        return NULL;
+      }
+    }
 
 	pElem=hRoot.FirstChild("authority").Element();
 	if (pElem) authority=pElem->GetText();
