@@ -5,8 +5,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/2048</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -15,8 +15,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/4096</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -25,8 +25,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/8192</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -35,8 +35,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/16384</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -45,8 +45,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/32768</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -55,8 +55,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/65536</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -65,8 +65,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/131072</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -75,8 +75,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/262144</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -85,8 +85,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/524288</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -95,8 +95,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/1048576</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 
@@ -105,8 +105,8 @@
 	<baseDir>/mnt/geoportail/ppons/ortho/cache36/2097152</baseDir>
 	<format>TIFF_INT8</format>
 	<channels>3</channels>
-	<blockWidth>16</blockWidth>
-	<blockHeight>16</blockHeight>
+	<tilesPerWidth>16</tilesPerWidth>
+	<tilesPerHeight>16</tilesPerHeight>
 	<pathDepth>2</pathDepth>
 </level>
 </Pyramid>
