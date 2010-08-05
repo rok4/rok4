@@ -15,10 +15,10 @@
 					<xs:element name="format"         type="imageFormat"/>
 					<!-- nombre de cannaux utilisés dans les images (et tuiles) -->
 					<xs:element name="channels"       type="xs:positiveInteger"/>
-					<!-- largeur des images (conteneur) en nombre de tuiles --> 
-					<xs:element name="blockWidth"     type="xs:positiveInteger"/>
-					<!-- hauteur des images (conteneur) en nombre de tuiles --> 
-					<xs:element name="blockHeight"    type="xs:positiveInteger"/>
+					<!-- nombre de tuiles par dalle en largeur--> 
+					<xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
+					<!-- nombre de tuiles par dalles en hauteur --> 
+					<xs:element name="tilesPerHeight" type="xs:positiveInteger"/>
 					<!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
 					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
 					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
