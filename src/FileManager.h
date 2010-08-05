@@ -6,9 +6,6 @@
 #include "Logger.h"
 #include <cstdio>
 
-//#include "TiledFile.h"
-//#include <map>
-
 // Classe qui lit les tuiles d'un fichier tuilé.
 // A coder plus efficacement.
 

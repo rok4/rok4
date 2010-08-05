@@ -12,25 +12,26 @@
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
                     //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
-template<class Decoder>
-TileMatrix const & TiledLevel<Decoder>::getTm(){return tm;}
-template<class Decoder>
-std::string TiledLevel<Decoder>::getFormat(){return format;}
-template<class Decoder>
-uint32_t TiledLevel<Decoder>::getMaxTileRow(){return maxTileRow;}
-template<class Decoder>
-uint32_t TiledLevel<Decoder>::getMinTileRow(){return minTileRow;}
-template<class Decoder>
-uint32_t TiledLevel<Decoder>::getMaxTileCol(){return maxTileCol;}
-template<class Decoder>
-uint32_t TiledLevel<Decoder>::getMinTileCol(){return minTileCol;}
-template<class Decoder>
-double TiledLevel<Decoder>::getRes(){return tm.getRes();}
-template<class Decoder>
-std::string TiledLevel<Decoder>::getId(){return tm.getId();}
+TileMatrix const & TiledLevel::getTm(){return tm;}
+std::string TiledLevel::getFormat(){return format;}
+uint32_t TiledLevel::getMaxTileRow(){return maxTileRow;}
+uint32_t TiledLevel::getMinTileRow(){return minTileRow;}
+uint32_t TiledLevel::getMaxTileCol(){return maxTileCol;}
+uint32_t TiledLevel::getMinTileCol(){return minTileCol;}
+double TiledLevel::getRes(){return tm.getRes();}
+std::string TiledLevel::getId(){return tm.getId();}
+int TiledLevel::getTileCoding() {
+  if (format.compare("TIFF_INT8")==0)
+        return RAW_UINT8;
+  else if (format.compare("TIFF_JPG_INT8")==0)
+        return JPEG_UINT8;
+  else if (format.compare("TIFF_PNG_INT8")==0)
+        return PNG_UINT8;
+  LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
+  return 0;
+}
 
-template<class Decoder>
-Image* TiledLevel<Decoder>::getbbox(BoundingBox<double> bbox, int width, int height) {
+Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height) {
   // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0  
   bbox.xmin = (bbox.xmin - tm.getX0())/tm.getRes();
   bbox.xmax = (bbox.xmax - tm.getX0())/tm.getRes();
@@ -65,8 +66,7 @@ Image* TiledLevel<Decoder>::getbbox(BoundingBox<double> bbox, int width, int hei
 }
 
 
-template<class Decoder>
-Image* TiledLevel<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
+Image* TiledLevel::getwindow(BoundingBox<int64_t> bbox) {
 
   int tile_xmin = bbox.xmin / tm.getTileW();
   int tile_xmax = (bbox.xmax -1)/ tm.getTileW();
@@ -82,12 +82,14 @@ Image* TiledLevel<Decoder>::getwindow(BoundingBox<int64_t> bbox) {
   int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;
   int bottom[nby]; memset(bottom, 0, nby*sizeof(int)); bottom[nby- 1] = tm.getTileH() - ((bbox.ymax -1) % tm.getTileH()) - 1;
 
+  int tileCoding=getTileCoding();
+
   std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
   for(int y = 0; y < nby; y++)
     for(int x = 0; x < nbx; x++) {
       LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );      
       StaticHttpResponse* tile = gettile(tile_xmin + x, tile_ymin + y);
-      T[y][x] = new Tile<Decoder>(tm.getTileW(), tm.getTileH(), channels, tile, left[x], top[y], right[x], bottom[y]);
+      T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile, left[x], top[y], right[x], bottom[y],tileCoding);
     }
 
   if(nbx == 1 && nby == 1) return T[0][0];
@@ -109,8 +111,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  *
  *
  */
-template<class Decoder>
-std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
+std::string TiledLevel::getfilepath(int tilex, int tiley) {
   LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley << " " << tilesPerWidth << " " << tilesPerHeight) ;
 
   int x = tilex / tilesPerWidth;
@@ -145,14 +146,22 @@ std::string TiledLevel<Decoder>::getfilepath(int tilex, int tiley) {
 }
 
 
-template<class Decoder>
-StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
+StaticHttpResponse* TiledLevel::gettile(int x, int y)
 {
+  int tileCoding=getTileCoding();
+  int typeSize=1;
+  if (tileCoding==RAW_UINT8 || tileCoding==JPEG_UINT8 || tileCoding==PNG_UINT8)
+	typeSize=1;
+  else if(RAW_FLOAT)
+	typeSize=4;
+  else
+	LOGGER_ERROR("Taille du type non connu");
+
   LOGGER_DEBUG( " TiledLevel: gettile " << x << " " << y );
   
   if(x < 0 || y < 0) {
-    data_t* T = new data_t[tm.getTileW()*tm.getTileH()*channels];
-    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*sizeof(data_t));
+    uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
+    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
   }
 
   std::string file_path = getfilepath(x, y);
@@ -171,35 +180,8 @@ StaticHttpResponse* TiledLevel<Decoder>::gettile(int x, int y)
   else {
     LOGGER_DEBUG( " TiledLevel: gettile " << size );
 
-    data_t* T = new data_t[tm.getTileW()*tm.getTileH()*channels];
-    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*sizeof(data_t));
+    uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
+    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
   }
 }
-
-
-
-
-template class TiledLevel<RawDecoder>;
-template class TiledLevel<JpegDecoder>;
-//template class Level<pixel_gray>;
-//template class Level<pixel_float>;
-
-//template class TiledFileLevel<RawTile ,pixel_rgb>;
-//template class TiledFileLevel<RawTile ,pixel_float>;
-//template class TiledFileLevel<PngTile ,pixel_rgb>;
-//template class TiledFileLevel<JpegTile,pixel_rgb>;
-
-//template class TiledFileLevel<RawTile ,pixel_gray>;
-//template class TiledFileLevel<PngTile ,pixel_gray>;
-//template class TiledFileLevel<JpegTile,pixel_gray>;
-
-
-/*
-template class TiledFileLevel<pixel_rgb>;
-template class RawTiffLevel<pixel_rgb>;
-template class JpegTiffLevel<pixel_rgb>;
-template class PngTiffLevel<pixel_gray>;
-*/
-
-
 

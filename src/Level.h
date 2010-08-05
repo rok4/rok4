@@ -55,11 +55,9 @@ class Level {
  *  Il est prévu de simplifier cela en supprimant le template et en ne faisant
  *  qu'une seule classe Level. Cette modification n'étant pas simple, elle est
  *  prévue pour plus tard.*/
-template<class Decoder>
+
 class TiledLevel : public Level {
   private:
-
-  typedef typename Decoder::data_t data_t;
 
   std::string baseDir;
   int pathDepth;
@@ -94,6 +92,7 @@ class TiledLevel : public Level {
   uint32_t    getMinTileCol();
   double      getRes();
   std::string getId();
+  int	      getTileCoding();
 
   Image* getbbox(BoundingBox<double> bbox, int width, int height);
   /**
@@ -113,11 +112,11 @@ class TiledLevel : public Level {
  TiledLevel(TileMatrix &tm, int channels, std::string baseDir,
 		    int tilesPerWidth, int tilesPerHeight,
 		    uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-		    int pathDepth) :
+		    int pathDepth, std::string format) :
 	        Level(), tm(tm), channels(channels), baseDir(baseDir),
 	        tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight),
 		    maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol),
-	        pathDepth(pathDepth) {}
+	        pathDepth(pathDepth), format(format) {}
 
 };
 

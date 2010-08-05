@@ -3,16 +3,9 @@
 #include "WMSServer.h"
 #include <iostream>
 
-//#include <fstream>
-//#include "pixel_type.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
-//#include "BilEncoder.h"
-//#include "Encoder.h"
-
-
-
 
 #include <sstream>
 #include <vector>
@@ -91,13 +84,13 @@ Construction du serveur
   }
 
   HttpResponse* WMSServer::getMap(WMSRequest* request) {
-      LOGGER_DEBUG( "wmsserver:getMap" << request->layers );
+      LOGGER_DEBUG( "wmsserver:getMap layers : " << request->layers );
 
       std::map<std::string, Layer*>::iterator it = layers.find(std::string(request->layers));
      LOGGER_DEBUG( "it");
       if(it == layers.end())
 	{	
-		LOGGER_DEBUG( "Pas de tel layer");
+		LOGGER_DEBUG( "Pas de tel layers : ");
 		return 0;
 	}
       Layer* L = it->second;

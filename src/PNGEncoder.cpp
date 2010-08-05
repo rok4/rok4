@@ -10,9 +10,20 @@ static const uint8_t IEND[12] = {
   0, 0, 0, 0, 'I', 'E', 'N', 'D',    // 8  | taille et type du chunck IHDR
   0xae, 0x42, 0x60, 0x82};           // crc32
 
+static const uint8_t PNG_HEADER_GRAY[33] = {
+  137, 80, 78, 71, 13, 10, 26, 10,               // 0  | 8 octets d'entête
+  0, 0, 0, 13, 'I', 'H', 'D', 'R',               // 8  | taille et type du chunck IHDR
+  0, 0, 1, 0,                                    // 16 | width
+  0, 0, 1, 0,                                    // 20 | height
+  8,                                             // 24 | bit depth
+  0,                                             // 25 | Colour type
+  0,                                             // 26 | Compression method
+  0,                                             // 27 | Filter method
+  0,                                             // 28 | Interlace method
+  0xd3, 0x10, 0x3f, 0x31};                       // 29 | crc32
+                                                 // 33
 
-
-static const uint8_t PNG_HEADER[33] = {
+static const uint8_t PNG_HEADER_RGB[33] = {
   137, 80, 78, 71, 13, 10, 26, 10,               // 0  | 8 octets d'entête
   0, 0, 0, 13, 'I', 'H', 'D', 'R',               // 8  | taille et type du chunck IHDR
   0, 0, 1, 0,                                    // 16 | width
@@ -36,14 +47,26 @@ void PNGEncoder::addCRC(uint8_t *buffer, uint32_t length) {
 }
 
 size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
-  if(sizeof(PNG_HEADER) > size) return 0;
-  memcpy(buffer, PNG_HEADER, sizeof(PNG_HEADER));       // cf: http://www.w3.org/TR/PNG/#11IHDR
+  if (colortype==0){
+    if(sizeof(PNG_HEADER_GRAY) > size) return 0;
+    memcpy(buffer, PNG_HEADER_GRAY, sizeof(PNG_HEADER_GRAY));       // cf: http://www.w3.org/TR/PNG/#11IHDR
+  }
+  else if (colortype==2){
+    if(sizeof(PNG_HEADER_RGB) > size) return 0;
+    memcpy(buffer, PNG_HEADER_RGB, sizeof(PNG_HEADER_RGB));       // cf: http://www.w3.org/TR/PNG/#11IHDR
+  }
+  else{
+  LOGGER_ERROR("Type de couleur non gere : " << colortype);
+  return 0;
+}
   *((uint32_t*)(buffer+16)) = bswap_32(image->width);   // ajoute le champs width
   *((uint32_t*)(buffer+20)) = bswap_32(image->height);  // ajoute le champs height
   buffer[25] = colortype;                               // ajoute le champs colortype
   addCRC(buffer+8, 13);                                 // signe le chunck avca un CRC32
   line++;
-  return sizeof(PNG_HEADER);
+  if (colortype==0)
+  	return sizeof(PNG_HEADER_GRAY);
+  return sizeof(PNG_HEADER_RGB);
 }
 
 size_t PNGEncoder::write_IEND(uint8_t *buffer, size_t size) {
@@ -82,7 +105,14 @@ size_t PNGEncoder::write_IDAT(uint8_t *buffer, size_t size) {
 
 size_t PNGEncoder::getdata(uint8_t *buffer, size_t size) {
   size_t pos = 0;
-  if(line == -1) pos += write_IHDR(buffer, size, 2); // TODO choix du colortype : 2 = RGB 
+  uint8_t colortype=2;
+  // On traite 2 cas : 'Greyscale' et 'Truecolor'
+  // cf: http://www.w3.org/TR/PNG/#11IHDR
+  if (image->channels==1)
+	colortype=0;
+  else if (image->channels==3)
+	colortype=2;
+  if(line == -1) pos += write_IHDR(buffer, size, colortype);
   if(line >= 0 && line <= image->height) pos += write_IDAT(buffer + pos, size - pos);
   if(line == image->height+1) pos += write_IEND(buffer + pos, size - pos);
   return pos;
