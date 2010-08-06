@@ -13,7 +13,7 @@
 					<xs:element name="baseDir"        type="xs:string"/>
 					<!-- format des images du cache (ne pas confondre avec celui des tuiles) -->
 					<xs:element name="format"         type="imageFormat"/>
-					<!-- nombre de cannaux utilisés dans les images (et tuiles) -->
+					<!-- nombre de canaux utilisés dans les images (et tuiles) -->
 					<xs:element name="channels"       type="xs:positiveInteger"/>
 					<!-- nombre de tuiles par dalle en largeur--> 
 					<xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
@@ -23,7 +23,19 @@
 					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
 					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
 					<xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
-					</xs:sequence>
+					<xs:element name="metadata"		>
+						<xs:complexType>
+						<xs:sequence>
+							<!-- type de métadonnées encodées -->
+							   					<xs:element name="type"        type="metadataType"/>
+							<!-- repertoire racine des données du level pour les métadonnées-->
+		                                        <xs:element name="baseDir"        type="xs:string"/>
+							<!-- format des masques de métadonnées du cache -->
+                                        		<xs:element name="format"         type="imageFormat"/>
+						</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			</xs:sequence>
@@ -39,6 +51,13 @@
 			<xs:enumeration value="TIFF_LZW_INT8"/>
 		</xs:restriction>
 	</xs:simpleType>
+
+	<!-- liste des types de métadonnées autorisés -->
+	<xs:simpleType name="metadataType">
+                <xs:restriction base="xs:string">
+                        <xs:enumeration value="INT32_DB_LZW"/>
+                </xs:restriction>
+        </xs:simpleType>
 	
 	<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
 	<xs:element name="TMSLimits" >
