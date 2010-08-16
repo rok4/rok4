@@ -55,7 +55,7 @@ Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height) {
   double ratio_x = (bbox.xmax - bbox.xmin) / width;
   double ratio_y = (bbox.ymax - bbox.ymin) / height;
 
-  const Kernel& kk = Kernel::getInstance("Lanczos_2");
+  const Kernel& kk = Kernel::getInstance(Kernel::LANCZOS_3);
 
   bbox_int.xmin = floor(bbox.xmin - kk.size(ratio_x));
   bbox_int.xmax = ceil (bbox.xmax + kk.size(ratio_x));

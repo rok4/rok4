@@ -1,18 +1,14 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-class NearestNeighbour;
-
-#include <cmath>
-#include <string>
-#include "Logger.h"
-
  /**
-  * Classe 
+  * Classe mère définissant l'interface d'appel d'un noyau de rééchantillonnage en 1 dimension.
   *
   * Les classe filles implémentant un noyau particulier de rééchantillonnage auront 
   * à définir la taille du noyau (kernel_size), à déterminer si celle-ci dépend du ratio 
   * de rééchantillonage (const_ratio) et la fonction de poids (kernel_function)
+  *
+  * Les rééchantillonages en 2D sont effectués en échantillonnant en 1D selon chaque dimension.
   */
 class Kernel {
   private:
@@ -46,57 +42,62 @@ class Kernel {
 
   /**
    * Initialise le tableau des coefficient avec en échantillonnant la fonction kernel_function.
+   * Cette fonction doit typiquement être apellée à la fin du constructeur des classe filles 
+   * (pour des raisons d'ordre d'initialisation des instances mère/fille).
    */
   void init() {
-    for(int i = 0; i <= 1024; i++) 
-      coeff[i] = kernel_function(i * kernel_size / 1024.);
+    for(int i = 0; i <= 1024; i++) coeff[i] = kernel_function(i * kernel_size / 1024.);
   }
 
+  /**
+   * Constructeur de la classe mère
+   * Ne peux être appelé que par les constructeurs des classes filles.
+   */
   Kernel(double kernel_size, bool const_ratio = false) : kernel_size(kernel_size), const_ratio(const_ratio) {}
 
   public:
 
-  static const Kernel& getInstance(std::string method);
+  /**
+   * Type définissant les différentes méthodes de d'interpolation.
+   *
+   *
+   */
+  typedef enum {NEAREST_NEIGHBOUR, LINEAR, CUBIC, LANCZOS_2, LANCZOS_3, LANCZOS_4} KernelType;
+  
+  /**
+   * Factory permettant d'obtenir une instance d'un type de noyau donné.
+   */
+  static const Kernel& getInstance(KernelType T = LANCZOS_3);
 
+  /**
+   * Calcule la taille du noyau en nombre de pixels sources requis sur une dimension
+   * en fonction du ratio de rééchantillonage.
+   *
+   *
+   * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
+   *        ratio = resolution source / résolution cible.
+   *
+   * @return nombre de pixels (non forcément entiers) requis. Pour interpoler 
+   *           la coordonnées x, les pixels compris entre x-size et x+size seront utlisés.
+   */
   inline double size(double ratio = 1.) const {
       if(ratio <= 1 || const_ratio) return kernel_size;
       else return kernel_size * ratio;
   }
 
-
- /*
-   * W     : tableau de coefficients d'interpollation à calculer.
-   * length  : taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
-   * x     : valeur à interpoler
-   * ratio : ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
+  /**
+   * Fonction calculant les poids à appliquer aux pixels sources en fonction
+   * du centre du pixel à calculer et du ratio de réchantillonage
    *
-   * retour (xmin) : première valeur entière avec coefficient non nul.
-   * W est rempli avec size coefficients le premier correspond à xmin, le dernier à xmin+size-1.
+   * @param W Tableau de coefficients d'interpollation à calculer.
+   * @param length Taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
+   * @param x Valeur à interpoler
+   * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
+   *
+   * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
+   * indiquer le nombre réel de coefficients écrits dans W.
    */
-  int weight(float* W, int &length, double x, double ratio) const {
-//    LOGGER(DEBUG) << size << std::endl;
-//    if(ratio < 1) ratio = 1;
-    double Ks = size(ratio);                  // Taille du noyeau prenant compte le ratio du réchantillonnage.
-    int xmin = ceil(x - Ks + 1e-9);          // Premier x avec coeff non nul.    
-
-    double sum = 0;
-    double step = 1024. / Ks;
-    double indf = (x - xmin) * step;
-
-    int i = 0;
-    for(;indf >= 0 && i < length; indf -= step) {
-      int ind = (int) indf;
-      sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
-    }
-    for(indf = -indf; indf < 1024. && i < length; indf += step) {
-      int ind = (int) indf;
-      sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
-    }
-    length = i;
-    while(i--) W[i] /= sum;
-   // LOGGER_DEBUG(" ");
-    return xmin;
-  }
+  int weight(float* W, int &length, double x, double ratio) const;
 
 };
 

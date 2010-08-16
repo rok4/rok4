@@ -1,22 +1,13 @@
 #ifndef CONVERT_H
 #define CONVERT_H
 
-#include <xmmintrin.h>
 #include <stdint.h>
 #include <cstring> // pour memcpy
-#include <cmath>
 
 /**
  * Converti et copie count éléments du tableau from
  * vers le tableau to.
  */
-/*
-template<typename T, typename F>
-void convert(T* to, const F* from, size_t count)
-{
-  for(size_t i = 0; i < count; i++) to[i] = (T) from[i];
-}
-*/
 
 
 /**
@@ -27,12 +18,15 @@ inline void convert(uint8_t* to, const uint8_t* from, size_t length) {
 }
 
 
+#ifdef __SSE2__
+
+#include <xmmintrin.h>
 
 /**
  * Convertir des int8 en float
  */
 inline void convert(float* to, const uint8_t* from, size_t count) {
-/*
+
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
   while( (intptr_t)to & 0x0f && count--) *to++ = (float) *from++;
 
@@ -45,18 +39,8 @@ inline void convert(float* to, const uint8_t* from, size_t count) {
   _mm_empty();
 
   // On traite les derniers éléments si count n'est pas un multuple de 4.
-  while(count-- & 0x03) to[count] = (float) from[count];
-*/
-/*
- * Si rien ne va plus, on peut toujours faire simplement ceci:*/
-  for (size_t i=0; i<count; ++i){
-	  to[i]=from[i];
-  }
-
+  while(count-- & 0x03) to[count] = (float) from[count];    
 }
-
-
-
 
 #define _mm_cvtps_pu8(a) _mm_packs_pu16(_mm_cvtps_pi16(a), _mm_setzero_si64())
 
@@ -64,7 +48,6 @@ inline void convert(float* to, const uint8_t* from, size_t count) {
  * Convertir de float à int8 en seuillant les valeur <0 et >255
  */
 inline void convert(uint8_t* to, const float* from, size_t count) {
-
   //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
@@ -82,6 +65,25 @@ inline void convert(uint8_t* to, const float* from, size_t count) {
   // On a utilisé des instructions MMX il faut réinitialiser les registres pour éviter des plantages sur les prochaines instructions FPU
   _mm_empty();
 }
+
+#else // __SSE2__
+
+// Versions non SSE 
+
+inline void convert(float* to, const uint8_t* from, size_t count) {
+  for(size_t i = 0; i < count; i++) to[i] = (float) from[i];
+}
+
+
+inline void convert(uint8_t* to, const float* from, size_t count) {
+  for(size_t i = 0; i < count; i++) {
+    if(from[i] < 0.) to[i] = 0;
+    else if(from[i] > 255) to[i] = 255;
+    else to[i] = (uint8_t) from[i];
+  }
+}
+
+#endif // __SSE2__
 
 
 
