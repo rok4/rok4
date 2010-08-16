@@ -4,6 +4,7 @@
 #include "EmptyImage.h"
 #include <sys/time.h>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 

@@ -1,5 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include "Convert.h"
+#include <cstdlib>
 #include <sys/time.h>
 
 
