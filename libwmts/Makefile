@@ -38,11 +38,11 @@ WMSServer: dependencies bindir $(WMSSOBJ)
 	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 dependencies:
+	make -C ../liblogger
+	make -C ../libz
 	make -C ../libfcgi	
 	make -C ../libtinyxml
 	make -C ../libimage
-	make -C ../liblogger
-	make -C ../libz
 
 
 
