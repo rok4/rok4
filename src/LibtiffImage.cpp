@@ -1,6 +1,6 @@
 #include "LibtiffImage.h"
 #include "Logger.h"
-#include "Convert.h"
+#include "Utils.h"
 
 /**
 Creation d'une LibtiffImage a partir d un fichier TIFF filename

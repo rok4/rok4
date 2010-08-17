@@ -121,7 +121,7 @@ const Kernel& Kernel::getInstance(KernelType T) {
     case LANCZOS_3: return lanczos_3; break;
     case LANCZOS_4: return lanczos_4; break;
   }
-
+  return lanczos_3;
 }
 
 

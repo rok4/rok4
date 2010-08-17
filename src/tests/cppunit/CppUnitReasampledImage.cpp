@@ -8,8 +8,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "SSE.h"
-
 using namespace std;
 
 class CppUnitResampledImage : public CPPUNIT_NS::TestFixture
@@ -17,8 +15,7 @@ class CppUnitResampledImage : public CPPUNIT_NS::TestFixture
   CPPUNIT_TEST_SUITE( CppUnitResampledImage );
   // enregistrement des methodes de tests à jouer :
   CPPUNIT_TEST( testResampled );
-  CPPUNIT_TEST( chrono );
-  CPPUNIT_TEST( test_mult );
+  CPPUNIT_TEST( performance );
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -29,7 +26,7 @@ protected:
   void testResampled() {
 
     uint8_t color[4];
-    for(int i = 0; i < 50; i++) {
+    for(int i = 0; i < 20; i++) {
       int width = 200 + rand()%800;
       int height = 200 + rand()%800;
       int channels = 1 + rand()%4;
@@ -58,7 +55,9 @@ protected:
 
       delete R;
     }
+    cerr << "Test ResampledImage OK" << endl;
   }
+
 
   string name(int kernel_type) {
     switch(kernel_type) {
@@ -71,12 +70,10 @@ protected:
     }
   }
 
-
-
   void _chrono(int channels, int kernel_type) {
     uint8_t color[4];
     float buffer[800*4];
-    int nb_iteration = 10;
+    int nb_iteration = 50;
 
     timeval BEGIN, NOW;
     gettimeofday(&BEGIN, NULL);
@@ -88,50 +85,14 @@ protected:
     }
     gettimeofday(&NOW, NULL);
     double time = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
-    cerr << "rééchantillonage 800x600, " << channels << " canaux, " << name(kernel_type) << " : " << nb_iteration << " itérations en " << time << "s" << endl;
+    cerr << time << "s : " << nb_iteration << " rééchantillonages 800x600, " << channels << " canaux, " << name(kernel_type) << endl;
   }
 
-
-
-  void chrono() {
+  void performance() {
     for(int i = 1; i <= 4; i++) 
       for(int j = 0; j < 6; j++) 
         _chrono(i, j);
   }
-
-
-  void test_mult() {
-
-    float to[1024];
-    float from[1024];
-    float w;
-    int nb_iteration = 1000000;
-
-    timeval BEGIN, NOW;
-    gettimeofday(&BEGIN, NULL);
-    for(int i = 0; i < nb_iteration; i++) {
-      mult(to, from, w, 1024);
-    }
-    gettimeofday(&NOW, NULL);
-    double time = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
-    cerr << "mult : " << nb_iteration << " itérations en " << time << "s" << endl;
-
-
-    gettimeofday(&BEGIN, NULL);
-    for(int i = 0; i < nb_iteration; i++) {
-      add_mult(to, from, w, 1024);
-    }
-    gettimeofday(&NOW, NULL);
-    time = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
-    cerr << "add_mult : " << nb_iteration << " itérations en " << time << "s" << endl;
-
-
-  }
-
-
-
-
-
 
 };
 

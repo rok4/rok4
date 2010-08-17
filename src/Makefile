@@ -1,6 +1,6 @@
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3  -mfpmath=sse -msse -msse2 -I"." 
+CXXFLAGS = -O3  -msse2 -I"."
 #conf de debug:
 #CXXFLAGS = -g -O0 -msse2 -I"." 
 LDFLAGS = 
@@ -35,8 +35,8 @@ WMSServer: bindir $(WMSSOBJ)
 	make -C libfcgi
 	make -C tinyxml
 	$(CXX) $(WMSSOBJ) $(FCGIOBJ) $(TIXMLOBJ) -o WMSServer $(LDLIBS)
-	rm -f WMSServer.o
-	mv WMSServer *.o $(FCGIOBJ) $(TIXMLOBJ) $(BINDIR)
+	cp WMSServer *.o $(FCGIOBJ) $(TIXMLOBJ) $(BINDIR)
+	rm $(BINDIR)/WMSServer.o
 	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 Test : Test.o Image.o Tile.o Logger.o TiffEncoder.o PNGEncoder.o 
@@ -45,14 +45,15 @@ Test : Test.o Image.o Tile.o Logger.o TiffEncoder.o PNGEncoder.o
 #
 # cpputest
 # compile et execute les tests unitaires cppunit
-cpputest: clean WMSServer cppubin
+cpputest: WMSServer cppubin
 	$(CPPUBIN)
 
 cppubin: $(CPPUNITOBJ)
 	$(CXX) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(LDCPPUNITLIBS) $(LDLIBS)
-	mv $(CPPUNITOBJ) $(BINDIR)	
+	cp $(CPPUNITOBJ) $(BINDIR)
 
-bindir:
+bindir: 
+	rm -fr $(TGTDIR)
 	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
 	if [ ! -d $(TGTCONFDIR) ] ; then mkdir $(TGTCONFDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
@@ -61,6 +62,8 @@ doc :
 	doxygen $(DOCSDIR)/doxygen.cfg
 
 clean:
-	rm -f *.o $(CPPUNITDIR)/*.o libfcgi/*.o WMSServer	
+	rm -f *.o $(CPPUNITDIR)/*.o WMSServer	
 	rm -fr $(TGTDIR)
 	make -C libfcgi clean
+	make -C tinyxml clean
+	

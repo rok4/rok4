@@ -1,4 +1,9 @@
 #include <cppunit/extensions/HelperMacros.h>
+
+#undef __SSE3__
+#undef __SSE2__
+#undef __SSE__
+
 #include "Utils.h"
 #include <sys/time.h>
 
@@ -10,9 +15,9 @@ template<> inline const char* name<uint8_t>() {return "uint8";}
 template<> inline const char* name<float>() {return "float";}
 
 
-class CppUnitConvert : public CPPUNIT_NS::TestFixture
+class CppUnitConvertnoSSE : public CPPUNIT_NS::TestFixture
 {
-  CPPUNIT_TEST_SUITE( CppUnitConvert );
+  CPPUNIT_TEST_SUITE( CppUnitConvertnoSSE );
   // enregistrement des methodes de tests à jouer :
   CPPUNIT_TEST( uint8_to_float );
   CPPUNIT_TEST( performance );
@@ -40,23 +45,23 @@ protected:
     int nb_iteration = 1000000;
     int length = 1000;
 
-    F from[2048]  __attribute__ ((aligned (32)));
-    T to[2048]    __attribute__ ((aligned (32)));
+    F from[4096]  __attribute__ ((aligned (32)));
+    T to[4096]    __attribute__ ((aligned (32)));
     memset(from, 0, sizeof(from));
 
-    cerr << " -= Conversion " << name<F>() << " -> " << name<T>() << " =-" << endl;
+    cerr << " -= Conversion " << name<F>() << " -> " << name<T>() << " no SSE =-" << endl;
 
     double t = chrono(to, from, length, nb_iteration); 
-    cerr << t << "s : " << nb_iteration << " (x" << length << ") conversions " << name<F>() << " (aligned) -> " << name<T>() << " (aligned)" << endl;
+    cerr << t << "s : " << nb_iteration << " (x" << length << ") " << name<F>() << " (aligned) -> " << name<T>() << " (aligned)" << endl;
 
     t = chrono(to, from+1, length, nb_iteration);
-    cerr << t << "s : " << nb_iteration << " (x" << length << ") conversions " << name<F>() << " (non aligned) -> " << name<T>() << " (aligned)" << endl;
+    cerr << t << "s : " << nb_iteration << " (x" << length << ") " << name<F>() << " (non aligned) -> " << name<T>() << " (aligned)" << endl;
 
     t = chrono(to+1, from, length, nb_iteration);
-    cerr << t << "s : " << nb_iteration << " (x" << length << ") conversions " << name<F>() << " (aligned) -> " << name<T>() << " (non aligned)" << endl;
+    cerr << t << "s : " << nb_iteration << " (x" << length << ") " << name<F>() << " (aligned) -> " << name<T>() << " (non aligned)" << endl;
 
     t = chrono(to+2, from+1, length, nb_iteration);
-    cerr << t << "s : " << nb_iteration << " (x" << length << ") conversions " << name<F>() << " (non aligned) -> " << name<T>() << " (non aligned)" << endl;
+    cerr << t << "s : " << nb_iteration << " (x" << length << ") " << name<F>() << " (non aligned) -> " << name<T>() << " (non aligned)" << endl;
     cerr << endl;
 
   }
@@ -96,5 +101,5 @@ protected:
   }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitConvert );
+CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitConvertnoSSE );
 
