@@ -1,6 +1,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include "Utils.h"
 #include <sys/time.h>
+#include <cstdlib>
 
 #include <iostream>
 using namespace std;

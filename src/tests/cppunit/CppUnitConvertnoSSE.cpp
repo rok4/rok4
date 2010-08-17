@@ -4,8 +4,10 @@
 #undef __SSE2__
 #undef __SSE__
 
+
 #include "Utils.h"
 #include <sys/time.h>
+#include <cstdlib>
 
 #include <iostream>
 using namespace std;
