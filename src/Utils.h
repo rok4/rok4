@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cstdlib>
 
 #ifdef __SSE2__
 #include <emmintrin.h>
