@@ -36,11 +36,11 @@ clean:
 	rm -f *.o $(CPPUNITDIR)/*.o $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a $(CPPUBIN)
 
 include:
-	if [ ! -d $(INCDIR) ] ; then mkdir $(INCDIR) ; fi
+	if [ ! -d $(INCDIR) ] ; then mkdir -p $(INCDIR) ; fi
 	cp $(HEADER) $(INCDIR)
 
 bindir:
-	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
+	if [ ! -d $(BINDIR) ] ; then mkdir -p $(BINDIR) ; fi
 
 
 
@@ -68,4 +68,4 @@ cpputest: archive cppubin
 	$(CPPUBIN)
 
 cppubin: bindir $(DEPLIB) $(CPPUNITOBJ)
-	$(CXX) $(CPPUNITOBJ) $(THISLIB) -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
+	$(CXX) $(CPPUNITOBJ) $(THISLIB).a -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
