@@ -196,8 +196,8 @@ uninstall:
 	if test "$(SHAREDLIBV)" -a -f $(SHAREDLIBV); then \
 	  rm -f $(SHAREDLIBV) $(SHAREDLIB) $(SHAREDLIBM); \
 	fi
-	cd $(DESTDIR)$(man3dir); rm -f zlib.3
-	cd $(DESTDIR)$(pkgconfigdir); rm -f zlib.pc
+#	cd $(DESTDIR)$(man3dir); rm -f zlib.3
+#	cd $(DESTDIR)$(pkgconfigdir); rm -f zlib.pc
 
 docs: zlib.3.pdf
 
@@ -221,7 +221,7 @@ clean:
 	rm -rf objs
 
 maintainer-clean: distclean
-distclean: clean zconf docs
+distclean: clean zconf
 	rm -f Makefile zlib.pc
 	-@rm -f .DS_Store
 	-@printf 'all:\n\t-@echo "Please use ./configure first.  Thank you."\n' > Makefile

@@ -8,10 +8,12 @@ CXXFLAGS = -O3  -msse2 -I"." -I$(INCDIR)
 #CXXFLAGS = -g -O0 -msse2 -I"." 
 LDFLAGS = -L$(LIBDIR)
 LDLIBS = -llog4cxx
-LDCPPUNITLIBS= -lcppunit
+
+DEPLIB= libcppunit
+
 
 # CCFLAGS = -g -ansi
-THISLIB=libimage.a
+THISLIB=image
 BINDIR=../target/bin
 
 # definitions pour CppUnit :
@@ -26,12 +28,12 @@ HEADER= $(wildcard *.h)
 
 all : include archive
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
-	cp $(THISLIB) $(LIBDIR)
+	cp $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a
 
-archive : $(THISLIB)($(OBJ))
+archive : $(THISLIB).a($(OBJ))
 
 clean:
-	rm -f *.o $(CPPUNITDIR)/*.o $(THISLIB)	$(LIBDIR)/$(THISLIB) $(CPPUBIN)
+	rm -f *.o $(CPPUNITDIR)/*.o $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a $(CPPUBIN)
 
 include:
 	if [ ! -d $(INCDIR) ] ; then mkdir $(INCDIR) ; fi
@@ -40,10 +42,30 @@ include:
 bindir:
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 
+
+
+
+# règle générique pour lancer les compilations des librairies dépendnates
+lib%:
+	test -e $(LIBDIR)/$@.a || make -C ../$@
+
+# Lance le goal clean pour une librairie
+clean-lib%:
+	make -C ../lib$* clean
+
+# Nettoie aussi les librairies dépendantes
+very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
+
+
+
+
+
+
+
 # cpputest
 # compile et execute les tests unitaires cppunit
 cpputest: archive cppubin
 	$(CPPUBIN)
 
-cppubin: bindir $(CPPUNITOBJ)
-	$(CXX) $(CPPUNITOBJ) $(THISLIB) -o $(CPPUBIN) $(LDCPPUNITLIBS) $(LDLIBS)
+cppubin: bindir $(DEPLIB) $(CPPUNITOBJ)
+	$(CXX) $(CPPUNITOBJ) $(THISLIB) -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)

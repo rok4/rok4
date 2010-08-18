@@ -1,14 +1,18 @@
+
 INCDIR=../include
 LIBDIR=../lib
+
 
 CXX = g++
 CC  = gcc
 CXXFLAGS = -O3  -msse2 -I"." -I$(INCDIR) 
 #conf de debug:
 #CXXFLAGS = -g -O0 -msse2 -I"." 
-LDFLAGS = -L$(LIBDIR)
-LDLIBS = -limage -ltinyxml -lfcgi -lz -llogger -llog4cxx -lpthread -ljpeg 
-LDCPPUNITLIBS= -lcppunit
+LDFLAGS =
+LDLIBS = -llog4cxx -lpthread 
+
+# Liste de librairies dépendantes embarquées
+DEPLIB= libcppunit libz libjpeg libfcgi libtinyxml liblogger libimage
 
 # CCFLAGS = -g -ansi
 
@@ -31,23 +35,31 @@ all: clean WMSServer
 #
 # WMSServer
 # compile et genere le serveur WMS
-WMSServer: dependencies bindir $(WMSSOBJ)
-	$(CXX) $(LDFLAGS) ../lib/libz.a $(WMSSOBJ) -o WMSServer $(LDLIBS)
+WMSServer: $(DEPLIB) bindir $(WMSSOBJ)
+	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o WMSServer $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
 	cp WMSServer *.o $(FCGIOBJ) $(TIXMLOBJ) $(BINDIR)
 	rm $(BINDIR)/WMSServer.o
 	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
 
-dependencies:
-	make -C ../liblogger
-	make -C ../libz
-	make -C ../libfcgi	
-	make -C ../libtinyxml
-	make -C ../libimage
 
 
 
 
-#Test : Test.o Image.o Tile.o Logger.o TiffEncoder.o PNGEncoder.o 
+# règle générique pour lancer les compilations des librairies dépendnates
+lib%:
+	test -e $(LIBDIR)/$@.a || make -C ../$@
+
+# Lance le goal clean pour une librairie
+clean-lib%:
+	make -C ../lib$* clean
+
+# Nettoie aussi les librairies dépendantes
+very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
+
+
+
+
+
 
 
 #
@@ -56,8 +68,8 @@ dependencies:
 cpputest: WMSServer cppubin
 	$(CPPUBIN)
 
-cppubin: $(CPPUNITOBJ)
-	$(CXX) $(LDFLAGS) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(LDCPPUNITLIBS) $(LDLIBS)
+cppubin: $(DEPLIB) $(CPPUNITOBJ)
+	$(CXX) $(LDFLAGS) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
 	cp $(CPPUNITOBJ) $(BINDIR)
 	make -C ../libimage cpputest
 
@@ -74,11 +86,4 @@ doc :
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o WMSServer	
 	rm -fr $(TGTDIR)
-
-veryclean: clean
-	make -C ../libfcgi clean
-	make -C ../libtinyxml clean
-	make -C ../libimage clean
-	make -C ../liblogger clean
-	make -C ../libz clean
 	
