@@ -5,7 +5,7 @@ LIBDIR=../lib
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3  -march=prescott -msse -msse2 -msse3 -I"." -I$(INCDIR) 
+CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR) 
 #conf de debug:
 #CXXFLAGS = -pg -O0 -msse2 -I"."  -I$(INCDIR)
 LDFLAGS = -pg
