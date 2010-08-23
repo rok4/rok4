@@ -43,7 +43,7 @@
     //
     //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
     //
-     sock = FCGX_OpenSocket(":1998", 50);
+    //  sock = FCGX_OpenSocket(":1998", 50);
 
     if (FCGX_InitRequest(&request, sock, 0)!=0){
     	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");

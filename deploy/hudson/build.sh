@@ -6,7 +6,7 @@ export LD_LIBRARY_PATH=/usr/local/lib
 # building and testing
 cd libwmts
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
-make clean cpputest
+make very-clean cpputest
 if [ $? -ne 0 ] ; then
   exit 1
 fi
