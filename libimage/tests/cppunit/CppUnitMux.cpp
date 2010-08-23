@@ -42,6 +42,15 @@ protected:
     cerr << t << "s : " << nb_iteration << " (x" << length << ") multiplex (aligned)" << endl;
     cerr << endl;
 
+    cerr << " -= Multiplex unaligned =-" << endl;
+
+    gettimeofday(&BEGIN, NULL);
+    for(int i = 0; i < nb_iteration; i++) multiplex_unaligned(T, T1, T2+1, T3+2, T4+3, length);
+    gettimeofday(&NOW, NULL);
+    t = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
+    cerr << t << "s : " << nb_iteration << " (x" << length << ") multiplex (aligned)" << endl;
+    cerr << endl;
+
     cerr << " -= DeMultiplex =-" << endl;
 
     gettimeofday(&BEGIN, NULL);

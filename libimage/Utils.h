@@ -10,12 +10,13 @@
 
 /**
  * Conversion qui n'est qu'une copie.
- * @param to     Tableau d'entiers 8 bits destination
- * @param from   Tableau d'entiers 8 bits source
+ * @param to     Tableau destination
+ * @param from   Tableau source
  * @param length Nombre d'éléments à convertir
  */
-inline void convert(uint8_t* to, const uint8_t* from, size_t length) {
-  memcpy(to, from, length);
+template<typename T>
+inline void convert(T* to, const T* from, size_t length) {
+  memcpy(to, from, length*sizeof(T));
 }
 
 
@@ -79,7 +80,7 @@ inline void convert(uint8_t* to, const float* from, int length) {
     int t = (int) (from[i] + 0.5);
     if(t < 0) to[i] = 0;
     else if(t > 255) to[i] = 255;
-    to[i] = t;
+    else to[i] = t;
   }
 }
 #endif
@@ -154,6 +155,17 @@ inline void add_mult(float* to, const float* from, const float w, int length) {
  * @param T  Tableau de sortie : A1 B1 C1 D1 A2 B2 C2 D2 A3 B3 C3 D3 ...
  * @param length taille des tableau F1, F2, F3, F4.
  */
+
+
+inline void multiplex_unaligned(float* T, const float* F1, const float* F2, const float* F3, const float* F4, int length) { 
+  for(int i = 0; i < length; i++) {
+    T[4*i] = F1[i];
+    T[4*i+1] = F2[i];
+    T[4*i+2] = F3[i];
+    T[4*i+3] = F4[i];
+  }
+}
+
 #ifdef __SSE2__
 inline void multiplex(float* T, const float* F1, const float* F2, const float* F3, const float* F4, int length) {
   while(length & 0x03) { // On s'arrange pour avoir un multiple de 4 d'éléments à traiter.
@@ -181,14 +193,10 @@ inline void multiplex(float* T, const float* F1, const float* F2, const float* F
     _mm_store_ps(T + 16*i+12, _mm_unpackhi_ps(H02, H13));
   }
 }
+
 #else // Version non SSE 
 inline void multiplex(float* T, const float* F1, const float* F2, const float* F3, const float* F4, int length) { 
-  for(int i = 0; i < length; i++) {
-    T[4*i] = F1[i];
-    T[4*i+1] = F2[i];
-    T[4*i+2] = F3[i];
-    T[4*i+3] = F4[i];
-  }
+  return multiplex_unaligned(T, F1, F2, F3, F4, length);
 }
 #endif
 
@@ -269,12 +277,10 @@ inline void dot_prod(int K, float* to, const float* from, const float* W) {
 template<int C> 
 inline void dot_prod(int K, float* to, const float* from, const float* W) {
   float T[4*C];
-  float w = W[0];
-  for(int c = 0; c < 4*C; c++) T[c] = w * from[c];
+  for(int c = 0; c < 4*C; c++) T[c] = W[c%4] * from[c];
 
   for(int i = 1; i < K; i++) {
-    w = W[4*i];
-    for(int c = 0; c < 4*C; c++) T[c] += w * from[4*C*i + c];
+    for(int c = 0; c < 4*C; c++) T[c] += W[4*i+c%4] * from[4*C*i + c];
   }
   for(int c = 0; c < 4*C; c++) to[c] = T[c];
 }

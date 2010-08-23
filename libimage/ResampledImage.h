@@ -45,9 +45,6 @@ class ResampledImage : public Image {
   int* resampled_line_index;
 
 
-   template<int C> 
-   inline void interpolate();
-
 
 /**
  * Rééchantillone une ligne source selon les x.
@@ -56,14 +53,6 @@ class ResampledImage : public Image {
  * @return pointeur vers la ligne rééchantillonnée de width pixels.
  */
   float* resample_src_line(int line);
-
-/**
- * Calcule une ligne destination en float
- *i
- * @param line Indice de la ligne à calculer
- * @return un pointeur vers un buffer contenant la ligne rééchantillonée sur width*channel float
- */
-  float* compute_dst_line(int line);
 
 
   float* Wx;

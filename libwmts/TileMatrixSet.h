@@ -19,6 +19,10 @@ public:
 	std::map<std::string, TileMatrix> tmList; // Ca ne sert à rien de faire un get qui renvoie une ref
 	                                          // FIXME: comment interdire à l'utilisateur de modifier ce map?
 	std::string getId();
+        
+        std::string getCrs() const
+        {return crs;} 
+
 
 	int best_scale(double resolution_x, double resolution_y);
 

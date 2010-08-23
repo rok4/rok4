@@ -25,6 +25,9 @@ class Level {
   /** D */
   virtual Image* getbbox(BoundingBox<double> bbox, int width, int height)=0;
 
+  virtual Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs)=0;
+
+
   /**
    * Renvoie la tuile x, y numéroté depuis l'origine.
    * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
@@ -94,7 +97,10 @@ class TiledLevel : public Level {
   std::string getId();
   int	      getTileCoding();
 
+
   Image* getbbox(BoundingBox<double> bbox, int width, int height);
+
+  Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs = 0);
   /**
    * Renvoie la tuile x, y numéroté depuis l'origine.
    * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)

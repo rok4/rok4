@@ -3,6 +3,7 @@
 #include "Pyramid.h"
 #include "tinyxml.h"
 #include "tinystr.h"
+#include "config.h"
 
 TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	LOGGER_DEBUG("=>buildTileMatrixSet");

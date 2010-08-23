@@ -2,6 +2,7 @@
 #define IMAGE_H
 
 #include <stdint.h>
+#include "BoundingBox.h"
 
 /**
  * Interface de base des classes Image.
@@ -20,9 +21,22 @@ class Image {
   /** Nombre de canaux de l'image */
   const int channels;
 
+  /** 
+   * BoundingBox de l'image dans son système de coordonnées. Celle-ci correspond 
+   * aux coordonnées du coin suppérieur gauche et du coin inférieur droit de l'image.
+   * Note : ces coordonnées sont aux coins des pixels et non au centre de ceux-ci
+   */
+  BoundingBox<double> bbox;
+
+
+  inline double resolution_x() const {return (bbox.xmax - bbox.xmin)/double(width);}
+  inline double resolution_y() const {return (bbox.ymax - bbox.ymin)/double(height);}
+
+
+
   /** Constructeur */
-  Image(int width, int height, int channels) :
-        width(width), height(height), channels(channels) {}
+  Image(int width, int height, int channels, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
+        width(width), height(height), channels(channels), bbox(bbox) {}
   /** 
    * Retourne une ligne en entier 8 bits. 
    * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des entiers 8 bits

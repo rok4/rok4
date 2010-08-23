@@ -5,6 +5,8 @@
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 
+#include "ReprojectedImage.h"
+
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
@@ -30,6 +32,37 @@ int TiledLevel::getTileCoding() {
   LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
   return 0;
 }
+
+/*
+ * A REFAIRE
+ */
+Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs) {
+
+  Grid* grid = new Grid(width, height, bbox);
+  grid->bbox.print();
+
+  grid->reproject("IGNF:LAMB93", dst_crs);
+
+  grid->bbox.print();
+
+  BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - 50),
+                                floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50), 
+                                ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + 50),
+                                ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50)); 
+  // TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpollation
+  //
+
+  bbox_int.print();
+  
+  Image* image = getwindow(bbox_int);
+  image->bbox.xmin = tm.getX0() + tm.getRes() * bbox_int.xmin;
+  image->bbox.xmax = tm.getX0() + tm.getRes() * bbox_int.xmax;
+  image->bbox.ymin = tm.getY0() - tm.getRes() * bbox_int.ymax;
+  image->bbox.ymax = tm.getY0() - tm.getRes() * bbox_int.ymin;
+
+  return new ReprojectedImage(image, bbox, grid);
+}
+
 
 Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height) {
   // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0  
@@ -92,7 +125,7 @@ Image* TiledLevel::getwindow(BoundingBox<int64_t> bbox) {
       T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile, left[x], top[y], right[x], bottom[y],tileCoding);
     }
 
-  if(nbx == 1 && nby == 1) return T[0][0];
+  if(nbx == 1 && nby == 1) return T[0][0];  
   else return new CompoundImage(T);
 }
 

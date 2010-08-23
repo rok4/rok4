@@ -5,14 +5,14 @@ LIBDIR=../lib
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3  -msse2 -I"." -I$(INCDIR) 
+CXXFLAGS = -O3  -march=prescott -msse -msse2 -msse3 -I"." -I$(INCDIR) 
 #conf de debug:
-#CXXFLAGS = -g -O0 -msse2 -I"." 
-LDFLAGS =
-LDLIBS = -llog4cxx -lpthread 
+#CXXFLAGS = -pg -O0 -msse2 -I"."  -I$(INCDIR)
+LDFLAGS = -pg
+LDLIBS = -llog4cxx -lpthread
 
 # Liste de librairies dépendantes embarquées
-DEPLIB= libcppunit libz libjpeg libfcgi libtinyxml liblogger libimage
+DEPLIB= libcppunit libz libjpeg libfcgi libtinyxml liblogger libimage libproj
 
 # CCFLAGS = -g -ansi
 
@@ -31,7 +31,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 WMSSOBJ= WMSServer.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o WMSRequest.o Tile.o
 
-all: clean WMSServer
+all: WMSServer
 #
 # WMSServer
 # compile et genere le serveur WMS

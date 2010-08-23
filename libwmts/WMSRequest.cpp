@@ -127,6 +127,8 @@ void WMSRequest::url_decode(char *src) {
       if(strquery[pos]) strquery[pos++] = 0; // on met un 0 à la fin du char* value
       parseparam(key, value);
     }
+
+    if(crs) for(int i = 0; crs[i]; i++) crs[i] = tolower(crs[i]);
   }
 
 WMSRequest::~WMSRequest() {

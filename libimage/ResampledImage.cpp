@@ -12,6 +12,9 @@
 ResampledImage::ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y,  Kernel::KernelType KT) :
   Image(width, height, image->channels), image(image) , left(left), top(top), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance(KT)) {
 
+    left += 0.5*ratio_x - 0.5; // Pour prendre en compte que les échantillons 
+    top  += 0.5*ratio_y - 0.5; // sont positionnés aux centres des pixels
+
     //  LOGGER_DEBUG( "ResampledImage => Constructeur ");
 
     Kx = ceil(2 * K.size(ratio_x));

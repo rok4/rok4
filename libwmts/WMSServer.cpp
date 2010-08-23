@@ -33,17 +33,25 @@
     int rc;
     FCGX_Request request;
 
-    if (FCGX_InitRequest(&request, 0, 0)!=0){
+    
+    int sock = 0;
+    // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+    // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
+    // Utile 
+    //  * Pour faire du profiling (grof)
+    //  * Pour lancer rok4 sur plusieurs serveurs distants
+    //
+    //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
+    //
+     sock = FCGX_OpenSocket(":1998", 50);
+
+    if (FCGX_InitRequest(&request, sock, 0)!=0){
     	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
     }
 
+//     for(int i = 0; i < 5; i++) {
     while(true){
-//        static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-        /* Some platforms require accept() serialization, some don't.. */
-//        pthread_mutex_lock(&accept_mutex);
         rc = FCGX_Accept_r(&request);
-//        pthread_mutex_unlock(&accept_mutex);
 
         if (rc < 0){
             LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
