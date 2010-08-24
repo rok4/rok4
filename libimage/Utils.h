@@ -27,7 +27,7 @@ inline void convert(T* to, const T* from, size_t length) {
  * @param length Nombre d'éléments à convertir
  */
 #ifdef __SSE2__
-
+/*
 inline void convert(float* to, const uint8_t* from, int length) {
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
   while( (intptr_t)to & 0x0f && length) {--length; *to++ = (float) *from++;}
@@ -39,6 +39,52 @@ inline void convert(float* to, const uint8_t* from, int length) {
   _mm_empty();
   // On traite les derniers éléments si length n'est pas un multuple de 4.
   while(length-- & 0x03) to[length] = (float) from[length];    
+}
+*/
+
+inline void convert(float* to, const uint8_t* from, int length) {
+  while( (intptr_t)to & 0x0f && length) {--length; *to++ = (float) *from++;}
+  while(length & 0x0f) {--length; to[length] = (float) from[length];} // On s'arrange pour avoir un multiple de 16 d'éléments à traiter.
+  length /= 16;
+
+  // On traite les éléments 16 par 16 en utlisant les fonctions intrinsics SSE  
+  __m128i z = _mm_setzero_si128();
+  __m128i* F = (__m128i*) from;
+
+  if((intptr_t)from & 0x0f) 
+  for(int i = 0; i < length; ++i) { // cas from non aligné
+    __m128i m = _mm_loadu_si128(F + i);
+
+    __m128i L = _mm_unpacklo_epi8(m, z);
+    __m128i H = _mm_unpackhi_epi8(m, z);
+
+    __m128i L0 = _mm_unpacklo_epi8(L, z);
+    __m128i L1 = _mm_unpackhi_epi8(L, z);
+    __m128i H0 = _mm_unpacklo_epi8(H, z);
+    __m128i H1 = _mm_unpackhi_epi8(H, z);
+
+    _mm_store_ps(to + 16*i,      _mm_cvtepi32_ps(L0));
+    _mm_store_ps(to + 16*i + 4,  _mm_cvtepi32_ps(L1));
+    _mm_store_ps(to + 16*i + 8,  _mm_cvtepi32_ps(H0));
+    _mm_store_ps(to + 16*i + 12, _mm_cvtepi32_ps(H1));
+  }
+  else for(int i = 0; i < length; ++i) { // cas from aligné
+    __m128i m = _mm_load_si128(F + i);
+
+    __m128i L = _mm_unpacklo_epi8(m, z);
+    __m128i H = _mm_unpackhi_epi8(m, z);
+
+    __m128i L0 = _mm_unpacklo_epi8(L, z);
+    __m128i L1 = _mm_unpackhi_epi8(L, z);
+    __m128i H0 = _mm_unpacklo_epi8(H, z);
+    __m128i H1 = _mm_unpackhi_epi8(H, z);
+
+    _mm_store_ps(to + 16*i,      _mm_cvtepi32_ps(L0));
+    _mm_store_ps(to + 16*i + 4,  _mm_cvtepi32_ps(L1));
+    _mm_store_ps(to + 16*i + 8,  _mm_cvtepi32_ps(H0));
+    _mm_store_ps(to + 16*i + 12, _mm_cvtepi32_ps(H1));
+  }
+
 }
 
 #else // Version non SSE 
@@ -58,8 +104,9 @@ inline void convert(float* to, const uint8_t* from, int length) {
  */
 
 #ifdef __SSE2__
-#define _mm_cvtps_pu8(a) _mm_packs_pu16(_mm_cvtps_pi16(a), _mm_setzero_si64())
 
+/*
+#define _mm_cvtps_pu8(a) _mm_packs_pu16(_mm_cvtps_pi16(a), _mm_setzero_si64())
 inline void convert(uint8_t* to, const float* from, int length) {
   //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
   // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
@@ -72,6 +119,53 @@ inline void convert(uint8_t* to, const float* from, int length) {
   while(length-- & 0x03) to[length] = (uint8_t) _m_to_int(_mm_cvtps_pu8(_mm_load_ss(from + length)));
   // On a utilisé des instructions MMX il faut réinitialiser les registres pour éviter des plantages sur les prochaines instructions FPU
   _mm_empty();
+}
+*/
+inline void convert(uint8_t* to, const float* from, int length) {
+  //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+  //
+  // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
+  while( (intptr_t)from & 0x0f && length) {
+    if(*from > 255) *to = 255;
+    else if(*from < 0) *to = 0;
+    else *to = (uint8_t) *from;
+    ++from;
+    ++to;
+    --length;
+  }
+  while(length & 0x0f)  { // On s'arrange pour avoir un multiple de 16 d'éléments à traiter.
+    --length;
+    if(from[length] > 255) to[length] = 255;
+    else if(from[length] < 0) to[length] = 0;
+    else to[length] = (uint8_t) from[length];
+  }
+
+  // On traite les éléments 16 par 16 en utlisant les fonctions intrinsics SSE  
+  __m128i* T = (__m128i*) to;
+  length /= 16;
+
+  if((intptr_t)to & 0x0f) 
+  for(int i = 0; i < length; i++) { // Cas to non aligné
+    __m128i m1 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i));
+    __m128i m2 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+4));
+    __m128i m3 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+8));
+    __m128i m4 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+12));
+    m1 = _mm_packs_epi32(m1, m2);
+    m3 = _mm_packs_epi32(m3, m4);
+    m1 = _mm_packus_epi16(m1, m3);
+    _mm_storeu_si128(T + i, m1);
+  }
+  else 
+  for(int i = 0; i < length; i++) { // cas to aligné
+    __m128i m1 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i));
+    __m128i m2 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+4));
+    __m128i m3 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+8));
+    __m128i m4 = _mm_cvtps_epi32(_mm_load_ps(from + 16*i+12));
+    m1 = _mm_packs_epi32(m1, m2);
+    m3 = _mm_packs_epi32(m3, m4);
+    m1 = _mm_packus_epi16(m1, m3);
+    _mm_store_si128(T + i, m1);
+  }    
 }
 #else // Version non SSE 
 

@@ -72,10 +72,11 @@ protected:
   void uint8_to_float() {
     double t = 0;
     
-    uint8_t FROM8[32768];
-    float  FLOAT[32768];
-    uint8_t TO8[32768];
+    uint8_t FROM8[32768]   __attribute__ ((aligned (32)));;
+    float  FLOAT[32768]   __attribute__ ((aligned (32)));;
+    uint8_t TO8[32768]   __attribute__ ((aligned (32)));;
     for(int i = 0; i < 32768; i++) FROM8[i] = i;
+
     for(int i = 0; i < 100; i++) {
       int i1 = 4* (rand() % (16384/4));
       int i2 = 4* (rand() % (16384/4));
