@@ -17,10 +17,12 @@ Grid::Grid(int width, int height, BoundingBox<double> bbox) : width(width), heig
   nbx = 2 + (width-1)/step;
   nby = 2 + (height-1)/step;
 
-  double left = bbox.xmin + 0.5;
-  double top  = bbox.ymax - 0.5;   
-  double stepx = step * (bbox.xmax - bbox.xmin)/double(width);
-  double stepy = step * (bbox.ymax - bbox.ymin)/double(height);
+  double ratio_x = (bbox.xmax - bbox.xmin)/double(width);
+  double ratio_y = (bbox.ymax - bbox.ymin)/double(height);
+  double left = bbox.xmin + 0.5 * ratio_x;
+  double top  = bbox.ymax - 0.5 * ratio_y;
+  double stepx = step * ratio_x;
+  double stepy = step * ratio_y;
   
   gridX = new double[nbx*nby];
   gridY = new double[nbx*nby];
@@ -58,7 +60,7 @@ const char *pj_finder(const char *name) {
  * ou proj est une projection de from_srs vers to_srs
  */
 void Grid::reproject(std::string from_srs, std::string to_srs) {
-  
+
   pthread_mutex_lock (& mutex_proj);
   pj_set_finder( pj_finder );
 
@@ -79,9 +81,13 @@ void Grid::reproject(std::string from_srs, std::string to_srs) {
     return;
   }
 
-  pj_transform(pj_dst, pj_src, nbx*nby, 0, gridX, gridY, 0);
-  pthread_mutex_unlock (& mutex_proj);
+  if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
+    gridX[i] *= DEG_TO_RAD;
+    gridY[i] *= DEG_TO_RAD;
+  }
 
+  pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+  pthread_mutex_unlock (& mutex_proj);
   update_bbox();
 }
 

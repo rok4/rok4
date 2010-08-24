@@ -2,6 +2,7 @@
 #include "Pyramid.h"
 #include "Logger.h"
 #include "Error.h"
+#include "Grid.h"
 
 HttpResponse* Pyramid::gettile(int x, int y, std::string tmId) {
 
@@ -47,10 +48,20 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
     }
   }
 
-
-  
   double resolution_x = (bbox.xmax - bbox.xmin) / width;
   double resolution_y = (bbox.ymax - bbox.ymin) / height;
+
+
+  if(dst_crs) { // TODO: ne pas faire la reprojection 2 fois !!!!!
+    Grid* grid = new Grid(width, height, bbox);  
+    grid->reproject(dst_crs, "IGNF:LAMB93");
+    resolution_x = (grid->bbox.xmax - grid->bbox.xmin) / width;
+    resolution_y = (grid->bbox.ymax - grid->bbox.ymin) / height;
+    delete grid;
+  }
+
+
+
   std::string l = best_level(resolution_x, resolution_y);
 //  return levels[l]->getbbox(bbox, width, height);
 

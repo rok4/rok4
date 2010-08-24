@@ -41,16 +41,15 @@ Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height, cons
   Grid* grid = new Grid(width, height, bbox);
   grid->bbox.print();
 
-  grid->reproject("IGNF:LAMB93", dst_crs);
+  grid->reproject(dst_crs, "IGNF:LAMB93"); // FIXME : prendre en compte le SRS du cache (pas forcément LAMB93)
 
   grid->bbox.print();
 
   BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - 50),
                                 floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50), 
                                 ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + 50),
-                                ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50)); 
+                                ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50));
   // TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpollation
-  //
 
   bbox_int.print();
   
