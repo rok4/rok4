@@ -2,7 +2,7 @@
 #define LAYER_H_
 
 #include <vector>
-#include <cstring>
+#include <string>
 #include "Pyramid.h"
 
 class Layer {

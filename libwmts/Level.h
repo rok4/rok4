@@ -8,71 +8,24 @@
 #include "BoundingBox.h"
 #include "TileMatrix.h"
 
-  /** La classe Level est une interface permettant d'utiliser les différents TiledLevel<Decoder>
-   *  de façon unifié. Cette interface à vocation à disparaitre au profit d'un TiledLevel unique
-   *  sans template. */
+
+/**
+  */
+
 class Level {
-  protected:
-  /**
-   * Renvoie une image de taille width, height
-   *
-   * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tiley.
-   * Toutes les coordonnées sont entières depuis le coin haut gauche.
-   */
-  virtual Image* getwindow(BoundingBox<int64_t> src_bbox) = 0;
-
-  public:
-  /** D */
-  virtual Image* getbbox(BoundingBox<double> bbox, int width, int height)=0;
-
-  virtual Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs)=0;
-
-
-  /**
-   * Renvoie la tuile x, y numéroté depuis l'origine.
-   * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
-   * Les indices de tuiles augmentes vers la droite et vers le bas.
-   * Des indices de tuiles négatifs sont interdits
-   * 
-   * La tuile contenant la coordonnées (X, Y) dans le srs d'origine a pour indice :
-   * x = floor((X - X0) / (tile_width * resolution_x))
-   * y = floor((Y - Y0) / (tile_height * resolution_y))
-   */
-  virtual HttpResponse* gettile(int x, int y) = 0;
-  virtual double        getRes()=0;
-
-  /**
-   * Destructeur virtuel. Permet de lancer les destructeurs des classes filles
-   * lors de la destruction d'un pointeur Level.
-   */
-   virtual ~Level(){};
-};
-
-
-
-
-/** La classe TiledLevel utilise un template <Decoder>.
- *  C'est pour en simplifier l'utilisation que la classe Level a été créée.
- *  Il ne s'agit pas d'un type de Level particulier, il n'y aura pas de Level
- *  non tuilé.
- *  Il est prévu de simplifier cela en supprimant le template et en ne faisant
- *  qu'une seule classe Level. Cette modification n'étant pas simple, elle est
- *  prévue pour plus tard.*/
-
-class TiledLevel : public Level {
   private:
 
-  std::string baseDir;
-  int pathDepth;
+  std::string   baseDir;
+  int           pathDepth;
   TileMatrix  & tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
   const std::string format; //format d'image des block de tuiles du cache.
-  const int channels;
+  const int     channels;
   const int32_t maxTileRow;
   const int32_t minTileRow;
   const int32_t maxTileCol;
   const int32_t minTileCol;
-  uint32_t tilesPerWidth; //nombre de tuiles par dalle dans le sens de la largeur
-  uint32_t tilesPerHeight; //nombre de tuiles par dalle dans le sens de la hauteur
+  uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
+  uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
 
   std::string getfilepath(int tilex, int tiley);
 
@@ -100,7 +53,7 @@ class TiledLevel : public Level {
 
   Image* getbbox(BoundingBox<double> bbox, int width, int height);
 
-  Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs = 0);
+  Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs);
   /**
    * Renvoie la tuile x, y numéroté depuis l'origine.
    * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
@@ -115,11 +68,11 @@ class TiledLevel : public Level {
 
    
 /** D */
- TiledLevel(TileMatrix &tm, int channels, std::string baseDir,
+  Level(TileMatrix &tm, int channels, std::string baseDir,
 		    int tilesPerWidth, int tilesPerHeight,
 		    uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
 		    int pathDepth, std::string format) :
-	        Level(), tm(tm), channels(channels), baseDir(baseDir),
+	        tm(tm), channels(channels), baseDir(baseDir),
 	        tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight),
 		    maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol),
 	        pathDepth(pathDepth), format(format) {}

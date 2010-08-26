@@ -1,7 +1,7 @@
 #ifndef TILEMATRIXSET_H_
 #define TILEMATRIXSET_H_
 
-#include <cstring>
+#include <string>
 #include <vector>
 #include <map>
 #include "TileMatrix.h"

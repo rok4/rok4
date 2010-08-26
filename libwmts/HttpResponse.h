@@ -44,10 +44,11 @@ class StaticHttpResponse : public HttpResponse {
       LOGGER_DEBUG( " StaticHttpResponse " << size << " " << (void*) data );
   }
 
-  /** D */
+/** D */
   ~StaticHttpResponse() {
-LOGGER_DEBUG("Destruction statichhtp");
-delete[] data;}
+	LOGGER_DEBUG("Destruction statichhtp");
+	delete[] data;
+  }
 
   /** D */
   const uint8_t* get_data(size_t &sz) {    

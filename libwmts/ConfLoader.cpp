@@ -308,7 +308,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 			}
 		}
 
-		Level *TL = new TiledLevel(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
+		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 									maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth,format);
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels

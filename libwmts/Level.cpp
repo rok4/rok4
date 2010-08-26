@@ -14,15 +14,15 @@
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
                     //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
-TileMatrix const & TiledLevel::getTm(){return tm;}
-std::string TiledLevel::getFormat(){return format;}
-uint32_t TiledLevel::getMaxTileRow(){return maxTileRow;}
-uint32_t TiledLevel::getMinTileRow(){return minTileRow;}
-uint32_t TiledLevel::getMaxTileCol(){return maxTileCol;}
-uint32_t TiledLevel::getMinTileCol(){return minTileCol;}
-double TiledLevel::getRes(){return tm.getRes();}
-std::string TiledLevel::getId(){return tm.getId();}
-int TiledLevel::getTileCoding() {
+TileMatrix const & Level::getTm(){return tm;}
+std::string Level::getFormat(){return format;}
+uint32_t Level::getMaxTileRow(){return maxTileRow;}
+uint32_t Level::getMinTileRow(){return minTileRow;}
+uint32_t Level::getMaxTileCol(){return maxTileCol;}
+uint32_t Level::getMinTileCol(){return minTileCol;}
+double Level::getRes(){return tm.getRes();}
+std::string Level::getId(){return tm.getId();}
+int Level::getTileCoding() {
   if (format.compare("TIFF_INT8")==0)
         return RAW_UINT8;
   else if (format.compare("TIFF_JPG_INT8")==0)
@@ -36,7 +36,7 @@ int TiledLevel::getTileCoding() {
 /*
  * A REFAIRE
  */
-Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs) {
+Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs) {
 
   Grid* grid = new Grid(width, height, bbox);
   grid->bbox.print();
@@ -46,7 +46,7 @@ Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height, cons
   grid->bbox.print();
 
   BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - 50),
-                                floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50), 
+                                floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50),
                                 ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + 50),
                                 ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50));
   // TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpollation
@@ -63,7 +63,7 @@ Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height, cons
 }
 
 
-Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height) {
+Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
   // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0  
   bbox.xmin = (bbox.xmin - tm.getX0())/tm.getRes();
   bbox.xmax = (bbox.xmax - tm.getX0())/tm.getRes();
@@ -98,7 +98,7 @@ Image* TiledLevel::getbbox(BoundingBox<double> bbox, int width, int height) {
 }
 
 
-Image* TiledLevel::getwindow(BoundingBox<int64_t> bbox) {
+Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 
   int tile_xmin = bbox.xmin / tm.getTileW();
   int tile_xmax = (bbox.xmax -1)/ tm.getTileW();
@@ -143,7 +143,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  *
  *
  */
-std::string TiledLevel::getfilepath(int tilex, int tiley) {
+std::string Level::getfilepath(int tilex, int tiley) {
   LOGGER_DEBUG (" getfilepath " << tilex << " " << tiley << " " << tilesPerWidth << " " << tilesPerHeight) ;
 
   int x = tilex / tilesPerWidth;
@@ -178,7 +178,7 @@ std::string TiledLevel::getfilepath(int tilex, int tiley) {
 }
 
 
-StaticHttpResponse* TiledLevel::gettile(int x, int y)
+StaticHttpResponse* Level::gettile(int x, int y)
 {
   int tileCoding=getTileCoding();
   int typeSize=1;
@@ -189,7 +189,7 @@ StaticHttpResponse* TiledLevel::gettile(int x, int y)
   else
 	LOGGER_ERROR("Taille du type non connu");
 
-  LOGGER_DEBUG( " TiledLevel: gettile " << x << " " << y );
+  LOGGER_DEBUG( " Level: gettile " << x << " " << y );
   
   if(x < 0 || y < 0) {
     uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
@@ -198,19 +198,19 @@ StaticHttpResponse* TiledLevel::gettile(int x, int y)
 
   std::string file_path = getfilepath(x, y);
 
-  LOGGER_DEBUG( " TiledLevel: gettile " << file_path );
+  LOGGER_DEBUG( " Level: gettile " << file_path );
 
   uint32_t size;
   int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth); // Index de la tuile
   uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
 
-  LOGGER_DEBUG( " TiledLevel: gettile " << posoff << " " <<  possize );
+  LOGGER_DEBUG( " Level: gettile " << posoff << " " <<  possize );
   const uint8_t *data = FileManager::gettile(file_path, size, posoff, possize);
-  LOGGER_DEBUG( " TiledLevel: gettile " << size );
+  LOGGER_DEBUG( " Level: gettile " << size );
 
   if(data) return new StaticHttpResponse("bubu", data, size);
   else {
-    LOGGER_DEBUG( " TiledLevel: gettile " << size );
+    LOGGER_DEBUG( " Level: gettile " << size );
 
     uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
     return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*typeSize);

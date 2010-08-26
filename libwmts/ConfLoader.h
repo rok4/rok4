@@ -2,7 +2,7 @@
 #define CONFLOADER_H_
 
 #include <vector>
-#include <cstring>
+#include <string>
 #include "ServicesConf.h"
 #include "Layer.h"
 #include "TileMatrixSet.h"

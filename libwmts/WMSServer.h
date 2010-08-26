@@ -18,16 +18,12 @@
 class WMSServer {
   private:
   int nbThread;
-  pthread_t Thread[128]; /* tableau des threads => 128 thread max! */
+  pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
   ResponseSender S;
 
   ServicesConf &servicesConf;
   std::map<std::string, Layer*> layers;
   std::map<std::string,TileMatrixSet*> tmsList;
-
-  /* NV:REFACTOR:maintenant les pyramides sont référencées par les layers.
-  std::map<std::string, Pyramid*> pyramids;
-  */
 
   static void* thread_loop(void* arg);
 
