@@ -14,11 +14,6 @@
 ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Kernel::KernelType KT) 
   : Image(grid->width, grid->height, image->channels, bbox), image(image), grid(grid), K(Kernel::getInstance(KT)) {
     
-    
-    LOGGER_DEBUG("bbox =" << bbox.xmin << " " << bbox.xmax << " " << bbox.ymin << " " << bbox.ymax);
-    LOGGER_DEBUG("ibbox =" << image->bbox.xmin << " " << image->bbox.xmax << " " << image->bbox.ymin << " " << image->bbox.ymax);
-
-
     double res_x = image->resolution_x();
     double res_y = image->resolution_y();
     grid->bbox.print();
@@ -29,9 +24,6 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 
     Kx = ceil(2 * K.size(ratio_x));
     Ky = ceil(2 * K.size(ratio_y));
-
-    LOGGER_DEBUG("KX = " << Kx << " Ky = " << Ky);
- 
 
     int sz1 = 4*((image->width*channels + 3)/4);  // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
     int sz2 = 4*((width*channels + 3)/4);         // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
@@ -111,18 +103,26 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
       for(int i = 0; i < 4; i++) {
         Ix[i] = (X[i][x] - floor(X[i][x])) * 1024;
         Iy[i] = (Y[i][x] - floor(Y[i][x])) * 1024;
-//        std::cerr << "Ix " << i << " " << Ix[i] << " " << Iy[i] << " " << xmin[Ix[i]] << " " << ymin[Iy[i]] << std::endl;
       }
 
       multiplex(WWx, Wx[Ix[0]], Wx[Ix[1]], Wx[Ix[2]], Wx[Ix[3]], Kx);
       multiplex(WWy, Wy[Iy[0]], Wy[Iy[1]], Wy[Iy[2]], Wy[Iy[3]], Ky);
 
+      int y0 = (int)(Y[0][x]) + ymin[Iy[0]];
+      int y1 = (int)(Y[1][x]) + ymin[Iy[1]];
+      int y2 = (int)(Y[2][x]) + ymin[Iy[2]];
+      int y3 = (int)(Y[3][x]) + ymin[Iy[3]];
+      int dx0 = ((int)(X[0][x]) + xmin[Ix[0]])*channels;
+      int dx1 = ((int)(X[1][x]) + xmin[Ix[1]])*channels;
+      int dx2 = ((int)(X[2][x]) + xmin[Ix[2]])*channels;
+      int dx3 = ((int)(X[3][x]) + xmin[Ix[3]])*channels;
+
       for(int j = 0; j < Ky; j++) {
         multiplex_unaligned(TMP1,
-                  src_line_buffer[(int)(Y[0][x]) + ymin[Iy[0]] + j] + ((int)(X[0][x]) + xmin[Ix[0]])*channels,
-                  src_line_buffer[(int)(Y[1][x]) + ymin[Iy[1]] + j] + ((int)(X[1][x]) + xmin[Ix[1]])*channels,
-                  src_line_buffer[(int)(Y[2][x]) + ymin[Iy[2]] + j] + ((int)(X[2][x]) + xmin[Ix[2]])*channels,
-                  src_line_buffer[(int)(Y[3][x]) + ymin[Iy[3]] + j] + ((int)(X[3][x]) + xmin[Ix[3]])*channels,
+                  src_line_buffer[y0 + j] + dx0,
+                  src_line_buffer[y1 + j] + dx1,
+                  src_line_buffer[y2 + j] + dx2,
+                  src_line_buffer[y3 + j] + dx3,
                   Kx * channels);
         dot_prod(channels, Kx, TMP2 + 4*j*channels, TMP1, WWx);
       }

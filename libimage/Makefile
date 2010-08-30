@@ -6,9 +6,9 @@ CC  = gcc
 CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR)
 #conf de debug:
 #CXXFLAGS = -pg -O0 -msse2 -I"." -I$(INCDIR)
-LDLIBS = -llog4cxx
+LDLIBS = -lpthread
 
-DEPLIB= libcppunit
+DEPLIB= libcppunit libproj liblogger
 
 
 # CCFLAGS = -g -ansi
@@ -25,11 +25,11 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 OBJ= $(patsubst %.cpp, %.o, $(wildcard *.cpp)) 
 HEADER= $(wildcard *.h)
 
-all : include archive
+all : $(DEPLIB) include archive
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
-	cp $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a
-
+	
 archive : $(THISLIB).a($(OBJ))
+	cp $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a
 
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a $(CPPUBIN)
@@ -43,7 +43,6 @@ bindir:
 
 
 
-
 # règle générique pour lancer les compilations des librairies dépendnates
 lib%:
 	test -e $(LIBDIR)/$@.a || make -C ../$@
@@ -54,9 +53,6 @@ clean-lib%:
 
 # Nettoie aussi les librairies dépendantes
 very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
-
-
-
 
 
 

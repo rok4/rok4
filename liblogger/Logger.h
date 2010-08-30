@@ -1,27 +1,26 @@
 #ifndef _LOGGER_
 #define _LOGGER_
 
-#include <log4cxx/logger.h>
-#include <log4cxx/xml/domconfigurator.h>
-#include <iostream>
+#include <ostream>
+
+
 
 
 typedef enum{DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3, FATAL = 4} LogLevel;
+std::ostream &logger(LogLevel l);
 
 class Logger {
-private:
 public:
-        static log4cxx::LoggerPtr logger;
-
-public:
-        static void configure(std::string confFileName);
+   static void configure(std::string logFileName);
 };
 
-#define LOGGER_DEBUG(m) LOG4CXX_DEBUG(Logger::logger,m)
-#define LOGGER_INFO(m)  LOG4CXX_INFO( Logger::logger,m)
-#define LOGGER_WARN(m)  LOG4CXX_WARN( Logger::logger,m)
-#define LOGGER_ERROR(m) LOG4CXX_ERROR(Logger::logger,m)
-#define LOGGER_FATAL(m) LOG4CXX_FATAL(Logger::logger,m)
- 
+
+#define LOGGER(x) logger(x)<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "
+#define LOGGER_DEBUG(m) logger(DEBUG)<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
+#define LOGGER_INFO(m)  logger(INFO)<<m<<std::endl
+#define LOGGER_WARN(m)  logger(WARN)<<m<<std::endl
+#define LOGGER_ERROR(m) logger(ERROR)<<m<<std::endl
+#define LOGGER_FATAL(m) logger(FATAL)<<m<<std::endl
+
 
 #endif

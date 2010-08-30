@@ -21,6 +21,8 @@ class WMSServer {
   pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
   ResponseSender S;
 
+  int sock;
+
   ServicesConf &servicesConf;
   std::map<std::string, Layer*> layers;
   std::map<std::string,TileMatrixSet*> tmsList;

@@ -2,6 +2,8 @@
 #define UTILS_H
 
 #include <cstring>
+#include <stdint.h>
+
 
 #ifdef __SSE2__
 #include <emmintrin.h>
@@ -27,20 +29,6 @@ inline void convert(T* to, const T* from, size_t length) {
  * @param length Nombre d'éléments à convertir
  */
 #ifdef __SSE2__
-/*
-inline void convert(float* to, const uint8_t* from, int length) {
-  // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
-  while( (intptr_t)to & 0x0f && length) {--length; *to++ = (float) *from++;}
-  // On traite les éléments 4 par 4 en utlisant les fonctions intrinsics SSE
-  __m128* T = (__m128*) to;
-  int* F = (int*) from;
-  for(int i = length/4; i--;) *T++ = _mm_cvtpu8_ps(_m_from_int(*F++));
-  // On a utilisé des instructions MMX il faut réinitialiser les registres pour éviter des plantages sur les prochaines instructions FPU
-  _mm_empty();
-  // On traite les derniers éléments si length n'est pas un multuple de 4.
-  while(length-- & 0x03) to[length] = (float) from[length];    
-}
-*/
 
 inline void convert(float* to, const uint8_t* from, int length) {
   while( (intptr_t)to & 0x0f && length) {--length; *to++ = (float) *from++;}
@@ -105,22 +93,6 @@ inline void convert(float* to, const uint8_t* from, int length) {
 
 #ifdef __SSE2__
 
-/*
-#define _mm_cvtps_pu8(a) _mm_packs_pu16(_mm_cvtps_pi16(a), _mm_setzero_si64())
-inline void convert(uint8_t* to, const float* from, int length) {
-  //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
-  // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
-  while( (intptr_t)from & 0x0f && length) {--length; *to++ = (uint8_t) _m_to_int(_mm_cvtps_pu8(_mm_load_ss(from++)));}
-  // On traite les éléments 4 par 4 en utlisant les fonctions intrinsics SSE
-  int* T = (int*) to;
-  __m128* F = (__m128*) from;
-  for(int i = length/4; i--;) *T++ = _m_to_int(_mm_cvtps_pu8(*F++));
-  // On traite les derniers éléments si length n'est pas un multuple de 4.
-  while(length-- & 0x03) to[length] = (uint8_t) _m_to_int(_mm_cvtps_pu8(_mm_load_ss(from + length)));
-  // On a utilisé des instructions MMX il faut réinitialiser les registres pour éviter des plantages sur les prochaines instructions FPU
-  _mm_empty();
-}
-*/
 inline void convert(uint8_t* to, const float* from, int length) {
   //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
   //
@@ -376,7 +348,7 @@ inline void dot_prod(int K, float* to, const float* from, const float* W) {
   for(int i = 1; i < K; i++) {
     for(int c = 0; c < 4*C; c++) T[c] += W[4*i+c%4] * from[4*C*i + c];
   }
-  for(int c = 0; c < 4*C; c++) to[c] = T[c];
+  for(int c = 0; c < 4*C; c++) to[c] = T[c];  
 }
 #endif
 

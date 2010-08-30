@@ -34,7 +34,7 @@
     FCGX_Request request;
 
     
-    int sock = 0;
+//    int sock = 0;
     // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
     // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
     // Utile 
@@ -43,9 +43,8 @@
     //
     //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
     //
-    //  sock = FCGX_OpenSocket(":1998", 50);
 
-    if (FCGX_InitRequest(&request, sock, 0)!=0){
+    if (FCGX_InitRequest(&request, server->sock, 0)!=0){
     	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
     }
 
@@ -78,8 +77,9 @@ Construction du serveur
 */
 
   WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList) :
-		               nbThread(nbThread), servicesConf(servicesConf), layers(layers), tmsList(tmsList) {
+		               nbThread(nbThread), sock(0), servicesConf(servicesConf), layers(layers), tmsList(tmsList) {
 	int init=FCGX_Init();
+//        sock = FCGX_OpenSocket(":1998", 50);
   }
 	
 
@@ -192,7 +192,7 @@ Construction du serveur
       }
 
       /* Chargement de la conf technique du serveur */
-      Logger::configure(LOG_CONF_PATH);
+      Logger::configure("/var/tmp/rok4cxx.log");
       LOGGER_INFO( "Lancement du serveur ROK4");
 
       //chargement de la conf technique

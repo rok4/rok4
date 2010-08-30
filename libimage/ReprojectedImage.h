@@ -50,7 +50,7 @@ class ReprojectedImage : public Image {
   float* compute_dst_line(int line);
 
   public:
-  ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Kernel::KernelType KT = Kernel::LANCZOS_3);
+  ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Kernel::KernelType KT = Kernel::LANCZOS_2);
 
   int getline(float* buffer, int line);
 

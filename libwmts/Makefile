@@ -5,14 +5,14 @@ LIBDIR=../lib
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR) 
+CXXFLAGS = -g -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR) 
 #conf de debug:
 #CXXFLAGS = -pg -O0 -msse2 -I"."  -I$(INCDIR)
 LDFLAGS =
-LDLIBS = -llog4cxx -lpthread
+LDLIBS = -lpthread
 
 # Liste de librairies dépendantes embarquées
-DEPLIB= libcppunit libz libjpeg libfcgi libtinyxml liblogger libimage libproj
+DEPLIB= libimage liblogger libcppunit libz libjpeg libfcgi libtinyxml libproj   
 
 # CCFLAGS = -g -ansi
 

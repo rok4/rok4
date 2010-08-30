@@ -193,7 +193,7 @@ StaticHttpResponse* Level::gettile(int x, int y)
   
   if(x < 0 || y < 0) {
     uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
-    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
+    return new StaticHttpResponse("image/jpeg", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
   }
 
   std::string file_path = getfilepath(x, y);
@@ -208,12 +208,12 @@ StaticHttpResponse* Level::gettile(int x, int y)
   const uint8_t *data = FileManager::gettile(file_path, size, posoff, possize);
   LOGGER_DEBUG( " Level: gettile " << size );
 
-  if(data) return new StaticHttpResponse("bubu", data, size);
+  if(data) return new StaticHttpResponse("image/jpeg", data, size);
   else {
     LOGGER_DEBUG( " Level: gettile " << size );
 
     uint8_t* T = new uint8_t[tm.getTileW()*tm.getTileH()*channels*typeSize];
-    return new StaticHttpResponse("bubu", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
+    return new StaticHttpResponse("image/jpeg", T, tm.getTileW()*tm.getTileH()*channels*typeSize);
   }
 }
 

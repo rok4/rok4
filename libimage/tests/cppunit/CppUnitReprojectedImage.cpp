@@ -1,6 +1,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "ResampledImage.h"
+#include "ReprojectedImage.h"
 #include "EmptyImage.h"
 #include <sys/time.h>
 #include <cmath>
@@ -10,11 +10,11 @@
 
 using namespace std;
 
-class CppUnitResampledImage : public CPPUNIT_NS::TestFixture
+class CppUnitReprojectedImage : public CPPUNIT_NS::TestFixture
 {
-  CPPUNIT_TEST_SUITE( CppUnitResampledImage );
+  CPPUNIT_TEST_SUITE( CppUnitReprojectedImage );
   // enregistrement des methodes de tests à jouer :
-  CPPUNIT_TEST( testResampled );
+//  CPPUNIT_TEST( testReproject );
   CPPUNIT_TEST( performance );
   CPPUNIT_TEST_SUITE_END();
 
@@ -22,7 +22,7 @@ public:
   void setUp() {};
 
 protected:
-
+/*
   void testResampled() {
 
     uint8_t color[4];
@@ -57,7 +57,7 @@ protected:
     }
     cerr << "Test ResampledImage OK" << endl;
   }
-
+*/
 
   string name(int kernel_type) {
     switch(kernel_type) {
@@ -73,19 +73,29 @@ protected:
   void _chrono(int channels, int kernel_type) {
     uint8_t color[4];
     float buffer[800*4] __attribute__ ((aligned (32)));
-    int nb_iteration = 50;
+    int nb_iteration = 20;
 
     timeval BEGIN, NOW;
     gettimeofday(&BEGIN, NULL);
+
     for(int i = 0; i < nb_iteration; i++) {
-      Image* image = new EmptyImage(1300, 1000, channels, color);
-      ResampledImage* R = new ResampledImage(image, 800, 600, 50, 50, 1.5, 1.5, Kernel::KernelType(kernel_type));
+      BoundingBox<double> bbox(500000, 6500000, 501000, 6501000);
+      Grid* grid = new Grid(800, 600, bbox);
+      grid->reproject("IGNF:LAMBE", "IGNF:LAMB93");
+
+      Image* image = new EmptyImage(1024, 768, channels, color);
+      image->bbox.xmin = grid->bbox.xmin - 100;
+      image->bbox.ymin = grid->bbox.ymin - 100;
+      image->bbox.xmax = grid->bbox.xmax + 100;
+      image->bbox.ymax = grid->bbox.ymax + 100;
+            
+      ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Kernel::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
       delete R;
     }
     gettimeofday(&NOW, NULL);
     double time = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
-    cerr << time << "s : " << nb_iteration << " rééchantillonages 800x600, " << channels << " canaux, " << name(kernel_type) << endl;
+    cerr << time << "s : " << nb_iteration << " reprojection 800x600, " << channels << " canaux, " << name(kernel_type) << endl;
   }
 
   void performance() {
@@ -96,6 +106,6 @@ protected:
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitResampledImage );
+CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitReprojectedImage );
 
 

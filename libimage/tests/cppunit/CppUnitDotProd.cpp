@@ -29,6 +29,7 @@ protected:
     for(int i = 0; i < nb_iteration; i++) dot_prod(c, k, to, from, W);
     gettimeofday(&NOW, NULL);
     double time = NOW.tv_sec - BEGIN.tv_sec + (NOW.tv_usec - BEGIN.tv_usec)/1000000.;
+//    time += to[0] * 1e-20;    
     return time;
   }
 
@@ -40,8 +41,8 @@ protected:
     float from[2000]  __attribute__ ((aligned (32)));
     float to[2000]    __attribute__ ((aligned (32)));
     float W[128]      __attribute__ ((aligned (32)));
-    memset(from, 0, sizeof(from));
-    memset(W, 0, sizeof(W));
+    for(int i = 0; i < 2000; i++) from[i] = i;
+    for(int i = 0; i < 128; i++) W[i] = i;
 
     cerr << " -= Dot Product =-" << endl;
     for(int k = 1; k <= 6; k++) 
