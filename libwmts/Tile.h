@@ -55,29 +55,7 @@ class Tile : public Image {
     return width * channels;
   }
 
-  Tile(int tile_width, int tile_height, int channels, StaticHttpResponse* data, int left, int top, int right, int bottom, int coding) :
-  Image(tile_width - left - right, tile_height - top - bottom, channels), data(data), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding) {
-    raw_data = new uint8_t[tile_width * tile_height * channels];
-    size_t encoded_size;
-    const uint8_t* encoded_data = data->get_data(encoded_size);
-    LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels << " " << (void *) encoded_data << " " << encoded_size );
-
-    if (coding==RAW_UINT8 || coding==RAW_FLOAT) {
-	RawDecoder::decode(encoded_data, encoded_size, raw_data);
-    }
-    else if (coding==JPEG_UINT8) {
-	JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-    }
-    else if (coding==PNG_UINT8) {
-	LOGGER_DEBUG("CHANNELS : " << channels);
-        PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-    }
-    else
-	LOGGER_ERROR("Codage inconnu");
-
-  //  Decoder::decode(encoded_data, encoded_size, raw_data);
-    LOGGER_DEBUG( " Tile " << width << " " << height << " " << channels << " " << encoded_size );    
-  }
+  Tile(int tile_width, int tile_height, int channels, StaticHttpResponse* data, int left, int top, int right, int bottom, int coding);
 
   ~Tile() {
    delete[] raw_data;
