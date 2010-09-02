@@ -24,8 +24,9 @@ fi
 ROK4BASE=/var/www/hudson/rok4
 echo "\n\n\n\n***  DEPLOIEMENT    *****"
 cd ../target
-rm -fr $ROK4BASE/bin/
+rm -fr $ROK4BASE/bin/*
 cp bin/rok4 $ROK4BASE/bin/
+rm -fr $ROK4BASE/config/*
 cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
