@@ -20,7 +20,7 @@ all: clean tiff2tile
 
 tiff2tile: $(TIFF2TILEOBJ)
 	$(CXX) $(TIFF2TILEOBJ) -o tiff2tile $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp tiff2tile $(BINDIR)
+	mv tiff2tile $(BINDIR)
 	cp TiffReader.h $(INCDIR)
 	cp TiledTiffWriter.h $(INCDIR)
 clean:

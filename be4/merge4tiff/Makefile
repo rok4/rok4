@@ -20,7 +20,7 @@ all: clean merge4tiff
 
 merge4tiff: $(MERGE4TIFFOBJ)
 	$(CXX) $(MERGE4TIFFOBJ) -o merge4tiff $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp merge4tiff $(BINDIR)
+	mv merge4tiff $(BINDIR)
 
 clean:
 	rm -f *.o

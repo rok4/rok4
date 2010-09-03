@@ -20,7 +20,7 @@ all: clean dalles_base
 
 dalles_base: $(DALLESBASEOBJ)
 	$(CXX) $(DALLESBASEOBJ) -o dalles_base $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp dalles_base $(BINDIR)
+	mv dalles_base $(BINDIR)
 
 clean:
 	rm -f *.o
