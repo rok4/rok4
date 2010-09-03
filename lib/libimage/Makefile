@@ -26,7 +26,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 OBJ= $(patsubst %.cpp, %.o, $(wildcard *.cpp)) 
 HEADER= $(wildcard *.h)
 
-all : $(DEPLIB) tgtdir include archive
+all : tgtdir include $(DEPLIB) archive
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
 	
 archive : $(THISLIB).a($(OBJ))
@@ -64,8 +64,9 @@ very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
 
 # cpputest
 # compile et execute les tests unitaires cppunit
-cpputest: archive cppubin
+#cpputest: archive cppubin
+cpputest: cppubin
 	$(CPPUBIN)
 
-cppubin: bindir $(DEPLIB) $(CPPUNITOBJ)
+cppubin: include bindir $(DEPLIB) archive $(CPPUNITOBJ)
 	$(CXX) $(CPPUNITOBJ) $(THISLIB).a -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
