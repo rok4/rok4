@@ -34,26 +34,24 @@ all: WMSServer
 #
 # WMSServer
 # compile et genere le serveur WMS
-WMSServer: bindir libs $(WMSSOBJ)
+WMSServer: bindir $(DEPLIB) $(WMSSOBJ)
 	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o WMSServer $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
 	cp WMSServer *.o $(BINDIR)
 	rm $(BINDIR)/WMSServer.o
 	mv $(BINDIR)/WMSServer $(BINDIR)/rok4
 	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
 
-libs :
-	make -C ../lib
 
 # règle générique pour lancer les compilations des librairies dépendnates
-#lib%:
-#	test -e $(LIBDIR)/$@.a || make -C ../lib/$@
+lib%:
+	test -e $(LIBDIR)/$@.a || make -C ../lib/$@
 
 # Lance le goal clean pour une librairie
-# clean-lib%:
-# 	make -C ../lib/lib$* clean
+clean-lib%:
+	make -C ../lib/lib$* clean
 
 # Nettoie aussi les librairies dépendantes
-#very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
+very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
 
 test: cpputest
 
@@ -63,10 +61,10 @@ test: cpputest
 cpputest: WMSServer cppubin
 	$(CPPUBIN)
 
-cppubin: libs $(CPPUNITOBJ)
+cppubin: $(CPPUNITOBJ)
 	$(CXX) $(LDFLAGS) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
 	cp $(CPPUNITOBJ) $(BINDIR)
-#	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
+	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
 
 
 bindir: 
@@ -81,5 +79,5 @@ doc :
 
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o WMSServer	
-	rm -fr $(TGTDIR)
+	rm -fr $(BINDIR)
 	
