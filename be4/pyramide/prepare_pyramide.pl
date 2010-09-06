@@ -54,7 +54,6 @@ getopts("p:i:s:r:t:n:d:m:");
 if ( ! defined ($opt_p and $opt_i and $opt_s and $opt_r and $opt_t and $opt_n ) ){
 	print colored ("[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
-	&usage();
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
 		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -p.", 'white on_red');
@@ -80,6 +79,7 @@ if ( ! defined ($opt_p and $opt_i and $opt_s and $opt_r and $opt_t and $opt_n ) 
 		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -n.", 'white on_red');
 		print "\n";
 	}
+	&usage();
 	exit;
 }
 

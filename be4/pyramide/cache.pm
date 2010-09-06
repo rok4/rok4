@@ -109,7 +109,7 @@ our %produit_nb_canaux_param = (
 	"scan" => 3,
 );
 
-my $tms_base = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/FR_LAMB93_test.tms";
+
 
 our %produit_tms_param = (
 	"ortho" => $tms_base,
@@ -118,9 +118,13 @@ our %produit_tms_param = (
 	"scan" => $tms_base,
 );
 
-our $xsd_pyramide_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd";
+# apres deploiement
+our $xsd_pyramide_param = "../config/pyramids/pyramid.xsd";
+our $path_tms_param = "../config/tileMatrixSet";
+#our $xsd_pyramide_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd";
+#our $path_tms_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3";
 
-our $path_tms_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3";
+my $tms_base = $path_tms_param."/FR_LAMB93_test.tms";
 ################################################################################
 
 ########## FONCTIONS

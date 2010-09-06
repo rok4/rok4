@@ -53,7 +53,6 @@ getopts("p:f:x:m:");
 if ( ! defined ($opt_p and $opt_f and $opt_x ) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
-	&usage();
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
 		print colored ("[CREE_DALLAGE_BASE] Veuillez sprcifier un parametre -p.", 'white on_red');
@@ -67,6 +66,7 @@ if ( ! defined ($opt_p and $opt_f and $opt_x ) ){
 		print colored ("[CREE_DALLAGE_BASE] Veuillez sprcifier un parametre -x.", 'white on_red');
 		print "\n";
 	}
+	&usage();
 	exit;
 }
 
@@ -342,7 +342,7 @@ if ($bool_erreur == 1){
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source -m path/fichier_mtd_source -x path/fichier_pyramide \n",'black on_white');
+	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -x path/fichier_pyramide \n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
 	print "\n\n";
