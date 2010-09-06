@@ -11,7 +11,8 @@ libs:
 rok4: clean
 	make -C rok4/
 
-
+be4:
+	make -C be4/
 
 
 

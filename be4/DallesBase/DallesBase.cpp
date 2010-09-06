@@ -1,10 +1,27 @@
 //============================================================================
-// Name        : CreerDallesCacheNiveauMinimum.cpp
+// Name        : DallesBase.cpp
 // Author      : 
 // Version     :
 // Copyright   : 
-// Description : Hello World in C++, Ansi-style
+// Description : Creation d une dalle georeference a partir de n dalles source
 //============================================================================
+
+/*
+Ce programme est destine a etre utilise dans la chaine de generation de cache be4
+Il est appele pour calculer le niveau minimum d une pyramide, pour chaque nouvelle dalle
+
+Les dalles source ne sont pas necessairement entierement recouvrantes
+Parametres d'entree :
+1. Un fichier texte contenant les dalles source et la dalle finale avec leur georeferencement (resolution, emprise)
+2. Un mode d interpolation
+
+En sortie, un fichier TIFF au format dit de travail brut non compressé entrelace
+
+
+Contrainte:
+1. Toutes les dalles sont dans le meme SRS (pas de reprojection)
+*/
+
 
 using namespace std;
 #include <iostream> //pour cout, endl
