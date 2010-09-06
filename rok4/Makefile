@@ -16,7 +16,7 @@ LDFLAGS =
 LDLIBS = -lpthread
 
 # Liste de librairies dépendantes embarquées
-DEPLIB= libimage liblogger libcppunit libz libjpeg libfcgi libtinyxml libproj   
+DEPLIB= libtiff libimage liblogger libcppunit libz libjpeg libfcgi libtinyxml libproj   
 
 # CCFLAGS = -g -ansi
 
