@@ -1,5 +1,7 @@
-INCDIR=../../include
-LIBDIR=../../lib
+TGTDIR=../../../target
+
+INCDIR=${TGTDIR}/include
+LIBDIR=${TGTDIR}/lib
 
 THISLIB=jpeg
 HEADERS=$(wildcard *.h)
