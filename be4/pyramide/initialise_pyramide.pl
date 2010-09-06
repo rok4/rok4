@@ -30,6 +30,14 @@ if ( ! defined ($opt_l and $opt_p ) ){
 	print "\n\n";
 	&usage();
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
+	if(! defined $opt_l){
+		print colored ("[INITIALISE_PYRAMIDE] Veuillez sprcifier un parametre -l.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_p){
+		print colored ("[INITIALISE_PYRAMIDE] Veuillez sprcifier un parametre -p.", 'white on_red');
+		print "\n";
+	}
 	exit;
 }
 my $lay_ancien = $opt_l;

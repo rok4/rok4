@@ -30,6 +30,7 @@ our @EXPORT=(
 	'$xsd_pyramide_param',
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
+	'$dalle_no_data_mtd_param',
 );
 ################################################################################
 
@@ -66,12 +67,13 @@ our %base10_base_param = (
 
 our $color_no_data_param = "#FFFFFF";
 
-our $dalle_no_data_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/4096_4096_FFFFFF.tif";
+our $dalle_no_data_param = "../share/pyramide/4096_4096_FFFFFF.tif";
+our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";
 
 my @res_utiles_ortho = (0.25, 8388608);
 my @res_utiles_parcel = (0.05, 8388608);
 my @res_utiles_franceraster = (0.25, 8388608);
-# TODO determiner res utiles scans
+# TODO determiner resolutions utiles scans
 my @res_utiles_scan25;
 my @res_utiles_scan50;
 my @res_utiles_scan100;
@@ -90,8 +92,11 @@ our %produit_res_utiles_param = (
 	"scan1000" => \@res_utiles_scan1000,
 );
 
-our $programme_ss_ech_param = "/exavol/private/only4diffusio/charlotte/pascal/merge4tiff";
-our $programme_format_pivot_param = "/exavol/private/only4diffusio/charlotte/pascal/tiff2tile";
+# apres deploiement
+our $programme_ss_ech_param = "merge4tiff";
+our $programme_format_pivot_param = "tiff2tile";
+#our $programme_ss_ech_param = "/exavol/private/only4diffusio/charlotte/pascal/merge4tiff";
+#our $programme_format_pivot_param = "/exavol/private/only4diffusio/charlotte/pascal/tiff2tile";
 
 # pour les .pyr
 our $min_tile_param = 1;

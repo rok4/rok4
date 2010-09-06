@@ -15,6 +15,7 @@ use cache(
 	'$taille_dalle_pix_param',
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
+	'$dalle_no_data_mtd_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
@@ -28,6 +29,7 @@ my %base10_base = %base10_base_param;
 my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
 my $color_no_data = $color_no_data_param;
 my $dalle_no_data = $dalle_no_data_param;
+my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
 my %produit_res_utiles = %produit_res_utiles_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
@@ -48,18 +50,33 @@ open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le f
 #### recuperation des parametres
 getopts("p:f:x:m:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_m) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x ) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&usage();
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
+	if(! defined $opt_p){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez sprcifier un parametre -p.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_f){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez sprcifier un parametre -f.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_x){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez sprcifier un parametre -x.", 'white on_red');
+		print "\n";
+	}
 	exit;
 }
 
 my $produit = $opt_p;
 my $ss_produit;
 my $fichier_dalle_source = $opt_f;
-my $fichier_mtd_source = $opt_m;
+my $fichier_mtd_source;
+if (defined $opt_m){
+	$fichier_mtd_source = $opt_m;
+}
 my $fichier_pyramide = $opt_x;
 
 # verifications des parametres
@@ -84,7 +101,7 @@ if (! (-e $fichier_dalle_source && -f $fichier_dalle_source)){
 	&ecrit_log("ERREUR : Le fichier $fichier_dalle_source n'existe pas.");
 	exit;
 }
-if (! (-e $fichier_mtd_source && -f $fichier_mtd_source)){
+if (defined $fichier_mtd_source && ( ! (-e $fichier_mtd_source && -f $fichier_mtd_source))){
 	print colored ("[CREE_DALLAGE_BASE] Le fichier $fichier_mtd_source n'existe pas.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR : Le fichier $fichier_mtd_source n'existe pas.");
@@ -167,17 +184,27 @@ my %source_y_max = %{$reference_hash_y_max};
 my %source_res_x = %{$reference_hash_res_x};
 my %source_res_y = %{$reference_hash_res_y};
 my @dalles_source = keys %source_x_min; # ou un autre
-# mtd
-&ecrit_log("Lecture du fichier de mtd source $fichier_mtd_source.");
-print "[CREE_DALLAGE_BASE] Lecture du fichier de mtd source $fichier_mtd_source.\n";
-my ($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
-my %mtd_source_x_min = %{$ref_hash_x_min};
-my %mtd_source_x_max = %{$ref_hash_x_max};
-my %mtd_source_y_min = %{$ref_hash_y_min};
-my %mtd_source_y_max = %{$ref_hash_y_max};
-my %mtd_source_res_x = %{$ref_hash_res_x};
-my %mtd_source_res_y = %{$ref_hash_res_y};
-my @mtd_source = keys %mtd_source_x_min;
+# mtd seulement si definies
+my ($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y);
+my %mtd_source_x_min;
+my %mtd_source_x_max;
+my %mtd_source_y_min;
+my %mtd_source_y_max;
+my %mtd_source_res_x;
+my %mtd_source_res_y ;
+my @mtd_source;
+if (defined $fichier_mtd_source){
+	&ecrit_log("Lecture du fichier de mtd source $fichier_mtd_source.");
+	print "[CREE_DALLAGE_BASE] Lecture du fichier de mtd source $fichier_mtd_source.\n";
+	($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
+	%mtd_source_x_min = %{$ref_hash_x_min};
+	%mtd_source_x_max = %{$ref_hash_x_max};
+	%mtd_source_y_min = %{$ref_hash_y_min};
+	%mtd_source_y_max = %{$ref_hash_y_max};
+	%mtd_source_res_x = %{$ref_hash_res_x};
+	%mtd_source_res_y = %{$ref_hash_res_y};
+	@mtd_source = keys %mtd_source_x_min;
+}
 
 # action 3 : infos de la dalle cache la plus haute : xmin, xmax, ymin, ymax, resx, resy 
 # (au moins au plus haut niveau de la pyramide) (pas forcement existante)
@@ -209,15 +236,17 @@ print "[CREE_DALLAGE_BASE] Calcul de l'arbre image.\n";
 my $nombre_dalles_cache = cree_arbre_dalles_cache(\@dalles_source, "image");
 &ecrit_log("$nombre_dalles_cache images definies.");
 print "[CREE_DALLAGE_BASE] $nombre_dalles_cache images definies.\n";
-&ecrit_log("Calcul de l'arbre mtd.");
-print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd.\n";
-my $nombre_mtd_cache = cree_arbre_dalles_cache(\@mtd_source, "mtd");
-&ecrit_log("$nombre_mtd_cache images definies.");
-print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
-
+if (defined $fichier_mtd_source){
+	&ecrit_log("Calcul de l'arbre mtd.");
+	print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd.\n";
+	my $nombre_mtd_cache = cree_arbre_dalles_cache(\@mtd_source, "mtd");
+	&ecrit_log("$nombre_mtd_cache images definies.");
+	print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
+}
 # transformation des index dans l'arbre en nom des dalles cache
 my @liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 my @liste_total_dalles_cache;
+my @liste_total_dalles_cache_mtd;
 my %dalle_cache_min_liste_dalle;
 my %mtd_cache_min_liste_mtd;
 my %dalle_cache_dessous;
@@ -229,12 +258,18 @@ print "[CREE_DALLAGE_BASE] Passage des donnees arbre aux donnees cache.\n";
 &arbre2cache(\@liste_dalles_cache_index_arbre);
 
 # action 5 : completer la pyramide initiale
-# images et mtd en meme temps
+# images
 &ecrit_log("Completement des dalles absentes de la pyramide initiale.");
 print "[CREE_DALLAGE_BASE] Completement des dalles absentes de la pyramide initiale.\n";
-my $nombre_ajoutees = &complete_pyramide_initiale(\@liste_total_dalles_cache);
-&ecrit_log("$nombre_ajoutees images ajoutees (image et mtd).");
-print "[CREE_DALLAGE_BASE] $nombre_ajoutees images ajoutees (image et mtd).\n";
+my $nombre_ajoutees = &complete_pyramide_initiale(\@liste_total_dalles_cache, "image");
+&ecrit_log("$nombre_ajoutees images ajoutees.");
+print "[CREE_DALLAGE_BASE] $nombre_ajoutees images ajoutees.\n";
+# mtd
+if (defined $fichier_mtd_source){
+	my $nombre_ajoutees_mtd = &complete_pyramide_initiale(\@liste_total_dalles_cache_mtd, "mtd");
+	&ecrit_log("$nombre_ajoutees_mtd mtd ajoutees.");
+	print "[CREE_DALLAGE_BASE] $nombre_ajoutees_mtd mtd ajoutees.\n";
+}
 
 #action 6 : calculer le niveau minimum
 &ecrit_log("Calcul des images du niveau le plus bas.");
@@ -243,24 +278,28 @@ my $rep_fichiers_img = dirname($fichier_dalle_source);
 my $nombre_dalles_minimum_calc = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_fichiers_img, "image");
 &ecrit_log("$nombre_dalles_minimum_calc images du plus bas niveau calculees.");
 print "[CREE_DALLAGE_BASE] $nombre_dalles_minimum_calc images du plus bas niveau calculees.\n";
-&ecrit_log("Calcul des mtd du niveau le plus bas.");
-print "[CREE_DALLAGE_BASE] Calcul des mtd du niveau le plus bas.\n";
-my $rep_fichiers_mtd = dirname($fichier_mtd_source);
-my $nombre_mtd_minimum_calc = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_fichiers_mtd, "mtd");
-&ecrit_log("$nombre_mtd_minimum_calc mtd du plus bas niveau calculees.");
-print "[CREE_DALLAGE_BASE] $nombre_mtd_minimum_calc mtd du plus bas niveau calculees.\n";
+if (defined $fichier_mtd_source){
+	&ecrit_log("Calcul des mtd du niveau le plus bas.");
+	print "[CREE_DALLAGE_BASE] Calcul des mtd du niveau le plus bas.\n";
+	my $rep_fichiers_mtd = dirname($fichier_mtd_source);
+	my $nombre_mtd_minimum_calc = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_fichiers_mtd, "mtd");
+	&ecrit_log("$nombre_mtd_minimum_calc mtd du plus bas niveau calculees.");
+	print "[CREE_DALLAGE_BASE] $nombre_mtd_minimum_calc mtd du plus bas niveau calculees.\n";
+}
 
 # action 7 : calculer les niveaux inferieurs
 &ecrit_log("Calcul des images des niveaux inferieurs.");
 print "[CREE_DALLAGE_BASE] Calcul des images des niveaux inferieurs.\n";
-my $nombre_dalles_niveaux_inf = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle);
+my $nombre_dalles_niveaux_inf = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image");
 &ecrit_log("$nombre_dalles_niveaux_inf images calculees.");
 print "[CREE_DALLAGE_BASE] $nombre_dalles_niveaux_inf images calculees.\n";
-&ecrit_log("Calcul des mtd des niveaux inferieurs.");
-print "[CREE_DALLAGE_BASE] Calcul des mtd des niveaux inferieurs.\n";
-my $nombre_mtd_niveaux_inf = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd);
-&ecrit_log("$nombre_mtd_niveaux_inf images calculees.");
-print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images calculees.\n";
+if (defined $fichier_mtd_source){
+	&ecrit_log("Calcul des mtd des niveaux inferieurs.");
+	print "[CREE_DALLAGE_BASE] Calcul des mtd des niveaux inferieurs.\n";
+	my $nombre_mtd_niveaux_inf = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd");
+	&ecrit_log("$nombre_mtd_niveaux_inf images calculees.");
+	print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images calculees.\n";
+}
 
 # suppression du repertoire temporaire
 opendir TEMP, "$rep_temp" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvir le repertoire $rep_temp.", 'white on_red');
@@ -459,19 +498,30 @@ sub complete_pyramide_initiale{
 
 	my $ref_list_dal_cach = $_[0];
 	my @liste_dalles = @{$ref_list_dal_cach};
+	my $type_dal = $_[1];
 	
 	my $nombre_dalles_ajoutees = 0;
 	
 	foreach my $dalle_cache(@liste_dalles){
 		if (!(-e $dalle_cache)){
+			my $dalle_a_copier;
+			if($type_dal eq "image"){
+				$dalle_a_copier = $dalle_no_data;
+			}elsif($type_dal eq "mtd"){
+				$dalle_a_copier = $dalle_no_data_mtd;
+			}else{
+				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dal incorrect.", 'white on_red');
+				print "\n";
+				exit;
+			}
 			ecrit_log("Creation des eventuels repertoires manquants.");
 			&cree_repertoires_recursifs(dirname($dalle_cache));
-			my $return = copy($dalle_no_data, $dalle_cache);
+			my $return = copy($dalle_a_copier, $dalle_cache);
 			if ($return == 0){
-				&ecrit_log("ERREUR a la copie de $dalle_no_data vers $dalle_cache");
+				&ecrit_log("ERREUR a la copie de $dalle_a_copier vers $dalle_cache");
 			}else{
 				print ".";
-				&ecrit_log("Copie de $dalle_no_data vers $dalle_cache");
+				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
 				$nombre_dalles_ajoutees += 1;
 				# calcul d'un TFW pour GDAL
 				if($cache_arbre_niveau{$dalle_cache} eq "$level_min"){
@@ -896,6 +946,7 @@ sub calcule_niveaux_inferieurs{
 	my $ref_dalles_a_calc = $_[0];
 	my $interpol = $_[1];
 	my $ref_niveau_bas = $_[2];
+	my $type_dalle = $_[3];
 	
 	my %hash_niveau_liste = %{$ref_dalles_a_calc};
 	
@@ -917,7 +968,16 @@ sub calcule_niveaux_inferieurs{
 						my $fichier_pointe;
 						# si la dalle n'existe pas on met la dalle no_data
 						if(!(-e $dalle_dessous)){
-							$fichier_pointe = $dalle_no_data;
+							if($type_dalle eq "image"){
+								$fichier_pointe = $dalle_no_data;
+							}elsif($type_dalle eq "mtd"){
+								$fichier_pointe = $dalle_no_data_mtd;
+							}else{
+								print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dalle incorrect.", 'white on_red');
+								print "\n";
+								exit;
+							}
+							
 						}else{
 # 							# lecture du lien de la dalle cache pour test 
 # 							$fichier_pointe = readlink("$dalle_dessous");
@@ -1004,7 +1064,8 @@ sub arbre2cache{
 		# transformer en nomenclature de pyramide
 		my $new_nom_dalle = &nom_dalle_cache($x_min_dalle_arbre, $y_max_dalle_arbre, $x_m_origine, $y_m_origine, $taille_dalle_x, $taille_dalle_y, $rep_niveau_dalle, $profondeur);
 		my $new_nom_mtd = &nom_dalle_cache($x_min_dalle_arbre, $y_max_dalle_arbre, $x_m_origine, $y_m_origine, $taille_dalle_x, $taille_dalle_y, $rep_niveau_mtd, $profondeur);
-		push (@liste_total_dalles_cache, $new_nom_dalle, $new_nom_mtd);
+		push (@liste_total_dalles_cache, $new_nom_dalle);
+		push (@liste_total_dalles_cache_mtd, $new_nom_mtd);
 		
 		# remplissage des infos de la dalle cache
 		# pour GDAL

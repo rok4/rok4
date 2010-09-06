@@ -51,11 +51,35 @@ open LOG, ">>$log" or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le fi
 
 getopts("p:i:s:r:t:n:d:m:");
 
-if ( ! defined ($opt_p and $opt_i and $opt_s and $opt_r and $opt_t and $opt_n and $opt_m) ){
+if ( ! defined ($opt_p and $opt_i and $opt_s and $opt_r and $opt_t and $opt_n ) ){
 	print colored ("[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&usage();
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
+	if(! defined $opt_p){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -p.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_i){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -i.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_s){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -s.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_r){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -r.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_t){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -t.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_n){
+		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -n.", 'white on_red');
+		print "\n";
+	}
 	exit;
 }
 
@@ -63,7 +87,10 @@ print "[PREPARE_PYRAMIDE] Preparation au calcul de pyramide de cache Geoportail.
 
 my $produit = $opt_p;
 my $rep_images_source = $opt_i;
-my $rep_masque_mtd = $opt_m;
+my $rep_masque_mtd;
+if (defined $opt_m){
+	$rep_masque_mtd = $opt_m;
+}
 my $RIG = $opt_s;
 my $rep_pyramide = $opt_r;
 my $rep_fichiers_dallage = $opt_t;
@@ -89,7 +116,7 @@ if (!(-e $rep_images_source && -d $rep_images_source)){
 	&ecrit_log("ERREUR Le repertoire $rep_images_source n'existe pas.");
 	exit;
 }
-if (!(-e $rep_masque_mtd && -d $rep_masque_mtd)){
+if (defined $rep_masque_mtd && (!(-e $rep_masque_mtd && -d $rep_masque_mtd))){
 	print colored ("[PREPARE_PYRAMIDE] Le repertoire $rep_masque_mtd n'existe pas.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR Le repertoire $rep_masque_mtd n'existe pas.");
@@ -126,17 +153,21 @@ my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $refere
 &ecrit_log("Ecriture du fichier des dalles source.");
 print "[PREPARE_PYRAMIDE] Ecriture du fichier des dalles source.\n";
 &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
-&ecrit_log("Recensement des mtd dans $rep_masque_mtd.");
-print "[PREPARE_PYRAMIDE] Recensement des mtd dans $rep_masque_mtd.\n";
-my ($ref_mtd_source, $nb_mtd) = &cherche_images($rep_masque_mtd);
-&ecrit_log("$nb_mtd mtd dans $rep_masque_mtd.");
-print "[PREPARE_PYRAMIDE] $nb_mtd mtd dans $rep_masque_mtd.\n";
-&ecrit_log("Recensement des infos des mtd de $rep_masque_mtd.");
-print "[PREPARE_PYRAMIDE] Recensement des infos des mtd de $rep_masque_mtd.\n";
-my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_images_source);
-&ecrit_log("Ecriture du fichier des mtd source.");
-print "[PREPARE_PYRAMIDE] Ecriture du fichier des mtd source.\n";
-&ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
+# seulement si les mtd sont specifiees
+if(defined $rep_masque_mtd){
+	&ecrit_log("Recensement des mtd dans $rep_masque_mtd.");
+	print "[PREPARE_PYRAMIDE] Recensement des mtd dans $rep_masque_mtd.\n";
+	my ($ref_mtd_source, $nb_mtd) = &cherche_images($rep_masque_mtd);
+	&ecrit_log("$nb_mtd mtd dans $rep_masque_mtd.");
+	print "[PREPARE_PYRAMIDE] $nb_mtd mtd dans $rep_masque_mtd.\n";
+	&ecrit_log("Recensement des infos des mtd de $rep_masque_mtd.");
+	print "[PREPARE_PYRAMIDE] Recensement des infos des mtd de $rep_masque_mtd.\n";
+	my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_images_source);
+	&ecrit_log("Ecriture du fichier des mtd source.");
+	print "[PREPARE_PYRAMIDE] Ecriture du fichier des mtd source.\n";
+	&ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
+}
+
 
 # action 2 : creer pyramid.xml
 my $srs_pyramide = "IGNF_".uc($RIG);
@@ -192,7 +223,7 @@ sub usage{
 	
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source -m path/repertoire_masques_metadonnees -s systeme_coordonnees -r path/repertoire_pyramide -t path/repertoire_fichiers_dallage -n annee [-d departement]\n",'black on_white');
+	print colored ("\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -s systeme_coordonnees -r path/repertoire_pyramide -t path/repertoire_fichiers_dallage -n annee [-d departement]\n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
 	print "\nsysteme_coordonnees :\n";
