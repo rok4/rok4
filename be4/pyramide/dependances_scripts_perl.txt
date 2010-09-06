@@ -1,0 +1,17 @@
+Dependances des scripts Perl :
+
+Modules Perl :
+Cwd
+Getopt::Std
+Term::ANSIColor
+File::Basename
+File::Copy
+XML::Simple
+Exporter
+cache
+
+Fichiers :
+../share/pyramide/4096_4096_FFFFFF.tif
+../share/pyramide/mtd_4096_4096_black_32b.tif
+/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/FR_LAMB93_test.tms
+/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd
