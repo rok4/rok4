@@ -1,9 +1,10 @@
-INCDIR=../include
-LIBDIR=../lib
+TGTDIR=../../target
+INCDIR=${TGTDIR}/include
+LIBDIR=${TGTDIR}/lib
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR)
+CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I"$(INCDIR)"
 #conf de debug:
 #CXXFLAGS = -pg -O0 -msse2 -I"." -I$(INCDIR)
 LDLIBS = -lpthread
@@ -13,7 +14,7 @@ DEPLIB= libcppunit libproj liblogger
 
 # CCFLAGS = -g -ansi
 THISLIB=image
-BINDIR=../target/bin
+BINDIR=${TGTDIR}/bin
 
 # definitions pour CppUnit :
 CPPUNITDIR=tests/cppunit
@@ -25,7 +26,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 OBJ= $(patsubst %.cpp, %.o, $(wildcard *.cpp)) 
 HEADER= $(wildcard *.h)
 
-all : $(DEPLIB) include archive
+all : $(DEPLIB) tgtdir include archive
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
 	
 archive : $(THISLIB).a($(OBJ))
@@ -34,13 +35,17 @@ archive : $(THISLIB).a($(OBJ))
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o $(THISLIB).a $(LIBDIR)/lib$(THISLIB).a $(CPPUBIN)
 
-include:
+tgtdir:
+	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
+
+include: tgtdir
 	if [ ! -d $(INCDIR) ] ; then mkdir -p $(INCDIR) ; fi
 	cp $(HEADER) $(INCDIR)
 
-bindir:
+bindir: tgtdir
 	if [ ! -d $(BINDIR) ] ; then mkdir -p $(BINDIR) ; fi
 
+test: cpputest
 
 
 # règle générique pour lancer les compilations des librairies dépendnates
