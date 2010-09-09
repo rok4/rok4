@@ -7,7 +7,9 @@
 
 #ifndef CDALLE_H_
 #define CDALLE_H_
-#include "LibtiffImage.h"
+#include <string.h>
+#include <iostream>
+#include <fstream>
 
 class CDalle /* : public LibtiffImage */ {
 
@@ -26,80 +28,25 @@ public:
 	virtual ~CDalle();
 	CDalle(const CDalle& );
 
-	void affiche();
 	int getline(uint8_t* buffer, int line) { return 0; }
 	int getline(float* buffer, int line) { return 0; }
 
-	char *getNom() const
-	{
-		return nom;
-	}
+	char inline *getNom() const{return nom;}
+	void inline setNom(char *nom){strcpy(this->nom,nom);}
+	double inline getResx() const{return resx;}
+	double inline getResy() const{return resy;}
+	double inline getXmax() const{return xmax;}
+	double inline getXmin() const{return xmin;}
+	double inline getYmax() const{return ymax;}
+	double inline getYmin() const{return ymin;}
+	void inline setResx(const float resx){this->resx = resx;}
+	void inline setResy(const float resy){this->resy = resy;}
+	void inline setXmax(const int xmax){this->xmax = xmax;}
+	void inline setXmin(const int xmin){this->xmin = xmin;}
+	void inline setYmax(const int ymax){this->ymax = ymax;}
+	void inline setYmin(const int ymin){this->ymin = ymin;}
 
-	void setNom(char *nom)
-	{
-		this->nom = nom;
-	}
-
-	double getResx() const
-	{
-		return resx;
-	}
-
-	double getResy() const
-	{
-		return resy;
-	}
-
-	double getXmax() const
-	{
-		return xmax;
-	}
-
-	double getXmin() const
-	{
-		return xmin;
-	}
-
-	double getYmax() const
-	{
-		return ymax;
-	}
-
-	double getYmin() const
-	{
-		return ymin;
-	}
-
-	void setResx(const float resx)
-	{
-		this->resx = resx;
-	}
-
-	void setResy(const float resy)
-	{
-		this->resy = resy;
-	}
-
-	void setXmax(const int xmax)
-	{
-		this->xmax = xmax;
-	}
-
-	void setXmin(const int xmin)
-	{
-		this->xmin = xmin;
-	}
-
-	void setYmax(const int ymax)
-	{
-		this->ymax = ymax;
-	}
-
-	void setYmin(const int ymin)
-	{
-		this->ymin = ymin;
-	}
-
+	int readFromFile(ifstream& file);
 };
 
 #endif /* CDALLE_H_ */

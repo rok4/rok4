@@ -33,35 +33,24 @@ private:
 
 		double y=l2y(line);
 		for (uint i=0;i<images.size();i++){
-			/* On écarte les images qui ne se trouvent pas sur la ligne*/
-			if (images[i]->getymin()>=y||images[i]->getymax()<=y)
-				continue;
-			if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
-				continue;
+                        /* On écarte les images qui ne se trouvent pas sur la ligne*/
+                        if (images[i]->getymin()>=y||images[i]->getymax()<y)
+                                continue;
+                        if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
+                                continue;
 
-			/* c0 est la première colonne de l'ExtendedCompoundImage remplie par l'image en cours.*/
-			int c0=__max(0,x2c(images[i]->getxmin()));
-			/* c1-1 est la dernière colonne de l' ExtendedCompoundImage remplie par l'image en cours.*/
-			/* FIXME: NV: j'ai quand même un doute sur le fait que ce ne soit pas parfois c1*/
-			int c1=__min(width,x2c(images[i]->getxmax()));
-			T* buffer_t = new T[images[i]->width*images[i]->channels];
-			images[i]->getline(buffer_t,images[i]->y2l(y));
+                        /* c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
+                        int c0=__max(0,x2c(images[i]->getxmin()));
+                        /* c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
+                        int c1=__min(width,x2c(images[i]->getxmax()));
 
-			memcpy(&buffer[c0*channels],
-				   &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
-				   (c1-c0)*channels*sizeof(T));
+                        T* buffer_t = new T[images[i]->width*images[i]->channels];
+                        images[i]->getline(buffer_t,images[i]->y2l(y));
+                        memcpy(&buffer[c0*channels],
+                                   &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
+                                   (c1-c0)*channels*sizeof(T)-10);
+                        delete [] buffer_t;
 
-//			if (line==0 || line==1 || line==2000 || line==2010){
-//				cout<<"image:"<<i<<endl;
-//				cout<<"line"<<line<<endl;
-//				cout<<"c0:"<<c0<<" c1:"<<c1<<endl;
-//				cout<<"@ dans buffer (px):"<< c0<<endl;
-//				cout<<"@ dans line   (px):"<< -__min(0,x2c(images[i]->getxmin())) <<endl;
-//				cout<<"taille de la copie (px):"<< c1-c0 <<endl;
-//				cout<<"---------------------------" <<endl;
-//			}
-
-			delete [] buffer_t;
 		}
 		return width*channels*sizeof(T);
 	}
@@ -78,7 +67,6 @@ protected:
 		images(images) {}
 
 public:
-
 	/** D */
 	int getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
 
@@ -114,7 +102,6 @@ public:
 				return NULL;
 			}	
 		}
-
 		return new ExtendedCompoundImage(width,height,channels,x0,y0,resx,resy,images);
 	}
 };

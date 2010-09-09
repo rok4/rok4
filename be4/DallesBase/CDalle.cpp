@@ -6,17 +6,7 @@
  */
 
 using namespace std;
-#include <iostream> //pour cout, endl
-#include <string.h>
 #include "CDalle.h"
-
-void CDalle::affiche() {
-	cout << " -> "  ;
-	cout << getNom() << " " ;
-	cout << getXmin() << " " << getYmax() << " " ;
-	cout << getXmax() << " " << getYmin() << " " ;
-	cout << getResx() << " " << getResy() << endl ;
-}
 
 CDalle::CDalle(const CDalle& cd) {
 	// Ici on passe le parametre par REFERENCE et non par copie !!
@@ -37,7 +27,6 @@ CDalle::CDalle() {
 
 CDalle::CDalle(const char * c, const double i1, const double i2, const double i3,
 		const double i4, const double f1, const double f2) {
-
 	nom = new char [256];
 	strcpy (nom, c );
 	xmin=i1;
@@ -49,6 +38,15 @@ CDalle::CDalle(const char * c, const double i1, const double i2, const double i3
 }
 
 CDalle::~CDalle() {
-	// TODO Auto-generated destructor stub
+	delete [] nom;
 }
 
+int CDalle::readFromFile(ifstream& file)
+{
+	string str;
+	std::getline(file,str);
+	int n;
+	if ((n=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf", nom, &xmin, &xmax, &ymin, &ymax, &resx, &resy))!=7)
+		return -1;
+	return n;
+}
