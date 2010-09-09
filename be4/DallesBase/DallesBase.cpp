@@ -74,7 +74,7 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				break;
 			case 'n': // nodata
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
-				nodata = argv[i];
+				strcpy(nodata,argv[i]);
 				if (strlen(nodata)!=6) {LOGGER_ERROR("Couleur nodata invalide "); return -1;}
 				break;
 			case 't': // type
@@ -332,7 +332,7 @@ int main(int argc, char **argv) {
 		LOGGER_ERROR("Echec controle des dalles");
 		return -1;
 	}
-LOGGER_DEBUG(bitspersample);
+
 	// Fusion des dalles
 	if (mergeDalles(dalle_out,&dalles_in,&pECImage,sampleperpixel)<0){
 		LOGGER_ERROR("Echec fusion des dalles");
