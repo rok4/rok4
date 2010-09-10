@@ -151,7 +151,7 @@ void WMSServer::buildWMSCapabilities(){
 	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Layer
-	std::map<std::string, Layer*>::iterator it(layers.begin()), itend(layers.end());
+	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
 	for (;it!=itend;++it){
 		TiXmlElement * layerEl = new TiXmlElement( "Layer" );
 		Layer* layer = it->second;
