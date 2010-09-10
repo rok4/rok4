@@ -31,7 +31,7 @@
     WMSServer* server = (WMSServer*) (arg);   
 
     int rc;
-    FCGX_Request request;
+    FCGX_Request fcgxRequest;
 
     
 //    int sock = 0;
@@ -44,42 +44,44 @@
     //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
     //
 
-    if (FCGX_InitRequest(&request, server->sock, 0)!=0){
+    if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
     	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
     }
 
 //     for(int i = 0; i < 5; i++) {
     while(true){
-        rc = FCGX_Accept_r(&request);
+        rc = FCGX_Accept_r(&fcgxRequest);
 
         if (rc < 0){
             LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
             break;
         }
 	LOGGER_DEBUG("Creation requete");
-	WMSRequest* wmsrequest = new WMSRequest(FCGX_GetParam("QUERY_STRING", request.envp));
+	Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
 	LOGGER_DEBUG("Traitement requete");
-      	HttpResponse* response = server->processRequest(wmsrequest);
+      	HttpResponse* response = server->processRequest(request);
 	
 	LOGGER_DEBUG("Send response");
-      	server->S.sendresponse(response, &request);
+      	server->S.sendresponse(response, &fcgxRequest);
 	LOGGER_DEBUG("Delete request");
-      	delete wmsrequest;
+      	delete request;
 	LOGGER_DEBUG("Finish");
-        FCGX_Finish_r(&request);
+        FCGX_Finish_r(&fcgxRequest);
     }
 
     return 0;
   }
 
+
 /**
 Construction du serveur
 */
-
-  WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList) :
-		               nbThread(nbThread), sock(0), servicesConf(servicesConf), layers(layers), tmsList(tmsList) {
+  WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
+		               nbThread(nbThread), sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList) {
 	int init=FCGX_Init();
-//        sock = FCGX_OpenSocket(":1998", 50);
+//  sock = FCGX_OpenSocket(":1998", 50);
+	buildWMSCapabilities();
+	buildWMTSCapabilities();
   }
 	
 
@@ -91,95 +93,151 @@ Construction du serveur
       pthread_join(Thread[i], NULL);
   }
 
-  HttpResponse* WMSServer::getMap(WMSRequest* request) {
-      LOGGER_DEBUG( "wmsserver:getMap layers : " << request->layers );
 
-      std::map<std::string, Layer*>::iterator it = layers.find(std::string(request->layers));
-     LOGGER_DEBUG( "it");
-      if(it == layers.end())
-	{	
-		LOGGER_DEBUG( "Pas de tel layers : ");
-		return 0;
-	}
-      Layer* L = it->second;
-     LOGGER_DEBUG( "it1");
-      Image* image = L->getbbox(*request->bbox, request->width, request->height, request->crs);
-     LOGGER_DEBUG( "it2");
-      if (image == 0) return 0;
+  HttpResponse* WMSServer::WMSGetCapabilities(Request* request) {
+	  /*FIXME: remplacer le nom du serveur dans les adresses des capabilities*/
+	  LOGGER_DEBUG("=> WMSGetCapabilities");
+	  LOGGER_DEBUG("GetCapa:               " << WMSCapabilities);
+	  char * resp= new char[WMSCapabilities.length()+1];
+	  strcpy(resp,WMSCapabilities.c_str());
+	  return new StaticHttpResponse("text/xml", (const uint8_t*) resp, WMSCapabilities.length());
+  }
 
-      LOGGER_DEBUG( "wmsserver:getMap : format : " << request->format);
-      if(strncmp(request->format, "image/png", 9) == 0)
-	return new PNGEncoder(image);
-      else if(strncmp(request->format, "image/tiff", 10) == 0)
-        return new TiffEncoder(image);
-      else if(strncmp(request->format, "image/jpeg", 10) == 0)
-        return new JPEGEncoder(image);
-      else
-	return new PNGEncoder(image);
+  HttpResponse* WMSServer::WMTSGetCapabilities(Request* request) {
+	  // TODO à faire
+	  return new Error("Not yet implemented!");
+  }
+
+  HttpResponse* WMSServer::getMap(Request* request) {
+	  std::string layer;
+	  BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
+	  int width;
+	  int height;
+	  std::string crs;
+	  std::string format;
+	  LOGGER_DEBUG( "wmsserver:getMap layers : " << layer );
+
+	  // récupération des paramètres
+	  HttpResponse* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
+	  if (errorResp){
+		  LOGGER_DEBUG ("probleme dans les parametres de la requete getMap");
+		  return errorResp;
+	  }
+
+	  // vérification des paramètres
+	  std::map<std::string, Layer*>::iterator it = layerList.find(layer);
+	  if(it == layerList.end()){
+		  LOGGER_DEBUG("le layer "<<layer<<" est inconnu.");
+		  return 0;
+	  }
+	  Layer* L = it->second;
+
+	  Image* image = L->getbbox(bbox, width, height, crs.c_str());
+	  if (image == 0) return 0;
+
+	  LOGGER_DEBUG( "wmsserver:getMap : format : " << format);
+	  if(format=="image/png")
+		  return new PNGEncoder(image);
+	  else if(format == "image/tiff")
+		  return new TiffEncoder(image);
+	  else if(format == "image/jpeg")
+		  return new JPEGEncoder(image);
+
+	  return new PNGEncoder(image);
   }
 
 
-    HttpResponse* WMSServer::getTile(WMSRequest* request) {
-      LOGGER_DEBUG ("wmsserver:getTile" );
+    HttpResponse* WMSServer::getTile(Request* request) {
+    	std::string layer;
+    	int tileCol;
+    	int tileRow;
+    	std::string tileMatrixSet;
+    	std::string tileMatrix;
+    	std::string format;
 
-      std::map<std::string, Layer*>::iterator it = layers.find(std::string(request->layers));
-      if(it == layers.end())
-	{
-		LOGGER_DEBUG("Erreur layer inexistante : "<<request->layers);
-		return 0;
-	}
-      Layer* L = it->second;
+    	LOGGER_DEBUG ("wmsserver:getTile" );
 
-      LOGGER_DEBUG(  " request : " << request->tilecol << " " << request->tilerow << " " << request->tilematrix << " " << request->transparent << " " << request->format );
-      return L->gettile(request->tilecol, request->tilerow, request->tilematrix);
+    	// récupération des paramètres
+    	HttpResponse* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
+    	if (errorResp){
+    		LOGGER_DEBUG ("probleme dans les parametres de la requete getTile");
+    		return errorResp;
+    	}
+    	LOGGER_DEBUG(  " request : col:" << tileCol << " row:" << tileRow << " tm:" << tileMatrix << " fmt:" << format );
+
+    	// vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
+		// existance du layer
+    	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
+    	if(it == layerList.end()){
+    		LOGGER_DEBUG("Erreur layer inexistante : "<< layer);
+    		return new Error("Unknown layer");
+    	}
+    	Layer* L = it->second;
+		// l'existance du TMS et TM est controlée dans gettile()
+
+
+    	// récupération de la tuile.
+    	return L->gettile(tileCol, tileRow, tileMatrix);
     }
 
-  /** traite les requêtes de type WMTS */
-  HttpResponse* WMSServer::processWMTS(WMSRequest* request) {
-    HttpResponse* response;
-    response = getTile(request);
-    if(response) return response;
-    else return new Error("Unknown layer: " + std::string(request->layers));
+    /** traite les requêtes de type WMTS */
+    HttpResponse* WMSServer::processWMTS(Request* request) {
+    	HttpResponse* response;
+
+    	if (request->request == "getcapabilities"){
+    		response = WMTSGetCapabilities(request);
+    	}else if (request->request == "gettile"){
+    		response = getTile(request);
+    	}else{
+    		LOGGER_DEBUG("Request inconnu");
+    		return new Error("Invalid request");
+    	}
+
+    	if(response){
+    		return response;
+    	}else{
+    		// on devrait avoir une réponse.
+    		return new Error("Unknown error");
+    	}
+
   }
 
   /** Traite les requêtes de type WMS */
-  HttpResponse* WMSServer::processWMS(WMSRequest* request) {
+  HttpResponse* WMSServer::processWMS(Request* request) {
     HttpResponse* response;
-    response = getMap(request);
-    if(response) return response;
-    else return new Error("Unknown layer: " + std::string(request->layers));
+
+    if (request->request == "getcapabilities"){
+    	response = WMSGetCapabilities(request);
+    }else if (request->request == "getmap"){
+    	response = getMap(request);
+    }else{
+		  LOGGER_DEBUG("Request inconnu");
+		  return new Error("Invalid request");
+    }
+
+    if(response){
+    	return response;
+    }else{
+    	// on devrait avoir une réponse.
+    	return new Error("Unknown error");
+    }
   }
 
   /**
    * Renvoie la réponse à la requête.
    */
-  HttpResponse* WMSServer::processRequest(WMSRequest* request) {
-        LOGGER_DEBUG("Debut Traitement Requete");
-    if(request->isWMSRequest()) {
-        LOGGER_DEBUG("Requete WMS");
-      HttpResponse* response = request->checkWMS();
-      if(response)
-      {
-	LOGGER_DEBUG("Requete WMS invalide");
-	return response;
-      }
-      return processWMS(request);
-    }
-    else if(request->isWMTSRequest()) {
-	LOGGER_DEBUG("Requete WMTS");
-      HttpResponse* response = request->checkWMTS();
-      if(response)
-	{
-		LOGGER_DEBUG("Requete WMTS invalide");
-		return response;
-	}
-      return processWMTS(request);
-    }
-    else 
-	{
-	LOGGER_DEBUG("Requete invalide");
-	return new Error("Invalid request");
-	}
+  HttpResponse* WMSServer::processRequest(Request* request) {
+	  LOGGER_DEBUG("Debut Traitement Requete");
+	  if(request->service == "wms") {
+		  LOGGER_DEBUG("Requete WMS");
+		  return processWMS(request);
+	  }else if(request->service=="wmts") {
+		  LOGGER_DEBUG("Requete WMTS");
+		  return processWMTS(request);
+	  }else{
+		  LOGGER_DEBUG("Service inconnu");
+		  return new Error("Invalid request");
+	  }
   }
 
 
@@ -233,8 +291,8 @@ Construction du serveur
       }
 
       //chargement des Layers
-      std::map<std::string, Layer*> layers;
-      if(!ConfLoader::buildLayersList(layerDir,tmsList,layers)){
+      std::map<std::string, Layer*> layerList;
+      if(!ConfLoader::buildLayersList(layerDir,tmsList,layerList)){
     	  LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
     	  LOGGER_FATAL("Extinction du serveur ROK4");
       	  // On attend 10s pour eviter que le serveur web nele relance tout de suite
@@ -245,7 +303,7 @@ Construction du serveur
       }
 
       //construction du serveur.
-      WMSServer W(nbThread, *servicesConf, layers, tmsList);
+      WMSServer W(nbThread, *servicesConf, layerList, tmsList);
 
       W.run();
 

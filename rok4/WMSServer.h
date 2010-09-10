@@ -5,7 +5,7 @@
 
 #include "ResponseSender.h"
 #include "HttpResponse.h"
-#include "WMSRequest.h"
+#include "Request.h"
 
 #include <pthread.h>
 #include <map>
@@ -24,20 +24,28 @@ class WMSServer {
   int sock;
 
   ServicesConf &servicesConf;
-  std::map<std::string, Layer*> layers;
+  std::map<std::string, Layer*> layerList;
   std::map<std::string,TileMatrixSet*> tmsList;
 
   static void* thread_loop(void* arg);
 
-  HttpResponse* getMap(WMSRequest* request);
-  HttpResponse* getTile(WMSRequest* request);
-  HttpResponse* processRequest(WMSRequest *request);
-  HttpResponse* processWMS (WMSRequest *request);
-  HttpResponse* processWMTS(WMSRequest *request);
+  void buildWMSCapabilities();
+  void buildWMTSCapabilities();
+
+  HttpResponse* getMap(Request* request);
+  HttpResponse* getTile(Request* request);
+  HttpResponse* WMSGetCapabilities(Request* request);
+  HttpResponse* WMTSGetCapabilities(Request* request);
+  HttpResponse* processRequest(Request *request);
+  HttpResponse* processWMS (Request *request);
+  HttpResponse* processWMTS(Request *request);
 
   public:
+  std::string WMSCapabilities;
+  std::string WMTSCapabilities;
+
   void run();
-  WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tmsList);
+  WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 

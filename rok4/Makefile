@@ -28,7 +28,7 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= WMSServer.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o WMSRequest.o Tile.o
+WMSSOBJ= WMSServer.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o
 
 all: WMSServer
 #

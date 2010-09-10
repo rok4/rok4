@@ -36,11 +36,11 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	}
 	hRoot=TiXmlHandle(pElem);
 
-	int idBegin=fileName.rfind("/");
+	unsigned int idBegin=fileName.rfind("/");
 	if (idBegin == std::string::npos){
 		idBegin=0;
 	}
-	int idEnd=fileName.rfind(".tms");
+	unsigned int idEnd=fileName.rfind(".tms");
 	if (idEnd == std::string::npos){
 		idEnd=fileName.rfind(".TMS");
 		if (idEnd == std::string::npos){
@@ -63,14 +63,13 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	pElem=hRoot.FirstChild("title").Element();
 	if (pElem) title = pElem->GetText();
 
-	pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("keyword")){
+
+	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
 
-	pElem=hRoot.FirstChild( "tileMatrix" ).Element();
-	for( pElem; pElem; pElem=pElem->NextSiblingElement( "tileMatrix")){
+	for( pElem=hRoot.FirstChild( "tileMatrix" ).Element(); pElem; pElem=pElem->NextSiblingElement( "tileMatrix")){
 		std::string tmId;
 		double res;
 		double x0;
@@ -190,8 +189,8 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 	}
 	tms=it->second;
 
-	pElem=hRoot.FirstChild( "level" ).Element();
-	for( pElem; pElem; pElem=pElem->NextSiblingElement( "level")){
+
+	for( pElem=hRoot.FirstChild( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement( "level")){
 		TileMatrix *tm;
 		std::string id;
 		std::string format;
@@ -362,11 +361,11 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	}
 	hRoot=TiXmlHandle(pElem);
 
-	int idBegin=fileName.rfind("/");
+	unsigned int idBegin=fileName.rfind("/");
 	if (idBegin == std::string::npos){
 		idBegin=0;
 	}
-	int idEnd=fileName.rfind(".lay");
+	unsigned int idEnd=fileName.rfind(".lay");
 	if (idEnd == std::string::npos){
 		idEnd=fileName.rfind(".LAY");
 		if (idEnd == std::string::npos){
@@ -381,8 +380,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	pElem=hRoot.FirstChild("abstract").Element();
 	if (pElem) abstract=pElem->GetText();
 
-	pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("keyword")){
+
+	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
@@ -412,8 +411,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		return NULL;
 	}
 
-	pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
+
+	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
 		std::string crs(pElem->GetText());
 		WMSCRSList.push_back(crs);
 	}
@@ -448,8 +447,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		resampling = pElem->GetText();
 	}
 
-	pElem=hRoot.FirstChild("pyramidList").FirstChild("pyramid").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("pyramid")){
+
+	for (pElem=hRoot.FirstChild("pyramidList").FirstChild("pyramid").Element(); pElem; pElem=pElem->NextSiblingElement("pyramid")){
 		Pyramid * pyramid = buildPyramid(pElem->GetText(), tmsList);
 		if (!pyramid){
 			LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
@@ -491,8 +490,8 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 		LOGGER_ERROR(SERVER_CONF_PATH << " impossible de recuperer la racine.");
 		return false;
 	}
-	if (strcmp(pElem->Value(),"serverConf")){
-		LOGGER_ERROR(SERVER_CONF_PATH << " La racine n'est pas un ServerConf.");
+	if (strcmp(pElem->Value(), "serverConf")){
+		LOGGER_ERROR(SERVER_CONF_PATH << " La racine n'est pas un serverConf.");
 		return false;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -557,7 +556,7 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
     }
 
     // générer les TMS décrits par les fichiers.
-    for (int i=0; i<tmsFiles.size(); i++){
+    for (unsigned int i=0; i<tmsFiles.size(); i++){
         TileMatrixSet * tms;
         tms = buildTileMatrixSet(tmsFiles[i]);
         if (tms){
@@ -602,7 +601,7 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
     }
 
     // générer les Layers décrits par les fichiers.
-    for (int i=0; i<layerFiles.size(); i++){
+    for (unsigned int i=0; i<layerFiles.size(); i++){
         Layer * layer;
         layer = buildLayer(layerFiles[i], tmsList);
         if (layer){
@@ -638,7 +637,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		LOGGER_ERROR(SERVICES_CONF_PATH << " impossible de recuperer la racine.");
 		return NULL;
 	}
-	if (strcmp(pElem->Value(),"servicesConf")){
+	if (pElem->ValueStr() != "servicesConf"){
 		LOGGER_ERROR(SERVICES_CONF_PATH << " La racine n'est pas un servicesConf.");
 		return NULL;
 	}
@@ -665,8 +664,8 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	pElem=hRoot.FirstChild("abstract").Element();
 	if (pElem) abstract = pElem->GetText();
 
-	pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element();
-	for (pElem; pElem; pElem=pElem->NextSiblingElement("keyword")){
+
+	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
@@ -695,6 +694,12 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
 		return false;
 	}
+
+	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
+		std::string format(pElem->GetText());
+		formatList.push_back(format);
+	}
+
 
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,

@@ -24,7 +24,56 @@ public:
                 name(name), title(title), abstract(abstract), keyWords(keyWords),
                 serviceProvider(serviceProvider), fee(fee), accessConstraint(accessConstraint),
                 maxWidth(maxWidth), maxHeight(maxHeight), formatList(formatList) {};
-//    virtual ~ServicesConf();
+    std::string getAbstract() const
+    {
+        return abstract;
+    }
+
+    std::string getAccessConstraint() const
+    {
+        return accessConstraint;
+    }
+
+    std::string getFee() const
+    {
+        return fee;
+    }
+
+    std::vector<std::string> getFormatList() const
+    {
+        return formatList;
+    }
+
+    std::vector<std::string> getKeyWords() const
+    {
+        return keyWords;
+    }
+
+    unsigned int getMaxHeight() const
+    {
+        return maxHeight;
+    }
+
+    unsigned int getMaxWidth() const
+    {
+        return maxWidth;
+    }
+
+    std::string getName() const
+    {
+        return name;
+    }
+
+    std::string getServiceProvider() const
+    {
+        return serviceProvider;
+    }
+
+    std::string getTitle() const
+    {
+        return title;
+    }
+
 };
 
 #endif /* SERVICESCONF_H_ */
