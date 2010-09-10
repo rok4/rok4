@@ -14,10 +14,10 @@
 ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Kernel::KernelType KT) 
   : Image(grid->width, grid->height, image->channels, bbox), image(image), grid(grid), K(Kernel::getInstance(KT)) {
     
-    double res_x = image->resolution_x();
-    double res_y = image->resolution_y();
+    double res_x = image->getresx();
+    double res_y = image->getresy();
     grid->bbox.print();
-    grid->affine_transform(1./res_x, -image->bbox.xmin/res_x - 0.5, -1./res_y, image->bbox.ymax/res_y - 0.5);
+    grid->affine_transform(1./res_x, -image->getbbox().xmin/res_x - 0.5, -1./res_y, image->getbbox().ymax/res_y - 0.5);
     grid->bbox.print();
     ratio_x = (grid->bbox.xmax - grid->bbox.xmin) / double(width); 
     ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / double(height);

@@ -54,10 +54,10 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, const cha
   bbox_int.print();
   
   Image* image = getwindow(bbox_int);
-  image->bbox.xmin = tm.getX0() + tm.getRes() * bbox_int.xmin;
-  image->bbox.xmax = tm.getX0() + tm.getRes() * bbox_int.xmax;
-  image->bbox.ymin = tm.getY0() - tm.getRes() * bbox_int.ymax;
-  image->bbox.ymax = tm.getY0() - tm.getRes() * bbox_int.ymin;
+  image->getbbox().xmin = tm.getX0() + tm.getRes() * bbox_int.xmin;
+  image->getbbox().xmax = tm.getX0() + tm.getRes() * bbox_int.xmax;
+  image->getbbox().ymin = tm.getY0() - tm.getRes() * bbox_int.ymax;
+  image->getbbox().ymax = tm.getY0() - tm.getRes() * bbox_int.ymin;
 
   return new ReprojectedImage(image, bbox, grid);
 }

@@ -1,7 +1,7 @@
 #ifndef EXTENTED_COMPOUND_IMAGE_H
 #define EXTENTED_COMPOUND_IMAGE_H
 
-#include "GeoreferencedImage.h"
+#include "Image.h"
 #include <vector>
 #include <cstring>
 #include "Logger.h"
@@ -14,13 +14,13 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-class ExtendedCompoundImage : public GeoreferencedImage {
+class ExtendedCompoundImage : public Image {
 
 	friend class extendedCompoundImageFactory;
 
 private:
 
-	std::vector<GeoreferencedImage*> images;
+	std::vector<LibtiffImage*> images;
 
 	/**
 	Remplissage iteratif d'une ligne
@@ -59,11 +59,11 @@ protected:
 
 	/** Constructeur
   Appelé via une fabrique de type extendedCompoundImageFactory
-  Les GeoreferencedImage sont detruites ensuite en meme temps que l'objet
+  Les Image sont detruites ensuite en meme temps que l'objet
   Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
-	ExtendedCompoundImage(int width, int height, int channels, double x0, double y0, double resx, double resy, std::vector<GeoreferencedImage*>& images) :
-		GeoreferencedImage(width, height, channels,x0,y0,resx,resy),
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<LibtiffImage*>& images) :
+		Image(width, height, channels,bbox),
 		images(images) {}
 
 public:
@@ -84,7 +84,7 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, double x0, double y0, double resx, double resy, std::vector<GeoreferencedImage*>& images)
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<LibtiffImage*>& images)
 	{
 		uint i;
 		double intpart;
@@ -102,7 +102,7 @@ public:
 				return NULL;
 			}	
 		}
-		return new ExtendedCompoundImage(width,height,channels,x0,y0,resx,resy,images);
+		return new ExtendedCompoundImage(width,height,channels,bbox,images);
 	}
 };
 

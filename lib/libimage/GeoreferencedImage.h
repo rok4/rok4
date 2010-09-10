@@ -27,10 +27,6 @@ class GeoreferencedImage : public Image {
   /** D */
   ~GeoreferencedImage() {}
 
-  void inline setx0(double x) {x0=x;}
-  void inline sety0(double y) {y0=y;}
-  void setresx(double x) {resx=x;}
-  void setresy(double y) {resy=y;}
   double inline getxmin() {return x0;}
   double inline getymax() {return y0;}
   double inline getxmax() {return x0+width*resx;}

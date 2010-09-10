@@ -1,35 +1,49 @@
 #ifndef LIBTIFF_IMAGE_H
 #define LIBTIFF_IMAGE_H
 
-#include "GeoreferencedImage.h"
+#include "Image.h"
 #include "tiffio.h"
+#include <string.h>
 
-class LibtiffImage : public GeoreferencedImage {
+#define LIBTIFFIMAGE_MAX_FILENAME_LENGTH 512
 
-  friend class libtiffImageFactory;
+class LibtiffImage : public Image {
 
-  private:
-  TIFF* tif;
+	friend class libtiffImageFactory;
 
-  protected:
-  /** D */
-  LibtiffImage(int width, int height, int channels, double x0, double y0, double resx, double resy, TIFF* tif);
+  	private:
+  	TIFF* tif;
+  	char* filename;
+	uint16_t bitspersample;
+	uint16_t photometric;
+	uint16_t compression;
 
-  public:
+	protected:
+  	/** Constructeur */
+  	LibtiffImage(int width, int height, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression);
 
-  /** D */
-  int getline(uint8_t* buffer, int line);
+  	public:
 
-  /** D */
-  int getline(float* buffer, int line);
+  	/** D */
+  	int getline(uint8_t* buffer, int line);
 
-  /** D */
-  ~LibtiffImage();
+  	/** D */
+  	int getline(float* buffer, int line);
+
+	void inline setfilename(char* str) {strcpy(filename,str);};
+	inline char* getfilename() {return filename;}
+	uint16_t inline getbitspersample() {return bitspersample;}
+	uint16_t inline getphotometric() {return photometric;}
+	uint16_t inline getcompression() {return compression;}
+
+  	/** Destructeur */
+  	~LibtiffImage();
 };
 
 class libtiffImageFactory {
-  public:
-        LibtiffImage* createLibtiffImage(char* filename);
+  	public:
+        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox);
+	LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression);
 };
 
 
