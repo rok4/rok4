@@ -43,6 +43,8 @@ mv rok4-rev${SVN_REVISION}.tgz $ROK4BASE/builds/
 
 echo "demarrage serveur apache..."
 sudo /etc/init.d/apache2 start
+echo "on laisse le temps de demarrer... c'est long, mais un compare aux test unitaires, c'est rien..."
+sleep 20
 if [ ! -f /var/run/apache2.pid ] ; then
   echo "[error] Pb lors du démarrage du service apache ! "
   exit 3
