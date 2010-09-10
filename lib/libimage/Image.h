@@ -33,6 +33,7 @@ class Image {
 	double resx;
 	double resy;
 	void computeResxy() {
+
 		resx=(bbox.xmax - bbox.xmin)/double(width);
                 resy=(bbox.ymax - bbox.ymin)/double(height);
 	}
