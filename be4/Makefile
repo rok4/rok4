@@ -6,7 +6,7 @@ DOCS= $(wildcard *.txt)
 
 all: docdir
 	$(foreach tool, $(TOOLS), make -C $(tool);)
-	cp $(DOCS) $(DOCDIR)
+	if [ ! -z $(DOCS) ] ; then cp $(DOCS) $(DOCDIR) ; fi
 
 clean:
 	make -C * clean
