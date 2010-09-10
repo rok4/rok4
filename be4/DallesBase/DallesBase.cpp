@@ -34,7 +34,6 @@ using namespace std;
 #include <string>
 #include <fstream>
 #include "tiffio.h"
-#include "CDalle.h"
 
 #include "Logger.h"
 #include "config.h"
@@ -109,10 +108,35 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 	return 0;
 }
 
-/* Chargement de dalles depuis le fichier texte donné en parametre */
+/* Lecture d une ligne du fichier de dalles */
 
-int loadDalles(char* liste_dalles_filename, CDalle& dalle_out, vector<CDalle>& dalles_in)
+int readFileLine(ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
 {
+	string str;
+        std::getline(file,str);
+        int n;
+	double resx, resy;
+        n=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->xmax, &bbox->ymin, &bbox->ymax, &resx, &resy);
+	if (resx*resy==0.)
+	{
+		LOGGER_ERROR("Ligne : " << str.c_str() << " resolution nulle");
+		return -1;
+	}
+	*width = (int) (bbox->xmax - bbox->xmin)/resx;	
+	*height = (int) (bbox->ymax - bbox->ymin)/resy;
+
+	return n;
+}
+
+/* Chargement des images depuis le fichier texte donné en parametre */
+
+int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, vector<LibtiffImage*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
+{
+	char filename[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+	BoundingBox<double> bbox(0.,0.,0.,0.);
+	int width, height;
+	libtiffImageFactory factory;
+
 	// Ouverture du fichier texte listant les dalles
 	ifstream file;
 	file.open(liste_dalles_filename);
@@ -121,31 +145,41 @@ int loadDalles(char* liste_dalles_filename, CDalle& dalle_out, vector<CDalle>& d
                 return -1;
         }
 
-	// Lecture de la dalle de sortie
-	if (dalle_out.readFromFile(file)<0)
-	{
-		LOGGER_ERROR("Erreur fichier dalles ligne 0");
+	// Lecture et creation de la dalle de sortie
+	if (readFileLine(file,filename,&bbox,&width,&height)<0){
+		LOGGER_ERROR("Erreur fichier " << liste_dalles_filename << " ligne 0");
 		return -1;
 	}
+	else {
+		*ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE);
+		if (*ppImageOut==NULL){
+			LOGGER_ERROR("Impossible de creer " << filename);
+			return -1;
+		}
+	}
 
-	// Lecture des dalles d'entree	
-	CDalle D;
+	// Lecture et creation des dalles d'entree	
 	int i=1,n;
-	while ((n=D.readFromFile(file))==7)
+	while ((n=readFileLine(file,filename,&bbox,&width,&height))==7)
 	{
-		dalles_in.push_back(D);
+		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
+		if (pImage==NULL){
+                        LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
+                        return -1;
+                }
+		pImageIn->push_back(pImage);
 		i++;
 	}
 	if (n>0&&n!=7)
 	{
-                LOGGER_ERROR("Erreur fichier dalles ligne " << i);
+                LOGGER_ERROR("Erreur fichier " << liste_dalles_filename << " ligne " << i);
                 return -1;
 	}
 
 	// Fermeture du fichier
 	file.close();
 
-	return (dalles_in.size()+1);	
+	return (pImageIn->size()+1);	
 }
 
 /* Controle des dalles d 'entree
@@ -156,57 +190,43 @@ Elles doivent :
 4. Avoir les memes valeurs de champ TIFFTAG_PHOTOMETRIC, TIFFTAG_BITSPERSAMPLE et TIFFTAG_SAMPLESPERPIXEL
 */
 
-int checkDalles(CDalle& dalle_out, vector<CDalle>& dalles_in)
+int checkDalles(LibtiffImage* pImageOut, vector<LibtiffImage*>& ImageIn)
 {
-	uint16_t compression, photometric0, bitspersample0, sampleperpixel0,photometric, bitspersample, sampleperpixel;
-
-	if (dalle_out.getResx()*dalle_out.getResy()==0.){
-		LOGGER_ERROR("Resolution de la dalle de sortie egale a 0 " << dalle_out.getNom());
+	if (pImageOut->getresx()*pImageOut->getresy()==0.){
+		LOGGER_ERROR("Resolution de la dalle de sortie egale a 0 " << pImageOut->getfilename());
                 return -1;
 	}
-
-	for (unsigned int i=0;i<dalles_in.size();i++)
+	for (unsigned int i=0;i<ImageIn.size();i++)
 	{
-		TIFF* tiff = TIFFOpen( dalles_in[i].getNom(), "r");
+LOGGER_DEBUG(ImageIn.at(i)->width);
+		TIFF* tiff = TIFFOpen( ImageIn.at(i)->getfilename(), "r");
 		if (!tiff) {
-			LOGGER_ERROR("Impossible d 'ouvrir le fichier " << dalles_in[i].getNom());
+			LOGGER_ERROR("Impossible d 'ouvrir le fichier " << ImageIn.at(i)->getfilename());
 			return -1;
 		}
-		TIFFGetField(tiff, TIFFTAG_COMPRESSION, &compression);
-                if (compression != COMPRESSION_NONE){
-                        LOGGER_ERROR(" Dalle " << dalles_in[i].getNom() << " compressee");
-		}
-		if (i==0){
-			TIFFGetField(tiff, TIFFTAG_PHOTOMETRIC, &photometric0);
-                        TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitspersample0);
-                        TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel0);
-		
-		}
-		else{
-			TIFFGetField(tiff, TIFFTAG_PHOTOMETRIC, &photometric);
-			if (photometric0!=photometric){
-				LOGGER_ERROR("Dalle " << dalles_in[i].getNom() << " photometrie incoherente avec la dalle " << dalles_in[0].getNom());
-				return -1;
-			}
-                        TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitspersample);
-			if (bitspersample0!=bitspersample){
-                                LOGGER_ERROR("Dalle " << dalles_in[i].getNom() << " bitspersample incoherent avec la dalle " << dalles_in[0].getNom());
-                                return -1;
-                        }
-                        TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel);
-                        if (sampleperpixel0!=sampleperpixel){
-                                LOGGER_ERROR("Dalle " << dalles_in[i].getNom() << " sampleperpixel incoherent avec la dalle " << dalles_in[0].getNom());
-                                return -1;
-                        }
-
-		}
 		TIFFClose(tiff);
-
-		if (dalles_in[i].getResx()!=dalle_out.getResx() || dalles_in[i].getResy()!=dalle_out.getResy()){
-			LOGGER_ERROR("La resolution de la dalle " << dalles_in[i].getNom() << " diffrente de la resolution de sortie");
+                if (ImageIn.at(i)->getcompression() != COMPRESSION_NONE){
+                        LOGGER_ERROR(" Dalle " << ImageIn.at(i)->getfilename() << " compressee Code = " << ImageIn.at(i)->getcompression());
+			return -1;
+		}
+		if (ImageIn.at(0)->getphotometric()!=ImageIn.at(i)->getphotometric()){
+			LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " photometrie incoherente avec la dalle " << ImageIn.at(0)->getfilename());
+			return -1;
+		}
+		if (ImageIn.at(0)->getbitspersample()!=ImageIn.at(i)->getbitspersample()){
+                        LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " bitspersample incoherent avec la dalle " << ImageIn.at(0)->getfilename());
+                	return -1;
+                }
+                if (ImageIn.at(0)->channels!=ImageIn.at(i)->channels){
+                        LOGGER_ERROR("Dalle "<< ImageIn.at(i)->getfilename() << " sampleperpixel incoherent avec la dalle " << ImageIn.at(0)->getfilename());
+                        return -1;
+                }
+		if (ImageIn.at(i)->getresx()!=pImageOut->getresx() || ImageIn.at(i)->getresy()!=pImageOut->getresy()){
+			LOGGER_ERROR("La resolution de la dalle " << ImageIn.at(0)->getfilename() << " diffrente de la resolution de sortie");
                         return -1;
 		}
-	}	
+	}
+LOGGER_DEBUG("ttttt");
 	return 0;
 }
 
@@ -216,37 +236,12 @@ int checkDalles(CDalle& dalle_out, vector<CDalle>& dalles_in)
 
 /* Fusion de dalles */
 
-int mergeDalles(CDalle& dalle_out, vector<CDalle>* dalles_in,  ExtendedCompoundImage** pImage, uint16_t& sampleperpixel) 
+int mergeDalles(LibtiffImage* pImageOut, vector<LibtiffImage*>& ImageIn,  ExtendedCompoundImage** ppImage) 
 {
-	// Fabrication d'un container d'images
-	vector<GeoreferencedImage*> vGeoreferencedImages ;
-	libtiffImageFactory LTImgfactory;
-
-	for( uint i = 0; i < dalles_in->size(); i++ ) {
-		LibtiffImage* pLTImg = LTImgfactory.createLibtiffImage( dalles_in->at(i).getNom() );
-		if (pLTImg==NULL){
-			LOGGER_ERROR("Erreur lors de la fusion de " << dalles_in->at(i).getNom());
-			return -1;
-		}
-		pLTImg->setx0( dalles_in->at(i).getXmin());
-		pLTImg->sety0( dalles_in->at(i).getYmax());
-		pLTImg->setresx( dalles_in->at(i).getResx());
-		pLTImg->setresy( dalles_in->at(i).getResy());
-		vGeoreferencedImages.push_back(pLTImg) ;
-	}
-
 	// Fabrication de la ExtendedCompoundImage
 	extendedCompoundImageFactory ECImgfactory ;
-	*pImage = ECImgfactory.createExtendedCompoundImage(
-			(dalle_out.getXmax()-dalle_out.getXmin())/dalle_out.getResx(),
-			(dalle_out.getYmax()-dalle_out.getYmin())/dalle_out.getResy(),
-			sampleperpixel, //  nb de canaux  
-			dalle_out.getXmin(), dalle_out.getYmax(),
-			dalle_out.getResx(), dalle_out.getResy(),
-			vGeoreferencedImages);
-
-	if (*pImage==NULL){
-		LOGGER_ERROR("Erreur lors de la fusion");
+	if ( (*ppImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width,pImageOut->height,pImageOut->channels,pImageOut->getbbox(),ImageIn))==NULL) {
+		LOGGER_ERROR("Erreur lors de la fabrication de l image fusionnee");
 		return -1;
 	}
 
@@ -269,15 +264,14 @@ int h2i(char s)
 
 /* Enregistrement d'une image TIFF */
 
-int saveImage(Image *pImg, char* pName, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& photometric, char* nodata) {
+int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t& bitspersample, uint16_t& photometric, char* nodata) {
         TIFF* output=TIFFOpen(pName,"w");
         if (!output) {
                 LOGGER_ERROR( " Impossible d'ouvrir le fichier en ecriture !" );
                 return -1;
         }
-
-        TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImg->width);
-        TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImg->height);
+        TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
+        TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
         TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
         TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
         TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
@@ -285,16 +279,15 @@ int saveImage(Image *pImg, char* pName, uint16_t& sampleperpixel, uint16_t& bits
         TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
         TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
-        unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc((pImg->width)*sampleperpixel*bitspersample/8 );
+        unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
 	unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]),b=h2i(nodata[0])*16 + h2i(nodata[1]);
-	for (long k=0;k<(pImg->width)*sampleperpixel*bitspersample/8;k+=3){
+	for (long k=0;k<(pImage->width)*pImage->channels*bitspersample/8;k+=3){
 		buf_ligne[k]=r;buf_ligne[k+1]=g;buf_ligne[k+2]=b;
 	}
-        for(int ligne = 0; ligne < pImg->height; ligne++) {
-                pImg->getline(buf_ligne,ligne);
+        for(int ligne = 0; ligne < pImage->height; ligne++) {
+                pImage->getline(buf_ligne,ligne);
                 TIFFWriteScanline(output, buf_ligne, ligne, 0); // en contigu (entrelace) on prend chanel=0 (!)
         }
-	LOGGER_DEBUG("e");
         _TIFFfree(buf_ligne);
         TIFFClose(output);
         return 0;
@@ -306,8 +299,8 @@ int saveImage(Image *pImg, char* pName, uint16_t& sampleperpixel, uint16_t& bits
 int main(int argc, char **argv) {
         char liste_dalles_filename[256], nodata[6];
         Kernel::KernelType interpolation = DEFAULT_INTERPOLATION;
-	CDalle dalle_out;
-	vector<CDalle> dalles_in;
+	LibtiffImage* pImageOut;
+	vector<LibtiffImage*> ImageIn;
 	ExtendedCompoundImage* pECImage ;
         uint16_t sampleperpixel, bitspersample, photometric;
 	int type=-1;
@@ -322,25 +315,25 @@ int main(int argc, char **argv) {
 	}
 
 	// Chargement des dalles
-	if (loadDalles(liste_dalles_filename,dalle_out,dalles_in)<0){
+	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles");
 		return -1;
 	}
 
 	// Controle des dalles
-	if (checkDalles(dalle_out,dalles_in)<0){
+	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles");
 		return -1;
 	}
 
 	// Fusion des dalles
-	if (mergeDalles(dalle_out,&dalles_in,&pECImage,sampleperpixel)<0){
+	if (mergeDalles(pImageOut,ImageIn,&pECImage)<0){
 		LOGGER_ERROR("Echec fusion des dalles");
 		return -1;
 	}
 
 	// Enregistrement de la dalle fusionnee
-	if (saveImage(pECImage,dalle_out.getNom(),sampleperpixel,bitspersample,photometric,nodata)<0){
+	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");
 		return -1;
 	};

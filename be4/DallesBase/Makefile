@@ -15,7 +15,7 @@ LDLIBS = -lpthread
 # Liste de librairies dépendantes embarquées
 DEPLIB= libtiff libz libjpeg liblogger libimage
 
-DALLESBASEOBJ= CDalle.o DallesBase.o
+DALLESBASEOBJ= DallesBase.o
 
 all: clean dalles_base
 

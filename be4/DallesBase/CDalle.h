@@ -10,17 +10,13 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include "Image.h"
 
-class CDalle /* : public LibtiffImage */ {
+class dalleImage  : public Image  {
+
+	friend 
 
 	char * nom ;
-	double xmin ;
-	double ymax ;
-	double xmax ;
-	double ymin ;
-	double resx ;
-	double resy ;
-
 public:
 	CDalle();
 	CDalle(const char * c, const double i1, const double i2, const double i3,
@@ -33,18 +29,6 @@ public:
 
 	char inline *getNom() const{return nom;}
 	void inline setNom(char *nom){strcpy(this->nom,nom);}
-	double inline getResx() const{return resx;}
-	double inline getResy() const{return resy;}
-	double inline getXmax() const{return xmax;}
-	double inline getXmin() const{return xmin;}
-	double inline getYmax() const{return ymax;}
-	double inline getYmin() const{return ymin;}
-	void inline setResx(const float resx){this->resx = resx;}
-	void inline setResy(const float resy){this->resy = resy;}
-	void inline setXmax(const int xmax){this->xmax = xmax;}
-	void inline setXmin(const int xmin){this->xmin = xmin;}
-	void inline setYmax(const int ymax){this->ymax = ymax;}
-	void inline setYmin(const int ymin){this->ymin = ymin;}
 
 	int readFromFile(ifstream& file);
 };
