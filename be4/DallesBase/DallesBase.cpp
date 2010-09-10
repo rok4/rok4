@@ -222,13 +222,11 @@ LOGGER_DEBUG(ImageIn.at(i)->width);
                         LOGGER_ERROR("Dalle "<< ImageIn.at(i)->getfilename() << " sampleperpixel incoherent avec la dalle " << ImageIn.at(0)->getfilename());
                         return -1;
                 }
-		LOGGER_DEBUG(ImageIn.at(i)->getresx()<<" " <<pImageOut->getresx()<<" "<< ImageIn.at(i)->getresy()<<" "<<pImageOut->getresy());
-		if (ImageIn.at(i)->getresx()!=pImageOut->getresx() || ImageIn.at(i)->getresy()!=pImageOut->getresy()){
+		if (ImageIn.at(0)->getresx()!=ImageIn.at(i)->getresx() || ImageIn.at(0)->getresy()!=ImageIn.at(i)->getresy()){
 			LOGGER_ERROR("La resolution de la dalle " << ImageIn.at(0)->getfilename() << " diffrente de la resolution de sortie");
                         return -1;
 		}
 	}
-LOGGER_DEBUG("ttttt");
 	return 0;
 }
 
