@@ -31,11 +31,11 @@ if ( ! defined ($opt_l and $opt_p ) ){
 	&usage();
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_l){
-		print colored ("[INITIALISE_PYRAMIDE] Veuillez sprcifier un parametre -l.", 'white on_red');
+		print colored ("[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -l.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_p){
-		print colored ("[INITIALISE_PYRAMIDE] Veuillez sprcifier un parametre -p.", 'white on_red');
+		print colored ("[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -p.", 'white on_red');
 		print "\n";
 	}
 	exit;
@@ -122,7 +122,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ninitialise_pyramide.pl -l path/fichier_clayer.lay -p path/fichier_pyramide.pyr\n",'black on_white');
+	print colored ("\nUsage : \ninitialise_pyramide.pl -l path/fichier_layer.lay -p path/fichier_pyramide.pyr\n",'black on_white');
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -159,9 +159,12 @@ sub ecrit_log{
 	
 	my $bool_ok = 0;
 	
+	# machine sur Linux
+    my $machine_utilisee = $ENV{'SYSMAC'};
+	
 	# largement inspire par P.PONS et gen_cache.pl
 	my $T = localtime();
-	printf LOG "%s %s\n", $T, $message;
+	printf LOG "$machine_utilisee %s %s\n", $T, $message;
 	
 	$bool_ok = 1;
 	return $bool_ok;

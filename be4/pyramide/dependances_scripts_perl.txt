@@ -1,6 +1,7 @@
 Dependances des scripts Perl :
 
 Modules Perl :
+POSIX
 Cwd
 Getopt::Std
 Term::ANSIColor

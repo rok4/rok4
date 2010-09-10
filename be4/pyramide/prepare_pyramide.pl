@@ -5,6 +5,7 @@ use Getopt::Std;
 use Term::ANSIColor;
 use Cwd 'abs_path';
 use File::Basename;
+use POSIX qw(ceil);
 use cache(
 	'%produit_format_param',
 	'$taille_dalle_pix_param',
@@ -56,27 +57,27 @@ if ( ! defined ($opt_p and $opt_i and $opt_s and $opt_r and $opt_t and $opt_n ) 
 	print "\n\n";
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -p.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -p.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_i){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -i.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -i.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_s){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -s.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -s.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_r){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -r.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -r.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_t){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -t.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -t.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_n){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez sprcifier un parametre -n.", 'white on_red');
+		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -n.", 'white on_red');
 		print "\n";
 	}
 	&usage();
@@ -292,32 +293,46 @@ sub cherche_infos_dalle{
 	
 	my $bool_ok = 0;
 	
-	foreach my $image(@imgs){
+	my $nb_dalles = @imgs;
+	my $pourcent = 0;
+	$| = 1;
+	print "0";
+	
+	for(my $i = 0; $i < @imgs; $i++){
+#	foreach my $image(@imgs){
+		my $nombre_compare = ceil ($nb_dalles * ( ($pourcent + 10) / 100 ) );
+		if ($i > $nombre_compare){
+			$pourcent += 10;
+			print "$pourcent";
+		}else{
+			print ".";
+		}
+		
 		# recuperation x_min x_max y_min y_max
-		my @result = `gdalinfo $image`;
+		my @result = `gdalinfo $imgs[$i]`;
 		
 		foreach my $resultat(@result){
 			if($resultat =~ /Upper Left\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
-				$hash_x_min{$image} = $1;
-				$hash_y_max{$image} = $2;
+				$hash_x_min{$imgs[$i]} = $1;
+				$hash_y_max{$imgs[$i]} = $2;
 				# actualisation des xmin et ymax du chantier
-				if($hash_x_min{$image} < $x_min_source){
-					$x_min_source = $hash_x_min{$image};
+				if($hash_x_min{$imgs[$i]} < $x_min_source){
+					$x_min_source = $hash_x_min{$imgs[$i]};
 				}
-				if($hash_y_max{$image} > $y_max_source){
-					$y_max_source = $hash_y_max{$image}
+				if($hash_y_max{$imgs[$i]} > $y_max_source){
+					$y_max_source = $hash_y_max{$imgs[$i]}
 				}
 			}elsif($resultat =~ /Lower Right\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
-				$hash_x_max{$image} = $1;
-				$hash_y_min{$image} = $2;
+				$hash_x_max{$imgs[$i]} = $1;
+				$hash_y_min{$imgs[$i]} = $2;
 			}elsif($resultat =~ /Pixel Size = \((\d+)\.(\d+), ?\-(\d+)\.(\d+)\)/){
-				$hash_res_x{$image} = $1 + ( $2 / (10**length($2)));
-				$hash_res_y{$image} = $3 + ( $4 / (10**length($4)));
+				$hash_res_x{$imgs[$i]} = $1 + ( $2 / (10**length($2)));
+				$hash_res_y{$imgs[$i]} = $3 + ( $4 / (10**length($4)));
 			}
 		}
 		
 	}
-	
+	print "100\n";
 	my @refs = (\%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $x_min_source, $y_max_source);
 	
 	return @refs;
@@ -474,9 +489,12 @@ sub ecrit_log{
 	
 	my $bool_ok = 0;
 	
+	# machine sur Linux
+    my $machine_utilisee = $ENV{'SYSMAC'};
+	
 	# largement inspire par P.PONS et gen_cache.pl
 	my $T = localtime();
-	printf LOG "%s %s\n", $T, $message;
+	printf LOG "$machine_utilisee %s %s\n", $T, $message;
 	
 	$bool_ok = 1;
 	return $bool_ok;
