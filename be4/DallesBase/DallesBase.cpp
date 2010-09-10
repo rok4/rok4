@@ -116,7 +116,7 @@ int readFileLine(ifstream& file, char* filename, BoundingBox<double>* bbox, int*
         std::getline(file,str);
         int n;
 	double resx, resy;
-        n=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->xmax, &bbox->ymin, &bbox->ymax, &resx, &resy);
+        n=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy);
 	if (resx*resy==0.)
 	{
 		LOGGER_ERROR("Ligne : " << str.c_str() << " resolution nulle");
@@ -167,6 +167,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, vector<Li
                         LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
                         return -1;
                 }
+	LOGGER_DEBUG(pImage->getresx());
 		pImageIn->push_back(pImage);
 		i++;
 	}
@@ -221,6 +222,7 @@ LOGGER_DEBUG(ImageIn.at(i)->width);
                         LOGGER_ERROR("Dalle "<< ImageIn.at(i)->getfilename() << " sampleperpixel incoherent avec la dalle " << ImageIn.at(0)->getfilename());
                         return -1;
                 }
+		LOGGER_DEBUG(ImageIn.at(i)->getresx()<<" " <<pImageOut->getresx()<<" "<< ImageIn.at(i)->getresy()<<" "<<pImageOut->getresy());
 		if (ImageIn.at(i)->getresx()!=pImageOut->getresx() || ImageIn.at(i)->getresy()!=pImageOut->getresy()){
 			LOGGER_ERROR("La resolution de la dalle " << ImageIn.at(0)->getfilename() << " diffrente de la resolution de sortie");
                         return -1;
