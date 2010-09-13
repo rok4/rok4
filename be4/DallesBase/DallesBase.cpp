@@ -57,7 +57,6 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 	}
 
 	for(int i = 1; i < argc; i++) {
-		LOGGER_DEBUG(argv[i] << " " << argv[i+1]);
 		if(argv[i][0] == '-') {
 			switch(argv[i][1]) {
 			case 'f': // fichier de dalles
@@ -167,7 +166,6 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, vector<Li
                         LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
                         return -1;
                 }
-	LOGGER_DEBUG(pImage->getresx());
 		pImageIn->push_back(pImage);
 		i++;
 	}
@@ -199,7 +197,6 @@ int checkDalles(LibtiffImage* pImageOut, vector<LibtiffImage*>& ImageIn)
 	}
 	for (unsigned int i=0;i<ImageIn.size();i++)
 	{
-LOGGER_DEBUG(ImageIn.at(i)->width);
 		TIFF* tiff = TIFFOpen( ImageIn.at(i)->getfilename(), "r");
 		if (!tiff) {
 			LOGGER_ERROR("Impossible d 'ouvrir le fichier " << ImageIn.at(i)->getfilename());
@@ -264,24 +261,24 @@ int h2i(char s)
 
 /* Enregistrement d'une image TIFF */
 
-int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t& bitspersample, uint16_t& photometric, char* nodata) {
-        TIFF* output=TIFFOpen(pName,"w");
+int saveImage(Image *pImage, LibtiffImage* pImageOut, char* nodata) {
+        TIFF* output=TIFFOpen(pImageOut->getfilename(),"w");
         if (!output) {
                 LOGGER_ERROR( " Impossible d'ouvrir le fichier en ecriture !" );
                 return -1;
         }
         TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
         TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
-        TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
-        TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
-        TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
+        TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, pImageOut->channels);
+        TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, pImageOut->getbitspersample());
+        TIFFSetField(output, TIFFTAG_PHOTOMETRIC, pImageOut->getphotometric());
         TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+        TIFFSetField(output, TIFFTAG_COMPRESSION, pImageOut->getcompression());
         TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
-        unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
+        unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*pImageOut->getbitspersample()/8 );
 	unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]),b=h2i(nodata[0])*16 + h2i(nodata[1]);
-	for (long k=0;k<(pImage->width)*pImage->channels*bitspersample/8;k+=3){
+	for (long k=0;k<(pImage->width)*pImage->channels*pImageOut->getbitspersample()/8;k+=3){
 		buf_ligne[k]=r;buf_ligne[k+1]=g;buf_ligne[k+2]=b;
 	}
         for(int ligne = 0; ligne < pImage->height; ligne++) {
@@ -333,7 +330,7 @@ int main(int argc, char **argv) {
 	}
 
 	// Enregistrement de la dalle fusionnee
-	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata)<0){
+	if (saveImage(pECImage,pImageOut,nodata)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");
 		return -1;
 	};
