@@ -856,16 +856,16 @@ sub calcule_niveau_minimum {
 				}
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
-			
+			close FIC;
 			# definition de l'interpolateur
-			my $interpolateur = "BICUBIQUE";
+			my $interpolateur = "bicubique";
 			# TODO a supprimer le interpol_gdal
 			# my $interpol_gdal = "near";
 			
 			if($type eq "mtd"){
-				$interpolateur = "PPV";
+				$interpolateur = "ppv";
 			}elsif(($cache_arbre_res{$dalle_cache} / $res_x_max_source < 2) && ($cache_arbre_res{$dalle_cache} / $res_y_max_source)){
-				$interpolateur = "LANCZOS";
+				$interpolateur = "lanczos";
 			}
 			# definition de la couleur no_data
 			my $no_data;
@@ -924,7 +924,7 @@ sub calcule_niveau_minimum {
 				$type_dalles_base = "img";
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
-			system("dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 32 -p rgb");
+			system("dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
 			
 			# TODO voir si sans GDAL, la suppression est necessaire
 			# suppression de la dalle existante (blanche ou lien) avant remplacement
@@ -1153,7 +1153,7 @@ sub ecrit_log{
 	my $bool_ok = 0;
 	
 	# machine sur Linux
-    my $machine_utilisee = $ENV{'SYSMAC'};
+    my $machine_utilisee = `hostname`;
 	
 	# largement inspire par P.PONS et gen_cache.pl
 	my $T = localtime();
