@@ -65,7 +65,7 @@ our %base10_base_param = (
 	      
 );
 
-our $color_no_data_param = "#FFFFFF";
+our $color_no_data_param = "FFFFFF";
 
 our $dalle_no_data_param = "../share/pyramide/4096_4096_FFFFFF.tif";
 our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";

@@ -301,12 +301,16 @@ sub cherche_infos_dalle{
 	for(my $i = 0; $i < @imgs; $i++){
 #	foreach my $image(@imgs){
 		my $nombre_compare = ceil ($nb_dalles * ( ($pourcent + 10) / 100 ) );
-		if ($i > $nombre_compare){
-			$pourcent += 10;
-			print "$pourcent";
-		}else{
-			print ".";
+		# toutes les 10 images 
+		if( $i % 10  == 0){
+			if ($i > $nombre_compare){
+				$pourcent += 10;
+				print "$pourcent";
+			}else{
+				print ".";
+			}
 		}
+		
 		
 		# recuperation x_min x_max y_min y_max
 		my @result = `gdalinfo $imgs[$i]`;
