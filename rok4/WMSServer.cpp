@@ -56,6 +56,20 @@
             LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
             break;
         }
+// Ce code recupere tous les parametres de la requete
+// dont le parametre :
+/*
+    LOGGER_DEBUG("DUMP REQUEST");
+  	{
+      int len;
+      char **p;
+  	  for (p = request.envp; *p; ++p) {
+  	    LOGGER_DEBUG(*p) ;
+  	  }
+  	}
+*/
+//    LOGGER_DEBUG("REQUEST METHOD : "<<FCGX_GetParam("REQUEST_METHOD",request.envp)) ;
+
 	LOGGER_DEBUG("Creation requete");
 	Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
 	LOGGER_DEBUG("Traitement requete");
