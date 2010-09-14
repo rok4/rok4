@@ -33,6 +33,9 @@ fi
 rm -fr $ROK4BASE/bin/*
 rm -fr $ROK4BASE/config/*
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
+rm -fr $ROK4BASE/tests
+mkdir $ROK4BASE/tests
+
 
 cd ../target
 cp bin/rok4 $ROK4BASE/bin/
@@ -40,6 +43,9 @@ cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/rok4 docs
 mv rok4-rev${SVN_REVISION}.tgz $ROK4BASE/builds/
+cp -r ../rok4/tests/html $ROK4BASE/tests
+
+# copie page de test
 
 echo "demarrage serveur apache..."
 sudo /etc/init.d/apache2 start
