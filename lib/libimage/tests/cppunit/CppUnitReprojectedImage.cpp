@@ -84,10 +84,10 @@ protected:
       grid->reproject("IGNF:LAMBE", "IGNF:LAMB93");
 
       Image* image = new EmptyImage(1024, 768, channels, color);
-      image->bbox.xmin = grid->bbox.xmin - 100;
-      image->bbox.ymin = grid->bbox.ymin - 100;
-      image->bbox.xmax = grid->bbox.xmax + 100;
-      image->bbox.ymax = grid->bbox.ymax + 100;
+      image->getbbox().xmin = grid->bbox.xmin - 100;
+      image->getbbox().ymin = grid->bbox.ymin - 100;
+      image->getbbox().xmax = grid->bbox.xmax + 100;
+      image->getbbox().ymax = grid->bbox.ymax + 100;
             
       ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Kernel::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
