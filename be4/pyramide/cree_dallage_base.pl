@@ -23,7 +23,7 @@ use File::Copy;
 use XML::Simple;
 use File::Basename;
 
-our ($opt_p, $opt_f, $opt_x, $opt_m);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_d);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
@@ -38,6 +38,24 @@ my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 ################################################################################
 
+# verification de l'existence de fichiers et repertoires annexes
+if(!(-e $dalle_no_data && -f $dalle_no_data)){
+	print colored ("[CREE_DALLAGE_BASE] Le fichier $dalle_no_data est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
+	print colored ("[CREE_DALLAGE_BASE] Le fichier $dalle_no_data_mtd est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+if(!(-e $path_tms && -d $path_tms)){
+	print colored ("[CREE_DALLAGE_BASE] Le repertoire $path_tms est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+# TODO verifier la presence des programmes $programme_ss_ech $programme_format_pivot
+
 ############ MAIN
 my $time = time();
 my $log = "log_cree_dallage_base_$time.log";
@@ -48,9 +66,9 @@ open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le f
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:");
+getopts("p:f:x:m:d:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x ) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_d) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
@@ -66,6 +84,10 @@ if ( ! defined ($opt_p and $opt_f and $opt_x ) ){
 		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -x.", 'white on_red');
 		print "\n";
 	}
+	if(! defined $opt_d){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -d.", 'white on_red');
+		print "\n";
+	}
 	&usage();
 	exit;
 }
@@ -78,6 +100,7 @@ if (defined $opt_m){
 	$fichier_mtd_source = $opt_m;
 }
 my $fichier_pyramide = $opt_x;
+my $pourcentage_dilatation = $opt_d;
 
 # verifications des parametres
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
@@ -113,7 +136,12 @@ if (! (-e $fichier_pyramide && -f $fichier_pyramide)){
 	&ecrit_log("ERREUR : Le fichier $fichier_pyramide n'existe pas.");
 	exit;
 }
-
+if ($pourcentage_dilatation !~ /^[0-100]$/){
+	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation $pourcentage_dilatation est incorrect.", 'white on_red');
+	print "\n";
+	&ecrit_log("ERREUR : Le pourcentage de dilatation $pourcentage_dilatation est incorrect.");
+	exit;
+}
 ########### traitement
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = "cree_dallage_base_".$time;
@@ -233,13 +261,13 @@ $dalle_arbre_indice_niveau{"0"} = @niveaux_ranges - 1;
 #recursivite descendante et mise en memoire pour chacune des dalles cache
 &ecrit_log("Calcul de l'arbre image.");
 print "[CREE_DALLAGE_BASE] Calcul de l'arbre image.\n";
-my $nombre_dalles_cache = cree_arbre_dalles_cache(\@dalles_source, "image");
+my $nombre_dalles_cache = cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation);
 &ecrit_log("$nombre_dalles_cache images definies.");
 print "[CREE_DALLAGE_BASE] $nombre_dalles_cache images definies.\n";
 if (defined $fichier_mtd_source){
 	&ecrit_log("Calcul de l'arbre mtd.");
 	print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd.\n";
-	my $nombre_mtd_cache = cree_arbre_dalles_cache(\@mtd_source, "mtd");
+	my $nombre_mtd_cache = cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation);
 	&ecrit_log("$nombre_mtd_cache images definies.");
 	print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
 }
@@ -342,9 +370,10 @@ if ($bool_erreur == 1){
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -x path/fichier_pyramide.pyr \n",'black on_white');
+	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -x path/fichier_pyramide.pyr -d pourcentage_dilatation\n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
+ 	print "\npourcentage_dilatation : 0 a 100\n";
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -734,12 +763,13 @@ sub definit_bloc_dalle{
 	my $indice_niveau = $_[7];
 	my $ref_dalles = $_[8];
 	my $type = $_[9];
+	my $pcent_dilat = $_[10];
 	
 	my @dalles_initiales = @{$ref_dalles};
 	
 	my $nombre_dalles_traitees = 0;
 	
-	# sortie si la dalle n'st pas dans la bbox des dalles source
+	# sortie si la dalle n'est pas dans la bbox des dalles source
 	my $interieur_ok = 0;
 	if ( intersects($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) ){
 		$interieur_ok = 1;
@@ -750,8 +780,14 @@ sub definit_bloc_dalle{
 	
 	# filtrage des dalles sources qui recouvrent
 	my @dalles_recouvrantes;
+	
+	# on dilate la dalle cache pour le test d'intersection
+	my $x_min_dilate = $x_min_dalle_cache - (($x_max_dalle_cache - $x_min_dalle_cache) * ($pcent_dilat / 100));
+	my $x_max_dilate = $x_max_dalle_cache + (($x_max_dalle_cache - $x_min_dalle_cache) * ($pcent_dilat / 100));
+	my $y_min_dilate = $y_min_dalle_cache - (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
+	my $y_max_dilate = $y_max_dalle_cache + (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
 	foreach my $source(@dalles_initiales){
-		if( intersects($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}) ){
+		if( intersects($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}) ){
 			push(@dalles_recouvrantes, $source);
 		}
 	}
@@ -799,10 +835,10 @@ sub definit_bloc_dalle{
 		my $x_inter = $x_min_dalle_cache + $res_dessous * $taille_image_pix_x;
 		my $y_inter = $y_max_dalle_cache - $res_dessous * $taille_image_pix_y;
 		
-		$nombre_dalles_traitees += definit_bloc_dalle($id_dalle."1", $x_min_dalle_cache, $x_inter, $y_inter, $y_max_dalle_cache, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."2", $x_inter, $x_max_dalle_cache, $y_inter, $y_max_dalle_cache, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."3", $x_inter, $x_max_dalle_cache, $y_min_dalle_cache, $y_inter, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."4", $x_min_dalle_cache, $x_inter, $y_min_dalle_cache, $y_inter, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type);
+		$nombre_dalles_traitees += definit_bloc_dalle($id_dalle."1", $x_min_dalle_cache, $x_inter, $y_inter, $y_max_dalle_cache, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."2", $x_inter, $x_max_dalle_cache, $y_inter, $y_max_dalle_cache, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."3", $x_inter, $x_max_dalle_cache, $y_min_dalle_cache, $y_inter, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."4", $x_min_dalle_cache, $x_inter, $y_min_dalle_cache, $y_inter, $res_dessous, $niveau_inferieur, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
 		
 		# on remplit les niveaux des dalles d'en dessous
 		$dalle_arbre_niveau{$id_dalle."1"} = $niveau_inferieur;
@@ -1167,9 +1203,10 @@ sub cree_arbre_dalles_cache{
 	
 	my $ref_liste = $_[0];
 	my $type = $_[1];
+	my $pourcentage = $_[2];
 	
 	my $nombre_dalles = 0;
-	$nombre_dalles += definit_bloc_dalle("0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $niveau_dalle0, $indice_niveau0, $ref_liste, $type);
+	$nombre_dalles += definit_bloc_dalle("0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $niveau_dalle0, $indice_niveau0, $ref_liste, $type, $pourcentage);
 	
 	return $nombre_dalles;
 }

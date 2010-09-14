@@ -43,6 +43,13 @@ my %produit_tms = %produit_tms_param;
 my $xsd_pyramide = $xsd_pyramide_param;
 ################################################################################
 
+# verification de l'existence des fichiers annexes
+if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
+	print colored ("[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+
 ##### MAIN
 my $time = time();
 my $log = "log_prepare_pyramide_$time.log";
@@ -111,6 +118,14 @@ if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
 	$produit = lc($produit);
 	
 }
+
+my $fichier_tms = $produit_tms{$produit};
+if (! (-e $fichier_tms && -f $fichier_tms) ){
+	print colored ("[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+
 if (!(-e $rep_images_source && -d $rep_images_source)){
 	print colored ("[PREPARE_PYRAMIDE] Le repertoire $rep_images_source n'existe pas.", 'white on_red');
 	print "\n";
@@ -179,7 +194,7 @@ if(defined $departement){
 
 my $format_images = $produit_format{$produit};
 my $nb_channels = $produit_nb_canaux{$produit};
-my $fichier_tms = $produit_tms{$produit};
+
 
 # creation du repertoire de la pyramide
 if ( !(-e $rep_pyramide && -d $rep_pyramide) ){
