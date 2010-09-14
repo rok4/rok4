@@ -39,7 +39,7 @@ WMSServer: bindir $(DEPLIB) $(WMSSOBJ)
 	cp WMSServer *.o $(BINDIR)
 	rm $(BINDIR)/WMSServer.o
 	mv $(BINDIR)/WMSServer $(BINDIR)/rok4
-	cp -r $(SRCCONFDIR)/* $(TGTCONFDIR)
+	cp -rf $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 
 # règle générique pour lancer les compilations des librairies dépendnates
@@ -66,9 +66,8 @@ cppubin: $(CPPUNITOBJ)
 	cp $(CPPUNITOBJ) $(BINDIR)
 	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
 
-
+#       rm -fr $(TGTDIR)
 bindir: 
-	rm -fr $(TGTDIR)
 	if [ ! -d $(TGTDIR) ] ; then mkdir $(TGTDIR) ; fi
 	if [ ! -d $(TGTCONFDIR) ] ; then mkdir $(TGTCONFDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
