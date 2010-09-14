@@ -40,7 +40,7 @@ std::string Pyramid::best_level(double resolution_x, double resolution_y) {
 Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const char *dst_crs) {
   // on calcule la résolution de la requete dans le crs source selon une diagonale de l'image.
   
-    if(dst_crs) {
+    if(strcmp(dst_crs,"")!=0) {
     LOGGER_DEBUG("crs dest=" <<dst_crs << " crs init=" << tms.getCrs());
     if(strcmp(tms.getCrs().c_str(), dst_crs) == 0) dst_crs = 0;
     else { // reprojection
@@ -52,23 +52,24 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const c
   double resolution_y = (bbox.ymax - bbox.ymin) / height;
 
 
-  if(dst_crs) { // TODO: ne pas faire la reprojection 2 fois !!!!!
+  if(strcmp(dst_crs,"")!=0) { // TODO: ne pas faire la reprojection 2 fois !!!!!
+    LOGGER_DEBUG("crs dest=" <<dst_crs << " crs init=" << tms.getCrs());
     Grid* grid = new Grid(width, height, bbox);  
+// Tous les caches sont actuellement en L93
     grid->reproject(dst_crs, "IGNF:LAMB93");
     resolution_x = (grid->bbox.xmax - grid->bbox.xmin) / width;
     resolution_y = (grid->bbox.ymax - grid->bbox.ymin) / height;
     delete grid;
   }
 
-
-
   std::string l = best_level(resolution_x, resolution_y);
-//  return levels[l]->getbbox(bbox, width, height);
 
   LOGGER_DEBUG( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y);
   
-  if(!dst_crs) return levels[l]->getbbox(bbox, width, height);
-  else return levels[l]->getbbox(bbox, width, height, dst_crs);
+  if(strcmp(dst_crs,"")==0)
+	return levels[l]->getbbox(bbox, width, height);
+  else
+	return levels[l]->getbbox(bbox, width, height, dst_crs);
   
 }
 
