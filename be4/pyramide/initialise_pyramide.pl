@@ -160,7 +160,7 @@ sub ecrit_log{
 	my $bool_ok = 0;
 	
 	# machine sur Linux
-    my $machine_utilisee = `hostname`;
+    chomp(my $machine_utilisee = `hostname`);
 	
 	# largement inspire par P.PONS et gen_cache.pl
 	my $T = localtime();
