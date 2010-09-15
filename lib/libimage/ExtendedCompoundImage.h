@@ -20,7 +20,7 @@ class ExtendedCompoundImage : public Image {
 
 private:
 
-	std::vector<LibtiffImage*> images;
+	std::vector<Image*> images;
 
 	/**
 	Remplissage iteratif d'une ligne
@@ -62,7 +62,7 @@ protected:
   Les Image sont detruites ensuite en meme temps que l'objet
   Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<LibtiffImage*>& images) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images) :
 		Image(width, height, channels,bbox),
 		images(images) {}
 
@@ -84,7 +84,7 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<LibtiffImage*>& images)
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images)
 	{
 		uint i;
 		double intpart;
