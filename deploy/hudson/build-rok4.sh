@@ -43,13 +43,13 @@ cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/rok4 docs
 mv rok4-rev${SVN_REVISION}.tgz $ROK4BASE/builds/
-cp -r ../rok4/tests/html $ROK4BASE/tests
+cp -r ../rok4/tests/html/* $ROK4BASE/tests
 
 # copie page de test
 
 echo "demarrage serveur apache..."
 sudo /etc/init.d/apache2 start
-echo "on laisse le temps de demarrer... c'est long, mais un compare aux test unitaires, c'est rien..."
+echo "on laisse le temps de demarrer... c'est long, mais compare aux test unitaires, c'est rien..."
 sleep 20
 if [ ! -f /var/run/apache2.pid ] ; then
   echo "[error] Pb lors du démarrage du service apache ! "
