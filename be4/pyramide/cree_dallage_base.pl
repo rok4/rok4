@@ -982,7 +982,7 @@ sub calcule_niveau_minimum {
 # XXXX			}
 # XXXX			
 # XXXX			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $fichier_pointe $gdal_source $rep_temp/temp.tif >>$log 2>&1");
-#XXXX			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $rep_temp/cache.tif $gdal_source $rep_temp/temp.tif >>$log 2>&1");
+# XXXX			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $rep_temp/cache.tif $gdal_source $rep_temp/temp.tif >>$log 2>&1");
 			
 			# pour le programme
 			my $type_dalles_base = $type;
