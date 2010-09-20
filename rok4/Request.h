@@ -3,7 +3,7 @@
 
 #include <map>
 #include "BoundingBox.h"
-#include "HttpResponse.h"
+#include "Data.h"
 
 class Request {
 private:
@@ -15,8 +15,8 @@ public:
 	std::string request;
 	std::map<std::string, std::string> params;
 
-	HttpResponse* getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format);
-	HttpResponse* getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format);
+	DataSource* getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format);
+	DataStream* getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format);
 
 	Request(char* strquery, char* serverName);
 	virtual ~Request();

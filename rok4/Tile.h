@@ -4,7 +4,8 @@
 #include <iostream>
 #include "Logger.h"
 #include "Utils.h"
-#include "Level.h"
+#include "Image.h"
+#include "Data.h"
 
 typedef enum {
         RAW_UINT8,
@@ -15,52 +16,54 @@ typedef enum {
 
 
 class RawDecoder {
-  public:
-  static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data) {
-    memcpy(raw_data, encoded_data, encoded_size);
-  }
+	public:
+	static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data) {
+	memcpy(raw_data, encoded_data, encoded_size);
+ 	}
 };
 
-
 class JpegDecoder {
-  public:
-  static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize);
+	public:
+  	static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize);
 };
 
 class PngDecoder {
-  public:
-  static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize);
+  	public:
+  	static void decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize);
 };
 
 class Tile : public Image {
-  private:
+  	private:
+	// Source de donnees : correspond aux octets de la tuile dans le fichier du cache
+  	DataSource *datasource;
+	// Donnees raw : correspond a la tuile decompressee (permet un acces direct aux pixels)
+  	uint8_t* raw_data;
 
-  StaticHttpResponse *data;
-  uint8_t* raw_data;
+  	int tile_width;
+  	int tile_height;
 
-  int tile_width;
-  int tile_height;
-  int left;
-  int top;
-  int coding;
+  	int left;
+  	int top;
+  	int coding;
 
-  public:
-  int getline(uint8_t* buffer, int line) {
-    convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
-    return width * channels;
-  }
+  	public:
+	DataSource* getDataSource() {return datasource;}
+  	int getline(uint8_t* buffer, int line) {
+    		convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    		return width * channels;
+  	}
 
-  int getline(float* buffer, int line) {
-    convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
-    return width * channels;
-  }
+	int getline(float* buffer, int line) {
+    		convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+    		return width * channels;
+  	}
 
-  Tile(int tile_width, int tile_height, int channels, StaticHttpResponse* data, int left, int top, int right, int bottom, int coding);
+  	Tile(int tile_width, int tile_height, int channels, DataSource* datasource, int left, int top, int right, int bottom, int coding);
 
-  ~Tile() {
-   delete[] raw_data;
-   delete data;
-  }
+  	~Tile() {
+   		delete[] raw_data;
+   		datasource->release_data();
+  	}
 };
 
 

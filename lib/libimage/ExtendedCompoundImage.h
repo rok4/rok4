@@ -48,7 +48,7 @@ private:
                         images[i]->getline(buffer_t,images[i]->y2l(y));
                         memcpy(&buffer[c0*channels],
                                    &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
-                                   (c1-c0)*channels*sizeof(T)-10);
+                                   (c1-c0)*channels*sizeof(T));
                         delete [] buffer_t;
 
 		}

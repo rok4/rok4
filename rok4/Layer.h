@@ -22,7 +22,7 @@ private:
 public:
 	std::string getId();
 
-	HttpResponse* gettile(int x, int y, std::string tmId);
+	Tile* gettile(int x, int y, std::string tmId);
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, const char *dst_crs = 0);
 
     std::string              getAbstract()   const { return abstract;}

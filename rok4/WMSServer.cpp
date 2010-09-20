@@ -10,7 +10,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
-#include "Error.h"
+#include "Message.h"
 
 #include <fstream>
 #include <signal.h>
@@ -24,68 +24,51 @@
 #include "fcgiapp.h"
 
 
-  /**
-   * Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
-   */
-  void* WMSServer::thread_loop(void* arg) {
-    WMSServer* server = (WMSServer*) (arg);   
-
-    int rc;
-    FCGX_Request fcgxRequest;
-
-    
-//    int sock = 0;
-    // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
-    // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
-    // Utile 
-    //  * Pour faire du profiling (grof)
-    //  * Pour lancer rok4 sur plusieurs serveurs distants
-    //
-    //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
-    //
-
-    if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
-    	LOGGER_FATAL("Le listenner FCGI ne peut etre initialise");
-    }
-
-//     for(int i = 0; i < 5; i++) {
-    while(true){
-        rc = FCGX_Accept_r(&fcgxRequest);
-
-        if (rc < 0){
-            LOGGER_DEBUG("FCGX_InitRequest renvoie le code d'erreur" << rc);
-            break;
-        }
-// Ce code recupere tous les parametres de la requete
-// dont le parametre :
-/*
-    LOGGER_DEBUG("DUMP REQUEST");
-  	{
-      int len;
-      char **p;
-  	  for (p = request.envp; *p; ++p) {
-  	    LOGGER_DEBUG(*p) ;
-  	  }
-  	}
+/**
+* Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
 */
-//    LOGGER_DEBUG("REQUEST METHOD : "<<FCGX_GetParam("REQUEST_METHOD",request.envp)) ;
+void* WMSServer::thread_loop(void* arg)
+{
+	WMSServer* server = (WMSServer*) (arg);   
 
-	LOGGER_DEBUG("Creation requete");
-	Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
-	LOGGER_DEBUG("Traitement requete");
-      	HttpResponse* response = server->processRequest(request);
-	
-	LOGGER_DEBUG("Send response");
-      	server->S.sendresponse(response, &fcgxRequest);
-	LOGGER_DEBUG("Delete request");
-      	delete request;
-	LOGGER_DEBUG("Finish");
-        FCGX_Finish_r(&fcgxRequest);
-    }
+    	int rc;
+    	FCGX_Request fcgxRequest;
+    
+	//    int sock = 0;
+    	// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+    	// Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
+    	// Utile 
+    	//  * Pour faire du profiling (grof)
+    	//  * Pour lancer rok4 sur plusieurs serveurs distants
+    	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
-    return 0;
-  }
+    	if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
+    		LOGGER_FATAL("Le listener FCGI ne peut etre initialise");
+    	}
 
+    	while(true){
+        	rc = FCGX_Accept_r(&fcgxRequest);
+
+        	if (rc < 0){
+            		LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
+            		break;
+        	}
+		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
+          	if(request->service == "wms")
+		{
+			DataStream* stream = server->processWMS(request);
+                  	server->S.sendresponse(stream,&fcgxRequest);
+		}
+          	else if(request->service=="wmts")
+                	server->S.sendresponse(server->processWMTS(request),&fcgxRequest);
+          	else
+                 	server->S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+      		delete request;
+        	FCGX_Finish_r(&fcgxRequest);
+    	}
+
+    	return 0;
+}
 
 /**
 Construction du serveur
@@ -108,60 +91,71 @@ Construction du serveur
   }
 
 
-  HttpResponse* WMSServer::WMSGetCapabilities(Request* request) {
+DataStream* WMSServer::WMSGetCapabilities(Request* request) {
 	  /*FIXME: remplacer le nom du serveur dans les adresses des capabilities*/
-	  LOGGER_DEBUG("=> WMSGetCapabilities");
-	  LOGGER_DEBUG("GetCapa:               " << WMSCapabilities);
-	  char * resp= new char[WMSCapabilities.length()+1];
-	  strcpy(resp,WMSCapabilities.c_str());
-	  return new StaticHttpResponse("text/xml", (const uint8_t*) resp, WMSCapabilities.length());
-  }
+	  LOGGER_DEBUG("=> WMSGetCapabilities" << WMSCapabilities);
+	  return new MessageDataStream(WMSCapabilities,"text/xml");
+}
 
-  HttpResponse* WMSServer::WMTSGetCapabilities(Request* request) {
+DataSource* WMSServer::WMTSGetCapabilities(Request* request) {
 	  // TODO à faire
-	  return new Error("Not yet implemented!");
-  }
+	  return new MessageDataSource("Not yet implemented!","text/plain");
+}
 
-  HttpResponse* WMSServer::getMap(Request* request) {
-	  std::string layer;
-	  BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
-	  int width;
-	  int height;
-	  std::string crs;
-	  std::string format;
-	  LOGGER_DEBUG( "wmsserver:getMap layers : " << layer );
+/*
+* Traitement d'une requete GetMap
+* @return Un pointeur sur le flux de donnees resultant
+* @return Un message d'erreur en cas d'erreur
+*/
 
-	  // récupération des paramètres
-	  HttpResponse* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
-	  if (errorResp){
-		  LOGGER_DEBUG ("probleme dans les parametres de la requete getMap");
-		  return errorResp;
-	  }
+DataStream* WMSServer::getMap(Request* request)
+{
+	std::string layer;
+	BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
+	int width;
+	int height;
+	std::string crs;
+	std::string format;
+	LOGGER_DEBUG( "wmsserver:getMap layers : " << layer );
 
-	  // vérification des paramètres
-	  std::map<std::string, Layer*>::iterator it = layerList.find(layer);
-	  if(it == layerList.end()){
-		  LOGGER_DEBUG("le layer "<<layer<<" est inconnu.");
-		  return 0;
-	  }
-	  Layer* L = it->second;
+	// Récupération des paramètres
+	DataStream* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
+	if (errorResp){
+		LOGGER_ERROR("probleme dans les parametres de la requete getMap");
+		return errorResp;
+	}
 
-	  Image* image = L->getbbox(bbox, width, height, crs.c_str());
-	  if (image == 0) return 0;
+	// Vérification des paramètres
+	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
+	if(it == layerList.end()){
+		LOGGER_ERROR("le layer "<<layer<<" est inconnu.");
+		return new MessageDataStream("Layer "+layer+" inconnu ","text/plain");
+	}
+	Layer* L = it->second;
 
-	  LOGGER_DEBUG( "wmsserver:getMap : format : " << format);
-	  if(format=="image/png")
-		  return new PNGEncoder(image);
-	  else if(format == "image/tiff")
-		  return new TiffEncoder(image);
-	  else if(format == "image/jpeg")
-		  return new JPEGEncoder(image);
+	Image* image = L->getbbox(bbox, width, height, crs.c_str());
+	
+	if (image == 0)
+		return 0;
+	//FIXME : cela est-il une erreur?
 
-	  return new PNGEncoder(image);
-  }
+	if(format=="image/png")
+		return new PNGEncoder(image);
+	else if(format == "image/tiff")
+		return new TiffEncoder(image);
+	else if(format == "image/jpeg")
+		return new JPEGEncoder(image);
+	return new PNGEncoder(image);
+}
 
+/*
+* Traitement d'une requete GetTile
+* @return Un pointeur sur la source de donnees de la tuile requetee
+* @return Un message d'erreur en cas d'erreur
+*/
 
-    HttpResponse* WMSServer::getTile(Request* request) {
+DataSource* WMSServer::getTile(Request* request)
+{
     	std::string layer;
     	int tileCol;
     	int tileRow;
@@ -169,91 +163,47 @@ Construction du serveur
     	std::string tileMatrix;
     	std::string format;
 
-    	LOGGER_DEBUG ("wmsserver:getTile" );
+    	// Récupération des paramètres de la requete
 
-    	// récupération des paramètres
-    	HttpResponse* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
-    	if (errorResp){
-    		LOGGER_DEBUG ("probleme dans les parametres de la requete getTile");
+    	DataSource* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
+    	if (errorResp)
     		return errorResp;
-    	}
-    	LOGGER_DEBUG(  " request : col:" << tileCol << " row:" << tileRow << " tm:" << tileMatrix << " fmt:" << format );
 
-    	// vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
-		// existance du layer
+    	// Vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
+	// Existence du layer
+	//FIXME : pourquoi ce controle ici?
     	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
     	if(it == layerList.end()){
-    		LOGGER_DEBUG("Erreur layer inexistante : "<< layer);
-    		return new Error("Unknown layer");
+    		return new MessageDataSource("Unknown layer","text/plain");
     	}
     	Layer* L = it->second;
-		// l'existance du TMS et TM est controlée dans gettile()
+	// l'existence du TMS et TM est controlée dans gettile()
+	// TODO: vérifier que c'est effectivement le cas
 
+    	// Récupération de la tuile
+    	return L->gettile(tileCol, tileRow, tileMatrix)->getDataSource();
+}
 
-    	// récupération de la tuile.
-    	return L->gettile(tileCol, tileRow, tileMatrix);
-    }
+/** traite les requêtes de type WMTS */
+DataSource* WMSServer::processWMTS(Request* request)
+{
+    	if (request->request == "getcapabilities")
+    		return(WMTSGetCapabilities(request));
+    	else if (request->request == "gettile")
+    		return (getTile(request));
+    	else
+    		return new MessageDataSource("Invalid request","text/plain");
+}
 
-    /** traite les requêtes de type WMTS */
-    HttpResponse* WMSServer::processWMTS(Request* request) {
-    	HttpResponse* response;
-
-    	if (request->request == "getcapabilities"){
-    		response = WMTSGetCapabilities(request);
-    	}else if (request->request == "gettile"){
-    		response = getTile(request);
-    	}else{
-    		LOGGER_DEBUG("Request inconnu");
-    		return new Error("Invalid request");
-    	}
-
-    	if(response){
-    		return response;
-    	}else{
-    		// on devrait avoir une réponse.
-    		return new Error("Unknown error");
-    	}
-
-  }
-
-  /** Traite les requêtes de type WMS */
-  HttpResponse* WMSServer::processWMS(Request* request) {
-    HttpResponse* response;
-
-    if (request->request == "getcapabilities"){
-    	response = WMSGetCapabilities(request);
-    }else if (request->request == "getmap"){
-    	response = getMap(request);
-    }else{
-		  LOGGER_DEBUG("Request inconnu");
-		  return new Error("Invalid request");
-    }
-
-    if(response){
-    	return response;
-    }else{
-    	// on devrait avoir une réponse.
-    	return new Error("Unknown error");
-    }
-  }
-
-  /**
-   * Renvoie la réponse à la requête.
-   */
-  HttpResponse* WMSServer::processRequest(Request* request) {
-	  LOGGER_DEBUG("Debut Traitement Requete");
-	  if(request->service == "wms") {
-		  LOGGER_DEBUG("Requete WMS");
-		  return processWMS(request);
-	  }else if(request->service=="wmts") {
-		  LOGGER_DEBUG("Requete WMTS");
-		  return processWMTS(request);
-	  }else{
-		  LOGGER_DEBUG("Service inconnu");
-		  return new Error("Invalid request");
-	  }
-  }
-
+/** Traite les requêtes de type WMS */
+DataStream* WMSServer::processWMS(Request* request) {
+	if (request->request == "getcapabilities")
+    		return(WMSGetCapabilities(request));
+	else if (request->request == "getmap")
+    		return (getMap(request));
+    	else
+		return new MessageDataStream("Invalid request","text/plain");
+}
 
   int main(int argc, char** argv) {
 
@@ -274,7 +224,7 @@ Construction du serveur
       if(!ConfLoader::getTechnicalParam(nbThread, layerDir, tmsDir)){
     	  LOGGER_FATAL("Impossible d'interpréter le fichier de conf server.conf");
     	  LOGGER_FATAL("Extinction du serveur ROK4");
-    	  // On attend 10s pour eviter que le serveur web nele relance tout de suite
+    	  // On attend 10s pour eviter que le serveur web ne le relance tout de suite
     	  // avec les mêmes conséquences et sature les logs trop rapidement.
     	  //sleep(10);
     	  return 1;

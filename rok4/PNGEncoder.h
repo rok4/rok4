@@ -1,12 +1,12 @@
 #ifndef _PNGENCODER_
 #define _PNGENCODER_
 
-#include "HttpResponse.h"
+#include "Data.h"
 #include "Image.h"
 #include "zlib.h"
 
 /** D */
-class PNGEncoder : public HttpResponse {
+class PNGEncoder : public DataStream {
   private:
   Image *image;
   uint8_t* linebuffer;
@@ -27,7 +27,10 @@ class PNGEncoder : public HttpResponse {
   ~PNGEncoder();
 
 /** D */
-  size_t getdata(uint8_t* buffer, size_t size);
+  size_t read(uint8_t* buffer, size_t size);
+  bool eof();
+
+  std::string gettype() {return "image/png";}
 };
 
 

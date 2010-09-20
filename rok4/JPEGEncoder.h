@@ -1,12 +1,12 @@
 #ifndef _JPEGENCODER_
 #define _JPEGENCODER_
 
-#include "HttpResponse.h"
+#include "Data.h"
 #include "Image.h"
 #include "jpeglib.h"
 
 /** D */
-class JPEGEncoder : public HttpResponse {  
+class JPEGEncoder : public DataStream {  
   private:
   Image *image;
 
@@ -16,15 +16,13 @@ class JPEGEncoder : public HttpResponse {
   struct jpeg_compress_struct cinfo;
   struct jpeg_error_mgr jerr;
 
-
   static void init_destination (jpeg_compress_struct *cinfo) {return;}
   static boolean empty_output_buffer (jpeg_compress_struct *cinfo) {return false;}
   static void term_destination (jpeg_compress_struct *cinfo) {return;}
 
-
   public:
 /** D */
-  JPEGEncoder(Image* image) : HttpResponse("image/jpeg"), image(image), status(-1) {   
+  JPEGEncoder(Image* image) : image(image), status(-1) {   
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
     cinfo.dest = new jpeg_destination_mgr;
@@ -55,8 +53,10 @@ class JPEGEncoder : public HttpResponse {
     delete image;
   }
 
-/** D */
-  size_t getdata(uint8_t *buffer, size_t size) {
+/**
+* Lecture du flux JPEG
+*/
+  size_t read(uint8_t *buffer, size_t size) {
     assert(size >= 1024);
 
     // On initialise le buffer d'écriture de la libjpeg
@@ -81,44 +81,11 @@ class JPEGEncoder : public HttpResponse {
 
     return (size - cinfo.dest->free_in_buffer);
   }
+
+  bool eof() {return(cinfo.next_scanline >= cinfo.image_height);}
+
+  std::string gettype() {return "image/jpeg";}
 };
-
-
-/*
-template<typename pixel_t>
-class JPEGTileEncoder : public HttpResponse {
-  private:
-  Tile<pixel_t> *tile;
-  uint8_t *jpegdata;
-  size_t offset;
-
-  public:
-
-  JPEGTileEncoder(Tile<pixel_t> *tile) : HttpResponse("image/jpeg"), tile(tile), offset(0) {
-    size_t size;
-    jpegdata = tile->getjpegdata(size);
-    this->set_size(size);
-  }
-
-  ~JPEGEncoder() {
-    std::cerr << "delete JPEGTileEncoder" << std::endl;
-    delete tile;  
-  }
-
-  size_t getdata(uint8_t *buffer, size_t size) {
-    size_t sz = std::min(size, this->get_size() - offset);
-    memcpy(buffer, jpegdata + offset, sz);
-    offset += sz;
-    retunr sz;
-  }
-
-  const uint8_t *getdata() {return jpegdata;}
-
-
-}
-*/
-
-
 
 #endif
 

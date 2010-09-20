@@ -3,6 +3,7 @@
 #include "PNGEncoder.h"
 #include "byteswap.h"
 #include "Logger.h"
+#include <string.h> // Pour memcpy
 
 
 // IEND chunck
@@ -103,7 +104,7 @@ size_t PNGEncoder::write_IDAT(uint8_t *buffer, size_t size) {
 }
 
 
-size_t PNGEncoder::getdata(uint8_t *buffer, size_t size) {
+size_t PNGEncoder::read(uint8_t *buffer, size_t size) {
   size_t pos = 0;
   uint8_t colortype=2;
   // On traite 2 cas : 'Greyscale' et 'Truecolor'
@@ -118,7 +119,12 @@ size_t PNGEncoder::getdata(uint8_t *buffer, size_t size) {
   return pos;
 }
 
-PNGEncoder::PNGEncoder(Image* image) : HttpResponse("image/png"), image(image), line(-1) {
+bool PNGEncoder::eof()
+{
+	return (line > image->height+1);
+}
+
+PNGEncoder::PNGEncoder(Image* image) : image(image), line(-1) {
   zstream.zalloc = Z_NULL;
   zstream.zfree = Z_NULL;
   zstream.opaque = Z_NULL;

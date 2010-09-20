@@ -1,7 +1,7 @@
 #include "Layer.h"
 #include "Logger.h"
 
-HttpResponse* Layer::gettile(int x, int y, std::string tmId) {
+Tile* Layer::gettile(int x, int y, std::string tmId) {
 	//TODO: Ici il faudrait choisir la pyramide à utiliser en fonction
 	//      du CRS de la requete ou du format d'image demandé.
 	//      Mais là on prend juste la première du layer.

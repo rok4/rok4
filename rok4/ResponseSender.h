@@ -1,15 +1,15 @@
 #ifndef _SENDER_
 #define _SENDER_
 
-#include "HttpResponse.h"
+#include "Data.h"
 #include "fcgiapp.h"
 
 class ResponseSender {
-  private:
+	private:
 
-  public:
-  int sendresponse(HttpResponse* response, int conn_fd);
-  int sendresponse(HttpResponse* response, FCGX_Request* request);
+	public:
+  	int sendresponse(DataSource* response, FCGX_Request* request);
+  	int sendresponse(DataStream* response, FCGX_Request* request);
 };
 
 

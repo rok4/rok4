@@ -17,6 +17,9 @@
 #define MAX_IMAGE_WIDTH  65536
 #define MAX_IMAGE_HEIGHT 65536
 
+// Taille maximum d'une tuile WMTS
+#define MAX_TILE_SIZE 1048576
+
 #define LOG_CONF_PATH      "../config/logConfig.xml"
 #define SERVER_CONF_PATH   "../config/server.conf"
 #define SERVICES_CONF_PATH "../config/services.conf"

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string.h> // Pour memcpy
 
 #include "TiffEncoder.h"
 #include "Logger.h"
@@ -54,7 +55,7 @@ const uint8_t TIFF_HEADER_GRAY[128]  = {
   8, 0,   8, 0,   8, 0};                         // 122| 3x 8 sur 16 bits (pointés par les samplesperpixels)
                                                  // 128   
 
-size_t TiffEncoder::getdata(uint8_t *buffer, size_t size) {
+size_t TiffEncoder::read(uint8_t *buffer, size_t size) {
   size_t offset = 0, header_size=128, linesize=image->width*image->channels;
   if(line == -1) { // écrire le header tiff
     // Si pas assez de place pour le header, ne rien écrire.
@@ -87,13 +88,12 @@ size_t TiffEncoder::getdata(uint8_t *buffer, size_t size) {
 return 0;
 }
 
+bool TiffEncoder::eof()
+{
+	return (line>=image->height);	
+}
+
 TiffEncoder::~TiffEncoder() {
   LOGGER_DEBUG("delete TiffEncoder");
   delete image;
 }
-
-/*
-template class TiffEncoder<pixel_rgb>;
-template class TiffEncoder<pixel_gray>;
-template class TiffEncoder<pixel_float>;
-*/

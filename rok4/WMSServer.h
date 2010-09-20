@@ -4,7 +4,7 @@
 #include "config.h"
 
 #include "ResponseSender.h"
-#include "HttpResponse.h"
+#include "Data.h"
 #include "Request.h"
 
 #include <pthread.h>
@@ -32,13 +32,12 @@ class WMSServer {
   void buildWMSCapabilities();
   void buildWMTSCapabilities();
 
-  HttpResponse* getMap(Request* request);
-  HttpResponse* getTile(Request* request);
-  HttpResponse* WMSGetCapabilities(Request* request);
-  HttpResponse* WMTSGetCapabilities(Request* request);
-  HttpResponse* processRequest(Request *request);
-  HttpResponse* processWMS (Request *request);
-  HttpResponse* processWMTS(Request *request);
+  DataStream* getMap(Request* request);
+  DataSource* getTile(Request* request);
+  DataStream* WMSGetCapabilities(Request* request);
+  DataSource* WMTSGetCapabilities(Request* request);
+  DataStream* processWMS (Request *request);
+  DataSource* processWMTS(Request *request);
 
   public:
   std::string WMSCapabilities;

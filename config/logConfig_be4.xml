@@ -7,7 +7,8 @@
              Pour bien indiquer la provenance des lignes, je les prefixe par ROK4.
  	-->
  	<appender name="MyConsoleAppender" class="org.apache.log4j.ConsoleAppender"> 
- 		<param name="Target" value="System.out"/> 
+<!-- 		<param name="Target" value="System.out"/>  	-->
+		<param name="Target" value="/home/schataigner/ROK4/target/bin/dallesbase.log"/>
  		<layout class="org.apache.log4j.PatternLayout"> 
  			<!-- <param name="ConversionPattern" value="ROK4: %-5p - %m%n"/> -->  
                         <!-- exemple:

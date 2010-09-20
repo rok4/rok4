@@ -1,5 +1,5 @@
 #include "Request.h"
-#include "Error.h"
+#include "Message.h"
 #include <cstdlib>
 #include <climits>
 #include <vector>
@@ -93,36 +93,40 @@ std::string Request::getParam(std::string paramName){
 	return it->second;
 }
 
-HttpResponse* Request::getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format){
-	layer=getParam("layer");
-    if(layer == "")    {LOGGER_DEBUG("Missing parameter: layer"); return new Error("Missing parameter: layer");}
-    tileMatrix=getParam("tilematrix");
-    if(tileMatrix == ""){LOGGER_DEBUG("Missing parameter: tilematrix"); return new Error("Missing parameter: tilematrix");}
-    std::string strTileRow=getParam("tilerow");
-    if(strTileRow == "")    {LOGGER_DEBUG("Missing parameter: tilerow"); return new Error("Missing parameter: tilerow");}
-    if (strTileRow=="0"){
-    	tileRow = 0;
-    }else{
-        tileRow=atoi(strTileRow.c_str());
-        if (tileRow == 0 || tileRow == INT_MAX || tileRow == INT_MIN){
-        	LOGGER_DEBUG("tileRow is not an integer");
-        	return new Error("tileRow is not an integer");
-        }
-    }
-	std::string strTileCol=getParam("tilecol");
-    if(strTileCol == "")    {LOGGER_DEBUG("Missing parameter: tilecol"); return new Error("Missing parameter: tilecol");}
-    if (strTileCol=="0"){
-    	tileCol = 0;
-    }else{
-        tileCol=atoi(strTileCol.c_str());
-        if (tileCol == 0 || tileCol == INT_MAX || tileCol == INT_MIN){
-        	LOGGER_DEBUG("tilecol is not an integer");
-        	return new Error("tilecol is not an integer");
-        }
-    }
+/*
+* Récuperation des parametres d'une requete GetTile
+* @return message d'erreur en cas d'erreur (NULL sinon)
+*/
 
-    format=getParam("format"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
-    tileMatrixSet=getParam("tilematrixset"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
+DataSource* Request::getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
+{
+	layer=getParam("layer");
+	if(layer == "")
+		return new MessageDataSource("Missing parameter: layer","text/plain");
+    	tileMatrix=getParam("tilematrix");
+    	if(tileMatrix == "")
+		return new MessageDataSource("Missing parameter: tilematrix","text/plain");
+    	std::string strTileRow=getParam("tilerow");
+    	if(strTileRow == "")
+		return new MessageDataSource("Missing parameter: tilerow","text/plain");
+    	if (strTileRow=="0")
+    		tileRow = 0;
+    	else
+        	tileRow=atoi(strTileRow.c_str());
+        if (tileRow == 0 || tileRow == INT_MAX || tileRow == INT_MIN)
+        	return new MessageDataSource("tileRow is not an integer","text/plain");
+	std::string strTileCol=getParam("tilecol");
+    	if(strTileCol == "")
+		return new MessageDataSource("Missing parameter: tilecol","text/plain");
+    	if (strTileCol=="0")
+    		tileCol = 0;
+    	else
+        	tileCol=atoi(strTileCol.c_str());
+        if (tileCol == 0 || tileCol == INT_MAX || tileCol == INT_MIN)
+        	return new MessageDataSource("tilecol is not an integer","text/plain");
+
+    	format=getParam("format"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
+    	tileMatrixSet=getParam("tilematrixset"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
 
 	return NULL;
 }
@@ -140,48 +144,53 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 	}
 }
 
-HttpResponse* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format){
+/*
+* Récuperation des parametres d'une requete GetMap
+* @return message d'erreur en cas d'erreur (NULL sinon)
+*/
+
+DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format)
+{
 	layers=getParam("layers");
-    if(layers == "")    {LOGGER_DEBUG("Missing parameter: layers"); return new Error("Missing parameter: layers");}
-    std::string strWidth=getParam("width");
-    if(strWidth == ""){LOGGER_DEBUG("Missing parameter: width"); return new Error("Missing parameter: width");}
-    width=atoi(strWidth.c_str());
-    if (width == 0 || width == INT_MAX || width == INT_MIN){
-      	LOGGER_DEBUG("width is not an integer");
-       	return new Error("width is not an integer");
-    }
-    std::string strHeight=getParam("height");
-    if(strHeight == ""){LOGGER_DEBUG("Missing parameter: height"); return new Error("Missing parameter: height");}
-    height=atoi(strHeight.c_str());
-    if (height == 0 || height == INT_MAX || height == INT_MIN){
-      	LOGGER_DEBUG("height is not an integer");
-       	return new Error("height is not an integer");
-    }
+    	if(layers == "")
+		return new MessageDataStream("Missing parameter: layers","text/plain");
+    	std::string strWidth=getParam("width");
+    	if(strWidth == "")
+		return new MessageDataStream("Missing parameter: width","text/plain");
+    	width=atoi(strWidth.c_str());
+    	if (width == 0 || width == INT_MAX || width == INT_MIN)
+		return new MessageDataStream("width is not an integer","text/plain");
+	std::string strHeight=getParam("height");
+    	if(strHeight == "")
+		return new MessageDataStream("Missing parameter: height","text/plain");
+	height=atoi(strHeight.c_str());
+	if (height == 0 || height == INT_MAX || height == INT_MIN)
+		return new MessageDataStream("height is not an integer","text/plain");
 	crs=getParam("crs");
 	/* FIXME le CRS est sensé etre obligatoire, mais pour des raisons de
 	 * "compatibilité" avec le prototype on est un peu laxiste pour le moment
 	if(crs == "")    {LOGGER_DEBUG("Missing parameter: crs"); return new Error("Missing parameter: crs");}
 	*/
 	format=getParam("format");
-    if(format == "")    {LOGGER_DEBUG("Missing parameter: format"); return new Error("Missing parameter: format");}
-    std::string strBbox=getParam("bbox");
-    if(strBbox == "")    {LOGGER_DEBUG("Missing parameter: bbox"); return new Error("Missing parameter: bbox");}
-    std::vector<std::string> coords;
-    stringSplit(strBbox,",",coords);
-    if (coords.size()!=4){
-    	LOGGER_DEBUG("bbox parameter is incorrect"); return new Error("bbox parameter is incorrect");
-    }
-    double bb[4];
-    for(int i = 0; i < 4; i++) {
-    	bb[i] = atof(coords[i].c_str());
-    	if (bb[i] == 0.0 && coords[i] != "0.0"){
-    		LOGGER_DEBUG("bbox parameter is incorrect"); return new Error("bbox parameter is incorrect");
+    	if(format == "")
+		return new MessageDataStream("Missing parameter: format","text/plain");
+    	std::string strBbox=getParam("bbox");
+    	if(strBbox == "")
+		return new MessageDataStream("Missing parameter: bbox","text/plain");
+    	std::vector<std::string> coords;
+    	stringSplit(strBbox,",",coords);
+    	if (coords.size()!=4)
+    		return new MessageDataStream("bbox parameter is incorrect","text/plain");
+    	double bb[4];
+    	for(int i = 0; i < 4; i++) {
+    		bb[i] = atof(coords[i].c_str());
+    		if (bb[i] == 0.0 && coords[i] != "0.0")
+    			return new MessageDataStream("bbox parameter is incorrect","text/plain");
     	}
-    }
-    bbox.xmin=bb[0];
-    bbox.ymin=bb[1];
-    bbox.xmax=bb[2];
-    bbox.ymax=bb[3];
+	bbox.xmin=bb[0];
+	bbox.ymin=bb[1];
+    	bbox.xmax=bb[2];
+    	bbox.ymax=bb[3];
 
 	return NULL;
 }

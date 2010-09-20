@@ -2,7 +2,6 @@
 #define LEVEL_H
 
 #include "Image.h"
-#include "HttpResponse.h"
 #include "Tile.h"
 
 #include "BoundingBox.h"
@@ -49,6 +48,8 @@ class Level {
   double      getRes();
   std::string getId();
   int	      getTileCoding();
+  std::string getType();
+  int	      getTypeSize();
 
 
   Image* getbbox(BoundingBox<double> bbox, int width, int height);
@@ -64,7 +65,7 @@ class Level {
    * x = floor((X - X0) / (tile_width * resolution_x))
    * y = floor((Y - Y0) / (tile_height * resolution_y))
    */
-  StaticHttpResponse* gettile(int x, int y);
+  Tile* gettile(int x, int y);
 
    
 /** D */

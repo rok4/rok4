@@ -1,15 +1,18 @@
 #include <cmath>
 #include "Pyramid.h"
 #include "Logger.h"
-#include "Error.h"
+#include "Message.h"
 #include "Grid.h"
 
-HttpResponse* Pyramid::gettile(int x, int y, std::string tmId) {
+/*
+
+*/
+Tile* Pyramid::gettile(int x, int y, std::string tmId) {
 
 std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
 
 if (it==levels.end())
-	LOGGER_DEBUG("Erreur WMTS : no such level");
+	LOGGER_ERROR("Erreur WMTS : no such level");
 //	return new Error("Erreur WMTS : no such level");
 
 return it->second->gettile(x, y);
