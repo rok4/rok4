@@ -48,15 +48,8 @@ class Tile : public Image {
 
   	public:
 	DataSource* getDataSource() {return datasource;}
-  	int getline(uint8_t* buffer, int line) {
-    		convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
-    		return width * channels;
-  	}
-
-	int getline(float* buffer, int line) {
-    		convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
-    		return width * channels;
-  	}
+  	int getline(uint8_t* buffer, int line);
+	int getline(float* buffer, int line);
 
   	Tile(int tile_width, int tile_height, int channels, DataSource* datasource, int left, int top, int right, int bottom, int coding);
 
