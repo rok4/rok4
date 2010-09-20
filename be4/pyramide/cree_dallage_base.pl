@@ -41,6 +41,8 @@ my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 ################################################################################
 
+### HELP lignes GDAL ### XXXX
+
 # verification de l'existence de fichiers et repertoires annexes
 if(!(-e $dalle_no_data && -f $dalle_no_data)){
 	print colored ("[CREE_DALLAGE_BASE] Le fichier $dalle_no_data est introuvable.", 'white on_red');
@@ -57,7 +59,26 @@ if(!(-e $path_tms && -d $path_tms)){
 	print "\n";
 	exit;
 }
-# TODO verifier la presence des programmes $programme_ss_ech $programme_format_pivot
+# verification la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
+my $verif_programme_dalle_base = `which $programme_dalles_base`;
+print "verif : $verif_programme_dalle_base\n";
+if ($verif_programme_dalle_base eq ""){
+	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_dalles_base est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+my $verif_programme_ss_ech = `which $programme_ss_ech`;
+if ($verif_programme_ss_ech eq ""){
+	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_ss_ech est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+my $verif_programme_pivot = `which $programme_format_pivot`;
+if ($verif_programme_pivot eq ""){
+	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_format_pivot est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
 
 ############ MAIN
 my $time = time();
@@ -244,7 +265,7 @@ my ($x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $ni
 	
 # action 4 : creer arbre : cree_arbre_dalles_cache
 # pour GDAL
-# my %cache_arbre_niveau;
+# XXXX my %cache_arbre_niveau;
 my %cache_arbre_x_min;
 my %cache_arbre_x_max;
 my %cache_arbre_y_min;
@@ -554,18 +575,18 @@ sub complete_pyramide_initiale{
 				print ".";
 				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
 				$nombre_dalles_ajoutees += 1;
-				# calcul d'un TFW pour GDAL
-# 				if($cache_arbre_niveau{$dalle_cache} eq "$level_min"){
-# 					my $string_tfw = &cree_string_tfw($cache_arbre_x_min{$dalle_cache}, $cache_arbre_y_max{$dalle_cache}, $cache_arbre_res{$dalle_cache}, 0);
-# 					my $fichier_tfw = &cree_fichier_georef(basename($dalle_cache), dirname($dalle_cache), "tfw", $string_tfw);
-# 					# test de l'existence du fichier
-# 					if (! (-e $fichier_tfw && -f $fichier_tfw) ){
-# 						print colored ("[CREE_DALLAGE_BASE] Erreur a la creation de $fichier_tfw.", 'white on_red');
-# 						print "\n";
-# 						&ecrit_log("ERREUR a la creation de $fichier_tfw.");
-# 						
-# 					}
-# 				}
+# XXXX				# calcul d'un TFW pour GDAL
+# XXXX				if($cache_arbre_niveau{$dalle_cache} eq "$level_min"){
+# XXXX					my $string_tfw = &cree_string_tfw($cache_arbre_x_min{$dalle_cache}, $cache_arbre_y_max{$dalle_cache}, $cache_arbre_res{$dalle_cache}, 0);
+# XXXX					my $fichier_tfw = &cree_fichier_georef(basename($dalle_cache), dirname($dalle_cache), "tfw", $string_tfw);
+# XXXX					# test de l'existence du fichier
+# XXXX					if (! (-e $fichier_tfw && -f $fichier_tfw) ){
+# XXXX						print colored ("[CREE_DALLAGE_BASE] Erreur a la creation de $fichier_tfw.", 'white on_red');
+# XXXX						print "\n";
+# XXXX						&ecrit_log("ERREUR a la creation de $fichier_tfw.");
+# XXXX						
+# XXXX					}
+# XXXX				}
 				
 			}
 			
@@ -879,16 +900,14 @@ sub calcule_niveau_minimum {
 			my $res_x_max_source = 0;
 			my $res_y_max_source = 0;
 			
-			print "trace : ouverture de $nom_fichier\n";
 			open FIC, ">$nom_fichier" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_fichier.", 'white on_red');
 			# dalle cache
-			print "trace : ecriture de la dalle cache dans $nom_fichier\n";
 			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			# dalles source a la suite
-			# TODO supprimer la string des dalles source pour GDAL
-			# my $gdal_source = "";
+# XXXX			# TODO supprimer la string des dalles source pour GDAL
+# XXXX			# my $gdal_source = "";
 			foreach my $src(@liste_dalles_source){
-				# $gdal_source .= "$src ";
+# XXXX				# $gdal_source .= "$src ";
 				if($source_res_x{$src} > $res_x_max_source){
 					$res_x_max_source = $source_res_x{$src};
 				}
@@ -898,15 +917,15 @@ sub calcule_niveau_minimum {
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
 			
-			print "trace : fin ecriture des dalles source dans $nom_fichier\n";
-			# test pour stephane
+			# ATTENTION, intuition feminine : l'execution dans certains environnement fait qu'il se melange les pinceaux
+			#et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
 			sleep(1);
 			
 			close FIC;
 			# definition de l'interpolateur
 			my $interpolateur = "bicubique";
-			# TODO a supprimer le interpol_gdal
-			# my $interpol_gdal = "near";
+# XXXX			# TODO a supprimer le interpol_gdal
+# XXXX			# my $interpol_gdal = "near";
 			
 			if($type eq "mtd"){
 				$interpolateur = "ppv";
@@ -919,50 +938,51 @@ sub calcule_niveau_minimum {
 				$no_data = "0";
 			}elsif( $type eq "image"){
 				$no_data = $color_no_data;
-# 				# TODO transformer en RGB le hexa ??
-# 				$no_data = "\"255 255 255 \"";
+# XXXX				# TODO transformer en RGB le hexa ??
+# XXXX				$no_data = "\"255 255 255 \"";
 			}else{
 				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type incorrect.", 'white on_red');
 				print "\n";
 				exit;
 			}
-			# desctruction de la dalle temporaire si elle existe
-			if(-e "$rep_temp/temp.tif" && -f "$rep_temp/temp.tif"){
-				my $suppr = unlink("$rep_temp/temp.tif");
-				if($suppr != 1){
-					&ecrit_log("ERREUR a la destruction de $rep_temp/temp.tif.");
-				}
-			}
 			
-			# mise en format travail dalle_cache
-			# desctruction de la dalle_cache temporaire si elle existe
-			if(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif"){
-				my $suppr = unlink("$rep_temp/cache.tif");
-				if($suppr != 1){
-					&ecrit_log("ERREUR a la destruction de $rep_temp/cache.tif.");
-				}
-			}
-			&ecrit_log("Copie raw de $dalle_cache.");
-			system("tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/cache.tif >>$log 2>&1");
-			if(!(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif")){
-				&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
-			}
-			
-			# copie du tfw en plus pour GDAL
-# 			my $nom_tfw = substr($dalle_cache, 0, length($dalle_cache) - 4).".tfw";
-# 			my $return2 = copy($nom_tfw, "$rep_temp/cache.tfw");
-# 			if ($return2 == 0){
-# 				&ecrit_log("ERREUR a la copie de $nom_tfw vers $rep_temp/cache.tfw");
-# 			}
-			
-# 			# lecture du lien de la dalle cache pour GDAL qui comprend rien 
-# 			my $fichier_pointe = readlink("$dalle_cache");
-# 			if ( ! defined $fichier_pointe){
-# 				$fichier_pointe = "$dalle_cache";
-# 			}
-			
-# 			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $fichier_pointe $gdal_source $rep_temp/temp.tif >>$log 2>&1");
-#			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $rep_temp/cache.tif $gdal_source $rep_temp/temp.tif >>$log 2>&1");
+# XXXX			# desctruction de la dalle temporaire si elle existe
+# XXXX			if(-e "$rep_temp/temp.tif" && -f "$rep_temp/temp.tif"){
+# XXXX				my $suppr = unlink("$rep_temp/temp.tif");
+# XXXX				if($suppr != 1){
+# XXXX					&ecrit_log("ERREUR a la destruction de $rep_temp/temp.tif.");
+# XXXX				}
+# XXXX			}
+# XXXX			
+# XXXX			# mise en format travail dalle_cache
+# XXXX			# destruction de la dalle_cache temporaire si elle existe
+# XXXX			if(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif"){
+# XXXX				my $suppr = unlink("$rep_temp/cache.tif");
+# XXXX				if($suppr != 1){
+# XXXX					&ecrit_log("ERREUR a la destruction de $rep_temp/cache.tif.");
+# XXXX				}
+# XXXX			}
+# XXXX			&ecrit_log("Copie raw de $dalle_cache.");
+# XXXX			system("tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/cache.tif >>$log 2>&1");
+# XXXX			if(!(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif")){
+# XXXX				&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+# XXXX			}
+# XXXX			
+# XXXX			# copie du tfw en plus pour GDAL
+# XXXX			my $nom_tfw = substr($dalle_cache, 0, length($dalle_cache) - 4).".tfw";
+# XXXX			my $return2 = copy($nom_tfw, "$rep_temp/cache.tfw");
+# XXXX			if ($return2 == 0){
+# XXXX				&ecrit_log("ERREUR a la copie de $nom_tfw vers $rep_temp/cache.tfw");
+# XXXX			}
+# XXXX			
+# XXXX			# lecture du lien de la dalle cache pour GDAL qui comprend rien 
+# XXXX		my $fichier_pointe = readlink("$dalle_cache");
+# XXXX			if ( ! defined $fichier_pointe){
+# XXXX				$fichier_pointe = "$dalle_cache";
+# XXXX			}
+# XXXX			
+# XXXX			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $fichier_pointe $gdal_source $rep_temp/temp.tif >>$log 2>&1");
+#XXXX			system("gdalwarp --config GDAL_CACHEMAX 512 -of GTiff -co PROFILE=BASELINE -te $cache_arbre_x_min{$dalle_cache} $cache_arbre_y_min{$dalle_cache} $cache_arbre_x_max{$dalle_cache} $cache_arbre_y_max{$dalle_cache} -tr $cache_arbre_res{$dalle_cache} $cache_arbre_res{$dalle_cache} -r $interpol_gdal -dstnodata $no_data $rep_temp/cache.tif $gdal_source $rep_temp/temp.tif >>$log 2>&1");
 			
 			# pour le programme
 			my $type_dalles_base = $type;
@@ -970,22 +990,22 @@ sub calcule_niveau_minimum {
 				$type_dalles_base = "img";
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
+			&ecrit_log("Execution de : $programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb");
 			system("$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
 			
-			# TODO voir si sans GDAL, la suppression est necessaire
-			# suppression de la dalle existante (blanche ou lien) avant remplacement
-			if(-e $dalle_cache && -f $dalle_cache){
-				my $suppr = unlink("$dalle_cache");
-				if($suppr != 1){
-					&ecrit_log("ERREUR a la destruction de $dalle_cache.");
-				}
-			}
-			my $bool_success = move ("$rep_temp/temp.tif","$dalle_cache");
-			if($bool_success == 0){
-				&ecrit_log("ERREUR au renommage $dalle_cache.");
-			}
-			# TODO appel du programme qui cree la dalle a la place de GDAL
-			# => param : $nom_fichier, $interpolateur, $no_data
+# XXXX			# TODO voir si sans GDAL, la suppression est necessaire
+# XXXX			# suppression de la dalle existante (blanche ou lien) avant remplacement
+# XXXX			if(-e $dalle_cache && -f $dalle_cache){
+# XXXX				my $suppr = unlink("$dalle_cache");
+# XXXX				if($suppr != 1){
+# XXXX					&ecrit_log("ERREUR a la destruction de $dalle_cache.");
+# XXXX				}
+# XXXX			}
+# XXXX			my $bool_success = move ("$rep_temp/temp.tif","$dalle_cache");
+# XXXX			if($bool_success == 0){
+# XXXX				&ecrit_log("ERREUR au renommage $dalle_cache.");
+# XXXX			}
+			
 			$nb_dal += 1;
 		}
 	}
@@ -1048,6 +1068,7 @@ sub calcule_niveaux_inferieurs{
 								}
 							}
 							&ecrit_log("Copie raw de $dalle_dessous.");
+							&ecrit_log("Execution de : tiffcp -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache");
 							system("tiffcp -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache >>$log 2>&1");
 							if(!(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache")){
 								&ecrit_log("ERREUR a la copie raw de $dalle_dessous.");
@@ -1057,7 +1078,8 @@ sub calcule_niveaux_inferieurs{
 						$string_dessous .= " $fichier_pointe";
 					}
 					# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
-		 			system("$programme_ss_ech $string_dessous $dal >>$log 2>&1");
+		 			&ecrit_log("Execution de : $programme_ss_ech $string_dessous $dal");
+					system("$programme_ss_ech $string_dessous $dal >>$log 2>&1");
 					# ou my $return = `$programme_ss_ech -i $interpol $string_dessous $dal`;
 					$nb_calc +=1; 
 				}
@@ -1121,16 +1143,16 @@ sub arbre2cache{
 		push (@liste_total_dalles_cache_mtd, $new_nom_mtd);
 		
 		# remplissage des infos de la dalle cache
-		# pour GDAL
-# 		$cache_arbre_niveau{$new_nom_dalle} = $niveau_dalle;
+# XXXX		# pour GDAL
+# XXXX		$cache_arbre_niveau{$new_nom_dalle} = $niveau_dalle;
 		$cache_arbre_x_min{$new_nom_dalle} = $x_min_dalle_arbre;
 		$cache_arbre_x_max{$new_nom_dalle} = $x_max_dalle_arbre;
 		$cache_arbre_y_min{$new_nom_dalle} = $y_min_dalle_arbre;
 		$cache_arbre_y_max{$new_nom_dalle} = $y_max_dalle_arbre;
 		$cache_arbre_res{$new_nom_dalle} = $niveau_res{"$niveau_dalle"};
 		
-		# pour GDAL
-# 		$cache_arbre_niveau{$new_nom_mtd} = $niveau_dalle;
+# XXXX		# pour GDAL
+# XXXX		$cache_arbre_niveau{$new_nom_mtd} = $niveau_dalle;
 		$cache_arbre_x_min{$new_nom_mtd} = $cache_arbre_x_min{$new_nom_dalle};
 		$cache_arbre_x_max{$new_nom_mtd} = $cache_arbre_x_max{$new_nom_dalle};
 		$cache_arbre_y_min{$new_nom_mtd} = $cache_arbre_y_min{$new_nom_dalle};
@@ -1305,6 +1327,7 @@ sub passage_pivot{
 		}
 		
 		# TODO introduire la couleur dans $programme_format_pivot
+		&ecrit_log("Execution de : $programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif");
 		system("$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif >>$log 2>&1");
 		#ou my $return = `$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif`;
 		my $suppr = unlink("$dal2");
@@ -1320,36 +1343,36 @@ sub passage_pivot{
 	
 }
 ################################################################################
-# TODO a supprimer sans GDAL
-# sub cree_string_tfw{
-# 	my $x_min_tfw = $_[0];
-# 	my $y_max_tfw = $_[1];
-# 	my $resolution_tfw = $_[2];
-# 	my $rotation_tfw = $_[3];
-# 	
-# 	my $tfw = '';
-# 	$tfw.= sprintf "%.2f\n%.2f\n%.2f\n%.2f\n", $resolution_tfw, $rotation_tfw, $rotation_tfw, $resolution_tfw * -1;
-# 	$tfw.= sprintf "%.2f\n", $x_min_tfw + 0.5 * $resolution_tfw;
-# 	$tfw.= sprintf "%.2f\n", $y_max_tfw - 0.5 * $resolution_tfw;
-# 	return $tfw;
-# }
-# sub cree_fichier_georef{
-# 	
-# 	my $nom_image_georef = $_[0];
-# 	my $repertoire_georef = $_[1];
-# 	my $type = $_[2];
-# 	my $contenu_fichier = $_[3];
-# 	
-# 	my $nom_ss_ext = substr($nom_image_georef,0,length($nom_image_georef)-4);
-# 	
-# 	my $nom_fichier_georef = $repertoire_georef."/".$nom_ss_ext.".".$type;
-# 	
-# 	if(!(-e $nom_fichier_georef && -f $nom_fichier_georef)){
-# 		open GEOREF, ">$nom_fichier_georef" or die colored ("[PARAM_DIFFUSION_RASTER] Impossible de creer le fichier $type de l'image $nom_image_georef.", 'white on_red');
-# 		print GEOREF $contenu_fichier;
-# 		close GEOREF;
-# 	}
-# 	
-# 	return $nom_fichier_georef;
-# 	
-# }
+# XXXXTODO a supprimer sans GDAL
+# XXXXsub cree_string_tfw{
+# XXXX	my $x_min_tfw = $_[0];
+# XXXX	my $y_max_tfw = $_[1];
+# XXXX	my $resolution_tfw = $_[2];
+# XXXX	my $rotation_tfw = $_[3];
+# XXXX	
+# XXXX	my $tfw = '';
+# XXXX	$tfw.= sprintf "%.2f\n%.2f\n%.2f\n%.2f\n", $resolution_tfw, $rotation_tfw, $rotation_tfw, $resolution_tfw * -1;
+# XXXX	$tfw.= sprintf "%.2f\n", $x_min_tfw + 0.5 * $resolution_tfw;
+# XXXX	$tfw.= sprintf "%.2f\n", $y_max_tfw - 0.5 * $resolution_tfw;
+# XXXX	return $tfw;
+# XXXX}
+# XXXXsub cree_fichier_georef{
+# XXXX	
+# XXXX	my $nom_image_georef = $_[0];
+# XXXX	my $repertoire_georef = $_[1];
+# XXXX	my $type = $_[2];
+# XXXX	my $contenu_fichier = $_[3];
+# XXXX	
+# XXXX	my $nom_ss_ext = substr($nom_image_georef,0,length($nom_image_georef)-4);
+# XXXX	
+# XXXX	my $nom_fichier_georef = $repertoire_georef."/".$nom_ss_ext.".".$type;
+# XXXX	
+# XXXX	if(!(-e $nom_fichier_georef && -f $nom_fichier_georef)){
+# XXXX		open GEOREF, ">$nom_fichier_georef" or die colored ("[PARAM_DIFFUSION_RASTER] Impossible de creer le fichier $type de l'image $nom_image_georef.", 'white on_red');
+# XXXX		print GEOREF $contenu_fichier;
+# XXXX		close GEOREF;
+# XXXX	}
+# XXXX	
+# XXXX	return $nom_fichier_georef;
+# XXXX	
+# XXXX}
