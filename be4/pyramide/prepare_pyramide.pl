@@ -24,7 +24,7 @@ use cache(
 	'lecture_tile_matrix_set',
 );
 # CONSTANTES
-
+$| = 1;
 our($opt_p, $opt_i, $opt_s, $opt_r, $opt_t, $opt_n, $opt_d, $opt_m);
 
 my %produit_format = %produit_format_param;
@@ -310,7 +310,6 @@ sub cherche_infos_dalle{
 	
 	my $nb_dalles = @imgs;
 	my $pourcent = 0;
-	$| = 1;
 	print "0";
 	
 	for(my $i = 0; $i < @imgs; $i++){
