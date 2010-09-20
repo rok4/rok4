@@ -353,7 +353,7 @@ my @lignes_log = <CHECK>;
 close CHECK;
 my $bool_erreur = 0;
 foreach my $ligne(@lignes_log){
-	if ($ligne =~ /err(?:eur|or)|unable/i){
+	if ($ligne =~ /err(?:eur|or)|unable|not found/i){
 		$bool_erreur = 1;
 		last;
 	}
@@ -892,6 +892,10 @@ sub calcule_niveau_minimum {
 				}
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
+			
+			# test pour stephane
+			sleep(1);
+			
 			close FIC;
 			# definition de l'interpolateur
 			my $interpolateur = "bicubique";
