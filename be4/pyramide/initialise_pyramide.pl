@@ -8,7 +8,7 @@ use Cwd 'abs_path';
 use cache(
 	'cree_repertoires_recursifs',
 );
-
+$| = 1;
 our($opt_l,$opt_p);
 
 # correspondance entre les repertoires de l'ancien cache et du nouveau

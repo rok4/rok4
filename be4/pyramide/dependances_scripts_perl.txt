@@ -1,18 +1,26 @@
 Dependances des scripts Perl :
 
 Modules Perl :
-POSIX
+cache
 Cwd
-Getopt::Std
-Term::ANSIColor
+Exporter
 File::Basename
 File::Copy
+Getopt::Std
+POSIX
+strict
+Term::ANSIColor
 XML::Simple
-Exporter
-cache
+
+
 
 Fichiers :
 ../share/pyramide/4096_4096_FFFFFF.tif
 ../share/pyramide/mtd_4096_4096_black_32b.tif
 ../config/tileMatrixSet/FR_LAMB93_test.tms
 ../config/pyramids/pyramid.xsd
+
+Programmes :
+merge4tiff
+tiff2tile
+dalles_base

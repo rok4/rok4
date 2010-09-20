@@ -16,13 +16,15 @@ use cache(
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
+	'$programme_dalles_base_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
 use File::Copy;
 use XML::Simple;
 use File::Basename;
-
+# pas de bufferisation des sorties
+$| = 1;
 our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_d);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
@@ -33,6 +35,7 @@ my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
 my %produit_res_utiles = %produit_res_utiles_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
+my $programme_dalles_base = $programme_dalles_base_param;
 my $taille_dalle_pix = $taille_dalle_pix_param;
 my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
@@ -59,8 +62,7 @@ if(!(-e $path_tms && -d $path_tms)){
 ############ MAIN
 my $time = time();
 my $log = "log_cree_dallage_base_$time.log";
-# pas de bufferisation des sorties
-$| = 1;
+
 open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $log.", 'white on_red');
 
 &ecrit_log("commande : @ARGV");
@@ -136,7 +138,7 @@ if (! (-e $fichier_pyramide && -f $fichier_pyramide)){
 	&ecrit_log("ERREUR : Le fichier $fichier_pyramide n'existe pas.");
 	exit;
 }
-if ($pourcentage_dilatation !~ /^[0-100]$/){
+if ($pourcentage_dilatation !~ /^\d{1,3}$/ || $pourcentage_dilatation > 100 ){
 	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation $pourcentage_dilatation est incorrect.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR : Le pourcentage de dilatation $pourcentage_dilatation est incorrect.");
@@ -876,8 +878,11 @@ sub calcule_niveau_minimum {
 			
 			my $res_x_max_source = 0;
 			my $res_y_max_source = 0;
+			
+			print "trace : ouverture de $nom_fichier\n";
 			open FIC, ">$nom_fichier" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_fichier.", 'white on_red');
 			# dalle cache
+			print "trace : ecriture de la dalle cache dans $nom_fichier\n";
 			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			# dalles source a la suite
 			# TODO supprimer la string des dalles source pour GDAL
@@ -893,6 +898,7 @@ sub calcule_niveau_minimum {
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
 			
+			print "trace : fin ecriture des dalles source dans $nom_fichier\n";
 			# test pour stephane
 			sleep(1);
 			
@@ -964,7 +970,7 @@ sub calcule_niveau_minimum {
 				$type_dalles_base = "img";
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
-			system("dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
+			system("$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
 			
 			# TODO voir si sans GDAL, la suppression est necessaire
 			# suppression de la dalle existante (blanche ou lien) avant remplacement

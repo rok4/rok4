@@ -31,6 +31,7 @@ our @EXPORT=(
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
+	'$programme_dalles_base_param',
 );
 ################################################################################
 
@@ -95,6 +96,7 @@ our %produit_res_utiles_param = (
 # apres deploiement
 our $programme_ss_ech_param = "merge4tiff";
 our $programme_format_pivot_param = "tiff2tile";
+our $programme_dalles_base_param = "dalles_base";
 #our $programme_ss_ech_param = "/exavol/private/only4diffusio/charlotte/pascal/merge4tiff";
 #our $programme_format_pivot_param = "/exavol/private/only4diffusio/charlotte/pascal/tiff2tile";
 
