@@ -4,6 +4,7 @@ use strict;
 use Term::ANSIColor;
 use Getopt::Std;
 use XML::Simple;
+use File::Basename;
 use Cwd 'abs_path';
 use cache(
 	'cree_repertoires_recursifs',
@@ -60,7 +61,7 @@ if (! (-e $fichier_pyr && -f $fichier_pyr)){
 # action 1 : determiner la pyramide la plus recente
 &ecrit_log("Lecture de la configuration.");
 print "[INITIALISE_PYRAMIDE] Lecture de la configuration.\n";
-my $ancien_pyr = &lecture_lay($lay_ancien);
+my $ancien_pyr = dirname($lay_ancien)."/".&lecture_lay($lay_ancien);
 &ecrit_log("Pyramide la plus recente : $ancien_pyr.");
 print "[INITIALISE_PYRAMIDE] Pyramide la plus recente : $ancien_pyr.\n";
 
@@ -143,7 +144,7 @@ sub lecture_lay{
 	# pour tester quel type d'objet est reference (ou pas)
 	my $ref = ref($liste_pyramides->{pyramid});
 	
-	if($ref eq "ARRAY" ){
+	if($ref eq "ARRAY"){
 		$path_fichier_pyramide_recente = $liste_pyramides->{pyramid}->[0];
 	}else{
 		$path_fichier_pyramide_recente = $liste_pyramides->{pyramid};
@@ -238,12 +239,15 @@ sub lecture_pyramide{
 			$id_rep_images{"$id"} = abs_path($rep1);
 		}
 		my $metadata = $level->{metadata};
-		my $rep2 = $metadata->{baseDir};
-		if (substr($rep2, 0, 1) eq "/" ){
-			$id_rep_mtd{"$id"} = $rep2;
-		}else{
-			$id_rep_mtd{"$id"} = abs_path($rep2);
-		}
+ 		if (defined $metadata){
+			my $rep2 = $metadata->{baseDir};
+			if (substr($rep2, 0, 1) eq "/" ){
+				$id_rep_mtd{"$id"} = $rep2;
+			}else{
+				$id_rep_mtd{"$id"} = abs_path($rep2);
+			}
+ 		}
+		
 		
 	}
 	
