@@ -7,7 +7,7 @@
 #include <jpeglib.h>
 
 void usage() {
-  std::cerr << "usage : 2pivot input_file -c [none/png/jpg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] output_file";
+  std::cerr << "usage : 2pivot input_file -c [none/png/jpeg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] output_file";
 }
 
 int main(int argc, char **argv) {
