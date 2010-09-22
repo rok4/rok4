@@ -172,14 +172,14 @@ int Tile::getline(uint8_t* buffer, int line) {
 		if (!encoded_data)
 			encoded_data=noDataSource->get_data(encoded_size);
 		if (encoded_data){
-	        	if (coding==RAW_UINT8)
+	        	if (coding==RAW_UINT8 || coding==RAW_FLOAT)
         	        	RawDecoder::decode(encoded_data, encoded_size, raw_data);
 	        	else if (coding==JPEG_UINT8)
         	        	JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
 		        else if (coding==PNG_UINT8)
         		        PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
 	        	else
-        	        	LOGGER_ERROR("Impossible de decoder la tuile");
+        	        	LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
 		}
 		// Couleur nodata
 		else{
@@ -194,17 +194,31 @@ int Tile::getline(uint8_t* buffer, int line) {
 
 int Tile::getline(float* buffer, int line) {
 	// La donne de la tuile (stockee dans datasource) n'est decompressee qu'en cas de necessite
-	if (!raw_data)
-	{
-		raw_data = new uint8_t[tile_width * tile_height * channels];
-		size_t encoded_size;
-        	const uint8_t* encoded_data = datasource->get_data(encoded_size);
-	        if (coding==RAW_FLOAT)
-                	RawDecoder::decode(encoded_data, encoded_size, raw_data);
-        	else
-                LOGGER_ERROR("Impossible de decoder la tuile");
-	}
-	convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+        if (!raw_data)
+        {
+                raw_data = new uint8_t[tile_width * tile_height * channels];
+                size_t encoded_size;
+                const uint8_t* encoded_data=datasource->get_data(encoded_size);
+                if (!encoded_data)
+                        encoded_data=noDataSource->get_data(encoded_size);
+                if (encoded_data){
+                        if (coding==RAW_UINT8 || coding==RAW_FLOAT)
+                                RawDecoder::decode(encoded_data, encoded_size, raw_data);
+                        else if (coding==JPEG_UINT8)
+                                JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+                        else if (coding==PNG_UINT8)
+                                PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+                        else
+                                LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
+                }
+                // Couleur nodata
+                else{
+                        memset(raw_data,100,tile_width * tile_height * channels);
+                }
+                        
+                
+        }
+        convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
         return width * channels;
 }
 

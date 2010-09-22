@@ -97,7 +97,7 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, const cha
   bbox_int.print();
   Image* image = getwindow(bbox_int);
   image->setbbox( BoundingBox<double>(tm.getX0() + tm.getRes() * bbox_int.xmin,tm.getX0() + tm.getRes() * bbox_int.xmax,tm.getY0() - tm.getRes() * bbox_int.ymax,tm.getY0() - tm.getRes() * bbox_int.ymin));
-
+LOGGER_DEBUG("Reprojection");
   return new ReprojectedImage(image, bbox, grid);
 }
 
