@@ -59,9 +59,8 @@ if(!(-e $path_tms && -d $path_tms)){
 	print "\n";
 	exit;
 }
-# verification la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
+# verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
-print "verif : $verif_programme_dalle_base\n";
 if ($verif_programme_dalle_base eq ""){
 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_dalles_base est introuvable.", 'white on_red');
 	print "\n";
@@ -895,6 +894,22 @@ sub calcule_niveau_minimum {
 			print ".";
 			
 			my $nom_dalle = $nom_dalle_index_base{$dalle_cache};
+			
+			# mise en format travail dalle_cache pour image initiale
+			# destruction de la dalle_cache temporaire si elle existe
+			if(-e "$rep_temp/$nom_dalle.tif" && -f "$rep_temp/$nom_dalle.tif"){
+				my $suppr = unlink("$rep_temp/$nom_dalle.tif");
+				if($suppr != 1){
+					&ecrit_log("ERREUR a la destruction de $rep_temp/$nom_dalle.tif.");
+				}
+			}
+			&ecrit_log("Copie raw de $dalle_cache.");
+			&ecrit_log("Execution de tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/$nom_dalle.tif");
+			system("tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/$nom_dalle.tif >>$log 2>&1");
+			if(!(-e "$rep_temp/$nom_dalle.tif" && -f "$rep_temp/$nom_dalle.tif")){
+				&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+			}
+			
 			my $nom_fichier = $rep_enregistr."/".$nom_dalle."_".$type;
 			
 			my $res_x_max_source = 0;
@@ -904,6 +919,10 @@ sub calcule_niveau_minimum {
 			# dalle cache
 			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			# dalles source a la suite
+			# d'abord la dalle cache temporaire
+			#(puisque $programme_dalles_base ne supporte pas l'entree/sortie sur la meme image)
+			print FIC "$rep_temp/$nom_dalle.tif\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
+			
 # XXXX			# TODO supprimer la string des dalles source pour GDAL
 # XXXX			# my $gdal_source = "";
 			foreach my $src(@liste_dalles_source){
@@ -954,19 +973,7 @@ sub calcule_niveau_minimum {
 # XXXX				}
 # XXXX			}
 # XXXX			
-# XXXX			# mise en format travail dalle_cache
-# XXXX			# destruction de la dalle_cache temporaire si elle existe
-# XXXX			if(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif"){
-# XXXX				my $suppr = unlink("$rep_temp/cache.tif");
-# XXXX				if($suppr != 1){
-# XXXX					&ecrit_log("ERREUR a la destruction de $rep_temp/cache.tif.");
-# XXXX				}
-# XXXX			}
-# XXXX			&ecrit_log("Copie raw de $dalle_cache.");
-# XXXX			system("tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/cache.tif >>$log 2>&1");
-# XXXX			if(!(-e "$rep_temp/cache.tif" && -f "$rep_temp/cache.tif")){
-# XXXX				&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
-# XXXX			}
+			
 # XXXX			
 # XXXX			# copie du tfw en plus pour GDAL
 # XXXX			my $nom_tfw = substr($dalle_cache, 0, length($dalle_cache) - 4).".tfw";
@@ -976,7 +983,7 @@ sub calcule_niveau_minimum {
 # XXXX			}
 # XXXX			
 # XXXX			# lecture du lien de la dalle cache pour GDAL qui comprend rien 
-# XXXX		my $fichier_pointe = readlink("$dalle_cache");
+# XXXX			my $fichier_pointe = readlink("$dalle_cache");
 # XXXX			if ( ! defined $fichier_pointe){
 # XXXX				$fichier_pointe = "$dalle_cache";
 # XXXX			}
