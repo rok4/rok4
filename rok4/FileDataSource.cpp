@@ -21,7 +21,6 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
         	tile_size=size;
                 return data;
         }
-
         // Ouverture du fichier
         int fildes = open(filename.c_str(), O_RDONLY);
         if(fildes < 0) {
@@ -41,7 +40,6 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
                 close(fildes);
                 return 0;
         }
-
         // La taille de la tuile ne doit pas exceder un seuil
         // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
         // (et qui pourraient indiquer des tailles de tuiles excessives)

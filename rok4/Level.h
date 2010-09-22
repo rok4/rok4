@@ -3,10 +3,10 @@
 
 #include "Image.h"
 #include "Tile.h"
-
 #include "BoundingBox.h"
 #include "TileMatrix.h"
-
+#include "Data.h"
+#include "FileDataSource.h"
 
 /**
   */
@@ -25,8 +25,10 @@ class Level {
   const int32_t minTileCol;
   uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
   uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
+  const std::string noDataFile;
 
   std::string getfilepath(int tilex, int tiley);
+  FileDataSource* noDataSource;
 
   protected:
   /**
@@ -72,11 +74,15 @@ class Level {
   Level(TileMatrix &tm, int channels, std::string baseDir,
 		    int tilesPerWidth, int tilesPerHeight,
 		    uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-		    int pathDepth, std::string format) :
-	        tm(tm), channels(channels), baseDir(baseDir),
-	        tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight),
-		    maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol),
-	        pathDepth(pathDepth), format(format) {}
+		    int pathDepth, std::string format);
+
+/*
+* Destructeur
+*/
+ ~Level()
+{
+	delete noDataSource;
+}
 
 };
 

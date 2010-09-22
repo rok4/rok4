@@ -2,17 +2,15 @@
 #define _WMSSERVER_
 
 #include "config.h"
-
 #include "ResponseSender.h"
 #include "Data.h"
 #include "Request.h"
-
 #include <pthread.h>
 #include <map>
-
 #include "ServicesConf.h"
 #include "Layer.h"
 #include "TileMatrixSet.h"
+#include "fcgiapp.h"
 
 
 class WMSServer {
@@ -33,11 +31,11 @@ class WMSServer {
   void buildWMTSCapabilities();
 
   DataStream* getMap(Request* request);
-  DataSource* getTile(Request* request);
+  DataSource* getTile(Request* request, Tile* tile);
   DataStream* WMSGetCapabilities(Request* request);
   DataSource* WMTSGetCapabilities(Request* request);
   DataStream* processWMS (Request *request);
-  DataSource* processWMTS(Request *request);
+  DataSource* processWMTS(Request *requesti, Tile* tile);
 
   public:
   std::string WMSCapabilities;

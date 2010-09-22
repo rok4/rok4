@@ -33,9 +33,8 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
                         return -1;
                  }
                  wr += w;
-	}
-        source->release_data();
-        //delete[] buffer;
+	}	
+
         return 0;
 }
 

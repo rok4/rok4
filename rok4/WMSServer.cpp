@@ -55,12 +55,13 @@ void* WMSServer::thread_loop(void* arg)
         	}
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
           	if(request->service == "wms")
-		{
-			DataStream* stream = server->processWMS(request);
-                  	server->S.sendresponse(stream,&fcgxRequest);
-		}
+                  	server->S.sendresponse(server->processWMS(request),&fcgxRequest);
           	else if(request->service=="wmts")
-                	server->S.sendresponse(server->processWMTS(request),&fcgxRequest);
+		{	
+			Tile* tile;
+                	server->S.sendresponse(server->processWMTS(request,tile),&fcgxRequest);
+			delete tile;
+		}
           	else
                  	server->S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
       		delete request;
@@ -73,22 +74,23 @@ void* WMSServer::thread_loop(void* arg)
 /**
 Construction du serveur
 */
-  WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
+WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
 		               nbThread(nbThread), sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList) {
 	int init=FCGX_Init();
 //  sock = FCGX_OpenSocket(":1998", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
-  }
+}
 	
-
-  void WMSServer::run() {
-
-    for(int i = 0; i < nbThread; i++)
-      pthread_create(&Thread[i], NULL, WMSServer::thread_loop, (void*) this);
-    for(int i = 0; i < nbThread; i++)
-      pthread_join(Thread[i], NULL);
-  }
+/*
+* Lancement des threads du serveur
+*/
+void WMSServer::run() {
+	for(int i = 0; i < nbThread; i++)
+      		pthread_create(&Thread[i], NULL, WMSServer::thread_loop, (void*) this);
+    	for(int i = 0; i < nbThread; i++)
+      		pthread_join(Thread[i], NULL);
+}
 
 
 DataStream* WMSServer::WMSGetCapabilities(Request* request) {
@@ -154,45 +156,45 @@ DataStream* WMSServer::getMap(Request* request)
 * @return Un message d'erreur en cas d'erreur
 */
 
-DataSource* WMSServer::getTile(Request* request)
+DataSource* WMSServer::getTile(Request* request, Tile* tile)
 {
-    	std::string layer;
-    	int tileCol;
-    	int tileRow;
-    	std::string tileMatrixSet;
-    	std::string tileMatrix;
-    	std::string format;
+	std::string layer,tileMatrixSet,tileMatrix,format;
+	int tileCol,tileRow;
+	
+	// Récupération des paramètres de la requete
+	DataSource* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
+        if (errorResp)
+        	return errorResp;
+        // Vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
+        // Existence du layer
+        //FIXME : pourquoi ce controle ici?
+        std::map<std::string, Layer*>::iterator it = layerList.find(layer);
+        if(it == layerList.end())
+                    return new MessageDataSource("Unknown layer","text/plain");
+        Layer* L = it->second;
+        // l'existence du TMS et TM est controlée dans gettile()
+        // TODO: vérifier que c'est effectivement le cas
 
-    	// Récupération des paramètres de la requete
-
-    	DataSource* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
-    	if (errorResp)
-    		return errorResp;
-
-    	// Vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
-	// Existence du layer
-	//FIXME : pourquoi ce controle ici?
-    	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
-    	if(it == layerList.end()){
-    		return new MessageDataSource("Unknown layer","text/plain");
-    	}
-    	Layer* L = it->second;
-	// l'existence du TMS et TM est controlée dans gettile()
-	// TODO: vérifier que c'est effectivement le cas
-
-    	// Récupération de la tuile
-    	return L->gettile(tileCol, tileRow, tileMatrix)->getDataSource();
+        // Récupération de la tuile
+	tile=L->gettile(tileCol, tileRow, tileMatrix);
+	DataSource* source=tile->getDataSource();
+	size_t size;
+	if (source->get_data(size))
+		return source;
+	else
+		return tile->getNoDataSource();
 }
 
-/** traite les requêtes de type WMTS */
-DataSource* WMSServer::processWMTS(Request* request)
+
+/** tTraite les requêtes de type WMTS */
+DataSource* WMSServer::processWMTS(Request* request, Tile* tile)
 {
-    	if (request->request == "getcapabilities")
-    		return(WMTSGetCapabilities(request));
-    	else if (request->request == "gettile")
-    		return (getTile(request));
-    	else
-    		return new MessageDataSource("Invalid request","text/plain");
+            if (request->request == "getcapabilities")
+                    return(WMTSGetCapabilities(request));
+            else if (request->request == "gettile")
+                    return (getTile(request, tile));
+            else
+                    return new MessageDataSource("Invalid request","text/plain");
 }
 
 /** Traite les requêtes de type WMS */
@@ -205,7 +207,7 @@ DataStream* WMSServer::processWMS(Request* request) {
 		return new MessageDataStream("Invalid request","text/plain");
 }
 
-  int main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
       /* the following loop is for fcgi debugging purpose */
       int stopSleep = 0;

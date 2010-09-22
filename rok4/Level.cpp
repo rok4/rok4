@@ -13,6 +13,14 @@
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
                     //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
+
+/** Constructeur */
+Level::Level(TileMatrix &tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
+tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
+{
+	noDataSource = new FileDataSource("../config/nodata/nodata_tiled.tif",1024,1028,getType());
+}
+
 TileMatrix const & Level::getTm(){return tm;}
 std::string Level::getFormat(){return format;}
 uint32_t Level::getMaxTileRow(){return maxTileRow;}
@@ -151,7 +159,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
     for(int x = 0; x < nbx; x++) {
       LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );      
       Tile* tile = gettile(tile_xmin + x, tile_ymin + y);
-      T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile->getDataSource(), left[x], top[y], right[x], bottom[y],tileCoding);
+      T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile->getDataSource(), tile->getNoDataSource(), left[x], top[y], right[x], bottom[y],tileCoding);
     }
 
   if(nbx == 1 && nby == 1) return T[0][0];  
@@ -218,8 +226,8 @@ Tile* Level::gettile(int x, int y)
   	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth); // Index de la tuile
   	uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
 	LOGGER_DEBUG(getfilepath(x, y).c_str());
-  	FileDataSource* datasource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
+  	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
-	return new Tile(tm.getTileW(),tm.getTileH(),channels,datasource,0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
+	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
 }
 

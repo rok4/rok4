@@ -243,7 +243,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
    			return NULL;
    		}
 
-	    pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
+	    	pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
    		if (!pElemLvl){
    			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerHeight !!");
    			return NULL;
@@ -308,7 +308,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		}
 
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-									maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth,format);
+									maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels
 
@@ -699,7 +699,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		std::string format(pElem->GetText());
 		formatList.push_back(format);
 	}
-
+	
 
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,

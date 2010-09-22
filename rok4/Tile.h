@@ -35,7 +35,9 @@ class PngDecoder {
 class Tile : public Image {
   	private:
 	// Source de donnees : correspond aux octets de la tuile dans le fichier du cache
-  	DataSource *datasource;
+  	DataSource* datasource;
+	// Source de donnees nodata
+	DataSource* noDataSource;
 	// Donnees raw : correspond a la tuile decompressee (permet un acces direct aux pixels)
   	uint8_t* raw_data;
 
@@ -47,15 +49,16 @@ class Tile : public Image {
   	int coding;
 
   	public:
-	DataSource* getDataSource() {return datasource;}
+	inline DataSource* getDataSource() {return datasource;}
+	inline DataSource* getNoDataSource() {return noDataSource;}
   	int getline(uint8_t* buffer, int line);
 	int getline(float* buffer, int line);
 
-  	Tile(int tile_width, int tile_height, int channels, DataSource* datasource, int left, int top, int right, int bottom, int coding);
+  	Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding);
 
   	~Tile() {
    		delete[] raw_data;
-   		datasource->release_data();
+		getDataSource()->release_data();
   	}
 };
 

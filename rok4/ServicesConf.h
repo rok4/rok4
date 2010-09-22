@@ -73,7 +73,6 @@ public:
     {
         return title;
     }
-
 };
 
 #endif /* SERVICESCONF_H_ */

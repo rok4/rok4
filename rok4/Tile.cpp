@@ -156,8 +156,8 @@ void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_
 * Constructeur
 */
 
-Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource, int left, int top, int right, int bottom, int coding)
-   : Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
+Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding)
+   : Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
 { 
 	raw_data = 0;
 }
@@ -168,15 +168,25 @@ int Tile::getline(uint8_t* buffer, int line) {
         {
 		raw_data = new uint8_t[tile_width * tile_height * channels];
                 size_t encoded_size;
-                const uint8_t* encoded_data = datasource->get_data(encoded_size);
-        	if (coding==RAW_UINT8)
-                	RawDecoder::decode(encoded_data, encoded_size, raw_data);
-	        else if (coding==JPEG_UINT8)
-        	        JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-	        else if (coding==PNG_UINT8)
-        	        PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-	        else
-        	        LOGGER_ERROR("Impossible de decoder la tuile");
+                const uint8_t* encoded_data=datasource->get_data(encoded_size);
+		if (!encoded_data)
+			encoded_data=noDataSource->get_data(encoded_size);
+		if (encoded_data){
+	        	if (coding==RAW_UINT8)
+        	        	RawDecoder::decode(encoded_data, encoded_size, raw_data);
+	        	else if (coding==JPEG_UINT8)
+        	        	JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+		        else if (coding==PNG_UINT8)
+        		        PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+	        	else
+        	        	LOGGER_ERROR("Impossible de decoder la tuile");
+		}
+		// Couleur nodata
+		else{
+			memset(raw_data,100,tile_width * tile_height * channels);
+		}
+			
+		
 	}
 	convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
 	return width * channels;
