@@ -15,6 +15,6 @@
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>
 	<pyramidList>
-		<pyramid>../config/pyramids/ORTHO_PARIS_RAW.pyr</pyramid>
+		<pyramid>/mnt/private/only4diffusio/charlotte/test_pyramide/ORTHO_IGNF_LAMB93_2008_92/ORTHO_PARIS_RAW.pyr</pyramid>
 	</pyramidList>
 </layer>

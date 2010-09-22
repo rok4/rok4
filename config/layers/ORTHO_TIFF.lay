@@ -15,6 +15,6 @@
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>
 	<pyramidList>
-		<pyramid>../config/pyramids/ORTHO_TIFF.pyr</pyramid>
+		<pyramid>/mnt/geoportail/ppons/ortho/cache36/ORTHO_TIFF.pyr</pyramid>
 	</pyramidList>
 </layer>
