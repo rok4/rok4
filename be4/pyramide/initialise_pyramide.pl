@@ -61,7 +61,7 @@ if (! (-e $fichier_pyr && -f $fichier_pyr)){
 # action 1 : determiner la pyramide la plus recente
 &ecrit_log("Lecture de la configuration.");
 print "[INITIALISE_PYRAMIDE] Lecture de la configuration.\n";
-my $ancien_pyr = dirname($lay_ancien)."/".&lecture_lay($lay_ancien);
+my $ancien_pyr = &lecture_lay($lay_ancien);
 &ecrit_log("Pyramide la plus recente : $ancien_pyr.");
 print "[INITIALISE_PYRAMIDE] Pyramide la plus recente : $ancien_pyr.\n";
 
