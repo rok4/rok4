@@ -62,6 +62,10 @@ if (! (-e $fichier_pyr && -f $fichier_pyr)){
 &ecrit_log("Lecture de la configuration.");
 print "[INITIALISE_PYRAMIDE] Lecture de la configuration.\n";
 my $ancien_pyr = &lecture_lay($lay_ancien);
+# test si le chemin est en absolu ou en relatif (dans ce cas on ajoute le repertoire du lay)
+if( $ancien_pyr !~ /^\//){
+	$ancien_pyr = dirname($lay_ancien)."/".$ancien_pyr;
+}
 &ecrit_log("Pyramide la plus recente : $ancien_pyr.");
 print "[INITIALISE_PYRAMIDE] Pyramide la plus recente : $ancien_pyr.\n";
 
