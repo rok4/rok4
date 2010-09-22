@@ -17,6 +17,7 @@ use cache(
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
+	'$programme_copie_image_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
@@ -36,6 +37,7 @@ my %produit_res_utiles = %produit_res_utiles_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
+my $programme_copie_image = $programme_copie_image_param;
 my $taille_dalle_pix = $taille_dalle_pix_param;
 my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
@@ -263,7 +265,7 @@ print "[CREE_DALLAGE_BASE] Determination des infos de la dalle la plus haute rec
 my ($x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $niveau_dalle0, $indice_niveau0) =  &trouve_infos_pyramide($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $x_max_niveau_max, $y_min_niveau_max, $y_max_niveau_max, $res_max, $level_max);
 	
 # action 4 : creer arbre : cree_arbre_dalles_cache
-# pour GDAL
+# XXXX pour GDAL
 # XXXX my %cache_arbre_niveau;
 my %cache_arbre_x_min;
 my %cache_arbre_x_max;
@@ -307,19 +309,22 @@ my %nom_dalle_index_base;
 print "[CREE_DALLAGE_BASE] Passage des donnees arbre aux donnees cache.\n";
 &arbre2cache(\@liste_dalles_cache_index_arbre);
 
-# action 5 : completer la pyramide initiale
-# images
-&ecrit_log("Completement des dalles absentes de la pyramide initiale.");
-print "[CREE_DALLAGE_BASE] Completement des dalles absentes de la pyramide initiale.\n";
-my $nombre_ajoutees = &complete_pyramide_initiale(\@liste_total_dalles_cache, "image");
-&ecrit_log("$nombre_ajoutees images ajoutees.");
-print "[CREE_DALLAGE_BASE] $nombre_ajoutees images ajoutees.\n";
-# mtd
-if (defined $fichier_mtd_source){
-	my $nombre_ajoutees_mtd = &complete_pyramide_initiale(\@liste_total_dalles_cache_mtd, "mtd");
-	&ecrit_log("$nombre_ajoutees_mtd mtd ajoutees.");
-	print "[CREE_DALLAGE_BASE] $nombre_ajoutees_mtd mtd ajoutees.\n";
-}
+##### ATTENTION; action 5 gelée : plus besoin d'intialiser la pyramide avec du vide
+# on fera simplement reference a la dalle no_data plus tard
+
+# 	# action 5 : completer la pyramide initiale
+# 	# images
+# 	&ecrit_log("Completement des dalles absentes de la pyramide initiale.");
+# 	print "[CREE_DALLAGE_BASE] Completement des dalles absentes de la pyramide initiale.\n";
+# 	my $nombre_ajoutees = &complete_pyramide_initiale(\@liste_total_dalles_cache, "image");
+# 	&ecrit_log("$nombre_ajoutees images ajoutees.");
+# 	print "[CREE_DALLAGE_BASE] $nombre_ajoutees images ajoutees.\n";
+# 	# mtd
+# 	if (defined $fichier_mtd_source){
+# 		my $nombre_ajoutees_mtd = &complete_pyramide_initiale(\@liste_total_dalles_cache_mtd, "mtd");
+# 		&ecrit_log("$nombre_ajoutees_mtd mtd ajoutees.");
+# 		print "[CREE_DALLAGE_BASE] $nombre_ajoutees_mtd mtd ajoutees.\n";
+# 	}
 
 #action 6 : calculer le niveau minimum
 &ecrit_log("Calcul des images du niveau le plus bas.");
@@ -895,20 +900,36 @@ sub calcule_niveau_minimum {
 			
 			my $nom_dalle = $nom_dalle_index_base{$dalle_cache};
 			
+			my $nom_dalle_temp = "$rep_temp/$nom_dalle.tif";
 			# mise en format travail dalle_cache pour image initiale
 			# destruction de la dalle_cache temporaire si elle existe
-			if(-e "$rep_temp/$nom_dalle.tif" && -f "$rep_temp/$nom_dalle.tif"){
-				my $suppr = unlink("$rep_temp/$nom_dalle.tif");
+			if(-e $nom_dalle_temp && -f $nom_dalle_temp){
+				my $suppr = unlink($nom_dalle_temp);
 				if($suppr != 1){
-					&ecrit_log("ERREUR a la destruction de $rep_temp/$nom_dalle.tif.");
+					&ecrit_log("ERREUR a la destruction de $nom_dalle_temp.");
 				}
 			}
-			&ecrit_log("Copie raw de $dalle_cache.");
-			&ecrit_log("Execution de tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/$nom_dalle.tif");
-			system("tiffcp -s -r $taille_dalle_pix $dalle_cache $rep_temp/$nom_dalle.tif >>$log 2>&1");
-			if(!(-e "$rep_temp/$nom_dalle.tif" && -f "$rep_temp/$nom_dalle.tif")){
-				&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+			# test si on a une dalle (normalement un lien vers une pyramide precedente qui est en format pyramide)
+			if (-e $dalle_cache ){
+				&ecrit_log("Copie raw de $dalle_cache.");
+				&ecrit_log("Execution de $programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp");
+				system("$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp >>$log 2>&1");
+				if(!(-e $nom_dalle_temp && -f $nom_dalle_temp)){
+					&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+				}
+			}else{
+				# sinon on fait reference a la dalle no_data
+				if($type eq "image"){
+					$nom_dalle_temp = $dalle_no_data;
+				}elsif($type eq "mtd"){
+					$nom_dalle_temp = $dalle_no_data_mtd;
+				}else{
+					print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type incorrect.", 'white on_red');
+					print "\n";
+					exit;
+				}
 			}
+			
 			
 			my $nom_fichier = $rep_enregistr."/".$nom_dalle."_".$type;
 			
@@ -919,9 +940,11 @@ sub calcule_niveau_minimum {
 			# dalle cache
 			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			# dalles source a la suite
+			
 			# d'abord la dalle cache temporaire
-			#(puisque $programme_dalles_base ne supporte pas l'entree/sortie sur la meme image)
-			print FIC "$rep_temp/$nom_dalle.tif\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
+			# (puisque $programme_dalles_base ne supporte pas de ne pas avoir de donnees)
+			
+			print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			
 # XXXX			# TODO supprimer la string des dalles source pour GDAL
 # XXXX			# my $gdal_source = "";
@@ -997,6 +1020,7 @@ sub calcule_niveau_minimum {
 				$type_dalles_base = "img";
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
+			# TODO supprimer no_data qui ne sert a rien
 			&ecrit_log("Execution de : $programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb");
 			system("$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
 			
@@ -1066,6 +1090,7 @@ sub calcule_niveaux_inferieurs{
 #							}
 							
 							my $nom_dalle_cache = basename($dalle_dessous);
+							
 							# mise en format travail de la dalle dalle_cache
 							# desctruction de la dalle_cache temporaire si elle existe
 							if(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache"){
@@ -1075,8 +1100,8 @@ sub calcule_niveaux_inferieurs{
 								}
 							}
 							&ecrit_log("Copie raw de $dalle_dessous.");
-							&ecrit_log("Execution de : tiffcp -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache");
-							system("tiffcp -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache >>$log 2>&1");
+							&ecrit_log("Execution de : $programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache");
+							system("$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache >>$log 2>&1");
 							if(!(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache")){
 								&ecrit_log("ERREUR a la copie raw de $dalle_dessous.");
 							}
@@ -1088,7 +1113,7 @@ sub calcule_niveaux_inferieurs{
 		 			&ecrit_log("Execution de : $programme_ss_ech $string_dessous $dal");
 					system("$programme_ss_ech $string_dessous $dal >>$log 2>&1");
 					# ou my $return = `$programme_ss_ech -i $interpol $string_dessous $dal`;
-					$nb_calc +=1; 
+					$nb_calc += 1; 
 				}
 				
 			}
