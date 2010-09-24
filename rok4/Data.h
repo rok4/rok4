@@ -14,7 +14,7 @@ public:
 
 	/** Destructeur virtuel */
 	virtual ~DataSource() {}
-	int a;
+
 	/**
 	 * Donne un accès direct mémoire en lecture aux données. Les données pointées sont en lecture seule.
 	 *
