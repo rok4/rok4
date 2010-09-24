@@ -28,17 +28,17 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= WMSServer.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o
+WMSSOBJ= Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o
 
-all: WMSServer
+all: Rok4Server
 #
-# WMSServer
+# Rok4Server
 # compile et genere le serveur WMS
-WMSServer: bindir $(DEPLIB) $(WMSSOBJ)
-	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o WMSServer $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp WMSServer *.o $(BINDIR)
-	rm $(BINDIR)/WMSServer.o
-	mv $(BINDIR)/WMSServer $(BINDIR)/rok4
+Rok4Server: bindir $(DEPLIB) $(WMSSOBJ)
+	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o Rok4Server $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
+	cp Rok4Server *.o $(BINDIR)
+	rm $(BINDIR)/Rok4Server.o
+	mv $(BINDIR)/Rok4Server $(BINDIR)/rok4
 	cp -rf $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 
@@ -58,7 +58,7 @@ test: cpputest
 #
 # cpputest
 # compile et execute les tests unitaires cppunit
-cpputest: WMSServer cppubin
+cpputest: Rok4Server cppubin
 	$(CPPUBIN)
 
 cppubin: $(CPPUNITOBJ)
@@ -77,6 +77,6 @@ doc :
 	doxygen $(DOCSDIR)/doxygen.cfg
 
 clean:
-	rm -f *.o $(CPPUNITDIR)/*.o WMSServer	
+	rm -f *.o $(CPPUNITDIR)/*.o Rok4Server	
 	rm -fr $(BINDIR)
 	

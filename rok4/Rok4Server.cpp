@@ -1,6 +1,6 @@
 #include "Image.h"
 
-#include "WMSServer.h"
+#include "Rok4Server.h"
 #include <iostream>
 
 #include "TiffEncoder.h"
@@ -27,9 +27,9 @@
 /**
  * Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
  */
-void* WMSServer::thread_loop(void* arg)
+void* Rok4Server::thread_loop(void* arg)
 {
-	WMSServer* server = (WMSServer*) (arg);   
+	Rok4Server* server = (Rok4Server*) (arg);
 
 	int rc;
 	FCGX_Request fcgxRequest;
@@ -74,7 +74,7 @@ void* WMSServer::thread_loop(void* arg)
 /**
 Construction du serveur
  */
-WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
+Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
 		            		   nbThread(nbThread), sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList) {
 	int init=FCGX_Init();
 	//  sock = FCGX_OpenSocket(":1998", 50);
@@ -85,21 +85,21 @@ WMSServer::WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::stri
 /*
  * Lancement des threads du serveur
  */
-void WMSServer::run() {
+void Rok4Server::run() {
 	for(int i = 0; i < nbThread; i++)
-		pthread_create(&Thread[i], NULL, WMSServer::thread_loop, (void*) this);
+		pthread_create(&Thread[i], NULL, Rok4Server::thread_loop, (void*) this);
 	for(int i = 0; i < nbThread; i++)
 		pthread_join(Thread[i], NULL);
 }
 
 
-DataStream* WMSServer::WMSGetCapabilities(Request* request) {
+DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	/*FIXME: remplacer le nom du serveur dans les adresses des capabilities*/
 	LOGGER_DEBUG("=> WMSGetCapabilities" << WMSCapabilities);
 	return new MessageDataStream(WMSCapabilities,"text/xml");
 }
 
-DataSource* WMSServer::WMTSGetCapabilities(Request* request) {
+DataSource* Rok4Server::WMTSGetCapabilities(Request* request) {
 	// TODO à faire
 	return new MessageDataSource("Not yet implemented!","text/plain");
 }
@@ -110,7 +110,7 @@ DataSource* WMSServer::WMTSGetCapabilities(Request* request) {
  * @return Un message d'erreur en cas d'erreur
  */
 
-DataStream* WMSServer::getMap(Request* request)
+DataStream* Rok4Server::getMap(Request* request)
 {
 	std::string layer;
 	BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
@@ -118,7 +118,7 @@ DataStream* WMSServer::getMap(Request* request)
 	int height;
 	std::string crs;
 	std::string format;
-	LOGGER_DEBUG( "wmsserver:getMap layers : " << layer );
+	LOGGER_DEBUG( "Rok4Server:getMap layers : " << layer );
 
 	// Récupération des paramètres
 	DataStream* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
@@ -156,7 +156,7 @@ DataStream* WMSServer::getMap(Request* request)
  * @return Un message d'erreur en cas d'erreur
  */
 
-DataSource* WMSServer::getTile(Request* request, Tile* tile)
+DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 {
 	std::string layer,tileMatrixSet,tileMatrix,format;
 	int tileCol,tileRow;
@@ -187,7 +187,7 @@ DataSource* WMSServer::getTile(Request* request, Tile* tile)
 
 
 /** tTraite les requêtes de type WMTS */
-DataSource* WMSServer::processWMTS(Request* request, Tile* tile)
+DataSource* Rok4Server::processWMTS(Request* request, Tile* tile)
 {
 	if (request->request == "getcapabilities")
 		return(WMTSGetCapabilities(request));
@@ -198,7 +198,7 @@ DataSource* WMSServer::processWMTS(Request* request, Tile* tile)
 }
 
 /** Traite les requêtes de type WMS */
-DataStream* WMSServer::processWMS(Request* request) {
+DataStream* Rok4Server::processWMS(Request* request) {
 	if (request->request == "getcapabilities")
 		return(WMSGetCapabilities(request));
 	else if (request->request == "getmap")
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
 	}
 
 	//construction du serveur.
-	WMSServer W(nbThread, *servicesConf, layerList, tmsList);
+	Rok4Server W(nbThread, *servicesConf, layerList, tmsList);
 
 	W.run();
 

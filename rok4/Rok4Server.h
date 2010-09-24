@@ -1,5 +1,5 @@
-#ifndef _WMSSERVER_
-#define _WMSSERVER_
+#ifndef _ROK4SERVER_
+#define _ROK4SERVER_
 
 #include "config.h"
 #include "ResponseSender.h"
@@ -13,7 +13,7 @@
 #include "fcgiapp.h"
 
 
-class WMSServer {
+class Rok4Server {
 private:
 	int nbThread;
 	pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
@@ -42,7 +42,7 @@ public:
 	std::string WMTSCapabilities;
 
 	void run();
-	WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
+	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 

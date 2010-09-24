@@ -5,7 +5,7 @@
  *      Author: nico
  */
 
-#include "WMSServer.h"
+#include "Rok4Server.h"
 #include "tinyxml.h"
 #include "tinystr.h"
 #include <iostream>
@@ -16,7 +16,7 @@ std::string intToStr(int i){
 	return strstr.str();
 }
 
-void WMSServer::buildWMSCapabilities(){
+void Rok4Server::buildWMSCapabilities(){
 	TiXmlDocument doc;
 	TiXmlDeclaration * decl = new TiXmlDeclaration( "1.0", "UTF-8", "" );
 	doc.LinkEndChild( decl );
@@ -213,6 +213,6 @@ void WMSServer::buildWMSCapabilities(){
 }
 
 
-void WMSServer::buildWMTSCapabilities(){
+void Rok4Server::buildWMTSCapabilities(){
 	WMTSCapabilities="WMTS Capabilities";
 }
