@@ -21,6 +21,9 @@ Fichiers :
 ../config/pyramids/pyramid.xsd
 
 Programmes :
-merge4tiff
-tiff2tile
-dalles_base
+./merge4tiff
+./tiff2tile
+./dalles_base
+gdalinfo
+hostname
+which
