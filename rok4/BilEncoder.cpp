@@ -6,22 +6,22 @@
 
 template<typename pixel_t>
 size_t BilEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
-  size_t offset = 0;
+	size_t offset = 0;
 
-  LOGGER_DEBUG( "Encodage BIL : height " <<image->height<< " image->linesize" <<image->linesize);
+	LOGGER_DEBUG( "Encodage BIL : height " <<image->height<< " image->linesize" <<image->linesize);
 
-  for(; line < image->height && offset + image->linesize <= size; line++) {
-    image->getline((typename pixel_t::data_t*)(buffer + offset), line);    
-    offset += image->linesize*sizeof(typename pixel_t::data_t);
-  }
+	for(; line < image->height && offset + image->linesize <= size; line++) {
+		image->getline((typename pixel_t::data_t*)(buffer + offset), line);
+		offset += image->linesize*sizeof(typename pixel_t::data_t);
+	}
 
-  return offset;
+	return offset;
 }
 
 template<typename pixel_t>
 BilEncoder<pixel_t>::~BilEncoder() {
-  LOGGER_DEBUG( "delete BilEncoder");
-  delete image;
+	LOGGER_DEBUG( "delete BilEncoder");
+	delete image;
 }
 
 template class BilEncoder<pixel_rgb>;

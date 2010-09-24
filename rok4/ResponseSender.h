@@ -5,11 +5,11 @@
 #include "fcgiapp.h"
 
 class ResponseSender {
-	private:
+private:
 
-	public:
-  	int sendresponse(DataSource* response, FCGX_Request* request);
-  	int sendresponse(DataStream* response, FCGX_Request* request);
+public:
+	int sendresponse(DataSource* response, FCGX_Request* request);
+	int sendresponse(DataStream* response, FCGX_Request* request);
 };
 
 

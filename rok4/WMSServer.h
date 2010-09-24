@@ -14,35 +14,35 @@
 
 
 class WMSServer {
-  private:
-  int nbThread;
-  pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
-  ResponseSender S;
+private:
+	int nbThread;
+	pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
+	ResponseSender S;
 
-  int sock;
+	int sock;
 
-  ServicesConf &servicesConf;
-  std::map<std::string, Layer*> layerList;
-  std::map<std::string,TileMatrixSet*> tmsList;
+	ServicesConf &servicesConf;
+	std::map<std::string, Layer*> layerList;
+	std::map<std::string,TileMatrixSet*> tmsList;
 
-  static void* thread_loop(void* arg);
+	static void* thread_loop(void* arg);
 
-  void buildWMSCapabilities();
-  void buildWMTSCapabilities();
+	void buildWMSCapabilities();
+	void buildWMTSCapabilities();
 
-  DataStream* getMap(Request* request);
-  DataSource* getTile(Request* request, Tile* tile);
-  DataStream* WMSGetCapabilities(Request* request);
-  DataSource* WMTSGetCapabilities(Request* request);
-  DataStream* processWMS (Request *request);
-  DataSource* processWMTS(Request *requesti, Tile* tile);
+	DataStream* getMap(Request* request);
+	DataSource* getTile(Request* request, Tile* tile);
+	DataStream* WMSGetCapabilities(Request* request);
+	DataSource* WMTSGetCapabilities(Request* request);
+	DataStream* processWMS (Request *request);
+	DataSource* processWMTS(Request *requesti, Tile* tile);
 
-  public:
-  std::string WMSCapabilities;
-  std::string WMTSCapabilities;
+public:
+	std::string WMSCapabilities;
+	std::string WMTSCapabilities;
 
-  void run();
-  WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
+	void run();
+	WMSServer(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 

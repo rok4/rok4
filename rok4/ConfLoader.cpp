@@ -217,41 +217,41 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		tm = &(it->second);
 
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
-   		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
-   		baseDir=pElemLvl->GetText();
+		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
+		baseDir=pElemLvl->GetText();
 
 		pElemLvl = hLvl.FirstChild("format").Element();
-			if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans format!!"); return NULL; }
-			format=pElemLvl->GetText(); // FIXME: controle de la valeur a faire
+		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans format!!"); return NULL; }
+		format=pElemLvl->GetText(); // FIXME: controle de la valeur a faire
 
 		pElemLvl = hLvl.FirstChild("channels").Element();
-   		if (!pElemLvl){
-   			LOGGER_ERROR(fileName <<" Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
-   			channels=DEFAULT_CHANNELS;
-   		}else if (!sscanf(pElemLvl->GetText(),"%d",&channels)){
-   			LOGGER_ERROR(fileName <<" Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
-   			return NULL;
-   		}
+		if (!pElemLvl){
+			LOGGER_ERROR(fileName <<" Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
+			channels=DEFAULT_CHANNELS;
+		}else if (!sscanf(pElemLvl->GetText(),"%d",&channels)){
+			LOGGER_ERROR(fileName <<" Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			return NULL;
+		}
 
-	    pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
-   		if (!pElemLvl){
-   			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerWidth !!");
-   			return NULL;
-   		}
-   		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerWidth)){
-   			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
-   			return NULL;
-   		}
+		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
+		if (!pElemLvl){
+			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerWidth !!");
+			return NULL;
+		}
+		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerWidth)){
+			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			return NULL;
+		}
 
-	    	pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
-   		if (!pElemLvl){
-   			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerHeight !!");
-   			return NULL;
-   		}
-   		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerHeight)){
-   			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
-   			return NULL;
-   		}
+		pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
+		if (!pElemLvl){
+			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerHeight !!");
+			return NULL;
+		}
+		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerHeight)){
+			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			return NULL;
+		}
 
 		pElemLvl = hLvl.FirstChild("pathDepth").Element();
 		if (!pElemLvl){
@@ -308,7 +308,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		}
 
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-									maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
+				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels
 
@@ -420,21 +420,21 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		LOGGER_WARN(fileName << ": Aucun CRS autorisé pour le WMS");
 	}
 
-    pElem=hRoot.FirstChild("opaque").Element();
-    if (!pElem){
-      LOGGER_ERROR("Pas de opaque => opaque = " << DEFAULT_OPAQUE);
-      opaque = DEFAULT_OPAQUE;
-    }else{
-      std::string opaStr=pElem->GetText();
-      if (opaStr=="true"){
-        opaque = true;
-      }else if(opaStr=="false"){
-        opaque = false;
-      }else{
-        LOGGER_ERROR("le param opaque n'est pas exploitable:[" << opaStr <<"]");
-        return NULL;
-      }
-    }
+	pElem=hRoot.FirstChild("opaque").Element();
+	if (!pElem){
+		LOGGER_ERROR("Pas de opaque => opaque = " << DEFAULT_OPAQUE);
+		opaque = DEFAULT_OPAQUE;
+	}else{
+		std::string opaStr=pElem->GetText();
+		if (opaStr=="true"){
+			opaque = true;
+		}else if(opaStr=="false"){
+			opaque = false;
+		}else{
+			LOGGER_ERROR("le param opaque n'est pas exploitable:[" << opaStr <<"]");
+			return NULL;
+		}
+	}
 
 	pElem=hRoot.FirstChild("authority").Element();
 	if (pElem) authority=pElem->GetText();
@@ -463,10 +463,10 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		return NULL;
 	}
 
-    Layer *layer;
+	Layer *layer;
 
 	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
-			         WMSCRSList, opaque, authority, resampling);
+			WMSCRSList, opaque, authority, resampling);
 
 	LOGGER_DEBUG("<= buildLayer");
 
@@ -522,7 +522,7 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 	}
 
 	LOGGER_DEBUG("<=getTechnicalParam");
-    return true;
+	return true;
 }//getTechnicalParam
 
 
@@ -532,47 +532,47 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 	// lister les fichier du répertoire tmsDir
 	std::vector<std::string> tmsFiles;
 	std::string tmsFileName;
-    struct dirent *fileEntry;
-    DIR *dir;
-    if ((dir = opendir(tmsDir.c_str())) == NULL){
-        LOGGER_FATAL("Le répertoire des TMS " << tmsDir << " n'est pas accessible.");
-        return false;
-    }
-    while ((fileEntry = readdir(dir))){
-       tmsFileName = fileEntry->d_name;
-       if(tmsFileName.rfind(".tms")==tmsFileName.size()-4){
-    	   tmsFiles.push_back(tmsDir+"/"+tmsFileName);
-       }
-    }
-    closedir(dir);
+	struct dirent *fileEntry;
+	DIR *dir;
+	if ((dir = opendir(tmsDir.c_str())) == NULL){
+		LOGGER_FATAL("Le répertoire des TMS " << tmsDir << " n'est pas accessible.");
+		return false;
+	}
+	while ((fileEntry = readdir(dir))){
+		tmsFileName = fileEntry->d_name;
+		if(tmsFileName.rfind(".tms")==tmsFileName.size()-4){
+			tmsFiles.push_back(tmsDir+"/"+tmsFileName);
+		}
+	}
+	closedir(dir);
 
-    if (tmsFiles.empty()){
-    	// FIXME:
-    	// Aucun TMS présents. Ce n'est pas nécessairement grave si le serveur
-    	// ne sert pas pour le WMTS et qu'on exploite pas de cache tuilé.
-    	// Cependant pour le moment (07/2010) on ne gère que des caches tuilés
-    	LOGGER_FATAL("Aucun fichier *.tms dans le répertoire " << tmsDir);
-    	return false;
-    }
+	if (tmsFiles.empty()){
+		// FIXME:
+		// Aucun TMS présents. Ce n'est pas nécessairement grave si le serveur
+		// ne sert pas pour le WMTS et qu'on exploite pas de cache tuilé.
+		// Cependant pour le moment (07/2010) on ne gère que des caches tuilés
+		LOGGER_FATAL("Aucun fichier *.tms dans le répertoire " << tmsDir);
+		return false;
+	}
 
-    // générer les TMS décrits par les fichiers.
-    for (unsigned int i=0; i<tmsFiles.size(); i++){
-        TileMatrixSet * tms;
-        tms = buildTileMatrixSet(tmsFiles[i]);
-        if (tms){
-     	    tmsList.insert( std::pair<std::string, TileMatrixSet *> (tms->getId(), tms));
-        }else{
-        	LOGGER_ERROR("Ne peut charger le tms: " << tmsFiles[i]);
-        }
-    }
+	// générer les TMS décrits par les fichiers.
+	for (unsigned int i=0; i<tmsFiles.size(); i++){
+		TileMatrixSet * tms;
+		tms = buildTileMatrixSet(tmsFiles[i]);
+		if (tms){
+			tmsList.insert( std::pair<std::string, TileMatrixSet *> (tms->getId(), tms));
+		}else{
+			LOGGER_ERROR("Ne peut charger le tms: " << tmsFiles[i]);
+		}
+	}
 
-    if (tmsList.size()==0){
-        LOGGER_FATAL("Aucun TMS n'a pu être chargé!");
-        return false;
-    }
+	if (tmsList.size()==0){
+		LOGGER_FATAL("Aucun TMS n'a pu être chargé!");
+		return false;
+	}
 
-    LOGGER_DEBUG("<=buildTMSList");
-    return true;
+	LOGGER_DEBUG("<=buildTMSList");
+	return true;
 }
 
 bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers){
@@ -580,44 +580,44 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
 	std::string layerFileName;
-    struct dirent *fileEntry;
-    DIR *dir;
-    if ((dir = opendir(layerDir.c_str())) == NULL){
-        LOGGER_FATAL("Le répertoire " << layerDir << " n'est pas accessible.");
-        return false;
-    }
-    while ((fileEntry = readdir(dir))){
-       layerFileName = fileEntry->d_name;
-       if(layerFileName.rfind(".lay")==layerFileName.size()-4){
-    	   layerFiles.push_back(layerDir+"/"+layerFileName);
-       }
-    }
-    closedir(dir);
+	struct dirent *fileEntry;
+	DIR *dir;
+	if ((dir = opendir(layerDir.c_str())) == NULL){
+		LOGGER_FATAL("Le répertoire " << layerDir << " n'est pas accessible.");
+		return false;
+	}
+	while ((fileEntry = readdir(dir))){
+		layerFileName = fileEntry->d_name;
+		if(layerFileName.rfind(".lay")==layerFileName.size()-4){
+			layerFiles.push_back(layerDir+"/"+layerFileName);
+		}
+	}
+	closedir(dir);
 
-    if (layerFiles.empty()){
-    	LOGGER_FATAL("Aucun fichier *.lay dans le répertoire " << layerDir);
-    	LOGGER_FATAL("Le serveur n'a aucune données à servir. Domage...");
-    	return false;
-    }
+	if (layerFiles.empty()){
+		LOGGER_FATAL("Aucun fichier *.lay dans le répertoire " << layerDir);
+		LOGGER_FATAL("Le serveur n'a aucune données à servir. Domage...");
+		return false;
+	}
 
-    // générer les Layers décrits par les fichiers.
-    for (unsigned int i=0; i<layerFiles.size(); i++){
-        Layer * layer;
-        layer = buildLayer(layerFiles[i], tmsList);
-        if (layer){
-    	    layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
-        }else{
-        	LOGGER_ERROR("Ne peut charger le layer: " << layerFiles[i]);
-        }
-    }
+	// générer les Layers décrits par les fichiers.
+	for (unsigned int i=0; i<layerFiles.size(); i++){
+		Layer * layer;
+		layer = buildLayer(layerFiles[i], tmsList);
+		if (layer){
+			layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
+		}else{
+			LOGGER_ERROR("Ne peut charger le layer: " << layerFiles[i]);
+		}
+	}
 
-    if (layers.size()==0){
-        LOGGER_FATAL("Aucun layer n'a pu être chargé!");
-        return false;
-    }
+	if (layers.size()==0){
+		LOGGER_FATAL("Aucun layer n'a pu être chargé!");
+		return false;
+	}
 
 	LOGGER_DEBUG("<=buildLayersList");
-    return true;
+	return true;
 }
 
 ServicesConf * ConfLoader::buildServicesConf(){
@@ -699,12 +699,12 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		std::string format(pElem->GetText());
 		formatList.push_back(format);
 	}
-	
+
 
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			                       accessConstraint, maxWidth, maxHeight, formatList);
+			accessConstraint, maxWidth, maxHeight, formatList);
 
 	LOGGER_DEBUG("<= buildServicesConf");
-    return servicesConf;
+	return servicesConf;
 }

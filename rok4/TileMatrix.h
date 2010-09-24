@@ -15,11 +15,11 @@ private:
 	long int matrixH;
 public:
 	std::string getId();
-    double getRes();
-    double getX0();
-    double getY0();
-    int getTileW();
-    int getTileH();
+	double getRes();
+	double getX0();
+	double getY0();
+	int getTileW();
+	int getTileH();
 
 
 	TileMatrix(std::string id,double res,double x0,double y0,int tileW,	int tileH,long int matrixW, long int matrixH) :

@@ -10,23 +10,23 @@ void init_source (jpeg_decompress_struct *cinfo) {}
 boolean fill_input_buffer (jpeg_decompress_struct *cinfo){return false;}
 void skip_input_data (jpeg_decompress_struct *cinfo, long num_bytes) {
 	std::cerr << "c" << std::endl;
-  	if (num_bytes > 0) {
-    		cinfo->src->next_input_byte += (size_t) num_bytes;
-    		cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
-  	}
+	if (num_bytes > 0) {
+		cinfo->src->next_input_byte += (size_t) num_bytes;
+		cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
+	}
 }
 void term_source (jpeg_decompress_struct *cinfo) {}
 
 // Gestion des erreurs fatales pour la libjpeg
 
 /*
-* Structure destinee a gerer les erreurs de la libjepg
-*/
+ * Structure destinee a gerer les erreurs de la libjepg
+ */
 
 struct my_error_mgr {
-  	struct jpeg_error_mgr pub;    /* "public" fields */
+	struct jpeg_error_mgr pub;    /* "public" fields */
 
-  	jmp_buf setjmp_buffer;        /* for return to caller */
+	jmp_buf setjmp_buffer;        /* for return to caller */
 };
 
 typedef struct my_error_mgr * my_error_ptr;
@@ -34,20 +34,20 @@ typedef struct my_error_mgr * my_error_ptr;
 METHODDEF(void)
 my_error_exit (j_common_ptr cinfo)
 {
-  	/* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
-  	my_error_ptr myerr = (my_error_ptr) cinfo->err;
+	/* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+	my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-  	/* Always display the message. */
-  	/* We could postpone this until after returning, if we chose. */
-  	(*cinfo->err->output_message) (cinfo);
+	/* Always display the message. */
+	/* We could postpone this until after returning, if we chose. */
+	(*cinfo->err->output_message) (cinfo);
 
-  	/* Return control to the setjmp point */
-  	longjmp(myerr->setjmp_buffer, 1);
+	/* Return control to the setjmp point */
+	longjmp(myerr->setjmp_buffer, 1);
 }
 
 /*
-* Decodage de donnee JPEG
-*/
+ * Decodage de donnee JPEG
+ */
 
 void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize) { 
 	struct jpeg_decompress_struct cinfo;
@@ -68,20 +68,20 @@ void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8
 
 	// Initialisation de la gestion des erreurs
 	cinfo.err = jpeg_std_error(&jerr.pub);
-  	jerr.pub.error_exit = my_error_exit; 
+	jerr.pub.error_exit = my_error_exit;
 
 	// Initialisation du contexte retourne par setjmp pour my_error_exit
-  	if (setjmp(jerr.setjmp_buffer)) {
-	// TODO : couleur nodata
-	// Les dalles nodata sont en blanc
+	if (setjmp(jerr.setjmp_buffer)) {
+		// TODO : couleur nodata
+		// Les dalles nodata sont en blanc
 		memset(raw_data,255,linesize*height);
-    		jpeg_destroy_decompress(&cinfo);
-    		return;
-  	}
+		jpeg_destroy_decompress(&cinfo);
+		return;
+	}
 
 	// Lecture
 	if (jpeg_read_header(&cinfo, TRUE)==JPEG_HEADER_OK) {
-    		jpeg_start_decompress(&cinfo);
+		jpeg_start_decompress(&cinfo);
 
 		while (cinfo.output_scanline < (unsigned int) height) {
 			uint8_t *line = raw_data + cinfo.output_scanline * linesize;
@@ -101,19 +101,19 @@ void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8
 }
 
 /*
-* Decodage de donnee PNG
-* En cas d'erreur, le buffer raw_data n'est pas rempli jusqu'au bout
-*/
+ * Decodage de donnee PNG
+ * En cas d'erreur, le buffer raw_data n'est pas rempli jusqu'au bout
+ */
 void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize)
 {
 	// Initialisation du flux
-  	z_stream zstream;
-  	zstream.zalloc = Z_NULL;
-  	zstream.zfree = Z_NULL;
-  	zstream.opaque = Z_NULL;
-  	zstream.data_type = Z_BINARY;
+	z_stream zstream;
+	zstream.zalloc = Z_NULL;
+	zstream.zfree = Z_NULL;
+	zstream.opaque = Z_NULL;
+	zstream.data_type = Z_BINARY;
 	int zinit;
-  	if( (zinit=inflateInit(&zstream)) != Z_OK)
+	if( (zinit=inflateInit(&zstream)) != Z_OK)
 	{
 		if (zinit==Z_MEM_ERROR)
 			LOGGER_ERROR("Decompression PNG : pas assez de memoire");
@@ -124,40 +124,40 @@ void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_
 		else
 			LOGGER_ERROR("Decompression PNG : echec");
 		return;
- 	}
+	}
 
-  	zstream.next_in = (uint8_t*)(encoded_data + 41); // 41 = 33 header + 8(chunk idat)
-  	zstream.avail_in = encoded_size;     // 45 = 41 + 4(crc)
+	zstream.next_in = (uint8_t*)(encoded_data + 41); // 41 = 33 header + 8(chunk idat)
+	zstream.avail_in = encoded_size;     // 45 = 41 + 4(crc)
 
 	// Decompression du flux ligne par ligne
-  	uint8_t tmp;
-  	for(int h = 0; h < height; h++) {
-    		zstream.next_out = &tmp;
-    		zstream.avail_out = 1;
+	uint8_t tmp;
+	for(int h = 0; h < height; h++) {
+		zstream.next_out = &tmp;
+		zstream.avail_out = 1;
 		// Decompression 1er octet de la ligne (=0 dans le cache)
-    		if(inflate(&zstream, Z_SYNC_FLUSH) != Z_OK) {
+		if(inflate(&zstream, Z_SYNC_FLUSH) != Z_OK) {
 			LOGGER_ERROR("Decompression PNG : probleme png decompression au debut de la ligne " << h);
 			break;
 		}
 		// Decompression des pixels de la ligne
-    		zstream.next_out = (uint8_t*) (raw_data + h*linesize);
-    		zstream.avail_out = linesize * sizeof(uint8_t);
-    		if(inflate(&zstream, Z_SYNC_FLUSH) != Z_OK) {
+		zstream.next_out = (uint8_t*) (raw_data + h*linesize);
+		zstream.avail_out = linesize * sizeof(uint8_t);
+		if(inflate(&zstream, Z_SYNC_FLUSH) != Z_OK) {
 			LOGGER_ERROR("Decompression PNG : probleme png decompression des pixels de la ligne " << h);
 			break;
 		}
-  	}
+	}
 	// Destruction du flux
-  	if (inflateEnd(&zstream)!=Z_OK)
+	if (inflateEnd(&zstream)!=Z_OK)
 		LOGGER_ERROR("Decompression PNG : probleme de liberation du flux");
 }
 
 /*
-* Constructeur
-*/
+ * Constructeur
+ */
 
 Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding)
-   : Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
+: Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
 { 
 	raw_data = 0;
 }
@@ -165,28 +165,28 @@ Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource
 int Tile::getline(uint8_t* buffer, int line) {
 	// La donne de la tuile (stockee dans datasource) n'est decompressee qu'en cas de necessite
 	if (!raw_data)
-        {
+	{
 		raw_data = new uint8_t[tile_width * tile_height * channels];
-                size_t encoded_size;
-                const uint8_t* encoded_data=datasource->get_data(encoded_size);
+		size_t encoded_size;
+		const uint8_t* encoded_data=datasource->get_data(encoded_size);
 		if (!encoded_data)
 			encoded_data=noDataSource->get_data(encoded_size);
 		if (encoded_data){
-	        	if (coding==RAW_UINT8 || coding==RAW_FLOAT)
-        	        	RawDecoder::decode(encoded_data, encoded_size, raw_data);
-	        	else if (coding==JPEG_UINT8)
-        	        	JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-		        else if (coding==PNG_UINT8)
-        		        PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-	        	else
-        	        	LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
+			if (coding==RAW_UINT8 || coding==RAW_FLOAT)
+				RawDecoder::decode(encoded_data, encoded_size, raw_data);
+			else if (coding==JPEG_UINT8)
+				JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+			else if (coding==PNG_UINT8)
+				PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+			else
+				LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
 		}
 		// Couleur nodata
 		else{
 			memset(raw_data,100,tile_width * tile_height * channels);
 		}
-			
-		
+
+
 	}
 	convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
 	return width * channels;
@@ -194,32 +194,32 @@ int Tile::getline(uint8_t* buffer, int line) {
 
 int Tile::getline(float* buffer, int line) {
 	// La donne de la tuile (stockee dans datasource) n'est decompressee qu'en cas de necessite
-        if (!raw_data)
-        {
-                raw_data = new uint8_t[tile_width * tile_height * channels];
-                size_t encoded_size;
-                const uint8_t* encoded_data=datasource->get_data(encoded_size);
-                if (!encoded_data)
-                        encoded_data=noDataSource->get_data(encoded_size);
-                if (encoded_data){
-                        if (coding==RAW_UINT8 || coding==RAW_FLOAT)
-                                RawDecoder::decode(encoded_data, encoded_size, raw_data);
-                        else if (coding==JPEG_UINT8)
-                                JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-                        else if (coding==PNG_UINT8)
-                                PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
-                        else
-                                LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
-                }
-                // Couleur nodata
-                else{
-                        memset(raw_data,100,tile_width * tile_height * channels);
-                }
-                        
-                
-        }
-        convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
-        return width * channels;
+	if (!raw_data)
+	{
+		raw_data = new uint8_t[tile_width * tile_height * channels];
+		size_t encoded_size;
+		const uint8_t* encoded_data=datasource->get_data(encoded_size);
+		if (!encoded_data)
+			encoded_data=noDataSource->get_data(encoded_size);
+		if (encoded_data){
+			if (coding==RAW_UINT8 || coding==RAW_FLOAT)
+				RawDecoder::decode(encoded_data, encoded_size, raw_data);
+			else if (coding==JPEG_UINT8)
+				JpegDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+			else if (coding==PNG_UINT8)
+				PngDecoder::decode(encoded_data, encoded_size, raw_data,tile_height,tile_width*channels);
+			else
+				LOGGER_ERROR("Impossible de decoder la tuile (type d'encodage  inconnu)");
+		}
+		// Couleur nodata
+		else{
+			memset(raw_data,100,tile_width * tile_height * channels);
+		}
+
+
+	}
+	convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
+	return width * channels;
 }
 
 

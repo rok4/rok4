@@ -7,8 +7,8 @@
 
 class Request {
 private:
-	  void url_decode(char *src);
-	  std::string getParam(std::string paramName);
+	void url_decode(char *src);
+	std::string getParam(std::string paramName);
 public:
 	std::string server;
 	std::string service;

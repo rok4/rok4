@@ -189,12 +189,12 @@ void WMSServer::buildWMSCapabilities(){
 			layerEl->LinkEndChild(elem);
 		}
 
-/*		layer->getAuthority();
+		/*		layer->getAuthority();
 		layer->getMaxRes();
 		layer->getMinRes();
 		layer->getOpaque();
 		layer->getStyles();
-*/
+		 */
 		capabilityEl->LinkEndChild(layerEl);
 
 	}// for layer
@@ -202,14 +202,14 @@ void WMSServer::buildWMSCapabilities(){
 	capabilitiesEl->LinkEndChild(capabilityEl);
 	doc.LinkEndChild( capabilitiesEl );
 
-//	std::cout << doc; // ecriture non formatée dans la flux
-//	doc.Print();  // affichage formaté sur stdout
+	//	std::cout << doc; // ecriture non formatée dans la flux
+	//	doc.Print();  // affichage formaté sur stdout
 	WMSCapabilities << doc;
-/*	std::cout << ":"<<std::endl;
+	/*	std::cout << ":"<<std::endl;
 	std::cout << ":"<<std::endl;
 	std::cout << ":"<<std::endl;
 	std::cout << WMSCapabilities << std::endl;
-*/
+	 */
 }
 
 
