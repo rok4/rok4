@@ -1,26 +1,26 @@
 //============================================================================
 // Name        : DallesBase.cpp
-// Author      : 
+// Author      : AM
 // Version     :
 // Copyright   : 
 // Description : Creation d une dalle georeference a partir de n dalles source
 //============================================================================
 
 /*
-Ce programme est destine a etre utilise dans la chaine de generation de cache be4
-Il est appele pour calculer le niveau minimum d une pyramide, pour chaque nouvelle dalle
+Ce programme est destine a etre utilise dans la chaine de generation de cache be4.
+Il est appele pour calculer le niveau minimum d'une pyramide, pour chaque nouvelle dalle.
 
-Les dalles source ne sont pas necessairement entierement recouvrantes
+Les dalles source ne sont pas necessairement entierement recouvrantes.
+
 Parametres d'entree :
 1. Un fichier texte contenant les dalles source et la dalle finale avec leur georeferencement (resolution, emprise)
-2. Un mode d interpolation
+2. Un mode d'interpolation, une couleur de NoData, un type...
 
 En sortie, un fichier TIFF au format dit de travail brut non compressé entrelace
-Ou, erreurs :
+Ou, erreurs (voir dans le main)
 
 Contrainte:
 Toutes les dalles sont dans le meme SRS (pas de reprojection)
-Autres
  */
 
 using namespace std;
@@ -41,11 +41,13 @@ using namespace std;
 #include "ExtendedCompoundImage.h"
 
 
+string version = "version 0.12 ";
 
 /* Usage de la ligne de commande */
 
 void usage() {
-	LOGGER_INFO(" expl : MergeDalles -f textfile -i [lanczos/ppv/bicubique] -n couleur_hexa -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask]");
+	LOGGER_INFO(" Parametres : dalles_base -f (fichier de dalles) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
+	LOGGER_INFO(" Exemple : dalles_base -f myfile.txt -i [lanczos/ppv/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
 }
 
 double getPhasex(Image * img) {
@@ -82,7 +84,6 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 	}
 	TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
 	TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
-	LOGGER_DEBUG( " width-height à écrire: " << pImage->width << "-" << pImage->height );
 	TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
 	TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
 	TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
@@ -92,30 +93,37 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 	TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 	unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
 
-	// on remplit d'abord avec nodata:
-	unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]),b=h2i(nodata[4])*16 + h2i(nodata[5]);
+	// calcul du buffer contenant nodata:
+	unsigned char * buf_nodata = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
+	unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]), b=h2i(nodata[4])*16 + h2i(nodata[5]);
+
 	if (pImage->channels == 3 ) {
 		for (long k=0; k<(pImage->width)*3*bitspersample/8; k+=3){
-			buf_ligne[k]=r; buf_ligne[k+1]=g; buf_ligne[k+2]=b;
+			buf_nodata[k]=r; buf_nodata[k+1]=g; buf_nodata[k+2]=b;
 		}
 	} else {
 		for (long k=0; k<(pImage->width)*1*bitspersample/8; k+=1)
-			buf_ligne[k]=r;
+			buf_nodata[k]=r;
 	}
 
-	int ligne = -1;
-	for( ligne = 0; ligne < pImage->height; ligne++) {
-		pImage->getline(buf_ligne,ligne);
+	for( int ligne = 0; ligne < pImage->height; ligne++) {
+		// on initialise le buffer avec le buffer_no_data
+		_TIFFmemcpy(buf_ligne, buf_nodata, pImage->width*pImage->channels*bitspersample/8);
+		// on va lire l'image pImage. NB: une resampledImage renvoie systematiquement toute la width alors
+		// qu'une ECImage ne renvoie que la zone comportant des données
+		pImage->getline(buf_ligne,ligne) ;
+		// on ecrit la zone lue dans l'image à produire
 		TIFFWriteScanline(output, buf_ligne, ligne, 0); // en contigu (entrelace) on prend chanel=0 (!)
 	}
-	_TIFFfree(buf_ligne);
-	TIFFClose(output);
+
+	_TIFFfree(buf_ligne); _TIFFfree(buf_nodata); TIFFClose(output);
 	return 0;
 }
 
 /* Lecture des parametres de la ligne de commande */
 
 int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& photometric) {
+
 	if (argc != 15) {
 		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
 		usage();
@@ -136,7 +144,6 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				else if(strncmp(argv[i], "ppv",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
 				else if(strncmp(argv[i], "bicubique",9) == 0) interpolation = Kernel::CUBIC; // =2
 				else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
-				LOGGER_DEBUG( " interpolation: " << interpolation);
 				break;
 			case 'n': // nodata
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
@@ -181,18 +188,22 @@ int readFileLine(ifstream& file, char* filename, BoundingBox<double>* bbox, int*
 {
 	string str;
 	std::getline(file,str);
-	int n;
-	double resx, resy;
-	n=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy);
-	if (resx*resy==0.)
-	{
-		LOGGER_ERROR("Ligne : " << str.c_str() << " resolution nulle");
-		return -1;
+	int ret;
+	double resx=0., resy=0.;
+	ret=sscanf (str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy);
+
+	if (ret<0) // le fichier est fini
+		return ret;
+
+	if (ret>=0 && ret != 7) { // le fichier comporte une ligne fausse
+		LOGGER_DEBUG(" Ligne erronnee: " << str.c_str() );
+		return ret;
 	}
+
 	*width = (int) (bbox->xmax - bbox->xmin)/resx;	
 	*height = (int) (bbox->ymax - bbox->ymin)/resy;
 
-	return n;
+	return ret;
 }
 
 /* Chargement des images depuis le fichier texte donné en parametre */
@@ -214,7 +225,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, vector<Im
 
 	// Lecture et creation de la dalle de sortie
 	if (readFileLine(file,filename,&bbox,&width,&height)<0){
-		LOGGER_ERROR("Erreur fichier " << liste_dalles_filename << " ligne 0");
+		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne 0");
 		return -1;
 	}
 
@@ -224,25 +235,24 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, vector<Im
 		LOGGER_ERROR("Impossible de creer " << filename);
 		return -1;
 	}
-	//LOGGER_DEBUG( " width-height de l IMAGE FINALE demandée: " << width << "-" << height << ". bbox de l IMAGE FINALE demandée: ");
+	//LOGGER_DEBUG( " width-height de l IMAGE FINALE demandee: " << width << "-" << height << ". bbox de l IMAGE FINALE demandee: ");
 	//bbox.print() ;
 
 	// Lecture et creation des dalles source
-	int i=1,n;
-	while ((n=readFileLine(file,filename,&bbox,&width,&height))==7)
+	int iligne=2, nb=0;
+	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7)
 	{
 		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
 		if (pImage==NULL){
 			LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
 			return -1;
 		}
-		//LOGGER_DEBUG( pImage->getresx() << " " << pImage->getresy() );
 		pImageIn->push_back(pImage);
-		i++;
+		iligne++;
 	}
-	if (n>0 && n!=7)
+	if (nb>=0 && nb!=7)
 	{
-		LOGGER_ERROR("Erreur fichier " << liste_dalles_filename << " ligne " << i);
+		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne " << iligne);
 		return -1;
 	}
 
@@ -266,33 +276,27 @@ int checkDalles(LibtiffImage* pImageOut, vector<Image*>& ImageIn)
 		return -1;
 	}
 
-//	for (unsigned int i=0;i<ImageIn.size();i++)
-//	{
-//		//LOGGER_DEBUG( ImageIn.at(i)->width);
-//		TIFF* tiff = TIFFOpen( ImageIn.at(i)->getfilename(), "r");
-//		if (!tiff) {
-//			LOGGER_ERROR("Impossible d'ouvrir le fichier " << ImageIn.at(i)->getfilename());
-//			return -1;
-//		}
-//		TIFFClose(tiff);
-//		if (ImageIn.at(i)->getcompression() != COMPRESSION_NONE){
-//			LOGGER_ERROR(" Dalle " << ImageIn.at(i)->getfilename() << " compressee! Code = " << ImageIn.at(i)->getcompression());
-//			return -1;
-//		}
-//		if (ImageIn.at(0)->getphotometric()!=ImageIn.at(i)->getphotometric()){
-//			LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " photometrie incoherente avec la dalle " << ImageIn.at(0)->getfilename());
-//			return -1;
-//		}
-//		if (ImageIn.at(0)->getbitspersample()!=ImageIn.at(i)->getbitspersample()){
-//			LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " bitspersample incoherent avec la dalle " << ImageIn.at(0)->getfilename());
-//			return -1;
-//		}
-//		if (ImageIn.at(0)->channels!=ImageIn.at(i)->channels){
-//			LOGGER_ERROR("Dalle "<< ImageIn.at(i)->getfilename() << " sampleperpixel incoherent avec la dalle " << ImageIn.at(0)->getfilename());
-//			return -1;
-//		}
-//
-//	}
+	// les controles sont desormais faits en aval
+	//	for (unsigned int i=0;i<ImageIn.size();i++)  {
+	//		//LOGGER_DEBUG( ImageIn.at(i)->width);
+	//		TIFF* tiff = TIFFOpen( ImageIn.at(i)->getfilename(), "r");
+	//		if (!tiff) {
+	//			LOGGER_ERROR("Impossible d'ouvrir le fichier " << ImageIn.at(i)->getfilename());  return -1;
+	//		}
+	//		TIFFClose(tiff);
+	//		if (ImageIn.at(i)->getcompression() != COMPRESSION_NONE){
+	//			LOGGER_ERROR(" Dalle " << ImageIn.at(i)->getfilename() << " compressee! Code = " << ImageIn.at(i)->getcompression());  return -1;
+	//		}
+	//		if (ImageIn.at(0)->getphotometric()!=ImageIn.at(i)->getphotometric()){
+	//			LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " photometrie incoherente avec la dalle " << ImageIn.at(0)->getfilename());  return -1;
+	//		}
+	//		if (ImageIn.at(0)->getbitspersample()!=ImageIn.at(i)->getbitspersample()){
+	//			LOGGER_ERROR("Dalle " << ImageIn.at(i)->getfilename() << " bitspersample incoherent avec la dalle " << ImageIn.at(0)->getfilename());  return -1;
+	//		}
+	//		if (ImageIn.at(0)->channels!=ImageIn.at(i)->channels){
+	//			LOGGER_ERROR("Dalle "<< ImageIn.at(i)->getfilename() << " sampleperpixel incoherent avec la dalle " << ImageIn.at(0)->getfilename());  return -1;
+	//		}
+	//	}
 	return 0;
 }
 
@@ -305,7 +309,7 @@ int rechercheIndice(const vector< double> tableau, double indice) {
 	return (-1);
 }
 
-/* Tri les dalles source
+/* Tri les dalles source en paquet de dalles ayant une meme resolution
  */
 
 int sortDalles(vector<Image*> ImageIn, vector< vector<Image*> >* pTabImageIn)
@@ -329,19 +333,15 @@ int sortDalles(vector<Image*> ImageIn, vector< vector<Image*> >* pTabImageIn)
 			pTabImageIn->push_back( tmp );
 		}
 	}
-	//LOGGER_DEBUG ( "-->" << pTabImageIn->size() << " " << pTabImageIn->at(0).at(0)->width );
 
-	for (unsigned int i=0;i<pTabImageIn->size();i++)	{
-		for (unsigned int j=0;j<pTabImageIn->at(i).size();j++)		{
-			LOGGER_DEBUG( " resx:" << pTabImageIn->at(i).at(j)->getresx() << " - resy:" << pTabImageIn->at(i).at(j)->getresy() );
-			//LOGGER_DEBUG( " width:" << pTabImageIn->at(i).at(j)->width << " - height:" << pTabImageIn->at(i).at(j)->height );
-		}
+	for (unsigned int i=0; i<pTabImageIn->size(); i++)	{
+		LOGGER_DEBUG( " Paquet " << i << " de " << pTabImageIn->at(i).size() << " dalle(s): res x: " << pTabImageIn->at(i).at(0)->getresx() << " - res y: " << pTabImageIn->at(i).at(0)->getresy() );
 	}
 	return 0;
 }
 
 
-/* Assemble les dalles source intermediaires
+/* Assemble les dalles source intermediaires ayant meme resolution
  */
 
 ExtendedCompoundImage* CompoundDalles( vector< Image*> & TabImageIn )
@@ -366,13 +366,14 @@ ExtendedCompoundImage* CompoundDalles( vector< Image*> & TabImageIn )
 			TabImageIn.at(0)->channels, bbox, TabImageIn))==NULL) {
 		return NULL;
 	}
-	LOGGER_DEBUG( " ECImage creee: " << pECI->width << " " << pECI->height << " " << pECI->getresx() << " " << pECI->getresy() );
+	LOGGER_DEBUG( " -------------------------------------- " );
+	LOGGER_DEBUG( " ECImage creee: " << pECI->width << " " << pECI->getresx() << " " << pECI->height << " " << pECI->getresy() );
 	pECI->getbbox().print();
-	//saveImage(pECI,"DEUX.tif",pImageOut->channels,8,PHOTOMETRIC_RGB,"AAFFFF");
+
 	return pECI ;
 }
 
-/* Resample les dalles source intermediaires
+/* Resample les dalles source intermediaires ayant meme resolution
  */
 
 ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType & interpolation )
@@ -382,7 +383,7 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
 	double ratiox = pImageOut->getresx() / resx ;
 	double ratioy = pImageOut->getresy() / resy ;
-	LOGGER_DEBUG( " ratios : " << ratiox << "/" << ratioy << " interpolation: " << interpolation );
+	LOGGER_DEBUG( " ratios x: " << ratiox << " y: " << ratioy /*<< " ; interpolation: " << interpolation*/ );
 
 	double decalx = ratiox * interpolation, decaly = ratioy * interpolation ;
 	int newwidth = int( ((xmax - xmin)/resx - 2*decalx) / ratiox );
@@ -394,13 +395,13 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	ResampledImage* pRImage = new ResampledImage( (Image*) pECI, newwidth, newheight, decalx, decaly, ratiox, ratioy,
 			interpolation, newbbox );
 
-	LOGGER_DEBUG( " Resample image cree: resx: " << pRImage->getresx() << " " << pRImage->width << " " << pRImage->getxmin()
-			<< " " << pRImage->getresy() << " " << pRImage->height << " " << pRImage->getymin());
+	LOGGER_DEBUG( " ResampledImage creee: " << pRImage->width << " " << pRImage->getresx()
+			<< " " << pRImage->height << " " << pRImage->getresy());
 	pRImage->getbbox().print();
 	return pRImage ;
 }
 
-/* Assemble les dalles source de meme resolution
+/* Assemble les paquets de dalles source ayant meme resolution
  */
 
 int mergeTabDalles(LibtiffImage* pImageOut, vector< vector<Image*> > TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType & interpolation)
@@ -417,6 +418,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, vector< vector<Image*> > TabImageIn,
 			LOGGER_ERROR("Echec fusion du paquet de dalles : CompoundDalles: " << i);
 			return -1;
 		}
+
 		// -----------------------------------------------------------------------------
 		// 2/2  creation d'une ResampledImage RI à partir de la ECI :
 		ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation );
@@ -424,27 +426,34 @@ int mergeTabDalles(LibtiffImage* pImageOut, vector< vector<Image*> > TabImageIn,
 			LOGGER_ERROR("Echec fusion du paquet de dalles : resampleDalles: " << i);
 			return -1;
 		}
+		// on ajoute l'image produite dans le vector qui servira à produire l'ECI finale
 		pTabResampledImage->push_back( pRImage );
 	}
 
-
+	LOGGER_DEBUG( " -------------------------------------- " );
 	// merge final des différentes ResampleImage --> creation d'une ECI finale
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
 			pImageOut->channels, pImageOut->getbbox(), *pTabResampledImage))==NULL) {
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");		return -1;
 	}
-	LOGGER_DEBUG( " ECImage finale cree: resx: " << (*ppECImage)->getresx() << " " << (*ppECImage)->width << " " << (*ppECImage)->getxmin()
-			<< " " << (*ppECImage)->getresy() << " " << (*ppECImage)->height << " " << (*ppECImage)->getymin());
+	LOGGER_DEBUG( " ECImage finale cree: " << (*ppECImage)->width << " " << (*ppECImage)->getresx() << " " <<
+			(*ppECImage)->height << " " << (*ppECImage)->getresy() );
+	(*ppECImage)->getbbox().print();
 
-	return pTabResampledImage->size()-1;
+	delete pTabResampledImage ;
+
+	return 0;
 }
 
 /* Fonction principale ------------------------------------------------------------ */
 
 int main(int argc, char **argv) {
 
-	char liste_dalles_filename[256], nodata[6];
+	// Initilisation du logger
+	Logger::configure(LOG_CONF_PATH);
+	LOGGER_INFO( " dalles_base ; " << version );
 
+	char liste_dalles_filename[256], nodata[6];
 	uint16_t sampleperpixel, bitspersample, photometric;
 	int type=-1;
 	Kernel::KernelType interpolation = DEFAULT_INTERPOLATION; // =4
@@ -454,41 +463,46 @@ int main(int argc, char **argv) {
 	vector< vector<Image*> > TabImageIn ;
 	ExtendedCompoundImage* pECImage ;
 
-	// Initilisation du logger
-	Logger::configure(LOG_CONF_PATH);
-
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec lecture ligne de commande");		return -1;
+		LOGGER_ERROR("Echec lecture ligne de commande"); return -1;
 	}
 
-	// TODO gerer le type mtd
+	// TODO : gérer le type mtd !!
+	if (type==0) {
+		LOGGER_ERROR("Le type mtd n'est pas pris en compte"); return -1;
+	}
 
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec chargement des dalles");		return -1;
+		LOGGER_ERROR("Echec chargement des dalles"); return -1;
 	}
 
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
-		LOGGER_ERROR("Echec controle des dalles");		return -1;
+		LOGGER_ERROR("Echec controle des dalles"); return -1;
 	}
 
 	// Tri des dalles
 	if (sortDalles(ImageIn, & TabImageIn)<0){
-		LOGGER_ERROR("Echec tri des dalles");		return -1;
+		LOGGER_ERROR("Echec tri des dalles"); return -1;
 	}
 
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, & pECImage, interpolation) < 0){
-		LOGGER_ERROR("Echec fusion des paquets de dalles");		return -1;
+		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
 	}
 
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata)<0){
-		LOGGER_ERROR("Echec enregistrement dalle finale");		return -1;
+		LOGGER_ERROR("Echec enregistrement dalle finale"); return -1;
 	}
+
+	// Nettoyage
+	delete pImageOut ;
+	delete pECImage ;
+
+	LOGGER_INFO( " dalles_base ; fin du programme " );
 
 	return 0;
 }
-
