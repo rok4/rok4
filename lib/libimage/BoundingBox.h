@@ -1,7 +1,17 @@
 #ifndef _BOUNDINGBOX_
 #define _BOUNDINGBOX_
 
+/**
+* \file BoundingBox.h
+* \brief Implementation d'un rectangle englobant
+* \author IGN France - Geoportail
+*/
+
 #include "Logger.h"
+
+/*
+* \struct BoundingBox
+*/
 
 template<typename T> 
 struct BoundingBox {

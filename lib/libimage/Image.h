@@ -5,11 +5,19 @@
 #include "BoundingBox.h"
 
 /**
- * Interface de base des classes Image.
- * Les implémentations définiront des images avec différentes structures de pixel
- * (type et nombre de canaux). Cette interface basique permet de définir des
- * fonctions prenant en paramètre tout type d'image.
- */
+* \file Image.h
+* \brief Interface de base des classes Image.
+* \author IGN France - Geoportail
+*/
+
+/**
+* \class Image
+* \brief Interface de base des classes Image.
+* Les implémentations définiront des images avec différentes structures de pixel
+* (type et nombre de canaux). Cette interface basique permet de définir des
+* fonctions prenant en paramètre tout type d'image.
+*/
+
 class Image {
 	public:
 	/** Largeur de l'image en pixels */
@@ -29,9 +37,11 @@ class Image {
 	 */
 	BoundingBox<double> bbox;
 	
-	/** Resolutions en x et en y, calculées à partir des dimensions et de la BoudingBox **/
+	/** Resolution en x de l'image*/
 	double resx;
+	/** Resolution en y de l'image*/
 	double resy;
+	/** Calcul des resolutions en x et en y, calculées à partir des dimensions et de la BoudingBox **/
 	void computeResxy() {
 
 		resx=(bbox.xmax - bbox.xmin)/double(width);
@@ -39,6 +49,9 @@ class Image {
 	}
 	
 	public:
+	/** Affectation d'une bbox
+	* Necessite la mise a jour des emprises 
+	*/
 	inline void setbbox(BoundingBox<double> box) {bbox=box;computeResxy();}
 	
 	inline double getresx() const {return resx;}
