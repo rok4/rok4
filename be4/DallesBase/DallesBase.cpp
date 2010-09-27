@@ -450,7 +450,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, vector< vector<Image*> > TabImageIn,
 int main(int argc, char **argv) {
 
 	// Initilisation du logger
-	Logger::configure(LOG_CONF_PATH);
+	Logger::configure("LOG_CONF_PATH");
 	LOGGER_INFO( " dalles_base ; " << version );
 
 	char liste_dalles_filename[256], nodata[6];
