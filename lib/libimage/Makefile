@@ -1,6 +1,7 @@
 TGTDIR=../../target
 INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
+DOCSDIR=../../docs
 
 CXX = g++
 CC  = gcc
@@ -70,3 +71,7 @@ cpputest: cppubin
 
 cppubin: include bindir $(DEPLIB) archive $(CPPUNITOBJ)
 	$(CXX) $(CPPUNITOBJ) $(THISLIB).a -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
+
+# documentation doxygen
+doc : 
+	doxygen $(DOCSDIR)/doxygen_libimage.cfg

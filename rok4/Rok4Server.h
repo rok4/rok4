@@ -1,6 +1,11 @@
 #ifndef _ROK4SERVER_
 #define _ROK4SERVER_
 
+/**
+* \file Rok4Server.h
+* \brief Definition de la classe Rok4Server et programme principal
+*/
+
 #include "config.h"
 #include "ResponseSender.h"
 #include "Data.h"
@@ -12,6 +17,10 @@
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
 
+/**
+* \class Rok4Server 
+*
+*/
 
 class Rok4Server {
 private:
