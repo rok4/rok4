@@ -5,14 +5,14 @@
 #include "BoundingBox.h"
 
 /**
-* \file Image.h
-* \brief Interface de base des classes Image.
-* \author IGN France - Geoportail
+* @file Image.h
+* @brief Interface de base des classes Image.
+* @author IGN France - Geoportail
 */
 
 /**
-* \class Image
-* \brief Interface de base des classes Image.
+* @class Image
+* @brief Interface de base des classes Image.
 * Les implémentations définiront des images avec différentes structures de pixel
 * (type et nombre de canaux). Cette interface basique permet de définir des
 * fonctions prenant en paramètre tout type d'image.

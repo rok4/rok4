@@ -1,6 +1,12 @@
 #ifndef EXTENTED_COMPOUND_IMAGE_H
 #define EXTENTED_COMPOUND_IMAGE_H
 
+/**
+* @file ExtendedCompoundImage.h
+* @brief Image composee a partir de n autres images
+* @author IGN France - Geoportail
+*/
+
 #include "Image.h"
 #include <vector>
 #include <cstring>
@@ -14,6 +20,15 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+/*
+* @class ExtendedCompoundImage
+* @brief Image compose de n autres images
+* Ces images doivent etre superposables, c'est-a-dire remplir les conditions suivantes :
+* Elles doivent toutes avoir la meme resolution en x
+* Elles doivent toutes avoir la meme resolution en y
+* Elles doivent toutes etres en phase en x et en y (ne pas avoir les pixels d'une image decales par rapport aux pixels d'une autre image)
+*/
+
 class ExtendedCompoundImage : public Image {
 
 	friend class extendedCompoundImageFactory;
@@ -23,9 +38,11 @@ private:
 	std::vector<Image*> images;
 
 	/**
-	Remplissage iteratif d'une ligne
+	@fn _getline(T* buffer, int line)
+	@brief Remplissage iteratif d'une ligne
 	Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
-	retourne le nombre d'octets de la ligne
+	@param le numero de la ligne
+	@return le nombre d'octets de la ligne
 	*/
 
 	template<typename T>
@@ -58,19 +75,19 @@ private:
 protected:
 
 	/** Constructeur
-  Appelé via une fabrique de type extendedCompoundImageFactory
-  Les Image sont detruites ensuite en meme temps que l'objet
-  Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
+  	* Appelé via une fabrique de type extendedCompoundImageFactory
+  	* Les Image sont detruites ensuite en meme temps que l'objet
+  	* Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
 	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images) :
 		Image(width, height, channels,bbox),
 		images(images) {}
 
 public:
-	/** D */
+	/** Implementation de getline pour les uint8_t */
 	int getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
 
-	/** D */
+	/** Implementation de getline pour les float */
 	int getline(float* buffer, int line) { return _getline(buffer, line); }
 
 	/** Destructeur
@@ -81,6 +98,13 @@ public:
 	}
 
 };
+
+/*
+* @class ExtendedCompoundImageFactory
+* @brief Fabrique de extendedCompoundImageFactory
+* @return Un pointeur sur l'ExtendedCOmpoundImage creee, NULL en cas d'echec
+* La creation par une fabrique permet de procder a certaines verifications
+*/
 
 class extendedCompoundImageFactory {
 public:

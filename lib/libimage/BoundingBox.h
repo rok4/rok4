@@ -2,15 +2,15 @@
 #define _BOUNDINGBOX_
 
 /**
-* \file BoundingBox.h
-* \brief Implementation d'un rectangle englobant
-* \author IGN France - Geoportail
+* @file BoundingBox.h
+* @brief Implementation d'un rectangle englobant
+* @author IGN France - Geoportail
 */
 
 #include "Logger.h"
 
 /*
-* \struct BoundingBox
+* @struct BoundingBox
 */
 
 template<typename T> 
