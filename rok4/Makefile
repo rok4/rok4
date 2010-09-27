@@ -74,7 +74,7 @@ bindir:
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
 
 doc : 
-	doxygen $(DOCSDIR)/doxygen.cfg
+	doxygen $(DOCSDIR)/doxygen_rok4.cfg
 
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o Rok4Server	
