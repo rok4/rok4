@@ -18,7 +18,7 @@
 Level::Level(TileMatrix &tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
 tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
 {
-	noDataSource = new FileDataSource("../config/nodata/nodata_tiledt.tif",1024,1028,getType());
+	noDataSource = new FileDataSource("../config/nodata/nodata_tiled.tif",1024,1028,getType());
 }
 
 TileMatrix const & Level::getTm(){return tm;}
