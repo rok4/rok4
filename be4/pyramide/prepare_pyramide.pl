@@ -467,8 +467,8 @@ sub cree_xml_pyramide{
 		print PYRAMIDE "\t\t\t<format>$format_mtd</format>\n";
 		print PYRAMIDE "\t\t</metadata>\n";
 		print PYRAMIDE "\t\t<channels>$nb_canaux</channels>\n";
-		print PYRAMIDE "\t\t<blockWidth>$nb_tuile_x</blockWidth>\n";
-		print PYRAMIDE "\t\t<blockHeight>$nb_tuile_y</blockHeight>\n";
+		print PYRAMIDE "\t\t<tilesPerWidth>$nb_tuile_x</tilesPerWidth>\n";
+		print PYRAMIDE "\t\t<tilesPerHeight>$nb_tuile_y</tilesPerHeight>\n";
 		print PYRAMIDE "\t\t<pathDepth>$profondeur</pathDepth>\n";
 		print PYRAMIDE "\t\t<TMSLimits>\n";
 		print PYRAMIDE "\t\t\t<minTileRow>$min_tile</minTileRow>\n";
