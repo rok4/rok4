@@ -12,6 +12,7 @@
 #include "Request.h"
 #include <pthread.h>
 #include <map>
+#include <vector>
 #include "ServicesConf.h"
 #include "Layer.h"
 #include "TileMatrixSet.h"
@@ -47,8 +48,8 @@ private:
 	DataSource* processWMTS(Request *requesti, Tile* tile);
 
 public:
-	std::string WMSCapabilities;
-	std::string WMTSCapabilities;
+	std::vector<std::string> wmsCapaFrag;  /// liste des fragments de capabilities prets à être concténé avec les infos de la requête.
+	std::vector<std::string> wmtsCapaFrag; /// liste des fragments de capabilities prets à être concténé avec les infos de la requête.
 
 	void run();
 	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);

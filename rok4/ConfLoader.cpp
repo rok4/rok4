@@ -7,7 +7,7 @@
 
 TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	LOGGER_DEBUG("=>buildTileMatrixSet");
-
+	LOGGER_INFO("load TileMatrixSet: " << fileName);
 	std::string id;
 	std::string title="";
 	std::string abstract="";
@@ -151,6 +151,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_DEBUG("=>buildPyramid");
+	LOGGER_INFO("load Pyramid:        " << fileName);
 	TileMatrixSet *tms;
 	std::map<std::string, Level *> levels;
 
@@ -326,6 +327,7 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 
 Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_DEBUG("=> buildLayer");
+	LOGGER_INFO("load layer:         " << fileName);
 	std::string id;
 	std::string title="";
 	std::string abstract="";

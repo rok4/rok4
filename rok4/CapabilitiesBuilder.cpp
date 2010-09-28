@@ -9,14 +9,24 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include <iostream>
+#include <vector>
 
+
+/**
+ * Conversion de int en std::string.
+ */
 std::string intToStr(int i){
 	std::ostringstream strstr;
 	strstr << i;
 	return strstr.str();
 }
 
+/**
+ * Construit les fragments invariants du getCapabilities WMS (wmsCapaFrag).
+ */
 void Rok4Server::buildWMSCapabilities(){
+	std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
+	std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
 	TiXmlDocument doc;
 	TiXmlDeclaration * decl = new TiXmlDeclaration( "1.0", "UTF-8", "" );
 	doc.LinkEndChild( decl );
@@ -62,7 +72,7 @@ void Rok4Server::buildWMSCapabilities(){
 	//OnlineResource
 	TiXmlElement * onlineResourceEl = new TiXmlElement( "OnlineResource" );
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
-	onlineResourceEl->SetAttribute("xlink:href","http://hostname/");
+	onlineResourceEl->SetAttribute("xlink:href",hostNameTag);
 	serviceEl->LinkEndChild(onlineResourceEl);
 	// Pas de ContactInformation (facultatif).
 	//Fees
@@ -111,7 +121,7 @@ void Rok4Server::buildWMSCapabilities(){
 	//OnlineResource
 	onlineResourceEl = new TiXmlElement( "OnlineResource" );
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
-	onlineResourceEl->SetAttribute("xlink:href","http://hostname/path?");
+	onlineResourceEl->SetAttribute("xlink:href",pathTag);
 	onlineResourceEl->SetAttribute("xlink:type","simple");
 	GetEl->LinkEndChild(onlineResourceEl);
 	HTTPEl->LinkEndChild(GetEl);
@@ -131,7 +141,7 @@ void Rok4Server::buildWMSCapabilities(){
 	GetEl = new TiXmlElement( "Get" );
 	onlineResourceEl = new TiXmlElement( "OnlineResource" );
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
-	onlineResourceEl->SetAttribute("xlink:href","http://hostname/path?");
+	onlineResourceEl->SetAttribute("xlink:href",pathTag);
 	onlineResourceEl->SetAttribute("xlink:type","simple");
 	GetEl->LinkEndChild(onlineResourceEl);
 	HTTPEl->LinkEndChild(GetEl);
@@ -202,17 +212,34 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilitiesEl->LinkEndChild(capabilityEl);
 	doc.LinkEndChild( capabilitiesEl );
 
-	//	std::cout << doc; // ecriture non formatée dans la flux
-	//	doc.Print();  // affichage formaté sur stdout
-	WMSCapabilities << doc;
-	/*	std::cout << ":"<<std::endl;
-	std::cout << ":"<<std::endl;
-	std::cout << ":"<<std::endl;
-	std::cout << WMSCapabilities << std::endl;
-	 */
+	// std::cout << doc; // ecriture non formatée dans le flux
+	// doc.Print();      // affichage formaté sur stdout
+	std::string wmsCapaTemplate;
+	wmsCapaTemplate << doc;  // ecriture non formatée dans un std::string
+
+	size_t beginPos;
+	size_t endPos;
+	endPos=wmsCapaTemplate.find(hostNameTag);
+	wmsCapaFrag.push_back(wmsCapaTemplate.substr(0,endPos));
+
+	beginPos= endPos + hostNameTag.length();
+	endPos  = wmsCapaTemplate.find(pathTag, beginPos);
+	while(endPos != std::string::npos){
+		wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos,endPos-beginPos));
+		beginPos = endPos + pathTag.length();
+		endPos=wmsCapaTemplate.find(pathTag,beginPos);
+	}
+	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
+
+/*	debug: affichage des fragments.
+    for (int i=0; i<wmsCapaFrag.size();i++){
+		std::cout << "(" << wmsCapaFrag[i] << ")" << std::endl;
+	}
+*/
+
 }
 
 
 void Rok4Server::buildWMTSCapabilities(){
-	WMTSCapabilities="WMTS Capabilities";
+	wmtsCapaFrag.push_back("WMTS Capabilities");
 }

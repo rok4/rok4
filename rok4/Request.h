@@ -10,7 +10,8 @@ private:
 	void url_decode(char *src);
 	std::string getParam(std::string paramName);
 public:
-	std::string server;
+	std::string hostName;
+	std::string path;
 	std::string service;
 	std::string request;
 	std::map<std::string, std::string> params;
@@ -18,7 +19,7 @@ public:
 	DataSource* getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format);
 	DataStream* getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format);
 
-	Request(char* strquery, char* serverName);
+	Request(char* strquery, char* hostName, char* path);
 	virtual ~Request();
 };
 

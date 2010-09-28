@@ -57,7 +57,7 @@ void toLowerCase(char* str){
 	if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
 }
 
-Request::Request(char* strquery,char* serverName) : server(serverName),service(""),request("") {
+Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
 	url_decode(strquery);
 
 	for(int pos = 0; strquery[pos];) {

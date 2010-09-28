@@ -53,7 +53,19 @@ void* Rok4Server::thread_loop(void* arg)
 			LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
 			break;
 		}
-		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp), FCGX_GetParam("SERVER_NAME", fcgxRequest.envp));
+
+		/* La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
+		char **p;
+	    for (p = fcgxRequest.envp; *p; ++p) {
+	    	LOGGER_DEBUG((char*)*p);
+	    }*/
+
+		/* On espère récupérer le nom du host tel qu'il est exprimé dans la requete avec HTTP_HOST.
+		 * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
+		 */
+		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
+		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
+		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
 		if(request->service == "wms")
 			server->S.sendresponse(server->processWMS(request),&fcgxRequest);
 		else if(request->service=="wmts")
@@ -94,9 +106,14 @@ void Rok4Server::run() {
 
 
 DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
-	/*FIXME: remplacer le nom du serveur dans les adresses des capabilities*/
-	LOGGER_DEBUG("=> WMSGetCapabilities" << WMSCapabilities);
-	return new MessageDataStream(WMSCapabilities,"text/xml");
+	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
+	for (int i=1; i < wmsCapaFrag.size()-1; i++){
+		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path;
+	}
+	capa = capa + wmsCapaFrag.back();
+
+	LOGGER_DEBUG("=> WMSGetCapabilities" << capa);
+	return new MessageDataStream(capa,"text/xml");
 }
 
 DataSource* Rok4Server::WMTSGetCapabilities(Request* request) {
