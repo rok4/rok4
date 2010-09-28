@@ -78,7 +78,7 @@ int h2i(char s)
 
 int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t photometric, char* nodata) {
 	TIFF* output=TIFFOpen(pName,"w");
-	if (!output) {
+	if (output==NULL) {
 		LOGGER_ERROR( " Impossible d'ouvrir le fichier en ecriture !" );
 		return -1;
 	}
@@ -450,7 +450,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, vector< vector<Image*> > TabImageIn,
 int main(int argc, char **argv) {
 
 	// Initilisation du logger
-	Logger::configure("LOG_CONF_PATH");
+	Logger::configure(LOG_CONF_PATH);
 	LOGGER_INFO( " dalles_base ; " << version );
 
 	char liste_dalles_filename[256], nodata[6];
