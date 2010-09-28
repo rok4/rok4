@@ -1338,8 +1338,8 @@ sub lecture_pyramide{
 		$id_origine_y{"$id"} = $tms_level_origine_y{"$id"};
 		$id_taille_pix_tuile_x{"$id"} = $tms_level_taille_pix_tuile_x{"$id"};
 		$id_taille_pix_tuile_y{"$id"} = $tms_level_taille_pix_tuile_y{"$id"};
-		$id_taille_m_x{"$id"} = $id_res{"$id"} * $id_taille_pix_tuile_x{"$id"} * $level->{blockWidth};
-		$id_taille_m_y{"$id"} = $id_res{"$id"} * $id_taille_pix_tuile_y{"$id"} * $level->{blockHeight};
+		$id_taille_m_x{"$id"} = $id_res{"$id"} * $id_taille_pix_tuile_x{"$id"} * $level->{tilesPerWidth};
+		$id_taille_m_y{"$id"} = $id_res{"$id"} * $id_taille_pix_tuile_y{"$id"} * $level->{tilesPerHeight};
 	}
 	
 	push(@refs_infos_levels, \@niveaux_croissants, \%id_rep_images, \%id_rep_mtd, \%id_res, \%id_taille_m_x, \%id_taille_m_y, \%id_origine_x, \%id_origine_y, \%id_profondeur, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y);
