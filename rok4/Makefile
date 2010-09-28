@@ -3,9 +3,11 @@ INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
 BINDIR=$(TGTDIR)/bin
 TGTCONFDIR=$(TGTDIR)/config
+DOCDIR=$(TGTDIR)/docs
+DOCROK4DIR=$(DOCDIR)/rok4
 
 SRCCONFDIR=../config
-DOCSDIR=../docs
+SRCDOCDIR=../docs
 
 CXX = g++
 CC  = gcc
@@ -72,9 +74,11 @@ bindir:
 	if [ ! -d $(TGTCONFDIR) ] ; then mkdir $(TGTCONFDIR) ; fi
 	if [ ! -d $(BINDIR) ] ; then mkdir $(BINDIR) ; fi
 	if [ ! -d $(LIBDIR) ] ; then mkdir $(LIBDIR) ; fi
+	if [ ! -d $(DOCDIR) ] ; then mkdir $(DOCDIR) ; fi
+	if [ ! -d $(DOCROK4DIR) ] ; then mkdir $(DOCROK4DIR) ; fi
 
-doc : 
-	doxygen $(DOCSDIR)/doxygen_rok4.cfg
+doc : bindir 
+	doxygen $(SRCDOCDIR)/doxygen_rok4.cfg
 
 clean:
 	rm -f *.o $(CPPUNITDIR)/*.o Rok4Server	
