@@ -33,6 +33,7 @@ our @EXPORT=(
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
 	'$programme_copie_image_param',
+	'$rep_logs_param',
 );
 ################################################################################
 
@@ -126,7 +127,8 @@ our %produit_tms_param = (
 	"scan" => $tms_base,
 );
 
-
+# pour deploiement
+our $rep_logs_param = "../log";
 
 #our $xsd_pyramide_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd";
 #our $path_tms_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3";

@@ -8,18 +8,19 @@ use File::Basename;
 use Cwd 'abs_path';
 use cache(
 	'cree_repertoires_recursifs',
+	'$rep_logs_param',
 );
 $| = 1;
 our($opt_l,$opt_p);
 
 # correspondance entre les repertoires de l'ancien cache et du nouveau
 my %rep_ancien_nouveau;
-
+my $rep_log = $rep_logs_param;
 ################################################################################
 
 ################ MAIN
 my $time = time();
-my $log = "log_initialise_pyramide_$time.log";
+my $log = $rep_log."/log_initialise_pyramide_$time.log";
 
 open LOG, ">>$log" or die colored ("[INITIALISE_PYRAMIDE] Impossible de creer le fichier $log.", 'white on_red');
 &ecrit_log("commande : @ARGV");

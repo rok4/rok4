@@ -18,6 +18,7 @@ use cache(
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
 	'$programme_copie_image_param',
+	'$rep_logs_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
@@ -41,6 +42,7 @@ my $programme_copie_image = $programme_copie_image_param;
 my $taille_dalle_pix = $taille_dalle_pix_param;
 my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
+my $rep_log = $rep_logs_param;
 ################################################################################
 
 ### HELP lignes GDAL ### XXXX
@@ -83,7 +85,7 @@ if ($verif_programme_pivot eq ""){
 
 ############ MAIN
 my $time = time();
-my $log = "log_cree_dallage_base_$time.log";
+my $log = $rep_log."/log_cree_dallage_base_$time.log";
 
 open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $log.", 'white on_red');
 

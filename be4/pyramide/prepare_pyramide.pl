@@ -22,6 +22,7 @@ use cache(
 	'%produit_tms_param',
 	'$xsd_pyramide_param',
 	'lecture_tile_matrix_set',
+	'$rep_logs_param',
 );
 # CONSTANTES
 $| = 1;
@@ -41,6 +42,7 @@ my $max_tile = $max_tile_param;
 my %produit_nb_canaux = %produit_nb_canaux_param;
 my %produit_tms = %produit_tms_param;
 my $xsd_pyramide = $xsd_pyramide_param;
+my $rep_log = $rep_logs_param;
 ################################################################################
 
 # verification de l'existence des fichiers annexes
@@ -52,7 +54,7 @@ if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
 
 ##### MAIN
 my $time = time();
-my $log = "log_prepare_pyramide_$time.log";
+my $log = $rep_log."/log_prepare_pyramide_$time.log";
 
 open LOG, ">>$log" or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.", 'white on_red');
 &ecrit_log("commande : @ARGV");
