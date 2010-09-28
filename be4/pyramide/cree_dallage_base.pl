@@ -900,6 +900,11 @@ sub calcule_niveau_minimum {
 			my @liste_dalles_source = @{$ref_dalles_source};
 			print ".";
 			
+			# creation le cas echeant des repertoires parents
+			my $rep_parent_dalle = dirname($dalle_cache);
+			&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle.");
+			&cree_repertoires_recursifs($rep_parent_dalle);
+			
 			my $nom_dalle = $nom_dalle_index_base{$dalle_cache};
 			
 			my $nom_dalle_temp = "$rep_temp/$nom_dalle.tif";
@@ -1069,6 +1074,12 @@ sub calcule_niveaux_inferieurs{
 					&ecrit_log("Calcul de $dal.");
 					my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
 					print ".";
+					
+					# creation le cas echeant des repertoires parents
+					my $rep_parent_dalle_niveau_inf = dirname($dal);
+					&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle_niveau_inf.");
+					&cree_repertoires_recursifs($rep_parent_dalle_niveau_inf);
+					
 					my $string_dessous = "";
 					foreach my $dalle_dessous(@list_cache_dessous){
 						my $fichier_pointe;
