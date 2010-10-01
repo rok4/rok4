@@ -98,8 +98,8 @@ int LibtiffImage::getline(float* buffer, int line)
 
 LibtiffImage::~LibtiffImage()
 {
-//	if (tif)
-//		TIFFClose(tif);
 //	LOGGER_DEBUG("Destructeur LibtiffImage");
+	if (tif)
+		TIFFClose(tif);
 	delete [] filename;
 }
