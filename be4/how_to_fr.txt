@@ -68,3 +68,32 @@ le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage d
 
 Exemple :
 "cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10"
+
+
+
+
+ETAPE 4 : METTRE A JOUR LA CONFIGURATION DU SERVEUR
+
+Lancer :
+"maj_conf_serveur.pl -l path/fichier_layer.lay -p path/fichier_pyramide.pyr"
+
+le parametre -l contient le chemin vers le fichiers layer a mettre a jour
+le parametre -p contient le chemin vers le fichier de pyramide cree par prepare_pyramide.pl (indique a la fin du traitement)
+
+Remarque : ce sont les memes parametres (et les memes contenus) que pour l'etape 2
+
+Exemple :
+"maj_conf_serveur.pl -l ../config/layers/ORTHO.lay -p /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr"
+
+
+
+
+ETAPE 5 : METTRE LAPYRAMIDE EN LECTURE SEULE
+
+Lancer :
+"pyramide_lecture_seule.pl -p path/fichier_pyramide.pyr"
+
+le parametre -p contient le chemin vers le fichier de pyramide cree par prepare_pyramide.pl (indique a la fin du traitement)
+
+Exemple :
+"pyramide_lecture_seule.pl -p /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr"
