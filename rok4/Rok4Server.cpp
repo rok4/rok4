@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
 	}
 
 	//construction du serveur.
-	Rok4Server(nbThread, *servicesConf, layerList, tmsList);
+	Rok4Server W(nbThread, *servicesConf, layerList, tmsList);
 
 	W.run();
 
