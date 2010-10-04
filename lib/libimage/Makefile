@@ -2,13 +2,14 @@ TGTDIR=../../target
 INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
 DOCDIR=${TGTDIR}/docs/libimage
-DOCSDIR=../../docs
+DOCLIBIMAGEDIR=${DOCDIR}/libimage
+SRCDOCDIR=../../docs
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I"$(INCDIR)"
+#CXXFLAGS = -O3 -msse -msse2 -msse3 -I"." -I"$(INCDIR)"
 #conf de debug:
-#CXXFLAGS = -pg -O0 -msse2 -I"." -I$(INCDIR)
+CXXFLAGS = -pg -O0 -msse2 -I"." -I$(INCDIR)
 LDLIBS = -lpthread
 
 DEPLIB= libcppunit libproj liblogger libtiff
@@ -49,6 +50,7 @@ bindir: tgtdir
 
 docdir: tgtdir
 	if [ ! -d $(DOCDIR) ] ; then mkdir -p $(DOCDIR) ; fi
+	if [ ! -d $(DOCLIBIMAGEDIR) ] ; then mkdir -p $(DOCLIBIMAGEDIR) ; fi
 
 test: cpputest
 
@@ -78,4 +80,4 @@ cppubin: include bindir $(DEPLIB) archive $(CPPUNITOBJ)
 
 # documentation doxygen
 doc : docdir
-	doxygen $(DOCSDIR)/doxygen_libimage.cfg
+	doxygen $(DOCDIR)/doxygen_libimage.cfg

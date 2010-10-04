@@ -62,22 +62,6 @@ int Level::getTileCoding() {
 }
 
 /*
- * @return la taille en octets du type utilise pour le codage
- * @ return -1 en cas d'erreur
- */
-
-int Level::getTypeSize()
-{
-	int tileCoding=getTileCoding();
-	if (tileCoding==RAW_UINT8 || tileCoding==JPEG_UINT8 || tileCoding==PNG_UINT8)
-		return 1;
-	else if(tileCoding==RAW_FLOAT)
-		return 4;
-	LOGGER_ERROR("Taille du type non connu");
-	return -1;
-}
-
-/*
  * A REFAIRE
  */
 Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs) {
@@ -223,9 +207,10 @@ Tile* Level::gettile(int x, int y)
 	if (tileCoding<0)
 		return 0;
 
-	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth); // Index de la tuile
-	uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
-	LOGGER_DEBUG(getfilepath(x, y).c_str());
+	// Index de la tuile (cf. ordre de rangement des tuiles)
+	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
+	// Les index sont stockés à partir de l'octet 2048
+	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());

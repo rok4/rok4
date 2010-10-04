@@ -40,9 +40,7 @@
 #define	PHOTOMETRIC_RGB		2	/* RGB color model */
 #define PHOTOMETRIC_YCBCR       6       /* !CCIR 601 */
 
-
-
-#define RESERVED_SIZE             1024
+#define RESERVED_SIZE             2048
 
 
 /*
@@ -50,8 +48,8 @@
  * 0    : [header 8 Bytes] 
  * 8    : [IFD (RESERVED_SIZE - 8) bytes]   // wifth some reserved an unused space
  * 
- * 1024: [TileOffset 4*nbtile Bytes]
- *       [TileByteCount 4*nbtile Bytes] 
+ * RESERVED_SIZE: [TileOffset 4*nbtile Bytes]
+ *       	  [TileByteCount 4*nbtile Bytes] 
  * [Tile Data]
  */
 

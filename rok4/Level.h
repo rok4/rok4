@@ -51,7 +51,6 @@ public:
 	std::string getId();
 	int	      getTileCoding();
 	std::string getType();
-	int	      getTypeSize();
 
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);

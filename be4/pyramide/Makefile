@@ -1,15 +1,19 @@
 TGTDIR=../../target
 BINDIR=${TGTDIR}/bin
 SHAREDIR=${TGTDIR}/share/pyramide
+LOGDIR=${TGTDIR}/log
+TMPDIR=${TGTDIR}/tmp
 
 PLSCRIPTS= $(wildcard *.pl)
 PLMODULES= $(wildcard *.pm)
 IMGSHARE= $(wildcard *.tif)
 
-all: sharedir
+all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
 	cp $(PLMODULES) $(BINDIR)
 	cp $(IMGSHARE) $(SHAREDIR)
 
-sharedir:
+makedir:
 	if [ ! -d $(SHAREDIR) ] ; then mkdir $(SHAREDIR) ; fi
+	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
+	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi

@@ -4,6 +4,7 @@ LIBDIR=${TGTDIR}/lib
 BINDIR=$(TGTDIR)/bin
 CONFIGDIR=$(TGTDIR)/config
 LOGDIR=$(TGTDIR)/log
+TMPDIR=$(TGTDIR)/tmp
 
 CXX = g++
 CC  = gcc
@@ -22,6 +23,7 @@ all: clean dalles_base
 
 dalles_base: $(DALLESBASEOBJ)
 	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
+	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi
 	$(CXX) $(DALLESBASEOBJ) -o dalles_base $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
 	cp dalles_base $(BINDIR)
 	cp logConfig_be4.xml $(CONFIGDIR)

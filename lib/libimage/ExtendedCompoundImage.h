@@ -50,19 +50,28 @@ private:
 
 		double y=l2y(line);
 		for (uint i=0;i<images.size();i++){
+
+
+LOGGER_DEBUG("1" << line);
                         /* On écarte les images qui ne se trouvent pas sur la ligne*/
                         if (images[i]->getymin()>=y||images[i]->getymax()<y)
                                 continue;
                         if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
                                 continue;
+LOGGER_DEBUG("2");
 
                         /* c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
                         int c0=__max(0,x2c(images[i]->getxmin()));
                         /* c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
                         int c1=__min(width,x2c(images[i]->getxmax()));
+LOGGER_DEBUG("3 " << i);
 
                         T* buffer_t = new T[images[i]->width*images[i]->channels];
+
+LOGGER_DEBUG("35 " << images[i]->width*images[i]->channels);
+
                         images[i]->getline(buffer_t,images[i]->y2l(y));
+LOGGER_DEBUG("4");
                         memcpy(&buffer[c0*channels],
                                    &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
                                    (c1-c0)*channels*sizeof(T));

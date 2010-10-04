@@ -83,7 +83,19 @@ int LibtiffImage::getline(uint8_t* buffer, int line)
 {
 // le buffer est déjà alloue
 // Cas RGB : canaux entralaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
-	TIFFReadScanline(tif,buffer,line,0);	
+
+
+LOGGER_DEBUG("HO " << line << " "<<width<<" "<<bitspersample<<" "<<channels);
+if (tif==NULL)
+	LOGGER_DEBUG("HHHH");
+LOGGER_DEBUG("EZZZ");
+uint8_t* buft=new uint8_t[12288000];
+LOGGER_DEBUG("EZZY");
+        TIFFReadScanline(tif,buft,line,0);
+LOGGER_DEBUG("EZs");
+
+	TIFFReadScanline(tif,buffer,line,0);
+LOGGER_DEBUG("HA");	
 	return width*channels;
 }
 
