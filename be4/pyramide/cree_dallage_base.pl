@@ -380,17 +380,24 @@ close LOG;
 open CHECK, "<$log" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le fichier $log.", 'white on_red');
 my @lignes_log = <CHECK>;
 close CHECK;
-my $bool_erreur = 0;
+my $nb_erreur = 0;
 foreach my $ligne(@lignes_log){
 	if ($ligne =~ /err(?:eur|or)|unable|not found/i){
-		$bool_erreur = 1;
-		last;
+		$nb_erreur += 1;
 	}
 }
-if ($bool_erreur == 1){
-	print colored ("[CREE_DALLAGE_BASE] Des erreurs se sont produites. Consulter le fichier $log.", 'white on_red');
+if ($nb_erreur != 0){
+	print colored ("[CREE_DALLAGE_BASE] $nb_erreur erreurs se sont produites. Consulter le fichier $log.", 'white on_red');
+	print "\n";
+}else{
+	print colored ("[CREE_DALLAGE_BASE] $nb_erreur erreurs se sont produites. Consulter le fichier $log.", 'green');
 	print "\n";
 }
+
+# on l'ecrit dans le log
+open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le fichier $log en ajout.", 'white on_red');
+&ecrit_log("FIN : $nb_erreur erreurs se sont produites.");
+close LOG;
 ################### FIN
 
 ################################################################################
@@ -923,6 +930,14 @@ sub calcule_niveau_minimum {
 				system("$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp >>$log 2>&1");
 				if(!(-e $nom_dalle_temp && -f $nom_dalle_temp)){
 					&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+				}
+				# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
+				if(-l $dalle_cache){
+					&ecrit_log("Suppression du lien symbolique $dalle_cache.");
+					unlink($dalle_cache);
+					if (-l $dalle_cache){
+						&ecrit_log("ERREUR a la suppression du lien symbolique $dalle_cache.");
+					}
 				}
 			}else{
 				# sinon on fait reference a la dalle no_data
