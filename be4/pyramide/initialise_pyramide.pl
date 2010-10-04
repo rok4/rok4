@@ -9,6 +9,7 @@ use Cwd 'abs_path';
 use cache(
 	'cree_repertoires_recursifs',
 	'$rep_logs_param',
+	'lecture_repertoires_pyramide',
 );
 $| = 1;
 our($opt_l,$opt_p);
@@ -76,7 +77,7 @@ my %level_rep_mtd_ancien;
 if ( -e $ancien_pyr && -f $ancien_pyr ){
 	&ecrit_log("Lecture de la pyramide $ancien_pyr.");
 	print "[INITIALISE_PYRAMIDE] Lecture de la pyramide $ancien_pyr.\n";
-	my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_pyramide($ancien_pyr);
+	my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($ancien_pyr);
 	%level_rep_img_ancien = %{$ref_hash_images_ancien};
 	%level_rep_mtd_ancien = %{$ref_hash_mtd_ancien};
 }else{
@@ -87,7 +88,7 @@ if ( -e $ancien_pyr && -f $ancien_pyr ){
 }
 &ecrit_log("Lecture de la pyramide $fichier_pyr.");
 print "[INITIALISE_PYRAMIDE] Lecture de la pyramide $fichier_pyr.\n";
-my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_pyramide($fichier_pyr);
+my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_repertoires_pyramide($fichier_pyr);
 my %level_rep_img_nouveau = %{$ref_hash_images_nouveau};
 my %level_rep_mtd_nouveau = %{$ref_hash_mtd_nouveau};
 
@@ -198,7 +199,16 @@ sub cree_liens_syboliques_recursifs{
 		next if ($fic =~ /^\.\.?$/);
 		# si fichier => lien symbolique
 		if( -f "$rep_ini/$fic" || -l "$rep_ini/$fic"){
-			my $return = symlink("$rep_ini/$fic","$rep_fin/$fic");
+			
+			# on rebondit sur les differents liens
+			my $new_nom = "$rep_ini/$fic";
+			my $dernier_new_nom;
+			while(defined $new_nom){
+				$dernier_new_nom = $new_nom;
+				$new_nom = readlink($new_nom);
+			}
+
+			my $return = symlink("$dernier_new_nom","$rep_fin/$fic");
 			if ($return != 1){
 				&ecrit_log("ERREUR a la creation du lien symbolique $rep_ini/$fic -> $rep_fin/$fic.");
 			}else{
@@ -220,44 +230,4 @@ sub cree_liens_syboliques_recursifs{
 	return $nb_liens;
 	
 }
-################################################################################
-sub lecture_pyramide{
-	
-	my $xml_pyramide = $_[0];
-	
-	my (%id_rep_images, %id_rep_mtd);
-	
-	my @refs_rep_levels;
-	
-	my $xml_fictif = new XML::Simple(KeyAttr=>[]);
 
-	# lire le fichier XML
-	my $data = $xml_fictif->XMLin("$xml_pyramide");
-	
-	foreach my $level (@{$data->{level}}){
-		my $id = $level->{tileMatrix};
-		# oblige car abs_path ne marche pas toujours
-		my $rep1 = $level->{baseDir};
-		if (substr($rep1, 0, 1) eq "/" ){
-			$id_rep_images{"$id"} = $rep1;
-		}else{
-			$id_rep_images{"$id"} = abs_path($rep1);
-		}
-		my $metadata = $level->{metadata};
- 		if (defined $metadata){
-			my $rep2 = $metadata->{baseDir};
-			if (substr($rep2, 0, 1) eq "/" ){
-				$id_rep_mtd{"$id"} = $rep2;
-			}else{
-				$id_rep_mtd{"$id"} = abs_path($rep2);
-			}
- 		}
-		
-		
-	}
-	
-	push(@refs_rep_levels, \%id_rep_images, \%id_rep_mtd);
-	
-	return @refs_rep_levels;
-	
-}

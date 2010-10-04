@@ -34,6 +34,7 @@ our @EXPORT=(
 	'$programme_dalles_base_param',
 	'$programme_copie_image_param',
 	'$rep_logs_param',
+	'lecture_repertoires_pyramide',
 );
 ################################################################################
 
@@ -191,4 +192,46 @@ sub lecture_tile_matrix_set{
 	
 }
 ################################################################################
+sub lecture_repertoires_pyramide{
+	
+	my $xml_pyramide = $_[0];
+	
+	my (%id_rep_images, %id_rep_mtd);
+	
+	my @refs_rep_levels;
+	
+	my $xml_fictif = new XML::Simple(KeyAttr=>[]);
+
+	# lire le fichier XML
+	my $data = $xml_fictif->XMLin("$xml_pyramide");
+	
+	foreach my $level (@{$data->{level}}){
+		my $id = $level->{tileMatrix};
+		# oblige car abs_path ne marche pas toujours
+		my $rep1 = $level->{baseDir};
+		if (substr($rep1, 0, 1) eq "/" ){
+			$id_rep_images{"$id"} = $rep1;
+		}else{
+			$id_rep_images{"$id"} = abs_path($rep1);
+		}
+		my $metadata = $level->{metadata};
+ 		if (defined $metadata){
+			my $rep2 = $metadata->{baseDir};
+			if (substr($rep2, 0, 1) eq "/" ){
+				$id_rep_mtd{"$id"} = $rep2;
+			}else{
+				$id_rep_mtd{"$id"} = abs_path($rep2);
+			}
+ 		}
+		
+		
+	}
+	
+	push(@refs_rep_levels, \%id_rep_images, \%id_rep_mtd);
+	
+	return @refs_rep_levels;
+	
+}
+################################################################################
+
 1;
