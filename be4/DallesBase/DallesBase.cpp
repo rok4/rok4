@@ -111,9 +111,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 		_TIFFmemcpy(buf_ligne, buf_nodata, pImage->width*pImage->channels*bitspersample/8);
 		// on va lire l'image pImage. NB: une resampledImage renvoie systematiquement toute la width alors
 		// qu'une ECImage ne renvoie que la zone comportant des données
-LOGGER_DEBUG(ligne);
 		pImage->getline(buf_ligne,ligne) ;
-LOGGER_DEBUG(ligne);
 		// on ecrit la zone lue dans l'image à produire
 		TIFFWriteScanline(output, buf_ligne, ligne, 0); // en contigu (entrelace) on prend chanel=0 (!)
 	}
@@ -480,9 +478,6 @@ int main(int argc, char **argv) {
 		LOGGER_ERROR("Echec chargement des dalles"); return -1;
 	}
 
-saveImage(ImageIn[0],pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata);
-
-/*
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles"); return -1;
@@ -502,7 +497,7 @@ saveImage(ImageIn[0],pImageOut->getfilename(),pImageOut->channels,bitspersample,
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale"); return -1;
 	}
-*/
+
 	// Nettoyage
 	delete pImageOut ;
 	delete pECImage ;
