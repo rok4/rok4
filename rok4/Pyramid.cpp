@@ -40,6 +40,20 @@ std::string Pyramid::best_level(double resolution_x, double resolution_y) {
 }
 
 
+std::map<std::string, Level*> Pyramid::getLevels(){
+	return levels;
+}
+
+Level * Pyramid::getFirstLevel(){
+	std::map<std::string, Level*>::iterator it(levels.begin());
+	return it->second;
+}
+
+TileMatrixSet Pyramid::getTms(){
+	return tms;
+}
+
+
 Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, const char *dst_crs) {
 	// on calcule la résolution de la requete dans le crs source selon une diagonale de l'image.
 

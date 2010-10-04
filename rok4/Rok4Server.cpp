@@ -106,6 +106,8 @@ void Rok4Server::run() {
 
 
 DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
+	/* concaténation des fragments invariant de capabilities en intercalant les
+	 * parties variables dépendantes de la requête */
 	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
 	for (int i=1; i < wmsCapaFrag.size()-1; i++){
 		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path;
@@ -286,7 +288,7 @@ int main(int argc, char** argv) {
 	}
 
 	//construction du serveur.
-	Rok4Server W(nbThread, *servicesConf, layerList, tmsList);
+	Rok4Server(nbThread, *servicesConf, layerList, tmsList);
 
 	W.run();
 

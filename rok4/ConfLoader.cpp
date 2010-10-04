@@ -699,7 +699,14 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
 		std::string format(pElem->GetText());
-		formatList.push_back(format);
+		if (format != "image/jpeg" &&
+			format != "image/png"  &&
+			format != "image/tiff" &&
+			format != "image/gif"){
+			LOGGER_ERROR(SERVICES_CONF_PATH << "le format d'image [" << format << "] n'est pas un type MIME");
+		}else{
+			formatList.push_back(format);
+		}
 	}
 
 
