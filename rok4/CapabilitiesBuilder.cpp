@@ -141,7 +141,9 @@ void Rok4Server::buildWMSCapabilities(){
 			layerEl->LinkEndChild(buildTextNode("CRS", layer->getWMSCRSList()[i]));
 		}
 
-		/*		layer->getAuthority();
+		/* TODO:
+		 *
+		layer->getAuthority();
 		layer->getMaxRes();
 		layer->getMinRes();
 		layer->getOpaque();
@@ -358,9 +360,10 @@ void Rok4Server::buildWMTSCapabilities(){
 	}
 	wmtsCapaFrag.push_back(wmtsCapaTemplate.substr(beginPos));
 
-	//debug: affichage des fragments.
+	/*//debug: affichage des fragments.
     for (int i=0; i<wmtsCapaFrag.size();i++){
 		std::cout << "(" << wmtsCapaFrag[i] << ")" << std::endl;
 	}
+	*/
 
 }
