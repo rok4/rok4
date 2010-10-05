@@ -110,7 +110,7 @@ DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	return new MessageDataStream(capa,"text/xml");
 }
 
-DataSource* Rok4Server::WMTSGetCapabilities(Request* request) {
+DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	/* concaténation des fragments invariant de capabilities en intercalant les
 	 * parties variables dépendantes de la requête */
 	std::string capa = "";
@@ -120,7 +120,7 @@ DataSource* Rok4Server::WMTSGetCapabilities(Request* request) {
 	capa = capa + wmtsCapaFrag.back();
 
 	//LOGGER_DEBUG("=> WMTSGetCapabilities" << capa);
-	return new MessageDataSource(capa,"text/xml");
+	return new MessageDataStream(capa,"text/xml");
 }
 
 /*

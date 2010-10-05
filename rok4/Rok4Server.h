@@ -43,7 +43,7 @@ private:
 	DataStream* getMap (Request* request);
 	DataSource* getTile(Request* request, Tile* tile);
 	DataStream* WMSGetCapabilities (Request* request);
-	DataSource* WMTSGetCapabilities(Request* request);
+	DataStream* WMTSGetCapabilities(Request* request);
 	void        processWMS    (Request *request, FCGX_Request&  fcgxRequest);
 	void        processWMTS   (Request *request, FCGX_Request&  fcgxRequest);
 	void        processRequest(Request *request, FCGX_Request&  fcgxRequest);
