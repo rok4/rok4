@@ -9,10 +9,20 @@
 /**
  * Conversion de int en std::string.
  */
-std::string intToStr(int i){
+std::string numToStr(int i){
 	std::ostringstream strstr;
 	strstr << i;
 	return strstr.str();
+}
+
+/**
+ * construit un noeud xml simple (de type text).
+ */
+TiXmlElement * buildTextNode(std::string elementName, std::string value){
+	TiXmlElement * elem = new TiXmlElement( elementName );
+	TiXmlText * text = new TiXmlText(value);
+	elem->LinkEndChild(text);
+	return elem;
 }
 
 /**
@@ -37,29 +47,14 @@ void Rok4Server::buildWMSCapabilities(){
 	// traitement de la partie service
 	//----------------------------------
 	TiXmlElement * serviceEl = new TiXmlElement( "Service" );
-	//Name
-	TiXmlElement * elem = new TiXmlElement( "Name" );
-	TiXmlText * text = new TiXmlText( servicesConf.getName());
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//Title
-	elem = new TiXmlElement( "Title" );
-	text = new TiXmlText( servicesConf.getTitle());
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//Abstract
-	elem = new TiXmlElement( "Abstract" );
-	text = new TiXmlText( servicesConf.getAbstract());
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
+	serviceEl->LinkEndChild(buildTextNode("Name",servicesConf.getName()));
+	serviceEl->LinkEndChild(buildTextNode("Title",servicesConf.getTitle()));
+	serviceEl->LinkEndChild(buildTextNode("Abstract",servicesConf.getAbstract()));
 	//KeywordList
 	if (servicesConf.getKeyWords().size() != 0){
 		TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
 		for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
-			elem = new TiXmlElement( "Keyword" );
-			text = new TiXmlText( servicesConf.getKeyWords()[i]);
-			elem->LinkEndChild(text);
-			kwlEl->LinkEndChild(elem);
+			kwlEl->LinkEndChild(buildTextNode("Keyword",servicesConf.getKeyWords()[i]));
 		}
 		serviceEl->LinkEndChild(kwlEl);
 	}
@@ -69,31 +64,11 @@ void Rok4Server::buildWMSCapabilities(){
 	onlineResourceEl->SetAttribute("xlink:href",hostNameTag);
 	serviceEl->LinkEndChild(onlineResourceEl);
 	// Pas de ContactInformation (facultatif).
-	//Fees
-	elem = new TiXmlElement( "Fees" );
-	text = new TiXmlText( servicesConf.getFee());
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//AccessConstraints
-	elem = new TiXmlElement( "AccessConstraints" );
-	text = new TiXmlText( servicesConf.getAccessConstraint());
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//LayerLimit
-	elem = new TiXmlElement( "LayerLimit" );
-	text = new TiXmlText("1");
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//MaxWidth
-	elem = new TiXmlElement( "MaxWidth" );
-	text = new TiXmlText(intToStr(servicesConf.getMaxWidth()));
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
-	//MaxHeight
-	elem = new TiXmlElement( "MaxHeight" );
-	text = new TiXmlText(intToStr(servicesConf.getMaxHeight()));
-	elem->LinkEndChild(text);
-	serviceEl->LinkEndChild(elem);
+	serviceEl->LinkEndChild(buildTextNode("Fees",servicesConf.getFee()));
+	serviceEl->LinkEndChild(buildTextNode("AccessConstraints",servicesConf.getAccessConstraint()));
+	serviceEl->LinkEndChild(buildTextNode("LayerLimit","1"));
+	serviceEl->LinkEndChild(buildTextNode("MaxWidth",numToStr(servicesConf.getMaxWidth())));
+	serviceEl->LinkEndChild(buildTextNode("MaxHeight",numToStr(servicesConf.getMaxHeight())));
 
 	capabilitiesEl->LinkEndChild( serviceEl );
 
@@ -104,10 +79,8 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * capabilityEl = new TiXmlElement( "Capability" );
 	TiXmlElement * requestEl = new TiXmlElement( "Request" );
 	TiXmlElement * getCapabilitiestEl = new TiXmlElement( "GetCapabilities" );
-	elem = new TiXmlElement( "Format" );
-	text = new TiXmlText("text/xml");
-	elem->LinkEndChild(text);
-	getCapabilitiestEl->LinkEndChild(elem);
+
+	getCapabilitiestEl->LinkEndChild(buildTextNode("Format","text/xml"));
 	//DCPType
 	TiXmlElement * DCPTypeEl = new TiXmlElement( "DCFPType" );
 	TiXmlElement * HTTPEl = new TiXmlElement( "HTTP" );
@@ -125,10 +98,7 @@ void Rok4Server::buildWMSCapabilities(){
 
 	TiXmlElement * getMapEl = new TiXmlElement( "GetMap" );
 	for (unsigned int i=0; i<servicesConf.getFormatList().size(); i++){
-		elem = new TiXmlElement( "Format" );
-		text = new TiXmlText(servicesConf.getFormatList()[i]);
-		elem->LinkEndChild(text);
-		getMapEl->LinkEndChild(elem);
+		getMapEl->LinkEndChild(buildTextNode("Format",servicesConf.getFormatList()[i]));
 	}
 	DCPTypeEl = new TiXmlElement( "DCFPType" );
 	HTTPEl = new TiXmlElement( "HTTP" );
@@ -148,49 +118,27 @@ void Rok4Server::buildWMSCapabilities(){
 
 	//exception
 	TiXmlElement * exceptionEl = new TiXmlElement( "Exception" );
-	elem = new TiXmlElement( "Format" );
-	text = new TiXmlText("XML");
-	elem->LinkEndChild(text);
-	exceptionEl->LinkEndChild(elem);
-	capabilityEl->LinkEndChild(exceptionEl);
+	capabilityEl->LinkEndChild(buildTextNode("Format","XML"));
 
 	// Layer
 	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
 	for (;it!=itend;++it){
 		TiXmlElement * layerEl = new TiXmlElement( "Layer" );
 		Layer* layer = it->second;
-		//Name
-		TiXmlElement * elem = new TiXmlElement( "Name" );
-		TiXmlText * text = new TiXmlText(layer->getId());
-		elem->LinkEndChild(text);
-		layerEl->LinkEndChild(elem);
-		//Title
-		elem = new TiXmlElement( "Title" );
-		text = new TiXmlText(layer->getTitle());
-		elem->LinkEndChild(text);
-		layerEl->LinkEndChild(elem);
-		//Abstract
-		elem = new TiXmlElement( "Abstract" );
-		text = new TiXmlText( layer->getAbstract());
-		elem->LinkEndChild(text);
-		layerEl->LinkEndChild(elem);
+		layerEl->LinkEndChild(buildTextNode("Name", layer->getId()));
+		layerEl->LinkEndChild(buildTextNode("Title", layer->getTitle()));
+		layerEl->LinkEndChild(buildTextNode("Abstract", layer->getAbstract()));
 		//KeywordList
 		if (layer->getKeyWords().size() != 0){
 			TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
 			for (unsigned int i=0; i < layer->getKeyWords().size(); i++){
-				elem = new TiXmlElement( "Keyword" );
-				text = new TiXmlText( layer->getKeyWords()[i]);
-				elem->LinkEndChild(text);
-				kwlEl->LinkEndChild(elem);
+				kwlEl->LinkEndChild(buildTextNode("Keyword", layer->getKeyWords()[i]));
 			}
 			layerEl->LinkEndChild(kwlEl);
 		}
 		//CRS
 		for (unsigned int i=0; i < layer->getWMSCRSList().size(); i++){
-			elem = new TiXmlElement( "CRS" );
-			text = new TiXmlText(layer->getWMSCRSList()[i]);
-			elem->LinkEndChild(text);
-			layerEl->LinkEndChild(elem);
+			layerEl->LinkEndChild(buildTextNode("CRS", layer->getWMSCRSList()[i]));
 		}
 
 		/*		layer->getAuthority();
@@ -235,15 +183,9 @@ void Rok4Server::buildWMSCapabilities(){
 
 }
 
-TiXmlElement * buildTextNode(std::string elementName, std::string value){
-	TiXmlElement * elem = new TiXmlElement( elementName );
-	TiXmlText * text = new TiXmlText(value);
-	elem->LinkEndChild(text);
-	return elem;
-}
 
 void Rok4Server::buildWMTSCapabilities(){
-	std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
+	// std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
 	std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
 	TiXmlDocument doc;
 	TiXmlDeclaration * decl = new TiXmlDeclaration( "1.0", "UTF-8", "" );
@@ -322,10 +264,11 @@ void Rok4Server::buildWMTSCapabilities(){
 	TiXmlElement * contentsEl=new TiXmlElement("Contents");
 
 	// Layer
-	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
-	for (;it!=itend;++it){
+	//------------------------------------------------------------------
+	std::map<std::string, Layer*>::iterator itLay(layerList.begin()), itLayEnd(layerList.end());
+	for (;itLay!=itLayEnd;++itLay){
 		TiXmlElement * layerEl=new TiXmlElement("Layer");
-		Layer* layer = it->second;
+		Layer* layer = itLay->second;
 
 		layerEl->LinkEndChild(buildTextNode("ows:Title", layer->getTitle()));
 		layerEl->LinkEndChild(buildTextNode("ows:Abstract", layer->getAbstract()));
@@ -350,104 +293,74 @@ void Rok4Server::buildWMTSCapabilities(){
 			}
 		}
 
-		// on pourrait avoir un format différent par pyramide si on utilise vraiment plusieurs pyramides par layer.
-		for (unsigned int i=0; i<layer->getPyramids().size(); i++){
-//			std::map<std::string, Level*>::iterator it(layer->getPyramids()[i]->getLevels.begin());
-//			std::string format = it->second->getFormat();
-			layerEl->LinkEndChild(buildTextNode("Format",layer->getPyramids()[i]->getFirstLevel()->getFormat()));
+		// on pourrait avoir plusieurs formats différents par layer si on utilise plusieurs pyramides par layer.
+		std::vector<std::string> formats = layer->getMimeFormats();
+		for (unsigned int i=0; i < formats.size(); i++){
+			layerEl->LinkEndChild(buildTextNode("Format",formats[i]));
 		}
 
-		/* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramides
-		 *  il faudra contrôler la conhérence entre le format, la projection et le TMS...*/
+		/* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
+		 *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
 		TiXmlElement * tmsLinkEl = new TiXmlElement("TileMatrixSetLink");
 		tmsLinkEl->LinkEndChild(buildTextNode("TileMatrixSet",layer->getPyramids()[0]->getTms().getId()));
 		layerEl->LinkEndChild(tmsLinkEl);
 
 		contentsEl->LinkEndChild(layerEl);
 	}
+
+	// TileMatrixSet
+	//--------------------------------------------------------
+	std::map<std::string,TileMatrixSet*>::iterator itTms(tmsList.begin()), itTmsEnd(tmsList.end());
+	for (;itTms!=itTmsEnd;++itTms){
+		TiXmlElement * tmsEl=new TiXmlElement("TileMatrixSet");
+		TileMatrixSet* tms = itTms->second;
+		tmsEl->LinkEndChild(buildTextNode("ows:Identifier",tms->getId()));
+		// FIXME: le format du CRS est à revoir!
+		tmsEl->LinkEndChild(buildTextNode("ows:SupportedCRS",tms->getCrs()));
+		std::map<std::string, TileMatrix> tmList = tms->getTmList();
+
+		// TileMatrix
+		std::map<std::string, TileMatrix>::iterator itTm(tmList.begin()), itTmEnd(tmList.end());
+		for (;itTm!=itTmEnd;++itTm){
+			TileMatrix tm =itTm->second;
+			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
+			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
+			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",numToStr(tm.getRes()/0.00028)));
+			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
+			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
+			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));
+			tmEl->LinkEndChild(buildTextNode("MatrixWidth",numToStr(tm.getMatrixW())));
+			tmEl->LinkEndChild(buildTextNode("MatrixHeight",numToStr(tm.getMatrixH())));
+			tmsEl->LinkEndChild(tmEl);
+		}
+		contentsEl->LinkEndChild(tmsEl);
+	}
+
 	capabilitiesEl->LinkEndChild(contentsEl);
-	/*
-	//exception
-	TiXmlElement * exceptionEl = new TiXmlElement( "Exception" );
-	elem = new TiXmlElement( "Format" );
-	text = new TiXmlText("XML");
-	elem->LinkEndChild(text);
-	exceptionEl->LinkEndChild(elem);
-	capabilityEl->LinkEndChild(exceptionEl);
 
-	// Layer
-	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
-	for (;it!=itend;++it){
-		TiXmlElement * layerEl = new TiXmlElement( "Layer" );
-		Layer* layer = it->second;
-		//Title
-		elem = new TiXmlElement( "Title" );
-		text = new TiXmlText(layer->getTitle());
-		elem->LinkEndChild(text);
-		layerEl->LinkEndChild(elem);
-		//Abstract
-		elem = new TiXmlElement( "Abstract" );
-		text = new TiXmlText( layer->getAbstract());
-		elem->LinkEndChild(text);
-		layerEl->LinkEndChild(elem);
-		//KeywordList
-		if (layer->getKeyWords().size() != 0){
-			TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
-			for (unsigned int i=0; i < layer->getKeyWords().size(); i++){
-				elem = new TiXmlElement( "Keyword" );
-				text = new TiXmlText( layer->getKeyWords()[i]);
-				elem->LinkEndChild(text);
-				kwlEl->LinkEndChild(elem);
-			}
-			layerEl->LinkEndChild(kwlEl);
-		}
-		//CRS
-		for (unsigned int i=0; i < layer->getWMSCRSList().size(); i++){
-			elem = new TiXmlElement( "CRS" );
-			text = new TiXmlText(layer->getWMSCRSList()[i]);
-			elem->LinkEndChild(text);
-			layerEl->LinkEndChild(elem);
-		}
-
-//		layer->getAuthority();
-//		layer->getMaxRes();
-//		layer->getMinRes();
-//		layer->getOpaque();
-//		layer->getStyles();
-
-		capabilityEl->LinkEndChild(layerEl);
-
-	}// for layer
-
-	capabilitiesEl->LinkEndChild(capabilityEl);
-*/
 	doc.LinkEndChild( capabilitiesEl );
 
-	// std::cout << doc; // ecriture non formatée dans le flux
-	doc.Print();      // affichage formaté sur stdout
-	doc.Clear();
-/*
+	//doc.Print();      // affichage formaté sur stdout
+
 	std::string wmtsCapaTemplate;
 	wmtsCapaTemplate << doc;  // ecriture non formatée dans un std::string
+	doc.Clear();
 
 	// Découpage en fragments constants.
 	size_t beginPos;
 	size_t endPos;
-	endPos=wmsCapaTemplate.find(hostNameTag);
-	wmsCapaFrag.push_back(wmsCapaTemplate.substr(0,endPos));
-
-	beginPos= endPos + hostNameTag.length();
-	endPos  = wmsCapaTemplate.find(pathTag, beginPos);
+	beginPos= 0;
+	endPos  = wmtsCapaTemplate.find(pathTag);
 	while(endPos != std::string::npos){
-		wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos,endPos-beginPos));
+		wmtsCapaFrag.push_back(wmtsCapaTemplate.substr(beginPos,endPos-beginPos));
 		beginPos = endPos + pathTag.length();
-		endPos=wmsCapaTemplate.find(pathTag,beginPos);
+		endPos=wmtsCapaTemplate.find(pathTag,beginPos);
 	}
-	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
-*/
-/*	debug: affichage des fragments.
-    for (int i=0; i<wmsCapaFrag.size();i++){
-		std::cout << "(" << wmsCapaFrag[i] << ")" << std::endl;
+	wmtsCapaFrag.push_back(wmtsCapaTemplate.substr(beginPos));
+
+	//debug: affichage des fragments.
+    for (int i=0; i<wmtsCapaFrag.size();i++){
+		std::cout << "(" << wmtsCapaFrag[i] << ")" << std::endl;
 	}
-*/
+
 }

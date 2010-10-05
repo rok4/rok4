@@ -37,6 +37,8 @@ public:
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
 
+	std::vector<std::string> getMimeFormats();
+
 	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling)
 	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling)
 	{

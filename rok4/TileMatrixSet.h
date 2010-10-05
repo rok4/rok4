@@ -15,9 +15,11 @@ private:
 	std::string abstract;
 	std::vector<std::string> keyWords;
 	std::string crs;
+	std::map<std::string, TileMatrix> tmList;
 public:
-	std::map<std::string, TileMatrix> tmList; // Ca ne sert à rien de faire un get qui renvoie une ref
 	// FIXME: comment interdire à l'utilisateur de modifier ce map?
+	std::map<std::string, TileMatrix> getTmList();
+
 	std::string getId();
 
 	std::string getCrs() const

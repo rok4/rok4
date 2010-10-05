@@ -40,16 +40,17 @@ private:
 	void buildWMSCapabilities();
 	void buildWMTSCapabilities();
 
-	DataStream* getMap(Request* request);
+	DataStream* getMap (Request* request);
 	DataSource* getTile(Request* request, Tile* tile);
-	DataStream* WMSGetCapabilities(Request* request);
+	DataStream* WMSGetCapabilities (Request* request);
 	DataSource* WMTSGetCapabilities(Request* request);
-	DataStream* processWMS (Request *request);
-	DataSource* processWMTS(Request *requesti, Tile* tile);
+	void        processWMS    (Request *request, FCGX_Request&  fcgxRequest);
+	void        processWMTS   (Request *request, FCGX_Request&  fcgxRequest);
+	void        processRequest(Request *request, FCGX_Request&  fcgxRequest);
 
 public:
-	std::vector<std::string> wmsCapaFrag;  /// liste des fragments de capabilities prets à être concténé avec les infos de la requête.
-	std::vector<std::string> wmtsCapaFrag; /// liste des fragments de capabilities prets à être concténé avec les infos de la requête.
+	std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+	std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
 
 	void run();
 	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);

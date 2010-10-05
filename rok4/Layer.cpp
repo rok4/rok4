@@ -16,3 +16,25 @@ Image* Layer::getbbox(BoundingBox<double> bbox, int width, int height, const cha
 }
 
 std::string Layer::getId(){return id;}
+
+
+/**
+ * Cette fonction retourne les formats mime des images des pyramides associées à ce layer.
+ * Il s'agit donc des formats que l'on peut demander en WMTS.
+ */
+std::vector<std::string> Layer::getMimeFormats(){
+	std::vector<std::string> formats;
+	for (unsigned int i=0; i < pyramids.size();i++){
+		std::string format=pyramids[i]->getFirstLevel()->getFormat();
+		if (format.find("JPG")!=std::string::npos){
+			formats.push_back("image/jpeg");
+		}else if (format.find("PNG")!=std::string::npos){
+			formats.push_back("image/png");
+		}else if (format.find("GIF")!=std::string::npos){
+			formats.push_back("image/gif");
+		}else{
+			formats.push_back("image/tiff");
+		}
+	}
+	return formats;
+}

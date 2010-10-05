@@ -23,8 +23,8 @@ private:
 	uint32_t pos;
 public:
 	MessageDataStream(std::string message, std::string type) : message(message), type(type), pos(0) {}
-	size_t read(uint8_t *buffer, size_t size)
-	{
+
+	size_t read(uint8_t *buffer, size_t size){
 		if(size > message.length() - pos) size = message.length() - pos;
 		memcpy(buffer,(uint8_t*)message.data(),size);
 		pos+=size;

@@ -210,8 +210,9 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<id<<" sans tileMatrix!!"); return NULL; }
 		std::string tmName(pElemLvl->GetText());
 		id=tmName;
-		std::map<std::string, TileMatrix>::iterator it = tms->tmList.find(tmName);
-		if(it == tms->tmList.end()){
+		std::map<std::string, TileMatrix> tmList = tms->getTmList();
+		std::map<std::string, TileMatrix>::iterator it = tmList.find(tmName);
+		if(it == tmList.end()){
 			LOGGER_ERROR(fileName <<" Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
 			return NULL;
 		}

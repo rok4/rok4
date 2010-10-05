@@ -20,6 +20,8 @@ public:
 	double getY0();
 	int getTileW();
 	int getTileH();
+	long int getMatrixW();
+	long int getMatrixH();
 
 
 	TileMatrix(std::string id,double res,double x0,double y0,int tileW,	int tileH,long int matrixW, long int matrixH) :

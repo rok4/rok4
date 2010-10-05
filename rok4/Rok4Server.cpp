@@ -54,7 +54,7 @@ void* Rok4Server::thread_loop(void* arg)
 			break;
 		}
 
-		/* La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
+		/* DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
 		char **p;
 	    for (p = fcgxRequest.envp; *p; ++p) {
 	    	LOGGER_DEBUG((char*)*p);
@@ -66,16 +66,8 @@ void* Rok4Server::thread_loop(void* arg)
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
 		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
 		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
-		if(request->service == "wms")
-			server->S.sendresponse(server->processWMS(request),&fcgxRequest);
-		else if(request->service=="wmts")
-		{	
-			Tile* tile;
-			server->S.sendresponse(server->processWMTS(request,tile),&fcgxRequest);
-			delete tile;
-		}
-		else
-			server->S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+
+		server->processRequest(request, fcgxRequest);
 		delete request;
 		FCGX_Finish_r(&fcgxRequest);
 	}
@@ -114,13 +106,21 @@ DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	}
 	capa = capa + wmsCapaFrag.back();
 
-	LOGGER_DEBUG("=> WMSGetCapabilities" << capa);
+	//LOGGER_DEBUG("=> WMSGetCapabilities" << capa);
 	return new MessageDataStream(capa,"text/xml");
 }
 
 DataSource* Rok4Server::WMTSGetCapabilities(Request* request) {
-	// TODO à faire
-	return new MessageDataSource("Not yet implemented!","text/plain");
+	/* concaténation des fragments invariant de capabilities en intercalant les
+	 * parties variables dépendantes de la requête */
+	std::string capa = "";
+	for (int i=0; i < wmtsCapaFrag.size()-1; i++){
+		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path;
+	}
+	capa = capa + wmtsCapaFrag.back();
+
+	//LOGGER_DEBUG("=> WMTSGetCapabilities" << capa);
+	return new MessageDataSource(capa,"text/xml");
 }
 
 /*
@@ -205,25 +205,40 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 }
 
 
-/** tTraite les requêtes de type WMTS */
-DataSource* Rok4Server::processWMTS(Request* request, Tile* tile)
-{
-	if (request->request == "getcapabilities")
-		return(WMTSGetCapabilities(request));
-	else if (request->request == "gettile")
-		return (getTile(request, tile));
-	else
-		return new MessageDataSource("Invalid request","text/plain");
+/** Traite les requêtes de type WMTS */
+void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
+	if (request->request == "getcapabilities"){
+		S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
+	}else if (request->request == "gettile"){
+		Tile * tile;
+		S.sendresponse(getTile(request, tile), &fcgxRequest);
+		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliorer.
+		// Appel au destructeur préservant la zone mémoire de la tuile no-data.
+		delete tile;
+	}else{
+		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+	}
 }
 
 /** Traite les requêtes de type WMS */
-DataStream* Rok4Server::processWMS(Request* request) {
-	if (request->request == "getcapabilities")
-		return(WMSGetCapabilities(request));
-	else if (request->request == "getmap")
-		return (getMap(request));
-	else
-		return new MessageDataStream("Invalid request","text/plain");
+void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
+	if (request->request == "getcapabilities"){
+		S.sendresponse(WMSGetCapabilities(request),&fcgxRequest);
+	}else if (request->request == "getmap"){
+		S.sendresponse(getMap(request), &fcgxRequest);
+	}else{
+		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+	}
+}
+
+void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
+	if(request->service == "wms") {
+		processWMS(request, fcgxRequest);
+	}else if(request->service=="wmts") {
+		processWMTS(request, fcgxRequest);
+	}else{
+		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+	}
 }
 
 int main(int argc, char** argv) {

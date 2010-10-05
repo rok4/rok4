@@ -9,9 +9,12 @@
 
 
 
-double TileMatrix::getRes()    {return res;}
-double TileMatrix::getX0()     {return x0;}
-double TileMatrix::getY0()     {return y0;}
-int    TileMatrix::getTileW()  {return tileW;}
-int    TileMatrix::getTileH()  {return tileH;}
-std::string TileMatrix::getId(){return id;}
+double   TileMatrix::getRes()    {return res;}
+double   TileMatrix::getX0()     {return x0;}
+double   TileMatrix::getY0()     {return y0;}
+int      TileMatrix::getTileW()  {return tileW;}
+int      TileMatrix::getTileH()  {return tileH;}
+long int TileMatrix::getMatrixW(){return matrixW;}
+long int TileMatrix::getMatrixH(){return matrixH;}
+
+std::string TileMatrix::getId()  {return id;}
