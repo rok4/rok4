@@ -30,7 +30,7 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o
+WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o
 
 all: Rok4Server
 #
@@ -60,7 +60,7 @@ test: cpputest
 #
 # cpputest
 # compile et execute les tests unitaires cppunit
-cpputest: Rok4Server cppubin
+cpputest: clean Rok4Server cppubin
 	$(CPPUBIN)
 
 cppubin: $(CPPUNITOBJ)

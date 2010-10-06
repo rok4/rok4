@@ -3,11 +3,15 @@
 
 #include "Data.h"
 #include <string.h> // Pour memcpy
+#include "ServiceException.h"
+#include <vector>
+
 
 class MessageDataSource : public DataSource {
 private:
-	std::string message;
 	std::string type;
+protected:
+	std::string message;
 public:
 	MessageDataSource(std::string message, std::string type) : message(message), type(type) {}
 	const uint8_t* get_data(size_t& size) {size=message.length();return (const uint8_t*)message.data();}
@@ -15,12 +19,35 @@ public:
 	bool release_data() {}
 };
 
+/**
+ * @class SERDataSource
+ * genere un MessageDataSource a partir de ServiceExceptions
+ */
+class SERDataSource : public MessageDataSource {
+public:
+/**
+	* Constructeur à partir d'un ServiceException
+	* @param sex le ServiceException
+	*/
+	SERDataSource(ServiceException *sex) ;
+/**
+	* Constructeur à partir d'un tableau de ServiceException
+	* @param sexcp le tableau des ServiceExceptions
+	*/
+	SERDataSource(std::vector<ServiceException*> *sexcp) ;
+/**
+ * getter pour la propriete Message
+ */
+	std::string getMessage() {return this->message;} ;
+};
 
 class MessageDataStream : public DataStream {
 private:
-	std::string message;
 	std::string type;
 	uint32_t pos;
+protected:
+	std::string message;
+
 public:
 	MessageDataStream(std::string message, std::string type) : message(message), type(type), pos(0) {}
 
@@ -32,6 +59,28 @@ public:
 	}
 	bool eof() {return (pos==message.length());}
 	std::string gettype() {return type.c_str();}
+};
+
+/**
+ * @class SERDataStream
+ * genere un MessageDataStream a partir de ServiceExceptions
+ */
+class SERDataStream : public MessageDataStream {
+public:
+/**
+	* Constructeur à partir d'un ServiceException
+	* @param sex le ServiceException
+	*/
+	SERDataStream(ServiceException *sex) ;
+/**
+	* Constructeur à partir d'un tableau de ServiceException
+	* @param sexcp le tableau des ServiceExceptions
+	*/
+	SERDataStream(std::vector<ServiceException*> *sexcp) ;
+/**
+ * getter pour la propriete Message
+ */
+	std::string getMessage() {return this->message;} ;
 };
 
 #endif
