@@ -276,7 +276,7 @@ void Rok4Server::buildWMTSCapabilities(){
 		layerEl->LinkEndChild(buildTextNode("ows:Abstract", layer->getAbstract()));
 		if (layer->getKeyWords().size() != 0){
 			TiXmlElement * kwlEl = new TiXmlElement( "ows:Keywords" );
-			for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
+			for (unsigned int i=0; i < layer->getKeyWords().size(); i++){
 				kwlEl->LinkEndChild(buildTextNode("ows:Keyword", layer->getKeyWords()[i]));
 			}
 			layerEl->LinkEndChild(kwlEl);

@@ -16,7 +16,7 @@ private:
 
 	std::string   baseDir;
 	int           pathDepth;
-	TileMatrix  & tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
+	TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
 	const std::string format; //format d'image des block de tuiles du cache.
 	const int     channels;
 	const int32_t maxTileRow;
@@ -41,7 +41,7 @@ protected:
 
 
 public:
-	TileMatrix const & getTm();
+	TileMatrix const getTm();
 	std::string getFormat();
 	uint32_t    getMaxTileRow();
 	uint32_t    getMinTileRow();
@@ -70,7 +70,7 @@ public:
 
 
 	/** D */
-	Level(TileMatrix &tm, int channels, std::string baseDir,
+	Level(TileMatrix tm, int channels, std::string baseDir,
 			int tilesPerWidth, int tilesPerHeight,
 			uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
 			int pathDepth, std::string format);

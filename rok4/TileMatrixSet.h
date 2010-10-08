@@ -30,6 +30,15 @@ public:
 
 	TileMatrixSet(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::string crs, std::map<std::string, TileMatrix> & tmList) :
 		id(id), title(title), abstract(abstract), keyWords(keyWords), crs(crs), tmList(tmList) {};
+	TileMatrixSet(const TileMatrixSet& t)
+	{
+		id=t.id;
+		title=t.title;
+		abstract=t.abstract;
+		keyWords=t.keyWords;
+		crs=t.crs;
+		tmList=t.tmList;
+	}
 
 };
 
