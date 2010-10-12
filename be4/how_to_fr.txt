@@ -1,7 +1,7 @@
 ETAPE 1 : PREPARATION DES FICHIERS NECESSAIRES A LA PYRAMIDE
 
 Lancer : 
-"prepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -s systeme_coordonnees -r path/repertoire_pyramide -t path/repertoire_fichiers_dallage -n annee [-d departement]"
+"prepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement]"
 
 produit :
         ortho
@@ -9,8 +9,13 @@ produit :
         scan
         franceraster
 
+compression images pyramide :
+		raw
+		jpeg
+		png
+
 systeme_coordonnees :
-        code RIG des images source : LAMB93 LAMBE ...
+        code RIG de la pyramide a creer : LAMB93 LAMBE WGS84 ...
 
 annee :
         scan25 et scan50 :
@@ -21,14 +26,15 @@ annee :
 le parametre -p contient le nom du produit (voir exemples ci-dessus)
 le parametre -i contient le chemin des images a integrer dans le cache
 le parametre -m (optionnel) contient le chemin des masques de metadonnees associees aux images a integrer au cache (s'il existe)
-le parametre -s contient le code RIG des images source (voir exemples ci-dessus)
 le parametre -r contient le chemin du repertoire ou creer la nouvelle pyramide (elle sera creee dans un sous-repertoire avec une arborescence specifique)
+le parametre -c contient la compression des images de la pyramide finale (voir exemples ci-dessus)
+le parametre -s contient le code RIG des images de la pyramide a creer (voir exemples ci-dessus)
 le parametre -t contient le chemin du repertoire ou mettre les fichiers de dallage necessaire au calcul de la pyramide (independant du chemin de la pyramide)
 le parametre -n contient l'annee de production des donnees
 le parametre -d contient le nom du departement cocnerne (le cas echeant)
 
 Exemple : 
-"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -s LAMB93 -r /home/charlotte/rep_pyramide -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75"
+"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -r /home/charlotte/rep_pyramide -c jpeg -s LAMB93 -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75"
 
 
 
@@ -50,7 +56,7 @@ Exemple :
 ETAPE 3 : CREATION DU CACHE PROPREMENT DIT
 
 Lancer :
-"cree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -x path/fichier_pyramide.pyr -d pourcentage_dilatation"
+"cree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d pourcentage_dilatation"
 
 produit :
  		ortho
@@ -58,16 +64,20 @@ produit :
 		scan[25|50|100|dep|reg|1000]
 		franceraster
 
+systeme_coordonnees_source :
+		code RIG des images source : LAMB93 LAMBE ...
+
 pourcentage_dilatation : 0 a 100
 
 le parametre -p contient le nom du produit (voir exemple ci-dessus)
 le parametre -f contient le chemin vers le fichier des dalles sources produit par prepare_pyramide.pl (indique en cours de traitement)
 le parametre -m (optionnel) contient le chemin vers le fichier des metadonnees sources produit par prepare_pyramide.pl (indique en cours de traitement si le parametre -m a ete specifie dans prepare_pyramide.pl)
+le parametre -s contient le code RIG des donnees source (voir exemples ci-dessus)
 le parametre -x contient le chemin vers le fichier de pyramide cree par prepare_pyramide.pl (indique en fin de traitement)
 le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage de dilatation applique aux dalles pour trouver les dalles source en recouvrement
 
 Exemple :
-"cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10"
+"cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10"
 
 
 
