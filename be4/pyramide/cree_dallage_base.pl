@@ -11,7 +11,7 @@ use cache(
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
-	'%produit_format_param',
+# 	'%produit_format_param',
 	'$taille_dalle_pix_param',
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
@@ -19,6 +19,7 @@ use cache(
 	'$programme_dalles_base_param',
 	'$programme_copie_image_param',
 	'$rep_logs_param',
+	'$dilatation_reproj_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
@@ -27,7 +28,7 @@ use XML::Simple;
 use File::Basename;
 # pas de bufferisation des sorties
 $| = 1;
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_d);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
@@ -40,9 +41,10 @@ my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
 my $taille_dalle_pix = $taille_dalle_pix_param;
-my %produit_format = %produit_format_param;
+# my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
+my $dilatation_reproj = $dilatation_reproj_param;
 ################################################################################
 
 ### HELP lignes GDAL ### XXXX
@@ -63,7 +65,7 @@ if(!(-e $path_tms && -d $path_tms)){
 	print "\n";
 	exit;
 }
-# verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
+verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
 if ($verif_programme_dalle_base eq ""){
 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_dalles_base est introuvable.", 'white on_red');
@@ -92,9 +94,9 @@ open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le f
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:d:");
+getopts("p:f:x:m:s:d:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_d) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
@@ -108,6 +110,10 @@ if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_d) ){
 	}
 	if(! defined $opt_x){
 		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -x.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_s){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -s.", 'white on_red');
 		print "\n";
 	}
 	if(! defined $opt_d){
@@ -126,6 +132,7 @@ if (defined $opt_m){
 	$fichier_mtd_source = $opt_m;
 }
 my $fichier_pyramide = $opt_x;
+my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
 
 # verifications des parametres
@@ -175,22 +182,14 @@ if (! (-e $rep_temp && -d $rep_temp)){
 	mkdir "$rep_temp", 0775 or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le repertoire $rep_temp.", 'white on_red');
 }
 
-# action 0 : determiner les resolutions utiles et la compression finale
+# action 0 : determiner les resolutions utiles
 my $ref_niv_utiles = $produit_res_utiles{$ss_produit};
 my ($res_min_produit, $res_max_produit) = @{$ref_niv_utiles};
-my $compress;
-if($produit_format{$produit} =~ /jpg/i){
-	$compress = "jpeg";
-}elsif($produit_format{$produit} =~ /png/i){
-	$compress = "png";
-}else{
-	$compress = "none";
-}
 
 # action 1 : recuperer les infos de la pyramide
 &ecrit_log("Lecture de la pyramide $fichier_pyramide.");
 print "[CREE_DALLAGE_BASE] Lecture de la pyramide $fichier_pyramide.\n";
-my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y) = &lecture_pyramide($fichier_pyramide);
+my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
 my @niveaux_ranges = @{$ref_niveau_ordre_croissant};
 my %niveau_repertoire_image = %{$ref_rep_images};
 my %niveau_repertoire_mtd = %{$ref_rep_mtd};
@@ -225,6 +224,24 @@ my $x_min_niveau_max = $niveau_origine_x{"$level_max"};
 my $y_max_niveau_max = $niveau_origine_y{"$level_max"};
 my $x_max_niveau_max = $x_min_niveau_max + $niveau_taille_m_x{"$level_max"};
 my $y_min_niveau_max = $y_max_niveau_max - $niveau_taille_m_y{"$level_max"};
+
+# determination de la compression finale
+my $compress;
+my $bool_perte = 0;
+if($format_imgs_pyramide =~ /jpg/i){
+	$compress = "jpeg";
+	$bool_perte = 1;
+}elsif($format_imgs_pyramide =~ /png/i){
+	$compress = "png";
+}else{
+	$compress = "none";
+}
+
+# determination d'une reprojection
+my $bool_reprojection = 0;
+if($systeme_source ne $systeme_target){
+	$bool_reprojection = 1;
+}
 
 # action 2 : lire le fichier de dalles source et des mtd
 # => bbox des donnees, hashes des xmin, xmax, ymin, ymax, resx, resy
@@ -264,8 +281,8 @@ if (defined $fichier_mtd_source){
 # (au moins au plus haut niveau de la pyramide) (pas forcement existante)
 &ecrit_log("Determination des infos de la dalle la plus haute recouvrant les donnees.");
 print "[CREE_DALLAGE_BASE] Determination des infos de la dalle la plus haute recouvrant les donnees.\n";
-my ($x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $niveau_dalle0, $indice_niveau0) =  &trouve_infos_pyramide($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $x_max_niveau_max, $y_min_niveau_max, $y_max_niveau_max, $res_max, $level_max);
-	
+my ($x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $niveau_dalle0, $indice_niveau0) =  &trouve_infos_pyramide($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $x_max_niveau_max, $y_min_niveau_max, $y_max_niveau_max, $res_max, $level_max, $systeme_source, $systeme_target);
+
 # action 4 : creer arbre : cree_arbre_dalles_cache
 # XXXX pour GDAL
 # XXXX my %cache_arbre_niveau;
@@ -297,6 +314,8 @@ if (defined $fichier_mtd_source){
 	&ecrit_log("$nombre_mtd_cache images definies.");
 	print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
 }
+
+
 # transformation des index dans l'arbre en nom des dalles cache
 my @liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 my @liste_total_dalles_cache;
@@ -310,6 +329,8 @@ my %nom_dalle_index_base;
 &ecrit_log("Passage des donnees arbre aux donnees cache.");
 print "[CREE_DALLAGE_BASE] Passage des donnees arbre aux donnees cache.\n";
 &arbre2cache(\@liste_dalles_cache_index_arbre);
+
+exit;
 
 ##### ATTENTION; action 5 gelée : plus besoin d'intialiser la pyramide avec du vide
 # on fera simplement reference a la dalle no_data plus tard
@@ -328,7 +349,7 @@ print "[CREE_DALLAGE_BASE] Passage des donnees arbre aux donnees cache.\n";
 # 		print "[CREE_DALLAGE_BASE] $nombre_ajoutees_mtd mtd ajoutees.\n";
 # 	}
 
-#action 6 : calculer le niveau minimum
+#action 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
 &ecrit_log("Calcul des images du niveau le plus bas.");
 print "[CREE_DALLAGE_BASE] Calcul des images du niveau le plus bas.\n";
 my $rep_fichiers_img = dirname($fichier_dalle_source);
@@ -406,10 +427,12 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -x path/fichier_pyramide.pyr -d pourcentage_dilatation\n",'black on_white');
+	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d pourcentage_dilatation\n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
- 	print "\npourcentage_dilatation : 0 a 100\n";
+ 	print "\nsysteme_coordonnees_source :\n";
+	print "\tcode RIG des images source : LAMB93 LAMBE ...\n";
+	print "\npourcentage_dilatation : 0 a 100\n";
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -750,38 +773,68 @@ sub trouve_infos_pyramide{
 	my $y_max_niveau_maxi = $_[7];
 	my $res_maxi = $_[8];
 	my $niveau_max = $_[9];
+	my $syst_dalles = $_[10];
+	my $syst_pyramide = $_[11];
+	
+	# les calculs sont fait dans l'espace dalles
+	# la remontee de niveaux se fait dans l'espace cache
 	
 	# initialisation a la resolution la plus grande de la pyramide
 	my ($niveau_dalle_haut, $res_haut) = ($niveau_max, $res_maxi);
+	my ($x_min_haut_proj_cache, $x_max_haut_proj_cache, $y_min_haut_proj_cache, $y_max_haut_proj_cache) = ($x_min_niveau_maxi, $x_max_niveau_maxi, $y_min_niveau_maxi, $y_max_niveau_maxi);
 	
-	my ($x_min_haut, $x_max_haut, $y_min_haut, $y_max_haut) = ($x_min_niveau_maxi, $x_max_niveau_maxi, $y_min_niveau_maxi, $y_max_niveau_maxi);
+	my ($x_min_haut_proj_dalles, $x_max_haut_proj_dalles, $y_min_haut_proj_dalles, $y_max_haut_proj_dalles) = ($x_min_haut_proj_cache, $x_max_haut_proj_cache, $y_min_haut_proj_cache, $y_max_haut_proj_cache);
+	# si on a une difference de proj, on doit reprojeter les dalles cache (fictives) en proj des images source
+	if($bool_reprojection){
+		($x_min_haut_proj_dalles, $x_max_haut_proj_dalles, $y_min_haut_proj_dalles, $y_max_haut_proj_dalles) = &reproj_rectangle($x_min_haut_proj_cache, $x_max_haut_proj_cache, $y_min_haut_proj_cache, $y_max_haut_proj_cache, $syst_pyramide, $syst_dalles, $dilatation_reproj);
+	}
 	
 	my @infos_dalle_haut;
 	
 	# les donnees source ne peuvent pas etre au nord ou a l'ouest de l'origine
 	# l'origine a ete calculee pour
-	if (($x_min_haut > $x_min_chantier) || ($y_max_haut < $y_max_chantier)){
+	if (($x_min_haut_proj_dalles > $x_min_chantier) || ($y_max_haut_proj_dalles < $y_max_chantier)){
 		print colored ("[CREE_DALLAGE_BASE] Probleme dans la definition de la pyramide : les donnees source n'y sont pas incluses.", 'white on_red');
 		print "\n";
 		&ecrit_log("ERREUR dans la definition de la pyramide : les donnees source n'y sont pas incluses.");
 		exit;
 	}
-	
+		
 	# jusqu'a ce que la dalle couvre la box des donnees source
 	# hypothese : toutes les dalles ont la meme taille pixel
-	while( ! (intersects($x_min_haut, $x_max_haut, $y_min_haut, $y_max_haut, $x_min_chantier, $x_max_chantier, $y_min_chantier, $y_max_chantier)) ){
+	while( ! (intersects($x_min_haut_proj_dalles, $x_max_haut_proj_dalles, $y_min_haut_proj_dalles, $y_max_haut_proj_dalles, $x_min_chantier, $x_max_chantier, $y_min_chantier, $y_max_chantier)) ){
 		$res_haut *= 2;
-		$x_max_haut = $x_min_haut + $res_haut * $taille_image_pix_x;
-		$y_min_haut = $y_max_haut - $res_haut * $taille_image_pix_y;
+		$x_max_haut_proj_cache = $x_min_haut_proj_cache + $res_haut * $taille_image_pix_x;
+		$y_min_haut_proj_cache = $y_max_haut_proj_cache - $res_haut * $taille_image_pix_y;
+		
+		# on recalcule tout le rectangle dans le cas d'une reproj
+		if($bool_reprojection){
+			($x_min_haut_proj_dalles, $x_max_haut_proj_dalles, $y_min_haut_proj_dalles, $y_max_haut_proj_dalles) = &reproj_rectangle($x_min_haut_proj_cache, $x_max_haut_proj_cache, $y_min_haut_proj_cache, $y_max_haut_proj_cache, $syst_pyramide, $syst_dalles, $dilatation_reproj)
+		}else{
+			$x_max_haut_proj_dalles = $x_max_haut_proj_cache;
+			$y_min_haut_proj_dalles = $y_min_haut_proj_cache;
+		}
 		$niveau_dalle_haut = "$res_haut";
-		# mise a jour des ifos des variables globales
+		# mise a jour des infos des variables globales
+		$niveau_res{"$niveau_dalle_haut"} = $res_haut;
+		push(@niveaux_ranges, "$niveau_dalle_haut");
+	}
+	
+	# si besoin on repasse dans le systeme cache, la dalle haut est agmentee d'un niveau a cause des deformations 
+	if($bool_reprojection){
+		$res_haut *= 2;
+		$x_max_haut_proj_cache = $x_min_haut_proj_cache + $res_haut * $taille_image_pix_x;
+		$y_min_haut_proj_cache = $y_max_haut_proj_cache - $res_haut * $taille_image_pix_y;
+		$niveau_dalle_haut = "$res_haut";
 		$niveau_res{"$niveau_dalle_haut"} = $res_haut;
 		push(@niveaux_ranges, "$niveau_dalle_haut");
 	}
 	
 	my $indice_dalle_haut = @niveaux_ranges - 1;
 	
-	push(@infos_dalle_haut, $x_min_haut, $x_max_haut, $y_min_haut, $y_max_haut, $res_haut, $niveau_dalle_haut, $indice_dalle_haut);
+	
+	
+	push(@infos_dalle_haut, $x_min_haut_proj_cache, $x_max_haut_proj_cache, $y_min_haut_proj_cache, $y_max_haut_proj_cache, $res_haut, $niveau_dalle_haut, $indice_dalle_haut);
 	
 	return @infos_dalle_haut;
 	
@@ -805,9 +858,14 @@ sub definit_bloc_dalle{
 	
 	my $nombre_dalles_traitees = 0;
 	
+	# pour les reproj
+	my ($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles) = ($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache);
 	# sortie si la dalle n'est pas dans la bbox des dalles source
+	if ($bool_reprojection){
+		($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles) = &reproj_rectangle($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $systeme_source, $systeme_target, $dilatation_reproj);
+	}
 	my $interieur_ok = 0;
-	if ( intersects($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) ){
+	if ( intersects($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) ){
 		$interieur_ok = 1;
 	}
 	if($interieur_ok == 0){
@@ -822,8 +880,15 @@ sub definit_bloc_dalle{
 	my $x_max_dilate = $x_max_dalle_cache + (($x_max_dalle_cache - $x_min_dalle_cache) * ($pcent_dilat / 100));
 	my $y_min_dilate = $y_min_dalle_cache - (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
 	my $y_max_dilate = $y_max_dalle_cache + (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
+	
+	# pour les reproj
+	my ($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles) = ($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate);
+	if ($bool_reprojection){
+		($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles) = &reproj_rectangle($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $systeme_source, $systeme_target, $dilatation_reproj);
+	}
+	
 	foreach my $source(@dalles_initiales){
-		if( intersects($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}) ){
+		if( intersects($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles, $source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}) ){
 			push(@dalles_recouvrantes, $source);
 		}
 	}
@@ -1307,8 +1372,6 @@ sub lecture_pyramide{
 	
 	my $xml_pyramide = $_[0];
 	
-	
-	
 	my (%id_rep_images, %id_rep_mtd, %id_res, %id_taille_m_x, %id_taille_m_y, %id_origine_x, %id_origine_y, %id_profondeur, %id_taille_pix_tuile_x, %id_taille_pix_tuile_y);
 	
 	my @refs_infos_levels;
@@ -1321,7 +1384,7 @@ sub lecture_pyramide{
 	my $nom_tms = $data->{tileMatrixSet};
 	my $tms_complet = $path_tms."/".$nom_tms.".tms";
 	
-	my ($ref_inutile1, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_id_origine_x, $ref_id_origine_y) = &lecture_tile_matrix_set($tms_complet);
+	my ($ref_inutile1, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_id_origine_x, $ref_id_origine_y, $srs) = &lecture_tile_matrix_set($tms_complet);
 	my %tms_level_resolution = %{$ref_id_resolution};
 	my %tms_level_taille_pix_tuile_x = %{$ref_id_taille_pix_tuile_x};
 	my %tms_level_taille_pix_tuile_y = %{$ref_id_taille_pix_tuile_y};
@@ -1331,6 +1394,10 @@ sub lecture_pyramide{
 	#fonction de tri des niveaux par resolution
 	my @niveaux_croissants = sort { $tms_level_resolution{"$a"} <=> $tms_level_resolution{"$b"}} keys %tms_level_resolution;
 	
+	# liste des formats (cles uniquement)
+	my %formats;
+	my $format_images_pyramide;
+	
 	foreach my $level (@{$data->{level}}){
 		my $id = $level->{tileMatrix};
 		my $rep1 = $level->{baseDir};
@@ -1339,6 +1406,8 @@ sub lecture_pyramide{
 		}else{
 			$id_rep_images{"$id"} = abs_path($rep1);
 		}
+		my $format_level = $level->{format};
+		$formats{$format_level} = "toto";
 		my $metadata = $level->{metadata};
 		my $rep2 = $metadata->{baseDir};
 		if (substr($rep2, 0, 1) eq "/" ){
@@ -1357,7 +1426,24 @@ sub lecture_pyramide{
 		$id_taille_m_y{"$id"} = $id_res{"$id"} * $id_taille_pix_tuile_y{"$id"} * $level->{tilesPerHeight};
 	}
 	
-	push(@refs_infos_levels, \@niveaux_croissants, \%id_rep_images, \%id_rep_mtd, \%id_res, \%id_taille_m_x, \%id_taille_m_y, \%id_origine_x, \%id_origine_y, \%id_profondeur, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y);
+	# verification de l'unicite des formats
+	my @formats_temp = keys %formats;
+	my $nb_formats_temp = @formats_temp;
+	if ($nb_formats_temp == 0){
+		&ecrit_log("ERREUR Pas de formats d'images trouves dans le fichier $xml_pyramide.");
+		print colored ("[CREE_DALLAGE_BASE] Pas de formats d'images trouves dans le fichier $xml_pyramide.", 'white on_red');
+		print "\n";
+		exit;
+	}else{
+		if($nb_formats_temp > 1){
+			&ecrit_log("WARNING Plusieurs formats d'images trouves dans le fichier $xml_pyramide => retenu : $formats_temp[0].");
+			print colored ("[CREE_DALLAGE_BASE] WARNING Plusieurs formats d'images trouves dans le fichier $xml_pyramide => retenu : $formats_temp[0].", 'white on_red');
+			print "\n";
+		}
+		$format_images_pyramide = $formats_temp[0];
+	}
+	
+	push(@refs_infos_levels, \@niveaux_croissants, \%id_rep_images, \%id_rep_mtd, \%id_res, \%id_taille_m_x, \%id_taille_m_y, \%id_origine_x, \%id_origine_y, \%id_profondeur, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y, $srs, $format_images_pyramide);
 	
 	return @refs_infos_levels;
 	
@@ -1401,6 +1487,115 @@ sub passage_pivot{
 	}
 	print "\n";
 	
+}
+################################################################################
+sub reproj_point{
+
+	my $x_point = $_[0];
+	my $y_point = $_[1];
+	my $srs_ini = $_[2];
+	my $srs_fin = $_[3];
+	
+	my $x_reproj;
+	my $y_reproj;
+	
+	my $result = `echo $x_point $y_point | cs2cs +init=$srs_ini +to +init=$srs_fin`;
+	my @split2 = split /\s/, $result;
+	if(defined $split2[0] && defined $split2[1]){
+		$x_reproj = $split2[0];
+		$y_reproj = $split2[1];
+	}else{
+		print colored ("[CREE_DALLAGE_BASE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.", 'white on_red');
+		print "\n";
+		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
+	}
+	
+	return ($x_reproj, $y_reproj);
+}
+################################################################################
+sub reproj_rectangle{
+
+	my $x_min_poly = $_[0];
+	my $x_max_poly = $_[1];
+	my $y_min_poly = $_[2];
+	my $y_max_poly = $_[3];
+	my $srs_ini_poly = $_[4];
+	my $srs_fin_poly = $_[5];
+	my $dilat_securite = $_[6];
+	
+	my ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
+	
+	# schema du rectangle
+	# 12
+	# 43
+	my ($x1,$y1) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x2,$y2) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x4,$y4) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	
+	# determination de la bbox resultat
+	my $x_min_result = 99999999999;
+	if($x1 < $x_min_result){
+		$x_min_result = $x1;
+	}
+	if($x2 < $x_min_result){
+		$x_min_result = $x2;
+	}
+	if($x3 < $x_min_result){
+		$x_min_result = $x3;
+	}
+	if($x4 < $x_min_result){
+		$x_min_result = $x4;
+	}
+	my $x_max_result = -99999999999;
+	if($x1 > $x_max_result){
+		$x_max_result = $x1;
+	}
+	if($x2 > $x_max_result){
+		$x_max_result = $x2;
+	}
+	if($x3 > $x_max_result){
+		$x_max_result = $x3;
+	}
+	if($x4 > $x_max_result){
+		$x_max_result = $x4;
+	}
+	my $y_min_result = 99999999999;
+	if($y1 < $y_min_result){
+		$y_min_result = $y1;
+	}
+	if($y2 < $y_min_result){
+		$y_min_result = $y2;
+	}
+	if($y3 < $y_min_result){
+		$y_min_result = $y3;
+	}
+	if($y4 < $y_min_result){
+		$y_min_result = $y4;
+	}
+	my $y_max_result = -99999999999;
+	if($y1 > $y_max_result){
+		$y_max_result = $y1;
+	}
+	if($y2 > $y_max_result){
+		$y_max_result = $y2;
+	}
+	if($y3 > $y_max_result){
+		$y_max_result = $y3;
+	}
+	if($y4 > $y_max_result){
+		$y_max_result = $y4;
+	}
+	
+	# dilatataion de la bbox resultat
+	my $dilat_x = ($x_max_result - $x_min_result) * ($dilat_securite / 100);
+	my $dilat_y = ($y_max_result - $y_min_result) * ($dilat_securite / 100);
+	$x_min_reproj = $x_min_result - $dilat_x;
+	$x_max_reproj = $x_max_result + $dilat_x;
+	$y_min_reproj = $y_min_result - $dilat_y;
+	$y_max_reproj = $y_max_result + $dilat_y;
+	
+	return ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
 }
 ################################################################################
 # XXXXTODO a supprimer sans GDAL

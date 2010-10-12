@@ -6,7 +6,7 @@ use XML::Simple;
 use Exporter;
 our @ISA=('Exporter');
 our @EXPORT=(
-	'%produit_format_param',
+# 	'%produit_format_param',
 	'$taille_dalle_pix_param',
 	'$type_mtd_pyr_param',
 	'$format_mtd_pyr_param',
@@ -35,17 +35,19 @@ our @EXPORT=(
 	'$programme_copie_image_param',
 	'$rep_logs_param',
 	'lecture_repertoires_pyramide',
+	'%format_format_pyr_param',
+	'$dilatation_reproj_param',
 );
 ################################################################################
 
 ######### CONSTANTES
 
-our %produit_format_param = (
-	"ortho" => "TIFF_JPG_INT8",
-	"parcellaire" => "TIFF_PNG_INT8",
-	"franceraster" => "TIFF_INT8",
-	"scan" => "TIFF_INT8",
-);
+# our %produit_format_param = (
+# 	"ortho" => "TIFF_JPG_INT8",
+# 	"parcellaire" => "TIFF_PNG_INT8",
+# 	"franceraster" => "TIFF_INT8",
+# 	"scan" => "TIFF_INT8",
+# );
 
 our $taille_dalle_pix_param = 4096;
 our $type_mtd_pyr_param = "INT32_DB_LZW";
@@ -134,6 +136,15 @@ our $rep_logs_param = "../log";
 #our $xsd_pyramide_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd";
 #our $path_tms_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3";
 
+our %format_format_pyr_param = (
+	"raw" => "TIFF_INT8",
+	"jpeg" => "TIFF_JPG_INT8",
+	"png" => "TIFF_PNG_INT8",
+);
+
+# dilatataion des images pour parer a la deformation des images reperojetees (en %)
+our $dilatation_reproj_param = 20;
+
 ################################################################################
 
 ########## FONCTIONS
@@ -176,6 +187,8 @@ sub lecture_tile_matrix_set{
 	# lire le fichier XML
 	my $data = $xml_fictif->XMLin("$xml_tms");
 	
+	my $systeme_reference = $data->{crs};
+	
 	foreach my $tileMatrix (@{$data->{tileMatrix}}){
 		my $id = $tileMatrix->{id};
 		push(@id, "$id");
@@ -186,7 +199,7 @@ sub lecture_tile_matrix_set{
 		$id_taille_pix_tuile_y{"$id"} = $tileMatrix->{tileHeight};
 	}
 	
-	push(@refs_infos_levels, \@id, \%id_resolution, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y, \%id_origine_x, \%id_origine_y);
+	push(@refs_infos_levels, \@id, \%id_resolution, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y, \%id_origine_x, \%id_origine_y, $systeme_reference);
 	
 	return @refs_infos_levels;
 	

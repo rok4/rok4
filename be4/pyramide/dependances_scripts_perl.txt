@@ -24,6 +24,7 @@ Programmes :
 ./merge4tiff
 ./tiff2tile
 ./dalles_base
+cs2cs
 gdalinfo
 hostname
 which
