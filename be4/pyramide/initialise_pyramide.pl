@@ -231,4 +231,3 @@ sub cree_liens_syboliques_recursifs{
 	
 }
 
->>>>>>> .r305

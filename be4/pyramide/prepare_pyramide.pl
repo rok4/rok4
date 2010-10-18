@@ -118,7 +118,7 @@ if (defined $opt_d){
 }
 
 # verifier les parametres
-if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
+if ($produit !~ /^ortho_raw|ortho_jpeg|parcellaire|scan|franceraster$/i){
 	print colored ("[PREPARE_PYRAMIDE] Produit mal specifie.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
@@ -255,7 +255,7 @@ sub usage{
 	
 	print colored ("\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement]\n",'black on_white');
 	print "\nproduit :\n";
- 	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
+ 	print "\tortho_raw\northo_jpeg\n\tparcellaire\n\tscan\n\tfranceraster\n";
 	print "\ncompression images pyramide :\n";
 	print "\traw\n\tjpeg\n\tpng\n";
 	print "\nsysteme_coordonnees :\n";

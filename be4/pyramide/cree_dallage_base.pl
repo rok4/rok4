@@ -136,7 +136,7 @@ my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
 
 # verifications des parametres
-if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
+if ($produit !~ /^ortho_raw|ortho_jpeg|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
 	print colored ("[CREE_DALLAGE_BASE] Produit mal specifie.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
@@ -429,7 +429,7 @@ sub usage{
 	
 	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d pourcentage_dilatation\n",'black on_white');
 	print "\nproduit :\n";
- 	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
+ 	print "\tortho_raw\northo_jpeg\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";
 	print "\tcode RIG des images source : LAMB93 LAMBE ...\n";
 	print "\npourcentage_dilatation : 0 a 100\n";
