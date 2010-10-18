@@ -2,14 +2,14 @@
 
 # building and testing
 cd libs
-echo "\n\n\n\n***  BUILD AND TESTS    *****"
+echo "\n\n\n\n***  BUILD LIBS   *****"
 make
 if [ $? -ne 0 ] ; then
   exit 1
 fi
 
-cd ../be4
-echo "\n\n\n\n***  BUILD AND TESTS    *****"
+cd be4
+echo "\n\n\n\n***  BUILD BE4   *****"
 make
 if [ $? -ne 0 ] ; then
   exit 2
