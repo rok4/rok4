@@ -18,7 +18,7 @@
 Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
 tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
 {
-	noDataSource = new FileDataSource("../config/nodata/nodata_tiled.tif",1024,1028,getType());
+	noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,/*getType()*/"image/tif");
 }
 
 TileMatrix const Level::getTm(){return tm;}
@@ -37,7 +37,7 @@ std::string Level::getId(){return tm.getId();}
 
 std::string Level::getType() {
 	if (format.compare("TIFF_INT8")==0)
-		return "image/tif";
+		return "image/tiff";
 	else if (format.compare("TIFF_JPG_INT8")==0)
 		return "image/jpeg";
 	else if (format.compare("TIFF_PNG_INT8")==0)
@@ -141,7 +141,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 	std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
 	for(int y = 0; y < nby; y++)
 		for(int x = 0; x < nbx; x++) {
-			LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );
+//			LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );
 			Tile* tile = gettile(tile_xmin + x, tile_ymin + y);
 			T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile->getDataSource(), tile->getNoDataSource(), left[x], top[y], right[x], bottom[y],tileCoding);
 		}
@@ -209,9 +209,9 @@ Tile* Level::gettile(int x, int y)
 
 	// Index de la tuile (cf. ordre de rangement des tuiles)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
-	// Les index sont stockés à partir de l'octet 2048a
-uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
-//	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
+	// Les index sont stockés à partir de l'octet 2048
+//	uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
+	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());

@@ -43,7 +43,6 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
 		return 0;
 	}
 	tile_size=tmp;
-	
 	// La taille de la tuile ne doit pas exceder un seuil
 	// Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
 	// (et qui pourraient indiquer des tailles de tuiles excessives)
@@ -54,8 +53,8 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
 		return 0;
 	}
 	// Lecture de la tuile
-	data = new uint8_t[tile_size];
-	size_t read_size=pread(fildes, data, tile_size, pos);
+	data = new uint8_t[header_size+tile_size];
+	size_t read_size=pread(fildes, &data[header_size], tile_size, pos);
 	if (read_size!=tile_size) {
 		LOGGER_ERROR( "Impossible de lire la tuile dans le fichier " << filename );
 		delete[] data;

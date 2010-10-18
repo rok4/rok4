@@ -59,7 +59,7 @@ void toLowerCase(char* str){
 
 Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
 	url_decode(strquery);
-
+LOGGER_DEBUG("QUERY="<<strquery);
 	for(int pos = 0; strquery[pos];) {
 		char* key = strquery + pos;
 		for(;strquery[pos] && strquery[pos] != '=' && strquery[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0

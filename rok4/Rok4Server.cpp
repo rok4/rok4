@@ -166,6 +166,7 @@ DataStream* Rok4Server::getMap(Request* request)
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
+	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
 	return new PNGEncoder(image);
 }
 
