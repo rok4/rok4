@@ -20,6 +20,7 @@
 #include "TileMatrixSet.h"
 #include "Layer.h"
 #include "ConfLoader.h"
+#include "ServiceException.h"
 
 #include "fcgiapp.h"
 
@@ -150,7 +151,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
 	if(it == layerList.end()){
 		LOGGER_ERROR("le layer "<<layer<<" est inconnu.");
-		return new MessageDataStream("Layer "+layer+" inconnu ","text/plain");
+		return new SERDataStream(new ServiceException("",WMS_LAYER_NOT_DEFINED,"Layer "+layer+" inconnu.","wms"));
 	}
 	Layer* L = it->second;
 
@@ -167,7 +168,8 @@ DataStream* Rok4Server::getMap(Request* request)
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
 	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
-	return new PNGEncoder(image);
+	return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms"));
+	//return new PNGEncoder(image);
 }
 
 /*
@@ -190,7 +192,7 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 	//FIXME : pourquoi ce controle ici?
 	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
 	if(it == layerList.end())
-		return new MessageDataSource("Unknown layer","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Layer "+layer+" inconnu.","wmts"));
 	Layer* L = it->second;
 	// l'existence du TMS et TM est controlée dans gettile()
 	// TODO: vérifier que c'est effectivement le cas
@@ -211,13 +213,14 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 	if (request->request == "getcapabilities"){
 		S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "gettile"){
-		Tile * tile;
+		Tile * tile= NULL;
 		S.sendresponse(getTile(request, tile), &fcgxRequest);
 		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliorer.
 		// Appel au destructeur préservant la zone mémoire de la tuile no-data.
-		delete tile;
+		// en cas d'erreur retournee, tile peut etre NULL
+		if (tile==NULL) delete tile;
 	}else{
-		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
 	}
 }
 
@@ -228,7 +231,7 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 	}else if (request->request == "getmap"){
 		S.sendresponse(getMap(request), &fcgxRequest);
 	}else{
-		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+		S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wms")),&fcgxRequest);
 	}
 }
 
@@ -238,7 +241,7 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}else if(request->service=="wmts") {
 		processWMTS(request, fcgxRequest);
 	}else{
-		S.sendresponse(new MessageDataSource("Invalid request","text/plain"),&fcgxRequest);
+		S.sendresponse(new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le service "+request->service+" est inconnu pour ce serveur.","wmts")),&fcgxRequest);
 	}
 }
 

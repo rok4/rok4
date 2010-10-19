@@ -24,6 +24,8 @@ public:
  * genere un MessageDataSource a partir de ServiceExceptions
  */
 class SERDataSource : public MessageDataSource {
+private:
+	int httpStatus ;
 public:
 /**
 	* Constructeur à partir d'un ServiceException
@@ -39,6 +41,10 @@ public:
  * getter pour la propriete Message
  */
 	std::string getMessage() {return this->message;} ;
+/**
+ * getter pour la propriete httpStatus
+ */
+	int getHttpStatus() {return this->httpStatus;}
 };
 
 class MessageDataStream : public DataStream {
@@ -66,6 +72,8 @@ public:
  * genere un MessageDataStream a partir de ServiceExceptions
  */
 class SERDataStream : public MessageDataStream {
+private:
+	int httpStatus ;
 public:
 /**
 	* Constructeur à partir d'un ServiceException
@@ -81,6 +89,10 @@ public:
  * getter pour la propriete Message
  */
 	std::string getMessage() {return this->message;} ;
+/**
+ * getter pour la propriete httpStatus
+ */
+	int getHttpStatus() {return this->httpStatus;}
 };
 
 #endif

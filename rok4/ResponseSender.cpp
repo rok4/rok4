@@ -1,19 +1,54 @@
 #include "ResponseSender.h"
+#include "ServiceException.h"
+#include "Message.h"
 #include <iostream>
 #include "Logger.h"
 #include <stdio.h>
 #include <string.h> // pour strlen
 
 /**
- * Copie d'une source de onnées dans le flux de sortie de l'objet request de type FCGX_Request
+ * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
+ */
+std::string genStatusHeader(int statusCode) {
+	// Creation de l'en-tete
+	char strCode[4] ;
+	size_t nbchars= sprintf(strCode,"%d",statusCode) ;
+//	std::string statusHeader= "Status: "+strCode+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
+	std::string statusHeader= "Status: ";
+	statusHeader.append(strCode).append(" ").append(ServiceException::getStatusCodeAsReasonPhrase(statusCode)).append("\r\n") ;
+	// c'est tellement puissant qu'on met un log debug pour afficher la concatenation
+	LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
+	return statusHeader ;
+}
+
+/**
+ * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
  * @return -1 en cas d'erreur
  * @return 0 sinon
  */
 
 int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
+	SERDataSource *ser= dynamic_cast<SERDataSource*>(source) ;
+	if (ser==NULL) {
+		return this->sendresponse(200, source, request) ;
+	} else {
+		return this->sendresponse(ser->getHttpStatus(),source, request) ;
+	}
+}
+
+/**
+ * Copie d'une source de onnées dans le flux de sortie de l'objet request de type FCGX_Request
+ * avec specification d'un code HTTP de retour
+ * @return -1 en cas d'erreur
+ * @return 0 sinon
+ */
+
+int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Request* request)
+{
 	// Creation de l'en-tete
-	FCGX_PutStr("Status: 200 OK\r\n",16,request->out);
+	std::string statusHeader= genStatusHeader(statusCode) ;
+	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->gettype().c_str(), strlen(source->gettype().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
@@ -38,6 +73,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 	return 0;
 }
 
+
 /**
  * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
  * @return -1 en cas d'erreur
@@ -46,8 +82,26 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 
 int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 {
+	SERDataStream *ser= dynamic_cast<SERDataStream*>(stream) ;
+	if (ser==NULL) {
+		return this->sendresponse(200, stream, request) ;
+	} else {
+		return this->sendresponse(ser->getHttpStatus(),stream, request) ;
+	}
+}
+
+
+/**
+ * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
+ * avec specification d'un code HTTP d'erreur
+ * @return -1 en cas d'erreur
+ * @return 0 sinon
+ */
+int ResponseSender::sendresponse(int statusCode, DataStream* stream, FCGX_Request* request)
+{
 	// Creation de l'en-tete
-	FCGX_PutStr("Status: 200 OK\r\n",16,request->out);
+	std::string statusHeader= genStatusHeader(statusCode) ;
+	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(stream->gettype().c_str(), strlen(stream->gettype().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
@@ -89,5 +143,3 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 
 	return 0;
 }
-
-

@@ -51,7 +51,7 @@ typedef enum {
                                         dimension.*/
 	WMS_INVALID_DIMENSION_VALUE= 13, /*!< Request contains an invalid sample 
                                         dimension value. */
-	WMS_OPERATION_NOT_SUPORTED= 14,  /*!< Request is for an optional operation 
+	OWS_OPERATION_NOT_SUPORTED= 14,  /*!< Request is for an optional operation 
                                         that is not supported by the server.*/
 	WMTS_TILE_OUT_OF_RANGE= 15       /*!< TileRow or TileCol out of range */
 
@@ -69,7 +69,7 @@ typedef enum {
 class ServiceException {
 private:
 	std::string locator;
-	std::string code ;
+	ExceptionCode code ;
 	std::string message;
 	std::string service;
 //	static void _init() ;
@@ -92,6 +92,18 @@ public:
 	static std::string getCodeAsString(ExceptionCode code);
 
 	/**
+	 * Retourne le status code HTTP associe à l'exception.
+	 * @param code le code d'erreur enumere
+	 */
+	static int getCodeAsStatusCode(ExceptionCode code);
+
+	/**
+	 * Retourne la "reason phrase" associée au status code http
+	 * @param statusCode le status code HTTP à traduire
+	 */
+	static std::string getStatusCodeAsReasonPhrase(int statusCode);
+
+	/**
 	 * Genere la chaine de caracteres relative a l'exception decrite par l'objet
 	 */
 	std::string toString();
@@ -99,6 +111,10 @@ public:
 		* acces au champ service
 		*/
 	std::string getService() {return this->service ;} ;
+	/**
+	 * access au champ code
+	 */
+	ExceptionCode getCode() {return this->code;} ;
 };
 
 

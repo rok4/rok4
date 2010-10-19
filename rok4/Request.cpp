@@ -101,28 +101,28 @@ DataSource* Request::getTileParam(std::string &layer, std::string  &tileMatrixSe
 {
 	layer=getParam("layer");
 	if(layer == "")
-		return new MessageDataSource("Missing parameter: layer","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre LAYER absent.","wmts"));
 	tileMatrix=getParam("tilematrix");
 	if(tileMatrix == "")
-		return new MessageDataSource("Missing parameter: tilematrix","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEMATRIX absent.","wmts"));
 	std::string strTileRow=getParam("tilerow");
 	if(strTileRow == "")
-		return new MessageDataSource("Missing parameter: tilerow","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEROW absent.","wmts"));
 	if (strTileRow=="0")
 		tileRow = 0;
 	else
 		tileRow=atoi(strTileRow.c_str());
 	if (tileRow == 0 || tileRow == INT_MAX || tileRow == INT_MIN)
-		return new MessageDataSource("tileRow is not an integer","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILEROW n'est pas une valeur entiere.","wmts"));
 	std::string strTileCol=getParam("tilecol");
 	if(strTileCol == "")
-		return new MessageDataSource("Missing parameter: tilecol","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILECOL absent.","wmts"));
 	if (strTileCol=="0")
 		tileCol = 0;
 	else
 		tileCol=atoi(strTileCol.c_str());
 	if (tileCol == 0 || tileCol == INT_MAX || tileCol == INT_MIN)
-		return new MessageDataSource("tilecol is not an integer","text/plain");
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILECOL n'est pas une valeur entiere.","wmts"));
 
 	format=getParam("format"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
 	tileMatrixSet=getParam("tilematrixset"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
@@ -151,19 +151,19 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format){
 	layers=getParam("layers");
 	if(layers == "")
-		return new MessageDataStream("Missing parameter: layers","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre LAYERS absent.","wms"));
 	std::string strWidth=getParam("width");
 	if(strWidth == "")
-		return new MessageDataStream("Missing parameter: width","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre WIDTH absent.","wms"));
 	width=atoi(strWidth.c_str());
 	if (width == 0 || width == INT_MAX || width == INT_MIN)
-		return new MessageDataStream("width is not an integer","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre WIDTH n'est pas une valeur entiere.","wms"));
 	std::string strHeight=getParam("height");
 	if(strHeight == "")
-		return new MessageDataStream("Missing parameter: height","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre HEIGHT absent.","wms"));
 	height=atoi(strHeight.c_str());
 	if (height == 0 || height == INT_MAX || height == INT_MIN)
-		return new MessageDataStream("height is not an integer","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT n'est pas une valeur entiere.","wms")) ;
 	crs=getParam("crs");
 	/* FIXME le CRS est sensé etre obligatoire, mais pour des raisons de
 	 * "compatibilité" avec le prototype on est un peu laxiste pour le moment
@@ -171,19 +171,19 @@ DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox,
 	 */
 	format=getParam("format");
 	if(format == "")
-		return new MessageDataStream("Missing parameter: format","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
 	std::string strBbox=getParam("bbox");
 	if(strBbox == "")
-		return new MessageDataStream("Missing parameter: bbox","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre BBOX absent.","wms"));
 	std::vector<std::string> coords;
 	stringSplit(strBbox,",",coords);
 	if (coords.size()!=4)
-		return new MessageDataStream("bbox parameter is incorrect","text/plain");
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 	double bb[4];
 	for(int i = 0; i < 4; i++) {
 		bb[i] = atof(coords[i].c_str());
 		if (bb[i] == 0.0 && coords[i] != "0.0"){
-			return new MessageDataStream("bbox parameter is incorrect","text/plain");
+			return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 		}
 	}
 	bbox.xmin=bb[0];
