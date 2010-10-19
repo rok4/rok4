@@ -19,16 +19,16 @@ use cache(
 	'$programme_dalles_base_param',
 	'$programme_copie_image_param',
 	'$rep_logs_param',
-	'$dilatation_reproj_param',
+	'$programme_reproj_param',
 );
 use Term::ANSIColor;
 use Getopt::Std;
-use File::Copy;
+#use File::Copy;
 use XML::Simple;
 use File::Basename;
 # pas de bufferisation des sorties
 $| = 1;
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
@@ -44,7 +44,7 @@ my $taille_dalle_pix = $taille_dalle_pix_param;
 # my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
-my $dilatation_reproj = $dilatation_reproj_param;
+my $programme_reproj = $programme_reproj_param;
 ################################################################################
 
 ### HELP lignes GDAL ### XXXX
@@ -65,7 +65,7 @@ if(!(-e $path_tms && -d $path_tms)){
 	print "\n";
 	exit;
 }
-verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base
+#verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
 if ($verif_programme_dalle_base eq ""){
 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_dalles_base est introuvable.", 'white on_red');
@@ -84,7 +84,12 @@ if ($verif_programme_pivot eq ""){
 	print "\n";
 	exit;
 }
-
+my $verif_programme_reproj = `which $programme_reproj`;
+if ($verif_programme_reproj eq ""){
+	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_reproj est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
 ############ MAIN
 my $time = time();
 my $log = $rep_log."/log_cree_dallage_base_$time.log";
@@ -94,9 +99,9 @@ open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le f
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:s:d:");
+getopts("p:f:x:m:s:d:r:n:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
@@ -120,6 +125,14 @@ if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d) ){
 		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -d.", 'white on_red');
 		print "\n";
 	}
+	if(! defined $opt_r){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -r.", 'white on_red');
+		print "\n";
+	}
+	if(! defined $opt_n){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -n.", 'white on_red');
+		print "\n";
+	}
 	&usage();
 	exit;
 }
@@ -134,6 +147,8 @@ if (defined $opt_m){
 my $fichier_pyramide = $opt_x;
 my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
+my $dilatation_reproj = $opt_r;
+my $nom_script = $opt_n;
 
 # verifications des parametres
 if ($produit !~ /^ortho_raw|ortho_jpeg|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
@@ -170,9 +185,15 @@ if (! (-e $fichier_pyramide && -f $fichier_pyramide)){
 	exit;
 }
 if ($pourcentage_dilatation !~ /^\d{1,3}$/ || $pourcentage_dilatation > 100 ){
-	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation $pourcentage_dilatation est incorrect.", 'white on_red');
+	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation -d $pourcentage_dilatation est incorrect.", 'white on_red');
 	print "\n";
-	&ecrit_log("ERREUR : Le pourcentage de dilatation $pourcentage_dilatation est incorrect.");
+	&ecrit_log("ERREUR : Le pourcentage de dilatation -d $pourcentage_dilatation est incorrect.");
+	exit;
+}
+if ($dilatation_reproj !~ /^\d{1,3}$/ || $dilatation_reproj > 100 ){
+	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation -r $dilatation_reproj est incorrect.", 'white on_red');
+	print "\n";
+	&ecrit_log("ERREUR : Le pourcentage de dilatation -r $dilatation_reproj est incorrect.");
 	exit;
 }
 ########### traitement
@@ -330,8 +351,6 @@ my %nom_dalle_index_base;
 print "[CREE_DALLAGE_BASE] Passage des donnees arbre aux donnees cache.\n";
 &arbre2cache(\@liste_dalles_cache_index_arbre);
 
-exit;
-
 ##### ATTENTION; action 5 gelée : plus besoin d'intialiser la pyramide avec du vide
 # on fera simplement reference a la dalle no_data plus tard
 
@@ -348,6 +367,9 @@ exit;
 # 		&ecrit_log("$nombre_ajoutees_mtd mtd ajoutees.");
 # 		print "[CREE_DALLAGE_BASE] $nombre_ajoutees_mtd mtd ajoutees.\n";
 # 	}
+
+# les actions 6 et 7 sont envoyees dans le script
+open SCRIPT, ">$nom_script" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_script.", 'white on_red');
 
 #action 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
 &ecrit_log("Calcul des images du niveau le plus bas.");
@@ -378,6 +400,8 @@ if (defined $fichier_mtd_source){
 	&ecrit_log("$nombre_mtd_niveaux_inf images calculees.");
 	print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images calculees.\n";
 }
+
+close SCRIPT;
 
 # suppression du repertoire temporaire
 opendir TEMP, "$rep_temp" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvir le repertoire $rep_temp.", 'white on_red');
@@ -427,12 +451,14 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d pourcentage_dilatation\n",'black on_white');
+	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script\n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho_raw\northo_jpeg\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";
 	print "\tcode RIG des images source : LAMB93 LAMBE ...\n";
 	print "\npourcentage_dilatation : 0 a 100\n";
+	print "%_dilatation_dalles_base : dilatation des dalles du cache pour trouver les dalles source en recouvrement\n";
+	print "%_dilatation_reproj : dilatation des dalles du cache reprojetees pour parer a la deformation de la reprojection\n";
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -582,56 +608,56 @@ sub formate_zero_base{
   
 }
 ################################################################################
-sub complete_pyramide_initiale{
-
-	my $ref_list_dal_cach = $_[0];
-	my @liste_dalles = @{$ref_list_dal_cach};
-	my $type_dal = $_[1];
-	
-	my $nombre_dalles_ajoutees = 0;
-	
-	foreach my $dalle_cache(@liste_dalles){
-		if (!(-e $dalle_cache)){
-			my $dalle_a_copier;
-			if($type_dal eq "image"){
-				$dalle_a_copier = $dalle_no_data;
-			}elsif($type_dal eq "mtd"){
-				$dalle_a_copier = $dalle_no_data_mtd;
-			}else{
-				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dal incorrect.", 'white on_red');
-				print "\n";
-				exit;
-			}
-			ecrit_log("Creation des eventuels repertoires manquants.");
-			&cree_repertoires_recursifs(dirname($dalle_cache));
-			my $return = copy($dalle_a_copier, $dalle_cache);
-			if ($return == 0){
-				&ecrit_log("ERREUR a la copie de $dalle_a_copier vers $dalle_cache");
-			}else{
-				print ".";
-				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
-				$nombre_dalles_ajoutees += 1;
-# XXXX				# calcul d'un TFW pour GDAL
-# XXXX				if($cache_arbre_niveau{$dalle_cache} eq "$level_min"){
-# XXXX					my $string_tfw = &cree_string_tfw($cache_arbre_x_min{$dalle_cache}, $cache_arbre_y_max{$dalle_cache}, $cache_arbre_res{$dalle_cache}, 0);
-# XXXX					my $fichier_tfw = &cree_fichier_georef(basename($dalle_cache), dirname($dalle_cache), "tfw", $string_tfw);
-# XXXX					# test de l'existence du fichier
-# XXXX					if (! (-e $fichier_tfw && -f $fichier_tfw) ){
-# XXXX						print colored ("[CREE_DALLAGE_BASE] Erreur a la creation de $fichier_tfw.", 'white on_red');
-# XXXX						print "\n";
-# XXXX						&ecrit_log("ERREUR a la creation de $fichier_tfw.");
-# XXXX						
-# XXXX					}
-# XXXX				}
-				
-			}
-			
-		}
-	}
-	print "\n";
-	
-	return $nombre_dalles_ajoutees;
-}
+# sub complete_pyramide_initiale{
+# 
+# 	my $ref_list_dal_cach = $_[0];
+# 	my @liste_dalles = @{$ref_list_dal_cach};
+# 	my $type_dal = $_[1];
+# 	
+# 	my $nombre_dalles_ajoutees = 0;
+# 	
+# 	foreach my $dalle_cache(@liste_dalles){
+# 		if (!(-e $dalle_cache)){
+# 			my $dalle_a_copier;
+# 			if($type_dal eq "image"){
+# 				$dalle_a_copier = $dalle_no_data;
+# 			}elsif($type_dal eq "mtd"){
+# 				$dalle_a_copier = $dalle_no_data_mtd;
+# 			}else{
+# 				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dal incorrect.", 'white on_red');
+# 				print "\n";
+# 				exit;
+# 			}
+# 			ecrit_log("Creation des eventuels repertoires manquants.");
+# 			&cree_repertoires_recursifs(dirname($dalle_cache));
+# 			my $return = copy($dalle_a_copier, $dalle_cache);
+# 			if ($return == 0){
+# 				&ecrit_log("ERREUR a la copie de $dalle_a_copier vers $dalle_cache");
+# 			}else{
+# 				print ".";
+# 				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
+# 				$nombre_dalles_ajoutees += 1;
+# # XXXX				# calcul d'un TFW pour GDAL
+# # XXXX				if($cache_arbre_niveau{$dalle_cache} eq "$level_min"){
+# # XXXX					my $string_tfw = &cree_string_tfw($cache_arbre_x_min{$dalle_cache}, $cache_arbre_y_max{$dalle_cache}, $cache_arbre_res{$dalle_cache}, 0);
+# # XXXX					my $fichier_tfw = &cree_fichier_georef(basename($dalle_cache), dirname($dalle_cache), "tfw", $string_tfw);
+# # XXXX					# test de l'existence du fichier
+# # XXXX					if (! (-e $fichier_tfw && -f $fichier_tfw) ){
+# # XXXX						print colored ("[CREE_DALLAGE_BASE] Erreur a la creation de $fichier_tfw.", 'white on_red');
+# # XXXX						print "\n";
+# # XXXX						&ecrit_log("ERREUR a la creation de $fichier_tfw.");
+# # XXXX						
+# # XXXX					}
+# # XXXX				}
+# 				
+# 			}
+# 			
+# 		}
+# 	}
+# 	print "\n";
+# 	
+# 	return $nombre_dalles_ajoutees;
+# }
 ################################################################################
 sub indice_arbre2xy{
 	
@@ -982,28 +1008,35 @@ sub calcule_niveau_minimum {
 			my $nom_dalle_temp = "$rep_temp/$nom_dalle.tif";
 			# mise en format travail dalle_cache pour image initiale
 			# destruction de la dalle_cache temporaire si elle existe
-			if(-e $nom_dalle_temp && -f $nom_dalle_temp){
-				my $suppr = unlink($nom_dalle_temp);
-				if($suppr != 1){
-					&ecrit_log("ERREUR a la destruction de $nom_dalle_temp.");
-				}
-			}
+			print SCRIPT "if [ -r \"$nom_dalle_temp\" ] ; then rm -f $nom_dalle_temp ; fi\n";
+# 			# >> pour le script
+# 			if(-e $nom_dalle_temp && -f $nom_dalle_temp){
+# 				my $suppr = unlink($nom_dalle_temp);
+# 				if($suppr != 1){
+# 					&ecrit_log("ERREUR a la destruction de $nom_dalle_temp.");
+# 				}
+# 			}
+			
 			# test si on a une dalle (normalement un lien vers une pyramide precedente qui est en format pyramide)
 			if (-e $dalle_cache ){
-				&ecrit_log("Copie raw de $dalle_cache.");
-				&ecrit_log("Execution de $programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp");
-				system("$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp >>$log 2>&1");
-				if(!(-e $nom_dalle_temp && -f $nom_dalle_temp)){
-					&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
-				}
+				print SCRIPT "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp 2>&1\n";
+# 				# >> pour le script
+# 				&ecrit_log("Copie raw de $dalle_cache.");
+# 				&ecrit_log("Execution de $programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp");
+# 				system("$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp >>$log 2>&1");
+# 				if(!(-e $nom_dalle_temp && -f $nom_dalle_temp)){
+# 					&ecrit_log("ERREUR a la copie raw de $dalle_cache.");
+# 				}
 				# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
-				if(-l $dalle_cache){
-					&ecrit_log("Suppression du lien symbolique $dalle_cache.");
-					unlink($dalle_cache);
-					if (-l $dalle_cache){
-						&ecrit_log("ERREUR a la suppression du lien symbolique $dalle_cache.");
-					}
-				}
+				print SCRIPT "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
+# 				# >> pour le script
+# 				if(-l $dalle_cache){
+# 					&ecrit_log("Suppression du lien symbolique $dalle_cache.");
+# 					unlink($dalle_cache);
+# 					if (-l $dalle_cache){
+# 						&ecrit_log("ERREUR a la suppression du lien symbolique $dalle_cache.");
+# 					}
+# 				}
 			}else{
 				# sinon on fait reference a la dalle no_data
 				if($type eq "image"){
@@ -1108,8 +1141,10 @@ sub calcule_niveau_minimum {
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
 			# TODO supprimer no_data qui ne sert a rien
-			&ecrit_log("Execution de : $programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb");
-			system("$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
+			print SCRIPT "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb 2>&1\n";
+# 			# >> pour le script
+# 			&ecrit_log("Execution de : $programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb");
+# 			system("$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb >>$log 2>&1");
 			
 # XXXX			# TODO voir si sans GDAL, la suppression est necessaire
 # XXXX			# suppression de la dalle existante (blanche ou lien) avant remplacement
@@ -1186,25 +1221,31 @@ sub calcule_niveaux_inferieurs{
 							
 							# mise en format travail de la dalle dalle_cache
 							# desctruction de la dalle_cache temporaire si elle existe
-							if(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache"){
-								my $suppr = unlink("$rep_temp/$nom_dalle_cache");
-								if($suppr != 1){
-									&ecrit_log("ERREUR a la destruction de $rep_temp/$nom_dalle_cache.");
-								}
-							}
-							&ecrit_log("Copie raw de $dalle_dessous.");
-							&ecrit_log("Execution de : $programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache");
-							system("$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache >>$log 2>&1");
-							if(!(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache")){
-								&ecrit_log("ERREUR a la copie raw de $dalle_dessous.");
-							}
+							print SCRIPT "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
+# 							# >> pour le script
+# 							if(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache"){
+# 								my $suppr = unlink("$rep_temp/$nom_dalle_cache");
+# 								if($suppr != 1){
+# 									&ecrit_log("ERREUR a la destruction de $rep_temp/$nom_dalle_cache.");
+# 								}
+# 							}
+							print SCRIPT "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache 2>&1\n";
+# 							# >> pour le script
+# 							&ecrit_log("Copie raw de $dalle_dessous.");
+# 							&ecrit_log("Execution de : $programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache");
+# 							system("$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache >>$log 2>&1");
+# 							if(!(-e "$rep_temp/$nom_dalle_cache" && -f "$rep_temp/$nom_dalle_cache")){
+# 								&ecrit_log("ERREUR a la copie raw de $dalle_dessous.");
+# 							}
 							$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 						}
 						$string_dessous .= " $fichier_pointe";
 					}
 					# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
-		 			&ecrit_log("Execution de : $programme_ss_ech $string_dessous $dal");
-					system("$programme_ss_ech $string_dessous $dal >>$log 2>&1");
+					print SCRIPT "$programme_ss_ech $string_dessous $dal 2>&1\n";
+# 		 			# >> pour le script
+# 					&ecrit_log("Execution de : $programme_ss_ech $string_dessous $dal");
+# 					system("$programme_ss_ech $string_dessous $dal >>$log 2>&1");
 					# ou my $return = `$programme_ss_ech -i $interpol $string_dessous $dal`;
 					$nb_calc += 1; 
 				}
@@ -1459,31 +1500,39 @@ sub passage_pivot{
 	foreach my $dal2(@dalles_travail){
 		&ecrit_log("Passage en format pivot de $dal2.");
 		print ".";
-		if ( !(-e $dal2) ){
-			print "[CREE_DALLAGE_BASE] La dalle $dal2 n'existe pas.\n";
-			&ecrit_log("ERREUR : la dalle $dal2 n'existe pas (passage en pivot).");
-			next;
-		}
-		if( -e "$rep_temp/temp.tif" && -f "$rep_temp/temp.tif"){
-			&ecrit_log("Destruction de $rep_temp/temp.tif.");
-			my $suppr2 = unlink("$rep_temp/temp.tif");
-			if($suppr2 != 1){
-				&ecrit_log("ERREUR a la destruction de $rep_temp/temp.tif.");
-			}
-		}
+# 		# >> pour le script
+		print SCRIPT "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
+# 		if ( !(-e $dal2) ){
+# 			print "[CREE_DALLAGE_BASE] La dalle $dal2 n'existe pas.\n";
+# 			&ecrit_log("ERREUR : la dalle $dal2 n'existe pas (passage en pivot).");
+# 			next;
+# 		}
+# 		if( -e "$rep_temp/temp.tif" && -f "$rep_temp/temp.tif"){
+# 			&ecrit_log("Destruction de $rep_temp/temp.tif.");
+# 			my $suppr2 = unlink("$rep_temp/temp.tif");
+# 			if($suppr2 != 1){
+# 				&ecrit_log("ERREUR a la destruction de $rep_temp/temp.tif.");
+# 			}
+# 		}
 		
 		# TODO introduire la couleur dans $programme_format_pivot
-		&ecrit_log("Execution de : $programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif");
-		system("$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif >>$log 2>&1");
+		print SCRIPT "$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif 2>&1\n";
+# 		# >> pour le script
+# 		&ecrit_log("Execution de : $programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif");
+# 		system("$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif >>$log 2>&1");
 		#ou my $return = `$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif`;
-		my $suppr = unlink("$dal2");
-		if($suppr != 1){
-			&ecrit_log("ERREUR a la destruction de $dal2.");
-		}
-		my $bool_success = move ("$rep_temp/temp.tif","$dal2");
-		if($bool_success == 0){
-			&ecrit_log("ERREUR au renommage $dal2.");
-		}
+		print SCRIPT "rm -f $dal2\n";
+# 		# >> pour le script
+# 		my $suppr = unlink("$dal2");
+# 		if($suppr != 1){
+# 			&ecrit_log("ERREUR a la destruction de $dal2.");
+# 		}
+		print SCRIPT "mv $rep_temp/temp.tif $dal2\n";
+# 		# >> pour le script
+# 		my $bool_success = move ("$rep_temp/temp.tif","$dal2");
+# 		if($bool_success == 0){
+# 			&ecrit_log("ERREUR au renommage $dal2.");
+# 		}
 	}
 	print "\n";
 	
@@ -1499,7 +1548,7 @@ sub reproj_point{
 	my $x_reproj;
 	my $y_reproj;
 	
-	my $result = `echo $x_point $y_point | cs2cs +init=$srs_ini +to +init=$srs_fin`;
+	my $result = `echo $x_point $y_point | $programme_reproj +init=$srs_ini +to +init=$srs_fin`;
 	my @split2 = split /\s/, $result;
 	if(defined $split2[0] && defined $split2[1]){
 		$x_reproj = $split2[0];

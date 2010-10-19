@@ -37,6 +37,7 @@ our @EXPORT=(
 	'lecture_repertoires_pyramide',
 	'%format_format_pyr_param',
 	'$dilatation_reproj_param',
+	'$programme_reproj_param',
 );
 ################################################################################
 
@@ -145,9 +146,7 @@ our %format_format_pyr_param = (
 	"png" => "TIFF_PNG_INT8",
 );
 
-# dilatataion des images pour parer a la deformation des images reperojetees (en %)
-our $dilatation_reproj_param = 20;
-
+our $programme_reproj_param = "./cs2cs";
 ################################################################################
 
 ########## FONCTIONS
