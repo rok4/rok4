@@ -53,6 +53,9 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
 		return 0;
 	}
 	// Lecture de la tuile
+	// DEBUG : juste pour faire compiler (header_size non declare), on declare
+	// header_size a 2048... (TODO : faire valider)
+	size_t header_size= 2048 ;
 	data = new uint8_t[header_size+tile_size];
 	size_t read_size=pread(fildes, &data[header_size], tile_size, pos);
 	if (read_size!=tile_size) {
