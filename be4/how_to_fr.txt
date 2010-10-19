@@ -56,7 +56,7 @@ Exemple :
 ETAPE 3 : CREATION DU CACHE PROPREMENT DIT
 
 Lancer :
-"cree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d pourcentage_dilatation"
+"cree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script"
 
 produit :
  		ortho
@@ -68,16 +68,20 @@ systeme_coordonnees_source :
 		code RIG des images source : LAMB93 LAMBE ...
 
 pourcentage_dilatation : 0 a 100
+%_dilatation_dalles_base : dilatation des dalles du cache pour trouver les dalles source en recouvrement
+%_dilatation_reproj : dilatation des dalles du cache reprojetees pour parer a la deformation de la reprojection
 
 le parametre -p contient le nom du produit (voir exemple ci-dessus)
 le parametre -f contient le chemin vers le fichier des dalles sources produit par prepare_pyramide.pl (indique en cours de traitement)
 le parametre -m (optionnel) contient le chemin vers le fichier des metadonnees sources produit par prepare_pyramide.pl (indique en cours de traitement si le parametre -m a ete specifie dans prepare_pyramide.pl)
 le parametre -s contient le code RIG des donnees source (voir exemples ci-dessus)
 le parametre -x contient le chemin vers le fichier de pyramide cree par prepare_pyramide.pl (indique en fin de traitement)
-le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage de dilatation applique aux dalles pour trouver les dalles source en recouvrement
+le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage de dilatation applique aux dalles cache pour trouver les dalles source en recouvrement
+le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage de dilatation applique aux dalles cache reprojetees pour parer a la deformation due a la reprojection
+le parametre -n contient le chemin vers le script a creer (contenant les commandes pour creer le cache)
 
 Exemple :
-"cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10"
+"cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide"
 
 
 
