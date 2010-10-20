@@ -343,7 +343,7 @@ sub cherche_infos_dalle{
 		
 		
 		# recuperation x_min x_max y_min y_max
-		my @result = `gdalinfo $imgs[$i]`;
+		my @result = `.\gdalinfo $imgs[$i]`;
 		
 		foreach my $resultat(@result){
 			if($resultat =~ /Upper Left\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
