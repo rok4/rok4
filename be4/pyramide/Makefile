@@ -12,6 +12,7 @@ all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
 	cp $(PLMODULES) $(BINDIR)
 	cp $(IMGSHARE) $(SHAREDIR)
+	cp gdalinfo $(BINDIR)
 
 makedir:
 	if [ ! -d $(SHAREDIR) ] ; then mkdir $(SHAREDIR) ; fi
