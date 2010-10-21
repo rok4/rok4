@@ -15,7 +15,7 @@ std::string genStatusHeader(int statusCode) {
 	std::stringstream out;
 	out << statusCode;
 	std::string statusHeader= "Status: "+out.str()+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
-	LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
+	//LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
 	return statusHeader ;
 }
 
@@ -65,7 +65,7 @@ int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Reques
 			return -1;
 		}
 		wr += w;
-	}	
+	}LOGGER_DEBUG("3");	
 	return 0;
 }
 

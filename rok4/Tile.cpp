@@ -157,7 +157,7 @@ void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_
  */
 
 Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding)
-: Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
+: Image(2*tile_width - left - right, 2*tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
 { 
 	raw_data = 0;
 }

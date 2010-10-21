@@ -97,36 +97,27 @@ TiffEncoderStream::~TiffEncoderStream() {
 
 TiffEncoderSource::TiffEncoderSource(Tile* tile) : tile(tile)
 {
-	tif_data =0;
-	size=0;
+        size_t header_size=128;
+	// On est cense avoir de la donnee source
+        const uint8_t* raw_data=tile->getDataSource()->get_data(size);
+        tif_data=new uint8_t[size+header_size];
+        if (tile->channels==1)
+                memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
+        else if (tile->channels==3)
+                memcpy(tif_data, TIFF_HEADER_RGB, header_size);
+        else if (tile->channels==4)
+                memcpy(tif_data, TIFF_HEADER_RGBA, header_size);
+        *((uint32_t*)(tif_data+18))  = tile->width;
+        *((uint32_t*)(tif_data+30))  = tile->height;
+        *((uint32_t*)(tif_data+102)) = tile->height;
+        *((uint32_t*)(tif_data+114)) = tile->height*tile->width*tile->channels;
+        memcpy(&tif_data[header_size],raw_data,size);
+        size+=header_size;
 }
 
 const uint8_t* TiffEncoderSource::get_data(size_t &tif_size)
 {
-	if (tif_data) {
-		tif_size=size;
-		return tif_data;
-	}
-	// On est cense avoir de la donnee source
-	if (!tile->getDataSource())
-		return 0;
-	size_t header_size=128;
-	const uint8_t* raw_data=tile->getDataSource()->get_data(size);
-	tif_size=size+header_size;
-	tif_data=new uint8_t[tif_size];
-	if (tile->channels==1)
-        	memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
-        else if (tile->channels==3)
-        	memcpy(tif_data, TIFF_HEADER_RGB, header_size);
-        else if (tile->channels==4)
-        	memcpy(tif_data, TIFF_HEADER_RGBA, header_size);
-	*((uint32_t*)(tif_data+18))  = tile->width;
-        *((uint32_t*)(tif_data+30))  = tile->height;
-        *((uint32_t*)(tif_data+102)) = tile->height;
-        *((uint32_t*)(tif_data+114)) = tile->height*tile->width*tile->channels;
-
-	memcpy(&tif_data[header_size],raw_data,size);
-	size=tif_size;
+	tif_size=size;
 	return tif_data;
 }	
 

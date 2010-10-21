@@ -18,7 +18,7 @@ class TiffEncoderStream : public DataStream {
 
 class TiffEncoderSource : public DataSource {
         Tile *tile;
-	uint8_t *tif_data;
+	uint8_t *tif_data;	// Donnee de la tuile avec l'en-tete
 	size_t size;
         public:
         TiffEncoderSource(Tile *tile);

@@ -204,8 +204,9 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 	if (source->get_data(size)){
 		if (source->gettype()=="image/tiff"){
 			TiffEncoderSource* tiff_source=new TiffEncoderSource(tile);
-			tile->getDataSource()->release_data();
+			source->release_data();
 			tile->setDataSource(tiff_source);
+			return tile->getDataSource();
 		}
 		return source;
 	}
