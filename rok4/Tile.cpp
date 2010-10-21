@@ -9,7 +9,7 @@
 void init_source (jpeg_decompress_struct *cinfo) {}
 boolean fill_input_buffer (jpeg_decompress_struct *cinfo){return false;}
 void skip_input_data (jpeg_decompress_struct *cinfo, long num_bytes) {
-	std::cerr << "c" << std::endl;
+	std::cerr << "c" << std::endl; //?
 	if (num_bytes > 0) {
 		cinfo->src->next_input_byte += (size_t) num_bytes;
 		cinfo->src->bytes_in_buffer -= (size_t) num_bytes;

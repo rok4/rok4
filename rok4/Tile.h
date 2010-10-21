@@ -49,6 +49,7 @@ private:
 	int coding;
 
 public:
+	inline void setDataSource(DataSource* source) {datasource=source;}
 	inline DataSource* getDataSource() {return datasource;}
 	inline DataSource* getNoDataSource() {return noDataSource;}
 	int getline(uint8_t* buffer, int line);

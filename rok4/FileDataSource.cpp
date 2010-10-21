@@ -54,7 +54,7 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
 	}
 	// Lecture de la tuile
 	data = new uint8_t[tile_size];
-	size_t read_size=pread(fildes, &data, tile_size, pos);
+	size_t read_size=pread(fildes, data, tile_size, pos);
 	if (read_size!=tile_size) {
 		LOGGER_ERROR( "Impossible de lire la tuile dans le fichier " << filename );
 		delete[] data;

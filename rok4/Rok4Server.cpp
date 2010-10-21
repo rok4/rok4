@@ -164,7 +164,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	if(format=="image/png")
 		return new PNGEncoder(image);
 	else if(format == "image/tiff")
-		return new TiffEncoder(image);
+		return new TiffEncoderStream(image);
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
 	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
@@ -201,8 +201,14 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 	tile=L->gettile(tileCol, tileRow, tileMatrix);
 	DataSource* source=tile->getDataSource();
 	size_t size;
-	if (source->get_data(size))
+	if (source->get_data(size)){
+		if (source->gettype()=="image/tiff"){
+			TiffEncoderSource* tiff_source=new TiffEncoderSource(tile);
+			tile->getDataSource()->release_data();
+			tile->setDataSource(tiff_source);
+		}
 		return source;
+	}
 	else
 		return tile->getNoDataSource();
 }
@@ -215,10 +221,10 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 	}else if (request->request == "gettile"){
 		Tile * tile= NULL;
 		S.sendresponse(getTile(request, tile), &fcgxRequest);
-		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliorer.
+		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliore.
 		// Appel au destructeur préservant la zone mémoire de la tuile no-data.
 		// en cas d'erreur retournee, tile peut etre NULL
-		if (tile==NULL) delete tile;
+		if (tile!=NULL) delete tile;
 	}else{
 		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
 	}

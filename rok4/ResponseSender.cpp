@@ -13,10 +13,11 @@ std::string genStatusHeader(int statusCode) {
 	// Creation de l'en-tete
 	char strCode[4] ;
 	size_t nbchars= sprintf(strCode,"%d",statusCode) ;
-//	std::string statusHeader= "Status: "+strCode+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
+	//std::string statusHeader= "Status: "+strCode+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
 	std::string statusHeader= "Status: ";
 	statusHeader.append(strCode).append(" ").append(ServiceException::getStatusCodeAsReasonPhrase(statusCode)).append("\r\n") ;
 	// c'est tellement puissant qu'on met un log debug pour afficher la concatenation
+	// en effet : ca m'etonnerait que tu y sois arrivé du premier coup
 	LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
 	return statusHeader ;
 }
@@ -52,7 +53,6 @@ int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Reques
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->gettype().c_str(), strlen(source->gettype().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
-
 	// Copie dans le flux de sortie
 	size_t buffer_size;
 	const uint8_t *buffer = source->get_data(buffer_size);
@@ -69,7 +69,6 @@ int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Reques
 		}
 		wr += w;
 	}	
-
 	return 0;
 }
 
@@ -100,12 +99,11 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 int ResponseSender::sendresponse(int statusCode, DataStream* stream, FCGX_Request* request)
 {
 	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(statusCode) ;
+	std::string statusHeader= genStatusHeader(statusCode);
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(stream->gettype().c_str(), strlen(stream->gettype().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
-
 	// Copie dans le flux de sortie
 	uint8_t *buffer = new uint8_t[2 << 20];
 	size_t size_to_read = 2 << 20;
@@ -137,7 +135,6 @@ int ResponseSender::sendresponse(int statusCode, DataStream* stream, FCGX_Reques
 		}
 		pos += read_size;
 	}
-
 	delete stream;
 	delete[] buffer;
 

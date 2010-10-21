@@ -4,7 +4,58 @@
 #include "TiffEncoder.h"
 #include "Logger.h"
 
-size_t TiffEncoder::read(uint8_t *buffer, size_t size_to_read) {
+const uint8_t TIFF_HEADER_RGB[128]  = {
+                73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
+                9, 0,                                          // 8  | nombre de tags sur 16 bits (10)
+                // .. | TIFFTAG              | DATA TYPE | NUMBER | VALUE
+                0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
+                1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
+                2, 1,   3, 0,   3, 0, 0, 0,   122,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8
+                3, 1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 1 (pas de compression)
+                6, 1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 2 (RGB)
+                17,1,   4, 0,   1 ,0, 0, 0,   128,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 128
+                21,1,   3, 0,   1, 0, 0, 0,   3, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 3
+                22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
+                23,1,   4, 0,   1, 0, 0, 0,   0, 0, 3, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 3
+                0, 0, 0, 0,                                    // 118| fin de l'IFD
+                8, 0,   8, 0,   8, 0};                         // 122| 3x 8 sur 16 bits (pointés par les samplesperpixels)
+// 128
+
+const uint8_t TIFF_HEADER_RGBA[128]  = { //FIXME
+                73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
+                9, 0,                                          // 8  | nombre de tags sur 16 bits (10)
+                // .. | TIFFTAG              | DATA TYPE | NUMBER | VALUE
+                0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
+                1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
+                2, 1,   3, 0,   3, 0, 0, 0,   122,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8
+                3, 1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 1 (pas de compression)
+                6, 1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 2 (RGB)
+                17,1,   4, 0,   1 ,0, 0, 0,   128,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 128
+                21,1,   3, 0,   1, 0, 0, 0,   3, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 3
+                22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
+                23,1,   4, 0,   1, 0, 0, 0,   0, 0, 3, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 3
+                0, 0, 0, 0,                                    // 118| fin de l'IFD
+                8, 0,   8, 0,   8, 0};                         // 122| 3x 8 sur 16 bits (pointés par les samplesperpixels)
+// 128
+
+const uint8_t TIFF_HEADER_GRAY[128]  = {
+                73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
+                9, 0,                                          // 8  | nombre de tags sur 16 bits (10)
+                // .. | TIFFTAG              | DATA TYPE | NUMBER | VALUE
+                0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
+                1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
+                2, 1,   3, 0,   1, 0, 0, 0,   8, 0, 0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 1      | pointeur vers un bloc mémoire 8
+                3, 1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 1 (pas de compression)
+                6, 1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 1 (black is zero)
+                17,1,   4, 0,   1 ,0, 0, 0,   128,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 128
+                21,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 1
+                22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
+                23,1,   4, 0,   1, 0, 0, 0,   0, 0, 1, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 1
+                0, 0, 0, 0,                                    // 118| fin de l'IFD
+                8, 0,   8, 0,   8, 0};                         // 122| 3x 8 sur 16 bits (pointés par les samplesperpixels)
+// 128
+
+size_t TiffEncoderStream::read(uint8_t *buffer, size_t size_to_read) {
 	size_t offset = 0, header_size=128, linesize=image->width*image->channels;
 	if(line == -1) { // écrire le header tiff
 		// Si pas assez de place pour le header, ne rien écrire.
@@ -30,16 +81,63 @@ size_t TiffEncoder::read(uint8_t *buffer, size_t size_to_read) {
 		image->getline((uint8_t*)(buffer + offset), line);
 		offset += linesize*sizeof(uint8_t);
 	}
-
 	return offset;
 }
 
-bool TiffEncoder::eof()
+bool TiffEncoderStream::eof()
 {
 	return (line>=image->height);	
 }
 
-TiffEncoder::~TiffEncoder() {
-	LOGGER_DEBUG("delete TiffEncoder");
+TiffEncoderStream::~TiffEncoderStream() {
+	LOGGER_DEBUG("delete TiffEncoderStream");
 	delete image;
+}
+
+
+TiffEncoderSource::TiffEncoderSource(Tile* tile) : tile(tile)
+{
+	tif_data =0;
+	size=0;
+}
+
+const uint8_t* TiffEncoderSource::get_data(size_t &tif_size)
+{
+	if (tif_data) {
+		tif_size=size;
+		return tif_data;
+	}
+	// On est cense avoir de la donnee source
+	if (!tile->getDataSource())
+		return 0;
+	size_t header_size=128;
+	const uint8_t* raw_data=tile->getDataSource()->get_data(size);
+	tif_size=size+header_size;
+	tif_data=new uint8_t[tif_size];
+	if (tile->channels==1)
+        	memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
+        else if (tile->channels==3)
+        	memcpy(tif_data, TIFF_HEADER_RGB, header_size);
+        else if (tile->channels==4)
+        	memcpy(tif_data, TIFF_HEADER_RGBA, header_size);
+	*((uint32_t*)(tif_data+18))  = tile->width;
+        *((uint32_t*)(tif_data+30))  = tile->height;
+        *((uint32_t*)(tif_data+102)) = tile->height;
+        *((uint32_t*)(tif_data+114)) = tile->height*tile->width*tile->channels;
+
+	memcpy(&tif_data[header_size],raw_data,size);
+	size=tif_size;
+	return tif_data;
+}	
+
+bool TiffEncoderSource::release_data()
+{
+	if (tif_data)
+		delete tif_data;
+	return true;
+}
+
+TiffEncoderSource::~TiffEncoderSource() {
+        LOGGER_DEBUG("delete TiffEncoderSource");
+ //       delete image;
 }
