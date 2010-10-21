@@ -5,19 +5,16 @@
 #include "Logger.h"
 #include <stdio.h>
 #include <string.h> // pour strlen
+#include <sstream> // pour les stringstream
 
 /**
  * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
  */
 std::string genStatusHeader(int statusCode) {
 	// Creation de l'en-tete
-	char strCode[4] ;
-	size_t nbchars= sprintf(strCode,"%d",statusCode) ;
-	//std::string statusHeader= "Status: "+strCode+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
-	std::string statusHeader= "Status: ";
-	statusHeader.append(strCode).append(" ").append(ServiceException::getStatusCodeAsReasonPhrase(statusCode)).append("\r\n") ;
-	// c'est tellement puissant qu'on met un log debug pour afficher la concatenation
-	// en effet : ca m'etonnerait que tu y sois arrivé du premier coup
+	std::stringstream out;
+	out << statusCode;
+	std::string statusHeader= "Status: "+out.str()+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
 	LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
 	return statusHeader ;
 }

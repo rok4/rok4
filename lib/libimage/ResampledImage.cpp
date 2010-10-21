@@ -15,8 +15,6 @@ ResampledImage::ResampledImage(Image *image, int width, int height, double left,
     left += 0.5*ratio_x - 0.5; // Pour prendre en compte que les échantillons 
     top  += 0.5*ratio_y - 0.5; // sont positionnés aux centres des pixels
 
-    //  LOGGER_DEBUG( "ResampledImage => Constructeur ");
-
     Kx = ceil(2 * K.size(ratio_x));
     Ky = ceil(2 * K.size(ratio_y));
 

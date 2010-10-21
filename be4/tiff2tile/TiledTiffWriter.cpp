@@ -132,6 +132,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     *((uint32_t*) (p += 2)) = 2;                       //
     *((uint16_t*) (p += 4)) = 2;                       //
     *((uint16_t*) (p + 2))  = 2;                       //
+
   }
 
   *((uint32_t*) (p += 4)) = 0;                       // end of IFD

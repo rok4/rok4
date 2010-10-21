@@ -33,11 +33,10 @@ class CompoundImage : public Image {
     // doit-on changer de tuile ?
     while(top + images[y][0]->height <= line) top += images[y++][0]->height;
     while(top > line) top -= images[--y][0]->height;
-
     // on calcule l'indice de la ligne dans la sous tuile
     line -= top; 
-
-    for(int x = 0; x < images[y].size(); x++) buffer += images[y][x]->getline(buffer, line);
+    for(int x = 0; x < images[y].size(); x++)
+	buffer += images[y][x]->getline(buffer, line);
     return width*channels;
   }
 
