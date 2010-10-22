@@ -26,6 +26,8 @@ use Getopt::Std;
 #use File::Copy;
 use XML::Simple;
 use File::Basename;
+use List::Util qw( max );
+use POSIX qw(ceil);
 
 my $nombre_jobs = 16;
 # pas de bufferisation des sorties
@@ -224,7 +226,8 @@ my %niveau_taille_tuile_x = %{$ref_taille_tuile_x};
 my %niveau_taille_tuile_y = %{$ref_taille_tuile_y};
 my $level_min = $niveaux_ranges[0];
 my $res_min = $niveau_res{"$level_min"};
-my $level_max = $niveaux_ranges[@niveaux_ranges - 1];
+my $indice_niveau_max = @niveaux_ranges - 1;
+my $level_max = $niveaux_ranges[$indice_niveau_max];
 my $res_max = $niveau_res{"$level_max"};
 
 # TODO voir si les elses sont corrects
@@ -298,14 +301,22 @@ if (defined $fichier_mtd_source){
 	@mtd_source = keys %mtd_source_x_min;
 }
 
-# action 3 :determiner le niveau de travail (ou il y aura un nombre de jobs de $nombre_jobs)
-my %dalle_travail_x_min;
-my %dalle_travail_x_max;
-my %dalle_travail_y_min;
-my %dalle_travail_y_max;
+# action 3 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
+
 my %dalle_travail_res;
 my %dalle_travail_indice_niveau;
-my @liste_dalles_arbre_niveau_travail = &liste_dalle_arbre_niveau_travail($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $y_max_niveau_max, $res_max, $taille_image_pix_x, $taille_image_pix_y, $level_max, $systeme_source, $systeme_target);
+my ($ref_liste_niveau_travail, $ref_travail_x_min, $ref_travail_x_max, $ref_travail_y_min, $ref_travail_y_max, $ref_liste_niveau_max, $ref_niv_max_x_min, $ref_niv_max_x_max, $ref_niv_max_y_min, $ref_niv_max_y_max) = &infos_niveau_travail_niveau_max($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $y_max_niveau_max, $res_max, $taille_image_pix_x, $taille_image_pix_y, $indice_niveau_max, $systeme_source, $systeme_target);
+my @liste_dalles_arbre_niveau_travail = @{$ref_liste_niveau_travail};
+
+my %dalle_travail_x_min = %{$ref_travail_x_min};
+my %dalle_travail_x_max = %{$ref_travail_x_max};
+my %dalle_travail_y_min = %{$ref_travail_y_min};
+my %dalle_travail_y_max = %{$ref_travail_y_max};
+my @liste_dalles_arbre_niveau_max = @{$ref_liste_niveau_max};
+my %dalle_niveau_max_x_min = %{$ref_niv_max_x_min};
+my %dalle_niveau_max_x_max = %{$ref_niv_max_x_max};
+my %dalle_niveau_max_y_min = %{$ref_niv_max_y_min};
+my %dalle_niveau_max_y_max = %{$ref_niv_max_y_max};
 
 # action 4 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
 my %cache_arbre_x_min;
@@ -331,6 +342,7 @@ my %nom_dalle_index_base;
 
 foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	
+	print "$dalle_arbre_niveau_travail\n";
 	# remise a zero des variables d'arbre
 	%cache_arbre_x_min = ();
 	%cache_arbre_x_max = ();
@@ -351,23 +363,23 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	%niveau_ref_mtd_inf = ();
 	%nom_dalle_index_base = ();
 	
-	$x_min_dalle0 = $dalle_travail_x_min{"$dalle_arbre_niveau_travail"};
-	$x_max_dalle0 = $dalle_travail_x_max{"$dalle_arbre_niveau_travail"};
-	$y_min_dalle0 = $dalle_travail_y_min{"$dalle_arbre_niveau_travail"};
-	$y_max_dalle0 = $dalle_travail_y_max{"$dalle_arbre_niveau_travail"};
-	$res_dalle0 = $dalle_travail_res{"$dalle_arbre_niveau_travail"};
-	$indice_niveau0 = $dalle_travail_indice_niveau{"$dalle_arbre_niveau_travail"};
+	my $x_min_dalle0 = $dalle_travail_x_min{"$dalle_arbre_niveau_travail"};
+	my $x_max_dalle0 = $dalle_travail_x_max{"$dalle_arbre_niveau_travail"};
+	my $y_min_dalle0 = $dalle_travail_y_min{"$dalle_arbre_niveau_travail"};
+	my $y_max_dalle0 = $dalle_travail_y_max{"$dalle_arbre_niveau_travail"};
+	my $res_dalle0 = $dalle_travail_res{"$dalle_arbre_niveau_travail"};
+	my $indice_niveau0 = $dalle_travail_indice_niveau{"$dalle_arbre_niveau_travail"};
 	
 	#recursivite descendante et mise en memoire pour chacune des dalles cache
 	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.");
 	print "[CREE_DALLAGE_BASE] Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.\n";
-	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, $dalle_arbre_niveau_travail, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0);
+	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, $dalle_arbre_niveau_travail, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
 	&ecrit_log("$nombre_dalles_cache images definies.");
 	print "[CREE_DALLAGE_BASE] $nombre_dalles_cache images definies.\n";
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.");
 		print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.\n";
-		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, $dalle_arbre_niveau_travail, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0);
+		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, $dalle_arbre_niveau_travail, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
 		&ecrit_log("$nombre_mtd_cache images definies.");
 		print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
 	}
@@ -401,41 +413,45 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	}
 	
 	
-	# action 7 : calculer les niveaux inferieurs
+	# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
 	&ecrit_log("Definition des images des niveaux inferieurs.");
 	print "[CREE_DALLAGE_BASE] Definition des images des niveaux inferieurs.\n";
-	my ($nombre_dalles_niveaux_inf, $string_script_niveaux_inf_img) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image");
+	my ($nombre_dalles_niveaux_inf, $string_script_niveaux_inf_img) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", 1, $indice_niveau0);
 	print SCRIPT $string_script_niveaux_inf_img;
 	&ecrit_log("$nombre_dalles_niveaux_inf images a calculer.");
 	print "[CREE_DALLAGE_BASE] $nombre_dalles_niveaux_inf images a calculer.\n";
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd des niveaux inferieurs.");
 		print "[CREE_DALLAGE_BASE] Definition des mtd des niveaux inferieurs.\n";
-		my ($nombre_mtd_niveaux_inf, $string_script_niveaux_inf_mtd) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd");
+		my ($nombre_mtd_niveaux_inf, $string_script_niveaux_inf_mtd) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", 1, $indice_niveau0);
 		print SCRIPT $string_script_niveaux_inf_mtd;
 		&ecrit_log("$nombre_mtd_niveaux_inf images a calculer.");
 		print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images a calculer.\n";
 	}
 	
 	close SCRIPT;
-
-	
 }
 
 # TODO action 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
+my $string_script4 = "";
 
 
-# TODO Passage en format pivot du dernier niveau
-my $dernier_niveau = "$level_max";
-&ecrit_log("Passage en format final niveau $level_max.");
-print "[CREE_DALLAGE_BASE] Passage en format final niveau $level_max\n";
-my @dalles_change_format_haut;
-if(defined $hash_niveau_liste{"$level_max"}){
-	@dalles_change_format_haut = @{$hash_niveau_liste{"$level_max"}};
-} 
-$string_script2 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_taille_tuile_y{"$level_max"}, \@dalles_change_format_haut);
-	
 
+# passage en pivot du dernier niveau
+# my $dernier_niveau = "$level_max";
+# &ecrit_log("Passage en format final niveau $level_max.");
+# print "[CREE_DALLAGE_BASE] Passage en format final niveau $level_max\n";
+# my @dalles_change_format_haut;
+# if(defined $hash_niveau_liste{"$level_max"}){
+# 	@dalles_change_format_haut = @{$hash_niveau_liste{"$level_max"}};
+# } 
+# $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_taille_tuile_y{"$level_max"}, \@dalles_change_format_haut);
+
+
+my $nom_script_job17 = "$nom_script"."_"."job17";
+open JOB17, ">$nom_script_job17" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_script_job17.", 'white on_red');
+print JOB17 $string_script4;
+close JOB17;
 
 # suppression du repertoire temporaire
 opendir TEMP, "$rep_temp" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvir le repertoire $rep_temp.", 'white on_red');
@@ -699,16 +715,16 @@ sub indice_arbre2xy{
 			my $taille_x_diff = ($x_max_cache - $x_min_cache) / 2;
 			my $taille_y_diff = ($y_max_cache - $y_min_cache) / 2;
 			# 4 cas possibles, on ajoute ou retranche selon les cas
-			if($chiffre eq "1"){
+			if($chiffre eq "0"){
 				$x_max_cache -= $taille_x_diff;
 				$y_min_cache += $taille_y_diff;
-			}elsif($chiffre eq "2"){
+			}elsif($chiffre eq "1"){
 				$x_min_cache += $taille_x_diff;
 				$y_min_cache += $taille_y_diff;
 			}elsif($chiffre eq "3"){
 				$x_min_cache += $taille_x_diff;
 				$y_max_cache -= $taille_y_diff;
-			}elsif($chiffre eq "4"){
+			}elsif($chiffre eq "2"){
 				$x_max_cache -= $taille_x_diff;
 				$y_max_cache -= $taille_y_diff;
 			}else{
@@ -821,9 +837,13 @@ sub definit_bloc_dalle{
 	my $ref_dalles = $_[7];
 	my $type = $_[8];
 	my $pcent_dilat = $_[9];
+	my $res_min_calcul = $_[10];
+	my $res_max_calcul = $_[11];
 	
 	my @dalles_initiales = @{$ref_dalles};
 	
+	print "definit $id_dalle... niveau $indice_niveau min $res_min_calcul max $res_max_calcul\n";
+	print "dalle cache : $x_min_dalle_cache : $x_max_dalle_cache : $y_min_dalle_cache : $y_max_dalle_cache\n";
 	my $nombre_dalles_traitees = 0;
 	
 	# pour les reproj
@@ -871,7 +891,7 @@ sub definit_bloc_dalle{
 	# on tronconne direct en ne mettant que les dalles interessantes :
 	# dans les niveaux utiles
 	# TODO remplacer $res_max et $res_min par les vraies des niveaux utiles
-	if( ($res_dalle <= $res_max_utile) && ($res_dalle >= $res_min_utile) ){
+	if( ($res_dalle <= $res_max_calcul) && ($res_dalle >= $res_min_calcul) ){
 		if ($type eq "mtd"){
 			$index_arbre_liste_mtd{$id_dalle} = \@dalles_recouvrantes;
 		}elsif($type eq "image"){
@@ -904,21 +924,21 @@ sub definit_bloc_dalle{
 		my $x_inter = $x_min_dalle_cache + $res_dessous * $taille_image_pix_x;
 		my $y_inter = $y_max_dalle_cache - $res_dessous * $taille_image_pix_y;
 		
-		$nombre_dalles_traitees += definit_bloc_dalle($id_dalle."1", $x_min_dalle_cache, $x_inter, $y_inter, $y_max_dalle_cache, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."2", $x_inter, $x_max_dalle_cache, $y_inter, $y_max_dalle_cache, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."3", $x_inter, $x_max_dalle_cache, $y_min_dalle_cache, $y_inter, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
-	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."4", $x_min_dalle_cache, $x_inter, $y_min_dalle_cache, $y_inter, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat);
+		$nombre_dalles_traitees += definit_bloc_dalle($id_dalle."0", $x_min_dalle_cache, $x_inter, $y_inter, $y_max_dalle_cache, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat, $res_min_calcul, $res_max_calcul);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."1", $x_inter, $x_max_dalle_cache, $y_inter, $y_max_dalle_cache, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat, $res_min_calcul, $res_max_calcul);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."3", $x_inter, $x_max_dalle_cache, $y_min_dalle_cache, $y_inter, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat, $res_min_calcul, $res_max_calcul);
+	    $nombre_dalles_traitees += definit_bloc_dalle($id_dalle."2", $x_min_dalle_cache, $x_inter, $y_min_dalle_cache, $y_inter, $res_dessous, $indice_dessous, \@dalles_recouvrantes, $type, $pcent_dilat, $res_min_calcul, $res_max_calcul);
 		
 		# on remplit les niveaux des dalles d'en dessous
+		$dalle_arbre_niveau{$id_dalle."0"} = $niveau_inferieur;
 		$dalle_arbre_niveau{$id_dalle."1"} = $niveau_inferieur;
-		$dalle_arbre_niveau{$id_dalle."2"} = $niveau_inferieur;
 		$dalle_arbre_niveau{$id_dalle."3"} = $niveau_inferieur;
-		$dalle_arbre_niveau{$id_dalle."4"} = $niveau_inferieur;
+		$dalle_arbre_niveau{$id_dalle."2"} = $niveau_inferieur;
 		
+		$dalle_arbre_indice_niveau{$id_dalle."0"} = $indice_dessous;
 		$dalle_arbre_indice_niveau{$id_dalle."1"} = $indice_dessous;
-		$dalle_arbre_indice_niveau{$id_dalle."2"} = $indice_dessous;
 		$dalle_arbre_indice_niveau{$id_dalle."3"} = $indice_dessous;
-		$dalle_arbre_indice_niveau{$id_dalle."4"} = $indice_dessous;
+		$dalle_arbre_indice_niveau{$id_dalle."2"} = $indice_dessous;
 		
 	}
 	
@@ -1048,13 +1068,15 @@ sub calcule_niveaux_inferieurs{
 	my $interpol = $_[1];
 	my $ref_niveau_bas = $_[2];
 	my $type_dalle = $_[3];
+	my $indice_niveau_min_calcul = $_[4];
+	my $indice_niveau_max_calcul = $_[5];
 	
 	my %hash_niveau_liste = %{$ref_dalles_a_calc};
 	
 	my $nb_calc = 0;
 	my $string_script2 = "";
 	
-	for (my $i = 1 ; $i < @niveaux_ranges ; $i++){
+	for (my $i = $indice_niveau_min_calcul ; $i < $indice_niveau_max_calcul ; $i++){
 		my $niveau_inf = $niveaux_ranges[$i];
 		if(defined $hash_niveau_liste{"$niveau_inf"}){
 			&ecrit_log("Calcul niveau $niveau_inf.");
@@ -1255,9 +1277,11 @@ sub cree_arbre_dalles_cache{
 	my $y_max_dalle_haut = $_[7];
 	my $res_dalle_haut  = $_[8];
 	my $indice_niveau_dalle_haut = $_[9];
+	my $res_minimum_calcul = $_[10];
+	my $res_maximum_calcul = $_[11];
 	
 	my $nombre_dalles = 0;
-	$nombre_dalles += definit_bloc_dalle($id_dalle_haut, $x_min_dalle_haut, $x_max_dalle_haut, $y_min_dalle_haut, $y_max_dalle_haut, $res_dalle_haut, $indice_niveau_dalle_haut, $ref_liste, $type, $pourcentage);
+	$nombre_dalles += definit_bloc_dalle($id_dalle_haut, $x_min_dalle_haut, $x_max_dalle_haut, $y_min_dalle_haut, $y_max_dalle_haut, $res_dalle_haut, $indice_niveau_dalle_haut, $ref_liste, $type, $pourcentage, $res_minimum_calcul, $res_maximum_calcul);
 	
 	return $nombre_dalles;
 }
@@ -1406,65 +1430,65 @@ sub reproj_rectangle{
 	my ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
 	
 	# schema du rectangle
-	# 12
-	# 43
-	my ($x1,$y1) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
-	my ($x2,$y2) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	# 01 12
+	# 23 43
+	my ($x0,$y0) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x1,$y1) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
 	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
-	my ($x4,$y4) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x2,$y2) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
 	
 	# determination de la bbox resultat
 	my $x_min_result = 99999999999;
+	if($x0 < $x_min_result){
+		$x_min_result = $x0;
+	}
 	if($x1 < $x_min_result){
 		$x_min_result = $x1;
-	}
-	if($x2 < $x_min_result){
-		$x_min_result = $x2;
 	}
 	if($x3 < $x_min_result){
 		$x_min_result = $x3;
 	}
-	if($x4 < $x_min_result){
-		$x_min_result = $x4;
+	if($x2 < $x_min_result){
+		$x_min_result = $x2;
 	}
 	my $x_max_result = -99999999999;
+	if($x0 > $x_max_result){
+		$x_max_result = $x0;
+	}
 	if($x1 > $x_max_result){
 		$x_max_result = $x1;
-	}
-	if($x2 > $x_max_result){
-		$x_max_result = $x2;
 	}
 	if($x3 > $x_max_result){
 		$x_max_result = $x3;
 	}
-	if($x4 > $x_max_result){
-		$x_max_result = $x4;
+	if($x2 > $x_max_result){
+		$x_max_result = $x2;
 	}
 	my $y_min_result = 99999999999;
+	if($y0 < $y_min_result){
+		$y_min_result = $y0;
+	}
 	if($y1 < $y_min_result){
 		$y_min_result = $y1;
-	}
-	if($y2 < $y_min_result){
-		$y_min_result = $y2;
 	}
 	if($y3 < $y_min_result){
 		$y_min_result = $y3;
 	}
-	if($y4 < $y_min_result){
-		$y_min_result = $y4;
+	if($y2 < $y_min_result){
+		$y_min_result = $y2;
 	}
 	my $y_max_result = -99999999999;
+	if($y0 > $y_max_result){
+		$y_max_result = $y0;
+	}
 	if($y1 > $y_max_result){
 		$y_max_result = $y1;
-	}
-	if($y2 > $y_max_result){
-		$y_max_result = $y2;
 	}
 	if($y3 > $y_max_result){
 		$y_max_result = $y3;
 	}
-	if($y4 > $y_max_result){
-		$y_max_result = $y4;
+	if($y2 > $y_max_result){
+		$y_max_result = $y2;
 	}
 	
 	# dilatataion de la bbox resultat
@@ -1486,21 +1510,101 @@ sub dalles_impactees{
 	my $pas_y_dallage = $_[3];
 	my $x_min_dalles_source = $_[4];
 	my $x_max_dalles_source = $_[5];
-	my $y_min_dalles_source = $_[4];
-	my $y_max_dalles_source = $_[5];
+	my $y_min_dalles_source = $_[6];
+	my $y_max_dalles_source = $_[7];
+	my $bool_nombre = $_[8];
+	
+	# indice des dalles dans le dallage (commencent a 0)
+	# (i,j) <= ($x_min_dalles_source, $y_max_dalles_source)
+	# (m,n) <= ($x_max_dalles_source, $y_min_dalles_source)
+	my $i = &calcule_indice_dallage($origine_x_dallage, $pas_x_dallage, $x_min_dalles_source);
+	my $j = &calcule_indice_dallage($origine_y_dallage, $pas_y_dallage, $y_max_dalles_source);
+	my $m = &calcule_indice_dallage($origine_x_dallage, $pas_x_dallage, $x_max_dalles_source);
+	my $n = &calcule_indice_dallage($origine_y_dallage, $pas_y_dallage, $y_min_dalles_source);
+	
+	# si on ne demande que le nombre
+	if ($bool_nombre == 1){
+		my $nb_impact = ($m - $i + 1) * ($n - $j + 1);
+		return $nb_impact;
+	}
+	
+	# calcul du nombre de chiffres de l'indice
+	# les nombre a comparer sont la plus petite puissance de 2 > m (resp n)
+	my $nombre_compare1 = 0;
+	if($m != 0){
+		$nombre_compare1 = ceil(log($m)/log(2));
+	}
+	my $nombre_compare2 = 0;
+	if($n != 0){
+		$nombre_compare2 = ceil(log($n)/log(2));
+	}
+	my $w = max($nombre_compare1,$nombre_compare2);
 	
 	my @liste_dalles_impactees;
+	my (%hash_dalles_x_min, %hash_dalles_x_max, %hash_dalles_y_min, %hash_dalles_y_max);
 	
-	# TODO voir les dalles impactees
-	$dalle_travail_x_min{} = ;
-	$dalle_travail_x_max{} = ;
-	$dalle_travail_y_min{} = ;
-	$dalle_travail_y_max{} = ;
+	# remplissage des informations
+	# x et y sont les numeros d'indice dans le dallage courant
+	for (my $x = $i ; $x < $m + 1; $x++){
+		for (my $y = $j ; $y < $n + 1 ; $y++){
+			# conversion de x et y en binaire B??
+			my $indice_x_binaire = sprintf("%b", $x);;
+			my $indice_y_binaire = sprintf("%b", $y);;
+			# avec la convention
+			# 0 1
+			# 2 3
+			my $indice_dalle_arbre = &formate_zero(($indice_x_binaire + (2 * $indice_y_binaire)),$w);
+			push(@liste_dalles_impactees, "$indice_dalle_arbre");
+			$hash_dalles_x_min{"$indice_dalle_arbre"} = $origine_x_dallage + ($x * $pas_x_dallage);
+			$hash_dalles_x_max{"$indice_dalle_arbre"} = $origine_x_dallage + (($x + 1) * $pas_x_dallage);
+			$hash_dalles_y_min{"$indice_dalle_arbre"} = $origine_y_dallage - (($y + 1) * $pas_y_dallage);
+			$hash_dalles_y_max{"$indice_dalle_arbre"} = $origine_y_dallage - ( $y * $pas_y_dallage);
+		}
+	}
 	
-	return @liste_dalles_impactees;
+	return (\@liste_dalles_impactees, \%hash_dalles_x_min, \%hash_dalles_x_max, \%hash_dalles_y_min, \%hash_dalles_y_max);
 }
 ################################################################################
-sub liste_dalle_arbre_niveau_travail{
+sub formate_zero{
+  
+	my $variable = $_[0];
+	my $nb_chiffres = $_[1];
+	
+	my $diff = $nb_chiffres - length($variable);
+	
+	for(my $compteur = 0 ; $compteur < $diff ; $compteur++){
+		$variable = "0".$variable;
+	}
+	
+	return $variable;
+  
+}
+################################################################################
+sub calcule_indice_dallage{
+	
+	my $origine_coord = $_[0];
+	my $pas = $_[1];
+	my $coord = $_[2];
+	
+	my $indice;
+	
+	#indice de la dalle en ligne ou en colonne dans le dallage
+	# abs(coord - origine) = q * pas + rest on prend la valeur absolue car les y vont en descendant
+	my $rest = (abs($coord - $origine_coord)) % $pas;
+	
+	# si le reste est nul on decale d'un cran a gauche pour etre sur d'avoir tout les recouvrements
+	if($rest == 0){
+		# indice = abs(q - 1)
+		$indice = ( (abs($coord - $origine_coord)) / $pas ) - 1 ;
+	}else{
+		# indice = q
+		$indice = (abs($coord - $origine_coord) - $rest) / $pas;
+	}
+	
+	return $indice;
+}
+################################################################################
+sub infos_niveau_travail_niveau_max{
 	
 	my $x_min_source = $_[0];
 	my $x_max_source = $_[1];
@@ -1517,30 +1621,41 @@ sub liste_dalle_arbre_niveau_travail{
 	my $systeme_src = $_[10];
 	my $systeme_dst = $_[11];
 	
-	
 	my $res_temp = $res_maxi;
 	my $pas_x = $res_temp * $taille_image_x_maxi;
 	my $pas_y = $res_temp * $taille_image_y_maxi;
-	my $level_temp = $level_maxi;
-	my @liste_dalles_niveau_travail = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source);
-	while(@liste_dalles_niveau_travail < $nombre_jobs){
-		# reinitilisation des hash
-		%dalle_travail_x_min = ();
-		%dalle_travail_x_max = ();
-		%dalle_travail_y_min = ();
-		%dalle_travail_y_max = ();
-		$level_temp -= 1;
-		$res_temp *= 2;
-		$pas_x *= 2;
-		$pas_y *= 2;
-		@liste_dalles_niveau_travail = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source);
-	}
+	my $indice_level_temp = $indice_level_maxi;
 	
+	# infos du niveau maxi
+	my ($ref_liste_dalles_niveau_max, $ref_hash_x_min_niveau_max, $ref_hash_x_max_niveau_max, $ref_hash_y_min_niveau_max, $ref_hash_y_max_niveau_max) = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 0);
+	my @liste_dalles_niveau_max = @{$ref_liste_dalles_niveau_max};
+	my %dal_niveau_max_x_min = %{$ref_hash_x_min_niveau_max};
+	my %dal_niveau_max_x_max = %{$ref_hash_x_max_niveau_max};
+	my %dal_niveau_max_y_min = %{$ref_hash_y_min_niveau_max};
+	my %dal_niveau_max_y_max = %{$ref_hash_y_max_niveau_max};
+	
+	my $nombre_dalles_impactees = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 1);
+
+	while($nombre_dalles_impactees < $nombre_jobs){
+	
+		$indice_level_temp -= 1;
+		$res_temp /= 2;
+		$pas_x /= 2;
+		$pas_y /= 2;
+		$nombre_dalles_impactees = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 1);
+	}
+	# infos du niveau d'elagage
+	my ($ref_liste_dalles_impactees, $ref_hash_x_min_travail, $ref_hash_x_max_travail, $ref_hash_y_min_travail, $ref_hash_y_max_travail) = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 0);
+	my @liste_dalles_niveau_travail = @{$ref_liste_dalles_impactees};
+	my %dal_travail_x_min = %{$ref_hash_x_min_travail};
+	my %dal_travail_x_max = %{$ref_hash_x_max_travail};
+	my %dal_travail_y_min = %{$ref_hash_y_min_travail};
+	my %dal_travail_y_max = %{$ref_hash_y_max_travail};
 	foreach my $id_dalle_temp(@liste_dalles_niveau_travail){
 		$dalle_travail_res{"$id_dalle_temp"} = $res_temp;
-		$dalle_travail_indice_niveau{"$id_dalle_temp"} = $level_temp;
+		$dalle_travail_indice_niveau{"$id_dalle_temp"} = $indice_level_temp;
 	}
 	
-	return @liste_dalles_niveau_travail;
+	return (\@liste_dalles_niveau_travail, \%dal_travail_x_min, \%dal_travail_x_max, \%dal_travail_y_min, \%dal_travail_y_max, \@liste_dalles_niveau_max, \%dal_niveau_max_x_min, \%dal_niveau_max_x_max, \%dal_niveau_max_y_min, \%dal_niveau_max_y_max);
 	
 }
