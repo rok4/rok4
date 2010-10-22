@@ -54,6 +54,8 @@ public:
 	inline DataSource* getNoDataSource() {return noDataSource;}
 	int getline(uint8_t* buffer, int line);
 	int getline(float* buffer, int line);
+	inline int getTileWidth() {return tile_width;}
+	inline int getTileHeight() {return tile_height;}
 
 	Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding);
 

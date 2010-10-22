@@ -151,7 +151,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 }
 
 /*
- * Tableau statique des caractères Base64 (pour système de fichier)
+ * Tableau statique des caractères Base36 (pour système de fichieri non cas-sensitive)
  */
 // static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -210,7 +210,6 @@ Tile* Level::gettile(int x, int y)
 	// Index de la tuile (cf. ordre de rangement des tuiles)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
-//	uint32_t posoff=1024+4*n, possize=1024+4*n +tilesPerWidth*tilesPerHeight*4;
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());

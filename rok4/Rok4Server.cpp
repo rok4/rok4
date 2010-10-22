@@ -64,10 +64,11 @@ void* Rok4Server::thread_loop(void* arg)
 		/* On espère récupérer le nom du host tel qu'il est exprimé dans la requete avec HTTP_HOST.
 		 * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
 		 */
+LOGGER_DEBUG("YEAH");
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
 		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
 		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
-
+LOGGER_DEBUG("YEAH2");
 		server->processRequest(request, fcgxRequest);
 		delete request;
 		FCGX_Finish_r(&fcgxRequest);
@@ -99,6 +100,7 @@ void Rok4Server::run() {
 
 
 DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
+LOGGER_DEBUG("CAPABBBB");
 	/* concaténation des fragments invariant de capabilities en intercalant les
 	 * parties variables dépendantes de la requête */
 	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
@@ -156,7 +158,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	Layer* L = it->second;
 
 	Image* image = L->getbbox(bbox, width, height, crs.c_str());
-
+LOGGER_DEBUG(width<< " " << height);
 	if (image == 0)
 		return 0;
 	//FIXME : cela est-il une erreur?
@@ -234,7 +236,10 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 /** Traite les requêtes de type WMS */
 void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 	if (request->request == "getcapabilities"){
+	{
+LOGGER_DEBUG("GETCAPABILITIES");
 		S.sendresponse(WMSGetCapabilities(request),&fcgxRequest);
+}
 	}else if (request->request == "getmap"){
 		S.sendresponse(getMap(request), &fcgxRequest);
 	}else{
@@ -244,6 +249,7 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 
 void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	if(request->service == "wms") {
+LOGGER_DEBUG("REQUETE WMS");
 		processWMS(request, fcgxRequest);
 	}else if(request->service=="wmts") {
 		processWMTS(request, fcgxRequest);
@@ -253,7 +259,6 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 }
 
 int main(int argc, char** argv) {
-
 	/* the following loop is for fcgi debugging purpose */
 	int stopSleep = 0;
 	while (getenv("SLEEP") != NULL && stopSleep == 0) {
