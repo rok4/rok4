@@ -48,7 +48,7 @@ cp -r ../rok4/tests/html/* $ROK4BASE/tests
 # copie page de test
 
 echo "demarrage serveur apache..."
-sudo -c "export PROJ_LIB=$ROK4BASE/config/proj ; /etc/init.d/apache2 start"
+sudo bash -c "export PROJ_LIB=$ROK4BASE/config/proj ; /etc/init.d/apache2 start"
 echo "on laisse le temps de demarrer... c'est long, mais compare aux test unitaires, c'est rien..."
 sleep 20
 if [ ! -f /var/run/apache2.pid ] ; then
