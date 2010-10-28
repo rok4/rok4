@@ -54,12 +54,12 @@ void Request::url_decode(char *src) {
 }
 
 void toLowerCase(char* str){
-	if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
+        if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
 }
 
 Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
+	LOGGER_DEBUG("QUERY="<<strquery);
 	url_decode(strquery);
-LOGGER_DEBUG("QUERY="<<strquery);
 	for(int pos = 0; strquery[pos];) {
 		char* key = strquery + pos;
 		for(;strquery[pos] && strquery[pos] != '=' && strquery[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0
@@ -165,10 +165,8 @@ DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox,
 	if (height == 0 || height == INT_MAX || height == INT_MIN)
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT n'est pas une valeur entiere.","wms")) ;
 	crs=getParam("crs");
-	/* FIXME le CRS est sensé etre obligatoire, mais pour des raisons de
-	 * "compatibilité" avec le prototype on est un peu laxiste pour le moment
-	if(crs == "")    {LOGGER_DEBUG("Missing parameter: crs"); return new Error("Missing parameter: crs");}
-	 */
+	if(crs == "")
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre CRS absent.","wms"));
 	format=getParam("format");
 	if(format == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
@@ -181,10 +179,8 @@ DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox,
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 	double bb[4];
 	for(int i = 0; i < 4; i++) {
-		bb[i] = atof(coords[i].c_str());
-		if (bb[i] == 0.0 && coords[i] != "0.0"){
-			return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
-		}
+		if (sscanf(coords[i].c_str(),"%lf",&bb[i])!=1)
+				return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 	}
 	bbox.xmin=bb[0];
 	bbox.ymin=bb[1];

@@ -12,7 +12,6 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	std::string title="";
 	std::string abstract="";
 	std::vector<std::string> keyWords;
-	std::string crs;
 	std::map<std::string, TileMatrix> listTM;
 
 	TiXmlDocument doc(fileName.c_str());
@@ -54,8 +53,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 		LOGGER_ERROR("TileMaxtrixSet " << id <<" pas de crs!!");
 		return NULL;
 	}
-	crs = pElem->GetText();
-	//FIXME: controle et normalisation du nom du CRS à faire
+	CRS crs(pElem->GetText());
 
 	pElem=hRoot.FirstChild("abstract").Element();
 	if (pElem) abstract = pElem->GetText();
@@ -142,7 +140,6 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 		LOGGER_ERROR("Aucun tileMatrix trouvé dans le tileMatrixSet" << id <<" : il est invalide!!");
 		return NULL;
 	}
-
 	TileMatrixSet * tms = new TileMatrixSet(id,title,abstract,keyWords,crs,listTM);
 	LOGGER_DEBUG("<=buildTileMatrixSet");
 	return tms;
@@ -342,6 +339,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	std::string authority="";
 	std::string resampling;
 	std::vector<Pyramid*> pyramids;
+	LatLonBoundingBoxWMS latLonBoundingBox;
+	BoundingBoxWMS boundingBox;
 
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
@@ -414,9 +413,62 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		return NULL;
 	}
 
+        pElem = hRoot.FirstChild("latLonBoundingBox").Element();
+        if (!pElem){
+                LOGGER_ERROR("Pas de latLonBoundingBox = ");
+        }else{
+                if (!sscanf(pElem->Attribute("minx"),"%lf",&latLonBoundingBox.minx)){
+                        LOGGER_ERROR("Le minx est inexploitable:[" << pElem->Attribute("minx") << "]");
+                        return NULL;
+                }
+                if (!sscanf(pElem->Attribute("miny"),"%lf",&latLonBoundingBox.miny)){
+                        LOGGER_ERROR("Le miny est inexploitable:[" << pElem->Attribute("miny") << "]");
+                        return NULL;
+                }
+                if (!sscanf(pElem->Attribute("maxx"),"%lf",&latLonBoundingBox.maxx)){
+                        LOGGER_ERROR("Le maxx est inexploitable:[" << pElem->Attribute("maxx") << "]");
+                        return NULL;
+                }
+                if (!sscanf(pElem->Attribute("maxy"),"%lf",&latLonBoundingBox.maxy)){
+                        LOGGER_ERROR("Le maxy est inexploitable:[" << pElem->Attribute("maxy") << "]");
+                        return NULL;
+                }
+        }
 
+	pElem = hRoot.FirstChild("boundingBox").Element();
+	if (!pElem){
+		LOGGER_ERROR("Pas de BoundingBox = ");
+	}else{
+		std::string tmp;
+		tmp=pElem->Attribute("SRS");
+		if (tmp.c_str()==0){
+			LOGGER_ERROR("Le SRS est inexploitable:[" << pElem->GetText() << "]");
+                        return NULL;
+		}
+		boundingBox.srs=pElem->Attribute("SRS");
+		if (!sscanf(pElem->Attribute("minx"),"%lf",&boundingBox.minx)){
+			LOGGER_ERROR("Le minx est inexploitable:[" << pElem->Attribute("minx") << "]");
+			return NULL;
+		}
+                if (!sscanf(pElem->Attribute("miny"),"%lf",&boundingBox.miny)){
+                        LOGGER_ERROR("Le miny est inexploitable:[" << pElem->Attribute("miny") << "]");
+                        return NULL;
+                }
+                if (!sscanf(pElem->Attribute("maxx"),"%lf",&boundingBox.maxx)){
+                        LOGGER_ERROR("Le maxx est inexploitable:[" << pElem->Attribute("maxx") << "]");
+                        return NULL;
+                }
+                if (!sscanf(pElem->Attribute("maxy"),"%lf",&boundingBox.maxy)){
+                        LOGGER_ERROR("Le maxy est inexploitable:[" << pElem->Attribute("maxy") << "]");
+                        return NULL;
+                }
+	}
+
+	
 	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
 		std::string crs(pElem->GetText());
+		// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+		
 		WMSCRSList.push_back(crs);
 	}
 	if (WMSCRSList.size()==0){
@@ -469,7 +521,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	Layer *layer;
 
 	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
-			WMSCRSList, opaque, authority, resampling);
+			WMSCRSList, opaque, authority, resampling,latLonBoundingBox,boundingBox);
 
 	LOGGER_DEBUG("<= buildLayer");
 

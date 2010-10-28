@@ -4,6 +4,21 @@
 #include <vector>
 #include <string>
 #include "Pyramid.h"
+#include "CRS.h"
+
+struct LatLonBoundingBoxWMS{
+public:
+        double minx, miny, maxx, maxy;
+        LatLonBoundingBoxWMS() {}
+};
+
+struct BoundingBoxWMS{
+public:
+	std::string srs;
+	double minx, miny, maxx, maxy;
+	BoundingBoxWMS() {}
+};
+
 
 class Layer {
 private:
@@ -19,11 +34,14 @@ private:
 	bool opaque;
 	std::string authority;
 	std::string resampling; //FIXME: revoir le type de resampling (plutot un enum).
+	LatLonBoundingBoxWMS latLonBoundingBox;
+	BoundingBoxWMS boundingBox;
+	
 public:
 	std::string getId();
 
 	Tile* gettile(int x, int y, std::string tmId);
-	Image* getbbox(BoundingBox<double> bbox, int width, int height, const char *dst_crs = 0);
+	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
 
 	std::string              getAbstract()   const { return abstract;}
 	std::string              getAuthority()  const { return authority;}
@@ -36,11 +54,12 @@ public:
 	std::vector<std::string> getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
-
+        LatLonBoundingBoxWMS     getLatLonBoundingBox() const { return latLonBoundingBox; }
+	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
 	std::vector<std::string> getMimeFormats();
 
-	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling)
-	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling)
+	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, LatLonBoundingBoxWMS latLonBoundingBox, BoundingBoxWMS boundingBox)
+	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), latLonBoundingBox(latLonBoundingBox), boundingBox(boundingBox)
 	{
 	}
 

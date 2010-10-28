@@ -7,6 +7,7 @@
 #include "TileMatrix.h"
 #include "Data.h"
 #include "FileDataSource.h"
+#include "CRS.h"
 
 /**
  */
@@ -55,7 +56,7 @@ public:
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);
 
-	Image* getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs);
+	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs);
 	/**
 	 * Renvoie la tuile x, y numéroté depuis l'origine.
 	 * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)

@@ -44,7 +44,7 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
 
 
-	// traitement de la partie service
+	// Traitement de la partie service
 	//----------------------------------
 	TiXmlElement * serviceEl = new TiXmlElement( "Service" );
 	serviceEl->LinkEndChild(buildTextNode("Name",servicesConf.getName()));
@@ -125,10 +125,13 @@ void Rok4Server::buildWMSCapabilities(){
 	for (;it!=itend;++it){
 		TiXmlElement * layerEl = new TiXmlElement( "Layer" );
 		Layer* layer = it->second;
+		// Name
 		layerEl->LinkEndChild(buildTextNode("Name", layer->getId()));
+		// Title
 		layerEl->LinkEndChild(buildTextNode("Title", layer->getTitle()));
+		// Abstract
 		layerEl->LinkEndChild(buildTextNode("Abstract", layer->getAbstract()));
-		//KeywordList
+		// KeywordList
 		if (layer->getKeyWords().size() != 0){
 			TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
 			for (unsigned int i=0; i < layer->getKeyWords().size(); i++){
@@ -136,10 +139,25 @@ void Rok4Server::buildWMSCapabilities(){
 			}
 			layerEl->LinkEndChild(kwlEl);
 		}
-		//CRS
+		// CRS
 		for (unsigned int i=0; i < layer->getWMSCRSList().size(); i++){
 			layerEl->LinkEndChild(buildTextNode("CRS", layer->getWMSCRSList()[i]));
 		}
+		// LatBoundingBox
+                TiXmlElement * llbbEl = new TiXmlElement( "LatLonBoundingBox");
+                llbbEl->SetAttribute("minx",layer->getLatLonBoundingBox().minx);
+                llbbEl->SetAttribute("miny",layer->getLatLonBoundingBox().miny);
+                llbbEl->SetAttribute("maxx",layer->getLatLonBoundingBox().maxx);
+                llbbEl->SetAttribute("maxy",layer->getLatLonBoundingBox().maxy);
+                layerEl->LinkEndChild(llbbEl);
+		// BoundingBox
+		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+		bbEl->SetAttribute("SRS",layer->getBoundingBox().srs);
+		bbEl->SetAttribute("minx",layer->getBoundingBox().minx);
+		bbEl->SetAttribute("miny",layer->getBoundingBox().miny);
+		bbEl->SetAttribute("maxx",layer->getBoundingBox().maxx);
+		bbEl->SetAttribute("maxy",layer->getBoundingBox().maxy);
+		layerEl->LinkEndChild(bbEl);
 
 		/* TODO:
 		 *
@@ -179,9 +197,9 @@ void Rok4Server::buildWMSCapabilities(){
 
 /*	debug: affichage des fragments.
     for (int i=0; i<wmsCapaFrag.size();i++){
-		std::cout << "(" << wmsCapaFrag[i] << ")" << std::endl;
-	}
-*/
+		LOGGER_DEBUG( "(" << wmsCapaFrag[i] << ")" );
+	}*/
+
 
 }
 
@@ -317,8 +335,7 @@ void Rok4Server::buildWMTSCapabilities(){
 		TiXmlElement * tmsEl=new TiXmlElement("TileMatrixSet");
 		TileMatrixSet* tms = itTms->second;
 		tmsEl->LinkEndChild(buildTextNode("ows:Identifier",tms->getId()));
-		// FIXME: le format du CRS est à revoir!
-		tmsEl->LinkEndChild(buildTextNode("ows:SupportedCRS",tms->getCrs()));
+		tmsEl->LinkEndChild(buildTextNode("ows:SupportedCRS",tms->getCrs().getRequestCode()));
 		std::map<std::string, TileMatrix> tmList = tms->getTmList();
 
 		// TileMatrix

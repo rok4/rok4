@@ -15,7 +15,6 @@ std::string genStatusHeader(int statusCode) {
 	std::stringstream out;
 	out << statusCode;
 	std::string statusHeader= "Status: "+out.str()+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
-	//LOGGER_DEBUG("statusHeader:["+statusHeader+"] - size:"<<statusHeader.size());
 	return statusHeader ;
 }
 

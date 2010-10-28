@@ -68,7 +68,6 @@ public:
 			jpeg_start_compress(&cinfo, true);
 			status = 0;
 		}
-
 		while(cinfo.next_scanline < cinfo.image_height && cinfo.dest->free_in_buffer >= 1024) {
 			image->getline(linebuffer, cinfo.next_scanline);
 			if(jpeg_write_scanlines(&cinfo, &linebuffer, 1) < 1) break;

@@ -97,7 +97,6 @@ TiffEncoderStream::~TiffEncoderStream() {
 
 TiffEncoderSource::TiffEncoderSource(Tile* tile) : tile(tile)
 {
-LOGGER_DEBUG("TIFFENCODERSOURCE");
         size_t header_size=128;
 	// On est cense avoir de la donnee source
         const uint8_t* raw_data=tile->getDataSource()->get_data(size);

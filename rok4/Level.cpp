@@ -64,19 +64,19 @@ int Level::getTileCoding() {
 /*
  * A REFAIRE
  */
-Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, const char* dst_crs) {
+Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs) {
 
 	Grid* grid = new Grid(width, height, bbox);
 	grid->bbox.print();
 
-	grid->reproject(dst_crs, "IGNF:LAMB93"); // FIXME : prendre en compte le SRS du cache (pas forcément LAMB93)
+	grid->reproject(dst_crs.getProj4Code(), src_crs.getProj4Code());
 
 	grid->bbox.print();
 	BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - 50),
 			floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50),
 			ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + 50),
 			ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50));
-	// TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpollation
+	// TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpolation
 
 	bbox_int.print();
 	Image* image = getwindow(bbox_int);
@@ -211,7 +211,7 @@ Tile* Level::gettile(int x, int y)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	LOGGER_DEBUG(getfilepath(x, y));
+	//LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
