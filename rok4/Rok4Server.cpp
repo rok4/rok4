@@ -165,7 +165,7 @@ DataStream* Rok4Server::getMap(Request* request)
 			break;
 	// FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
 	if (k==L->getWMSCRSList().size()){
-		LOGGER_ERROR("Le CRS "<<crs<<" ne figure pas dans la liste des CRS du layer "<<layer);
+		LOGGER_ERROR("Le CRS "<<crs<<" ne figure pas dans la liste des CRS du layer "<<layer<< " (equivalent PROJ1:"<<dst_crs.getProj4Code()<<")");
                 return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+crs+" inconnu pour le layer "+layer+".","wms"));
 	}
 

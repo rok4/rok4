@@ -15,10 +15,18 @@ std::string toUpperCase(std::string str){
         return uc_str;
 }
 bool isCrsProj4Compatible(std::string crs){
-        projPJ pj=pj_init_plus(("+init=" + crs +" +wktext" ).c_str());
-        if (pj) return true;
-	else return false;
+        projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
+        int *err = pj_get_errno_ref();
+                char *msg = pj_strerrno(*err);
+
+        LOGGER_DEBUG(crs<< " "<<msg);
+        if (pj) {LOGGER_DEBUG("true");return true;}
+        else{
+        LOGGER_DEBUG("false");
+return false;
+        }
 }
+
 
 /*
 * Contructeur
@@ -31,8 +39,8 @@ CRS::CRS(std::string crs_code){
 		proj4Code=requestCode;
 	else if (isCrsProj4Compatible(toLowerCase(requestCode)))
 		proj4Code=toLowerCase(requestCode);
-	else if (isCrsProj4Compatible(toLowerCase(requestCode)))
-                proj4Code=toLowerCase(requestCode);
+	else if (isCrsProj4Compatible(toUpperCase(requestCode)))
+                proj4Code=toUpperCase(requestCode);
 	// TODO : rajouter des tests en dur (ou charges depuis la conf), correspondance EPSG <-> IGNF
 	// Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
 	else
