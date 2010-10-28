@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# LD_LIBRARY_PATH pour librairies proj4
-# export LD_LIBRARY_PATH=/usr/local/lib
 
 # building and testing
 cd rok4
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
-make very-clean test
+#make very-clean test
+make very-clean
+make Rok4Server
 if [ $? -ne 0 ] ; then
   exit 1
 fi
@@ -48,7 +48,7 @@ cp -r ../rok4/tests/html/* $ROK4BASE/tests
 # copie page de test
 
 echo "demarrage serveur apache..."
-sudo /etc/init.d/apache2 start
+sudo  export PROJ_LIB=$ROK4BASE/config/proj/ && /etc/init.d/apache2 start
 echo "on laisse le temps de demarrer... c'est long, mais compare aux test unitaires, c'est rien..."
 sleep 20
 if [ ! -f /var/run/apache2.pid ] ; then
