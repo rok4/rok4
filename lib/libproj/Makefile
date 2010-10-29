@@ -6,7 +6,6 @@ clean :
 
 configure :
 	cd proj-4.7.0; if [ ! -e Makefile ]; then CFLAGS="-O3"; ./configure --enable-shared=no --prefix=`pwd`/../../../target; fi
-	export PROJ_LIB=../share/proj/
 test:
 
 

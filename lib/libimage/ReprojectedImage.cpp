@@ -78,13 +78,12 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
     LOGGER_DEBUG("ratio_x =" << ratio_x << " ratio_y= " << ratio_y << " Kx = " << Kx << " Ky = " << Ky);
     
 
-    // TODO : ne pas charger toute l'image source au démarage.
+    // TODO : ne pas charger toute l'image source au démarrage.
     for(int y = 0; y < image->height; y++) image->getline(src_line_buffer[y], y);
   }
 
 
   float* ReprojectedImage::compute_dst_line(int line) {
-
     if(line/4 == dst_line_index) return dst_line_buffer[line%4];
     dst_line_index = line/4;
 
@@ -118,7 +117,7 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
       int dx3 = ((int)(X[3][x]) + xmin[Ix[3]])*channels;
 
       for(int j = 0; j < Ky; j++) {
-        multiplex_unaligned(TMP1,
+multiplex_unaligned(TMP1,
                   src_line_buffer[y0 + j] + dx0,
                   src_line_buffer[y1 + j] + dx1,
                   src_line_buffer[y2 + j] + dx2,
@@ -134,19 +133,17 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
     return dst_line_buffer[line%4]; 
   }
 
+int ReprojectedImage::getline(float* buffer, int line) {    
+	const float* dst_line = compute_dst_line(line);
+	convert(buffer, dst_line, width*channels);
+	return width*channels;
+}
 
-
-  int ReprojectedImage::getline(float* buffer, int line) {    
-    const float* dst_line = compute_dst_line(line);
-    convert(buffer, dst_line, width*channels);
-    return width*channels;
-  }
-
-  int ReprojectedImage::getline(uint8_t* buffer, int line) {
-    const float* dst_line = compute_dst_line(line);
-    convert(buffer, dst_line, width*channels);
-    return width*channels;
-  }
+int ReprojectedImage::getline(uint8_t* buffer, int line) {
+	const float* dst_line = compute_dst_line(line);
+	convert(buffer, dst_line, width*channels);
+	return width*channels;
+}
 
 
   ReprojectedImage::~ReprojectedImage() {

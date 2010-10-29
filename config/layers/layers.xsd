@@ -18,6 +18,29 @@
 			<!-- identifiants des styles applicables au layer. (non utilisé au 07/2010)
 			     FIXME: une liste est a prévoir -->
 			<xs:element name="style" type="xs:string"/>
+			<!-- BoundingBox WMS -->
+                        <xs:element name="latLonBoundingBox">
+                                <xs:complexType>
+                                <xs:sequence>
+                                        <xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+                                        <xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+                                        <xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+                                        <xs:element name="maxy" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+                                </xs:sequence>
+                                </xs:complexType>
+                        </xs:element>
+			<!-- BoundingBox WMS -->
+			<xs:element name="boundingBox">
+				<xs:complexType>
+				<xs:sequence>
+					<xs:element name="SRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+					<xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+					<xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+					<xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+					<xs:element name="maxy" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
+				</xs:sequence>
+				</xs:complexType>
+			</xs:element>
 			<!-- Les résolutions min et max acceptables pour les requêtes WMS -->
 			<xs:element name="minRes" type="xs:double"/>
 			<xs:element name="maxRes" type="xs:double"/>

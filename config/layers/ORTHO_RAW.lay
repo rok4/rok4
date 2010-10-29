@@ -1,6 +1,6 @@
 <layer>
 	<title>Ortho IGN en TIFF non compressé</title>
-	<abstract>Permiere version du cache Ortho</abstract>
+	<abstract>Premiere version du cache Ortho</abstract>
 	<keywordList>
 		<keyword>Orthophoto</keyword>
 		<keyword>pva</keyword>
@@ -8,9 +8,12 @@
 	<style>normal</style>
 	<minRes>0.5</minRes>
 	<maxRes>512</maxRes>
+	<latLonBoundingBox minx="0" miny="40" maxx="10" maxy="50"/>
 	<WMSCRSList>
+		<WMSCRS>IGNF:LAMB93</WMSCRS>
 		<WMSCRS>epsg:2154</WMSCRS>
 	</WMSCRSList>
+	<boundingBox SRS="EPSG:2973" minx="800000" miny="6200000" maxx="1100000" maxy="6700000"/>
 	<opaque>true</opaque>
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>

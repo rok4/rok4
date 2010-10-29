@@ -8,7 +8,7 @@ class Grid {
   private:
 
 
-  // Pas d'interpollation : seules coordonnées des pixels dont les coordonnées image (en pixel) 
+  // Pas d'interpolation : seules coordonnées des pixels dont les coordonnées image (en pixel) 
   // sont des multiples de step seront effectivement reporjetés. Les autres seront interpollés.
   static const int step = 16;
 
@@ -24,7 +24,7 @@ class Grid {
   // Nombre de points reprojetés en Y. nby = 2 + (height-1)/step
   int nby;
 
-  // Grille d'interpollation des pixels
+  // Grille d'interpolation des pixels
   // Le centre du pixel cible (i*step, j*step) correspond au pixel source (gridX[i + nbx*j], gridY[i + nbx*j])
   // Chaque tableau contient nbx*nby éléments
   double *gridX, *gridY;
@@ -49,7 +49,7 @@ class Grid {
    * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
    * ou proj est une projection de from_srs vers to_srs
    */
-  void reproject(std::string from_srs, std::string to_srs);
+   bool reproject(std::string from_srs, std::string to_srs);
 
   /**
    * Effectue une transformation affine sur tous les éléments de la grille

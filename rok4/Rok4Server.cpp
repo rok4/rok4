@@ -6,14 +6,12 @@
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
-
 #include <sstream>
 #include <vector>
 #include <map>
 #include "Message.h"
-
 #include <fstream>
-#include <signal.h>
+//#include <signal.h>
 #include <cstring>
 #include "Logger.h"
 #include "Pyramid.h"
@@ -22,8 +20,8 @@
 #include "ConfLoader.h"
 #include "ServiceException.h"
 #include "CRS.h"
-
 #include "fcgiapp.h"
+#include <proj_api.h>
 
 
 /**
@@ -266,6 +264,12 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}
 }
 
+char PROJ_LIB[1024] = "../config/proj/";
+const char *pj_finder(const char *name) {
+  strcpy(PROJ_LIB + 15, name);
+  return PROJ_LIB;
+}
+
 int main(int argc, char** argv) {
 	/* the following loop is for fcgi debugging purpose */
 	int stopSleep = 0;
@@ -276,6 +280,10 @@ int main(int argc, char** argv) {
 	/* Chargement de la conf technique du serveur */
 	Logger::configure("/var/tmp/rok4cxx.log");
 	LOGGER_INFO( "Lancement du serveur ROK4");
+
+	// Initialisation de l'accès au paramétrage de la libproj
+	/// Cela evite d'utiliser la variable d'environnement PROJ_LIB
+	pj_set_finder( pj_finder );
 
 	//chargement de la conf technique
 	int nbThread;

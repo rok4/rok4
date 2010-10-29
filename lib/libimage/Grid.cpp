@@ -8,10 +8,6 @@
 
 static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 
-
-char PROJ_LIB[1024] = "../config/proj/";
-
-
 Grid::Grid(int width, int height, BoundingBox<double> bbox) : width(width), height(height), bbox(bbox) 
 {
   nbx = 2 + (width-1)/step;
@@ -46,49 +42,44 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
   update_bbox();
 }
 
-
-#include <cstring>
-const char *pj_finder(const char *name) {
-  strcpy(PROJ_LIB + 15, name);
-  return PROJ_LIB;
-}
-
 /**
- * Effecture une reprojection sur les coordonnées de la grille
+ * Effectue une reprojection sur les coordonnées de la grille
  * 
  * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
  * ou proj est une projection de from_srs vers to_srs
  */
-void Grid::reproject(std::string from_srs, std::string to_srs) {
+bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
-  pthread_mutex_lock (& mutex_proj);
-  pj_set_finder( pj_finder );
+	LOGGER_DEBUG(from_srs<<" -> " <<to_srs);
 
+  	pthread_mutex_lock (& mutex_proj);
 
-  projPJ pj_src, pj_dst;  
-  if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
-    int *err = pj_get_errno_ref();
-    char *msg = pj_strerrno(*err);     
-    LOGGER_DEBUG("erreur d initialisation " << from_srs << " " << msg);
-    pthread_mutex_unlock (& mutex_proj);
-    return;
-  }
-  if(!(pj_dst = pj_init_plus(  ("+init=" + to_srs +" +wktext" ).c_str()))) {
-    int *err = pj_get_errno_ref();
-    char *msg = pj_strerrno(*err);     
-    LOGGER_DEBUG("erreur d initialisation " << to_srs << " " << msg);
-    pthread_mutex_unlock (& mutex_proj);
-    return;
-  }
+  	projPJ pj_src, pj_dst;  
+  	if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
+    		int *err = pj_get_errno_ref();
+    		char *msg = pj_strerrno(*err);     
+    		LOGGER_DEBUG("erreur d initialisation " << from_srs << " " << msg);
+    		pthread_mutex_unlock (& mutex_proj);
+    		return false;
+  	}
+  	if(!(pj_dst = pj_init_plus(  ("+init=" + to_srs +" +wktext" ).c_str()))) {
+    		int *err = pj_get_errno_ref();
+    		char *msg = pj_strerrno(*err);     
+    		LOGGER_DEBUG("erreur d initialisation " << to_srs << " " << msg);
+    		pthread_mutex_unlock (& mutex_proj);
+    		return false;
+	}
 
-  if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
-    gridX[i] *= DEG_TO_RAD;
-    gridY[i] *= DEG_TO_RAD;
-  }
+	if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
+    		gridX[i] *= DEG_TO_RAD;
+    		gridY[i] *= DEG_TO_RAD;
+	}
 
-  pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
-  pthread_mutex_unlock (& mutex_proj);
-  update_bbox();
+	pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+	pthread_mutex_unlock (& mutex_proj);
+	update_bbox();
+
+	return true;
 }
 
 
