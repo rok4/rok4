@@ -56,7 +56,6 @@ TileMatrixSet Pyramid::getTms(){
 
 
 Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs) {
-	
 	// On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
 	double resolution_x, resolution_y;
 	if(getTms().getCrs()==dst_crs){

@@ -11,7 +11,6 @@
 #include <map>
 #include "Message.h"
 #include <fstream>
-//#include <signal.h>
 #include <cstring>
 #include "Logger.h"
 #include "Pyramid.h"
@@ -139,6 +138,7 @@ DataStream* Rok4Server::getMap(Request* request)
 
 	// Récupération des paramètres
 	DataStream* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
+
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
@@ -163,7 +163,7 @@ DataStream* Rok4Server::getMap(Request* request)
 			break;
 	// FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
 	if (k==L->getWMSCRSList().size()){
-		LOGGER_ERROR("Le CRS "<<crs<<" ne figure pas dans la liste des CRS du layer "<<layer<< " (equivalent PROJ1:"<<dst_crs.getProj4Code()<<")");
+		LOGGER_ERROR("Le CRS "<<crs<<" ne figure pas dans la liste des CRS du layer "<<layer<< " (equivalent PROJ4:"<<dst_crs.getProj4Code()<<")");
                 return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+crs+" inconnu pour le layer "+layer+".","wms"));
 	}
 
@@ -264,7 +264,7 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}
 }
 
-char PROJ_LIB[1024] = "../config/proj/";
+char PROJ_LIB[1024] = PROJ_LIB_PATH;
 const char *pj_finder(const char *name) {
   strcpy(PROJ_LIB + 15, name);
   return PROJ_LIB;

@@ -64,7 +64,7 @@ int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Reques
 			return -1;
 		}
 		wr += w;
-	}LOGGER_DEBUG("3");	
+	}
 	return 0;
 }
 

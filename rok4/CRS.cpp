@@ -17,14 +17,10 @@ std::string toUpperCase(std::string str){
 bool isCrsProj4Compatible(std::string crs){
         projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
         int *err = pj_get_errno_ref();
-                char *msg = pj_strerrno(*err);
+        char *msg = pj_strerrno(*err);
 
-        LOGGER_DEBUG(crs<< " "<<msg);
-        if (pj) {LOGGER_DEBUG("true");return true;}
-        else{
-        LOGGER_DEBUG("false");
-return false;
-        }
+        if (pj) return true;
+        else return false;
 }
 
 
@@ -45,9 +41,12 @@ CRS::CRS(std::string crs_code){
 	// Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
 	else
 		proj4Code=NO_PROJ4_CODE;
+	
 
 
-LOGGER_DEBUG(requestCode);
+	LOGGER_DEBUG(requestCode);
+	LOGGER_DEBUG(toLowerCase(requestCode));
+
 
 }
 

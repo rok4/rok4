@@ -65,7 +65,6 @@ int Level::getTileCoding() {
  * A REFAIRE
  */
 Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs) {
-
 	Grid* grid = new Grid(width, height, bbox);
 	grid->bbox.print();
 
@@ -80,7 +79,7 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_c
 
 	bbox_int.print();
 	Image* image = getwindow(bbox_int);
-	image->setbbox( BoundingBox<double>(tm.getX0() + tm.getRes() * bbox_int.xmin,tm.getX0() + tm.getRes() * bbox_int.xmax,tm.getY0() - tm.getRes() * bbox_int.ymax,tm.getY0() - tm.getRes() * bbox_int.ymin));
+	image->setbbox( BoundingBox<double>(tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin));
 	LOGGER_DEBUG("Reprojection");
 	return new ReprojectedImage(image, bbox, grid);
 }

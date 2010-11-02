@@ -32,5 +32,13 @@
 #define DEFAULT_RESAMPLING "moyenne"  //FIXME: c'est une valeur bidon en attedant d'avoir de vrai algo d'interpolation
 #define DEFAULT_CHANNELS   3
 
+// Configuration de l'acces au parametrage de PROJ4
+#define PROJ_LIB_PATH      "../config/proj/";
+/*char PROJ_LIB[1024] = PROJ_LIB_PATH;
+const char *pj_finder(const char *name) {
+  strcpy(PROJ_LIB + 15, name);
+  return PROJ_LIB;
+}
+*/
 
 #endif
