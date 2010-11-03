@@ -492,8 +492,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	
 	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
 		std::string crs(pElem->GetText());
-		// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-		
+		// TODO : On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+		LOGGER_DEBUG("Ajout du crs "<<crs);
 		WMSCRSList.push_back(crs);
 	}
 	if (WMSCRSList.size()==0){
