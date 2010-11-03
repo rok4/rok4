@@ -42,6 +42,13 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
   update_bbox();
 }
 
+#include <cstring>
+char PROJ_LIB2[1024] = "../config/proj";
+const char *pj_finder2(const char *name) {
+  strcpy(PROJ_LIB2 + 15, name);
+  return PROJ_LIB2;
+}
+
 /**
  * Effectue une reprojection sur les coordonnées de la grille
  * 
@@ -49,10 +56,11 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
  * ou proj est une projection de from_srs vers to_srs
  */
 bool Grid::reproject(std::string from_srs, std::string to_srs) {
-
 	LOGGER_DEBUG(from_srs<<" -> " <<to_srs);
 
   	pthread_mutex_lock (& mutex_proj);
+
+	pj_set_finder( pj_finder2 );
 
   	projPJ pj_src, pj_dst;  
   	if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
@@ -76,6 +84,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 	}
 
 	pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+
 	pthread_mutex_unlock (& mutex_proj);
 	update_bbox();
 

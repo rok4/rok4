@@ -8,7 +8,12 @@
 	<style>normal</style>
 	<minRes>0.5</minRes>
 	<maxRes>512</maxRes>
-	<latLonBoundingBox minx="0" miny="40" maxx="10" maxy="50"/>
+	<EX_GeographicBoundingBox>
+  		<westBoundLongitude>0</westBoundLongitude>
+  		<eastBoundLongitude>10</eastBoundLongitude>
+  		<southBoundLatitude>40</southBoundLatitude>
+  		<northBoundLatitude>50</northBoundLatitude>
+	</EX_GeographicBoundingBox>
 	<WMSCRSList>
 		<WMSCRS>IGNF:LAMB93</WMSCRS>
 		<WMSCRS>epsg:2154</WMSCRS>

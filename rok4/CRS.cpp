@@ -23,35 +23,39 @@ bool isCrsProj4Compatible(std::string crs){
         else return false;
 }
 
-
 /*
 * Contructeur
-* @brief Determine a partir du code du CRS passe dans la requete le code Porj4 correspondant
 */
 
 CRS::CRS(std::string crs_code){
 	requestCode=crs_code;
-	if (isCrsProj4Compatible(requestCode))
-		proj4Code=requestCode;
-	else if (isCrsProj4Compatible(toLowerCase(requestCode)))
-		proj4Code=toLowerCase(requestCode);
-	else if (isCrsProj4Compatible(toUpperCase(requestCode)))
+	buildProj4Code();
+}
+
+/*
+* Determine a partir du code du CRS passe dans la requete le code Proj4 correspondant
+*/
+
+void CRS::buildProj4Code(){
+        if (isCrsProj4Compatible(requestCode))
+                proj4Code=requestCode;
+        else if (isCrsProj4Compatible(toLowerCase(requestCode)))
+                proj4Code=toLowerCase(requestCode);
+        else if (isCrsProj4Compatible(toUpperCase(requestCode)))
                 proj4Code=toUpperCase(requestCode);
-	// TODO : rajouter des tests en dur (ou charges depuis la conf), correspondance EPSG <-> IGNF
-	// Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
-	else
-		proj4Code=NO_PROJ4_CODE;
-	
-
-
-	LOGGER_DEBUG(requestCode);
-	LOGGER_DEBUG(toLowerCase(requestCode));
-
-
+        // TODO : rajouter des tests en dur (ou charges depuis la conf), correspondance EPSG <-> IGNF
+        // Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
+        else
+                proj4Code=NO_PROJ4_CODE;
 }
 
 bool CRS::isProj4Compatible(){
 	return proj4Code!=NO_PROJ4_CODE;
+}
+
+void CRS::setRequestCode(std::string crs){
+	requestCode=crs;
+	buildProj4Code();
 }
 
 std::string CRS::getAuthority(){
@@ -73,12 +77,10 @@ std::string CRS::getIdentifier(){
 }
 
 /*
-* Test d'egelite de 2 CRS
+* Test d'egalite de 2 CRS
 * @return true s'ils ont le meme code Proj4, false sinon
 */
 
 bool CRS::operator==(const CRS crs) const {
 	return (proj4Code==crs.proj4Code);
 }
-
-

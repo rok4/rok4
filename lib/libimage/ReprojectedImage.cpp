@@ -16,6 +16,7 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
     
     double res_x = image->getresx();
     double res_y = image->getresy();
+
     grid->bbox.print();
     grid->affine_transform(1./res_x, -image->getbbox().xmin/res_x - 0.5, -1./res_y, image->getbbox().ymax/res_y - 0.5);
     grid->bbox.print();
@@ -133,18 +134,17 @@ multiplex_unaligned(TMP1,
     return dst_line_buffer[line%4]; 
   }
 
-int ReprojectedImage::getline(float* buffer, int line) {    
-	const float* dst_line = compute_dst_line(line);
-	convert(buffer, dst_line, width*channels);
-	return width*channels;
-}
-
 int ReprojectedImage::getline(uint8_t* buffer, int line) {
+        const float* dst_line = compute_dst_line(line);
+        convert(buffer, dst_line, width*channels);
+        return width*channels;
+}
+
+int ReprojectedImage::getline(float* buffer, int line) {
 	const float* dst_line = compute_dst_line(line);
 	convert(buffer, dst_line, width*channels);
 	return width*channels;
 }
-
 
   ReprojectedImage::~ReprojectedImage() {
     delete image;

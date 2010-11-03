@@ -20,7 +20,7 @@ std::string ServiceException::getCodeAsString(ExceptionCode code) {
 		case WMS_CURRENT_UPDATESEQUENCE: return "CurrentUpdateSequence" ;
 		case WMS_MISSING_DIMENSION_VALUE: return "MissingDimensionValue" ;
 		case WMS_INVALID_DIMENSION_VALUE: return "InvalidDimensionValue" ;
-		case OWS_OPERATION_NOT_SUPORTED: return "OperationNotSuported" ;
+		case OWS_OPERATION_NOT_SUPORTED: return "OperationNotSupported" ;
 		case WMTS_TILE_OUT_OF_RANGE: return "TileOutOfRange" ;
 		default: return "" ;
 	}

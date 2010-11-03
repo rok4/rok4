@@ -82,7 +82,7 @@ void Rok4Server::buildWMSCapabilities(){
 
 	getCapabilitiestEl->LinkEndChild(buildTextNode("Format","text/xml"));
 	//DCPType
-	TiXmlElement * DCPTypeEl = new TiXmlElement( "DCFPType" );
+	TiXmlElement * DCPTypeEl = new TiXmlElement( "DCPType" );
 	TiXmlElement * HTTPEl = new TiXmlElement( "HTTP" );
 	TiXmlElement * GetEl = new TiXmlElement( "Get" );
 	//OnlineResource
@@ -100,7 +100,7 @@ void Rok4Server::buildWMSCapabilities(){
 	for (unsigned int i=0; i<servicesConf.getFormatList().size(); i++){
 		getMapEl->LinkEndChild(buildTextNode("Format",servicesConf.getFormatList()[i]));
 	}
-	DCPTypeEl = new TiXmlElement( "DCFPType" );
+	DCPTypeEl = new TiXmlElement( "DCPType" );
 	HTTPEl = new TiXmlElement( "HTTP" );
 	GetEl = new TiXmlElement( "Get" );
 	onlineResourceEl = new TiXmlElement( "OnlineResource" );
@@ -116,9 +116,10 @@ void Rok4Server::buildWMSCapabilities(){
 
 	capabilityEl->LinkEndChild(requestEl);
 
-	//exception
+	//Exception
 	TiXmlElement * exceptionEl = new TiXmlElement( "Exception" );
-	capabilityEl->LinkEndChild(buildTextNode("Format","XML"));
+	exceptionEl->LinkEndChild(buildTextNode("Format","XML"));
+	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Layer
 	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
@@ -143,13 +144,21 @@ void Rok4Server::buildWMSCapabilities(){
 		for (unsigned int i=0; i < layer->getWMSCRSList().size(); i++){
 			layerEl->LinkEndChild(buildTextNode("CRS", layer->getWMSCRSList()[i]));
 		}
-		// LatBoundingBox
-                TiXmlElement * llbbEl = new TiXmlElement( "LatLonBoundingBox");
-                llbbEl->SetAttribute("minx",layer->getLatLonBoundingBox().minx);
-                llbbEl->SetAttribute("miny",layer->getLatLonBoundingBox().miny);
-                llbbEl->SetAttribute("maxx",layer->getLatLonBoundingBox().maxx);
-                llbbEl->SetAttribute("maxy",layer->getLatLonBoundingBox().maxy);
-                layerEl->LinkEndChild(llbbEl);
+		// GeographicBoundingBox
+                TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
+		std::ostringstream os;
+		os<<layer->getGeographicBoundingBox().minx;
+		gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
+		os.str("");
+		os<<layer->getGeographicBoundingBox().maxx;
+		gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+                os.str("");
+		os<<layer->getGeographicBoundingBox().miny;
+                gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
+                os.str("");
+		os<<layer->getGeographicBoundingBox().maxy;
+                gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+                layerEl->LinkEndChild(gbbEl);
 		// BoundingBox
 		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
 		bbEl->SetAttribute("SRS",layer->getBoundingBox().srs);

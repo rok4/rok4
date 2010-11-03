@@ -12,6 +12,7 @@ Image* Layer::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_c
 	//TODO: Ici il faudrait choisir la pyramide à utiliser en fonction
 	//      du CRS de la requete ou du format d'image demandé.
 	//      Mais là on prend juste la première du layer.
+LOGGER_DEBUG("BBB");
 	return pyramids[0]->getbbox(bbox, width, height, dst_crs);
 }
 

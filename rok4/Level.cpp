@@ -65,6 +65,7 @@ int Level::getTileCoding() {
  * A REFAIRE
  */
 Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs) {
+LOGGER_DEBUG("CCC");
 	Grid* grid = new Grid(width, height, bbox);
 	grid->bbox.print();
 

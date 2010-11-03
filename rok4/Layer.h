@@ -6,10 +6,10 @@
 #include "Pyramid.h"
 #include "CRS.h"
 
-struct LatLonBoundingBoxWMS{
+struct GeographicBoundingBoxWMS{
 public:
         double minx, miny, maxx, maxy;
-        LatLonBoundingBoxWMS() {}
+        GeographicBoundingBoxWMS() {}
 };
 
 struct BoundingBoxWMS{
@@ -34,7 +34,7 @@ private:
 	bool opaque;
 	std::string authority;
 	std::string resampling; //FIXME: revoir le type de resampling (plutot un enum).
-	LatLonBoundingBoxWMS latLonBoundingBox;
+	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
 	
 public:
@@ -54,12 +54,12 @@ public:
 	std::vector<std::string> getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
-        LatLonBoundingBoxWMS     getLatLonBoundingBox() const { return latLonBoundingBox; }
+        GeographicBoundingBoxWMS     getGeographicBoundingBox() const { return geographicBoundingBox; }
 	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
 	std::vector<std::string> getMimeFormats();
 
-	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, LatLonBoundingBoxWMS latLonBoundingBox, BoundingBoxWMS boundingBox)
-	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), latLonBoundingBox(latLonBoundingBox), boundingBox(boundingBox)
+	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
+	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
 	{
 	}
 

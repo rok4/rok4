@@ -9,12 +9,14 @@ private:
 	std::string proj4Code;		// Code du CRS dans la base proj4
 public:
 	CRS() {};
-	CRS(std::string crs);
+	CRS(std::string crs_code);
         CRS(const CRS& crs){
 		requestCode=crs.requestCode;
 		proj4Code=crs.proj4Code;
         }
+	void buildProj4Code();
 	bool isProj4Compatible();
+	void setRequestCode(std::string crs);
 	std::string getAuthority();	// Renvoie l'autorite du code passe dans la requete WMS (Ex: EPSG,epsg,IGNF,etc.)
 	std::string getIdentifier();	// Renvoie l'identifiant du code passe dans la requete WMS (Ex: 4326,LAMB93,etc.)
 	bool operator==(const CRS crs) const;

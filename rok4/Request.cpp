@@ -1,5 +1,6 @@
 #include "Request.h"
 #include "Message.h"
+#include "CRS.h"
 #include <cstdlib>
 #include <climits>
 #include <vector>
@@ -144,32 +145,52 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 }
 
 /*
- * Récuperation des parametres d'une requete GetMap
+ * Récuperation et vérification des parametres d'une requete GetMap
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox, int &width, int &height, std::string &crs, std::string &format){
-	layers=getParam("layers");
-	if(layers == "")
+DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format){
+	// LAYER
+	std::string str_layer=getParam("layers");
+	if(str_layer == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre LAYERS absent.","wms"));
+        std::map<std::string, Layer*>::iterator it = layerList.find(str_layer);
+        if(it == layerList.end())
+                return new SERDataStream(new ServiceException("",WMS_LAYER_NOT_DEFINED,"Layer "+str_layer+" inconnu.","wms"));
+        layer = it->second;
+	// WIDTH
 	std::string strWidth=getParam("width");
 	if(strWidth == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre WIDTH absent.","wms"));
 	width=atoi(strWidth.c_str());
 	if (width == 0 || width == INT_MAX || width == INT_MIN)
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre WIDTH n'est pas une valeur entiere.","wms"));
+	// HEIGHT
 	std::string strHeight=getParam("height");
 	if(strHeight == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre HEIGHT absent.","wms"));
 	height=atoi(strHeight.c_str());
 	if (height == 0 || height == INT_MAX || height == INT_MIN)
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT n'est pas une valeur entiere.","wms")) ;
-	crs=getParam("crs");
-	if(crs == "")
+	// CRS
+	std::string str_crs=getParam("crs");
+	if(str_crs == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre CRS absent.","wms"));
+        // Existence du CRS dans la liste de CRS du layer
+        crs.setRequestCode(str_crs);
+        unsigned int k;
+        for (k=0;k<layer->getWMSCRSList().size();k++)
+                if (layer->getWMSCRSList().at(k)==crs.getProj4Code())
+                        break;
+        // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
+        if (k==layer->getWMSCRSList().size())
+                return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+str_crs+" inconnu pour le layer "+str_layer+".","wms"));
+	
+	// FORMAT
 	format=getParam("format");
 	if(format == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
+	// BBOX
 	std::string strBbox=getParam("bbox");
 	if(strBbox == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre BBOX absent.","wms"));
@@ -186,6 +207,10 @@ DataStream* Request::getMapParam(std::string &layers, BoundingBox<double> &bbox,
 	bbox.ymin=bb[1];
 	bbox.xmax=bb[2];
 	bbox.ymax=bb[3];
+	// EXCEPTION
+	std::string str_exception=getParam("exception");
+	if (str_exception!=""&&str_exception!="XML")
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Format d'exception "+str_exception+" non pris en charge","wms"));
 
 	return NULL;
 }

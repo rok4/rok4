@@ -339,7 +339,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	std::string authority="";
 	std::string resampling;
 	std::vector<Pyramid*> pyramids;
-	LatLonBoundingBoxWMS latLonBoundingBox;
+	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
 
 	TiXmlDocument doc(fileName.c_str());
@@ -412,25 +412,50 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		LOGGER_ERROR("La resolution max est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
 	}
-
-        pElem = hRoot.FirstChild("latLonBoundingBox").Element();
+	// EX_GeographicBoundingBox
+        pElem = hRoot.FirstChild("EX_GeographicBoundingBox").Element();
         if (!pElem){
-                LOGGER_ERROR("Pas de latLonBoundingBox = ");
+                LOGGER_ERROR("Pas de geographicBoundingBox = ");
+		return NULL;
         }else{
-                if (!sscanf(pElem->Attribute("minx"),"%lf",&latLonBoundingBox.minx)){
-                        LOGGER_ERROR("Le minx est inexploitable:[" << pElem->Attribute("minx") << "]");
+		// westBoundLongitude
+		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("westBoundLongitude").Element();
+		if (!pElem){
+			LOGGER_ERROR("Pas de westBoundLongitude");
+                        return NULL;
+		}
+		else if (!sscanf(pElem->GetText(),"%lf",&geographicBoundingBox.minx)){
+                        LOGGER_ERROR("Le westBoundLongitude est inexploitable:[" << pElem->GetText() << "]");
                         return NULL;
                 }
-                if (!sscanf(pElem->Attribute("miny"),"%lf",&latLonBoundingBox.miny)){
-                        LOGGER_ERROR("Le miny est inexploitable:[" << pElem->Attribute("miny") << "]");
+		// southBoundLatitude
+		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("southBoundLatitude").Element();
+                if (!pElem){
+                        LOGGER_ERROR("Pas de southBoundLatitude");
                         return NULL;
                 }
-                if (!sscanf(pElem->Attribute("maxx"),"%lf",&latLonBoundingBox.maxx)){
-                        LOGGER_ERROR("Le maxx est inexploitable:[" << pElem->Attribute("maxx") << "]");
+                if (!sscanf(pElem->GetText(),"%lf",&geographicBoundingBox.miny)){
+                        LOGGER_ERROR("Le southBoundLatitude est inexploitable:[" << pElem->GetText() << "]");
                         return NULL;
                 }
-                if (!sscanf(pElem->Attribute("maxy"),"%lf",&latLonBoundingBox.maxy)){
-                        LOGGER_ERROR("Le maxy est inexploitable:[" << pElem->Attribute("maxy") << "]");
+		// eastBoundLongitude
+		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("eastBoundLongitude").Element();
+                if (!pElem){
+                        LOGGER_ERROR("Pas de eastBoundLongitude");
+                        return NULL;
+                }
+                if (!sscanf(pElem->GetText(),"%lf",&geographicBoundingBox.maxx)){
+                        LOGGER_ERROR("Le eastBoundLongitude est inexploitable:[" << pElem->GetText() << "]");
+                        return NULL;
+                }
+		// northBoundLatitude
+		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("northBoundLatitude").Element();
+                if (!pElem){
+                        LOGGER_ERROR("Pas de northBoundLatitude");
+                        return NULL;
+                }
+                if (!sscanf(pElem->GetText(),"%lf",&geographicBoundingBox.maxy)){
+                        LOGGER_ERROR("Le northBoundLatitude est inexploitable:[" << pElem->GetText() << "]");
                         return NULL;
                 }
         }
@@ -521,7 +546,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	Layer *layer;
 
 	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
-			WMSCRSList, opaque, authority, resampling,latLonBoundingBox,boundingBox);
+			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox);
 
 	LOGGER_DEBUG("<= buildLayer");
 

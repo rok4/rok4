@@ -18,7 +18,6 @@
 #include "Layer.h"
 #include "ConfLoader.h"
 #include "ServiceException.h"
-#include "CRS.h"
 #include "fcgiapp.h"
 #include <proj_api.h>
 
@@ -129,45 +128,20 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 
 DataStream* Rok4Server::getMap(Request* request)
 {
-	std::string layer;
+	Layer* L;
 	BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
-	int width;
-	int height;
-	std::string crs;
+	int width, height;
+	CRS crs;
 	std::string format;
 
 	// Récupération des paramètres
-	DataStream* errorResp = request->getMapParam(layer, bbox, width, height, crs, format);
-
+	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format);
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
 	}
 
-	// Vérification des paramètres (TODO : a mettre dans une fonction de Request)
-
-	// Existence du layer
-	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
-	if(it == layerList.end()){
-		LOGGER_ERROR("Le layer "<<layer<<" est inconnu.");
-		return new SERDataStream(new ServiceException("",WMS_LAYER_NOT_DEFINED,"Layer "+layer+" inconnu.","wms"));
-	}
-	Layer* L = it->second;
-
-	// Existence du CRS dans la liste de CRS du layer
-	CRS dst_crs(crs);
-	LOGGER_DEBUG(dst_crs.getProj4Code());
-	unsigned int k;
-	for (k=0;k<L->getWMSCRSList().size();k++)
-		if (L->getWMSCRSList().at(k)==dst_crs.getProj4Code())
-			break;
-	// FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
-	if (k==L->getWMSCRSList().size()){
-		LOGGER_ERROR("Le CRS "<<crs<<" ne figure pas dans la liste des CRS du layer "<<layer<< " (equivalent PROJ4:"<<dst_crs.getProj4Code()<<")");
-                return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+crs+" inconnu pour le layer "+layer+".","wms"));
-	}
-
-	Image* image = L->getbbox(bbox, width, height, dst_crs);
+	Image* image = L->getbbox(bbox, width, height, crs);
 
 	if (image == 0)
 		return 0;
@@ -264,6 +238,7 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}
 }
 
+// TODO : A mettre ailleurs (duppliqué dans ReprojectedImage.cpp)
 char PROJ_LIB[1024] = PROJ_LIB_PATH;
 const char *pj_finder(const char *name) {
   strcpy(PROJ_LIB + 15, name);
