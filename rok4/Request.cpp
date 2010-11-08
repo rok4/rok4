@@ -184,7 +184,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
                         break;
         // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
         if (k==layer->getWMSCRSList().size())
-                return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+str_crs+" inconnu pour le layer "+str_layer+".","wms"));
+                return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+str_crs+" (equivalent PROJ4 "+crs.getProj4Code()+" ) inconnu pour le layer "+str_layer+".","wms"));
 	
 	// FORMAT
 	format=getParam("format");
@@ -203,10 +203,19 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 		if (sscanf(coords[i].c_str(),"%lf",&bb[i])!=1)
 				return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 	}
+	if (bb[0]>=bb[2] || bb[1]>=bb[3])
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Parametre BBOX incorrect.","wms"));
 	bbox.xmin=bb[0];
 	bbox.ymin=bb[1];
 	bbox.xmax=bb[2];
 	bbox.ymax=bb[3];
+	// TODO : a refaire
+	if (crs.getProj4Code()=="epsg:4326") {
+		bbox.xmin=bb[1];
+        	bbox.ymin=bb[0];
+        	bbox.xmax=bb[3];
+        	bbox.ymax=bb[2];
+	}
 	// EXCEPTION
 	std::string str_exception=getParam("exception");
 	if (str_exception!=""&&str_exception!="XML")

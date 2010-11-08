@@ -462,7 +462,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 
 	pElem = hRoot.FirstChild("boundingBox").Element();
 	if (!pElem){
-		LOGGER_ERROR("Pas de BoundingBox = ");
+		LOGGER_ERROR("Pas de BoundingBox");
 	}else{
 		std::string tmp;
 		tmp=pElem->Attribute("SRS");

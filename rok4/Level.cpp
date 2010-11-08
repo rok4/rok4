@@ -18,7 +18,14 @@
 Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
 tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
 {
-	noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,/*getType()*/"image/tif");
+	if (getType()=="image/jpeg")
+		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_jpeg.tif",2048,2052,"image/jpeg");
+	else if(getType()=="image/tiff")
+		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,/*getType()*/"image/tiff");
+	else if(getType()=="image/png")
+                noDataSource = new FileDataSource("../config/nodata/nodata_tiled_png.tif",2048,2052,/*getType()*/"image/png");
+	else
+		LOGGER_ERROR("Pas de nodatasource disponible");
 }
 
 TileMatrix const Level::getTm(){return tm;}
@@ -65,7 +72,6 @@ int Level::getTileCoding() {
  * A REFAIRE
  */
 Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs) {
-LOGGER_DEBUG("CCC");
 	Grid* grid = new Grid(width, height, bbox);
 	grid->bbox.print();
 
@@ -193,7 +199,7 @@ std::string Level::getfilepath(int tilex, int tiley)
 		y = y / 36;
 	} while(x || y);
 	path[pos] = '/';
-
+LOGGER_DEBUG(path<<" "<<y<<" "<<tiley<<" "<<tilesPerHeight);
 	return baseDir + (path + pos);
 }
 
@@ -211,7 +217,7 @@ Tile* Level::gettile(int x, int y)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	//LOGGER_DEBUG(getfilepath(x, y));
+	LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());

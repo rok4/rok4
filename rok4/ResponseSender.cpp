@@ -35,7 +35,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 }
 
 /**
- * Copie d'une source de onnées dans le flux de sortie de l'objet request de type FCGX_Request
+ * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
  * avec specification d'un code HTTP de retour
  * @return -1 en cas d'erreur
  * @return 0 sinon

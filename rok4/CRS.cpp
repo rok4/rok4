@@ -45,6 +45,9 @@ void CRS::buildProj4Code(){
                 proj4Code=toUpperCase(requestCode);
         // TODO : rajouter des tests en dur (ou charges depuis la conf), correspondance EPSG <-> IGNF
         // Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
+	// ISO 19128 6.7.3.2
+	else if (requestCode=="CRS:84")
+		proj4Code="epsg:4326";
         else
                 proj4Code=NO_PROJ4_CODE;
 }

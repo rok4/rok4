@@ -93,6 +93,7 @@ void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8
 	}
 	else
 		LOGGER_ERROR("Erreur de lecture en tete jpeg");
+
 	jpeg_finish_decompress(&cinfo);
 
 	// Destruction de cinfo
