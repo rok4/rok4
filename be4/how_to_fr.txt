@@ -1,7 +1,7 @@
 ETAPE 1 : PREPARATION DES FICHIERS NECESSAIRES A LA PYRAMIDE
 
 Lancer : 
-"prepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement]"
+"prepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
 
 produit :
         ortho
@@ -34,7 +34,7 @@ le parametre -n contient l'annee de production des donnees
 le parametre -d contient le nom du departement cocnerne (le cas echeant)
 
 Exemple : 
-"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -r /home/charlotte/rep_pyramide -c jpeg -s LAMB93 -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75"
+"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -r /home/charlotte/rep_pyramide -c jpeg -s LAMB93 -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75 -x 4096"
 
 
 
@@ -53,10 +53,10 @@ Exemple :
 
 
 
-ETAPE 3 : CREATION DU CACHE PROPREMENT DIT
+ETAPE 3 : CREATION DE SCRIPTS DE CALCUL DU CACHE PROPREMENT DIT
 
 Lancer :
-"cree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script"
+"calcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script -t taille_dalles_pixels"
 
 produit :
  		ortho
@@ -81,7 +81,7 @@ le parametre -d contient un nombre entre 0 et 100 correspondant au pourcentage d
 le parametre -n contient le chemin vers le script a creer (contenant les commandes pour creer le cache)
 
 Exemple :
-"cree_dallage_base.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide"
+"calcule_pyramide.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide -t 4096"
 
 
 
@@ -102,7 +102,7 @@ Exemple :
 
 
 
-ETAPE 5 : METTRE LAPYRAMIDE EN LECTURE SEULE
+ETAPE 5 : METTRE LA PYRAMIDE EN LECTURE SEULE
 
 Lancer :
 "pyramide_lecture_seule.pl -p path/fichier_pyramide.pyr"
