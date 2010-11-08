@@ -7,7 +7,7 @@ use Exporter;
 our @ISA=('Exporter');
 our @EXPORT=(
 # 	'%produit_format_param',
-	'$taille_dalle_pix_param',
+#	'$taille_dalle_pix_param',
 	'$type_mtd_pyr_param',
 	'$format_mtd_pyr_param',
 	'$profondeur_pyr_param',
@@ -50,7 +50,9 @@ our @EXPORT=(
  	"scan" => "TIFF_INT8",
  );
 
-our $taille_dalle_pix_param = 4096;
+# en parametre des scripts
+#our $taille_dalle_pix_param = 4096;
+
 our $type_mtd_pyr_param = "INT32_DB_LZW";
 our $format_mtd_pyr_param = "TIFF_LZW_INT8";
 our $profondeur_pyr_param = 2;
@@ -88,8 +90,7 @@ my @res_utiles_scandep;
 my @res_utiles_scanreg;
 my @res_utiles_scan1000;
 our %produit_res_utiles_param = (
-        "ortho_raw" => \@res_utiles_ortho,
-	"ortho_jpeg" => \@res_utiles_ortho,
+	"ortho" => \@res_utiles_ortho,
 	"parcellaire" => \@res_utiles_parcel,
 	"franceraster" => \@res_utiles_franceraster,
 	"scan25" => \@res_utiles_scan25,
@@ -113,8 +114,7 @@ our $min_tile_param = 1;
 our $max_tile_param = 1000000;
 
 our %produit_nb_canaux_param = (
-	"ortho_raw" => 3,
-        "ortho_jpeg" => 3,
+    "ortho" => 3,
 	"parcellaire" => 1,
 	"franceraster" => 3,
 	"scan" => 3,
@@ -127,8 +127,7 @@ my $tms_base = $path_tms_param."/FR_LAMB93_test.tms";
 
 
 our %produit_tms_param = (
-	"ortho_raw" => $tms_base,
-        "ortho_jpeg" => $tms_base,
+	"ortho" => $tms_base,
 	"parcellaire" => $tms_base,
 	"franceraster" => $tms_base,
 	"scan" => $tms_base,

@@ -2,13 +2,11 @@
 
 use strict;
 use Getopt::Std;
-use Term::ANSIColor;
 use Cwd 'abs_path';
 use File::Basename;
 use POSIX qw(ceil);
 use cache(
 # 	'%produit_format_param',
-	'$taille_dalle_pix_param',
 	'$type_mtd_pyr_param',
 	'$format_mtd_pyr_param',
 	'$profondeur_pyr_param',
@@ -27,14 +25,14 @@ use cache(
 );
 # CONSTANTES
 $| = 1;
-our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m);
+our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x);
 
 # my %produit_format = %produit_format_param;
 my $nom_fichier_dalle_source = $nom_fichier_dalle_source_param;
 my $nom_fichier_mtd_source = $nom_fichier_mtd_source_param;
 my $nom_rep_images = $nom_rep_images_param;
 my $nom_rep_mtd = $nom_rep_mtd_param;
-my $taille_dalle_pix = $taille_dalle_pix_param;
+
 my $type_mtd_pyr = $type_mtd_pyr_param;
 my $format_mtd_pyr = $format_mtd_pyr_param;
 my $profondeur_pyr = $profondeur_pyr_param;
@@ -49,8 +47,7 @@ my %format_format_pyr = %format_format_pyr_param;
 
 # verification de l'existence des fichiers annexes
 if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
-	print colored ("[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
 	exit;
 }
 
@@ -58,48 +55,41 @@ if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
 my $time = time();
 my $log = $rep_log."/log_prepare_pyramide_$time.log";
 
-open LOG, ">>$log" or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.", 'white on_red');
+open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
 &ecrit_log("commande : @ARGV");
 
-getopts("p:i:r:c:s:t:n:d:m:");
+getopts("p:i:r:c:s:t:n:d:m:x:");
 
-if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n ) ){
-	print colored ("[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.", 'white on_red');
-	print "\n\n";
+if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x) ){
+	print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -p.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
 	}
 	if(! defined $opt_i){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -i.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -i.\n";
 	}
 	if(! defined $opt_r){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -r.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -r.\n";
 	}
 	if(! defined $opt_s){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -s.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -s.\n";
 	}
 	if(! defined $opt_c){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -c.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -c.\n";
 	}
 	if(! defined $opt_t){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -t.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -t.\n";
 	}
 	if(! defined $opt_n){
-		print colored ("[PREPARE_PYRAMIDE] Veuillez specifier un parametre -n.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -n.\n";
+	}
+	if(! defined $opt_x){
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
 	}
 	&usage();
 	exit;
 }
-
-print "[PREPARE_PYRAMIDE] Preparation au calcul de pyramide de cache Geoportail.\n";
 
 my $produit = $opt_p;
 my $rep_images_source = $opt_i;
@@ -116,11 +106,10 @@ my $departement;
 if (defined $opt_d){
 	$departement = uc($opt_d);
 }
-
+my $taille_dalle_pix = $opt_x;
 # verifier les parametres
-if ($produit !~ /^ortho_raw|ortho_jpeg|parcellaire|scan|franceraster$/i){
-	print colored ("[PREPARE_PYRAMIDE] Produit mal specifie.", 'white on_red');
-	print "\n";
+if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
+	print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
 	exit;
 }else{
@@ -130,73 +119,64 @@ if ($produit !~ /^ortho_raw|ortho_jpeg|parcellaire|scan|franceraster$/i){
 
 my $fichier_tms = $produit_tms{$produit};
 if (! (-e $fichier_tms && -f $fichier_tms) ){
-	print colored ("[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
 	exit;
 }
 
 if (!(-e $rep_images_source && -d $rep_images_source)){
-	print colored ("[PREPARE_PYRAMIDE] Le repertoire $rep_images_source n'existe pas.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Le repertoire $rep_images_source n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_images_source n'existe pas.");
 	exit;
 }
 if (defined $rep_masque_mtd && (!(-e $rep_masque_mtd && -d $rep_masque_mtd))){
-	print colored ("[PREPARE_PYRAMIDE] Le repertoire $rep_masque_mtd n'existe pas.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Le repertoire $rep_masque_mtd n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_masque_mtd n'existe pas.");
 	exit;
 }
 if (!(-e $rep_fichiers_dallage && -d $rep_fichiers_dallage)){
-	print colored ("[PREPARE_PYRAMIDE] Le repertoire $rep_fichiers_dallage n'existe pas.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Le repertoire $rep_fichiers_dallage n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
 	exit;
 }
 if($compression_pyramide !~ /^raw|jpeg|png$/i){
-	print colored ("[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.", 'white on_red');
-	print "\n";
-	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect..");
+	print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
+	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
 	exit;
 }
 if(defined $departement && $departement !~ /^\d{2,3}|2[AB]$/i){
-	print colored ("[PREPARE_PYRAMIDE] Departement mal specifie.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Departement mal specifie.\n";
 	&ecrit_log("ERREUR Departement mal specifie : $departement.");
 	exit;
 }
 if($annee !~ /^\d{4}(?:\-\d{2})?$/i){
-	print colored ("[PREPARE_PYRAMIDE] Annee mal specifiee.", 'white on_red');
-	print "\n";
+	print "[PREPARE_PYRAMIDE] Annee mal specifiee.\n";
 	&ecrit_log("ERREUR Annee mal specifiee : $annee.");
+	exit;
+}
+if($taille_dalle_pix !~ /^\d+$/i){
+	print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
+	&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
 	exit;
 }
 
 # action 1 : creer dalles_source_image et dalles_source_metadata
 &ecrit_log("Recensement des images dans $rep_images_source.");
-print "[PREPARE_PYRAMIDE] Recensement des images dans $rep_images_source.\n";
 my ($ref_images_source, $nb_images) = &cherche_images($rep_images_source);
 &ecrit_log("$nb_images images dans $rep_images_source.");
-print "[PREPARE_PYRAMIDE] $nb_images images dans $rep_images_source.\n";
 &ecrit_log("Recensement des infos des images de $rep_images_source.");
-print "[PREPARE_PYRAMIDE] Recensement des infos des images de $rep_images_source.\n";
 my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
 &ecrit_log("Ecriture du fichier des dalles source.");
-print "[PREPARE_PYRAMIDE] Ecriture du fichier des dalles source.\n";
-&ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
+my $nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
 # seulement si les mtd sont specifiees
+my $nom_fichier_dallage_mtd = "";
 if(defined $rep_masque_mtd){
 	&ecrit_log("Recensement des mtd dans $rep_masque_mtd.");
-	print "[PREPARE_PYRAMIDE] Recensement des mtd dans $rep_masque_mtd.\n";
 	my ($ref_mtd_source, $nb_mtd) = &cherche_images($rep_masque_mtd);
 	&ecrit_log("$nb_mtd mtd dans $rep_masque_mtd.");
-	print "[PREPARE_PYRAMIDE] $nb_mtd mtd dans $rep_masque_mtd.\n";
 	&ecrit_log("Recensement des infos des mtd de $rep_masque_mtd.");
-	print "[PREPARE_PYRAMIDE] Recensement des infos des mtd de $rep_masque_mtd.\n";
 	my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_images_source);
 	&ecrit_log("Ecriture du fichier des mtd source.");
-	print "[PREPARE_PYRAMIDE] Ecriture du fichier des mtd source.\n";
-	&ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
+	$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
 }
 
 
@@ -212,37 +192,44 @@ my $nb_channels = $produit_nb_canaux{$produit};
 
 # creation du repertoire de la pyramide
 if ( !(-e $rep_pyramide && -d $rep_pyramide) ){
-	mkdir "$rep_pyramide", 0775 or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide.", 'white on red');
+	mkdir "$rep_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide.";
 }
 # creation du sous-repertoire de la pyramide
 if ( !(-e "$rep_pyramide/$nom_pyramide" && -d "$rep_pyramide/$nom_pyramide") ){
-	mkdir "$rep_pyramide/$nom_pyramide", 0775 or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide/$nom_pyramide.", 'white on red');
+	mkdir "$rep_pyramide/$nom_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide/$nom_pyramide.";
 }
 
 my $nom_fichier_pyramide = $nom_pyramide.".pyr";
 &ecrit_log("Creation de $nom_fichier_pyramide.");
-print "[PREPARE_PYRAMIDE] Creation de $nom_fichier_pyramide.\n";
 my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr);
 
-# validation du .pyr par le xsd
-&ecrit_log("Validation de $nom_fichier_pyramide.");
-my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
-if ($valid ne ""){
-	print colored ("[PREPARE_PYRAMIDE] Le document n'est pas valide!", 'white on_red');
-	print "\n";
-	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
-}
+# TODO validation du .pyr par le xsd
+# &ecrit_log("Validation de $nom_fichier_pyramide.");
+# my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
+# if ($valid ne ""){
+# 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
+# 	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
+# }
 
 # action 3 : creer les sous-repertoires utiles
 &ecrit_log("Creation des repertoires des niveaux de la pyramide.");
-print "[PREPARE_PYRAMIDE] Creation des repertoires des niveaux de la pyramide.\n";
 my @repertoires = @{$ref_repertoires};
 foreach my $rep_a_creer(@repertoires){
 	if ( !(-e $rep_a_creer && -d $rep_a_creer) ){
-		mkdir $rep_a_creer, 0775 or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_a_creer.", 'white on red');
+		mkdir $rep_a_creer, 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_a_creer.";
 	}
 }
-print colored ("[PREPARE_PYRAMIDE] Repertoires de la pyramide crees.\n", 'green');
+&ecrit_log("Repertoires de la pyramide crees.");
+
+# pour recuperation par d'autres scripts
+# 1 nom fichier pyr
+print "$nom_fichier_final\n";
+# 2 nom dallage_image
+print "$nom_fichier_dallage_image\n";
+# 3 nom_dallage_mtd
+if($nom_fichier_dallage_mtd ne ""){
+	print "$nom_fichier_dallage_mtd\n";
+}
 &ecrit_log("Traitement termine.");
 close LOG;
 ################################################################################
@@ -253,9 +240,9 @@ sub usage{
 	
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement]\n",'black on_white');
+	print "\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
 	print "\nproduit :\n";
- 	print "\tortho_raw\northo_jpeg\n\tparcellaire\n\tscan\n\tfranceraster\n";
+ 	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
 	print "\ncompression images pyramide :\n";
 	print "\traw\n\tjpeg\n\tpng\n";
 	print "\nsysteme_coordonnees :\n";
@@ -277,7 +264,7 @@ sub cherche_images{
 	my @img_trouvees;
 	
 	
-	opendir REP, $repertoire or die colored ("[PREPARE_PYRAMIDE] Impossible d'ouvrir le repertoire $repertoire.", 'white on_red');
+	opendir REP, $repertoire or die "[PREPARE_PYRAMIDE] Impossible d'ouvrir le repertoire $repertoire.";
 	my @fichiers = readdir REP;
 	closedir REP;
 	foreach my $fic(@fichiers){
@@ -326,22 +313,10 @@ sub cherche_infos_dalle{
 	
 	my $nb_dalles = @imgs;
 	my $pourcent = 0;
-	print "0";
 	
 	for(my $i = 0; $i < @imgs; $i++){
 #	foreach my $image(@imgs){
-		my $nombre_compare = ceil ($nb_dalles * ( ($pourcent + 10) / 100 ) );
-		# toutes les 10 images 
-		if( $i % 10  == 0){
-			if ($i > $nombre_compare){
-				$pourcent += 10;
-				print "$pourcent";
-			}else{
-				print ".";
-			}
-		}
-		
-		
+	
 		# recuperation x_min x_max y_min y_max
 		my @result = `.\/gdalinfo $imgs[$i]`;
 		
@@ -366,7 +341,7 @@ sub cherche_infos_dalle{
 		}
 		
 	}
-	print "100\n";
+
 	my @refs = (\%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $x_min_source, $y_max_source);
 	
 	return @refs;
@@ -404,26 +379,18 @@ sub ecrit_dallage_source{
 	}elsif($type eq "mtd"){
 		$fichier_dallage_source = $rep_fichier."/".$nom_fichier_mtd_source;
 	}else{
-		print colored ("[PREPARE_PYRAMIDE] Probleme de programmation : type $type incorrect.", 'white on_red');
-		print "\n";
+		print "[PREPARE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 		exit;
 	}
 	
-	
-	my $bool_ok = 0;
-	
-	open DALLAGE, ">$fichier_dallage_source" or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_dallage_source.\n", 'white on_red');
+	open DALLAGE, ">$fichier_dallage_source" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_dallage_source.";
 	
 	foreach my $image(@tableau_images){
 		print DALLAGE "$image\t$dalle_x_min{$image}\t$dalle_y_max{$image}\t$dalle_x_max{$image}\t$dalle_y_min{$image}\t$dalle_res_x{$image}\t$dalle_res_y{$image}\n";
 	}
 	close DALLAGE;
-	
-	print colored ("[PREPARE_PYRAMIDE] Fichier $fichier_dallage_source ecrit.\n", 'green');
-	
-	$bool_ok = 1;
-	
-	return $bool_ok;
+		
+	return $fichier_dallage_source;
 }
 ################################################################################
 sub cree_xml_pyramide{
@@ -462,7 +429,7 @@ sub cree_xml_pyramide{
 	
 	my $fichier_complet = "$rep_pyr/$nom_fichier";
 	
-	open PYRAMIDE, ">$fichier_complet" or die colored ("[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_complet.", 'white on_red');
+	open PYRAMIDE, ">$fichier_complet" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_complet.";
 	print PYRAMIDE "<?xml version='1.0' encoding='US-ASCII'?>\n";
 	print PYRAMIDE "<Pyramid>\n";
 	print PYRAMIDE "\t<tileMatrixSet>$nom_tms</tileMatrixSet>\n";
@@ -496,9 +463,7 @@ sub cree_xml_pyramide{
 	
 	print PYRAMIDE "</Pyramid>\n";
 	close PYRAMIDE;
-	
-	print colored ("[PREPARE_PYRAMIDE] Fichier $fichier_complet ecrit.\n", 'green');
-	
+		
 	return (\@liste_repertoires, $fichier_complet);
 }
 

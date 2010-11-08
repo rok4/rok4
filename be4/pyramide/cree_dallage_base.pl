@@ -4,7 +4,6 @@ use strict;
 use cache(
 	'$base_param',
 	'%base10_base_param',
-	'$taille_dalle_pix_param',
 	'$color_no_data_param',
 	'$dalle_no_data_param',
 	'%produit_res_utiles_param',
@@ -12,7 +11,6 @@ use cache(
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
 # 	'%produit_format_param',
-	'$taille_dalle_pix_param',
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
@@ -28,10 +26,10 @@ use XML::Simple;
 use File::Basename;
 # pas de bufferisation des sorties
 $| = 1;
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
-my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
+
 my $color_no_data = $color_no_data_param;
 my $dalle_no_data = $dalle_no_data_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
@@ -40,7 +38,7 @@ my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
-my $taille_dalle_pix = $taille_dalle_pix_param;
+
 # my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
@@ -99,9 +97,9 @@ open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le f
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:s:d:r:n:");
+getopts("p:f:x:m:s:d:r:n:t:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t) ){
 	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
 	print "\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
@@ -133,6 +131,10 @@ if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r an
 		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -n.", 'white on_red');
 		print "\n";
 	}
+	if(! defined $opt_t){
+		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -t.", 'white on_red');
+		print "\n";
+	}
 	&usage();
 	exit;
 }
@@ -149,7 +151,8 @@ my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
 my $dilatation_reproj = $opt_r;
 my $nom_script = $opt_n;
-
+my $taille_dalle_pix = $opt_t;
+my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix, $taille_dalle_pix);
 # verifications des parametres
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
 	print colored ("[CREE_DALLAGE_BASE] Produit mal specifie.", 'white on_red');
@@ -194,6 +197,12 @@ if ($dilatation_reproj !~ /^\d{1,3}$/ || $dilatation_reproj > 100 ){
 	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation -r $dilatation_reproj est incorrect.", 'white on_red');
 	print "\n";
 	&ecrit_log("ERREUR : Le pourcentage de dilatation -r $dilatation_reproj est incorrect.");
+	exit;
+}
+if ($taille_dalle_pix !~ /^\d+$/){
+	print colored ("[CREE_DALLAGE_BASE] La taille des dalles en pixels -t $taille_dalle_pix est incorrecte.", 'white on_red');
+	print "\n";
+	&ecrit_log("ERREUR :La taille des dalles en pixels -t $taille_dalle_pix est incorrecte.");
 	exit;
 }
 ########### traitement
@@ -451,7 +460,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script\n",'black on_white');
+	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script -t taille_dalles_pixels\n",'black on_white');
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";

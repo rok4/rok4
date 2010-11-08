@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding='US-ASCII'?>
+<param
+	xmlns='IGN:SIEL:RASTER:DIFFUSION'
+>
+	<!-- a choisir parmi ortho/parcellaire/scan[25|50|100|dep|reg|1000]/franceraster -->
+	<ss_produit>ortho</ss_produit>
+	<repertoire_images_source>/exavol/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08</repertoire_images_source>
+	<!-- facultatif -->
+	<!--<repertoire_masques_metadonnees></repertoire_masques_metadonnees>-->
+	<systeme_coordonnees_source>LAMB93</systeme_coordonnees_source>
+	<annee>2008</annee>
+	<!-- facultatif -->
+	<departement>75</departement>
+	<repertoire_pyramide>../../test_cha</repertoire_pyramide>
+	<fichier_layer>ORTHO_CHARLOTTE.lay</fichier_layer>
+	<!-- a choisir parmi raw/jpeg/png -->
+	<compression_images_pyramide>raw</compression_images_pyramide>
+	<systeme_coordonnees_pyramide>LAMB93</systeme_coordonnees_pyramide>
+	<repertoire_fichiers_dallage>../../test_cha</repertoire_fichiers_dallage>
+	<taille_dalles_pixels>4096</taille_dalles_pixels>
+	<pcent_dilatation_dalles_base>10</pcent_dilatation_dalles_base>
+	<pcent_dilatation_reproj>20</pcent_dilatation_reproj>
+	<prefixe_nom_script>test_charlotte_global</prefixe_nom_script>
+	<nombre_batch_min>16</nombre_batch_min>
+</param>

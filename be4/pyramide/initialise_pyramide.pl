@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w 
 
 use strict;
-use Term::ANSIColor;
 use Getopt::Std;
 use XML::Simple;
 use File::Basename;
@@ -23,23 +22,20 @@ my $rep_log = $rep_logs_param;
 my $time = time();
 my $log = $rep_log."/log_initialise_pyramide_$time.log";
 
-open LOG, ">>$log" or die colored ("[INITIALISE_PYRAMIDE] Impossible de creer le fichier $log.", 'white on_red');
+open LOG, ">>$log" or die "[INITIALISE_PYRAMIDE] Impossible de creer le fichier $log.";
 &ecrit_log("commande : @ARGV");
 
 getopts("l:p:");
 
 if ( ! defined ($opt_l and $opt_p ) ){
-	print colored ("[INITIALISE_PYRAMIDE] Nombre d'arguments incorrect.", 'white on_red');
-	print "\n\n";
+	print "[INITIALISE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&usage();
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_l){
-		print colored ("[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -l.", 'white on_red');
-		print "\n";
+		print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
 	}
 	if(! defined $opt_p){
-		print colored ("[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -p.", 'white on_red');
-		print "\n";
+		print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
 	}
 	exit;
 }
@@ -48,46 +44,39 @@ my $fichier_pyr = $opt_p;
 
 # verification des parametres
 if (! (-e $lay_ancien && -f $lay_ancien)){
-	print colored ("[INITIALISE_PYRAMIDE] Le fichier $lay_ancien n'existe pas.", 'white on_red');
-	print "\n";
+	print "[INITIALISE_PYRAMIDE] Le fichier $lay_ancien n'existe pas.\n";
 	&ecrit_log("ERREUR Le fichier $lay_ancien n'existe pas.");
 	exit;
 }
 if (! (-e $fichier_pyr && -f $fichier_pyr)){
-	print colored ("[INITIALISE_PYRAMIDE] Le fichier $fichier_pyr n'existe pas.", 'white on_red');
-	print "\n";
+	print "[INITIALISE_PYRAMIDE] Le fichier $fichier_pyr n'existe pas.\n";
 	&ecrit_log("ERREUR Le fichier $fichier_pyr n'existe pas.");
 	exit;
 }
 
 # action 1 : determiner la pyramide la plus recente
 &ecrit_log("Lecture de la configuration.");
-print "[INITIALISE_PYRAMIDE] Lecture de la configuration.\n";
 my $ancien_pyr = &lecture_lay($lay_ancien);
 # test si le chemin est en absolu ou en relatif (dans ce cas on ajoute le repertoire du lay)
 if( $ancien_pyr !~ /^\//){
 	$ancien_pyr = dirname($lay_ancien)."/".$ancien_pyr;
 }
 &ecrit_log("Pyramide la plus recente : $ancien_pyr.");
-print "[INITIALISE_PYRAMIDE] Pyramide la plus recente : $ancien_pyr.\n";
 
 # action 2 : acceder au cache et faire le lien entre anciennes et nouvelles dalles
 my %level_rep_img_ancien;
 my %level_rep_mtd_ancien;
 if ( -e $ancien_pyr && -f $ancien_pyr ){
 	&ecrit_log("Lecture de la pyramide $ancien_pyr.");
-	print "[INITIALISE_PYRAMIDE] Lecture de la pyramide $ancien_pyr.\n";
 	my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($ancien_pyr);
 	%level_rep_img_ancien = %{$ref_hash_images_ancien};
 	%level_rep_mtd_ancien = %{$ref_hash_mtd_ancien};
 }else{
 	&ecrit_log("ERREUR Le fichier $ancien_pyr n'existe pas.");
-	print colored ("[INITIALISE_PYRAMIDE] Le fichier $ancien_pyr n'existe pas.", 'white on_red');
-	print "\n";
+	print "[INITIALISE_PYRAMIDE] Le fichier $ancien_pyr n'existe pas.\n";
 	exit;
 }
 &ecrit_log("Lecture de la pyramide $fichier_pyr.");
-print "[INITIALISE_PYRAMIDE] Lecture de la pyramide $fichier_pyr.\n";
 my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_repertoires_pyramide($fichier_pyr);
 my %level_rep_img_nouveau = %{$ref_hash_images_nouveau};
 my %level_rep_mtd_nouveau = %{$ref_hash_mtd_nouveau};
@@ -109,17 +98,15 @@ while ( my($level,$rep) = each %level_rep_mtd_nouveau ){
 
 # action 3 : lien-symboliquer les dalles de l'ancien cache vers le nouveau
 &ecrit_log("Creation des liens symboliques entre ancien et nouveau cache.");
-print "[INITIALISE_PYRAMIDE] Creation des liens symboliques entre ancien et nouveau cache.\n";
 my $nombre = 0;
 while( my ($repertoire_ancien_cache, $repertoire_nouveau_cache) = each %rep_ancien_nouveau ){
 	# on cree les repertoires s'il n'existent pas
 	&ecrit_log("Creation des repertoires manquants.");
-	print "[INITIALISE_PYRAMIDE] Creation des repertoires manquants.\n";
 	&cree_repertoires_recursifs($repertoire_nouveau_cache);
 	$nombre += &cree_liens_syboliques_recursifs($repertoire_ancien_cache, $repertoire_nouveau_cache);
 }
 
-print colored ("[INITIALISE_PYRAMIDE] $nombre dalles de l'ancien cache copiees dans le nouveau.\n",'green');
+&ecrit_log("$nombre dalles de l'ancien cache copiees dans le nouveau.");
 &ecrit_log("Traitement termine.");
 
 close LOG;
@@ -129,7 +116,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ninitialise_pyramide.pl -l path/fichier_layer.lay -p path/fichier_pyramide.pyr\n",'black on_white');
+	print "\nUsage : \ninitialise_pyramide.pl -l path/fichier_layer.lay -p path/fichier_pyramide.pyr\n";
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -187,12 +174,11 @@ sub cree_liens_syboliques_recursifs{
 	
 	if( !(-e $rep_ini && -d $rep_ini) ){
 		&ecrit_log("ERREUR Le repertoire $rep_ini n'existe pas.");
-		print colored ("[INITIALISE_PYRAMIDE] Le repertoire de l'ancienne pyramide $rep_ini n'existe pas.", 'white on_red');
-		print "\n";
+		print "[INITIALISE_PYRAMIDE] Le repertoire de l'ancienne pyramide $rep_ini n'existe pas.\n";
 		return $nb_liens;
 	}
 	
-	opendir REP, $rep_ini or die colored ("[INITIALISE_PYRAMIDE] Impossible d'ouvrir le repertoire $rep_ini", 'white on_red');
+	opendir REP, $rep_ini or die "[INITIALISE_PYRAMIDE] Impossible d'ouvrir le repertoire $rep_ini.";
 	my @fichiers = readdir REP;
 	closedir REP;
 	foreach my $fic(@fichiers){
@@ -219,7 +205,7 @@ sub cree_liens_syboliques_recursifs{
 			# si repertoire, on descend en prenant soin de verifier que le rep du nouveau cache existe
 			if( !(-e "$rep_fin/$fic" && -d "$rep_fin/$fic") ){
 				&ecrit_log("Creation du repertoire $rep_fin/$fic.");
-				mkdir "$rep_fin/$fic", 0775 or die colored ("[INITIALISE_PYRAMIDE] Impossible de creer le repertoire $rep_fin/$fic.", 'white on_red');
+				mkdir "$rep_fin/$fic", 0775 or die "[INITIALISE_PYRAMIDE] Impossible de creer le repertoire $rep_fin/$fic.";
 			}
 			$nb_liens += &cree_liens_syboliques_recursifs("$rep_ini/$fic", "$rep_fin/$fic");
 			next;

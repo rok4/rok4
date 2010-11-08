@@ -4,7 +4,6 @@ use strict;
 use cache(
 	'$base_param',
 	'%base10_base_param',
-	'$taille_dalle_pix_param',
 	'$color_no_data_param',
 	'$dalle_no_data_param',
 	'%produit_res_utiles_param',
@@ -12,7 +11,6 @@ use cache(
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
 # 	'%produit_format_param',
-	'$taille_dalle_pix_param',
 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
@@ -21,21 +19,18 @@ use cache(
 	'$rep_logs_param',
 	'$programme_reproj_param',
 );
-use Term::ANSIColor;
 use Getopt::Std;
-#use File::Copy;
 use XML::Simple;
 use File::Basename;
 use List::Util qw( max );
 use POSIX qw(ceil);
 
-my $nombre_jobs = 16;
+
 # pas de bufferisation des sorties
 $| = 1;
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
-my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix_param, $taille_dalle_pix_param);
 my $color_no_data = $color_no_data_param;
 my $dalle_no_data = $dalle_no_data_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
@@ -44,7 +39,7 @@ my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
-my $taille_dalle_pix = $taille_dalle_pix_param;
+
 # my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
@@ -53,87 +48,78 @@ my $programme_reproj = $programme_reproj_param;
 
 # verification de l'existence de fichiers et repertoires annexes
 if(!(-e $dalle_no_data && -f $dalle_no_data)){
-	print colored ("[CREE_DALLAGE_BASE] Le fichier $dalle_no_data est introuvable.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data est introuvable.\n";
 	exit;
 }
 if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
-	print colored ("[CREE_DALLAGE_BASE] Le fichier $dalle_no_data_mtd est introuvable.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_mtd est introuvable.\n";
 	exit;
 }
 if(!(-e $path_tms && -d $path_tms)){
-	print colored ("[CREE_DALLAGE_BASE] Le repertoire $path_tms est introuvable.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le repertoire $path_tms est introuvable.\n";
 	exit;
 }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
-# my $verif_programme_dalle_base = `which $programme_dalles_base`;
-# if ($verif_programme_dalle_base eq ""){
-# 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_dalles_base est introuvable.", 'white on_red');
-# 	print "\n";
-# 	exit;
-# }
-# my $verif_programme_ss_ech = `which $programme_ss_ech`;
-# if ($verif_programme_ss_ech eq ""){
-# 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_ss_ech est introuvable.", 'white on_red');
-# 	print "\n";
-# 	exit;
-# }
-# my $verif_programme_pivot = `which $programme_format_pivot`;
-# if ($verif_programme_pivot eq ""){
-# 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_format_pivot est introuvable.", 'white on_red');
-# 	print "\n";
-# 	exit;
-# }
-# my $verif_programme_reproj = `which $programme_reproj`;
-# if ($verif_programme_reproj eq ""){
-# 	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_reproj est introuvable.", 'white on_red');
-# 	print "\n";
-# 	exit;
-# }
+my $verif_programme_dalle_base = `which $programme_dalles_base`;
+if ($verif_programme_dalle_base eq ""){
+	print "[CALCULE_PYRAMIDE] Le programme $programme_dalles_base est introuvable.\n";
+	exit;
+}
+my $verif_programme_ss_ech = `which $programme_ss_ech`;
+if ($verif_programme_ss_ech eq ""){
+	print "[CALCULE_PYRAMIDE] Le programme $programme_ss_ech est introuvable.\n";
+	exit;
+}
+my $verif_programme_pivot = `which $programme_format_pivot`;
+if ($verif_programme_pivot eq ""){
+	print "[CALCULE_PYRAMIDE] Le programme $programme_format_pivot est introuvable\n.";
+	exit;
+}
+my $verif_programme_reproj = `which $programme_reproj`;
+if ($verif_programme_reproj eq ""){
+	print "[CALCULE_PYRAMIDE] Le programme $programme_reproj est introuvable.\n";
+	exit;
+}
 ############ MAIN
 my $time = time();
-my $log = $rep_log."/log_cree_dallage_base_$time.log";
+my $log = $rep_log."/log_calcule_pyramide_$time.log";
 
-open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $log.", 'white on_red');
+open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $log.";
 
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:s:d:r:n:");
+getopts("p:f:x:m:s:d:r:n:t:j:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n) ){
-	print colored ("[CREE_DALLAGE_BASE] Nombre d'arguments incorrect.", 'white on_red');
-	print "\n\n";
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j) ){
+	print "[CALCULE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -p.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
 	}
 	if(! defined $opt_f){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -f.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -f.\n";
 	}
 	if(! defined $opt_x){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -x.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
 	}
 	if(! defined $opt_s){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -s.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -s.\n";
 	}
 	if(! defined $opt_d){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -d.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -d.\n";
 	}
 	if(! defined $opt_r){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -r.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -r.\n";
 	}
 	if(! defined $opt_n){
-		print colored ("[CREE_DALLAGE_BASE] Veuillez specifier un parametre -n.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -n.\n";
+	}
+	if(! defined $opt_t){
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -t.\n";
+	}
+	if(! defined $opt_j){
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -j.\n";
 	}
 	&usage();
 	exit;
@@ -151,11 +137,12 @@ my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
 my $dilatation_reproj = $opt_r;
 my $nom_script = $opt_n;
-
+my $taille_dalle_pix = $opt_t;
+my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix, $taille_dalle_pix);
+my $nombre_jobs = $opt_j;
 # verifications des parametres
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
-	print colored ("[CREE_DALLAGE_BASE] Produit mal specifie.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
 	exit;
 }else{
@@ -169,38 +156,43 @@ if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$
 		
 }
 if (! (-e $fichier_dalle_source && -f $fichier_dalle_source)){
-	print colored ("[CREE_DALLAGE_BASE] Le fichier $fichier_dalle_source n'existe pas.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le fichier $fichier_dalle_source n'existe pas.\n";
 	&ecrit_log("ERREUR : Le fichier $fichier_dalle_source n'existe pas.");
 	exit;
 }
 if (defined $fichier_mtd_source && ( ! (-e $fichier_mtd_source && -f $fichier_mtd_source))){
-	print colored ("[CREE_DALLAGE_BASE] Le fichier $fichier_mtd_source n'existe pas.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le fichier $fichier_mtd_source n'existe pas.\n";
 	&ecrit_log("ERREUR : Le fichier $fichier_mtd_source n'existe pas.");
 	exit;
 }
 if (! (-e $fichier_pyramide && -f $fichier_pyramide)){
-	print colored ("[CREE_DALLAGE_BASE] Le fichier $fichier_pyramide n'existe pas.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le fichier $fichier_pyramide n'existe pas.\n";
 	&ecrit_log("ERREUR : Le fichier $fichier_pyramide n'existe pas.");
 	exit;
 }
 if ($pourcentage_dilatation !~ /^\d{1,3}$/ || $pourcentage_dilatation > 100 ){
-	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation -d $pourcentage_dilatation est incorrect.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le pourcentage de dilatation -d $pourcentage_dilatation est incorrect.\n";
 	&ecrit_log("ERREUR : Le pourcentage de dilatation -d $pourcentage_dilatation est incorrect.");
 	exit;
 }
 if ($dilatation_reproj !~ /^\d{1,3}$/ || $dilatation_reproj > 100 ){
-	print colored ("[CREE_DALLAGE_BASE] Le pourcentage de dilatation -r $dilatation_reproj est incorrect.", 'white on_red');
-	print "\n";
+	print "[CALCULE_PYRAMIDE] Le pourcentage de dilatation -r $dilatation_reproj est incorrect.\n";
 	&ecrit_log("ERREUR : Le pourcentage de dilatation -r $dilatation_reproj est incorrect.");
+	exit;
+}
+if ($taille_dalle_pix !~ /^\d+$/){
+	print "[CALCULE_PYRAMIDE] La taille des dalles en pixels -t $taille_dalle_pix est incorrecte.\n";
+	&ecrit_log("ERREUR : La taille des dalles en pixels -t $taille_dalle_pix est incorrecte.");
+	exit;
+}
+if ($nombre_jobs !~ /^\d+$/ && $nombre_jobs > 0){
+	print "[CALCULE_PYRAMIDE] Le nombre de batchs -j $nombre_jobs est incorrect.\n";
 	exit;
 }
 ########### traitement
 # creation d'un rep temporaire pour les calculs intermediaires
-my $rep_temp = "cree_dallage_base_".$time;
+my $rep_temp = "CALCULE_PYRAMIDE_".$time;
+mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoire $rep_temp.";
 my $string_script_creation_rep_temp = "if [ ! -d \"$rep_temp\" ] ; then mkdir $rep_temp ; fi\n";
 my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
 
@@ -210,7 +202,6 @@ my ($res_min_produit, $res_max_produit) = @{$ref_niv_utiles};
 
 # action 1 : recuperer les infos de la pyramide
 &ecrit_log("Lecture de la pyramide $fichier_pyramide.");
-print "[CREE_DALLAGE_BASE] Lecture de la pyramide $fichier_pyramide.\n";
 my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
 my @niveaux_ranges = @{$ref_niveau_ordre_croissant};
 my %niveau_repertoire_image = %{$ref_rep_images};
@@ -274,7 +265,6 @@ if($systeme_source ne $systeme_target){
 # action 2 : lire le fichier de dalles source et des mtd
 # => bbox des donnees, hashes des xmin, xmax, ymin, ymax, resx, resy
 &ecrit_log("Lecture du fichier d'images source $fichier_dalle_source.");
-print "[CREE_DALLAGE_BASE] Lecture du fichier d'images source $fichier_dalle_source.\n";
 my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &lecture_fichier_dalles_source($fichier_dalle_source, 1);
 my %source_x_min = %{$reference_hash_x_min};
 my %source_x_max = %{$reference_hash_x_max};
@@ -294,7 +284,6 @@ my %mtd_source_res_y ;
 my @mtd_source;
 if (defined $fichier_mtd_source){
 	&ecrit_log("Lecture du fichier de mtd source $fichier_mtd_source.");
-	print "[CREE_DALLAGE_BASE] Lecture du fichier de mtd source $fichier_mtd_source.\n";
 	($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
 	%mtd_source_x_min = %{$ref_hash_x_min};
 	%mtd_source_x_max = %{$ref_hash_x_max};
@@ -348,8 +337,9 @@ my %nom_dalle_index_base;
 
 foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	
-	print colored ("job $dalle_arbre_niveau_travail", 'yellow');
-	print "\n";
+	my $string_script_this = "";
+	my $nombre_dalles_creees_script = 0;
+	
 	# remise a zero des variables d'arbre
 	%cache_arbre_x_min = ();
 	%cache_arbre_x_max = ();
@@ -383,76 +373,60 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	
 	#recursivite descendante et mise en memoire pour chacune des dalles cache
 	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.");
-	print "[CREE_DALLAGE_BASE] Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.\n";
 	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
-	&ecrit_log("$nombre_dalles_cache images definies.");
-	print "[CREE_DALLAGE_BASE] $nombre_dalles_cache images definies.\n";
+	&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.");
-		print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.\n";
 		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
-		&ecrit_log("$nombre_mtd_cache images definies.");
-		print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
+		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
 	}
 	
 	# transformation des index dans l'arbre en nom des dalles cache
 	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 	&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_travail aux donnees cache.");
-	print "[CREE_DALLAGE_BASE] Passage des donnees arbre issu de $dalle_arbre_niveau_travail aux donnees cache.\n";
 	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);	
-	
-	my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
-	# les actions 6 et 7 sont envoyees dans le script
-	open SCRIPT, ">$nom_script_complet" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_script_complet.", 'white on_red');
-	
-	print SCRIPT $string_script_creation_rep_temp;
 	
 	#action 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
 	&ecrit_log("Definition des images du niveau le plus bas.");
-	print "[CREE_DALLAGE_BASE] Definition des images du niveau le plus bas.\n";
-	my $rep_fichiers_img = dirname($fichier_dalle_source);
-	my ($nombre_dalles_minimum_calc, $string_script_niveau_min_img) = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_fichiers_img, "image");
-	print SCRIPT $string_script_niveau_min_img;
-	&ecrit_log("$nombre_dalles_minimum_calc images du plus bas niveau a calculer.");
-	print "[CREE_DALLAGE_BASE] $nombre_dalles_minimum_calc images du plus bas niveau a calculer.\n";
+	my ($nombre_dalles_minimum_calc, $string_script_niveau_min_img) = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_temp, "image");
+	$string_script_this .= $string_script_niveau_min_img;
+	$nombre_dalles_creees_script += $nombre_dalles_minimum_calc;
+	&ecrit_log("$nombre_dalles_minimum_calc image(s) du plus bas niveau a calculer.");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd du niveau le plus bas.");
-		print "[CREE_DALLAGE_BASE] Definition des mtd du niveau le plus bas.\n";
-		my $rep_fichiers_mtd = dirname($fichier_mtd_source);
-		my ($nombre_mtd_minimum_calc, $string_script_niveau_min_mtd) = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_fichiers_mtd, "mtd");
-		print SCRIPT $string_script_niveau_min_mtd;
+		my ($nombre_mtd_minimum_calc, $string_script_niveau_min_mtd) = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_temp, "mtd");
+		$string_script_this .= $string_script_niveau_min_mtd;
+		$nombre_dalles_creees_script += $nombre_mtd_minimum_calc;
 		&ecrit_log("$nombre_mtd_minimum_calc mtd du plus bas niveau a calculer.");
-		print "[CREE_DALLAGE_BASE] $nombre_mtd_minimum_calc mtd du plus bas niveau a calculer.\n";
 	}
-	
 	
 	# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
 	&ecrit_log("Definition des images des niveaux inferieurs.");
-	print "[CREE_DALLAGE_BASE] Definition des images des niveaux inferieurs.\n";
 	my ($nombre_dalles_niveaux_inf, $string_script_niveaux_inf_img) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", 1, $indice_niveau0);
-	print SCRIPT $string_script_niveaux_inf_img;
-	&ecrit_log("$nombre_dalles_niveaux_inf images a calculer.");
-	print "[CREE_DALLAGE_BASE] $nombre_dalles_niveaux_inf images a calculer.\n";
+	$string_script_this .= $string_script_niveaux_inf_img;
+	$nombre_dalles_creees_script += $nombre_dalles_niveaux_inf;
+	&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd des niveaux inferieurs.");
-		print "[CREE_DALLAGE_BASE] Definition des mtd des niveaux inferieurs.\n";
 		my ($nombre_mtd_niveaux_inf, $string_script_niveaux_inf_mtd) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", 1, $indice_niveau0);
-		print SCRIPT $string_script_niveaux_inf_mtd;
-		&ecrit_log("$nombre_mtd_niveaux_inf images a calculer.");
-		print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images a calculer.\n";
+		$string_script_this .= $string_script_niveaux_inf_mtd;
+		$nombre_dalles_creees_script += $nombre_mtd_niveaux_inf;
+		&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
 	}
 	
-	print SCRIPT $string_script_destruction_rep_temp;
+	# on ne cree le script que si des dalles sont creees
+	if ($nombre_dalles_creees_script != 0){
+		my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
+		open SCRIPT, ">$nom_script_complet" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_complet.";
+		print SCRIPT $string_script_creation_rep_temp;
+		print SCRIPT $string_script_this;
+		close SCRIPT;
+	}
 	
-	close SCRIPT;
 }
 
 # action 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
 my $string_script4 = "";
-
-print colored ("job 17", 'yellow');
-print "\n";
-
 foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	
 	# remise a zero des variables d'arbre
@@ -488,47 +462,37 @@ foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	
 	#recursivite descendante et mise en memoire pour chacune des dalles cache
 	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_max.");
-	print "[CREE_DALLAGE_BASE] Calcul de l'arbre image issu de $dalle_arbre_niveau_max.\n";
 	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
-	&ecrit_log("$nombre_dalles_cache images definies.");
-	print "[CREE_DALLAGE_BASE] $nombre_dalles_cache images definies.\n";
+	&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_max.");
-		print "[CREE_DALLAGE_BASE] Calcul de l'arbre mtd issu de $dalle_arbre_niveau_max.\n";
 		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
-		&ecrit_log("$nombre_mtd_cache images definies.");
-		print "[CREE_DALLAGE_BASE] $nombre_mtd_cache images definies.\n";
+		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
+
 	}
 	
 	# transformation des index dans l'arbre en nom des dalles cache
 	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 	&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_max aux donnees cache.");
-	print "[CREE_DALLAGE_BASE] Passage des donnees arbre issu de $dalle_arbre_niveau_max aux donnees cache.\n";
 	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);	
 	
 	# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
 	&ecrit_log("Definition des images des niveaux inferieurs.");
-	print "[CREE_DALLAGE_BASE] Definition des images des niveaux inferieurs.\n";
 	my ($nombre_dalles_niveaux_inf, $string_script_temp) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", $indice_travail, $indice_niveau0);
 	$string_script4 .= $string_script_temp;
-	&ecrit_log("$nombre_dalles_niveaux_inf images a calculer.");
-	print "[CREE_DALLAGE_BASE] $nombre_dalles_niveaux_inf images a calculer.\n";
+	&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd des niveaux inferieurs.");
-		print "[CREE_DALLAGE_BASE] Definition des mtd des niveaux inferieurs.\n";
 		my ($nombre_mtd_niveaux_inf, $string_script_temp2) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", $indice_travail, $indice_niveau0);
 		$string_script4 .= $string_script_temp2;
-		&ecrit_log("$nombre_mtd_niveaux_inf images a calculer.");
-		print "[CREE_DALLAGE_BASE] $nombre_mtd_niveaux_inf images a calculer.\n";
+		&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
 	}
 	
 }
 
-
 # passage en pivot du dernier niveau
 my $dernier_niveau = "$level_max";
 &ecrit_log("Passage en format final niveau $level_max.");
-print "[CREE_DALLAGE_BASE] Passage en format final niveau $level_max\n";
 my @dalles_change_format_haut;
 if(defined $niveau_ref_dalles_inf{"$level_max"}){
 	@dalles_change_format_haut = @{$niveau_ref_dalles_inf{"$level_max"}};
@@ -537,18 +501,17 @@ $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_
 
 
 my $nom_script_job17 = "$nom_script"."_"."job17";
-open JOB17, ">$nom_script_job17" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_script_job17.", 'white on_red');
+open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
 print JOB17 $string_script_creation_rep_temp;
 print JOB17 $string_script4;
 print JOB17 $string_script_destruction_rep_temp;
 close JOB17;
 
 &ecrit_log("Traitement termine.");
-print colored ("[CREE_DALLAGE_BASE] Traitement termine.\n", 'green');
 close LOG;
 
 # lecture du log pour voir si erreurs
-open CHECK, "<$log" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le fichier $log.", 'white on_red');
+open CHECK, "<$log" or die "[CALCULE_PYRAMIDE] Impossible d'ouvrir le fichier $log.";
 my @lignes_log = <CHECK>;
 close CHECK;
 my $nb_erreur = 0;
@@ -557,16 +520,12 @@ foreach my $ligne(@lignes_log){
 		$nb_erreur += 1;
 	}
 }
-if ($nb_erreur != 0){
-	print colored ("[CREE_DALLAGE_BASE] $nb_erreur erreurs se sont produites. Consulter le fichier $log.", 'white on_red');
-	print "\n";
-}else{
-	print colored ("[CREE_DALLAGE_BASE] $nb_erreur erreurs se sont produites. Consulter le fichier $log.", 'green');
-	print "\n";
+if($nb_erreur != 0){
+	print "[CALCULE_PYRAMIDE] $nb_erreur erreurs se sont produites. Consulter le fichier $log.\n";
 }
 
 # on l'ecrit dans le log
-open LOG, ">>$log" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le fichier $log en ajout.", 'white on_red');
+open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible d'ouvrir le fichier $log en ajout.";
 &ecrit_log("FIN : $nb_erreur erreurs se sont produites.");
 close LOG;
 ################### FIN
@@ -577,7 +536,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print colored ("\nUsage : \ncree_dallage_base.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script\n",'black on_white');
+	print "\nUsage : \ncalcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script -t taille_dalles_pixels -j nombre_jobs_min\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";
@@ -750,8 +709,7 @@ sub formate_zero_base{
 # 			}elsif($type_dal eq "mtd"){
 # 				$dalle_a_copier = $dalle_no_data_mtd;
 # 			}else{
-# 				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dal incorrect.", 'white on_red');
-# 				print "\n";
+# 				print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type_dal incorrect.";
 # 				exit;
 # 			}
 # 			ecrit_log("Creation des eventuels repertoires manquants.");
@@ -760,7 +718,6 @@ sub formate_zero_base{
 # 			if ($return == 0){
 # 				&ecrit_log("ERREUR a la copie de $dalle_a_copier vers $dalle_cache");
 # 			}else{
-# 				print ".";
 # 				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
 # 				$nombre_dalles_ajoutees += 1;
 # 				
@@ -768,7 +725,6 @@ sub formate_zero_base{
 # 			
 # 		}
 # 	}
-# 	print "\n";
 # 	
 # 	return $nombre_dalles_ajoutees;
 # }
@@ -804,8 +760,7 @@ sub indice_arbre2xy{
 				$x_max_cache -= $taille_x_diff;
 				$y_max_cache -= $taille_y_diff;
 			}else{
-				print colored ("[CREE_DALLAGE_BASE] Probleme pour obtenir les coordonnees a partir de l'indice de l'arbre : indice $indice_arbre non correct.", 'white on_red');
-				print "\n";
+				print "[CALCULE_PYRAMIDE] Probleme pour obtenir les coordonnees a partir de l'indice de l'arbre : indice $indice_arbre non correct.\n";
 				&ecrit_log("ERREUR a l'appel de la fonction indice_arbre2xy : $indice_arbre $x_min_origin $x_max_origin $y_min_origin $y_max_origin");
 				exit;
 			}
@@ -837,7 +792,7 @@ sub lecture_fichier_dalles_source{
 	
 	my @infos;
 	
-	open SOURCE, "<$fichier_a_lire" or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le fichier $fichier_a_lire.", 'white on_red');
+	open SOURCE, "<$fichier_a_lire" or die "[CALCULE_PYRAMIDE] Impossible d'ouvrir le fichier $fichier_a_lire.";
 	my @lignes = <SOURCE>;
 	close SOURCE;
 	
@@ -972,8 +927,7 @@ sub definit_bloc_dalle{
 		}elsif($type eq "image"){
 			$index_arbre_liste_dalle{$id_dalle} = \@dalles_recouvrantes;
 		}else{
-			print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type incorrect.", 'white on_red');
-			print "\n";
+			print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 			exit;
 		}
 		
@@ -1035,7 +989,6 @@ sub calcule_niveau_minimum {
 		if(defined $ref_dalles_source ){
 			&ecrit_log("Calcul de $dalle_cache.");
 			my @liste_dalles_source = @{$ref_dalles_source};
-			print ".";
 			
 			# creation le cas echeant des repertoires parents
 			my $rep_parent_dalle = dirname($dalle_cache);
@@ -1064,8 +1017,7 @@ sub calcule_niveau_minimum {
 				}elsif($type eq "mtd"){
 					$nom_dalle_temp = $dalle_no_data_mtd;
 				}else{
-					print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type incorrect.", 'white on_red');
-					print "\n";
+					print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 					exit;
 				}
 			}
@@ -1076,7 +1028,7 @@ sub calcule_niveau_minimum {
 			my $res_x_max_source = 0;
 			my $res_y_max_source = 0;
 			
-			open FIC, ">$nom_fichier" or die colored ("[CREE_DALLAGE_BASE] Impossible de creer le fichier $nom_fichier.", 'white on_red');
+			open FIC, ">$nom_fichier" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier.";
 			# dalle cache
 			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
 			# dalles source a la suite
@@ -1117,8 +1069,7 @@ sub calcule_niveau_minimum {
 				$no_data = $color_no_data;
 
 			}else{
-				print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type incorrect.", 'white on_red');
-				print "\n";
+				print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 				exit;
 			}
 			
@@ -1134,7 +1085,6 @@ sub calcule_niveau_minimum {
 			$nb_dal += 1;
 		}
 	}
-	print "\n";
 	return ($nb_dal, $string_script);
 	
 }
@@ -1157,13 +1107,11 @@ sub calcule_niveaux_inferieurs{
 		my $niveau_inf = $niveaux_ranges[$i];
 		if(defined $hash_niveau_liste{"$niveau_inf"}){
 			&ecrit_log("Calcul niveau $niveau_inf.");
-			print "[CREE_DALLAGE_BASE] Calcul niveau $niveau_inf\n";
 			my @dalles_a_calc = @{$hash_niveau_liste{"$niveau_inf"}};
 			foreach my $dal(@dalles_a_calc){
 				if (defined $dalle_cache_dessous{$dal}){
 					&ecrit_log("Calcul de $dal.");
 					my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
-					print ".";
 					
 					# creation le cas echeant des repertoires parents
 					my $rep_parent_dalle_niveau_inf = dirname($dal);
@@ -1182,8 +1130,7 @@ sub calcule_niveaux_inferieurs{
 							}elsif($type_dalle eq "mtd"){
 								$fichier_pointe = $dalle_no_data_mtd;
 							}else{
-								print colored ("[CREE_DALLAGE_BASE] Probleme de programmation : type $type_dalle incorrect.", 'white on_red');
-								print "\n";
+								print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type_dalle incorrect.\n";
 								exit;
 							}
 							
@@ -1211,7 +1158,6 @@ sub calcule_niveaux_inferieurs{
 				}
 				
 			}
-			print "\n";
 			
 			# Passage en format pivot du niveaux dessous
 			
@@ -1224,7 +1170,6 @@ sub calcule_niveaux_inferieurs{
 				@dalles_change_format = @{$hash_niveau_liste{"$niveau_termine"}};
 			}
 			&ecrit_log("Passage en format final niveau $niveau_termine.");
-			print "[CREE_DALLAGE_BASE] Passage en format final niveau $niveau_termine\n";
 			$string_script2 .= &passage_pivot($niveau_taille_tuile_x{"$niveau_termine"}, $niveau_taille_tuile_y{"$niveau_termine"}, \@dalles_change_format);
 		}
 	}
@@ -1429,14 +1374,12 @@ sub lecture_pyramide{
 	my $nb_formats_temp = @formats_temp;
 	if ($nb_formats_temp == 0){
 		&ecrit_log("ERREUR Pas de formats d'images trouves dans le fichier $xml_pyramide.");
-		print colored ("[CREE_DALLAGE_BASE] Pas de formats d'images trouves dans le fichier $xml_pyramide.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Pas de formats d'images trouves dans le fichier $xml_pyramide.\n";
 		exit;
 	}else{
 		if($nb_formats_temp > 1){
 			&ecrit_log("WARNING Plusieurs formats d'images trouves dans le fichier $xml_pyramide => retenu : $formats_temp[0].");
-			print colored ("[CREE_DALLAGE_BASE] WARNING Plusieurs formats d'images trouves dans le fichier $xml_pyramide => retenu : $formats_temp[0].", 'white on_red');
-			print "\n";
+			print "[CALCULE_PYRAMIDE] WARNING Plusieurs formats d'images trouves dans le fichier $xml_pyramide => retenu : $formats_temp[0].\n";
 		}
 		$format_images_pyramide = $formats_temp[0];
 	}
@@ -1458,7 +1401,6 @@ sub passage_pivot{
 	
 	foreach my $dal2(@dalles_travail){
 		&ecrit_log("Passage en format pivot de $dal2.");
-		print ".";
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire la couleur dans $programme_format_pivot
@@ -1467,7 +1409,6 @@ sub passage_pivot{
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
 	}
-	print "\n";
 	
 	return $string_script3;
 	
@@ -1489,8 +1430,7 @@ sub reproj_point{
 		$x_reproj = $split2[0];
 		$y_reproj = $split2[1];
 	}else{
-		print colored ("[CREE_DALLAGE_BASE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.", 'white on_red');
-		print "\n";
+		print "[CALCULE_PYRAMIDE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.\n",;
 		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
 	}
 	
@@ -1745,7 +1685,7 @@ sub liste_liens{
 	my %hash_liens;
 	
 	foreach my $rep(@liste_rep){
-		opendir REP, $rep or die colored ("[CREE_DALLAGE_BASE] Impossible d'ouvrir le repertoire $rep.", 'white on_red');
+		opendir REP, $rep or die "[CALCULE_PYRAMIDE] Impossible d'ouvrir le repertoire $rep.";
 		my @fichiers = readdir REP;
 		closedir REP;
 		foreach my $fichier(@fichiers){
