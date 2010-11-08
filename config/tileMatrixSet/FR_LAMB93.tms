@@ -1,5 +1,5 @@
 <tileMatrixSet>
-	<crs>epsg:2154</crs>
+	<crs>IGNF:LAMB93</crs>
 	<tileMatrix>
 		<id>0_5</id>
 		<resolution>0.5</resolution>

@@ -68,6 +68,8 @@ retourne NULL en cas d erreur
 
 LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression)
 {
+	if (width<0||height<0)
+		return NULL;
         if (width*height*channels==0)
                 return NULL;
 	return new LibtiffImage(width,height,channels,bbox,NULL,filename,bitspersample,photometric,compression);
@@ -82,7 +84,7 @@ LibtiffImage::LibtiffImage(int width,int height, int channels, BoundingBox<doubl
 int LibtiffImage::getline(uint8_t* buffer, int line)
 {
 // le buffer est déjà alloue
-// Cas RGB : canaux entralaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
+// Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
 	TIFFReadScanline(tif,buffer,line,0);
 	return width*channels;

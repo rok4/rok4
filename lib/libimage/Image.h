@@ -16,6 +16,7 @@
 * Les implémentations définiront des images avec différentes structures de pixel
 * (type et nombre de canaux). Cette interface basique permet de définir des
 * fonctions prenant en paramètre tout type d'image.
+* Images 1 bit non gerees
 */
 
 class Image {

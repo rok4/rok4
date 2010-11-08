@@ -93,19 +93,20 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
 				if(strncmp(argv[i], "8",1) == 0) bitspersample = 8 ;
 				else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
-				else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+				else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
 				break;
 			case 'p': // photometric
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
 				if(strncmp(argv[i], "min_is_black",12) == 0) photometric = PHOTOMETRIC_MINISBLACK;
 				else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
 				else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
-				else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+				else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
 				break;
 			default: usage(); return -1;
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -377,7 +378,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 			pOverlayedImage.push_back(pECI);
 		else {
-        		// Etape 2 : Reechantillonnage de l'image composite
+        		// Etape 2 : Reechantillonnage de l'image composite si necessaire
 	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation);
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
@@ -421,7 +422,7 @@ int h2i(char s)
 * @parama bitspersample : nombre de bits par canal de l'image TIFF
 * @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
 * @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
-* TODO : gere tous les types de couleur pour la valeur NODATA
+* TODO : gerer tous les types de couleur pour la valeur NODATA
 * @return : 0 en cas de succes, -1 sinon
 */
 
@@ -446,7 +447,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
         // Initilisation des buffers
-        unsigned char * buf_ligne = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
+        unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
         unsigned char * buf_nodata = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
         unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]), b=h2i(nodata[4])*16 + h2i(nodata[5]);
         if (pImage->channels == 3 ) {
@@ -459,14 +460,14 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         }
 
         // Ecriture de l'image
-        for( int ligne = 0; ligne < pImage->height; ligne++) {
-                _TIFFmemcpy(buf_ligne, buf_nodata, pImage->width*pImage->channels*bitspersample/8);
-                pImage->getline(buf_ligne,ligne) ;
-                TIFFWriteScanline(output, buf_ligne, ligne, 0); // en contigu (entrelace) on prend chanel=0 (!)
+        for( int line = 0; line < pImage->height; line++) {
+                _TIFFmemcpy(buf_line, buf_nodata, pImage->width*pImage->channels*bitspersample/8);
+                pImage->getline(buf_line,line);
+                TIFFWriteScanline(output, buf_line, line, 0); // en contigu (entrelace) on prend chanel=0 (!)
         }
 
         // Liberation
-        _TIFFfree(buf_ligne);
+        _TIFFfree(buf_line);
         _TIFFfree(buf_nodata);
         TIFFClose(output);
         return 0;

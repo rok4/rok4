@@ -35,6 +35,10 @@ rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
 
+# copie des donnees pour les tests de non regression
+cd tests/noregression
+make
+cd ../..
 
 cd ../target
 cp bin/rok4 $ROK4BASE/bin/
@@ -54,4 +58,12 @@ if [ ! -f /var/run/apache2.pid ] ; then
   echo "[error] Pb lors du démarrage du service apache ! "
   exit 3
 fi
+
+cd ../rok/tests/noregression
+bash tests.sh
+
+
+
+
+
 
