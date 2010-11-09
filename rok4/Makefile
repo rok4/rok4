@@ -43,7 +43,6 @@ Rok4Server: bindir $(DEPLIB) $(WMSSOBJ)
 	mv $(BINDIR)/Rok4Server $(BINDIR)/rok4
 	cp -rf $(SRCCONFDIR)/* $(TGTCONFDIR)
 
-
 # règle générique pour lancer les compilations des librairies dépendnates
 lib%:
 	test -e $(LIBDIR)/$@.a || make -C ../lib/$@
@@ -67,6 +66,9 @@ cppubin: $(CPPUNITOBJ)
 	$(CXX) $(LDFLAGS) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
 	cp $(CPPUNITOBJ) $(BINDIR)
 	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
+
+noregression: Rok4Server
+	make -C tests/noregression all
 
 #       rm -fr $(TGTDIR)
 bindir: 

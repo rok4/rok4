@@ -59,11 +59,5 @@ if [ ! -f /var/run/apache2.pid ] ; then
   exit 3
 fi
 
-cd ../rok/tests/noregression
+cd ../rok4/tests/noregression
 bash tests.sh
-
-
-
-
-
-
