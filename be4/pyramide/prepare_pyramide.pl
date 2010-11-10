@@ -436,8 +436,23 @@ sub cree_xml_pyramide{
 	foreach my $level(@id_tms){
 		
 		my $taille_image_m = $tms_level_resolution{"$level"} * $taille_dalle;
-		my $nb_tuile_x = $taille_dalle / $tms_level_taille_pix_tuile_x{"$level"};
-		my $nb_tuile_y = $taille_dalle / $tms_level_taille_pix_tuile_y{"$level"};
+		my $taille_tuile_x = $tms_level_taille_pix_tuile_x{"$level"};
+		my $taille_tuile_y = $tms_level_taille_pix_tuile_y{"$level"};
+		
+		my $reste_x = $taille_dalle % $taille_tuile_x;
+		my $reste_y = $taille_dalle % $taille_tuile_y;
+		
+		# si la taille n'est pas un multiple de la taille des tuiles on sort
+		if($reste_x != 0 || $reste_y != 0){
+			close PYRAMIDE;
+			unlink "$fichier_complet";
+			print "[PREPARE_PYRAMIDE] ERREUR : Taille images $taille_dalle non multiple taille tuile du TMS au niveau $level.\n";
+			&ecrit_log("ERREUR Taille des images $taille_dalle non multiple taille tuile du TMS au niveau $level.");
+			exit;
+		}
+		
+		my $nb_tuile_x = $taille_dalle / $taille_tuile_x;
+		my $nb_tuile_y = $taille_dalle / $taille_tuile_y;
 		
 		print PYRAMIDE "\t<level>\n";
 		print PYRAMIDE "\t\t<tileMatrix>$level</tileMatrix>\n";
