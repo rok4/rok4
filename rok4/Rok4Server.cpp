@@ -182,12 +182,13 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 
 	DataSource* source=tile->getDataSource();
 	size_t size;
+
 	if (source->get_data(size)){
 		// Ca particulier des tuiles TIFF : rajouter un en-tete
 		if (source->gettype()=="image/tiff"){
-			TiffEncoderSource* tiff_source=new TiffEncoderSource(tile);
+			TiffEncoderSource* tif_source=new TiffEncoderSource(tile->getTileWidth(),tile->getTileHeight(),tile->channels,tile->getDataSource());
 			source->release_data();
-			tile->setDataSource(tiff_source);
+			tile->setDataSource(tif_source);
 			return tile->getDataSource();
 		}
 		return source;

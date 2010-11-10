@@ -17,11 +17,10 @@ class TiffEncoderStream : public DataStream {
 };
 
 class TiffEncoderSource : public DataSource {
-        Tile *tile;
 	uint8_t *tif_data;	// Donnee de la tuile avec l'en-tete
 	size_t size;
         public:
-        TiffEncoderSource(Tile *tile);
+        TiffEncoderSource(int w, int h, int channels, DataSource* source);
         ~TiffEncoderSource();
 	const uint8_t* get_data(size_t &size);
 	bool release_data();

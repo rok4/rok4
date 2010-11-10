@@ -19,6 +19,8 @@
 		<WMSCRS>epsg:2154</WMSCRS>
 		<WMSCRS>IGNF:LAMBE</WMSCRS>
 		<WMSCRS>epsg:4326</WMSCRS>
+		<WMSCRS>CRS:84</WMSCRS>
+		<WMSCRS>CRS:bubu</WMSCRS>
 	</WMSCRSList>
 	<boundingBox SRS="EPSG:2973" minx="800000" miny="6200000" maxx="1100000" maxy="6700000"/>
 	<opaque>true</opaque>

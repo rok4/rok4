@@ -95,22 +95,21 @@ TiffEncoderStream::~TiffEncoderStream() {
 }
 
 
-TiffEncoderSource::TiffEncoderSource(Tile* tile) : tile(tile)
+TiffEncoderSource::TiffEncoderSource(int w, int h, int channels, DataSource* source)
 {
         size_t header_size=128;
-	// On est cense avoir de la donnee source
-        const uint8_t* raw_data=tile->getDataSource()->get_data(size);
+        const uint8_t* raw_data=source->get_data(size);
         tif_data=new uint8_t[size+header_size];
-        if (tile->channels==1)
+        if (channels==1)
                 memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
-        else if (tile->channels==3)
+        else if (channels==3)
                 memcpy(tif_data, TIFF_HEADER_RGB, header_size);
-        else if (tile->channels==4)
+        else if (channels==4)
                 memcpy(tif_data, TIFF_HEADER_RGBA, header_size);
-        *((uint32_t*)(tif_data+18))  = tile->getTileWidth();
-        *((uint32_t*)(tif_data+30))  = tile->getTileHeight();
-        *((uint32_t*)(tif_data+102)) = tile->getTileHeight();
-        *((uint32_t*)(tif_data+114)) = tile->getTileHeight()*tile->getTileWidth()*tile->channels;
+        *((uint32_t*)(tif_data+18))  = w;
+        *((uint32_t*)(tif_data+30))  = h;
+        *((uint32_t*)(tif_data+102)) = h;
+        *((uint32_t*)(tif_data+114)) = w*h*channels;
         memcpy(&tif_data[header_size],raw_data,size);
         size+=header_size;
 }

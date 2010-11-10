@@ -491,10 +491,15 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 
 	
 	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
-		std::string crs(pElem->GetText());
-		// TODO : On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-		LOGGER_DEBUG("Ajout du crs "<<crs);
-		WMSCRSList.push_back(crs);
+		std::string str_crs(pElem->GetText());
+		// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+		CRS crs(str_crs);
+		if (!crs.isProj4Compatible())
+			LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
+		else{
+			LOGGER_DEBUG("Ajout du crs "<<str_crs);
+			WMSCRSList.push_back(str_crs);
+		}
 	}
 	if (WMSCRSList.size()==0){
 		LOGGER_WARN(fileName << ": Aucun CRS autorisé pour le WMS");

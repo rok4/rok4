@@ -134,14 +134,13 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
 	std::string strTileRow=getParam("tilerow");
 	if(strTileRow == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEROW absent.","wmts"));
-	uint32_t n;
-	if (sscanf(strTileRow.c_str(),"%d",&n)!=1)
+	if (sscanf(strTileRow.c_str(),"%d",&tileRow)!=1)
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILEROW est incorrecte.","wmts"));
 	// TILECOL
 	std::string strTileCol=getParam("tilecol");
 	if(strTileCol == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILECOL absent.","wmts"));
-	if (sscanf(strTileCol.c_str(),"%d",&n)!=1)
+	if (sscanf(strTileCol.c_str(),"%d",&tileCol)!=1)
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILECOL est incorrecte.","wmts"));
 	// FORMAT
 	format=getParam("format");

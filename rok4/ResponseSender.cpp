@@ -24,6 +24,8 @@ std::string genStatusHeader(int statusCode) {
  * @return 0 sinon
  */
 
+#include <typeinfo>
+
 int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
 	SERDataSource *ser= dynamic_cast<SERDataSource*>(source) ;

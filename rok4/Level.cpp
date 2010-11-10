@@ -1,7 +1,7 @@
 
 #include "Level.h"
 #include "FileDataSource.h"
-
+#include "TiffEncoder.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
@@ -20,10 +20,15 @@ tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tile
 {
 	if (getType()=="image/jpeg")
 		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_jpeg.tif",2048,2052,"image/jpeg");
-	else if(getType()=="image/tiff")
-		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,/*getType()*/"image/tiff");
+	else if(getType()=="image/tiff"){
+	/*		FileDataSource* rawNoDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/tiff");
+			TiffEncoderSource* noDataSource = new TiffEncoderSource(tm.getTileW(),tm.getTileH(),channels,rawNoDataSource);
+			rawNoDataSource->release_data();
+			delete rawNoDataSource;*/
+noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/jpeg");
+		}
 	else if(getType()=="image/png")
-                noDataSource = new FileDataSource("../config/nodata/nodata_tiled_png.tif",2048,2052,/*getType()*/"image/png");
+                noDataSource = new FileDataSource("../config/nodata/nodata_tiled_png.tif",2048,2052,"image/png");
 	else
 		LOGGER_ERROR("Pas de nodatasource disponible");
 }
@@ -145,7 +150,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 	std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
 	for(int y = 0; y < nby; y++)
 		for(int x = 0; x < nbx; x++) {
-//			LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );
+	//		LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );
 			Tile* tile = gettile(tile_xmin + x, tile_ymin + y);
 			T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile->getDataSource(), tile->getNoDataSource(), left[x], top[y], right[x], bottom[y],tileCoding);
 		}
