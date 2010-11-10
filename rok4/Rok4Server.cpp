@@ -76,7 +76,7 @@ void* Rok4Server::thread_loop(void* arg)
 Construction du serveur
  */
 Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
-		            		   nbThread(nbThread), sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList) {
+                       sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
 	int init=FCGX_Init();
 	//  sock = FCGX_OpenSocket(":1998", 50);
 	buildWMSCapabilities();
@@ -87,10 +87,11 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
  * Lancement des threads du serveur
  */
 void Rok4Server::run() {
-	for(int i = 0; i < nbThread; i++)
-		pthread_create(&Thread[i], NULL, Rok4Server::thread_loop, (void*) this);
-	for(int i = 0; i < nbThread; i++)
-		pthread_join(Thread[i], NULL);
+	for(int i = 0; i < threads.size(); i++){
+		pthread_create(&(threads[i]), NULL, Rok4Server::thread_loop, (void*) this);
+	}
+	for(int i = 0; i < threads.size(); i++)
+		pthread_join(threads[i], NULL);
 }
 
 

@@ -25,15 +25,14 @@
 
 class Rok4Server {
 private:
-	int nbThread;
-	pthread_t Thread[128]; /* tableau des threads => 128 thread max! *//*FIXME mettre un conteneur sans limite */
+	std::vector<pthread_t> threads;
 	ResponseSender S;
 
 	int sock;
 
 	ServicesConf& servicesConf;
 	std::map<std::string, Layer*> layerList;
-	std::map<std::string,TileMatrixSet*> tmsList;
+	std::map<std::string, TileMatrixSet*> tmsList;
 
 	static void* thread_loop(void* arg);
 
