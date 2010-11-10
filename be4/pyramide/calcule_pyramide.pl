@@ -418,6 +418,8 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	if ($nombre_dalles_creees_script != 0){
 		my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
 		open SCRIPT, ">$nom_script_complet" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_complet.";
+		# pour la repartition de torque
+		print SCRIPT "#PBS $nombre_dalles_creees_script\n";
 		print SCRIPT $string_script_creation_rep_temp;
 		print SCRIPT $string_script_this;
 		close SCRIPT;
@@ -427,6 +429,7 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 
 # action 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
 my $string_script4 = "";
+my $nombre_dalles_job17 = 0;
 foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	
 	# remise a zero des variables d'arbre
@@ -468,7 +471,6 @@ foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_max.");
 		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
 		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
-
 	}
 	
 	# transformation des index dans l'arbre en nom des dalles cache
@@ -481,11 +483,13 @@ foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	my ($nombre_dalles_niveaux_inf, $string_script_temp) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", $indice_travail, $indice_niveau0);
 	$string_script4 .= $string_script_temp;
 	&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
+	$nombre_dalles_job17 += $nombre_dalles_niveaux_inf;
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd des niveaux inferieurs.");
 		my ($nombre_mtd_niveaux_inf, $string_script_temp2) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", $indice_travail, $indice_niveau0);
 		$string_script4 .= $string_script_temp2;
 		&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
+		$nombre_dalles_job17 += $nombre_mtd_niveaux_inf;
 	}
 	
 }
@@ -502,6 +506,8 @@ $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_
 
 my $nom_script_job17 = "$nom_script"."_"."job17";
 open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
+# pour la repartition de torque
+print JOB17 "#PBS $nombre_dalles_job17\n";
 print JOB17 $string_script_creation_rep_temp;
 print JOB17 $string_script4;
 print JOB17 $string_script_destruction_rep_temp;
@@ -1045,11 +1051,12 @@ sub calcule_niveau_minimum {
 				if($source_res_y{$src} > $res_y_max_source){
 					$res_y_max_source = $source_res_y{$src};
 				}
+				# TODO passer par une image tiff2gray pour la bdparcel
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
 			
 			# ATTENTION, intuition feminine : l'execution dans certains environnement fait qu'il se melange les pinceaux
-			#et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
+			# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
 			sleep(1);
 			
 			close FIC;
