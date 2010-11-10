@@ -102,7 +102,7 @@ std::string Request::getParam(std::string paramName){
 DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
 {
 	// VERSION
-	std::string version=getParam("layer");
+	std::string version=getParam("version");
 	if (version=="")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre VERSION absent.","wmts"));
 	if (version.find("1.0.0")==std::string::npos)
