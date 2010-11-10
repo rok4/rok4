@@ -4,7 +4,8 @@
 # building and testing
 cd rok4
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
-make very-clean test
+#make very-clean test
+make very-clean
 make Rok4Server
 if [ $? -ne 0 ] ; then
   exit 1
@@ -35,11 +36,6 @@ rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
 
-# copie des donnees pour les tests de non regression
-cd tests/noregression
-make
-cd ../..
-
 cd ../target
 cp bin/rok4 $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
@@ -59,5 +55,6 @@ if [ ! -f /var/run/apache2.pid ] ; then
   exit 3
 fi
 
+# Lancement des tests de non regression
 cd ../rok4/tests/noregression
 bash tests.sh

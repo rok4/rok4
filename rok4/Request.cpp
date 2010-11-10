@@ -95,40 +95,65 @@ std::string Request::getParam(std::string paramName){
 }
 
 /*
- * Récuperation des parametres d'une requete GetTile
+ * Verficiation et recuperation des parametres d'une requete GetTile
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataSource* Request::getTileParam(std::string &layer, std::string  &tileMatrixSet, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
+DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
 {
-	layer=getParam("layer");
-	if(layer == "")
+	// VERSION
+	std::string version=getParam("layer");
+	if (version=="")
+		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre VERSION absent.","wmts"));
+	if (version.find("1.0.0")==std::string::npos)
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (doit contenir \"1.0.0\")","wmts"));
+	// LAYER
+	std::string str_layer=getParam("layer");
+	if(str_layer == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre LAYER absent.","wmts"));
+	std::map<std::string, Layer*>::iterator it = layerList.find(str_layer);
+        if(it == layerList.end())
+                return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Layer "+str_layer+" inconnu.","wmts"));
+        layer = it->second;
+	// TILEMATRIXSET
+	std::string str_tms=getParam("tilematrixset");
+	if(str_tms == "")
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEMATRIXSET absent.","wmts"));
+	std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find(str_tms);
+        if(tms == tmsList.end())
+                return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"TileMatrixSet "+str_tms+" inconnu.","wmts"));
+        layer = it->second;	
+	// TILEMATRIX
 	tileMatrix=getParam("tilematrix");
 	if(tileMatrix == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEMATRIX absent.","wmts"));
+	std::map<std::string, TileMatrix>::iterator tm = tms->second->getTmList().find(tileMatrix);
+	if (tm==tms->second->getTmList().end())
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"TileMatrix "+tileMatrix+" inconnu pour le TileMatrixSet "+str_tms,"wmts"));
+	// TILEROW
 	std::string strTileRow=getParam("tilerow");
 	if(strTileRow == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILEROW absent.","wmts"));
-	if (strTileRow=="0")
-		tileRow = 0;
-	else
-		tileRow=atoi(strTileRow.c_str());
-	if (tileRow == 0 || tileRow == INT_MAX || tileRow == INT_MIN)
-		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILEROW n'est pas une valeur entiere.","wmts"));
+	uint32_t n;
+	if (sscanf(strTileRow.c_str(),"%d",&n)!=1)
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILEROW est incorrecte.","wmts"));
+	// TILECOL
 	std::string strTileCol=getParam("tilecol");
 	if(strTileCol == "")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre TILECOL absent.","wmts"));
-	if (strTileCol=="0")
-		tileCol = 0;
-	else
-		tileCol=atoi(strTileCol.c_str());
-	if (tileCol == 0 || tileCol == INT_MAX || tileCol == INT_MIN)
-		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILECOL n'est pas une valeur entiere.","wmts"));
-
-	format=getParam("format"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
-	tileMatrixSet=getParam("tilematrixset"); // FIXME: on ne controle pas la présence parce qu'on ne s'en sert pas pour le moment...
-
+	if (sscanf(strTileCol.c_str(),"%d",&n)!=1)
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILECOL est incorrecte.","wmts"));
+	// FORMAT
+	format=getParam("format");
+        if(format == "")
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
+	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
+	unsigned int k;
+	for (k=0;k<layer->getMimeFormats().size();k++)
+		if (layer->getMimeFormats().at(k)==format)
+			break;
+	if (k==layer->getMimeFormats().size())
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	return NULL;
 }
 
@@ -191,7 +216,15 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	format=getParam("format");
 	if(format == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
+	/*
+	FIXME : plantage inexplique
+	for (k=0;k<servicesConf.getFormatList().size();k++)
+		if (servicesConf.getFormatList().at(k)==format)
+			break;
+	if (k==servicesConf.getFormatList().size())
+		return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Format "+format+" non gere par le service.","wms"));*/
 	// BBOX
+
 	std::string strBbox=getParam("bbox");
 	if(strBbox == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre BBOX absent.","wms"));
@@ -221,6 +254,5 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	std::string str_exception=getParam("exception");
 	if (str_exception!=""&&str_exception!="XML")
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Format d'exception "+str_exception+" non pris en charge","wms"));
-
 	return NULL;
 }

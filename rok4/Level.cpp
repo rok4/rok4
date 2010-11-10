@@ -127,16 +127,14 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
 
 
 Image* Level::getwindow(BoundingBox<int64_t> bbox) {
-
 	int tile_xmin = bbox.xmin / tm.getTileW();
 	int tile_xmax = (bbox.xmax -1)/ tm.getTileW();
 	int nbx = tile_xmax - tile_xmin + 1;
-	LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " );
 
 	int tile_ymin = bbox.ymin / tm.getTileH();
 	int tile_ymax = (bbox.ymax-1) / tm.getTileH();
 	int nby = tile_ymax - tile_ymin + 1;
-
+//LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " << " nb_y:" << nby  << " tileH:" << tm.getTileH());
 	int left[nbx];   memset(left,   0, nbx*sizeof(int)); left[0] = bbox.xmin % tm.getTileW();
 	int top[nby];    memset(top,    0, nby*sizeof(int)); top[0]  = bbox.ymin % tm.getTileH();
 	int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;
@@ -199,7 +197,7 @@ std::string Level::getfilepath(int tilex, int tiley)
 		y = y / 36;
 	} while(x || y);
 	path[pos] = '/';
-LOGGER_DEBUG(path<<" "<<y<<" "<<tiley<<" "<<tilesPerHeight);
+
 	return baseDir + (path + pos);
 }
 
@@ -217,7 +215,7 @@ Tile* Level::gettile(int x, int y)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	LOGGER_DEBUG(getfilepath(x, y));
+	// LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());

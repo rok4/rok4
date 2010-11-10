@@ -166,28 +166,24 @@ DataStream* Rok4Server::getMap(Request* request)
 
 DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 {
-	std::string layer,tileMatrixSet,tileMatrix,format;
+	Layer* L;
+	std::string tileMatrix,format;
 	int tileCol,tileRow;
 
-	// Récupération des paramètres de la requete
-	DataSource* errorResp = request->getTileParam(layer, tileMatrixSet,tileMatrix, tileCol, tileRow, format);
-	if (errorResp)
+	// Récupération des parametres de la requete
+	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format);
+	if (errorResp){
+		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
 		return errorResp;
-	// Vérification de l'adéquation entre les paramètres et la conf du serveur (ancien checkWMS)
-	// Existence du layer
-	//FIXME : pourquoi ce controle ici?
-	std::map<std::string, Layer*>::iterator it = layerList.find(layer);
-	if(it == layerList.end())
-		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Layer "+layer+" inconnu.","wmts"));
-	Layer* L = it->second;
-	// l'existence du TMS et TM est controlée dans gettile()
-	// TODO: vérifier que c'est effectivement le cas
+	}
 
 	// Récupération de la tuile
 	tile=L->gettile(tileCol, tileRow, tileMatrix);
+
 	DataSource* source=tile->getDataSource();
 	size_t size;
 	if (source->get_data(size)){
+		// Ca particulier des tuiles TIFF : rajouter un en-tete
 		if (source->gettype()=="image/tiff"){
 			TiffEncoderSource* tiff_source=new TiffEncoderSource(tile);
 			source->release_data();

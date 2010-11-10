@@ -24,7 +24,7 @@ const uint8_t* FileDataSource::get_data(size_t &tile_size) {
 	// Ouverture du fichier
 	int fildes = open(filename.c_str(), O_RDONLY);
 	if(fildes < 0) {
-		 LOGGER_ERROR("Impossible d'ouvrir le fichier " << filename);
+		// LOGGER_ERROR("Impossible d'ouvrir le fichier " << filename);
 		return 0;
 	}
 	// Lecture de la position de la tuile dans le fichier

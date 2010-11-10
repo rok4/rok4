@@ -11,10 +11,9 @@ Tile* Pyramid::gettile(int x, int y, std::string tmId) {
 
 	std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
 
+	// Cas normalement filtre en amont (exception WMTS)
 	if (it==levels.end())
-	// TODO : gérer cette exception WMTS
-		LOGGER_ERROR("Erreur WMTS : no such level");
-	//	return new Error("Erreur WMTS : no such level");
+		LOGGER_ERROR("Erreur WMTS : niveau manquant");
 
 	return it->second->gettile(x, y);
 }
@@ -22,6 +21,7 @@ Tile* Pyramid::gettile(int x, int y, std::string tmId) {
 std::string Pyramid::best_level(double resolution_x, double resolution_y) {
 
 	// TODO: A REFAIRE !!!!
+	// res_level/resx ou resy ne doit pas exceder une certaine valeur
 	double resolution = sqrt(resolution_x * resolution_y);
 
 	std::map<std::string, Level*>::iterator it(levels.begin()), itend(levels.end());

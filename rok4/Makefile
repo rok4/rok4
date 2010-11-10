@@ -32,7 +32,7 @@ CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
 WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o JPEGEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o CRS.o
 
-all: Rok4Server
+all: Rok4Server	noregression
 #
 # Rok4Server
 # compile et genere le serveur WMS
@@ -67,7 +67,7 @@ cppubin: $(CPPUNITOBJ)
 	cp $(CPPUNITOBJ) $(BINDIR)
 	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
 
-noregression: Rok4Server
+noregression:
 	make -C tests/noregression all
 
 #       rm -fr $(TGTDIR)
