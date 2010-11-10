@@ -1,8 +1,10 @@
-var url_template="http://obernai.ign.fr/rok4/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=__COL__&tileRow=__ROW__&tileMatrix=__ZOOM__&LAYER=__LAYER__&STYLES=&FORMAT=__FORMAT__&DPI=96&TRANSPARENT=TRUE" ;
+var url_template="http://obernai.ign.fr/rok4/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=__COL__&tileRow=__ROW__&tileMatrix=__ZOOM__&LAYER=__LAYER__&STYLES=&FORMAT=__FORMAT__&DPI=96&TRANSPARENT=TRUE&VERSION=1.0.0&TILEMATRIXSET=FR_LAMB93" ;
 
 var wmts_map={
-  col:3715,
-  row:40025,
+  col:2569,
+  row:38736,
+/*  col:3715,
+  row:40025,*/
   layer:"__NOLAYER__",
   format:"__NOFORMAT__",
   zoom:9,

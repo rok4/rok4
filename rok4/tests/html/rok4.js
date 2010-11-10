@@ -13,7 +13,7 @@ function init() {
         maxExtent: bounds,
         maxResolution: 512,
         minResolution: 0.5,
-        center: new OpenLayers.LonLat(951040, 6530560),
+        center: new OpenLayers.LonLat(657750, 6860651),
         zoom:9,
         numZoomLevel: 11
     });    
@@ -59,23 +59,27 @@ alert ("create WMTS Layer") ;
     });                
 */
 
+/*
     var wmsOJpeg= new OpenLayers.Layer.WMS(
       "(WMS) ORTHO JPEG",
       "http://obernai.ign.fr/rok4/bin/rok4?",
       {layers:"ORTHO"}
     ) ; 
+*/
     var wmsOParis= new OpenLayers.Layer.WMS(
-      "(WMS) ORTHO Paris TIFF Brut",
+      "(WMS) ORTHO RAW",
       "http://obernai.ign.fr/rok4/bin/rok4?",
-      {layers:"ORTHO_PARIS_RAW"}
+      {layers:"ORTHO_RAW", version:"1.3"}
     ) ; 
+/*
     var wmsOTiff= new OpenLayers.Layer.WMS(
       "(WMS) ORTHO TIFF",
       "http://obernai.ign.fr/rok4/bin/rok4?",
       {layers:"ORTHO_TIFF"}
     ) ; 
+*/
 
-    map.addLayers([wmsOJpeg, wmsOParis, wmsOTiff]);
+    map.addLayers([wmsOParis/*,wmsOTiff*/]);
     map.addControl(new OpenLayers.Control.LayerSwitcher());
 
     //alert("bounds : "+map.calculateBounds().toString()+"\ncenter: "+map.getCenter()) ;
