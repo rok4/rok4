@@ -1,0 +1,26 @@
+<layer>
+	<title>Scan IGN en RAW</title>
+	<abstract>Echantillon Scan IGN en RAW pour test de non regression</abstract>
+	<keywordList>
+		<keyword>Carte</keyword>
+	</keywordList>
+	<style>normal</style>
+	<minRes>0.5</minRes>
+	<maxRes>1</maxRes>
+	<EX_GeographicBoundingBox>
+                <westBoundLongitude>0</westBoundLongitude>
+                <eastBoundLongitude>10</eastBoundLongitude>
+                <southBoundLatitude>40</southBoundLatitude>
+                <northBoundLatitude>50</northBoundLatitude>
+        </EX_GeographicBoundingBox>
+	<WMSCRSList>
+		<WMSCRS>IGNF:LAMB93</WMSCRS>
+	</WMSCRSList>
+	<boundingBox SRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
+	<opaque>true</opaque>
+	<authority>IGNF</authority>
+	<resampling>lanczos_4</resampling>
+	<pyramidList>
+		<pyramid>../config/pyramids/SCAN_RAW_TEST.pyr</pyramid>
+	</pyramidList>
+</layer>
