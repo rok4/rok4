@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <climits>
 #include <vector>
+#include <cstdio> 
 
 /* converts hex char (0-9, A-Z, a-z) to decimal.
  * returns 0xFF on invalid input.
