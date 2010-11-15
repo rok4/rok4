@@ -14,6 +14,7 @@ class TiffEncoderStream : public DataStream {
   	size_t read(uint8_t *buffer, size_t size);
 	bool eof();
 	std::string gettype() {return "image/tiff";}
+	int getHttpStatus() {return 200;}	
 };
 
 class TiffEncoderSource : public DataSource {
@@ -25,6 +26,7 @@ class TiffEncoderSource : public DataSource {
 	const uint8_t* get_data(size_t &size);
 	bool release_data();
         std::string gettype() {return "image/tiff";}
+	int getHttpStatus() {return 200;}
 };
 
 #endif

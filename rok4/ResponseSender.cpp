@@ -19,34 +19,15 @@ std::string genStatusHeader(int statusCode) {
 }
 
 /**
- * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
+ * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
  * @return -1 en cas d'erreur
  * @return 0 sinon
  */
-
-#include <typeinfo>
 
 int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
-	SERDataSource *ser= dynamic_cast<SERDataSource*>(source) ;
-	if (ser==NULL) {
-		return this->sendresponse(200, source, request) ;
-	} else {
-		return this->sendresponse(ser->getHttpStatus(),source, request) ;
-	}
-}
-
-/**
- * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
- * avec specification d'un code HTTP de retour
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
-
-int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Request* request)
-{
 	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(statusCode) ;
+	std::string statusHeader= genStatusHeader(source->getHttpStatus()) ;
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->gettype().c_str(), strlen(source->gettype().c_str()),request->out);
@@ -76,28 +57,10 @@ int ResponseSender::sendresponse(int statusCode, DataSource* source, FCGX_Reques
  * @return -1 en cas d'erreur
  * @return 0 sinon
  */
-
 int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 {
-	SERDataStream *ser= dynamic_cast<SERDataStream*>(stream) ;
-	if (ser==NULL) {
-		return this->sendresponse(200, stream, request) ;
-	} else {
-		return this->sendresponse(ser->getHttpStatus(),stream, request) ;
-	}
-}
-
-
-/**
- * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
- * avec specification d'un code HTTP d'erreur
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
-int ResponseSender::sendresponse(int statusCode, DataStream* stream, FCGX_Request* request)
-{
 	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(statusCode);
+	std::string statusHeader= genStatusHeader(stream->getHttpStatus());
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(stream->gettype().c_str(), strlen(stream->gettype().c_str()),request->out);

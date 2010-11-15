@@ -20,13 +20,8 @@ tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tile
 {
 	if (getType()=="image/jpeg")
 		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_jpeg.tif",2048,2052,"image/jpeg");
-	else if(getType()=="image/tiff"){
-	/*		FileDataSource* rawNoDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/tiff");
-			TiffEncoderSource* noDataSource = new TiffEncoderSource(tm.getTileW(),tm.getTileH(),channels,rawNoDataSource);
-			rawNoDataSource->release_data();
-			delete rawNoDataSource;*/
-noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/jpeg");
-		}
+	else if(getType()=="image/tiff")
+		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/jpeg");
 	else if(getType()=="image/png")
                 noDataSource = new FileDataSource("../config/nodata/nodata_tiled_png.tif",2048,2052,"image/png");
 	else
@@ -222,7 +217,6 @@ Tile* Level::gettile(int x, int y)
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	// LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
-
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
 }
 

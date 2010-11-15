@@ -16,6 +16,7 @@ public:
 	}
 	~BilEncoder();
 	size_t getdata(uint8_t *buffer, size_t size);
+	int getHttpStatus() {return 200;}
 };*/
 #endif
 

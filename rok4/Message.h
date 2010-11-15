@@ -65,6 +65,7 @@ public:
 	}
 	bool eof() {return (pos==message.length());}
 	std::string gettype() {return type.c_str();}
+	int getHttpStatus() {return 200;}
 };
 
 /**

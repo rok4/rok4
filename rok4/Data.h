@@ -39,6 +39,11 @@ public:
 	 * Indique le type MIME associé à la donnée source.
 	 */
 	virtual std::string gettype() = 0;
+
+	/**
+         * Indique le statut Http associé à la donnée source.
+         */
+        virtual int getHttpStatus() = 0;
 };
 
 
@@ -80,6 +85,11 @@ public:
 	 * Indique le type MIME associé au flux.
 	 */
 	virtual std::string gettype() = 0;
+
+	/**
+         * Indique le statut Http associé au flux.
+         */
+        virtual int getHttpStatus() = 0;
 };
 
 

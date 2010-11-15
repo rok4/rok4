@@ -37,7 +37,8 @@ public:
 			delete[] data;
 		return true;
 	}
-
+	
+	int getHttpStatus() {return 200;}
 };
 
 #endif

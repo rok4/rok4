@@ -29,7 +29,7 @@ private:
 	const std::string noDataFile;
 
 	std::string getfilepath(int tilex, int tiley);
-	FileDataSource* noDataSource;
+	DataSource* noDataSource;
 
 protected:
 	/**

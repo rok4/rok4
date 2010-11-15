@@ -31,6 +31,8 @@ public:
 	bool eof();
 
 	std::string gettype() {return "image/png";}
+
+	int getHttpStatus() {return 200;}
 };
 
 
