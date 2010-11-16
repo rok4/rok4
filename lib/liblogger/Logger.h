@@ -2,25 +2,66 @@
 #define _LOGGER_
 
 #include <ostream>
+#include <vector>
+#include "Accumulator.h"
 
 
+typedef enum {	
+	DEBUG = 0,
+	INFO,
+	WARN,
+	ERROR,
+	FATAL,
+	nbLogLevel // ceci n'est pas un logLevel mais juste un hack pour avoir une constante qui compte le nombre de logLevel
+} LogLevel;
 
-
-typedef enum{DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3, FATAL = 4} LogLevel;
-std::ostream &logger(LogLevel l);
 
 class Logger {
-public:
-   static void configure(std::string logFileName);
+	private:
+		
+		// TODO: ce serait plus propre d'utiliser des shared_ptr
+		static Accumulator* accumulator[nbLogLevel];
+
+	public:
+		/**
+		 * Obtient un poiinteur vers la sortie du niveau de log.
+		 *
+		 * @return la valeur de retour peut être un pointeur nul, ce qui signifie que le niveau de log est désactivé.
+		 */
+		inline static Accumulator* getAccumulator(LogLevel level) {
+			return accumulator[level];
+		}
+
+		/**
+		 * Définit la sortie d'un niveau de log.
+		 *
+		 * Pour désactiver un niveau de log, utliser un pointeur nul
+		 * Le même accumulateur peut être utilisé par plusieurs niveau de log.
+		 *
+		 * La classe Logger se charge de détruire les Accumulateurs non utilisés.
+		 *
+		 * Attention cette fonction n'est pas threadsafe et ne doit être utilisée que
+		 * par un unique thread.
+		 */
+		static void setAccumulator(LogLevel level, Accumulator *A);
+
+
+
+		/**
+		 * utilisation : Logger(DEBUG) << message
+		 */
+		static std::ostream& getLogger(LogLevel level);
+
+
 };
 
+#define LOGGER(x) if(Logger::getAccumulator(x)) Logger::getLogger(x)
 
-#define LOGGER(x) logger(x)<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "
-#define LOGGER_DEBUG(m) logger(DEBUG)<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
-#define LOGGER_INFO(m)  logger(INFO)<<m<<std::endl
-#define LOGGER_WARN(m)  logger(WARN)<<m<<std::endl
-#define LOGGER_ERROR(m) logger(ERROR)<<m<<std::endl
-#define LOGGER_FATAL(m) logger(FATAL)<<m<<std::endl
+#define LOGGER_DEBUG(m) LOGGER(DEBUG)<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
+#define LOGGER_INFO(m) LOGGER(INFO)<<m<<std::endl
+#define LOGGER_WARN(m) LOGGER(WARN)<<m<<std::endl
+#define LOGGER_ERROR(m) LOGGER(ERROR)<<m<<std::endl
+#define LOGGER_FATAL(m) LOGGER(FATAL)<<m<<std::endl
 
 
 #endif

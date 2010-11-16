@@ -8,81 +8,65 @@
 #include <iostream>
 #include <fstream>
 
-const char* LogLevelText[5] = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
+const char* LogLevelText[nbLogLevel] = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
 class logbuffer : public std::stringbuf {
-  friend class Logger;
   private:
-  static std::ostream *out;
-  static pthread_mutex_t mutex;
-  pthread_t thread_id;
-  const char* level;
+	LogLevel level;
 
   protected:
   virtual int sync();
   public:
-  logbuffer(LogLevel level) : std::stringbuf(std::ios_base::out), thread_id(pthread_self()), level(LogLevelText[level]) {}
+  logbuffer(LogLevel level) : std::stringbuf(std::ios_base::out), level(level) {}
 };
 
-std::ostream *logbuffer::out = 0; // Définition du flux de sortie des log
-pthread_mutex_t logbuffer::mutex = PTHREAD_MUTEX_INITIALIZER;
-
-
-
-
-int logbuffer::sync() {    
-  timeval tim;
-  gettimeofday(&tim, NULL);
-  char date[32+1];
-  tm *now = localtime(&tim.tv_sec);
-  //FIXME:NV:cause de plantage 64bit et pb de sécurité
-  sprintf(date, "%s %04d/%02d/%02d %02d:%02d:%02d.%06d", level, now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec, (int) (tim.tv_usec));
-
-  pthread_mutex_lock(&mutex);
-    if(out) {
-      (*out) << date << "\t" << thread_id << "\t";
-      out->write(pbase(), pptr() - pbase());
-      out->flush();
-    }
-
-    std::cerr << date << "\t" << thread_id << "\t";
-    std::cerr.write(pbase(), pptr() - pbase());
-    std::cerr.flush();    
-  pthread_mutex_unlock(&mutex);
-
-  str("");
-  return 0;
+int logbuffer::sync() {	
+	Accumulator* acc = Logger::getAccumulator(level);
+	if(acc) acc->addMessage(str());
+	str("");
+	return 0;
 }
 
 
-void Logger::configure(std::string confFileName) {
-  static std::ofstream F;
-  F.open(confFileName.c_str(), std::ios_base::app | std::ios_base::out);
-  logbuffer::out = &F;
-}
-
+Accumulator* Logger::accumulator[nbLogLevel] = {0};
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-static pthread_key_t logger_key[5];
+static pthread_key_t logger_key[nbLogLevel];
 static void init_key() {
-  for(int i = 0; i < 5; i++) 
-    pthread_key_create(&logger_key[i], 0);
+  for(int i = 0; i < nbLogLevel; i++) pthread_key_create(&logger_key[i], 0);
 }
 
-std::ostream &logger(LogLevel level) {
+void Logger::setAccumulator(LogLevel level, Accumulator* A) {
+  // On ajoute une petite tache d'initialisation qui doit être 
+  // effectuée une seule fois. Il faut bien la mettre qqpart car 
+  // nous n'avons pas de constructeur ni de contion d'initialisation.
   pthread_once(&key_once, init_key); // initialize une seule fois logger_key
 
-  std::ostream *L;
-  if ((L = (std::ostream*) pthread_getspecific(logger_key[level])) == 0) {
-    L = new std::ostream(new logbuffer(level));
-    pthread_setspecific(logger_key[level], (void*) L);
-  }
-  return *L;
+
+  Accumulator* prev = accumulator[level];
+  accumulator[level] = A;
+
+  // On cherche si l'Accumulateur est encore utilisé 
+  bool last = true;
+  for(int i = 0; i <= FATAL; i++) if(prev == accumulator[level]) last = false;
+  
+  // On le détruit le cas échéant.
+  if(prev && last) delete prev;
 }
 
 
-class NullStream {};
-template<class T> 
-NullStream& operator<<(NullStream &stream, T &message) {return stream;};
 
+std::ostream& Logger::getLogger(LogLevel level) {
+	std::ostream *L;
+	if ((L = (std::ostream*) pthread_getspecific(logger_key[level])) == 0) {
+		L = new std::ostream(new logbuffer(level));
+		pthread_setspecific(logger_key[level], (void*) L);
+	}
 
-
+	timeval tim;
+	gettimeofday(&tim, NULL);
+	char date[64];
+	tm *now = localtime(&tim.tv_sec);
+  sprintf(date, "%04d/%02d/%02d %02d:%02d:%02d.%06d\t", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec, (int) (tim.tv_usec));
+	*L << date << LogLevelText[level] << '\t';
+	return *L;
+}

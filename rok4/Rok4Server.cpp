@@ -28,26 +28,16 @@
 void* Rok4Server::thread_loop(void* arg)
 {
 	Rok4Server* server = (Rok4Server*) (arg);
-
-	int rc;
 	FCGX_Request fcgxRequest;
-
-	//    int sock = 0;
-	// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
-	// Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
-	// Utile
-	//  * Pour faire du profiling (grof)
-	//  * Pour lancer rok4 sur plusieurs serveurs distants
-	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
 	if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
 		LOGGER_FATAL("Le listener FCGI ne peut etre initialise");
 	}
 
 	while(true){
-		rc = FCGX_Accept_r(&fcgxRequest);
+		int rc;
 
-		if (rc < 0){
+		if(FCGX_Accept_r(&fcgxRequest) < 0) {
 			LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
 			break;
 		}
@@ -61,6 +51,7 @@ void* Rok4Server::thread_loop(void* arg)
 		/* On espère récupérer le nom du host tel qu'il est exprimé dans la requete avec HTTP_HOST.
 		 * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
 		 */
+		
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
 		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
 		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
@@ -78,7 +69,17 @@ Construction du serveur
 Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
                        sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
 	int init=FCGX_Init();
-	//  sock = FCGX_OpenSocket(":1998", 50);
+
+
+  // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+	// Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
+	// Utile
+	//  * Pour faire du profiling (grof)
+	//  * Pour lancer rok4 sur plusieurs serveurs distants
+	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
+
+
+	sock = FCGX_OpenSocket(":1998", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
@@ -254,7 +255,16 @@ int main(int argc, char** argv) {
 	}
 
 	/* Chargement de la conf technique du serveur */
-	Logger::configure("/var/tmp/rok4cxx.log");
+
+	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4");
+//	Accumulator* acc = new StreamAccumulator(std::cerr);
+
+	Logger::setAccumulator(DEBUG, acc);
+	Logger::setAccumulator(INFO , acc);
+	Logger::setAccumulator(WARN , acc);
+	Logger::setAccumulator(ERROR, acc);
+	Logger::setAccumulator(FATAL, acc);
+
 	LOGGER_INFO( "Lancement du serveur ROK4");
 
 	// Initialisation de l'accès au paramétrage de la libproj
