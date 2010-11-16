@@ -22,7 +22,7 @@
 		<WMSCRS>CRS:84</WMSCRS>
 		<WMSCRS>CRS:bubu</WMSCRS>
 	</WMSCRSList>
-	<boundingBox SRS="EPSG:2973" minx="800000" miny="6200000" maxx="1100000" maxy="6700000"/>
+	<boundingBox CRS="EPSG:2973" minx="800000" miny="6200000" maxx="1100000" maxy="6700000"/>
 	<opaque>true</opaque>
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>

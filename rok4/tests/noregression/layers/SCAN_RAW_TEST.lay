@@ -16,7 +16,7 @@
 	<WMSCRSList>
 		<WMSCRS>IGNF:LAMB93</WMSCRS>
 	</WMSCRSList>
-	<boundingBox SRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
+	<boundingBox CRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
 	<opaque>true</opaque>
 	<authority>IGNF</authority>
 	<resampling>lanczos_4</resampling>

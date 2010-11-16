@@ -465,12 +465,12 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		LOGGER_ERROR("Pas de BoundingBox");
 	}else{
 		std::string tmp;
-		tmp=pElem->Attribute("SRS");
+		tmp=pElem->Attribute("CRS");
 		if (tmp.c_str()==0){
-			LOGGER_ERROR("Le SRS est inexploitable:[" << pElem->GetText() << "]");
+			LOGGER_ERROR("Le CRS est inexploitable:[" << pElem->GetText() << "]");
                         return NULL;
 		}
-		boundingBox.srs=pElem->Attribute("SRS");
+		boundingBox.srs=pElem->Attribute("CRS");
 		if (!sscanf(pElem->Attribute("minx"),"%lf",&boundingBox.minx)){
 			LOGGER_ERROR("Le minx est inexploitable:[" << pElem->Attribute("minx") << "]");
 			return NULL;

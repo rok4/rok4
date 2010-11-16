@@ -122,63 +122,126 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Layer
-	std::map<std::string, Layer*>::iterator it(layerList.begin()), itend(layerList.end());
-	for (;it!=itend;++it){
-		TiXmlElement * layerEl = new TiXmlElement( "Layer" );
-		Layer* layer = it->second;
-		// Name
-		layerEl->LinkEndChild(buildTextNode("Name", layer->getId()));
-		// Title
-		layerEl->LinkEndChild(buildTextNode("Title", layer->getTitle()));
-		// Abstract
-		layerEl->LinkEndChild(buildTextNode("Abstract", layer->getAbstract()));
-		// KeywordList
-		if (layer->getKeyWords().size() != 0){
-			TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
-			for (unsigned int i=0; i < layer->getKeyWords().size(); i++){
-				kwlEl->LinkEndChild(buildTextNode("Keyword", layer->getKeyWords()[i]));
-			}
-			layerEl->LinkEndChild(kwlEl);
-		}
-		// CRS
-		for (unsigned int i=0; i < layer->getWMSCRSList().size(); i++){
-			layerEl->LinkEndChild(buildTextNode("CRS", layer->getWMSCRSList()[i]));
-		}
-		// GeographicBoundingBox
+	if (layerList.empty()){
+		LOGGER_ERROR("Liste de layers vide");
+		return;
+	}
+	// Parent layer
+	Layer* parentLayer=layerList.begin()->second;
+	TiXmlElement * parentLayerEl = new TiXmlElement( "Layer" );
+        // Name
+        parentLayerEl->LinkEndChild(buildTextNode("Name", parentLayer->getId()));
+        // Title
+        parentLayerEl->LinkEndChild(buildTextNode("Title", parentLayer->getTitle()));
+        // Abstract
+        parentLayerEl->LinkEndChild(buildTextNode("Abstract", parentLayer->getAbstract()));
+        // KeywordList
+	if (parentLayer->getKeyWords().size() != 0){
+        	TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
+                for (unsigned int i=0; i < parentLayer->getKeyWords().size(); i++){
+                	kwlEl->LinkEndChild(buildTextNode("Keyword", parentLayer->getKeyWords()[i]));
+                }
+                parentLayerEl->LinkEndChild(kwlEl);
+        }
+        // CRS
+        for (unsigned int i=0; i < parentLayer->getWMSCRSList().size(); i++){
+        	parentLayerEl->LinkEndChild(buildTextNode("CRS", parentLayer->getWMSCRSList()[i]));
+        }
+	// GeographicBoundingBox
+        TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
+        std::ostringstream os;
+        os<<parentLayer->getGeographicBoundingBox().minx;
+        gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
+        os.str("");
+        os<<parentLayer->getGeographicBoundingBox().maxx;
+        gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+        os.str("");
+        os<<parentLayer->getGeographicBoundingBox().miny;
+        gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
+        os.str("");
+        os<<parentLayer->getGeographicBoundingBox().maxy;
+        gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+        parentLayerEl->LinkEndChild(gbbEl);
+        // BoundingBox
+        TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+        bbEl->SetAttribute("CRS",parentLayer->getBoundingBox().srs);
+        bbEl->SetAttribute("minx",parentLayer->getBoundingBox().minx);
+        bbEl->SetAttribute("miny",parentLayer->getBoundingBox().miny);
+        bbEl->SetAttribute("maxx",parentLayer->getBoundingBox().maxx);
+        bbEl->SetAttribute("maxy",parentLayer->getBoundingBox().maxy);
+        parentLayerEl->LinkEndChild(bbEl);
+
+        /* TODO:
+        *
+        layer->getAuthority();
+        layer->getMaxRes();
+        layer->getMinRes();
+        layer->getOpaque();
+        layer->getStyles();
+        */
+
+	// Child layers
+	std::map<std::string, Layer*>::iterator it;
+        for (it=++layerList.begin();it!=layerList.end();it++){
+                TiXmlElement * childLayerEl = new TiXmlElement( "Layer" );
+                Layer* childLayer = it->second;
+                // Name
+                childLayerEl->LinkEndChild(buildTextNode("Name", childLayer->getId()));
+                // Title
+                childLayerEl->LinkEndChild(buildTextNode("Title", childLayer->getTitle()));
+                // Abstract
+                childLayerEl->LinkEndChild(buildTextNode("Abstract", childLayer->getAbstract()));
+                // KeywordList
+                if (childLayer->getKeyWords().size() != 0){
+                        TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
+                        for (unsigned int i=0; i < childLayer->getKeyWords().size(); i++){
+                                kwlEl->LinkEndChild(buildTextNode("Keyword", childLayer->getKeyWords()[i]));
+                        }
+                        childLayerEl->LinkEndChild(kwlEl);
+                }
+                // CRS
+                for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
+                        childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
+                }
+                // GeographicBoundingBox
                 TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
-		std::ostringstream os;
-		os<<layer->getGeographicBoundingBox().minx;
-		gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
-		os.str("");
-		os<<layer->getGeographicBoundingBox().maxx;
-		gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+                std::ostringstream os;
+                os<<childLayer->getGeographicBoundingBox().minx;
+                gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
                 os.str("");
-		os<<layer->getGeographicBoundingBox().miny;
+                os<<childLayer->getGeographicBoundingBox().maxx;
+                gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+                os.str("");
+                os<<childLayer->getGeographicBoundingBox().miny;
                 gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
                 os.str("");
-		os<<layer->getGeographicBoundingBox().maxy;
+                os<<childLayer->getGeographicBoundingBox().maxy;
                 gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
-                layerEl->LinkEndChild(gbbEl);
+                childLayerEl->LinkEndChild(gbbEl);
+
 		// BoundingBox
-		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
-		bbEl->SetAttribute("SRS",layer->getBoundingBox().srs);
-		bbEl->SetAttribute("minx",layer->getBoundingBox().minx);
-		bbEl->SetAttribute("miny",layer->getBoundingBox().miny);
-		bbEl->SetAttribute("maxx",layer->getBoundingBox().maxx);
-		bbEl->SetAttribute("maxy",layer->getBoundingBox().maxy);
-		layerEl->LinkEndChild(bbEl);
+                TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+                bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
+                bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
+                bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
+                bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
+                bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
+                childLayerEl->LinkEndChild(bbEl);
 
-		/* TODO:
-		 *
-		layer->getAuthority();
-		layer->getMaxRes();
-		layer->getMinRes();
-		layer->getOpaque();
-		layer->getStyles();
-		 */
-		capabilityEl->LinkEndChild(layerEl);
+                /* TODO:
+                 *
+                layer->getAuthority();
+                layer->getMaxRes();
+                layer->getMinRes();
+                layer->getOpaque();
+                layer->getStyles();
+                 */
+                parentLayerEl->LinkEndChild(childLayerEl);
 
-	}// for layer
+        }// for layer
+
+        capabilityEl->LinkEndChild(parentLayerEl);
+
 
 	capabilitiesEl->LinkEndChild(capabilityEl);
 	doc.LinkEndChild( capabilitiesEl );

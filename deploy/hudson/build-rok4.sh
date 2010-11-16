@@ -61,4 +61,4 @@ fi
 
 # Lancement des tests de non regression
 cd ../rok4/tests/noregression
-bash tests.sh
+bash tests.sh http://localhost/rok4/bin/rok4

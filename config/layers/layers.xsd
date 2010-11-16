@@ -33,7 +33,7 @@
 			<xs:element name="boundingBox">
 				<xs:complexType>
 				<xs:sequence>
-					<xs:element name="SRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+					<xs:element name="CRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
 					<xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
 					<xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
 					<xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
