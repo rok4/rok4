@@ -23,8 +23,10 @@ use Getopt::Std;
 use XML::Simple;
 use File::Basename;
 use List::Util qw( max );
-use POSIX qw(ceil);
+use POSIX qw(ceil floor);
 
+my $nom_fichier_first_jobs = "first_jobs.txt";
+my $nom_fichier_last_jobs = "last_jobs.txt";
 
 # pas de bufferisation des sorties
 $| = 1;
@@ -311,6 +313,10 @@ my %dalle_niveau_max_y_max = %{$ref_niv_max_y_max};
 
 # action 4 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
 
+# liste des scripts en first ou last
+my @scripts_first;
+my @scripts_last;
+
 # liste des dalles calculees (cles seulement)
 my %dalles_calculees;
 
@@ -419,10 +425,12 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 		my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
 		open SCRIPT, ">$nom_script_complet" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_complet.";
 		# pour la repartition de torque
-		print SCRIPT "#PBS $nombre_dalles_creees_script\n";
+		my $temps = &cree_temps_torque($nombre_dalles_creees_script);
+		print SCRIPT "#PBS -l cput=$temps\n";
 		print SCRIPT $string_script_creation_rep_temp;
 		print SCRIPT $string_script_this;
 		close SCRIPT;
+		push(@scripts_first, $nom_script_complet);
 	}
 	
 }
@@ -507,11 +515,27 @@ $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_
 my $nom_script_job17 = "$nom_script"."_"."job17";
 open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
 # pour la repartition de torque
-print JOB17 "#PBS $nombre_dalles_job17\n";
+my $temps_17 = &cree_temps_torque($nombre_dalles_job17);
+print JOB17 "#PBS $temps_17\n";
 print JOB17 $string_script_creation_rep_temp;
 print JOB17 $string_script4;
 print JOB17 $string_script_destruction_rep_temp;
 close JOB17;
+push(@scripts_last, $nom_script_job17);
+
+# on cree 2 fichiers avec les premier et derniers traitements
+open FIRST, ">$nom_fichier_first_jobs" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier_first_jobs.";
+foreach my $fisrt_job(@scripts_first){
+	print FIRST "$fisrt_job ";
+}
+print FIRST "\n";
+close FIRST;
+open LAST, ">$nom_fichier_last_jobs" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier_last_jobs.";
+foreach my $last_job(@scripts_last){
+	print LAST "$last_job ";
+}
+print LAST "\n";
+close LAST;
 
 &ecrit_log("Traitement termine.");
 close LOG;
@@ -1012,7 +1036,7 @@ sub calcule_niveau_minimum {
 			#if (-e $dalle_cache ){
 			# avec le script il faut faire autrement
 			if (exists $dalles_liens{$dalle_cache} ){
-				$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp 2>&1\n";
+				$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp\n";
 				# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
 				$string_script .= "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
 
@@ -1087,7 +1111,7 @@ sub calcule_niveau_minimum {
 			}
 			# TODO nombre de canaux, nombre de bits, couleur en parametre
 			# TODO supprimer no_data qui ne sert a rien
-			$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb 2>&1\n";
+			$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb\n";
 			$dalles_calculees{$dalle_cache} = "toto";
 			$nb_dal += 1;
 		}
@@ -1153,13 +1177,13 @@ sub calcule_niveaux_inferieurs{
 							# mise en format travail de la dalle dalle_cache
 							# desctruction de la dalle_cache temporaire si elle existe
 							$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
-							$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache 2>&1\n";
+							$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n";
 							$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 						}
 						$string_dessous .= " $fichier_pointe";
 					}
 					# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
-					$string_script2 .= "$programme_ss_ech $string_dessous $dal 2>&1\n";
+					$string_script2 .= "$programme_ss_ech $string_dessous $dal\n";
 					$dalles_calculees{$dal} = "toto";
 					$nb_calc += 1; 
 				}
@@ -1411,7 +1435,7 @@ sub passage_pivot{
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire la couleur dans $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif 2>&1\n";
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n";
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
@@ -1709,4 +1733,19 @@ sub liste_liens{
 	}
 	
 	return \%hash_liens;
+}
+################################################################################
+sub cree_temps_torque{
+
+	my $nombre_cliches = $_[0];
+	
+	# on considere 1dalle par minute	
+	
+	my $nb_heures = floor($nombre_cliches / 60);
+	my $minutes = $nombre_cliches - (60 * $nb_heures);
+	$nb_heures = &formate_zero($nb_heures, 2);
+	$minutes = &formate_zero($minutes, 2);
+	my $temps_torque = $nb_heures.":".$minutes.":00";
+	
+	return $temps_torque;
 }
