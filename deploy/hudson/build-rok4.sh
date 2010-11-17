@@ -61,7 +61,10 @@ fi
 
 # Lancement des tests de non regression
 cd ../rok4/tests/noregression
-if [ ! bash tests.sh http://localhost/rok4/bin/rok4 ] ; then
+bash tests.sh http://localhost/rok4/bin/rok4
+if [ $? -ne 0 ] ; then
 	echo "[error] Echec des tests de non regression"
 	exit 4
 fi
+
+exit 0
