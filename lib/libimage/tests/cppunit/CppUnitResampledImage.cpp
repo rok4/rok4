@@ -73,7 +73,7 @@ protected:
   void _chrono(int channels, int kernel_type) {
     uint8_t color[4];
     float buffer[800*4] __attribute__ ((aligned (32)));
-    int nb_iteration = 50;
+    int nb_iteration = 2;
 
     timeval BEGIN, NOW;
     gettimeofday(&BEGIN, NULL);

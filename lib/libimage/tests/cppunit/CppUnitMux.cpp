@@ -24,7 +24,7 @@ protected:
 
   void performance() {
     timeval BEGIN, NOW;
-    int nb_iteration = 1000000;
+    int nb_iteration = 10000;
     int length = 1000;
 
     float T1[2000]  __attribute__ ((aligned (32)));

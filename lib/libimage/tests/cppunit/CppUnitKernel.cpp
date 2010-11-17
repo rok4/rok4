@@ -23,7 +23,7 @@ protected:
   void testKernel() {
 
     float W[100];
-    for(int i = 0; i < 10000; i++) {    
+    for(int i = 0; i < 1000; i++) {    
       
       const Kernel &K = Kernel::getInstance(Kernel::KernelType(i%6)); // Il y a 6 Noyaux défini dans KernelType
 

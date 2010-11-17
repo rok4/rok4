@@ -44,7 +44,7 @@ protected:
 
   template<typename T, typename F>
   void performance() {
-    int nb_iteration = 1000000;
+    int nb_iteration = 50000;
     int length = 1000;
 
     F from[4096]  __attribute__ ((aligned (32)));

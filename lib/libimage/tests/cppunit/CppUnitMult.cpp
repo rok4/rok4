@@ -43,7 +43,7 @@ protected:
 
 
   void performance() {
-    int nb_iteration = 1000000;
+    int nb_iteration = 50000;
     int length = 1000;
 
     float from[2000]  __attribute__ ((aligned (32)));
