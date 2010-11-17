@@ -8,6 +8,9 @@
 #include <iostream>
 #include <fstream>
 
+/* nullstream est initialisé sans streambuf, son badbit sera activé et les formatages seront alors ignorées */
+std::ostream nullstream(0);
+
 const char* LogLevelText[nbLogLevel] = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
 class logbuffer : public std::stringbuf {

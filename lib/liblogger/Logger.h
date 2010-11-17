@@ -55,7 +55,13 @@ class Logger {
 
 };
 
-#define LOGGER(x) if(Logger::getAccumulator(x)) Logger::getLogger(x)
+/**
+ * Un flux qui fait rien.
+ * Utilisé pour ne pas formater les sorties des niveaux logs déactivés.
+ */
+extern std::ostream nullstream;
+
+#define LOGGER(x) (Logger::getAccumulator(x)?Logger::getLogger(x):nullstream)
 
 #define LOGGER_DEBUG(m) LOGGER(DEBUG)<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
 #define LOGGER_INFO(m) LOGGER(INFO)<<m<<std::endl
