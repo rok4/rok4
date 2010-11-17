@@ -79,7 +79,7 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
 
-	sock = FCGX_OpenSocket(":1998", 50);
+//	sock = FCGX_OpenSocket(":1998", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
@@ -229,7 +229,7 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 	}
 }
 
-/** Separe les fequetes WMS et WMTS */
+/** Separe les requetes WMS et WMTS */
 void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	if(request->service == "wms") {
 		processWMS(request, fcgxRequest);
@@ -240,7 +240,7 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}
 }
 
-// TODO : A mettre ailleurs (duppliqué dans ReprojectedImage.cpp)
+// TODO : A mettre ailleurs (dupliqué dans ReprojectedImage.cpp)
 char PROJ_LIB[1024] = PROJ_LIB_PATH;
 const char *pj_finder(const char *name) {
   strcpy(PROJ_LIB + 15, name);
@@ -254,7 +254,8 @@ int main(int argc, char** argv) {
 		sleep(2);
 	}
 
-	/* Chargement de la conf technique du serveur */
+	/* Initialisation des Loggers */
+
 
 	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4");
 //	Accumulator* acc = new StreamAccumulator(std::cerr);
@@ -270,6 +271,9 @@ int main(int argc, char** argv) {
 	// Initialisation de l'accès au paramétrage de la libproj
 	/// Cela evite d'utiliser la variable d'environnement PROJ_LIB
 	pj_set_finder( pj_finder );
+
+
+	/* Chargement de la conf technique du serveur */
 
 	//chargement de la conf technique
 	int nbThread;
