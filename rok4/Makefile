@@ -38,9 +38,7 @@ all: Rok4Server	noregression
 # compile et genere le serveur WMS
 Rok4Server: bindir $(DEPLIB) $(WMSSOBJ)
 	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o Rok4Server $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp Rok4Server *.o $(BINDIR)
-	rm $(BINDIR)/Rok4Server.o
-	mv $(BINDIR)/Rok4Server $(BINDIR)/rok4
+	cp Rok4Server $(BINDIR)/rok4
 	cp -rf $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 # règle générique pour lancer les compilations des librairies dépendnates
@@ -56,16 +54,16 @@ very-clean: clean $(patsubst %, clean-%, $(DEPLIB))
 
 test: cpputest
 
-#
 # cpputest
 # compile et execute les tests unitaires cppunit
 cpputest: clean Rok4Server cppubin
 	$(CPPUBIN)
 
 cppubin: $(CPPUNITOBJ)
-	$(CXX) $(LDFLAGS) $(CPPUNITOBJ) $(BINDIR)/*.o -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
+	$(CXX) $(LDFLAGS) $(WMSSOBJ:Rok4Server.o=) $(CPPUNITOBJ) -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
 	cp $(CPPUNITOBJ) $(BINDIR)
-	make -C ../lib/libimage cpputest # lance les tests unitaires sur libimage
+	make -C ../lib/libimage test  # lance les tests unitaires sur libimage
+	make -C ../lib/liblogger test # lance les tests unitaires sur libimage
 
 noregression:
 	make -C tests/noregression all
