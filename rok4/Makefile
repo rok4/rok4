@@ -56,7 +56,7 @@ test: cpputest
 
 # cpputest
 # compile et execute les tests unitaires cppunit
-cpputest: clean Rok4Server cppubin
+cpputest: Rok4Server cppubin
 	$(CPPUBIN)
 
 cppubin: $(CPPUNITOBJ)
