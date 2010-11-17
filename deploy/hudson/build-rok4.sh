@@ -6,7 +6,7 @@ cd rok4
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
 #make very-clean test
 make very-clean
-make Rok4Server
+make Rok4Server test
 if [ $? -ne 0 ] ; then
   exit 1
 fi
@@ -61,7 +61,7 @@ fi
 
 # Lancement des tests de non regression
 cd ../rok4/tests/noregression
-if [ ! bash tests.sh http://localhost/rok4/bin/rok4] ; then
+if [ ! bash tests.sh http://localhost/rok4/bin/rok4 ] ; then
 	echo "[error] Echec des tests de non regression"
 	exit 4
 fi
