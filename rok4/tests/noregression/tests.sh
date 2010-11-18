@@ -47,7 +47,7 @@ else
         echo $NERRORS
 fi
 #rm tmp.xml
-rm tmp.log
+#rm tmp.log
 
 # 1.2. GetMap
 
