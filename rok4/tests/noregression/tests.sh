@@ -7,6 +7,7 @@
 # -> export export proxy_Port=portnumber
 # -> java
 # -> xerces
+# -> export xerces_home=path_to_xerces
 # Others
 # -> md5sum
 
@@ -35,9 +36,9 @@ fi
 let NTESTS+=1
 wget  --no-proxy -O tmp.xml "$1?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities"
 
-result="`java -Dhttp.proxyHost=$proxy_Host -Dhttp.proxyPort=$proxy_Port -classpath ./xerces/xercesSamples.jar:./xerces/xml-apis.jar:./xerces/xercesImpl.jar:./xerces/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a http://gditestbed.agiv.be/XSD/networkservice/view/1.0/INSPIRE_ExtendedCapabilities_WMS_130.xsd -i tmp.xml`"
-echo $result
-if [ "$result" = "" ]
+java -Dhttp.proxyHost=$proxy_Host -Dhttp.proxyPort=$proxy_Port -classpath $xerces_home/xercesSamples.jar:$xerces_home/xml-apis.jar:$xerces_home/xercesImpl.jar:$xerces_home/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a http://gditestbed.agiv.be/XSD/networkservice/view/1.0/INSPIRE_ExtendedCapabilities_WMS_130.xsd -i tmp.xml >& tmp.log
+
+if [ `wc -l tmp.log | cut -d\  -f1` -eq 0 ]
 then
         echo "Test 1.1.2. OK"
 else
@@ -45,8 +46,8 @@ else
         let NERRORS+=1
         echo $NERRORS
 fi
-
 #rm tmp.xml
+rm tmp.log
 
 # 1.2. GetMap
 
@@ -142,6 +143,19 @@ else
         let NERRORS+=1
 fi
 #rm tmp.png
+
+# 2.2.4 Nodata Tile
+let NTESTS+=1
+wget --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=3000&tileRow=80000&tileMatrix=0_5&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
+sum="`md5sum tmp.png | cut -d ' ' -f 1`"
+echo $sum
+if [ "$sum" = "bc03f273a15225714287a6c049bab7e7" ]
+then
+        echo "Test 2.2.4. OK"
+else
+        echo "Test 2.2.4. FAILED"
+        let NERRORS+=1
+fi
 
 echo " ERRORS : "$NERRORS"/"$NTESTS
 
