@@ -39,6 +39,7 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * capabilitiesEl = new TiXmlElement( "WMS_Capabilities" );
 	capabilitiesEl->SetAttribute("version","1.3.0");
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
+	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.europa.eu/networkservice/view/1.0");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
 	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");

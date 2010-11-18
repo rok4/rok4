@@ -223,7 +223,6 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	if (k==servicesConf.getFormatList().size())
 		return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Format "+format+" non gere par le service.","wms"));*/
 	// BBOX
-
 	std::string strBbox=getParam("bbox");
 	if(strBbox == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre BBOX absent.","wms"));

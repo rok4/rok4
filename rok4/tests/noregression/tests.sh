@@ -1,22 +1,52 @@
+# Requirements
+
+# Wms validation
+# -> export http_proxy=http://hostname:portnumber/
+# Inspire validation
+# -> export proxy_Host=hostname
+# -> export export proxy_Port=portnumber
+# -> java
+# -> xerces
+# Others
+# -> md5sum
+
 NTESTS=0
 NERRORS=0
 
 # 1. WMS
 
 # 1.1. GetCapabilitites
+
+# 1.1.2 vs WMS 1.3.0
+
 let NTESTS+=1
 wget  --no-proxy -O tmp.xml "$1?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities"
 
 if [ "`xmllint  --schema http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd tmp.xml`" ]
 then
-        echo "Test 1.1. OK"
+        echo "Test 1.1.1. OK"
 else
-        echo "Test 1.1. FAILED"
+        echo "Test 1.1.1. FAILED"
         let NERRORS+=1
 	echo $NERRORS
 fi
 
-rm tmp.xml
+# 1.1.2 vs INSPIRE
+let NTESTS+=1
+wget  --no-proxy -O tmp.xml "$1?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities"
+
+result="`java -Dhttp.proxyHost=$proxy_Host -Dhttp.proxyPort=$proxy_Port -classpath ./xerces/xercesSamples.jar:./xerces/xml-apis.jar:./xerces/xercesImpl.jar:./xerces/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a http://gditestbed.agiv.be/XSD/networkservice/view/1.0/INSPIRE_ExtendedCapabilities_WMS_130.xsd -i tmp.xml`"
+echo $result
+if [ "$result" = "" ]
+then
+        echo "Test 1.1.2. OK"
+else
+        echo "Test 1.1.2. FAILED"
+        let NERRORS+=1
+        echo $NERRORS
+fi
+
+#rm tmp.xml
 
 # 1.2. GetMap
 
