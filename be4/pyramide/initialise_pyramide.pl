@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Std;
 use XML::Simple;
+use XML::LibXML;
 use File::Basename;
 use Cwd 'abs_path';
 use cache(
@@ -63,20 +64,23 @@ if( $ancien_pyr !~ /^\//){
 }
 &ecrit_log("Pyramide la plus recente : $ancien_pyr.");
 
-# action 2 : acceder au cache et faire le lien entre anciennes et nouvelles dalles
-my %level_rep_img_ancien;
-my %level_rep_mtd_ancien;
+# action 2 : mise a jour des indices de tuiles limites dans les niveaux de la pyramide
+&ecrit_log("Mise a jour des limites dans le TMS avec $ancien_pyr.");
 if ( -e $ancien_pyr && -f $ancien_pyr ){
-	&ecrit_log("Lecture de la pyramide $ancien_pyr.");
-	my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($ancien_pyr);
-	%level_rep_img_ancien = %{$ref_hash_images_ancien};
-	%level_rep_mtd_ancien = %{$ref_hash_mtd_ancien};
+	my $ref_tms_limits = &lecture_limites_tms_pyramide($ancien_pyr);
+	&maj_limites_tms($fichier_pyr, $ref_tms_limits)
 }else{
 	&ecrit_log("ERREUR Le fichier $ancien_pyr n'existe pas.");
 	print "[INITIALISE_PYRAMIDE] Le fichier $ancien_pyr n'existe pas.\n";
 	exit;
 }
-&ecrit_log("Lecture de la pyramide $fichier_pyr.");
+
+# action 3 : acceder au cache et faire le lien entre anciennes et nouvelles dalles
+&ecrit_log("Lecture des repertoires de la pyramide $ancien_pyr.");
+my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($ancien_pyr);
+my %level_rep_img_ancien = %{$ref_hash_images_ancien};
+my %level_rep_mtd_ancien = %{$ref_hash_mtd_ancien};
+&ecrit_log("Lecture des repertoires de la pyramide $fichier_pyr.");
 my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_repertoires_pyramide($fichier_pyr);
 my %level_rep_img_nouveau = %{$ref_hash_images_nouveau};
 my %level_rep_mtd_nouveau = %{$ref_hash_mtd_nouveau};
@@ -96,7 +100,7 @@ while ( my($level,$rep) = each %level_rep_mtd_nouveau ){
 	}
 }
 
-# action 3 : lien-symboliquer les dalles de l'ancien cache vers le nouveau
+# action 4 : lien-symboliquer les dalles de l'ancien cache vers le nouveau
 &ecrit_log("Creation des liens symboliques entre ancien et nouveau cache.");
 my $nombre = 0;
 while( my ($repertoire_ancien_cache, $repertoire_nouveau_cache) = each %rep_ancien_nouveau ){
@@ -164,7 +168,6 @@ sub ecrit_log{
 	return $bool_ok;
 }
 ################################################################################
-
 sub cree_liens_syboliques_recursifs{
 	
 	my $rep_ini = $_[0];
@@ -216,4 +219,80 @@ sub cree_liens_syboliques_recursifs{
 	return $nb_liens;
 	
 }
+################################################################################
+sub lecture_limites_tms_pyramide{
+	
+	my $fichier_pyramide = $_[0];
+	
+	my %level_tms_limits;
+	
+	my $xml_fictif2 = new XML::Simple(KeyAttr=>[]);
 
+	# lire le fichier XML
+	my $data = $xml_fictif2->XMLin("$fichier_pyramide");
+	
+	foreach my $level (@{$data->{level}}){
+		my $id = $level->{tileMatrix};
+		my $tms_limits = $level->{TMSLimits};
+		my $tile_min_x = $tms_limits->{minTileRow};
+		my $tile_min_y = $tms_limits->{minTileCol};
+		my $tile_max_x = $tms_limits->{maxTileRow};
+		my $tile_max_y = $tms_limits->{maxTileCol};
+		
+		my @limits = ($tile_min_x, $tile_max_x, $tile_min_y, $tile_max_y);
+		
+		$level_tms_limits{"$id"} = \@limits;
+		
+	}
+	
+	
+	return \%level_tms_limits;
+}
+################################################################################
+sub maj_limites_tms{
+	
+	my $xml_pyr = $_[0];
+	my $ref_limites_tms = $_[1];
+	
+	my %hash_level_ref_limites = %{$ref_limites_tms};
+	
+	my $bool_ok = 0;
+	
+	# utilisation de xml::libxml car xml::simple deteriore l'ordre des noeuds
+	my $parser = XML::LibXML->new();
+	my $doc = $parser->parse_file("$xml_pyr");
+	
+	# remplacement dans la structure memorisee
+	foreach my $level_pyr(keys %hash_level_ref_limites){
+		# on sait qu'il n'y a qu'un TMSLimits, qu'un minTileRow...
+		my $node_limits = $doc->find("//level[tileMatrix = '$level_pyr']/TMSLimits")->get_node(0);
+		my $node_min_x_src = $node_limits->find("./minTileRow/text()")->get_node(0);
+		my $node_max_x_src = $node_limits->find("./maxTileRow/text()")->get_node(0);
+		my $node_min_y_src = $node_limits->find("./minTileCol/text()")->get_node(0);
+		my $node_max_y_src = $node_limits->find("./maxTileCol/text()")->get_node(0);
+		
+ 		my ($tile_min_x_ancien, $tile_max_x_ancien, $tile_min_y_ancien, $tile_max_y_ancien) = @{$hash_level_ref_limites{"$level_pyr"}};
+		# mis e a jour de l'info
+		if($node_min_x_src->textContent > $tile_min_x_ancien ){
+			$node_min_x_src->setData("$tile_min_x_ancien");
+		}
+		if($node_max_x_src->textContent < $tile_max_x_ancien ){
+			$node_max_x_src->setData("$tile_max_x_ancien");
+		}
+		if($node_min_y_src->textContent > $tile_min_y_ancien ){
+			$node_min_y_src->setData("$tile_min_y_ancien");
+		}
+		if($node_max_y_src->textContent < $tile_max_y_ancien ){
+			$node_max_y_src->setData("$tile_max_y_ancien");
+		}
+		
+	}
+	
+	# remplacement dans le fichier
+	open PYR,">$xml_pyr" or die "[INITIALISE_PYRAMIDE] Impossible d'ouvrir le fichier $xml_pyr.";
+	print PYR $doc->toString;
+	close PYR;
+	
+	$bool_ok = 1;
+	return $bool_ok;
+}

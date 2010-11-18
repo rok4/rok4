@@ -4,7 +4,7 @@ use strict;
 use Getopt::Std;
 use Cwd 'abs_path';
 use File::Basename;
-use POSIX qw(ceil);
+use POSIX qw(ceil floor);
 use cache(
 # 	'%produit_format_param',
 	'$type_mtd_pyr_param',
@@ -14,8 +14,6 @@ use cache(
 	'$nom_rep_images_param',
 	'$nom_rep_mtd_param',
 	'$nom_fichier_mtd_source_param',
-	'$min_tile_param',
-	'$max_tile_param',
 	'%produit_nb_canaux_param',
 	'%produit_tms_param',
 	'$xsd_pyramide_param',
@@ -36,8 +34,6 @@ my $nom_rep_mtd = $nom_rep_mtd_param;
 my $type_mtd_pyr = $type_mtd_pyr_param;
 my $format_mtd_pyr = $format_mtd_pyr_param;
 my $profondeur_pyr = $profondeur_pyr_param;
-my $min_tile = $min_tile_param;
-my $max_tile = $max_tile_param;
 my %produit_nb_canaux = %produit_nb_canaux_param;
 my %produit_tms = %produit_tms_param;
 my $xsd_pyramide = $xsd_pyramide_param;
@@ -164,7 +160,7 @@ if($taille_dalle_pix !~ /^\d+$/i){
 my ($ref_images_source, $nb_images) = &cherche_images($rep_images_source);
 &ecrit_log("$nb_images images dans $rep_images_source.");
 &ecrit_log("Recensement des infos des images de $rep_images_source.");
-my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
+my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
 &ecrit_log("Ecriture du fichier des dalles source.");
 my $nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
 # seulement si les mtd sont specifiees
@@ -201,7 +197,7 @@ if ( !(-e "$rep_pyramide/$nom_pyramide" && -d "$rep_pyramide/$nom_pyramide") ){
 
 my $nom_fichier_pyramide = $nom_pyramide.".pyr";
 &ecrit_log("Creation de $nom_fichier_pyramide.");
-my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr);
+my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 
 # TODO validation du .pyr par le xsd
 # &ecrit_log("Validation de $nom_fichier_pyramide.");
@@ -307,6 +303,8 @@ sub cherche_infos_dalle{
 	my %hash_res_y;
 	
 	my $x_min_source = 9999999999999;
+	my $x_max_source = 0;
+	my $y_min_source = 9999999999999;
 	my $y_max_source = 0;
 	
 	my $bool_ok = 0;
@@ -334,6 +332,13 @@ sub cherche_infos_dalle{
 			}elsif($resultat =~ /Lower Right\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
 				$hash_x_max{$imgs[$i]} = $1;
 				$hash_y_min{$imgs[$i]} = $2;
+				# actualisation des xmax et ymin du chantier
+				if($hash_x_max{$imgs[$i]} > $x_max_source){
+					$x_max_source = $hash_x_max{$imgs[$i]};
+				}
+				if($hash_y_min{$imgs[$i]} < $y_min_source){
+					$y_min_source = $hash_y_min{$imgs[$i]}
+				}
 			}elsif($resultat =~ /Pixel Size = \((\d+)\.(\d+), ?\-(\d+)\.(\d+)\)/){
 				$hash_res_x{$imgs[$i]} = $1 + ( $2 / (10**length($2)));
 				$hash_res_y{$imgs[$i]} = $3 + ( $4 / (10**length($4)));
@@ -342,7 +347,7 @@ sub cherche_infos_dalle{
 		
 	}
 
-	my @refs = (\%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $x_min_source, $y_max_source);
+	my @refs = (\%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source);
 	
 	return @refs;
 	
@@ -404,14 +409,20 @@ sub cree_xml_pyramide{
  	my $type_mtd = $_[6];
  	my $format_mtd = $_[7];
 	my $profondeur = $_[8];
+	my $x_min_donnees = $_[9];
+	my $x_max_donnees = $_[10];
+	my $y_min_donnees = $_[11];
+	my $y_max_donnees = $_[12];
 	
 	my @liste_repertoires = ();
 	
-	my ($ref_id, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_inutile1, $ref_inutile2, $var_inutile1) = &lecture_tile_matrix_set($tms);
+	my ($ref_id, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_origine_x, $ref_origine_y, $var_inutile1) = &lecture_tile_matrix_set($tms);
 	my @id_tms = @{$ref_id};
 	my %tms_level_resolution = %{$ref_id_resolution};
 	my %tms_level_taille_pix_tuile_x = %{$ref_id_taille_pix_tuile_x};
 	my %tms_level_taille_pix_tuile_y = %{$ref_id_taille_pix_tuile_y};
+	my %tms_level_origine_x = %{$ref_origine_x};
+	my %tms_level_origine_y = %{$ref_origine_y};
 	
 	my $nom_tms = substr(basename($tms), 0, length(basename($tms)) - 4);
 	
@@ -435,9 +446,12 @@ sub cree_xml_pyramide{
 	print PYRAMIDE "\t<tileMatrixSet>$nom_tms</tileMatrixSet>\n";
 	foreach my $level(@id_tms){
 		
-		my $taille_image_m = $tms_level_resolution{"$level"} * $taille_dalle;
+		my $resolution = $tms_level_resolution{"$level"};
+		my $taille_image_m = $resolution * $taille_dalle;
 		my $taille_tuile_x = $tms_level_taille_pix_tuile_x{"$level"};
 		my $taille_tuile_y = $tms_level_taille_pix_tuile_y{"$level"};
+		my $origine_x = $tms_level_origine_x{"$level"};
+		my $origine_y = $tms_level_origine_y{"$level"};
 		
 		my $reste_x = $taille_dalle % $taille_tuile_x;
 		my $reste_y = $taille_dalle % $taille_tuile_y;
@@ -454,6 +468,12 @@ sub cree_xml_pyramide{
 		my $nb_tuile_x = $taille_dalle / $taille_tuile_x;
 		my $nb_tuile_y = $taille_dalle / $taille_tuile_y;
 		
+		# bbox des sources : indice de la tuile dans le dallage du niveau du TMS
+		my $min_tuile_x = floor(($x_min_donnees - $origine_x) / ($resolution * $taille_tuile_x));
+		my $max_tuile_x = floor(($x_max_donnees - $origine_x) / ($resolution * $taille_tuile_x));
+		my $min_tuile_y = floor(($origine_y - $y_max_donnees) / ($resolution * $taille_tuile_y));
+		my $max_tuile_y = floor(($origine_y - $y_min_donnees) / ($resolution * $taille_tuile_y));
+		
 		print PYRAMIDE "\t<level>\n";
 		print PYRAMIDE "\t\t<tileMatrix>$level</tileMatrix>\n";
 		print PYRAMIDE "\t\t<baseDir>$rep_images/$taille_image_m</baseDir>\n";
@@ -466,11 +486,13 @@ sub cree_xml_pyramide{
 		print PYRAMIDE "\t\t<tilesPerWidth>$nb_tuile_x</tilesPerWidth>\n";
 		print PYRAMIDE "\t\t<tilesPerHeight>$nb_tuile_y</tilesPerHeight>\n";
 		print PYRAMIDE "\t\t<pathDepth>$profondeur</pathDepth>\n";
+		# les limites sont mises par rapport aux donnees mises a jour
+		# l'info sera corrigee dans l'initialisation de la pyramide
 		print PYRAMIDE "\t\t<TMSLimits>\n";
-		print PYRAMIDE "\t\t\t<minTileRow>$min_tile</minTileRow>\n";
-		print PYRAMIDE "\t\t\t<maxTileRow>$max_tile</maxTileRow>\n";
-		print PYRAMIDE "\t\t\t<minTileCol>$min_tile</minTileCol>\n";
-		print PYRAMIDE "\t\t\t<maxTileCol>$max_tile</maxTileCol>\n";
+		print PYRAMIDE "\t\t\t<minTileRow>$min_tuile_x</minTileRow>\n";
+		print PYRAMIDE "\t\t\t<maxTileRow>$max_tuile_x</maxTileRow>\n";
+		print PYRAMIDE "\t\t\t<minTileCol>$min_tuile_y</minTileCol>\n";
+		print PYRAMIDE "\t\t\t<maxTileCol>$max_tuile_y</maxTileCol>\n";
 		print PYRAMIDE "\t\t</TMSLimits>\n";
 		print PYRAMIDE "\t</level>\n";
 		push(@liste_repertoires, "$rep_images/$taille_image_m", "$rep_mtd/$taille_image_m");

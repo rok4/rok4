@@ -425,8 +425,8 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 		my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
 		open SCRIPT, ">$nom_script_complet" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_complet.";
 		# pour la repartition de torque
-		my $temps = &cree_temps_torque($nombre_dalles_creees_script);
-		print SCRIPT "#PBS -l cput=$temps\n";
+		my $temps = &cree_string_temps_torque($nombre_dalles_creees_script);
+		print SCRIPT "$temps\n";
 		print SCRIPT $string_script_creation_rep_temp;
 		print SCRIPT $string_script_this;
 		close SCRIPT;
@@ -515,8 +515,8 @@ $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_
 my $nom_script_job17 = "$nom_script"."_"."job17";
 open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
 # pour la repartition de torque
-my $temps_17 = &cree_temps_torque($nombre_dalles_job17);
-print JOB17 "#PBS $temps_17\n";
+my $temps_17 = &cree_string_temps_torque($nombre_dalles_job17);
+print JOB17 "$temps_17\n";
 print JOB17 $string_script_creation_rep_temp;
 print JOB17 $string_script4;
 print JOB17 $string_script_destruction_rep_temp;
@@ -1735,7 +1735,7 @@ sub liste_liens{
 	return \%hash_liens;
 }
 ################################################################################
-sub cree_temps_torque{
+sub cree_string_temps_torque{
 
 	my $nombre_cliches = $_[0];
 	
@@ -1745,7 +1745,7 @@ sub cree_temps_torque{
 	my $minutes = $nombre_cliches - (60 * $nb_heures);
 	$nb_heures = &formate_zero($nb_heures, 2);
 	$minutes = &formate_zero($minutes, 2);
-	my $temps_torque = $nb_heures.":".$minutes.":00";
+	my $temps_torque = "#PBS -l cput=".$nb_heures.":".$minutes.":00";
 	
 	return $temps_torque;
 }

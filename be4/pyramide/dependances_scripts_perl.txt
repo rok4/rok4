@@ -10,6 +10,7 @@ Getopt::Std
 POSIX
 strict
 Term::ANSIColor
+XML::LibXML
 XML::Simple
 
 Fichiers :

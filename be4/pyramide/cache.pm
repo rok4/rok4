@@ -23,8 +23,6 @@ our @EXPORT=(
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
-	'$min_tile_param',
-	'$max_tile_param',
 	'%produit_nb_canaux_param',
 	'%produit_tms_param',
 	'$xsd_pyramide_param',
@@ -109,10 +107,6 @@ our $programme_copie_image_param = "./tiffcp";
 #our $programme_ss_ech_param = "/exavol/private/only4diffusio/charlotte/pascal/merge4tiff";
 #our $programme_format_pivot_param = "/exavol/private/only4diffusio/charlotte/pascal/tiff2tile";
 
-# pour les .pyr
-our $min_tile_param = 1;
-our $max_tile_param = 1000000;
-
 our %produit_nb_canaux_param = (
     "ortho" => 3,
 	"parcellaire" => 1,
@@ -165,7 +159,7 @@ sub cree_repertoires_recursifs{
 	foreach my $rep_parent(@split_rep){
 		$rep_test .= "/".$rep_parent;
 		if( !(-e "$rep_test" && -d "$rep_test") ){
-			mkdir "$rep_test", 0775 or die colored ("[INITIALISE_PYRAMIDE] Impossible de creer le repertoire $rep_test.", 'white on_red');
+			mkdir "$rep_test", 0775 or die colored ("[CACHE] Impossible de creer le repertoire $rep_test.", 'white on_red');
 		}
 	}
 	
@@ -237,8 +231,6 @@ sub lecture_repertoires_pyramide{
 				$id_rep_mtd{"$id"} = abs_path($rep2);
 			}
  		}
-		
-		
 	}
 	
 	push(@refs_rep_levels, \%id_rep_images, \%id_rep_mtd);
@@ -246,6 +238,4 @@ sub lecture_repertoires_pyramide{
 	return @refs_rep_levels;
 	
 }
-################################################################################
-
 1;
