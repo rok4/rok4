@@ -57,7 +57,7 @@ class Logger {
 
 /**
  * Un flux qui fait rien.
- * Utilisé pour ne pas formater les sorties des niveaux logs déactivés.
+ * Utilisé pour ne pas formater les sorties des niveaux logs désactivés.
  */
 extern std::ostream nullstream;
 

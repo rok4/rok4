@@ -41,7 +41,7 @@ static void init_key() {
 void Logger::setAccumulator(LogLevel level, Accumulator* A) {
   // On ajoute une petite tache d'initialisation qui doit être 
   // effectuée une seule fois. Il faut bien la mettre qqpart car 
-  // nous n'avons pas de constructeur ni de contion d'initialisation.
+  // nous n'avons pas de constructeur ni de condition d'initialisation.
   pthread_once(&key_once, init_key); // initialize une seule fois logger_key
 
 

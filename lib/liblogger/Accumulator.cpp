@@ -140,7 +140,7 @@ void Accumulator::flushFrontMessage() {
 			time_t from = period*(t/period);
       tm* lt = localtime(&from);
 			char fileName[filePrefix.length() + 19];
-			sprintf(fileName, "%s-%4d-%2d-%2d-%2d.log", filePrefix.c_str(), lt->tm_year+1900, lt->tm_mon+1, lt->tm_mday, lt->tm_hour);
+			sprintf(fileName, "%s-%4d-%02d-%02d-%02d.log", filePrefix.c_str(), lt->tm_year+1900, lt->tm_mon+1, lt->tm_mday, lt->tm_hour);
 
       // On ferme le fichier précédant
 			if(out.is_open()) out.close();
