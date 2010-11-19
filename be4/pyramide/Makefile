@@ -10,7 +10,8 @@ IMGSHARE= $(wildcard *.tif)
 
 all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
-	chmod +x $(BINDIR)/$(PLSCRIPTS)
+	BINPLSCRIPTS= $(wildcard  $(BINDIR)/*.pl)
+	chmod +x $(BINPLSCRIPTS)
 	cp $(PLMODULES) $(BINDIR)
 	cp $(IMGSHARE) $(SHAREDIR)
 	cp gdalinfo $(BINDIR)
