@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # building and testing
-cd libs
+cd lib
 echo "\n\n\n\n***  BUILD LIBS   *****"
 make
 if [ $? -ne 0 ] ; then
