@@ -10,12 +10,13 @@ IMGSHARE= $(wildcard *.tif)
 
 all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
-	BINPLSCRIPTS= $(wildcard  $(BINDIR)/*.pl)
-	chmod +x $(BINPLSCRIPTS)
+#	BINPLSCRIPTS= $(wildcard  $(BINDIR)/*.pl)
+#	chmod +x $(BINPLSCRIPTS)
 	cp $(PLMODULES) $(BINDIR)
 	cp $(IMGSHARE) $(SHAREDIR)
 	cp gdalinfo $(BINDIR)
 	chmod +x $(BINDIR)/gdalinfo
+	cp ../../config/pyramids/pyramid.xsd $(SHAREDIR)
 makedir:
 	if [ ! -d $(SHAREDIR) ] ; then mkdir $(SHAREDIR) ; fi
 	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
