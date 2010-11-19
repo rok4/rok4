@@ -53,7 +53,7 @@ fi
 
 # 1.2.2 In Jpeg
 
-# 1.2.2.1 Out Rawa
+# 1.2.2.1 Out Raw
 let NTESTS+=1
 wget  --no-proxy -O tmp.tif "$1?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&BBOX=805888,6545920,806400,6546432&CRS=IGNF:LAMB93&WIDTH=512&HEIGHT=512&LAYERS=ORTHO_JPEG_TEST&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE"
 sum="`md5sum tmp.tif | cut -d ' ' -f 1`"

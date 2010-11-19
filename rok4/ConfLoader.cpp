@@ -738,7 +738,9 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	unsigned int maxWidth;
 	unsigned int maxHeight;
 	std::vector<std::string> formatList;
-
+	std::string serviceType;
+	std::string serviceTypeVersion;
+	std::vector<std::string> applicationProfileList;
 
 	pElem=hRoot.FirstChild("name").Element();
 	if (pElem) name = pElem->GetText();
@@ -792,10 +794,14 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		}
 	}
 
+	pElem=hRoot.FirstChild("serviceType").Element();
+        if (pElem) serviceType = pElem->GetText();
+	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
+        if (pElem) serviceTypeVersion = pElem->GetText();
 
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			accessConstraint, maxWidth, maxHeight, formatList);
+			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion);
 
 	LOGGER_DEBUG("<= buildServicesConf");
 	return servicesConf;

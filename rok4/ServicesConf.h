@@ -6,73 +6,46 @@
 
 class ServicesConf {
 private:
-	std::string name;
+	// WMS & WMTS
 	std::string title;
 	std::string abstract;
 	std::vector<std::string> keyWords;
 	std::string serviceProvider;
 	std::string fee;
 	std::string accessConstraint;
+	// WMS
+	std::string name;
 	unsigned int maxWidth;
 	unsigned int maxHeight;
 	std::vector<std::string> formatList;
+	// WMTS
+	std::string serviceType;
+	std::string serviceTypeVersion;
 public:
 
 	ServicesConf(std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
 			std::string serviceProvider, std::string fee, std::string accessConstraint,
-			unsigned int maxWidth, unsigned int maxHeight, std::vector<std::string> formatList) :
+			unsigned int maxWidth, unsigned int maxHeight, std::vector<std::string> formatList, std::string serviceType,
+			std::string serviceTypeVersion) :
 				name(name), title(title), abstract(abstract), keyWords(keyWords),
 				serviceProvider(serviceProvider), fee(fee), accessConstraint(accessConstraint),
-				maxWidth(maxWidth), maxHeight(maxHeight), formatList(formatList) {};
-	std::string getAbstract() const
-	{
-		return abstract;
-	}
-
-	std::string getAccessConstraint() const
-	{
-		return accessConstraint;
-	}
-
-	std::string getFee() const
-	{
-		return fee;
-	}
-
-	std::vector<std::string> getFormatList() const
-    		{
-		return formatList;
-    		}
-
-	std::vector<std::string> getKeyWords() const
-    		{
-		return keyWords;
-    		}
-
-	unsigned int getMaxHeight() const
-	{
-		return maxHeight;
-	}
-
-	unsigned int getMaxWidth() const
-	{
-		return maxWidth;
-	}
-
-	std::string getName() const
-	{
-		return name;
-	}
-
-	std::string getServiceProvider() const
-	{
-		return serviceProvider;
-	}
-
-	std::string getTitle() const
-	{
-		return title;
-	}
+				maxWidth(maxWidth), maxHeight(maxHeight), formatList(formatList), serviceType(serviceType),
+				serviceTypeVersion(serviceTypeVersion) {};
+	//  WMS & WMTS
+	std::string inline getAbstract() const	{return abstract;}
+	std::string inline getAccessConstraint() const{return accessConstraint;}
+	std::string inline getFee() const{return fee;}
+	std::vector<std::string> inline getKeyWords() const{return keyWords;}
+	std::string inline getServiceProvider() const {return serviceProvider;}
+	std::string inline getTitle() const {return title;}
+	// WMS
+	unsigned int inline getMaxHeight() const{return maxHeight;}
+	unsigned int inline getMaxWidth() const{return maxWidth;}
+	std::string inline getName() const{return name;}
+	std::vector<std::string> inline getFormatList() const{return formatList;}
+	// WMTS
+	std::string inline getServiceType() {return serviceType;}
+	std::string inline getServiceTypeVersion() {return serviceTypeVersion;}
 };
 
 #endif /* SERVICESCONF_H_ */

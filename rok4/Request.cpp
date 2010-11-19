@@ -105,8 +105,8 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
 	std::string version=getParam("version");
 	if (version=="")
 		return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre VERSION absent.","wmts"));
-	if (version.find("1.0.0")==std::string::npos)
-		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (doit contenir \"1.0.0\")","wmts"));
+	if (version.find(servicesConf.getServiceTypeVersion())==std::string::npos)
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (doit contenir "+servicesConf.getServiceTypeVersion()+")","wmts"));
 	// LAYER
 	std::string str_layer=getParam("layer");
 	if(str_layer == "")

@@ -39,7 +39,10 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * capabilitiesEl = new TiXmlElement( "WMS_Capabilities" );
 	capabilitiesEl->SetAttribute("version","1.3.0");
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
+	// Pour Inspire. Cf. remarque plus bas.
 	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.europa.eu/networkservice/view/1.0");
+	capabilitiesEl->SetAttribute("xmlns:gmd","http://www.isotc211.org/2005/gmd");
+	capabilitiesEl->SetAttribute("xmlns:gco","http://www.isotc211.org/2005/gco");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
 	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
@@ -122,6 +125,33 @@ void Rok4Server::buildWMSCapabilities(){
 	exceptionEl->LinkEndChild(buildTextNode("Format","XML"));
 	capabilityEl->LinkEndChild(exceptionEl);
 
+	// Inspire (extended Capaibility)
+	// TODO : en dur. A mettre dans la confguration du service (prevoir diffrenets profils d'application possibles)
+	TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+
+	// MetadataURL
+	TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_vs:MetadataUrl");
+	TiXmlElement * linkageEl = new TiXmlElement("gmd:linkage");
+	linkageEl->LinkEndChild(buildTextNode("gmd:URL", "A specifier"));
+	metadataUrlEl->LinkEndChild(linkageEl);
+	TiXmlElement * apEl = new TiXmlElement("gmd:applicationProfile");
+        apEl->LinkEndChild(buildTextNode("gco:CharacterString", "INSPIRE (EC) 976/2009"));
+        metadataUrlEl->LinkEndChild(apEl);
+        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+
+	// Languages
+	TiXmlElement * languagesEl = new TiXmlElement("inspire_vs:Languages");
+	TiXmlElement * lLanguageEl = new TiXmlElement("inspire_vs:Language");
+	lLanguageEl->SetAttribute("default","true");
+	TiXmlText * lfre = new TiXmlText("fre");
+        lLanguageEl->LinkEndChild(lfre);
+	languagesEl->LinkEndChild(lLanguageEl);
+	extendedCapabilititesEl->LinkEndChild(languagesEl);
+	// Currentlanguage
+        extendedCapabilititesEl->LinkEndChild(buildTextNode("inspire_vs:CurrentLanguage","fre"));
+	
+	capabilityEl->LinkEndChild(extendedCapabilititesEl);
+
 	// Layer
 	if (layerList.empty()){
 		LOGGER_ERROR("Liste de layers vide");
@@ -130,22 +160,22 @@ void Rok4Server::buildWMSCapabilities(){
 	// Parent layer
 	Layer* parentLayer=layerList.begin()->second;
 	TiXmlElement * parentLayerEl = new TiXmlElement( "Layer" );
-        // Name
-        parentLayerEl->LinkEndChild(buildTextNode("Name", parentLayer->getId()));
-        // Title
-        parentLayerEl->LinkEndChild(buildTextNode("Title", parentLayer->getTitle()));
-        // Abstract
-        parentLayerEl->LinkEndChild(buildTextNode("Abstract", parentLayer->getAbstract()));
-        // KeywordList
+	// Name
+	parentLayerEl->LinkEndChild(buildTextNode("Name", parentLayer->getId()));
+	// Title
+	parentLayerEl->LinkEndChild(buildTextNode("Title", parentLayer->getTitle()));
+	// Abstract
+	parentLayerEl->LinkEndChild(buildTextNode("Abstract", parentLayer->getAbstract()));
+	// KeywordList
 	if (parentLayer->getKeyWords().size() != 0){
-        	TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
-                for (unsigned int i=0; i < parentLayer->getKeyWords().size(); i++){
-                	kwlEl->LinkEndChild(buildTextNode("Keyword", parentLayer->getKeyWords()[i]));
-                }
-                parentLayerEl->LinkEndChild(kwlEl);
-        }
-        // CRS
-        for (unsigned int i=0; i < parentLayer->getWMSCRSList().size(); i++){
+		TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
+		for (unsigned int i=0; i < parentLayer->getKeyWords().size(); i++){
+			kwlEl->LinkEndChild(buildTextNode("Keyword", parentLayer->getKeyWords()[i]));
+		}
+		parentLayerEl->LinkEndChild(kwlEl);
+	}
+	// CRS
+	for (unsigned int i=0; i < parentLayer->getWMSCRSList().size(); i++){
         	parentLayerEl->LinkEndChild(buildTextNode("CRS", parentLayer->getWMSCRSList()[i]));
         }
 	// GeographicBoundingBox
@@ -309,8 +339,8 @@ void Rok4Server::buildWMTSCapabilities(){
 		}
 		serviceEl->LinkEndChild(kwlEl);
 	}
-	serviceEl->LinkEndChild(buildTextNode("ows:ServiceType", "OGC WMTS"));
-	serviceEl->LinkEndChild(buildTextNode("ows:ServiceTypeVersion", "1.0.0"));
+	serviceEl->LinkEndChild(buildTextNode("ows:ServiceType", servicesConf.getServiceType()));
+	serviceEl->LinkEndChild(buildTextNode("ows:ServiceTypeVersion", servicesConf.getServiceTypeVersion()));
 	serviceEl->LinkEndChild(buildTextNode("ows:Fees", servicesConf.getFee()));
 	serviceEl->LinkEndChild(buildTextNode("ows:AccessConstraints", servicesConf.getAccessConstraint()));
 

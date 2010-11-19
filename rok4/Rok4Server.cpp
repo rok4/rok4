@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
 	/* Initialisation des Loggers */
 
 
-	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4");
+	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4"/*,86400,1024*/);
 //	Accumulator* acc = new StreamAccumulator(std::cerr);
 
 	Logger::setAccumulator(DEBUG, acc);
