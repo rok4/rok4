@@ -479,9 +479,6 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 
 int main(int argc, char **argv) {
 
-	// Initilisation du logger
-	Logger::configure(LOG_CONF_PATH);
-
 	char liste_dalles_filename[256], nodata[6];
 	uint16_t sampleperpixel, bitspersample, photometric;
 	int type=-1;
