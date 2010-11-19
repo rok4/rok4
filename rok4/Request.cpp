@@ -190,6 +190,10 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	width=atoi(strWidth.c_str());
 	if (width == 0 || width == INT_MAX || width == INT_MIN)
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre WIDTH n'est pas une valeur entiere.","wms"));
+	if (width<0)
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre WIDTH est negative.","wms"));
+	if (width>servicesConf.getMaxWidth())
+		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service.","wms"));
 	// HEIGHT
 	std::string strHeight=getParam("height");
 	if(strHeight == "")
@@ -197,6 +201,10 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	height=atoi(strHeight.c_str());
 	if (height == 0 || height == INT_MAX || height == INT_MIN)
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT n'est pas une valeur entiere.","wms")) ;
+	if (height<0)
+                return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT est negative.","wms"));
+        if (height>servicesConf.getMaxHeight())
+                return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service.","wms"));
 	// CRS
 	std::string str_crs=getParam("crs");
 	if(str_crs == "")
