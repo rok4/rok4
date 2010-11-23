@@ -30,19 +30,20 @@ if [ -f /var/run/apache2.pid ] ; then
   echo "[warning] Pb lors de l'arret du service apache ! "
 fi
 
-rm -fr $ROK4BASE/bin
-mkdir $ROK4BASE/bin
-rm -fr $ROK4BASE/config
-mkdir $ROK4BASE/config
-rm -fr $ROK4BASE/docs
-mkdir $ROK4BASE/docs
-rm -fr $ROK4BASE/share
-mkdir $ROK4BASE/share
-rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
-rm -fr $ROK4BASE/tests
-mkdir $ROK4BASE/tests
+sudo rm -fr $ROK4BASE/bin
+sudo mkdir $ROK4BASE/bin
+sudo rm -fr $ROK4BASE/config
+sudo mkdir $ROK4BASE/config
+sudo rm -fr $ROK4BASE/docs
+sudo mkdir $ROK4BASE/docs
+sudo rm -fr $ROK4BASE/share
+sudo mkdir $ROK4BASE/share
+sudo rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
+sudo rm -fr $ROK4BASE/tests
+sudo mkdir $ROK4BASE/tests
 
 # Copie des donnees pour les tests de non-regression
+echo "Copie des donnees pour les tests de non-regression"
 make noregression
 
 # Copie des fichiers dans les repertoires finaux
