@@ -17,3 +17,12 @@ make
 if [ $? -ne 0 ] ; then
   exit 2
 fi
+
+#deploiement
+ROK4BASE=/var/www/hudson/rok4
+
+cd ../target
+cp bin/*.pl $ROK4BASE/bin/
+cp bin/*.pm $ROK4BASE/bin/
+cp bin/gdalinfo $ROK4BASE/bin
+cp config/pyramids/pyramid.xsd $ROK4BASE/bin/

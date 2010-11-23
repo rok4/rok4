@@ -39,6 +39,7 @@ mkdir $ROK4BASE/tests
 # Copie des donnees pour les tests de non-regression
 make noregression
 
+# Copie des fichiers dans les repertoires finaux
 cd ../target
 cp bin/rok4 $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
