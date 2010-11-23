@@ -1,6 +1,7 @@
 TGTDIR=../../target
 BINDIR=${TGTDIR}/bin
-SHAREDIR=${TGTDIR}/share/pyramide
+SHAREDIR=${TGTDIR}/share
+SHAREPYRAMIDEDIR=${SHAREDIR}/pyramide
 LOGDIR=${TGTDIR}/log
 TMPDIR=${TGTDIR}/tmp
 CONFDIR=${TGTDIR}/config
@@ -20,6 +21,7 @@ all: makedir
 	cp ../../config/pyramids/pyramid.xsd $(PYRAMIDSDIR)
 makedir:
 	if [ ! -d $(SHAREDIR) ] ; then mkdir $(SHAREDIR) ; fi
+	if [ ! -d $(SHAREPYRAMIDEDIR) ] ; then mkdir $(SHAREPYRAMIDEDIR) ; fi
 	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
 	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi
 	if [ ! -d $(CONFDIR) ] ; then mkdir $(CONFDIR) ; fi
