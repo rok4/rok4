@@ -27,4 +27,4 @@ cp bin/*.pm $ROK4BASE/bin/
 cp bin/gdalinfo $ROK4BASE/bin
 cp config/pyramids/pyramid.xsd $ROK4BASE/bin/
 if [ ! -d $ROK4BASE/share/pyramide ] ; then mkdir $ROK4BASE/share/pyramide ; fi
-cp 4096_4096_FFFFFF.tif  mtd_4096_4096_black_32b.tif $ROK4BASE/share/pyramide
+cp share/pyramide/4096_4096_FFFFFF.tif  share/pyramide/mtd_4096_4096_black_32b.tif $ROK4BASE/share/pyramide
