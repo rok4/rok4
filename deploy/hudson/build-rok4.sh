@@ -30,8 +30,14 @@ if [ -f /var/run/apache2.pid ] ; then
   echo "[warning] Pb lors de l'arret du service apache ! "
 fi
 
-rm -fr $ROK4BASE/bin/*
-rm -fr $ROK4BASE/config/*
+rm -fr $ROK4BASE/bin
+mkdir $ROK4BASE/bin
+rm -fr $ROK4BASE/config
+mkdir $ROK4BASE/config
+rm -fr $ROK4BASE/docs
+mkdir $ROK4BASE/docs
+rm -fr $ROK4BASE/share
+mkdir $ROK4BASE/share
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
