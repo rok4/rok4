@@ -14,7 +14,7 @@ IMGSHARE= $(wildcard *.tif)
 all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
 	cp $(PLMODULES) $(BINDIR)
-	cp $(IMGSHARE) $(SHAREDIR)
+	cp $(IMGSHARE) $(SHAREPYRAMIDEDIR)
 	cp gdalinfo $(BINDIR)
 	chmod +x $(BINDIR)/*.pl
 	chmod +x $(BINDIR)/gdalinfo
