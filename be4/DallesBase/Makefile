@@ -26,7 +26,6 @@ dalles_base: $(DALLESBASEOBJ)
 	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi
 	$(CXX) $(DALLESBASEOBJ) -o dalles_base $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
 	cp dalles_base $(BINDIR)
-	cp logConfig_be4.xml $(CONFIGDIR)
 
 clean:
 	rm -f *.o

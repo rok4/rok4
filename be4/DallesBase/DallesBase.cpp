@@ -487,7 +487,15 @@ int main(int argc, char **argv) {
 	LibtiffImage * pImageOut ;
 	std::vector<Image*> ImageIn;
 	std::vector<std::vector<Image*> > TabImageIn;
-	ExtendedCompoundImage* pECImage ;
+	ExtendedCompoundImage* pECImage;
+
+	/* Initialisation des Loggers */
+        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4"/*,86400,1024*/);
+        Logger::setAccumulator(DEBUG, acc);
+        Logger::setAccumulator(INFO , acc);
+        Logger::setAccumulator(WARN , acc);
+        Logger::setAccumulator(ERROR, acc);
+        Logger::setAccumulator(FATAL, acc);
 
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,photometric)<0){
