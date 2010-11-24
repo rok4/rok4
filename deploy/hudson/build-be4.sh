@@ -24,6 +24,9 @@ ROK4BASE=/var/www/hudson/rok4
 cd ../target
 cp bin/*.pl $ROK4BASE/bin/
 cp bin/*.pm $ROK4BASE/bin/
+cp bin/dalles_base $ROK4BASE/bin
+cp bin/merge4tiff $ROK4BASE/bin
+cp bin/tiff2tile $ROK4BASE/bin
 cp bin/gdalinfo $ROK4BASE/bin
 cp config/pyramids/pyramid.xsd $ROK4BASE/bin/
 if [ ! -d $ROK4BASE/share/pyramide ] ; then mkdir $ROK4BASE/share/pyramide ; fi
