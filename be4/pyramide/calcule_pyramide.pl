@@ -25,8 +25,8 @@ use File::Basename;
 use List::Util qw( max );
 use POSIX qw(ceil floor);
 
-my $nom_fichier_first_jobs = "first_jobs.txt";
-my $nom_fichier_last_jobs = "last_jobs.txt";
+my $nom_fichier_first_jobs = "../tmp/first_jobs.txt";
+my $nom_fichier_last_jobs = "../tmp/last_jobs.txt";
 
 # pas de bufferisation des sorties
 $| = 1;

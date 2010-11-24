@@ -202,11 +202,17 @@ void Rok4Server::buildWMSCapabilities(){
         bbEl->SetAttribute("maxy",parentLayer->getBoundingBox().maxy);
         parentLayerEl->LinkEndChild(bbEl);
 
+	// MinMaxRes
+	os.str("");
+        os<<parentLayer->getMinRes();
+	parentLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
+	os.str("");
+        os<<parentLayer->getMaxRes();
+        parentLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
+	
         /* TODO:
         *
         layer->getAuthority();
-        layer->getMaxRes();
-        layer->getMinRes();
         layer->getOpaque();
         layer->getStyles();
         */
@@ -259,11 +265,15 @@ void Rok4Server::buildWMSCapabilities(){
                 bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
                 childLayerEl->LinkEndChild(bbEl);
 
+		os.str("");
+        	os<<childLayer->getMinRes();
+        	childLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
+        	os.str("");
+        	os<<childLayer->getMaxRes();
+        	childLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
                 /* TODO:
                  *
                 layer->getAuthority();
-                layer->getMaxRes();
-                layer->getMinRes();
                 layer->getOpaque();
                 layer->getStyles();
                  */

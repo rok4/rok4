@@ -38,6 +38,12 @@ rm -fr $ROK4BASE/docs
 mkdir $ROK4BASE/docs
 rm -fr $ROK4BASE/share
 mkdir $ROK4BASE/share
+rm -fr $ROK4BASE/log
+mkdir $ROK4BASE/log
+chmod o+w $ROK4BASE/log
+mkdir $ROK4BASE/tmp
+chmod o+w $ROK4BASE/tmp
+if [ ! -d $(ROK4BASE/builds) ] ; then mkdir $(ROK4BASE/builds) ; fi
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
@@ -48,7 +54,8 @@ make noregression
 
 # Copie des fichiers dans les repertoires finaux
 cd ../target
-cp bin/* $ROK4BASE/bin/
+bins=ls bin/* | grep -v ".o"
+cp $(bins) $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/rok4 docs
