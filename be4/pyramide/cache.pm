@@ -117,7 +117,7 @@ our %produit_nb_canaux_param = (
 # apres deploiement
 our $xsd_pyramide_param = "../config/pyramids/pyramid.xsd";
 our $path_tms_param = "../config/tileMatrixSet";
-my $tms_base = $path_tms_param."/FR_LAMB93_test.tms";
+my $tms_base = $path_tms_param."/FR_LAMB93.tms";
 
 
 our %produit_tms_param = (
