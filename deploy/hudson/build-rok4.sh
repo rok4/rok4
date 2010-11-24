@@ -55,7 +55,7 @@ make noregression
 # Copie des fichiers dans les repertoires finaux
 cd ../target
 bins=ls bin/* | grep -v ".o"
-cp $(bins) $ROK4BASE/bin/
+cp $bins $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
 tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/rok4 docs
