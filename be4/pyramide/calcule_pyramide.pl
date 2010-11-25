@@ -193,7 +193,7 @@ if ($nombre_jobs !~ /^\d+$/ && $nombre_jobs > 0){
 }
 ########### traitement
 # creation d'un rep temporaire pour les calculs intermediaires
-my $rep_temp = "CALCULE_PYRAMIDE_".$time;
+my $rep_temp = "../tmp/CALCULE_PYRAMIDE_".$time;
 mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoire $rep_temp.";
 my $string_script_creation_rep_temp = "if [ ! -d \"$rep_temp\" ] ; then mkdir $rep_temp ; fi\n";
 my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
