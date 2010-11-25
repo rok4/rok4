@@ -24,12 +24,13 @@ fi
 ROK4BASE=/var/www/hudson/rok4
 echo "\n\n\n\n***  DEPLOIEMENT    *****"
 
-echo "arret serveur apache..."
+echo "-> Arret serveur apache..."
 sudo /etc/init.d/apache2 stop
 if [ -f /var/run/apache2.pid ] ; then
   echo "[warning] Pb lors de l'arret du service apache ! "
 fi
 
+echo "-> Suppression/creation des repertoires d'installation"
 rm -fr $ROK4BASE/bin
 mkdir $ROK4BASE/bin
 rm -fr $ROK4BASE/config
@@ -49,12 +50,14 @@ rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
 
 # Copie des donnees pour les tests de non-regression
-echo "Copie des donnees pour les tests de non-regression"
+echo "-> Copie des donnees pour les tests de non-regression"
 make noregression
 
-# Copie des fichiers dans les repertoires finaux
+# Copie des fichiers dans les repertoires d installation
+echo "-> Copie des fichiers dans les repertoires d installation"
 cd ../target
 bins=ls bin/* | grep -v ".o"
+echo "bins = $bins"
 cp $bins $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
 cp -r docs/* $ROK4BASE/docs/
@@ -62,8 +65,6 @@ tar -cvzf rok4-rev${SVN_REVISION}.tgz bin/rok4 docs
 mv rok4-rev${SVN_REVISION}.tgz $ROK4BASE/builds/
 cp -r ../rok4/tests/html/* $ROK4BASE/tests
 
-
-# copie page de test
 
 echo "demarrage serveur apache..."
 sudo /etc/init.d/apache2 start
