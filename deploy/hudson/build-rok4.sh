@@ -6,8 +6,7 @@ cd rok4
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
 #make very-clean test
 make very-clean
-#make Rok4Server test
-make Rok4Server
+make Rok4Server test
 if [ $? -ne 0 ] ; then
   exit 1
 fi
