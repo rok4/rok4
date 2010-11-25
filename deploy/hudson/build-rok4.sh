@@ -41,9 +41,9 @@ mkdir $ROK4BASE/share
 rm -fr $ROK4BASE/log
 mkdir $ROK4BASE/log
 chmod o+w $ROK4BASE/log
-if [ ! -d $(ROK4BASE)/tmp ] ; then mkdir $(ROK4BASE)/tmp ; fi
-chmod o+w $(ROK4BASE)/tmp
-if [ ! -d $(ROK4BASE)/builds ] ; then mkdir $(ROK4BASE)/builds ; fi
+if [ ! -d $ROK4BASE/tmp ] ; then mkdir $ROK4BASE/tmp ; fi
+chmod o+w $ROK4BASE/tmp
+if [ ! -d $ROK4BASE/builds ] ; then mkdir $ROK4BASE/builds ; fi
 rm -f $ROK4BASE/builds/rok4-rev${SVN_REVISION}.tgz
 rm -fr $ROK4BASE/tests
 mkdir $ROK4BASE/tests
