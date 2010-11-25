@@ -58,9 +58,7 @@ make noregression
 echo "-> Copie des fichiers dans les repertoires d installation"
 cd ../target
 #bins=ls bin/* | grep -v ".o"
-bins=`ls bin`
-echo "bins = $bins"
-bins=ls *
+bins=`ls bin | grep -v ".o"`
 echo "bins = $bins"
 cp $bins $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
