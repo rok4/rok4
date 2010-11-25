@@ -6,7 +6,8 @@ cd rok4
 echo "\n\n\n\n***  BUILD AND TESTS    *****"
 #make very-clean test
 make very-clean
-make Rok4Server test
+#make Rok4Server test
+make Rok4Server
 if [ $? -ne 0 ] ; then
   exit 1
 fi
@@ -56,7 +57,8 @@ make noregression
 # Copie des fichiers dans les repertoires d installation
 echo "-> Copie des fichiers dans les repertoires d installation"
 cd ../target
-bins=ls bin/* | grep -v ".o"
+#bins=ls bin/* | grep -v ".o"
+bins=ls bin/*
 echo "bins = $bins"
 cp $bins $ROK4BASE/bin/
 cp -r config/* $ROK4BASE/config/
