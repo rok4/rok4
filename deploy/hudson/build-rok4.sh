@@ -58,7 +58,7 @@ make noregression
 echo "-> Copie des fichiers dans les repertoires d installation"
 cd ../target
 #bins=ls bin/* | grep -v ".o"
-bins=ls bin
+bins=`ls bin`
 echo "bins = $bins"
 bins=ls *
 echo "bins = $bins"
