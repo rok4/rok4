@@ -178,7 +178,7 @@ if(defined $rep_masque_mtd){
 
 # action 2 : creer pyramid.pyr en XML
 my $srs_pyramide = "IGNF_".uc($RIG);
-my $nom_pyramide = uc($produit)."_".uc($srs_pyramide)."_".$annee;
+my $nom_pyramide = uc($produit)."_".uc($compression_pyramide)."_".uc($srs_pyramide)."_".$annee;
 if(defined $departement){
 	$nom_pyramide .= "_".$departement;
 }
