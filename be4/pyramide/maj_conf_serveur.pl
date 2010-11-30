@@ -4,16 +4,30 @@ use strict;
 use Term::ANSIColor;
 use Getopt::Std;
 use File::Copy;
+use XML::LibXML;
+use POSIX qw(ceil floor);
+use List::Util qw( min max );
 use Cwd 'abs_path';
 use cache(
 	'$rep_logs_param',
+	'reproj_point',
+	'$programme_reproj_param',
+	'$path_tms_param',
 );
 $| = 1;
 our($opt_l,$opt_p);
 
 my $rep_log = $rep_logs_param;
+my $programme_reproj = $programme_reproj_param;
+my $path_tms = $path_tms_param;
+# TODO eventuellement changer la def en fonction des specs
+my $srs_wgs84g = "IGNF:WGS84G";
 ################################################################################
-
+my $verif_programme_reproj = `which $programme_reproj`;
+if ($verif_programme_reproj eq ""){
+	print "[MAJ_CONF_SERVEUR] Le programme $programme_reproj est introuvable.\n";
+	exit;
+}
 ################ MAIN
 my $time = time();
 my $log = $rep_log."/log_maj_conf_serveur_$time.log";
@@ -63,45 +77,18 @@ if ($return == 0){
 	&ecrit_log("ERREUR a la copie de $lay vers $lay_ancien");
 }
 
-# action 2 : supprimer le lay pour le recreer ensuite
-&ecrit_log("Suppression de $lay.");
-my $suppr = unlink($lay);
-if($suppr != 1){
-	&ecrit_log("ERREUR a la destruction de $lay.");
-}
+#action 2 :mettre a jour le lay
+&ecrit_log("Mise a jour de $lay");
+my $bool_maj = &maj_pyr_et_bounding_box($lay, $fichier_pyr);
 
-# action 3 : lire le fichier lay ancien
-&ecrit_log("Lecture de $lay_ancien.");
-open LAY_ANCIEN, "<$lay_ancien" or die colored ("[MAJ_CONF_SERVEUR] Impossible de lire le fichier $lay_ancien.", 'white on_red');
-my @lignes_lay_ancien = <LAY_ANCIEN>;
-close LAY_ANCIEN;
-
-# action 3 : reeecrire le lay mis a jour
-&ecrit_log("Creation et mise a jour de $lay.");
-my $absolu_pyramide = abs_path($fichier_pyr);
-open LAY_NOUVEAU, ">$lay" or die colored ("[MAJ_CONF_SERVEUR] Impossible de creer le fichier $lay.", 'white on_red');
-my $bool_maj = 0;
-foreach my $ligne_ancien(@lignes_lay_ancien){
-	chomp(my $ligne_nouveau = $ligne_ancien);
-	my $bool_print = 1;
-	if($ligne_ancien =~ /^\s*<pyramid>(.*)<\/pyramid>\s*/){
-		# si on l'a deja mis a jour, on ne recopie pas les autres pyramides du layer
-		if($bool_maj == 1){
-			$bool_print = 0;
-		}else{
-			$ligne_nouveau =~ s/$1/$absolu_pyramide/;
-			$bool_maj = 1;
-		}
-		
-	}
-	if($bool_print == 1){
-		print LAY_NOUVEAU "$ligne_nouveau\n";
-	}
+if($bool_maj == 1){
+	print "[MAJ_CONF_SERVEUR] Fichier $lay mis a jour avec pyramide et rectangle englobant.\n";
+}else{
+	print "[MAJ_CONF_SERVEUR] Des erreurs se sont produites, consulter $log.\n";
+	# on revient en arriere : $lay n'a pas encore ete modifie
+	unlink($lay_ancien);
 	
 }
-close LAY_NOUVEAU;
-print colored ("[MAJ_CONF_SERVEUR] Fichier $lay mis a jour avec $absolu_pyramide.", 'green');
-print "\n";
 close LOG;
 ################################################################################
 
@@ -133,3 +120,115 @@ sub ecrit_log{
 	return $bool_ok;
 }
 ################################################################################
+sub maj_pyr_et_bounding_box{
+	
+	my $xml_lay = $_[0];
+	my $nom_fichier_pyr = $_[1];
+	
+	my $bool_ok = 0;
+	
+	#0. mise a jour du hcemin de la pyramide dans le lay
+	my $parser_lay = XML::LibXML->new();
+	my $doc_lay = $parser_lay->parse_file("$xml_lay");
+	
+	my $absolu_pyramide = abs_path($nom_fichier_pyr);
+	$doc_lay->find("//pyramidList/pyramid/text()")->get_node(0)->setData($absolu_pyramide);
+	
+	#1.recuperation de la resolution la plus grande dans le lay
+	
+	my $res_max = $doc_lay->find("//maxRes")->get_node(0)->textContent;
+	
+	#2. recuperation du TMS dans le pyr
+	my $parser_pyr = XML::LibXML->new();
+	my $doc_pyr = $parser_pyr->parse_file("$nom_fichier_pyr");
+	
+	my $tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
+	my $tms_complet = $path_tms."/".$tms.".tms";
+	
+	#3. recuperation du level, de la proj, des origines et tailles des tuiles en resolution max dans le TMS
+	my $parser_tms = XML::LibXML->new();
+	my $doc_tms = $parser_tms->parse_file("$tms_complet");
+	
+	my $proj = $doc_tms->find("//crs")->get_node(0)->textContent;
+	
+	my $tile_matrix = $doc_tms->find("//tileMatrix[resolution = '$res_max']")->get_node(0);
+	
+	my $level = $tile_matrix->find("./id")->get_node(0)->textContent;
+	# floor / ceil / int servent a caster en chiffre pouique les espaces sont possibles
+	my $origine_x = floor($tile_matrix->find("./topLeftCornerX")->get_node(0)->textContent);
+	my $origine_y = ceil($tile_matrix->find("./topLeftCornerY")->get_node(0)->textContent);
+	my $taille_tuile_pix_x = int($tile_matrix->find("./tileWidth")->get_node(0)->textContent);
+	my $taille_tuile_pix_y = int($tile_matrix->find("./tileHeight")->get_node(0)->textContent);
+	
+	#4. recuperation des limites TMS dans le pyr sur le level concerne
+	my $tms_limits = $doc_pyr->find("//level[tileMatrix = '$level']/TMSLimits")->get_node(0);
+	my $min_tile_x = $tms_limits->find("./minTileRow")->get_node(0)->textContent;
+	my $max_tile_x = $tms_limits->find("./maxTileRow")->get_node(0)->textContent;
+	my $min_tile_y = $tms_limits->find("./minTileCol")->get_node(0)->textContent;
+	my $max_tile_y = $tms_limits->find("./maxTileCol")->get_node(0)->textContent;
+	
+	#5. determination de la bbox en proj $proj
+	my $x_min_bbox = ($min_tile_x * $res_max * $taille_tuile_pix_x) + $origine_x;
+	my $x_max_bbox = ($max_tile_x * $res_max * $taille_tuile_pix_x) + $origine_x;
+	my $y_min_bbox = $origine_y - ($max_tile_y * $res_max * $taille_tuile_pix_y);
+	my $y_max_bbox = $origine_y - ($min_tile_y * $res_max * $taille_tuile_pix_y);
+	
+	#6. transformation en WGS84G pour l'info EX_GeographicBoundingBox au degre pres
+	my ($top_left_corner_x_g, $top_left_corner_y_g) = &reproj_point($x_min_bbox, $y_max_bbox, $proj, $srs_wgs84g);
+	my ($top_right_corner_x_g, $top_right_corner_y_g) = &reproj_point($x_max_bbox, $y_max_bbox, $proj, $srs_wgs84g);
+	my ($bottom_left_corner_x_g, $bottom_left_corner_y_g) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_wgs84g);
+	my ($bottom_right_corner_x_g, $bottom_right_corner_y_g) = &reproj_point($x_max_bbox, $y_min_bbox, $proj, $srs_wgs84g);
+	
+	my $x_min_g = floor(min($top_left_corner_x_g, $top_right_corner_x_g, $bottom_left_corner_x_g, $bottom_right_corner_x_g));
+	my $x_max_g = ceil(max($top_left_corner_x_g, $top_right_corner_x_g, $bottom_left_corner_x_g, $bottom_right_corner_x_g));
+	my $y_min_g = floor(min($top_left_corner_y_g, $top_right_corner_y_g, $bottom_left_corner_y_g, $bottom_right_corner_y_g));
+	my $y_max_g = ceil(max($top_left_corner_y_g, $top_right_corner_y_g, $bottom_left_corner_y_g, $bottom_right_corner_y_g));
+	
+	#7. mise a jour dans le layer
+	my $geographic_bbox = $doc_lay->find("//EX_GeographicBoundingBox")->get_node(0);
+	
+	my $node_x_min_g = $geographic_bbox->find("./westBoundLongitude/text()")->get_node(0);
+	$node_x_min_g->setData("$x_min_g");
+	my $node_x_max_g = $geographic_bbox->find("./eastBoundLongitude/text()")->get_node(0);
+	$node_x_max_g->setData("$x_max_g");
+	my $node_y_min_g = $geographic_bbox->find("./southBoundLatitude/text()")->get_node(0);
+	$node_y_min_g->setData("$y_min_g");
+	my $node_y_max_g = $geographic_bbox->find("./northBoundLatitude/text()")->get_node(0);
+	$node_y_max_g->setData("$y_max_g");
+	
+	#8. recuperation du srs voulu dans la balise boundingBox du layer
+	my $bounding_box = $doc_lay->find("//boundingBox")->get_node(0);
+	my $srs_layer = $bounding_box->find("./\@CRS")->get_node(0)->textContent;
+	
+	#9. transformation en srs du layer a l'unite pres
+	my ($top_left_corner_x_layer, $top_left_corner_y_layer) = &reproj_point($x_min_bbox, $y_max_bbox, $proj, $srs_layer);
+	my ($top_right_corner_x_layer, $top_right_corner_y_layer) = &reproj_point($x_max_bbox, $y_max_bbox, $proj, $srs_layer);
+	my ($bottom_left_corner_x_layer, $bottom_left_corner_y_layer) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_layer);
+	my ($bottom_right_corner_x_layer, $bottom_right_corner_y_layer) = &reproj_point($x_max_bbox, $y_min_bbox, $proj, $srs_layer);
+	
+	# on verifie que la transfo est dans les cordes de le projection sinon cs2cs renvoie *
+	if($top_left_corner_x_layer ne "*" && $top_left_corner_y_layer ne "*" && $top_right_corner_x_layer ne "*" && $top_right_corner_y_layer ne "*" && $bottom_left_corner_x_layer ne "*" && $bottom_left_corner_y_layer ne "*" && $bottom_right_corner_x_layer ne "*" && $bottom_right_corner_y_layer ne "*"){
+		my $x_min_layer = floor(min($top_left_corner_x_layer, $top_right_corner_x_layer, $bottom_left_corner_x_layer, $bottom_right_corner_x_layer));
+		my $x_max_layer = ceil(max($top_left_corner_x_layer, $top_right_corner_x_layer, $bottom_left_corner_x_layer, $bottom_right_corner_x_layer));
+		my $y_min_layer = floor(min($top_left_corner_y_layer, $top_right_corner_y_layer, $bottom_left_corner_y_layer, $bottom_right_corner_y_layer));
+		my $y_max_layer = ceil(max($top_left_corner_y_layer, $top_right_corner_y_layer, $bottom_left_corner_y_layer, $bottom_right_corner_y_layer));
+		
+		#10. mise a jour dans le layer		
+		$bounding_box->setAttribute("minx", $x_min_layer);
+		$bounding_box->setAttribute("maxx", $x_max_layer);
+		$bounding_box->setAttribute("miny", $y_min_layer);
+		$bounding_box->setAttribute("maxy", $y_max_layer);		
+	}else{
+		&ecrit_log("ERREUR a l'execution de la transfo : les coordonnnes ne doivent pas etre dans la plage autorisee.");
+		print "[MAJ_CONF_SERVEUR] ERREUR a l'execution de la transfo : les coordonnnes ne doivent pas etre dans la plage autorisee.\n";
+		return $bool_ok;
+	}
+		
+	#11. remplacement dans le fichier
+	open LAY,">$xml_lay" or die "[MAJ_CONF_SERVEUR] Impossible d'ouvrir le fichier $xml_lay.";
+	print LAY $doc_lay->toString;
+	close LAY;
+	
+	$bool_ok = 1;
+	return $bool_ok;
+}
