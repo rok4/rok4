@@ -215,7 +215,7 @@ Tile* Level::gettile(int x, int y)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	//LOGGER_DEBUG(getfilepath(x, y));
+	LOGGER_DEBUG(getfilepath(x, y));
 	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
 	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
 }
