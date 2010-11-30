@@ -36,6 +36,7 @@ our @EXPORT=(
 	'%format_format_pyr_param',
 	'$dilatation_reproj_param',
 	'$programme_reproj_param',
+	'reproj_point',
 );
 ################################################################################
 
@@ -139,7 +140,7 @@ our %format_format_pyr_param = (
 	"png" => "TIFF_PNG_INT8",
 );
 
-our $programme_reproj_param = "./cs2cs";
+our $programme_reproj_param = "cs2cs";
 ################################################################################
 
 ########## FONCTIONS
@@ -237,5 +238,28 @@ sub lecture_repertoires_pyramide{
 	
 	return @refs_rep_levels;
 	
+}
+################################################################################
+sub reproj_point{
+
+	my $x_point = $_[0];
+	my $y_point = $_[1];
+	my $srs_ini = $_[2];
+	my $srs_fin = $_[3];
+	
+	my $x_reproj;
+	my $y_reproj;
+	
+	my $result = `echo $x_point $y_point | $programme_reproj_param -f %.8f +init=$srs_ini +to +init=$srs_fin`;
+	my @split2 = split /\s/, $result;
+	if(defined $split2[0] && defined $split2[1]){
+		$x_reproj = $split2[0];
+		$y_reproj = $split2[1];
+	}else{
+		print "[CALCULE_PYRAMIDE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.\n",;
+		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
+	}
+	
+	return ($x_reproj, $y_reproj);
 }
 1;

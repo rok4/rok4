@@ -18,6 +18,7 @@ use cache(
 	'$programme_copie_image_param',
 	'$rep_logs_param',
 	'$programme_reproj_param',
+	'reproj_point',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -1443,29 +1444,6 @@ sub passage_pivot{
 	
 	return $string_script3;
 	
-}
-################################################################################
-sub reproj_point{
-
-	my $x_point = $_[0];
-	my $y_point = $_[1];
-	my $srs_ini = $_[2];
-	my $srs_fin = $_[3];
-	
-	my $x_reproj;
-	my $y_reproj;
-	
-	my $result = `echo $x_point $y_point | $programme_reproj +init=$srs_ini +to +init=$srs_fin`;
-	my @split2 = split /\s/, $result;
-	if(defined $split2[0] && defined $split2[1]){
-		$x_reproj = $split2[0];
-		$y_reproj = $split2[1];
-	}else{
-		print "[CALCULE_PYRAMIDE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.\n",;
-		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
-	}
-	
-	return ($x_reproj, $y_reproj);
 }
 ################################################################################
 sub reproj_rectangle{

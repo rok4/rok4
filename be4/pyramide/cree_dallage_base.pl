@@ -18,6 +18,7 @@ use cache(
 	'$programme_copie_image_param',
 	'$rep_logs_param',
 	'$programme_reproj_param',
+	'reproj_point',
 );
 use Term::ANSIColor;
 use Getopt::Std;
