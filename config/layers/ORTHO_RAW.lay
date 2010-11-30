@@ -6,8 +6,8 @@
 		<keyword>pva</keyword>
 	</keywordList>
 	<style>normal</style>
-	<minRes>0.5</minRes>
-	<maxRes>512</maxRes>
+	<minRes>0.0125</minRes>
+	<maxRes>32768</maxRes>
 	<EX_GeographicBoundingBox>
   		<westBoundLongitude>0</westBoundLongitude>
   		<eastBoundLongitude>10</eastBoundLongitude>
