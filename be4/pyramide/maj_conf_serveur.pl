@@ -179,6 +179,19 @@ sub maj_pyr_et_bounding_box{
 	my ($bottom_left_corner_x_g, $bottom_left_corner_y_g) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_wgs84g);
 	my ($bottom_right_corner_x_g, $bottom_right_corner_y_g) = &reproj_point($x_max_bbox, $y_min_bbox, $proj, $srs_wgs84g);
 	
+	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+	if(!($top_left_corner_x_g ne "erreur" && $top_right_corner_x_g ne "erreur" && $bottom_left_corner_x_g ne "erreur" && $bottom_right_corner_x_g ne "erreur")){
+		print "[MAJ_CONF_SERVEUR] ERREUR a la reprojection de $proj en $srs_wgs84g.\n";
+		&ecrit_log("ERREUR a la reprojection de $proj en $srs_wgs84g.");
+		return $bool_ok;
+	}
+	# teste si les coordonnees ne sont pas hors champ
+	if(!($top_left_corner_x_g ne "*" && $top_right_corner_x_g ne "*" && $bottom_left_corner_x_g ne "*" && $bottom_right_corner_x_g ne "*" && $top_left_corner_y_g ne "*" && $top_right_corner_y_g ne "*" && $bottom_left_corner_y_g ne "*" && $bottom_right_corner_y_g ne "*" )){
+		print "[MAJ_CONF_SERVEUR] ERREUR a la reprojection de $proj en $srs_wgs84g, coordonnees potentiellement hors champ.\n";
+		&ecrit_log("ERREUR a la reprojection de $proj en $srs_wgs84g, coordonnees potentiellement hors champ.");
+		return $bool_ok;
+	}
+	
 	my $x_min_g = floor(min($top_left_corner_x_g, $top_right_corner_x_g, $bottom_left_corner_x_g, $bottom_right_corner_x_g));
 	my $x_max_g = ceil(max($top_left_corner_x_g, $top_right_corner_x_g, $bottom_left_corner_x_g, $bottom_right_corner_x_g));
 	my $y_min_g = floor(min($top_left_corner_y_g, $top_right_corner_y_g, $bottom_left_corner_y_g, $bottom_right_corner_y_g));
@@ -205,6 +218,13 @@ sub maj_pyr_et_bounding_box{
 	my ($top_right_corner_x_layer, $top_right_corner_y_layer) = &reproj_point($x_max_bbox, $y_max_bbox, $proj, $srs_layer);
 	my ($bottom_left_corner_x_layer, $bottom_left_corner_y_layer) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_layer);
 	my ($bottom_right_corner_x_layer, $bottom_right_corner_y_layer) = &reproj_point($x_max_bbox, $y_min_bbox, $proj, $srs_layer);
+	
+	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+	if(!($top_left_corner_x_layer ne "erreur" && $top_right_corner_x_layer ne "erreur" && $bottom_left_corner_x_layer ne "erreur" && $bottom_right_corner_x_layer ne "erreur")){
+		print "[MAJ_CONF_SERVEUR] ERREUR a la reprojection de $proj en $srs_layer.\n";
+		&ecrit_log("ERREUR a la reprojection de $proj en $srs_layer.");
+		return $bool_ok;
+	}
 	
 	# on verifie que la transfo est dans les cordes de le projection sinon cs2cs renvoie *
 	if($top_left_corner_x_layer ne "*" && $top_left_corner_y_layer ne "*" && $top_right_corner_x_layer ne "*" && $top_right_corner_y_layer ne "*" && $bottom_left_corner_x_layer ne "*" && $bottom_left_corner_y_layer ne "*" && $bottom_right_corner_x_layer ne "*" && $bottom_right_corner_y_layer ne "*"){

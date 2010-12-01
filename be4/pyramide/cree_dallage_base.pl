@@ -1553,30 +1553,6 @@ sub passage_pivot{
 	
 }
 ################################################################################
-sub reproj_point{
-
-	my $x_point = $_[0];
-	my $y_point = $_[1];
-	my $srs_ini = $_[2];
-	my $srs_fin = $_[3];
-	
-	my $x_reproj;
-	my $y_reproj;
-	
-	my $result = `echo $x_point $y_point | $programme_reproj +init=$srs_ini +to +init=$srs_fin`;
-	my @split2 = split /\s/, $result;
-	if(defined $split2[0] && defined $split2[1]){
-		$x_reproj = $split2[0];
-		$y_reproj = $split2[1];
-	}else{
-		print colored ("[CREE_DALLAGE_BASE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.", 'white on_red');
-		print "\n";
-		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
-	}
-	
-	return ($x_reproj, $y_reproj);
-}
-################################################################################
 sub reproj_rectangle{
 
 	my $x_min_poly = $_[0];
@@ -1596,6 +1572,17 @@ sub reproj_rectangle{
 	my ($x2,$y2) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
 	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
 	my ($x4,$y4) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	
+	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
+		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly.");
+		exit;
+	}
+	# teste si les coordonnees ne sont pas hors champ
+	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
+		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly, coordonnees potentiellement hors champ.");
+		exit;
+	}
 	
 	# determination de la bbox resultat
 	my $x_min_result = 99999999999;

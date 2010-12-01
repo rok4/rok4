@@ -1472,6 +1472,17 @@ sub reproj_rectangle{
 	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
 	my ($x2,$y2) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
 	
+	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
+		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly.");
+		exit;
+	}
+	# teste si les coordonnees ne sont pas hors champ
+	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
+		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly, coordonnees potentiellement hors champ.");
+		exit;
+	}
+	
 	# determination de la bbox resultat
 	my $x_min_result = 99999999999;
 	if($x0 < $x_min_result){

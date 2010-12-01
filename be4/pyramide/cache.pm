@@ -256,8 +256,8 @@ sub reproj_point{
 		$x_reproj = $split2[0];
 		$y_reproj = $split2[1];
 	}else{
-		print "[CALCULE_PYRAMIDE] Erreur a la reprojection de $x_point $y_point $srs_ini en $srs_fin.\n",;
-		&ecrit_log("ERREUR a la reprojection de $x_point $y_point $srs_ini en $srs_fin.");
+		# gere par les autres programmes
+		return ("erreur", "erreur");
 	}
 	
 	return ($x_reproj, $y_reproj);
