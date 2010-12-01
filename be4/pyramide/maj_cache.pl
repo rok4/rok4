@@ -15,31 +15,31 @@ my $programme_pyramide_lecture_seule = "./pyramide_lecture_seule.pl";
 # verification de la presence des perl
 my $verif_programme_prepare_pyramide = `which $programme_prepare_pyramide`;
 if ($verif_programme_prepare_pyramide eq ""){
-	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_prepare_pyramide est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme $programme_prepare_pyramide est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
 my $verif_programme_initialise_pyramide = `which $programme_initialise_pyramide`;
 if ($verif_programme_initialise_pyramide eq ""){
-	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_initialise_pyramide est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme $programme_initialise_pyramide est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
 my $verif_programme_calcule_pyramide = `which $programme_calcule_pyramide`;
 if ($verif_programme_calcule_pyramide eq ""){
-	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_calcule_pyramide est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme $programme_calcule_pyramide est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
 my $verif_programme_maj_conf_serveur = `which $programme_maj_conf_serveur`;
 if ($verif_programme_maj_conf_serveur eq ""){
-	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_maj_conf_serveur est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme $programme_maj_conf_serveur est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
 my $verif_programme_pyramide_lecture_seule = `which $programme_pyramide_lecture_seule`;
 if ($verif_programme_pyramide_lecture_seule eq ""){
-	print colored ("[CREE_DALLAGE_BASE] Le programme $programme_pyramide_lecture_seule est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme $programme_pyramide_lecture_seule est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
