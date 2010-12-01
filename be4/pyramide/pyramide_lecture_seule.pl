@@ -102,6 +102,7 @@ sub lecture_seule{
 		# on elimine les liens symboliques (qui s'ils sont restes liens symboliques ne sont qu'en lecture seule deja)
 		if (-f "$repertoire/$fichier"){
 			chmod 0444, "$repertoire/$fichier";
+			$nb++;
 		}elsif(-d "$repertoire/$fichier"){
 			$nb += &lecture_seule("$repertoire/$fichier");
 		}
