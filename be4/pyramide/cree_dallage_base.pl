@@ -1200,6 +1200,11 @@ sub calcule_niveaux_inferieurs{
 					my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
 					print ".";
 					
+					# si la dalle existe en lien symbolique, on doit casser le lien pour ne pas deteriorer
+					if (exists $dalles_liens{$dal}){
+						print SCRIPT "if [ -L \"$dal\" ] ; then rm -f $dal ; fi\n";
+					}
+					
 					# creation le cas echeant des repertoires parents
 					my $rep_parent_dalle_niveau_inf = dirname($dal);
 					&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle_niveau_inf.");

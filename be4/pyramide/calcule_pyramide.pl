@@ -1143,6 +1143,12 @@ sub calcule_niveaux_inferieurs{
 			foreach my $dal(@dalles_a_calc){
 				if (defined $dalle_cache_dessous{$dal}){
 					&ecrit_log("Calcul de $dal.");
+					
+					# si la dalle existe en lien symbolique, on doit casser le lien pour ne pas deteriorer
+					if (exists $dalles_liens{$dal}){
+						$string_script2 .= "if [ -L \"$dal\" ] ; then rm -f $dal ; fi\n";
+					}
+					
 					my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
 					
 					# creation le cas echeant des repertoires parents
