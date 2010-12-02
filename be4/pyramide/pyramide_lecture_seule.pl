@@ -50,11 +50,14 @@ push (@repertoires, values %level_rep_img, values %level_rep_mtd);
 
 # action 2 : mettre tous les fichiers en lecture seule 0444
 &ecrit_log("Mise en lecture seule des fichiers");
-my $nombre = 0;
+my $nombre_fichiers = 0;
+my $nombre_repertoires = 0;
 foreach my $rep(@repertoires){
-	$nombre += &lecture_seule($rep);
+	my ($nombre_fichiers_temp, $nombre_repertoires_temp) = &lecture_seule($rep);
+	$nombre_fichiers += $nombre_fichiers_temp;
+	$nombre_repertoires += $nombre_repertoires_temp
 }
-print colored ("[PYRAMIDE_LECTURE_SEULE] $nombre fichiers mis en lecture seule.", 'green');
+print colored ("[PYRAMIDE_LECTURE_SEULE] $nombre_fichiers fichiers et $nombre_repertoires repertoires mis en lecture seule.", 'green');
 print "\n";
 close LOG;
 ################################################################################
@@ -91,7 +94,8 @@ sub lecture_seule{
 	
 	my $repertoire = $_[0];
 	
-	my $nb = 0;
+	my $nb_fic = 0;
+	my $nb_rep = 0;
 	
 	opendir REP, "$repertoire" or die colored ("[PYRAMIDE_LECTURE_SEULE] Impossible d'ouvrir le repertoire $repertoire.", 'white on_red');
 	my @fichiers = readdir REP;
@@ -102,11 +106,17 @@ sub lecture_seule{
 		# on elimine les liens symboliques (qui s'ils sont restes liens symboliques ne sont qu'en lecture seule deja)
 		if (-f "$repertoire/$fichier"){
 			chmod 0444, "$repertoire/$fichier";
-			$nb++;
+			$nb_fic++;
 		}elsif(-d "$repertoire/$fichier"){
-			$nb += &lecture_seule("$repertoire/$fichier");
-		}
+			my ($nb_fic_temp, $nb_rep_temp) = &lecture_seule("$repertoire/$fichier");
+			$nb_fic += $nb_fic_temp;
+			$nb_rep += $nb_rep_temp;
+		}   
 	}
 	
-	return $nb;
+	# on passe le repertoire en lecture seule
+	chmod(0555, $repertoire);
+	$nb_rep += 1;
+	
+	return ($nb_fic, $nb_rep);
 }
