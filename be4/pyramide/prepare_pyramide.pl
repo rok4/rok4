@@ -20,10 +20,11 @@ use cache(
 	'lecture_tile_matrix_set',
 	'$rep_logs_param',
 	'%format_format_pyr_param',
+	'%produit_nomenclature_param',
 );
 # CONSTANTES
 $| = 1;
-our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x);
+our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h);
 
 # my %produit_format = %produit_format_param;
 my $nom_fichier_dalle_source = $nom_fichier_dalle_source_param;
@@ -39,6 +40,7 @@ my %produit_tms = %produit_tms_param;
 my $xsd_pyramide = $xsd_pyramide_param;
 my $rep_log = $rep_logs_param;
 my %format_format_pyr = %format_format_pyr_param;
+my %produit_nomenclature = %produit_nomenclature_param;
 ################################################################################
 
 # verification de l'existence des fichiers annexes
@@ -54,9 +56,11 @@ my $log = $rep_log."/log_prepare_pyramide_$time.log";
 open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
 &ecrit_log("commande : @ARGV");
 
-getopts("p:i:r:c:s:t:n:d:m:x:");
+getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:");
 
+my $bool_getopt_ok = 1;
 if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x) ){
+	$bool_getopt_ok = 0;
 	print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
@@ -83,6 +87,27 @@ if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t an
 	if(! defined $opt_x){
 		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
 	}
+}
+if(defined $opt_f){
+	if(! defined $opt_a){
+		$bool_getopt_ok = 0;
+		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -a.\n";
+	}
+	if(! defined $opt_y){
+		$bool_getopt_ok = 0;
+		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -y.\n";
+	}
+	if(! defined $opt_w){
+		$bool_getopt_ok = 0;
+		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -w.\n";
+	}
+	if(! defined $opt_h){
+		$bool_getopt_ok = 0;
+		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -h.\n";
+	}
+}
+
+if ($bool_getopt_ok == 0){
 	&usage();
 	exit;
 }
@@ -103,11 +128,22 @@ if (defined $opt_d){
 	$departement = uc($opt_d);
 }
 my $taille_dalle_pix = $opt_x;
+my $resolution_source_x;
+my $resolution_source_y;
+my $taille_pix_source_x;
+my $taille_pix_source_y;
+if (defined $opt_f){
+	$resolution_source_x = $opt_a;
+	$resolution_source_y = $opt_y;
+	$taille_pix_source_x = $opt_w;
+	$taille_pix_source_y = $opt_h;
+}
 # verifier les parametres
+my $bool_param_ok = 1;
 if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
 	print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
-	exit;
+	$bool_param_ok = 0;
 }else{
 	$produit = lc($produit);
 	
@@ -116,44 +152,70 @@ if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
 my $fichier_tms = $produit_tms{$produit};
 if (! (-e $fichier_tms && -f $fichier_tms) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
-	exit;
+	$bool_param_ok = 0;
 }
 
 if (!(-e $rep_images_source && -d $rep_images_source)){
 	print "[PREPARE_PYRAMIDE] Le repertoire $rep_images_source n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_images_source n'existe pas.");
-	exit;
+	$bool_param_ok = 0;
 }
 if (defined $rep_masque_mtd && (!(-e $rep_masque_mtd && -d $rep_masque_mtd))){
 	print "[PREPARE_PYRAMIDE] Le repertoire $rep_masque_mtd n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_masque_mtd n'existe pas.");
-	exit;
+	$bool_param_ok = 0;
 }
 if (!(-e $rep_fichiers_dallage && -d $rep_fichiers_dallage)){
 	print "[PREPARE_PYRAMIDE] Le repertoire $rep_fichiers_dallage n'existe pas.\n";
 	&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
-	exit;
+	$bool_param_ok = 0;
 }
 if($compression_pyramide !~ /^raw|jpeg|png$/i){
 	print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
 	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
-	exit;
+	$bool_param_ok = 0;
 }
 if(defined $departement && $departement !~ /^\d{2,3}|2[AB]$/i){
 	print "[PREPARE_PYRAMIDE] Departement mal specifie.\n";
 	&ecrit_log("ERREUR Departement mal specifie : $departement.");
-	exit;
+	$bool_param_ok = 0;
 }
 if($annee !~ /^\d{4}(?:\-\d{2})?$/i){
 	print "[PREPARE_PYRAMIDE] Annee mal specifiee.\n";
 	&ecrit_log("ERREUR Annee mal specifiee : $annee.");
-	exit;
+	$bool_param_ok = 0;
 }
 if($taille_dalle_pix !~ /^\d+$/i){
 	print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
 	&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
+	$bool_param_ok = 0;
+}
+if(defined $opt_f){
+	if($resolution_source_x !~ /^\d+(?:\.\d+)?$/){
+		print "[PREPARE_PYRAMIDE] Resolution X des dalles source mal specifiee.\n";
+		&ecrit_log("ERREUR Resolution X des dalles source mal specifiee : $resolution_source_x.");
+		$bool_param_ok = 0;
+	}
+	if($resolution_source_y !~ /^\d+(?:\.\d+)?$/){
+		print "[PREPARE_PYRAMIDE] Resolution Y des dalles source mal specifiee.\n";
+		&ecrit_log("ERREUR Resolution Y des dalles source mal specifiee : $resolution_source_y.");
+		$bool_param_ok = 0;
+	}
+	if($taille_pix_source_x !~ /^\d+$/){
+		print "[PREPARE_PYRAMIDE] Taille pixel X des dalles source mal specifiee.\n";
+		&ecrit_log("ERREUR Taille pixel X des dalles source mal specifiee : $taille_pix_source_x.");
+		$bool_param_ok = 0;
+	}
+	if($taille_pix_source_y !~ /^\d+$/){
+		print "[PREPARE_PYRAMIDE] Taille pixel Y des dalles source mal specifiee.\n";
+		&ecrit_log("ERREUR Taille pixel Y des dalles source mal specifiee : $taille_pix_source_y.");
+		$bool_param_ok = 0;
+	}
+}
+if ($bool_param_ok == 0){
 	exit;
 }
+
 
 # action 1 : creer dalles_source_image et dalles_source_metadata
 &ecrit_log("Recensement des images dans $rep_images_source.");
@@ -170,7 +232,7 @@ if(defined $rep_masque_mtd){
 	my ($ref_mtd_source, $nb_mtd) = &cherche_images($rep_masque_mtd);
 	&ecrit_log("$nb_mtd mtd dans $rep_masque_mtd.");
 	&ecrit_log("Recensement des infos des mtd de $rep_masque_mtd.");
-	my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_images_source);
+	my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_mtd_source);
 	&ecrit_log("Ecriture du fichier des mtd source.");
 	$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
 }
@@ -235,10 +297,13 @@ close LOG;
 sub usage{
 	
 	my $bool_ok = 0;
-	
-	print "\nUsage : \nprepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
+	# TODO ajouter resx resy
+	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
+ 	print "\n-f (optionnel) : pour utiliser la nomenclature standard des produits IGN\n";
+ 	print "\t-a resolution en X ; -y resolution en Y en METRES des images SOURCE si -f est defini, sinon aucun effet\n";
+ 	print "\t-w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet\n";
 	print "\ncompression images pyramide :\n";
 	print "\traw\n\tjpeg\n\tpng\n";
 	print "\nsysteme_coordonnees :\n";
@@ -314,35 +379,54 @@ sub cherche_infos_dalle{
 	
 	for(my $i = 0; $i < @imgs; $i++){
 #	foreach my $image(@imgs){
-	
-		# recuperation x_min x_max y_min y_max
-		my @result = `.\/gdalinfo $imgs[$i]`;
 		
-		foreach my $resultat(@result){
-			if($resultat =~ /Upper Left\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
+		if(defined $opt_f){
+			my $nom_image = basename($imgs[$i]);
+			if($nom_image =~ /^$produit_nomenclature{$produit}/i){
 				$hash_x_min{$imgs[$i]} = $1;
 				$hash_y_max{$imgs[$i]} = $2;
-				# actualisation des xmin et ymax du chantier
-				if($hash_x_min{$imgs[$i]} < $x_min_source){
-					$x_min_source = $hash_x_min{$imgs[$i]};
-				}
-				if($hash_y_max{$imgs[$i]} > $y_max_source){
-					$y_max_source = $hash_y_max{$imgs[$i]}
-				}
-			}elsif($resultat =~ /Lower Right\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
-				$hash_x_max{$imgs[$i]} = $1;
-				$hash_y_min{$imgs[$i]} = $2;
-				# actualisation des xmax et ymin du chantier
-				if($hash_x_max{$imgs[$i]} > $x_max_source){
-					$x_max_source = $hash_x_max{$imgs[$i]};
-				}
-				if($hash_y_min{$imgs[$i]} < $y_min_source){
-					$y_min_source = $hash_y_min{$imgs[$i]}
-				}
-			}elsif($resultat =~ /Pixel Size = \((\d+)\.(\d+), ?\-(\d+)\.(\d+)\)/){
-				$hash_res_x{$imgs[$i]} = $1 + ( $2 / (10**length($2)));
-				$hash_res_y{$imgs[$i]} = $3 + ( $4 / (10**length($4)));
+				$hash_res_x{$imgs[$i]} = $resolution_source_x;
+				$hash_res_y{$imgs[$i]} = $resolution_source_y;
+				$hash_x_max{$imgs[$i]} = $hash_x_min{$imgs[$i]} + $resolution_source_x * $taille_pix_source_x;
+				$hash_y_min{$imgs[$i]} = $hash_y_max{$imgs[$i]} - $resolution_source_y * $taille_pix_source_y;
+			}else{
+				print "[PREPARE_PYRAMIDE] ERREUR : Nomenclature de $nom_image incorrecte.\n";
+				&ecrit_log("ERREUR Nomenclature de $nom_image incorrecte.");
 			}
+			
+		}else{
+			# recuperation x_min x_max y_min y_max res_x res_y
+			my @result = `.\/gdalinfo $imgs[$i]`;
+			
+			foreach my $resultat(@result){
+				if($resultat =~ /Upper Left\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
+					$hash_x_min{$imgs[$i]} = $1;
+					$hash_y_max{$imgs[$i]} = $2;
+					
+				}elsif($resultat =~ /Lower Right\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
+					$hash_x_max{$imgs[$i]} = $1;
+					$hash_y_min{$imgs[$i]} = $2;
+					
+				}elsif($resultat =~ /Pixel Size = \((\d+)\.(\d+), ?\-(\d+)\.(\d+)\)/){
+					$hash_res_x{$imgs[$i]} = $1 + ( $2 / (10**length($2)));
+					$hash_res_y{$imgs[$i]} = $3 + ( $4 / (10**length($4)));
+				}
+			}
+		}
+		
+		# actualisation des xmin et ymax du chantier
+		if($hash_x_min{$imgs[$i]} < $x_min_source){
+			$x_min_source = $hash_x_min{$imgs[$i]};
+		}
+		if($hash_y_max{$imgs[$i]} > $y_max_source){
+			$y_max_source = $hash_y_max{$imgs[$i]}
+		}
+		# actualisation des xmax et ymin du chantier
+		if($hash_x_max{$imgs[$i]} > $x_max_source){
+			$x_max_source = $hash_x_max{$imgs[$i]};
+		}
+		if($hash_y_min{$imgs[$i]} < $y_min_source){
+			$y_min_source = $hash_y_min{$imgs[$i]}
 		}
 		
 	}

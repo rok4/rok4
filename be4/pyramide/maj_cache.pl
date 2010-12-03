@@ -63,6 +63,12 @@ my $prefixe_nom_script;
 my $taille_dalles_pixels;
 my $nombre_batch_min;
 
+my $bool_nomenclature_IGN = 0;
+my $resolution_x_source;
+my $resolution_y_source;
+my $taille_pix_x_source;
+my $taille_pix_y_source;
+
 &initialise_parametres($fichier_parametres);
 
 # resultat du prepare 
@@ -79,7 +85,11 @@ my $dep = "";
 if (defined $departement){
 	$dep = "-d $departement";
 }
-my $commande_prepare = "$programme_prepare_pyramide -p $produit -i $repertoire_images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels";
+my $param_IGN = "";
+if($bool_nomenclature_IGN == 1){
+	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
+}
+my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $repertoire_images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels";
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats
 my $bool_erreur_prepare = 0;
@@ -177,6 +187,24 @@ sub initialise_parametres{
 	if (defined $data->{departement} ){
 		$departement = $data->{departement};
 	}
+	# on regarde si on va utiliser la nomenclature IGN = OUI ou NON dans le XML
+	my $nomenclature_IGN = $data->{nomenclature_IGN};
+	if($nomenclature_IGN !~ /^oui|non$/i){
+		print colored ("[MAJ_CACHE] Balise nomenclature_IGN non conforme dans $xml_parametres.", 'white on_red');
+		exit;
+	}else{
+		if(lc($nomenclature_IGN) eq "oui"){
+			# il faut que les 4 infos ci-dessous soient renseignees pour etre utilisees
+			if (defined $data->{resolution_x_source} && defined $data->{resolution_y_source} && defined $data->{taille_pixels_x_source} && defined $data->{taille_pixels_y_source}){
+				$bool_nomenclature_IGN = 1;
+				$resolution_x_source = $data->{resolution_x_source};
+				$resolution_y_source = $data->{resolution_y_source};
+				$taille_pix_x_source = $data->{taille_pixels_x_source};
+				$taille_pix_y_source = $data->{taille_pixels_y_source};
+			}
+		}
+	}
+	
 	$fichier_layer = $data->{fichier_layer};
 	$systeme_coordonnees_source = $data->{systeme_coordonnees_source};
 	$pcent_dilatation_dalles_base = $data->{pcent_dilatation_dalles_base};

@@ -1,13 +1,18 @@
 ETAPE 1 : PREPARATION DES FICHIERS NECESSAIRES A LA PYRAMIDE
 
 Lancer : 
-"prepare_pyramide.pl -p produit -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
+"prepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
 
 produit :
         ortho
         parcellaire
         scan
         franceraster
+
+-f (optionnel) : pour utiliser la nomenclature standard des produits IGN
+        -a resolution en X ; -y resolution en Y en METRES des images SOURCE si -f est defini, sinon aucun effet
+        -w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet
+
 
 compression images pyramide :
 		raw
@@ -24,6 +29,11 @@ annee :
                 2009
 
 le parametre -p contient le nom du produit (voir exemples ci-dessus)
+le parametre -f indique si on veut utiliser la nomenclature standard des produits IGN (fonction du produit)
+le parametre -a indique la resolution en x des dalles source
+le parametre -y indique la resolution en x des dalles source
+le parametre -w indique la taille en pixels en x des dalles source
+le parametre -h indique la taille en pixels en x des dalles source
 le parametre -i contient le chemin des images a integrer dans le cache
 le parametre -m (optionnel) contient le chemin des masques de metadonnees associees aux images a integrer au cache (s'il existe)
 le parametre -r contient le chemin du repertoire ou creer la nouvelle pyramide (elle sera creee dans un sous-repertoire avec une arborescence specifique)

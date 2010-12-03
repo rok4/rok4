@@ -37,17 +37,18 @@ our @EXPORT=(
 	'$dilatation_reproj_param',
 	'$programme_reproj_param',
 	'reproj_point',
+	'%produit_nomenclature_param',
 );
 ################################################################################
 
 ######### CONSTANTES
 
- our %produit_format_param = (
- 	"ortho" => "TIFF_JPG_INT8",
+our %produit_format_param = (
+	"ortho" => "TIFF_JPG_INT8",
  	"parcellaire" => "TIFF_PNG_INT8",
  	"franceraster" => "TIFF_INT8",
  	"scan" => "TIFF_INT8",
- );
+);
 
 # en parametre des scripts
 #our $taille_dalle_pix_param = 4096;
@@ -141,6 +142,13 @@ our %format_format_pyr_param = (
 );
 
 our $programme_reproj_param = "cs2cs";
+
+our %produit_nomenclature_param = (
+	"ortho" => "(?:\\d{2,3}|2[AB]|\\w+)-\\d{4}-(\\d{4,5})-(\\d{4,5})",
+ 	"parcellaire" => "BDP_\\d{2}_(\\d{4})_(\\d{4})",
+ 	"franceraster" => "fr\\w{2}_\\d{4}k_(\\d{4})_(\\d{4})",
+ 	"scan" => "SC\\w{2,4}(?:_\\w{3,4})?_(\\d{4})_(\\d{4})",
+);
 ################################################################################
 
 ########## FONCTIONS

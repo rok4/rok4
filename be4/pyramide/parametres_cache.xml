@@ -6,7 +6,18 @@
         <!-- facultatif -->
         <!--<repertoire_masques_metadonnees></repertoire_masques_metadonnees>-->
         <systeme_coordonnees_source>LAMB93</systeme_coordonnees_source>
-        <annee>2008</annee>
+        <!-- a choisir parmi OUI/NON -->
+		<nomenclature_IGN>OUI</nomenclature_IGN>
+		<!-- facultatif (METRES) -->
+		<resolution_x_source>0.5</resolution_x_source>
+        <!-- facultatif (METRES) -->
+		<resolution_y_source>0.5</resolution_y_source>
+        <!-- facultatif -->
+		<taille_pixels_x_source>2000</taille_pixels_x_source>
+        <!-- facultatif -->
+		<taille_pixels_y_source>2000</taille_pixels_y_source>
+        <!-- NB : si nomenclature_IGN vaut OUI resolution_x_source resolution_y_source taille_pixels_x_source taille_pixels_y_source doivent etre definis -->
+		<annee>2008</annee>
         <!-- facultatif -->
         <departement>75</departement>
         <repertoire_pyramide>/mnt/geoportail/Chataigner/TestCache</repertoire_pyramide>
