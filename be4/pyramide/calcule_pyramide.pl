@@ -1080,9 +1080,12 @@ sub calcule_niveau_minimum {
 				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 			}
 			
-			# ATTENTION, intuition feminine : l'execution dans certains environnement fait qu'il se melange les pinceaux
+			# ATTENTION, intuition feminine : l'execution dans certains environnements fait qu'il se melange les pinceaux
 			# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
-			sleep(1);
+			# sleep(1);
+			# moyen de le faire dormir moins que 1s : sleep ne fait que les entiers !!
+			# ~15s pour 1500 images
+			select(undef, undef, undef, 0.01);
 			
 			close FIC;
 			# definition de l'interpolateur
