@@ -297,12 +297,12 @@ close LOG;
 sub usage{
 	
 	my $bool_ok = 0;
-	# TODO ajouter resx resy
+
 	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
  	print "\n-f (optionnel) : pour utiliser la nomenclature standard des produits IGN\n";
- 	print "\t-a resolution en X ; -y resolution en Y en METRES des images SOURCE si -f est defini, sinon aucun effet\n";
+ 	print "\t-a resolution en X ; -y resolution en Y en UNITES DU SRS des images SOURCE si -f est defini, sinon aucun effet\n";
  	print "\t-w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet\n";
 	print "\ncompression images pyramide :\n";
 	print "\traw\n\tjpeg\n\tpng\n";

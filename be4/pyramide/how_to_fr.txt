@@ -10,7 +10,7 @@ produit :
         franceraster
 
 -f (optionnel) : pour utiliser la nomenclature standard des produits IGN
-        -a resolution en X ; -y resolution en Y en METRES des images SOURCE si -f est defini, sinon aucun effet
+        -a resolution en X ; -y resolution en Y en UNITES DU SRS des images SOURCE si -f est defini, sinon aucun effet
         -w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet
 
 

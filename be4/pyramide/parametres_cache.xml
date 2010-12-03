@@ -8,9 +8,9 @@
         <systeme_coordonnees_source>LAMB93</systeme_coordonnees_source>
         <!-- a choisir parmi OUI/NON -->
 		<nomenclature_IGN>OUI</nomenclature_IGN>
-		<!-- facultatif (METRES) -->
+		<!-- facultatif (UNITES DU SRS) -->
 		<resolution_x_source>0.5</resolution_x_source>
-        <!-- facultatif (METRES) -->
+        <!-- facultatif (UNITES DU SRS) -->
 		<resolution_y_source>0.5</resolution_y_source>
         <!-- facultatif -->
 		<taille_pixels_x_source>2000</taille_pixels_x_source>
