@@ -383,8 +383,13 @@ sub cherche_infos_dalle{
 		if(defined $opt_f){
 			my $nom_image = basename($imgs[$i]);
 			if($nom_image =~ /^$produit_nomenclature{$produit}/i){
-				$hash_x_min{$imgs[$i]} = $1;
-				$hash_y_max{$imgs[$i]} = $2;
+				my $multiplicateur = 1000;
+				#  si on est en hexadecimal
+				if(length($1) == 5 && length($2) == 5){
+					$multiplicateur = 100;
+				}
+				$hash_x_min{$imgs[$i]} = $1 * $multiplicateur;
+				$hash_y_max{$imgs[$i]} = $2 * $multiplicateur;
 				$hash_res_x{$imgs[$i]} = $resolution_source_x;
 				$hash_res_y{$imgs[$i]} = $resolution_source_y;
 				$hash_x_max{$imgs[$i]} = $hash_x_min{$imgs[$i]} + $resolution_source_x * $taille_pix_source_x;
