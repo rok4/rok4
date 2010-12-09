@@ -176,112 +176,102 @@ void Rok4Server::buildWMSCapabilities(){
 	}
 	// CRS
 	for (unsigned int i=0; i < parentLayer->getWMSCRSList().size(); i++){
-        	parentLayerEl->LinkEndChild(buildTextNode("CRS", parentLayer->getWMSCRSList()[i]));
-        }
+		parentLayerEl->LinkEndChild(buildTextNode("CRS", parentLayer->getWMSCRSList()[i]));
+	}
 	// GeographicBoundingBox
-        TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
-        std::ostringstream os;
-        os<<parentLayer->getGeographicBoundingBox().minx;
-        gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
-        os.str("");
-        os<<parentLayer->getGeographicBoundingBox().maxx;
-        gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
-        os.str("");
-        os<<parentLayer->getGeographicBoundingBox().miny;
-        gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
-        os.str("");
-        os<<parentLayer->getGeographicBoundingBox().maxy;
-        gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
-        parentLayerEl->LinkEndChild(gbbEl);
-        // BoundingBox
-        TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
-        bbEl->SetAttribute("CRS",parentLayer->getBoundingBox().srs);
-        bbEl->SetAttribute("minx",parentLayer->getBoundingBox().minx);
-        bbEl->SetAttribute("miny",parentLayer->getBoundingBox().miny);
-        bbEl->SetAttribute("maxx",parentLayer->getBoundingBox().maxx);
-        bbEl->SetAttribute("maxy",parentLayer->getBoundingBox().maxy);
-        parentLayerEl->LinkEndChild(bbEl);
+	TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
+	std::ostringstream os;
+	os<<parentLayer->getGeographicBoundingBox().minx;
+	gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
+	os.str("");
+	os<<parentLayer->getGeographicBoundingBox().maxx;
+	gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+	os.str("");
+	os<<parentLayer->getGeographicBoundingBox().miny;
+	gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
+	os.str("");
+	os<<parentLayer->getGeographicBoundingBox().maxy;
+	gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+	parentLayerEl->LinkEndChild(gbbEl);
+	// BoundingBox
+	TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+	bbEl->SetAttribute("CRS",parentLayer->getBoundingBox().srs);
+	bbEl->SetAttribute("minx",parentLayer->getBoundingBox().minx);
+	bbEl->SetAttribute("miny",parentLayer->getBoundingBox().miny);
+	bbEl->SetAttribute("maxx",parentLayer->getBoundingBox().maxx);
+	bbEl->SetAttribute("maxy",parentLayer->getBoundingBox().maxy);
+	parentLayerEl->LinkEndChild(bbEl);
 
-	// MinMaxRes
-	os.str("");
-        os<<parentLayer->getMinRes();
-	parentLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
-	os.str("");
-        os<<parentLayer->getMaxRes();
-        parentLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
-	
-        /* TODO:
-        *
-        layer->getAuthority();
-        layer->getOpaque();
-        layer->getStyles();
-        */
+	/* TODO:
+	 *
+	 layer->getAuthority();
+	 layer->getMaxRes();
+	 layer->getMinRes();
+	 layer->getOpaque();
+	 layer->getStyles();
+	 */
 
 	// Child layers
 	std::map<std::string, Layer*>::iterator it;
-        for (it=++layerList.begin();it!=layerList.end();it++){
-                TiXmlElement * childLayerEl = new TiXmlElement( "Layer" );
-                Layer* childLayer = it->second;
-                // Name
-                childLayerEl->LinkEndChild(buildTextNode("Name", childLayer->getId()));
-                // Title
-                childLayerEl->LinkEndChild(buildTextNode("Title", childLayer->getTitle()));
-                // Abstract
-                childLayerEl->LinkEndChild(buildTextNode("Abstract", childLayer->getAbstract()));
-                // KeywordList
-                if (childLayer->getKeyWords().size() != 0){
-                        TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
-                        for (unsigned int i=0; i < childLayer->getKeyWords().size(); i++){
-                                kwlEl->LinkEndChild(buildTextNode("Keyword", childLayer->getKeyWords()[i]));
-                        }
-                        childLayerEl->LinkEndChild(kwlEl);
-                }
-                // CRS
-                for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
-                        childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
-                }
-                // GeographicBoundingBox
-                TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
-                std::ostringstream os;
-                os<<childLayer->getGeographicBoundingBox().minx;
-                gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
-                os.str("");
-                os<<childLayer->getGeographicBoundingBox().maxx;
-                gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
-                os.str("");
-                os<<childLayer->getGeographicBoundingBox().miny;
-                gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
-                os.str("");
-                os<<childLayer->getGeographicBoundingBox().maxy;
-                gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
-                childLayerEl->LinkEndChild(gbbEl);
+	for (it=++layerList.begin();it!=layerList.end();it++){
+		TiXmlElement * childLayerEl = new TiXmlElement( "Layer" );
+		Layer* childLayer = it->second;
+		// Name
+		childLayerEl->LinkEndChild(buildTextNode("Name", childLayer->getId()));
+		// Title
+		childLayerEl->LinkEndChild(buildTextNode("Title", childLayer->getTitle()));
+		// Abstract
+		childLayerEl->LinkEndChild(buildTextNode("Abstract", childLayer->getAbstract()));
+		// KeywordList
+		if (childLayer->getKeyWords().size() != 0){
+			TiXmlElement * kwlEl = new TiXmlElement( "KeywordList" );
+			for (unsigned int i=0; i < childLayer->getKeyWords().size(); i++){
+				kwlEl->LinkEndChild(buildTextNode("Keyword", childLayer->getKeyWords()[i]));
+			}
+			childLayerEl->LinkEndChild(kwlEl);
+		}
+		// CRS
+		for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
+			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
+		}
+		// GeographicBoundingBox
+		TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
+		std::ostringstream os;
+		os<<childLayer->getGeographicBoundingBox().minx;
+		gbbEl->LinkEndChild(buildTextNode("westBoundLongitude", os.str()));
+		os.str("");
+		os<<childLayer->getGeographicBoundingBox().maxx;
+		gbbEl->LinkEndChild(buildTextNode("eastBoundLongitude", os.str()));
+		os.str("");
+		os<<childLayer->getGeographicBoundingBox().miny;
+		gbbEl->LinkEndChild(buildTextNode("southBoundLatitude", os.str()));
+		os.str("");
+		os<<childLayer->getGeographicBoundingBox().maxy;
+		gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+		childLayerEl->LinkEndChild(gbbEl);
 
 		// BoundingBox
-                TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
-                bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
-                bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
-                bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
-                bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
-                bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
-                childLayerEl->LinkEndChild(bbEl);
+		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+		bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
+		bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
+		bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
+		bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
+		bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
+		childLayerEl->LinkEndChild(bbEl);
 
-		os.str("");
-        	os<<childLayer->getMinRes();
-        	childLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
-        	os.str("");
-        	os<<childLayer->getMaxRes();
-        	childLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
-                /* TODO:
-                 *
-                layer->getAuthority();
-                layer->getOpaque();
-                layer->getStyles();
-                 */
-                parentLayerEl->LinkEndChild(childLayerEl);
+		/* TODO:
+		 *
+		 layer->getAuthority();
+		 layer->getMaxRes();
+		 layer->getMinRes();
+		 layer->getOpaque();
+		 layer->getStyles();
+		 */
+		parentLayerEl->LinkEndChild(childLayerEl);
 
-        }// for layer
+	}// for layer
 
-        capabilityEl->LinkEndChild(parentLayerEl);
+	capabilityEl->LinkEndChild(parentLayerEl);
 
 
 	capabilitiesEl->LinkEndChild(capabilityEl);
@@ -308,10 +298,10 @@ void Rok4Server::buildWMSCapabilities(){
 	}
 	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
 
-/*	debug: affichage des fragments.
-    for (int i=0; i<wmsCapaFrag.size();i++){
-		LOGGER_DEBUG( "(" << wmsCapaFrag[i] << ")" );
-	}*/
+	/*	debug: affichage des fragments.
+			for (int i=0; i<wmsCapaFrag.size();i++){
+			LOGGER_DEBUG( "(" << wmsCapaFrag[i] << ")" );
+			}*/
 
 
 }
@@ -334,9 +324,9 @@ void Rok4Server::buildWMTSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns:gml","http://www.opengis.net/gml");
 	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd");
 
-//----------------------------------------------------------------------
-// ServiceIdentification
-//----------------------------------------------------------------------
+	//----------------------------------------------------------------------
+	// ServiceIdentification
+	//----------------------------------------------------------------------
 	TiXmlElement * serviceEl = new TiXmlElement( "ows:ServiceIdentification" );
 
 	serviceEl->LinkEndChild(buildTextNode("ows:Title", servicesConf.getTitle()));
@@ -356,15 +346,15 @@ void Rok4Server::buildWMTSCapabilities(){
 
 	capabilitiesEl->LinkEndChild(serviceEl);
 
-//----------------------------------------------------------------------
-// Le serviceProvider (facultatif) n'est pas implémenté pour le moment.
-//TiXmlElement * servProvEl = new TiXmlElement("ows:ServiceProvider");
-//----------------------------------------------------------------------
+	//----------------------------------------------------------------------
+	// Le serviceProvider (facultatif) n'est pas implémenté pour le moment.
+	//TiXmlElement * servProvEl = new TiXmlElement("ows:ServiceProvider");
+	//----------------------------------------------------------------------
 
 
-//----------------------------------------------------------------------
-// OpertionsMetadata
-//----------------------------------------------------------------------
+	//----------------------------------------------------------------------
+	// OpertionsMetadata
+	//----------------------------------------------------------------------
 	TiXmlElement * opMtdEl = new TiXmlElement("ows:OperationMetadata");
 	TiXmlElement * opEl = new TiXmlElement("ows:Operation");
 	opEl->SetAttribute("name","GetCapabilities");
@@ -391,9 +381,9 @@ void Rok4Server::buildWMTSCapabilities(){
 	opMtdEl->LinkEndChild(opEl);
 
 	capabilitiesEl->LinkEndChild(opMtdEl);
-//----------------------------------------------------------------------
-// Contents
-//----------------------------------------------------------------------
+	//----------------------------------------------------------------------
+	// Contents
+	//----------------------------------------------------------------------
 	TiXmlElement * contentsEl=new TiXmlElement("Contents");
 
 	// Layer
@@ -491,9 +481,9 @@ void Rok4Server::buildWMTSCapabilities(){
 	wmtsCapaFrag.push_back(wmtsCapaTemplate.substr(beginPos));
 
 	/*//debug: affichage des fragments.
-    for (int i=0; i<wmtsCapaFrag.size();i++){
+		for (int i=0; i<wmtsCapaFrag.size();i++){
 		std::cout << "(" << wmtsCapaFrag[i] << ")" << std::endl;
-	}
-	*/
+		}
+		*/
 
 }

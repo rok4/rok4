@@ -14,9 +14,9 @@ protected:
 	std::string message;
 public:
 	MessageDataSource(std::string message, std::string type) : message(message), type(type) {}
-	const uint8_t* get_data(size_t& size) {size=message.length();return (const uint8_t*)message.data();}
+	const uint8_t* getData(size_t& size) {size=message.length();return (const uint8_t*)message.data();}
 	std::string gettype() {return type.c_str();}
-	bool release_data() {}
+	bool releaseData() {}
 };
 
 /**

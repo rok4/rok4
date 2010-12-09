@@ -7,7 +7,7 @@
 		<format>TIFF_PNG_INT8</format>
 		<metadata type='INT32_DB_LZW'>
 			<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/512</baseDir>
-			<format>TIFF_JPG_INT8</format>
+			<format>TIFF_PNG_INT8</format>
 		</metadata>
 		<channels>1</channels>
 		<tilesPerWidth>4</tilesPerWidth>
@@ -26,7 +26,7 @@
 		<format>TIFF_PNG_INT8</format>
 		<metadata type='INT32_DB_LZW'>
 			<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/1024</baseDir>
-			<format>TIFF_JPG_INT8</format>
+			<format>TIFF_PNG_INT8</format>
 		</metadata>
 		<channels>1</channels>
 		<tilesPerWidth>4</tilesPerWidth>

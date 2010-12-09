@@ -2,7 +2,7 @@
 #define _TIFFENCODER_
 
 #include "Data.h"
-#include "Tile.h"
+#include "Image.h"
 
 class TiffEncoderStream : public DataStream {
 	Image *image;
@@ -23,8 +23,8 @@ class TiffEncoderSource : public DataSource {
         public:
         TiffEncoderSource(int w, int h, int channels, DataSource* source);
         ~TiffEncoderSource();
-	const uint8_t* get_data(size_t &size);
-	bool release_data();
+	const uint8_t* getData(size_t &size);
+	bool releaseData();
         std::string gettype() {return "image/tiff";}
 	int getHttpStatus() {return 200;}
 };

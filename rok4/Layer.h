@@ -40,7 +40,7 @@ private:
 public:
 	std::string getId();
 
-	Tile* gettile(int x, int y, std::string tmId);
+	DataSource* gettile(int x, int y, std::string tmId);
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
 
 	std::string              getAbstract()   const { return abstract;}
@@ -54,7 +54,7 @@ public:
 	std::vector<std::string> getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
-        GeographicBoundingBoxWMS     getGeographicBoundingBox() const { return geographicBoundingBox; }
+	GeographicBoundingBoxWMS getGeographicBoundingBox() const { return geographicBoundingBox; }
 	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
 	std::vector<std::string> getMimeFormats();
 

@@ -1,14 +1,25 @@
 
 #include "Level.h"
 #include "FileDataSource.h"
-#include "TiffEncoder.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
 
+//#include "DecodedImage.h"
+
+#include "Decoder.h"
+
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
+
+#include <vector>
+
+
+#include "JPEGEncoder.h"
+#include "PNGEncoder.h"
+#include "TiffEncoder.h"
+
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -16,16 +27,29 @@
 
 /** Constructeur */
 Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
-tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
+	tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
 {
-	if (getType()=="image/jpeg")
-		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_jpeg.tif",2048,2052,"image/jpeg");
+//	std::vector<uint8_t> color(3, 100);
+// 
+//
+  
+	LOGGER(DEBUG) << "Constructeur Level " << format << std::endl;
+  
+	JPEGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
+	noDataSource = new BufferedDataSource(dataStream);
+
+	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
+	
+/*
+		noDataTile = new MonochromaticTile<uint8_t, JPEGEncoder>(tm.getTileW(), tm.getTileH(), channels, color);
 	else if(getType()=="image/tiff")
-		noDataSource = new FileDataSource("../config/nodata/nodata_tiled_raw.tif",2048,2052,"image/jpeg");
+		noDataTile = new MonochromaticTile<uint8_t, TiffEncoderStream>(tm.getTileW(), tm.getTileH(), channels, color);
 	else if(getType()=="image/png")
-                noDataSource = new FileDataSource("../config/nodata/nodata_tiled_png.tif",2048,2052,"image/png");
+		noDataTile = new MonochromaticTile<uint8_t, PNGEncoder>(tm.getTileW(), tm.getTileH(), channels, color);
 	else
 		LOGGER_ERROR("Pas de nodatasource disponible");
+*/
+
 }
 
 TileMatrix const Level::getTm(){return tm;}
@@ -52,21 +76,7 @@ std::string Level::getType() {
 	return "text/plain";
 }
 
-/*
- * @return le type de codage de la tuile en fonction du format
- * @ return -1 en cas d'erreur
- */
 
-int Level::getTileCoding() {
-	if (format.compare("TIFF_INT8")==0)
-		return RAW_UINT8;
-	else if (format.compare("TIFF_JPG_INT8")==0)
-		return JPEG_UINT8;
-	else if (format.compare("TIFF_PNG_INT8")==0)
-		return PNG_UINT8;
-	LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
-	return -1;
-}
 
 /*
  * A REFAIRE
@@ -134,21 +144,18 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 	int tile_ymin = bbox.ymin / tm.getTileH();
 	int tile_ymax = (bbox.ymax-1) / tm.getTileH();
 	int nby = tile_ymax - tile_ymin + 1;
-//LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " << " nb_y:" << nby  << " tileH:" << tm.getTileH());
+	//LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " << " nb_y:" << nby  << " tileH:" << tm.getTileH());
 	int left[nbx];   memset(left,   0, nbx*sizeof(int)); left[0] = bbox.xmin % tm.getTileW();
 	int top[nby];    memset(top,    0, nby*sizeof(int)); top[0]  = bbox.ymin % tm.getTileH();
 	int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;
 	int bottom[nby]; memset(bottom, 0, nby*sizeof(int)); bottom[nby- 1] = tm.getTileH() - ((bbox.ymax -1) % tm.getTileH()) - 1;
 
-	int tileCoding=getTileCoding();
+//	int tileCoding=getTileCoding();
 
 	std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
 	for(int y = 0; y < nby; y++)
-		for(int x = 0; x < nbx; x++) {
-	//		LOGGER_DEBUG(" getwindow " << x << " " << y << " " << nbx << " " << nby << " " << left[x] << " " << right[x] << " " << top[y] << " " << bottom[y] );
-			Tile* tile = gettile(tile_xmin + x, tile_ymin + y);
-			T[y][x] = new Tile(tm.getTileW(), tm.getTileH(), channels, tile->getDataSource(), tile->getNoDataSource(), left[x], top[y], right[x], bottom[y],tileCoding);
-		}
+		for(int x = 0; x < nbx; x++)
+			T[y][x] = getTile(tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y]);
 
 	if(nbx == 1 && nby == 1) return T[0][0];
 	else return new CompoundImage(T);
@@ -184,11 +191,11 @@ std::string Level::getfilepath(int tilex, int tiley)
 	int pos = sizeof(path) - 6;
 
 	for(int d = 0; d < pathDepth; d++) {;
-	path[pos--] = Base36[y % 36];
-	path[pos--] = Base36[x % 36];
-	path[pos--] = '/';
-	x = x / 36;
-	y = y / 36;
+		path[pos--] = Base36[y % 36];
+		path[pos--] = Base36[x % 36];
+		path[pos--] = '/';
+		x = x / 36;
+		y = y / 36;
 	}
 	do {
 		path[pos--] = Base36[y % 36];
@@ -205,18 +212,60 @@ std::string Level::getfilepath(int tilex, int tiley)
  * @ return la tuile d'indice (x,y) du niveau
  */
 
-Tile* Level::gettile(int x, int y)
-{
-	int tileCoding=getTileCoding();
-	if (tileCoding<0)
-		return 0;
 
+
+DataSource* Level::getEncodedTile(int x, int y) {
+	// TODO: return 0 sur des cas d'erreur..
 	// Index de la tuile (cf. ordre de rangement des tuiles)
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	LOGGER_DEBUG(getfilepath(x, y));
-	FileDataSource* dataSource = new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
-	return new Tile(tm.getTileW(),tm.getTileH(),channels,dataSource,noDataSource, 0,0,tm.getTileW(),tm.getTileH(),getTileCoding());
+	return new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());	
+}
+
+DataSource* Level::getDecodedTile(int x, int y)
+{
+	DataSource* encData = getEncodedTile(x, y);
+
+	if (format.compare("TIFF_INT8")==0)
+		return encData;
+	else if (format.compare("TIFF_JPG_INT8")==0)
+		return new DataSourceDecoder<JpegDecoder>(encData);
+	else if (format.compare("TIFF_PNG_INT8")==0)
+		return new DataSourceDecoder<PngDecoder>(encData);
+
+	LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
+	return 0;
+}
+
+
+DataSource* Level::getTile(int x, int y) {
+	return new DataSourceProxy(getEncodedTile(x, y), *noDataSource);
+}
+
+
+
+/*
+	switch(tileCoding) {
+		case RAW_UINT8:  return new EncodedTile<RawDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
+		case JPEG_UINT8: return new EncodedTile<JpegDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
+		case PNG_UINT8:  return new EncodedTile<PngDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
+		default: return 0;
+	}
+*/
+
+
+Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
+
+
+	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
+			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),
+				tm.getY0() + y * tm.getTileH() * tm.getRes(), 
+				tm.getX0() + (x+1) * tm.getTileW() * tm.getRes(),
+				tm.getY0() + (y+1) * tm.getTileH() * tm.getRes()),
+			left, top, right, bottom);
+
+
 }
 

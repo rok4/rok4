@@ -14,11 +14,11 @@ private:
 	std::string best_level(double resolution_x, double resolution_y);
 
 public:
-	std::map<std::string, Level*> getLevels();
+
 	Level * getFirstLevel();
 	TileMatrixSet getTms();
 
-	Tile* gettile(int x, int y, std::string tmId);
+	DataSource* getTile(int x, int y, std::string tmId);	
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
 
 	Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms) : levels(levels), tms(tms) {}

@@ -17,7 +17,7 @@ private:
 	std::string type;
 public:
 	FileDataSource(const char* filename, const uint32_t posoff, const uint32_t possize, std::string type);
-	const uint8_t* get_data(size_t &tile_size);
+	const uint8_t* getData(size_t &tile_size);
 
 	/*
 	 * @ return le type MIME de la source de donnees
@@ -31,12 +31,14 @@ public:
 	 * Liberation du buffer
 	 * @return true en cas de succes
 	 */
-	bool release_data()
+	bool releaseData()
 	{
-		if (data)
-			delete[] data;
+		delete[] data;
+		data = 0;
 		return true;
 	}
+
+	~FileDataSource() {releaseData();}
 	
 	int getHttpStatus() {return 200;}
 };

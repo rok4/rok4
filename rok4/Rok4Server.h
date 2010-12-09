@@ -40,7 +40,7 @@ private:
 	void buildWMTSCapabilities();
 
 	DataStream* getMap (Request* request);
-	DataSource* getTile(Request* request, Tile* tile);
+	DataSource* getTile(Request* request);
 	DataStream* WMSGetCapabilities (Request* request);
 	DataStream* WMTSGetCapabilities(Request* request);
 	void        processWMS    (Request *request, FCGX_Request&  fcgxRequest);

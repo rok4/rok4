@@ -7,7 +7,7 @@
 /*
 
  */
-Tile* Pyramid::gettile(int x, int y, std::string tmId) {
+DataSource* Pyramid::getTile(int x, int y, std::string tmId) {
 
 	std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
 
@@ -15,7 +15,7 @@ Tile* Pyramid::gettile(int x, int y, std::string tmId) {
 	if (it==levels.end())
 		LOGGER_ERROR("Erreur WMTS : niveau manquant");
 
-	return it->second->gettile(x, y);
+	return it->second->getTile(x, y);
 }
 
 std::string Pyramid::best_level(double resolution_x, double resolution_y) {
@@ -40,10 +40,6 @@ std::string Pyramid::best_level(double resolution_x, double resolution_y) {
 	return best_h;
 }
 
-
-std::map<std::string, Level*> Pyramid::getLevels(){
-	return levels;
-}
 
 Level * Pyramid::getFirstLevel(){
 	std::map<std::string, Level*>::iterator it(levels.begin());

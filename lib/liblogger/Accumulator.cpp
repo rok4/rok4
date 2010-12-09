@@ -59,6 +59,8 @@ void Accumulator::flushFrontMessage() {
 	getStream() << buffer[front];
 	//TODO: gérer les cas d'erreur d'écriture du flux.
 
+    getStream().flush();
+	
 	// On retire le message du buffer en incrémentant front.
 	pthread_mutex_lock(&mutex); 
 	front = (front+1) % buffer.size();

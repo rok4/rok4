@@ -29,7 +29,14 @@ private:
 	const std::string noDataFile;
 
 	std::string getfilepath(int tilex, int tiley);
+
+//	Tile* noDataTile;
 	DataSource* noDataSource;
+	
+
+	DataSource* getEncodedTile(int x, int y);
+	DataSource* getDecodedTile(int x, int y);
+	
 
 protected:
 	/**
@@ -50,7 +57,7 @@ public:
 	uint32_t    getMinTileCol();
 	double      getRes();
 	std::string getId();
-	int	      getTileCoding();
+	int         getTileCoding();
 	std::string getType();
 
 
@@ -67,7 +74,12 @@ public:
 	 * x = floor((X - X0) / (tile_width * resolution_x))
 	 * y = floor((Y - Y0) / (tile_height * resolution_y))
 	 */
-	Tile* gettile(int x, int y);
+	
+	DataSource* getTile(int x, int y);
+
+
+	Image* getTile(int x, int y, int left, int top, int right, int bottom);
+
 
 
 	/** D */
@@ -79,10 +91,7 @@ public:
 	/*
 	 * Destructeur
 	 */
-	~Level()
-	{
-		delete noDataSource;
-	}
+	~Level() {}
 
 };
 

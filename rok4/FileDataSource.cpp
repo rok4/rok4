@@ -15,7 +15,7 @@ FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, cons
  * Le fichier ne doit etre lu qu une seule fois
  * Indique le taille de la tuile (inconnue a priori)
  */
-const uint8_t* FileDataSource::get_data(size_t &tile_size) {
+const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	if (data)
 	{
 		tile_size=size;

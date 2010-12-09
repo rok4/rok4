@@ -165,7 +165,7 @@ DataStream* Rok4Server::getMap(Request* request)
  * @return Un message d'erreur en cas d'erreur
  */
 
-DataSource* Rok4Server::getTile(Request* request, Tile* tile)
+DataSource* Rok4Server::getTile(Request* request)
 {
 	Layer* L;
 	std::string tileMatrix,format;
@@ -173,32 +173,15 @@ DataSource* Rok4Server::getTile(Request* request, Tile* tile)
 
 	// Récupération des parametres de la requete
 	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format);
+
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
 		return errorResp;
 	}
 
-	// Récupération de la tuile
-	tile=L->gettile(tileCol, tileRow, tileMatrix);
 
-	DataSource* source=tile->getDataSource();
-	size_t size;
+	return  L->gettile(tileCol, tileRow, tileMatrix);
 
-	if (source->get_data(size)){
-		// Ca particulier des tuiles TIFF : rajouter un en-tete
-		if (source->gettype()=="image/tiff"){
-			TiffEncoderSource* tif_source=new TiffEncoderSource(tile->getTileWidth(),tile->getTileHeight(),tile->channels,tile->getDataSource());
-			source->release_data();
-			tile->setDataSource(tif_source);
-			return tile->getDataSource();
-		}
-		return source;
-	}
-	else{
-		if (source->gettype()=="image/tiff")
-	                return new TiffEncoderSource(tile->getTileWidth(),tile->getTileHeight(),tile->channels,tile->getNoDataSource());
-		return tile->getNoDataSource();
-	}
 }
 
 
@@ -207,12 +190,12 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 	if (request->request == "getcapabilities"){
 		S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "gettile"){
-		Tile * tile= NULL;
-		S.sendresponse(getTile(request, tile), &fcgxRequest);
+//		DataSource * tile= NULL;
+		S.sendresponse(getTile(request), &fcgxRequest);
 		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliore.
 		// Appel au destructeur préservant la zone mémoire de la tuile no-data.
 		// en cas d'erreur retournee, tile peut etre NULL
-		if (tile!=NULL) delete tile;
+//		if (tile!=NULL) delete tile;
 	}else{
 		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
 	}

@@ -1,11 +1,11 @@
+/*
+
 #include "Tile.h"
 #include "jpeglib.h"
 #include "zlib.h"
 #include <setjmp.h>
 
-/* 
- * Fonctions déclarées pour la libjpeg
- */
+
 void init_source (jpeg_decompress_struct *cinfo) {}
 boolean fill_input_buffer (jpeg_decompress_struct *cinfo){return false;}
 void skip_input_data (jpeg_decompress_struct *cinfo, long num_bytes) {
@@ -19,14 +19,12 @@ void term_source (jpeg_decompress_struct *cinfo) {}
 
 // Gestion des erreurs fatales pour la libjpeg
 
-/*
- * Structure destinee a gerer les erreurs de la libjepg
- */
+
 
 struct my_error_mgr {
-	struct jpeg_error_mgr pub;    /* "public" fields */
+	struct jpeg_error_mgr pub;   
 
-	jmp_buf setjmp_buffer;        /* for return to caller */
+	jmp_buf setjmp_buffer;       
 };
 
 typedef struct my_error_mgr * my_error_ptr;
@@ -34,20 +32,16 @@ typedef struct my_error_mgr * my_error_ptr;
 METHODDEF(void)
 my_error_exit (j_common_ptr cinfo)
 {
-	/* cinfo->err really points to a my_error_mgr struct, so coerce pointer */
+	
 	my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-	/* Always display the message. */
-	/* We could postpone this until after returning, if we chose. */
 	(*cinfo->err->output_message) (cinfo);
 
-	/* Return control to the setjmp point */
+
 	longjmp(myerr->setjmp_buffer, 1);
 }
 
-/*
- * Decodage de donnee JPEG
- */
+
 
 void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize) { 
 	struct jpeg_decompress_struct cinfo;
@@ -60,7 +54,7 @@ void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8
 	cinfo.src->init_source = init_source;
 	cinfo.src->fill_input_buffer = fill_input_buffer;
 	cinfo.src->skip_input_data = skip_input_data;
-	cinfo.src->resync_to_restart = jpeg_resync_to_restart; /* use default method */
+	cinfo.src->resync_to_restart = jpeg_resync_to_restart; 
 	cinfo.src->term_source = term_source;
 
 	cinfo.src->next_input_byte = encoded_data;
@@ -101,10 +95,7 @@ void JpegDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8
 	jpeg_destroy_decompress(&cinfo);
 }
 
-/*
- * Decodage de donnee PNG
- * En cas d'erreur, le buffer raw_data n'est pas rempli jusqu'au bout
- */
+
 void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_t* raw_data, int height, int linesize)
 {
 	// Initialisation du flux
@@ -153,9 +144,6 @@ void PngDecoder::decode(const uint8_t* encoded_data, size_t encoded_size, uint8_
 		LOGGER_ERROR("Decompression PNG : probleme de liberation du flux");
 }
 
-/*
- * Constructeur
- */
 
 Tile::Tile(int tile_width, int tile_height, int channels, DataSource* datasource, DataSource* noDataSource, int left, int top, int right, int bottom, int coding)
 : Image(tile_width - left - right, tile_height - top - bottom, channels), datasource(datasource), noDataSource(noDataSource), tile_width(tile_width), tile_height(tile_height), left(left), top(top), coding(coding)
@@ -169,9 +157,9 @@ int Tile::getline(uint8_t* buffer, int line) {
 	{
 		raw_data = new uint8_t[tile_width * tile_height * channels];
 		size_t encoded_size;
-		const uint8_t* encoded_data=datasource->get_data(encoded_size);
+		const uint8_t* encoded_data=datasource->getData(encoded_size);
 		if (!encoded_data)
-			encoded_data=noDataSource->get_data(encoded_size);
+			encoded_data=noDataSource->getData(encoded_size);
 		if (encoded_data){
 			if (coding==RAW_UINT8 || coding==RAW_FLOAT)
 				RawDecoder::decode(encoded_data, encoded_size, raw_data);
@@ -199,9 +187,9 @@ int Tile::getline(float* buffer, int line) {
 	{
 		raw_data = new uint8_t[tile_width * tile_height * channels];
 		size_t encoded_size;
-		const uint8_t* encoded_data=datasource->get_data(encoded_size);
+		const uint8_t* encoded_data=datasource->getData(encoded_size);
 		if (!encoded_data)
-			encoded_data=noDataSource->get_data(encoded_size);
+			encoded_data=noDataSource->getData(encoded_size);
 		if (encoded_data){
 			if (coding==RAW_UINT8 || coding==RAW_FLOAT)
 				RawDecoder::decode(encoded_data, encoded_size, raw_data);
@@ -222,5 +210,5 @@ int Tile::getline(float* buffer, int line) {
 	convert(buffer, raw_data + ((top + line) * tile_width + left) * channels, width * channels);
 	return width * channels;
 }
-
+*/
 

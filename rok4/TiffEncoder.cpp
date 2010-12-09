@@ -98,7 +98,7 @@ TiffEncoderStream::~TiffEncoderStream() {
 TiffEncoderSource::TiffEncoderSource(int w, int h, int channels, DataSource* source)
 {
         size_t header_size=128;
-        const uint8_t* raw_data=source->get_data(size);
+        const uint8_t* raw_data=source->getData(size);
         tif_data=new uint8_t[size+header_size];
         if (channels==1)
                 memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
@@ -114,13 +114,13 @@ TiffEncoderSource::TiffEncoderSource(int w, int h, int channels, DataSource* sou
         size+=header_size;
 }
 
-const uint8_t* TiffEncoderSource::get_data(size_t &tif_size)
+const uint8_t* TiffEncoderSource::getData(size_t &tif_size)
 {
 	tif_size=size;
 	return tif_data;
 }	
 
-bool TiffEncoderSource::release_data()
+bool TiffEncoderSource::releaseData()
 {
 	if (tif_data)
 		delete tif_data;

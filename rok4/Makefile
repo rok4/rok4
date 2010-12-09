@@ -11,17 +11,16 @@ SRCDOCDIR=../docs
 
 CXX = g++
 CC  = gcc
-CXXFLAGS = -g -O3 -msse -msse2 -msse3 -I"." -I$(INCDIR) 
+CXXFLAGS = -g -O0 -msse -msse2 -msse3 -I"." -I$(INCDIR) 
 #conf de debug:
 #CXXFLAGS = -pg -O0 -msse2 -I"."  -I$(INCDIR)
 LDFLAGS =
 LDLIBS = -lpthread
 
 # Liste de librairies dépendantes embarquées
-DEPLIB= libz libjpeg libfcgi libtinyxml libcppunit liblogger libimage libproj
+DEPLIB=libfcgi libtinyxml libcppunit liblogger libimage libproj libjpeg libz
 
 # CCFLAGS = -g -ansi
-
 
 # definitions pour CppUnit :
 CPPUNITDIR=tests/cppunit

@@ -34,7 +34,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	size_t buffer_size;
-	const uint8_t *buffer = source->get_data(buffer_size);
+	const uint8_t *buffer = source->getData(buffer_size);
 	int wr = 0;
 	// Ecriture iterative de la source de donnees dans le flux de sortie
 	while(wr < buffer_size) {
