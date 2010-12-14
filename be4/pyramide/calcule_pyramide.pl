@@ -19,6 +19,8 @@ use cache(
 	'$rep_logs_param',
 	'$programme_reproj_param',
 	'reproj_point',
+	'$nom_fichier_first_jobs_param',
+	'$nom_fichier_last_jobs_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -26,8 +28,8 @@ use File::Basename;
 use List::Util qw( max );
 use POSIX qw(ceil floor);
 
-my $nom_fichier_first_jobs = "../tmp/first_jobs.txt";
-my $nom_fichier_last_jobs = "../tmp/last_jobs.txt";
+
+
 
 # pas de bufferisation des sorties
 $| = 1;
@@ -42,7 +44,8 @@ my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
-
+my $nom_fichier_first_jobs = $nom_fichier_first_jobs_param;
+my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
 # my %produit_format = %produit_format_param;
 my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;

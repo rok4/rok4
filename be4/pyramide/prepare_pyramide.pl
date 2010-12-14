@@ -21,6 +21,7 @@ use cache(
 	'$rep_logs_param',
 	'%format_format_pyr_param',
 	'%produit_nomenclature_param',
+	'cree_nom_pyramide',
 );
 # CONSTANTES
 $| = 1;
@@ -240,10 +241,7 @@ if(defined $rep_masque_mtd){
 
 # action 2 : creer pyramid.pyr en XML
 my $srs_pyramide = "IGNF_".uc($RIG);
-my $nom_pyramide = uc($produit)."_".uc($compression_pyramide)."_".uc($srs_pyramide)."_".$annee;
-if(defined $departement){
-	$nom_pyramide .= "_".$departement;
-}
+my $nom_pyramide = &cree_nom_pyramide($produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
 
 my $format_images = $format_format_pyr{lc($compression_pyramide)};
 my $nb_channels = $produit_nb_canaux{$produit};

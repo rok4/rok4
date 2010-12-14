@@ -11,6 +11,7 @@ my $programme_initialise_pyramide = "./initialise_pyramide.pl";
 my $programme_calcule_pyramide = "./calcule_pyramide.pl";
 my $programme_maj_conf_serveur = "./maj_conf_serveur.pl";
 my $programme_pyramide_lecture_seule = "./pyramide_lecture_seule.pl";
+my $programme_rollback = "./rollback.pl";
 
 # verification de la presence des perl
 my $verif_programme_prepare_pyramide = `which $programme_prepare_pyramide`;
@@ -40,6 +41,12 @@ if ($verif_programme_maj_conf_serveur eq ""){
 my $verif_programme_pyramide_lecture_seule = `which $programme_pyramide_lecture_seule`;
 if ($verif_programme_pyramide_lecture_seule eq ""){
 	print colored ("[MAJ_CACHE] Le programme $programme_pyramide_lecture_seule est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+my $verif_programme_rollback = `which $programme_rollback`;
+if ($verif_programme_rollback eq ""){
+	print colored ("[MAJ_CACHE] Le programme $verif_programme_rollback est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
@@ -110,6 +117,8 @@ if($bool_erreur_prepare == 0){
 	print colored ("[MAJ_CACHE] Des erreurs se sont produites a l'execution de la commande\n$commande_prepare", 'white on_red');
 	print "\n\n";
 	print "@result_prepare\n";
+	# ROLLBACK
+	system("$programme_rollback $fichier_parametres");
 	exit;
 }
 
@@ -129,7 +138,9 @@ if($bool_erreur_initialise == 1){
 	print colored ("[MAJ_CACHE] Des erreurs se sont produites a l'execution de la commande\n$commande_initialise", 'white on_red');
 	print "\n\n";
 	print "@result_intialise\n";
-#	exit;
+	# ROLLBACK
+	system("$programme_rollback $fichier_parametres");
+	exit;
 }
 
 print "[MAJ_CACHE] Execution de $programme_calcule_pyramide ...\n";
@@ -152,7 +163,9 @@ if($bool_erreur_calcule == 1){
 	print colored ("[MAJ_CACHE] Des erreurs se sont produites a l'execution de la commande\n$commande_calcule_batch", 'white on_red');
 	print "\n\n";
 	print "@result_calcule\n";
-#	exit;
+	# ROLLBACK
+	system("$programme_rollback $fichier_parametres");
+	exit;
 }
 
 # on a les batchs

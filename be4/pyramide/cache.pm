@@ -38,6 +38,9 @@ our @EXPORT=(
 	'$programme_reproj_param',
 	'reproj_point',
 	'%produit_nomenclature_param',
+	'$nom_fichier_first_jobs_param',
+	'$nom_fichier_last_jobs_param',
+	'cree_nom_pyramide',
 );
 ################################################################################
 
@@ -149,6 +152,10 @@ our %produit_nomenclature_param = (
  	"franceraster" => "fr\\w{2}_\\d{4}k_(\\d{4})_(\\d{4})",
  	"scan" => "SC\\w{2,4}(?:_\\w{3,4})?_(\\d{4})_(\\d{4})",
 );
+
+our $nom_fichier_first_jobs_param = "../tmp/first_jobs.txt";
+our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
+
 ################################################################################
 
 ########## FONCTIONS
@@ -269,5 +276,21 @@ sub reproj_point{
 	}
 	
 	return ($x_reproj, $y_reproj);
+}
+################################################################################
+sub cree_nom_pyramide{
+	
+	my $produit = $_[0];
+	my $compression_pyramide = $_[1];
+	my $srs_pyramide = $_[2];
+	my $annee = $_[3];
+	my $departement = $_[4];
+	
+	my $nom_pyramide = uc($produit)."_".uc($compression_pyramide)."_".uc($srs_pyramide)."_".$annee;
+	if(defined $departement){
+		$nom_pyramide .= "_".$departement;
+	}
+	
+	return $nom_pyramide;
 }
 1;
