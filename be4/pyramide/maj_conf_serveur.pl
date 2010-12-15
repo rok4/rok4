@@ -134,9 +134,9 @@ sub maj_pyr_et_bounding_box{
 	my $absolu_pyramide = abs_path($nom_fichier_pyr);
 	$doc_lay->find("//pyramidList/pyramid/text()")->get_node(0)->setData($absolu_pyramide);
 	
-	#1.recuperation de la resolution la plus grande dans le lay
+	#1.recuperation de la resolution la plus petite dans le lay : la bbox collera mieux aux donnees
 	
-	my $res_max = $doc_lay->find("//maxRes")->get_node(0)->textContent;
+	my $res_min = $doc_lay->find("//minRes")->get_node(0)->textContent;
 	
 	#2. recuperation du TMS dans le pyr
 	my $parser_pyr = XML::LibXML->new();
@@ -145,16 +145,16 @@ sub maj_pyr_et_bounding_box{
 	my $tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
 	my $tms_complet = $path_tms."/".$tms.".tms";
 	
-	#3. recuperation du level, de la proj, des origines et tailles des tuiles en resolution max dans le TMS
+	#3. recuperation du level, de la proj, des origines et tailles des tuiles en resolution min dans le TMS
 	my $parser_tms = XML::LibXML->new();
 	my $doc_tms = $parser_tms->parse_file("$tms_complet");
 	
 	my $proj = $doc_tms->find("//crs")->get_node(0)->textContent;
 	
-	my $tile_matrix = $doc_tms->find("//tileMatrix[resolution = '$res_max']")->get_node(0);
+	my $tile_matrix = $doc_tms->find("//tileMatrix[resolution = '$res_min']")->get_node(0);
 	
 	my $level = $tile_matrix->find("./id")->get_node(0)->textContent;
-	# floor / ceil / int servent a caster en chiffre pouique les espaces sont possibles
+	# floor / ceil / int servent a caster en chiffre puisque les espaces sont possibles
 	my $origine_x = floor($tile_matrix->find("./topLeftCornerX")->get_node(0)->textContent);
 	my $origine_y = ceil($tile_matrix->find("./topLeftCornerY")->get_node(0)->textContent);
 	my $taille_tuile_pix_x = int($tile_matrix->find("./tileWidth")->get_node(0)->textContent);
@@ -168,10 +168,10 @@ sub maj_pyr_et_bounding_box{
 	my $max_tile_y = $tms_limits->find("./maxTileCol")->get_node(0)->textContent;
 	
 	#5. determination de la bbox en proj $proj
-	my $x_min_bbox = ($min_tile_x * $res_max * $taille_tuile_pix_x) + $origine_x;
-	my $x_max_bbox = ($max_tile_x * $res_max * $taille_tuile_pix_x) + $origine_x;
-	my $y_min_bbox = $origine_y - ($max_tile_y * $res_max * $taille_tuile_pix_y);
-	my $y_max_bbox = $origine_y - ($min_tile_y * $res_max * $taille_tuile_pix_y);
+	my $x_min_bbox = ($min_tile_x * $res_min * $taille_tuile_pix_x) + $origine_x;
+	my $x_max_bbox = ($max_tile_x * $res_min * $taille_tuile_pix_x) + $origine_x;
+	my $y_min_bbox = $origine_y - ($max_tile_y * $res_min * $taille_tuile_pix_y);
+	my $y_max_bbox = $origine_y - ($min_tile_y * $res_min * $taille_tuile_pix_y);
 	
 	#6. transformation en WGS84G pour l'info EX_GeographicBoundingBox au degre pres
 	my ($top_left_corner_x_g, $top_left_corner_y_g) = &reproj_point($x_min_bbox, $y_max_bbox, $proj, $srs_wgs84g);
