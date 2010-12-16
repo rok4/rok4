@@ -109,8 +109,6 @@ our $programme_ss_ech_param = "merge4tiff";
 our $programme_format_pivot_param = "tiff2tile";
 our $programme_dalles_base_param = "dalles_base";
 our $programme_copie_image_param = "tiffcp";
-#our $programme_ss_ech_param = "/exavol/private/only4diffusio/charlotte/pascal/merge4tiff";
-#our $programme_format_pivot_param = "/exavol/private/only4diffusio/charlotte/pascal/tiff2tile";
 
 our %produit_nb_canaux_param = (
     "ortho" => 3,
@@ -134,9 +132,6 @@ our %produit_tms_param = (
 
 # pour deploiement
 our $rep_logs_param = "../log";
-
-#our $xsd_pyramide_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3/pyramid.xsd";
-#our $path_tms_param = "/exavol/private/only4diffusio/charlotte/bin_cha/GPP3";
 
 our %format_format_pyr_param = (
 	"raw" => "TIFF_INT8",
@@ -267,7 +262,7 @@ sub reproj_point{
 	
 	my $result = `echo $x_point $y_point | $programme_reproj_param -f %.8f +init=$srs_ini +to +init=$srs_fin`;
 	my @split2 = split /\s/, $result;
-	if(defined $split2[0] && defined $split2[1]){
+	if(defined $split2[0] && defined $split2[1] && $split2[0] =~ /^\-?\d+(?:\.\d*)?$/ && $split2[1] =~ /^\-?\d+(?:\.\d*)?$/){
 		$x_reproj = $split2[0];
 		$y_reproj = $split2[1];
 	}else{

@@ -87,7 +87,6 @@ if($bool_maj == 1){
 	print "[MAJ_CONF_SERVEUR] Des erreurs se sont produites, consulter $log.\n";
 	# on revient en arriere : $lay n'a pas encore ete modifie
 	unlink($lay_ancien);
-	
 }
 close LOG;
 ################################################################################
@@ -134,20 +133,25 @@ sub maj_pyr_et_bounding_box{
 	my $absolu_pyramide = abs_path($nom_fichier_pyr);
 	$doc_lay->find("//pyramidList/pyramid/text()")->get_node(0)->setData($absolu_pyramide);
 	
-	#1.recuperation de la resolution la plus petite dans le lay : la bbox collera mieux aux donnees
-	
-	my $res_min = $doc_lay->find("//minRes")->get_node(0)->textContent;
-	
-	#2. recuperation du TMS dans le pyr
+	#1. recuperation du TMS dans le pyr
 	my $parser_pyr = XML::LibXML->new();
 	my $doc_pyr = $parser_pyr->parse_file("$nom_fichier_pyr");
 	
 	my $tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
 	my $tms_complet = $path_tms."/".$tms.".tms";
 	
-	#3. recuperation du level, de la proj, des origines et tailles des tuiles en resolution min dans le TMS
+	#2. recuperation du level, de la proj, des origines et tailles des tuiles en resolution min dans le TMS
 	my $parser_tms = XML::LibXML->new();
 	my $doc_tms = $parser_tms->parse_file("$tms_complet");
+	
+	# resolution min du TMS
+	my @nodes_resolution = $doc_tms->findnodes("//tileMatrix/resolution")->get_nodelist();
+	my $res_min = 99999999999;
+	foreach my $resolution(@nodes_resolution){
+		if($resolution->textContent < $res_min){
+			$res_min = $resolution->textContent;
+		}
+	}
 	
 	my $proj = $doc_tms->find("//crs")->get_node(0)->textContent;
 	
@@ -160,20 +164,20 @@ sub maj_pyr_et_bounding_box{
 	my $taille_tuile_pix_x = int($tile_matrix->find("./tileWidth")->get_node(0)->textContent);
 	my $taille_tuile_pix_y = int($tile_matrix->find("./tileHeight")->get_node(0)->textContent);
 	
-	#4. recuperation des limites TMS dans le pyr sur le level concerne
+	#3. recuperation des limites TMS dans le pyr sur le level concerne
 	my $tms_limits = $doc_pyr->find("//level[tileMatrix = '$level']/TMSLimits")->get_node(0);
 	my $min_tile_x = $tms_limits->find("./minTileRow")->get_node(0)->textContent;
 	my $max_tile_x = $tms_limits->find("./maxTileRow")->get_node(0)->textContent;
 	my $min_tile_y = $tms_limits->find("./minTileCol")->get_node(0)->textContent;
 	my $max_tile_y = $tms_limits->find("./maxTileCol")->get_node(0)->textContent;
 	
-	#5. determination de la bbox en proj $proj
+	#4. determination de la bbox en proj $proj
 	my $x_min_bbox = ($min_tile_x * $res_min * $taille_tuile_pix_x) + $origine_x;
 	my $x_max_bbox = ($max_tile_x * $res_min * $taille_tuile_pix_x) + $origine_x;
 	my $y_min_bbox = $origine_y - ($max_tile_y * $res_min * $taille_tuile_pix_y);
 	my $y_max_bbox = $origine_y - ($min_tile_y * $res_min * $taille_tuile_pix_y);
 	
-	#6. transformation en WGS84G pour l'info EX_GeographicBoundingBox au degre pres
+	#5. transformation en WGS84G pour l'info EX_GeographicBoundingBox au degre pres
 	my ($top_left_corner_x_g, $top_left_corner_y_g) = &reproj_point($x_min_bbox, $y_max_bbox, $proj, $srs_wgs84g);
 	my ($top_right_corner_x_g, $top_right_corner_y_g) = &reproj_point($x_max_bbox, $y_max_bbox, $proj, $srs_wgs84g);
 	my ($bottom_left_corner_x_g, $bottom_left_corner_y_g) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_wgs84g);
@@ -197,7 +201,7 @@ sub maj_pyr_et_bounding_box{
 	my $y_min_g = floor(min($top_left_corner_y_g, $top_right_corner_y_g, $bottom_left_corner_y_g, $bottom_right_corner_y_g));
 	my $y_max_g = ceil(max($top_left_corner_y_g, $top_right_corner_y_g, $bottom_left_corner_y_g, $bottom_right_corner_y_g));
 	
-	#7. mise a jour dans le layer
+	#6. mise a jour dans le layer
 	my $geographic_bbox = $doc_lay->find("//EX_GeographicBoundingBox")->get_node(0);
 	
 	my $node_x_min_g = $geographic_bbox->find("./westBoundLongitude/text()")->get_node(0);
@@ -209,11 +213,11 @@ sub maj_pyr_et_bounding_box{
 	my $node_y_max_g = $geographic_bbox->find("./northBoundLatitude/text()")->get_node(0);
 	$node_y_max_g->setData("$y_max_g");
 	
-	#8. recuperation du srs voulu dans la balise boundingBox du layer
+	#7. recuperation du srs voulu dans la balise boundingBox du layer
 	my $bounding_box = $doc_lay->find("//boundingBox")->get_node(0);
 	my $srs_layer = $bounding_box->find("./\@CRS")->get_node(0)->textContent;
 	
-	#9. transformation en srs du layer a l'unite pres
+	#8. transformation en srs du layer a l'unite pres
 	my ($top_left_corner_x_layer, $top_left_corner_y_layer) = &reproj_point($x_min_bbox, $y_max_bbox, $proj, $srs_layer);
 	my ($top_right_corner_x_layer, $top_right_corner_y_layer) = &reproj_point($x_max_bbox, $y_max_bbox, $proj, $srs_layer);
 	my ($bottom_left_corner_x_layer, $bottom_left_corner_y_layer) = &reproj_point($x_min_bbox, $y_min_bbox, $proj, $srs_layer);
@@ -244,11 +248,13 @@ sub maj_pyr_et_bounding_box{
 		return $bool_ok;
 	}
 		
-	#11. remplacement dans le fichier
+	#9. remplacement dans le fichier
 	open LAY,">$xml_lay" or die "[MAJ_CONF_SERVEUR] Impossible d'ouvrir le fichier $xml_lay.";
 	print LAY $doc_lay->toString;
 	close LAY;
 	
 	$bool_ok = 1;
+	
 	return $bool_ok;
+	
 }
