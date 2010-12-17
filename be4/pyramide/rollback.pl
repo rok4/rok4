@@ -6,6 +6,7 @@ use cache(
 	'$nom_fichier_last_jobs_param',
 	'$nom_fichier_dalle_source_param',
 	'$nom_fichier_mtd_source_param',
+	'cree_nom_pyramide',
 );
 
 my $fichier_parametres = $ARGV[0];

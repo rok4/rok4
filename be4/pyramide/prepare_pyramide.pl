@@ -15,17 +15,19 @@ use cache(
 	'$nom_rep_mtd_param',
 	'$nom_fichier_mtd_source_param',
 	'%produit_nb_canaux_param',
-	'%produit_tms_param',
+# 	'%produit_tms_param',
 	'$xsd_pyramide_param',
 	'lecture_tile_matrix_set',
 	'$rep_logs_param',
 	'%format_format_pyr_param',
 	'%produit_nomenclature_param',
 	'cree_nom_pyramide',
+	'cherche_pyramide_recente_lay',
+	'extrait_tms_from_pyr',
 );
 # CONSTANTES
 $| = 1;
-our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h);
+our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
 
 # my %produit_format = %produit_format_param;
 my $nom_fichier_dalle_source = $nom_fichier_dalle_source_param;
@@ -37,7 +39,7 @@ my $type_mtd_pyr = $type_mtd_pyr_param;
 my $format_mtd_pyr = $format_mtd_pyr_param;
 my $profondeur_pyr = $profondeur_pyr_param;
 my %produit_nb_canaux = %produit_nb_canaux_param;
-my %produit_tms = %produit_tms_param;
+# my %produit_tms = %produit_tms_param;
 my $xsd_pyramide = $xsd_pyramide_param;
 my $rep_log = $rep_logs_param;
 my %format_format_pyr = %format_format_pyr_param;
@@ -57,10 +59,10 @@ my $log = $rep_log."/log_prepare_pyramide_$time.log";
 open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
 &ecrit_log("commande : @ARGV");
 
-getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:");
+getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:");
 
 my $bool_getopt_ok = 1;
-if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x) ){
+if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l) ){
 	$bool_getopt_ok = 0;
 	print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
@@ -87,6 +89,9 @@ if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t an
 	}
 	if(! defined $opt_x){
 		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
+	}
+	if(! defined $opt_l){
+		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
 	}
 }
 if(defined $opt_f){
@@ -139,6 +144,7 @@ if (defined $opt_f){
 	$taille_pix_source_x = $opt_w;
 	$taille_pix_source_y = $opt_h;
 }
+my $fichier_layer = $opt_l;
 # verifier les parametres
 my $bool_param_ok = 1;
 if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
@@ -150,7 +156,18 @@ if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
 	
 }
 
-my $fichier_tms = $produit_tms{$produit};
+if (! (-e $fichier_layer && -f $fichier_layer) ){
+	print "[PREPARE_PYRAMIDE] Le fichier $fichier_layer est introuvable.\n";
+	$bool_param_ok = 0;
+}
+# extraction du pyr depuis le lay
+my $fichier_pyr_ancien = &cherche_pyramide_recente_lay($fichier_layer);
+if (! (-e $fichier_pyr_ancien && -f $fichier_pyr_ancien) ){
+	print "[PREPARE_PYRAMIDE] Le fichier $fichier_pyr_ancien est introuvable.\n";
+	$bool_param_ok = 0;
+}
+#extraction du tms depuis le pyr
+my $fichier_tms = &extrait_tms_from_pyr($fichier_pyr_ancien);
 if (! (-e $fichier_tms && -f $fichier_tms) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
 	$bool_param_ok = 0;
@@ -328,7 +345,7 @@ sub cherche_images{
 	closedir REP;
 	foreach my $fic(@fichiers){
 		next if ($fic =~ /^\.\.?$/);
-		if ($fic =~ /\.tif$/i){
+		if ($fic =~ /\.tif$/i && $fic !~ /10m/){
 			my $image;
 			if(substr("$repertoire/$fic", 0, 1) eq "/"){
 				$image = "$repertoire/$fic";

@@ -10,6 +10,7 @@ use cache(
 	'cree_repertoires_recursifs',
 	'$rep_logs_param',
 	'lecture_repertoires_pyramide',
+	'cherche_pyramide_recente_lay',
 );
 $| = 1;
 our($opt_l,$opt_p);
@@ -57,7 +58,7 @@ if (! (-e $fichier_pyr && -f $fichier_pyr)){
 
 # action 1 : determiner la pyramide la plus recente
 &ecrit_log("Lecture de la configuration.");
-my $ancien_pyr = &lecture_lay($lay_ancien);
+my $ancien_pyr = &cherche_pyramide_recente_lay($lay_ancien);
 # test si le chemin est en absolu ou en relatif (dans ce cas on ajoute le repertoire du lay)
 if( $ancien_pyr !~ /^\//){
 	$ancien_pyr = dirname($lay_ancien)."/".$ancien_pyr;
@@ -126,30 +127,7 @@ sub usage{
 	$bool_ok = 1;
 	return $bool_ok;
 }
-################################################################################
-sub lecture_lay{
 
-	my $xml_lay = $_[0];
-	my $path_fichier_pyramide_recente = "";
-	
-	my $xml_fictif = new XML::Simple(KeyAttr=>[]);
-
-	# lire le fichier XML
-	my $data = $xml_fictif->XMLin("$xml_lay");
-	my $liste_pyramides = $data->{pyramidList};
-	
-	# pour tester quel type d'objet est reference (ou pas)
-	my $ref = ref($liste_pyramides->{pyramid});
-	
-	if($ref eq "ARRAY"){
-		$path_fichier_pyramide_recente = $liste_pyramides->{pyramid}->[0];
-	}else{
-		$path_fichier_pyramide_recente = $liste_pyramides->{pyramid};
-	}
-	
-	
-	return $path_fichier_pyramide_recente;
-}
 ################################################################################
 sub ecrit_log{
 	

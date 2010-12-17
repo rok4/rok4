@@ -11,7 +11,7 @@ use cache(
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
 # 	'%produit_format_param',
-	'$path_tms_param',
+# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -19,6 +19,7 @@ use cache(
 	'$rep_logs_param',
 	'$programme_reproj_param',
 	'reproj_point',
+	'extrait_tms_from_pyr',
 );
 use Term::ANSIColor;
 use Getopt::Std;
@@ -41,7 +42,7 @@ my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
 
 # my %produit_format = %produit_format_param;
-my $path_tms = $path_tms_param;
+# my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 ################################################################################
@@ -59,11 +60,11 @@ if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
 	print "\n";
 	exit;
 }
-if(!(-e $path_tms && -d $path_tms)){
-	print colored ("[CREE_DALLAGE_BASE] Le repertoire $path_tms est introuvable.", 'white on_red');
-	print "\n";
-	exit;
-}
+# if(!(-e $path_tms && -d $path_tms)){
+# 	print colored ("[CREE_DALLAGE_BASE] Le repertoire $path_tms est introuvable.", 'white on_red');
+# 	print "\n";
+# 	exit;
+# }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
 if ($verif_programme_dalle_base eq ""){
@@ -1437,8 +1438,9 @@ sub lecture_pyramide{
 	# lire le fichier XML
 	my $data = $xml_fictif->XMLin("$xml_pyramide");
 	
-	my $nom_tms = $data->{tileMatrixSet};
-	my $tms_complet = $path_tms."/".$nom_tms.".tms";
+	my $tms_complet = &extrait_tms_from_pyr($xml_pyramide);
+# 	my $nom_tms = $data->{tileMatrixSet};
+# 	my $tms_complet = $path_tms."/".$nom_tms.".tms";
 	
 	my ($ref_inutile1, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_id_origine_x, $ref_id_origine_y, $srs) = &lecture_tile_matrix_set($tms_complet);
 	my %tms_level_resolution = %{$ref_id_resolution};
@@ -1574,12 +1576,12 @@ sub reproj_rectangle{
 	my ($x4,$y4) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
 	
 	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
-	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
+	if(!($x4 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
 		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly.");
 		exit;
 	}
 	# teste si les coordonnees ne sont pas hors champ
-	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
+	if(!($x4 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y4 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
 		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly, coordonnees potentiellement hors champ.");
 		exit;
 	}

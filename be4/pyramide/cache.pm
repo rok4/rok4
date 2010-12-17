@@ -3,6 +3,7 @@ use strict;
 use Cwd 'abs_path';
 use Term::ANSIColor;
 use XML::Simple;
+use XML::LibXML;
 use Exporter;
 our @ISA=('Exporter');
 our @EXPORT=(
@@ -24,9 +25,9 @@ our @EXPORT=(
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
 	'%produit_nb_canaux_param',
-	'%produit_tms_param',
+# 	'%produit_tms_param',
 	'$xsd_pyramide_param',
-	'$path_tms_param',
+# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -41,6 +42,8 @@ our @EXPORT=(
 	'$nom_fichier_first_jobs_param',
 	'$nom_fichier_last_jobs_param',
 	'cree_nom_pyramide',
+	'cherche_pyramide_recente_lay',
+	'extrait_tms_from_pyr',
 );
 ################################################################################
 
@@ -119,16 +122,16 @@ our %produit_nb_canaux_param = (
 
 # apres deploiement
 our $xsd_pyramide_param = "../config/pyramids/pyramid.xsd";
-our $path_tms_param = "../config/tileMatrixSet";
-my $tms_base = $path_tms_param."/FR_LAMB93.tms";
-
-
-our %produit_tms_param = (
-	"ortho" => $tms_base,
-	"parcellaire" => $tms_base,
-	"franceraster" => $tms_base,
-	"scan" => $tms_base,
-);
+my $path_tms_param = "../config/tileMatrixSet";
+# my $tms_base = $path_tms_param."/FR_LAMB93.tms";
+# 
+# 
+# our %produit_tms_param = (
+# 	"ortho" => $tms_base,
+# 	"parcellaire" => $tms_base,
+# 	"franceraster" => $tms_base,
+# 	"scan" => $tms_base,
+# );
 
 # pour deploiement
 our $rep_logs_param = "../log";
@@ -180,7 +183,6 @@ sub cree_repertoires_recursifs{
 }
 ################################################################################
 sub lecture_tile_matrix_set{
-	
 	
 	my $xml_tms = $_[0];
 	
@@ -287,5 +289,39 @@ sub cree_nom_pyramide{
 	}
 	
 	return $nom_pyramide;
+}
+################################################################################
+sub cherche_pyramide_recente_lay{
+	
+	my $xml_lay = $_[0];
+	my $path_fichier_pyramide_recente = "";
+	
+	my $parser_lay = XML::LibXML->new();
+	my $doc_lay = $parser_lay->parse_file("$xml_lay");
+	
+	my $nom_fichier_pyr = $doc_lay->find("//pyramidList/pyramid")->get_node(0)->textContent;
+	$path_fichier_pyramide_recente = abs_path($nom_fichier_pyr);
+	
+	return $path_fichier_pyramide_recente;
+}
+################################################################################
+sub extrait_tms_from_pyr{
+	
+	my $fichier_pyr = $_[0];
+	
+	if(!(-e $path_tms_param && -d $path_tms_param)){
+		print colored ("[CACHE] Le repertoire $path_tms_param est introuvable.", 'white on_red');
+		print "\n";
+		exit;
+	}
+	
+	my $parser_pyr = XML::LibXML->new();
+	my $doc_pyr = $parser_pyr->parse_file("$fichier_pyr");
+	
+	my $nom_tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
+	#ajout du chemin
+	my $tms = $path_tms_param."/".$nom_tms.".tms";
+	
+	return $tms;
 }
 1;

@@ -12,14 +12,15 @@ use cache(
 	'$rep_logs_param',
 	'reproj_point',
 	'$programme_reproj_param',
-	'$path_tms_param',
+# 	'$path_tms_param',
+	'extrait_tms_from_pyr',
 );
 $| = 1;
 our($opt_l,$opt_p);
 
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
-my $path_tms = $path_tms_param;
+# my $path_tms = $path_tms_param;
 # TODO eventuellement changer la def en fonction des specs
 my $srs_wgs84g = "IGNF:WGS84G";
 ################################################################################
@@ -126,7 +127,7 @@ sub maj_pyr_et_bounding_box{
 	
 	my $bool_ok = 0;
 	
-	#0. mise a jour du hcemin de la pyramide dans le lay
+	#0. mise a jour du chemin de la pyramide dans le lay
 	my $parser_lay = XML::LibXML->new();
 	my $doc_lay = $parser_lay->parse_file("$xml_lay");
 	
@@ -134,11 +135,9 @@ sub maj_pyr_et_bounding_box{
 	$doc_lay->find("//pyramidList/pyramid/text()")->get_node(0)->setData($absolu_pyramide);
 	
 	#1. recuperation du TMS dans le pyr
-	my $parser_pyr = XML::LibXML->new();
-	my $doc_pyr = $parser_pyr->parse_file("$nom_fichier_pyr");
-	
-	my $tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
-	my $tms_complet = $path_tms."/".$tms.".tms";
+	my $tms_complet = &extrait_tms_from_pyr($nom_fichier_pyr);
+	# 	my $tms = $doc_pyr->find("//tileMatrixSet")->get_node(0)->textContent;
+# 	my $tms_complet = $path_tms."/".$tms.".tms";
 	
 	#2. recuperation du level, de la proj, des origines et tailles des tuiles en resolution min dans le TMS
 	my $parser_tms = XML::LibXML->new();
@@ -165,6 +164,9 @@ sub maj_pyr_et_bounding_box{
 	my $taille_tuile_pix_y = int($tile_matrix->find("./tileHeight")->get_node(0)->textContent);
 	
 	#3. recuperation des limites TMS dans le pyr sur le level concerne
+	my $parser_pyr = XML::LibXML->new();
+ 	my $doc_pyr = $parser_pyr->parse_file("$nom_fichier_pyr");
+	
 	my $tms_limits = $doc_pyr->find("//level[tileMatrix = '$level']/TMSLimits")->get_node(0);
 	my $min_tile_x = $tms_limits->find("./minTileRow")->get_node(0)->textContent;
 	my $max_tile_x = $tms_limits->find("./maxTileRow")->get_node(0)->textContent;

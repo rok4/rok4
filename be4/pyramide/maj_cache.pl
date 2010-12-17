@@ -46,7 +46,7 @@ if ($verif_programme_pyramide_lecture_seule eq ""){
 }
 my $verif_programme_rollback = `which $programme_rollback`;
 if ($verif_programme_rollback eq ""){
-	print colored ("[MAJ_CACHE] Le programme (annulation des actions non validees) $verif_programme_rollback est introuvable.", 'white on_red');
+	print colored ("[MAJ_CACHE] Le programme (annulation des actions non validees) $programme_rollback est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
@@ -96,7 +96,7 @@ my $param_IGN = "";
 if($bool_nomenclature_IGN == 1){
 	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
 }
-my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $repertoire_images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels";
+my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $repertoire_images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats
 my $bool_erreur_prepare = 0;

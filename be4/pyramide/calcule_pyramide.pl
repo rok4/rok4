@@ -11,7 +11,7 @@ use cache(
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
 # 	'%produit_format_param',
-	'$path_tms_param',
+# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -21,6 +21,7 @@ use cache(
 	'reproj_point',
 	'$nom_fichier_first_jobs_param',
 	'$nom_fichier_last_jobs_param',
+	'extrait_tms_from_pyr',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -47,7 +48,7 @@ my $programme_copie_image = $programme_copie_image_param;
 my $nom_fichier_first_jobs = $nom_fichier_first_jobs_param;
 my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
 # my %produit_format = %produit_format_param;
-my $path_tms = $path_tms_param;
+# my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 ################################################################################
@@ -61,10 +62,10 @@ if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
 	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_mtd est introuvable.\n";
 	exit;
 }
-if(!(-e $path_tms && -d $path_tms)){
-	print "[CALCULE_PYRAMIDE] Le repertoire $path_tms est introuvable.\n";
-	exit;
-}
+# if(!(-e $path_tms && -d $path_tms)){
+# 	print "[CALCULE_PYRAMIDE] Le repertoire $path_tms est introuvable.\n";
+# 	exit;
+# }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
 if ($verif_programme_dalle_base eq ""){
@@ -1368,8 +1369,9 @@ sub lecture_pyramide{
 	# lire le fichier XML
 	my $data = $xml_fictif->XMLin("$xml_pyramide");
 	
-	my $nom_tms = $data->{tileMatrixSet};
-	my $tms_complet = $path_tms."/".$nom_tms.".tms";
+	my $tms_complet = &extrait_tms_from_pyr($xml_pyramide);
+# 	my $nom_tms = $data->{tileMatrixSet};
+# 	my $tms_complet = $path_tms."/".$nom_tms.".tms";
 	
 	my ($ref_inutile1, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_id_origine_x, $ref_id_origine_y, $srs) = &lecture_tile_matrix_set($tms_complet);
 	my %tms_level_resolution = %{$ref_id_resolution};
