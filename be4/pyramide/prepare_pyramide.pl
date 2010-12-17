@@ -355,7 +355,7 @@ sub cherche_images{
 			push(@img_trouvees, $image);
 			next;
 		}
-		if(-d "$repertoire/$fic"){
+		if(-d "$repertoire/$fic" && $fic !~ /10m/){
 			my ($ref_images, $nb_temp) = &cherche_images("$repertoire/$fic");
 			my @images_supp = @{$ref_images};
 			push(@img_trouvees, @images_supp);
