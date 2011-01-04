@@ -83,7 +83,7 @@ class ImageDecoder : public Image {
 		template<typename T> inline int getDataline(T* buffer, int line) {
 			convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
 
-			LOGGER(DEBUG) << line << std::endl;
+			//LOGGER(DEBUG) << line << std::endl;
 
 			return width * channels;
 		}
@@ -97,7 +97,7 @@ class ImageDecoder : public Image {
 
 		template<typename T> inline int _getline(T* buffer, int line) {
 
-			LOGGER(DEBUG) << "line " << line << " " << height << " " << width << " " << (intptr_t) rawData << " " << (intptr_t) dataSource << std::endl;
+			//LOGGER(DEBUG) << "line " << line << " " << height << " " << width << " " << (intptr_t) rawData << " " << (intptr_t) dataSource << std::endl;
 			if(rawData) { // Est ce que l'on a de la données.
 				return getDataline(buffer, line);
 				// TODO: libérer le datSource lorsque l'on lit la dernière ligne de l'image...
