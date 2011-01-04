@@ -37,6 +37,8 @@ our @EXPORT=(
 	'%format_format_pyr_param',
 	'$dilatation_reproj_param',
 	'$programme_reproj_param',
+	'$env_reproj_param',
+	'$repertoire_reproj_param',
 	'reproj_point',
 	'%produit_nomenclature_param',
 	'$nom_fichier_first_jobs_param',
@@ -143,6 +145,8 @@ our %format_format_pyr_param = (
 );
 
 our $programme_reproj_param = "cs2cs";
+our $env_reproj_param = "PROJ_LIB"
+our $repertoire_reproj_param "../config/proj"
 
 our %produit_nomenclature_param = (
 	"ortho" => "(?:\\d{2,3}|2[AB]|\\w+)-\\d{4}-(\\d{4,5})-(\\d{4,5})",

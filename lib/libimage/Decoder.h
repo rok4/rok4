@@ -89,9 +89,9 @@ class ImageDecoder : public Image {
 		}
 
 		template<typename T> inline int getNoDataline(T* buffer, int line) {
-			LOGGER(DEBUG) << "getnodata" << line << std::endl;
+			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			memset(buffer, 0, width * channels * sizeof(T));
-			LOGGER(DEBUG) << "getnodata" << line << std::endl;
+			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			return width * channels;
 		}
 
@@ -107,7 +107,7 @@ class ImageDecoder : public Image {
 				if(rawData = dataSource->getData(size))
 					return getDataline(buffer, line);
 				else {
-					LOGGER(DEBUG) << "rawdata= 0" << std::endl;
+					//LOGGER(DEBUG) << "rawdata= 0" << std::endl;
 					delete dataSource;
 					dataSource = 0;
 				}
