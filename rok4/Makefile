@@ -29,7 +29,7 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o JPEGEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o CRS.o
+WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o JPEGEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o CRS.o BilEncoder.o
 
 all: Rok4Server	noregression
 #

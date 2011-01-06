@@ -1,31 +1,30 @@
 #include <iostream>
 
 #include "BilEncoder.h"
-#include "pixel_type.h"
 #include "Logger.h"
 
-template<typename pixel_t>
-size_t BilEncoder<pixel_t>::getdata(uint8_t *buffer, size_t size) {
+size_t BilEncoder::read(uint8_t *buffer, size_t size) {
 	size_t offset = 0;
 
-	LOGGER_DEBUG( "Encodage BIL : height " <<image->height<< " image->linesize" <<image->linesize);
+	int linesize = image->width * image->channels;
 
-	for(; line < image->height && offset + image->linesize <= size; line++) {
-		image->getline((typename pixel_t::data_t*)(buffer + offset), line);
-		offset += image->linesize*sizeof(typename pixel_t::data_t);
+	for(; line < image->height && offset + linesize <= size; line++) {
+		image->getline(buffer + offset, line);
+		offset += linesize;
 	}
 
 	return offset;
 }
 
-template<typename pixel_t>
-BilEncoder<pixel_t>::~BilEncoder() {
+BilEncoder::~BilEncoder() {
 	LOGGER_DEBUG( "delete BilEncoder");
 	delete image;
 }
 
+bool BilEncoder::eof() {return line >= image->height;}
+/*
 template class BilEncoder<pixel_rgb>;
 template class BilEncoder<pixel_rgba>;
 template class BilEncoder<pixel_gray>;
 template class BilEncoder<pixel_float>;
-
+*/

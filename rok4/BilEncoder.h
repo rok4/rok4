@@ -9,14 +9,13 @@ class BilEncoder : public DataStream {
 	int line;
 
 public:
-	BilEncoder(Image* image) : HttpResponse("image/bil", image->height * image->linesize), image(image), line(-1) {
-		assert(image);
-		std::cerr << "Bil" << std::endl;
-		line=0;
-	}
+	BilEncoder(Image* image) : image(image), line(0) {}
 	~BilEncoder();
-	size_t getdata(uint8_t *buffer, size_t size);
+	size_t read(uint8_t *buffer, size_t size);
 	int getHttpStatus() {return 200;}
+	std::string gettype() {return "image/bil";}
+	bool eof();
+
 };
 #endif
 
