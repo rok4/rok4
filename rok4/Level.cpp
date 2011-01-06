@@ -19,7 +19,7 @@
 #include "JPEGEncoder.h"
 #include "PNGEncoder.h"
 #include "TiffEncoder.h"
-
+#include "BilEncoder.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -34,21 +34,24 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 //
   
 	LOGGER(DEBUG) << "Constructeur Level " << format << std::endl;
-  
-	JPEGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
-	noDataSource = new BufferedDataSource(dataStream);
+
+
+	if (format.compare("TIFF_INT8")==0) {
+		BilEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
+		noDataSource = new BufferedDataSource(dataStream);
+	}
+	else if (format.compare("TIFF_JPG_INT8")==0) {
+		JPEGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
+		noDataSource = new BufferedDataSource(dataStream);
+	}
+	else if (format.compare("TIFF_PNG_INT8")==0) {
+		PNGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
+		noDataSource = new BufferedDataSource(dataStream);
+	}
 
 	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
-	
-/*
-		noDataTile = new MonochromaticTile<uint8_t, JPEGEncoder>(tm.getTileW(), tm.getTileH(), channels, color);
-	else if(getType()=="image/tiff")
-		noDataTile = new MonochromaticTile<uint8_t, TiffEncoderStream>(tm.getTileW(), tm.getTileH(), channels, color);
-	else if(getType()=="image/png")
-		noDataTile = new MonochromaticTile<uint8_t, PNGEncoder>(tm.getTileW(), tm.getTileH(), channels, color);
-	else
-		LOGGER_ERROR("Pas de nodatasource disponible");
-*/
+
+
 
 }
 
@@ -255,17 +258,12 @@ DataSource* Level::getTile(int x, int y) {
 	}
 */
 
-
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
-
-
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),
 				tm.getY0() + y * tm.getTileH() * tm.getRes(), 
 				tm.getX0() + (x+1) * tm.getTileW() * tm.getRes(),
 				tm.getY0() + (y+1) * tm.getTileH() * tm.getRes()),
 			left, top, right, bottom);
-
-
 }
 

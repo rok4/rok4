@@ -3,7 +3,7 @@
 
 #include "Data.h"
 #include "Image.h"
-/*
+
 class BilEncoder : public DataStream {
 	Image* image;
 	int line;
@@ -17,7 +17,7 @@ public:
 	~BilEncoder();
 	size_t getdata(uint8_t *buffer, size_t size);
 	int getHttpStatus() {return 200;}
-};*/
+};
 #endif
 
 

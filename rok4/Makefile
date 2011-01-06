@@ -18,7 +18,7 @@ LDFLAGS =
 LDLIBS = -lpthread
 
 # Liste de librairies dépendantes embarquées
-DEPLIB=libfcgi libtinyxml libcppunit liblogger libimage libproj libjpeg libz
+DEPLIB=libfcgi libtinyxml liblogger libimage libproj libjpeg libz
 
 # CCFLAGS = -g -ansi
 
@@ -58,8 +58,8 @@ test: cpputest
 cpputest: Rok4Server cppubin
 	$(CPPUBIN)
 
-cppubin: $(CPPUNITOBJ)
-	$(CXX) $(LDFLAGS) $(WMSSOBJ:Rok4Server.o=) $(CPPUNITOBJ) -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LDLIBS)
+cppubin: libcppunit $(CPPUNITOBJ)
+	$(CXX) $(LDFLAGS) $(WMSSOBJ:Rok4Server.o=) $(CPPUNITOBJ) -o $(CPPUBIN) $(DEPLIB:%=$(LIBDIR)/%.a) $(LIBDIR)/libcppunit.a $(LDLIBS)
 	cp $(CPPUNITOBJ) $(BINDIR)
 	make -C ../lib/libimage test  # lance les tests unitaires sur libimage
 	make -C ../lib/liblogger test # lance les tests unitaires sur libimage

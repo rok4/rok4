@@ -103,17 +103,22 @@ fi
 # 2.2. GetTile
 
 # 2.2.1. Raw Tile
-let NTESTS+=1
-wget  --no-proxy -O tmp.tif "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=0_5&LAYER=SCAN_RAW_TEST&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
-sum="`md5sum tmp.tif | cut -d ' ' -f 1`"
-echo $sum
-if [ "$sum" = "bd46ed21e45d5214d59221ca6bf84c29" ]
-then
-        echo "Test 2.2.1. OK"
-else
-        echo "Test 2.2.1. FAILED"
-        let NERRORS+=1
-fi
+
+
+# Pascal : j'ai déactivé le test tuile tif qui a été enlevé du serveur
+# TODO : réactiver quand on aura réactivé l'ajout d'entête tiff au getTile.
+
+#let NTESTS+=1
+#wget  --no-proxy -O tmp.tif "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=0_5&LAYER=SCAN_RAW_TEST&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
+#sum="`md5sum tmp.tif | cut -d ' ' -f 1`"
+#echo $sum
+#if [ "$sum" = "bd46ed21e45d5214d59221ca6bf84c29" ]
+#then
+#        echo "Test 2.2.1. OK"
+#else
+#        echo "Test 2.2.1. FAILED"
+#        let NERRORS+=1
+#fi
 #rm tmp.tif
 
 # 2.2.2. Jpeg Tile
@@ -149,7 +154,7 @@ let NTESTS+=1
 wget --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=3000&tileRow=80000&tileMatrix=0_5&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
 sum="`md5sum tmp.png | cut -d ' ' -f 1`"
 echo $sum
-if [ "$sum" = "bc03f273a15225714287a6c049bab7e7" ]
+if [ "$sum" = "feb53fd5638f3f97f4edcc4338a0ce2a" ]
 then
         echo "Test 2.2.4. OK"
 else
