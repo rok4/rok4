@@ -37,8 +37,8 @@ our @EXPORT=(
 	'%format_format_pyr_param',
 	'$dilatation_reproj_param',
 	'$programme_reproj_param',
-	'$env_reproj_param',
-	'$repertoire_reproj_param',
+#	'$env_reproj_param',
+#	'$repertoire_reproj_param',
 	'reproj_point',
 	'%produit_nomenclature_param',
 	'$nom_fichier_first_jobs_param',
@@ -145,8 +145,8 @@ our %format_format_pyr_param = (
 );
 
 our $programme_reproj_param = "cs2cs";
-our $env_reproj_param = "PROJ_LIB"
-our $repertoire_reproj_param "../config/proj"
+my $env_reproj_param = "PROJ_LIB";
+my $repertoire_reproj_param = "../config/proj";
 
 our %produit_nomenclature_param = (
 	"ortho" => "(?:\\d{2,3}|2[AB]|\\w+)-\\d{4}-(\\d{4,5})-(\\d{4,5})",
@@ -161,6 +161,13 @@ our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
 ################################################################################
 
 ########## FONCTIONS
+sub proj4_env_variable{
+	
+	if(!(exists $ENV{'$env_reproj_param'} && $ENV{'$env_reproj_param'} eq $repertoire_reproj_param)){
+		$ENV{'$env_reproj_param'} = $repertoire_reproj_param;
+	}
+	
+}
 
 sub cree_repertoires_recursifs{
 	
@@ -265,6 +272,9 @@ sub reproj_point{
 	
 	my $x_reproj;
 	my $y_reproj;
+	
+	# pour etre sur que proj utilise le bon parametrage
+	&proj4_env_variable;
 	
 	my $result = `echo $x_point $y_point | $programme_reproj_param -f %.8f +init=$srs_ini +to +init=$srs_fin`;
 	my @split2 = split /\s/, $result;
