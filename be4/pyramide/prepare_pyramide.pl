@@ -4,6 +4,7 @@ use strict;
 use Getopt::Std;
 use Cwd 'abs_path';
 use File::Basename;
+use File::Copy;
 use POSIX qw(ceil floor);
 use cache(
 # 	'%produit_format_param',
@@ -119,10 +120,10 @@ if ($bool_getopt_ok == 0){
 }
 
 my $produit = $opt_p;
-my $rep_images_source = $opt_i;
-my $rep_masque_mtd;
+my $images_source = $opt_i;
+my $masque_mtd;
 if (defined $opt_m){
-	$rep_masque_mtd = $opt_m;
+	$masque_mtd = $opt_m;
 }
 my $rep_pyramide = $opt_r;
 my $compression_pyramide = $opt_c;
@@ -173,14 +174,14 @@ if (! (-e $fichier_tms && -f $fichier_tms) ){
 	$bool_param_ok = 0;
 }
 
-if (!(-e $rep_images_source && -d $rep_images_source)){
-	print "[PREPARE_PYRAMIDE] Le repertoire $rep_images_source n'existe pas.\n";
-	&ecrit_log("ERREUR Le repertoire $rep_images_source n'existe pas.");
+if (!(-e $images_source)){
+	print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $images_source n'existe pas.\n";
+	&ecrit_log("ERREUR Le repertoire ou le fichier $images_source n'existe pas.");
 	$bool_param_ok = 0;
 }
-if (defined $rep_masque_mtd && (!(-e $rep_masque_mtd && -d $rep_masque_mtd))){
-	print "[PREPARE_PYRAMIDE] Le repertoire $rep_masque_mtd n'existe pas.\n";
-	&ecrit_log("ERREUR Le repertoire $rep_masque_mtd n'existe pas.");
+if (defined $masque_mtd && (!(-e $masque_mtd))){
+	print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $masque_mtd n'existe pas.\n";
+	&ecrit_log("ERREUR Le repertoire ou le fichier $masque_mtd n'existe pas.");
 	$bool_param_ok = 0;
 }
 if (!(-e $rep_fichiers_dallage && -d $rep_fichiers_dallage)){
@@ -235,26 +236,43 @@ if ($bool_param_ok == 0){
 }
 
 
-# action 1 : creer dalles_source_image et dalles_source_metadata
-&ecrit_log("Recensement des images dans $rep_images_source.");
-my ($ref_images_source, $nb_images) = &cherche_images($rep_images_source);
-&ecrit_log("$nb_images images dans $rep_images_source.");
-&ecrit_log("Recensement des infos des images de $rep_images_source.");
-my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
-&ecrit_log("Ecriture du fichier des dalles source.");
-my $nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
-# seulement si les mtd sont specifiees
-my $nom_fichier_dallage_mtd = "";
-if(defined $rep_masque_mtd){
-	&ecrit_log("Recensement des mtd dans $rep_masque_mtd.");
-	my ($ref_mtd_source, $nb_mtd) = &cherche_images($rep_masque_mtd);
-	&ecrit_log("$nb_mtd mtd dans $rep_masque_mtd.");
-	&ecrit_log("Recensement des infos des mtd de $rep_masque_mtd.");
-	my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_mtd_source);
-	&ecrit_log("Ecriture du fichier des mtd source.");
-	$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
+# action 1 : creer dalles_source_image et dalles_source_metadata si on a un repertoire en entree
+my $nom_fichier_dallage_image;
+if(-d $images_source){
+	&ecrit_log("Recensement des images dans $images_source.");
+	my ($ref_images_source, $nb_images) = &cherche_images($images_source);
+	&ecrit_log("$nb_images images dans $images_source.");
+	&ecrit_log("Recensement des infos des images de $images_source.");
+	my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
+	&ecrit_log("Ecriture du fichier des dalles source.");
+	$nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
+
+}elsif(-f $images_source){
+	#on utilise l'existant
+	&ecrit_log("Utilisation du fichier des dalles source existant.");
+	$nom_fichier_dallage_image = $rep_fichiers_dallage."/".basename($images_source);
+	copy($images_source, $nom_fichier_dallage_image);
 }
 
+# seulement si les mtd sont specifiees
+my $nom_fichier_dallage_mtd = "";
+if(defined $masque_mtd){
+	# si on a un repertoire
+	if(-d $masque_mtd){
+		&ecrit_log("Recensement des mtd dans $masque_mtd.");
+		my ($ref_mtd_source, $nb_mtd) = &cherche_images($masque_mtd);
+		&ecrit_log("$nb_mtd mtd dans $masque_mtd.");
+		&ecrit_log("Recensement des infos des mtd de $masque_mtd.");
+		my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_mtd_source);
+		&ecrit_log("Ecriture du fichier des mtd source.");
+		$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
+	}elsif(-f $masque_mtd){
+		#on utilise l'existant
+		&ecrit_log("Utilisation du fichier des mtd source existant.");
+		$nom_fichier_dallage_mtd = $rep_fichiers_dallage."/".basename($masque_mtd);
+		copy($masque_mtd, $nom_fichier_dallage_mtd);
+	}
+}
 
 # action 2 : creer pyramid.pyr en XML
 my $srs_pyramide = "IGNF_".uc($RIG);
@@ -313,12 +331,14 @@ sub usage{
 	
 	my $bool_ok = 0;
 
-	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
+	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
  	print "\n-f (optionnel) : pour utiliser la nomenclature standard des produits IGN\n";
  	print "\t-a resolution en X ; -y resolution en Y en UNITES DU SRS des images SOURCE si -f est defini, sinon aucun effet\n";
  	print "\t-w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet\n";
+	print "\t-i images_source : un repertoire d'images ou un fichiers de dalles source issu d'un calcul precedent\n";
+	print "\t-m masques_metadonnees (optionnel) : un repertoire de mtd ou un fichiers de mtd source issu d'un calcul precedent\n";
 	print "\ncompression images pyramide :\n";
 	print "\traw\n\tjpeg\n\tpng\n";
 	print "\nsysteme_coordonnees :\n";
@@ -482,15 +502,9 @@ sub ecrit_dallage_source{
 	my $rep_fichier = $_[7];
 	my $type = $_[8];
 	
-	my $fichier_dallage_source;
-	if ($type eq "image"){
-		$fichier_dallage_source = $rep_fichier."/".$nom_fichier_dalle_source;
-	}elsif($type eq "mtd"){
-		$fichier_dallage_source = $rep_fichier."/".$nom_fichier_mtd_source;
-	}else{
-		print "[PREPARE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
-		exit;
-	}
+	my $fichier_dallage_source = &cree_nom_fichier_dallage_source($rep_fichier, $type, $compression_pyramide, $annee, $departement);
+	
+	
 	
 	open DALLAGE, ">$fichier_dallage_source" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_dallage_source.";
 	
@@ -653,3 +667,31 @@ sub valide_xml{
 	
 }
 ################################################################################
+sub cree_nom_fichier_dallage_source{
+	
+	my $rep_creation = $_[0];
+	my $type_dallage = $_[1];
+	my $compression = $_[2];
+	my $annee_dallage = $_[3];
+	my $dep_dallage = $_[4];
+	
+	$nom_fichier_dallage = $rep_creation."/";
+	
+	if ($type_dallage eq "image"){
+		$nom_fichier_dallage .= $nom_fichier_dalle_source;
+	}elsif($type_dallage eq "mtd"){
+		$nom_fichier_dallage .= $nom_fichier_mtd_source;
+	}else{
+		print "[PREPARE_PYRAMIDE] Probleme de programmation : type $type_dallage incorrect.\n";
+		exit;
+	}
+	
+	#ajout du suffixe
+	$nom_fichier_dallage .= "_".$compression."_".$annee_dallage;
+	if(defined $dep_dallage){
+		$nom_fichier_dallage .= "_".$dep_dallage;
+	}
+	$nom_fichier_dallage .= ".txt";
+	
+	return $nom_fichier_dallage;
+}

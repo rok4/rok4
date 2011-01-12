@@ -1,7 +1,7 @@
 ETAPE 1 : PREPARATION DES FICHIERS NECESSAIRES A LA PYRAMIDE
 
 Lancer : 
-"prepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i path/repertoire_images_source [-m path/repertoire_masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
+"prepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
 
 produit :
         ortho
@@ -13,6 +13,9 @@ produit :
         -a resolution en X ; -y resolution en Y en UNITES DU SRS des images SOURCE si -f est defini, sinon aucun effet
         -w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet
 
+images_source : un repertoire d'images ou un fichiers de dalles source issu d'un calcul precedent
+
+masques_metadonnees (optionnel) : un repertoire de mtd ou un fichiers de mtd source issu d'un calcul precedent 
 
 compression images pyramide :
 		raw

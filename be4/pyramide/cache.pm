@@ -65,8 +65,8 @@ our $type_mtd_pyr_param = "INT32_DB_LZW";
 our $format_mtd_pyr_param = "TIFF_LZW_INT8";
 our $profondeur_pyr_param = 2;
 
-our $nom_fichier_dalle_source_param = "dalles_source_image.txt";
-our $nom_fichier_mtd_source_param = "dalles_source_metadata.txt";
+our $nom_fichier_dalle_source_param = "dalles_source_image";
+our $nom_fichier_mtd_source_param = "dalles_source_metadata";
 our $nom_rep_images_param = "IMAGE";
 our $nom_rep_mtd_param = "METADATA";
 

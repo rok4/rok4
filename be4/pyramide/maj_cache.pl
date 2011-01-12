@@ -54,8 +54,8 @@ if ($verif_programme_rollback eq ""){
 # parametres dans le fichier
 my $ss_produit;
 my $produit;
-my $repertoire_images_source;
-my $repertoire_masques_metadonnees;
+my $images_source;
+my $masques_metadonnees;
 my $repertoire_pyramide;
 my $compression_images_pyramide;
 my $systeme_coordonnees_pyramide;
@@ -85,8 +85,8 @@ my $fichier_mtd_source;
 
 print "[MAJ_CACHE] Execution de $programme_prepare_pyramide ...\n";
 my $rep_mtd = "";
-if (defined $repertoire_masques_metadonnees){
-	$rep_mtd = "-m $repertoire_masques_metadonnees";
+if (defined $masques_metadonnees){
+	$rep_mtd = "-m $masques_metadonnees";
 }
 my $dep = "";
 if (defined $departement){
@@ -96,7 +96,7 @@ my $param_IGN = "";
 if($bool_nomenclature_IGN == 1){
 	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
 }
-my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $repertoire_images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
+my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats
 my $bool_erreur_prepare = 0;
@@ -188,9 +188,9 @@ sub initialise_parametres{
 		$produit = $ss_produit;
 	}
 	
-	$repertoire_images_source = $data->{repertoire_images_source};
-	if (defined $data->{repertoire_masques_metadonnees}){
-		$repertoire_masques_metadonnees = $data->{repertoire_masques_metadonnees};
+	$images_source = $data->{images_source};
+	if (defined $data->{masques_metadonnees}){
+		$masques_metadonnees = $data->{masques_metadonnees};
 	}
 	$repertoire_pyramide = $data->{repertoire_pyramide};
 	$compression_images_pyramide = $data->{compression_images_pyramide};

@@ -2,9 +2,10 @@
 <param>
         <!-- a choisir parmi ortho/parcellaire/scan[25|50|100|dep|reg|1000]/franceraster -->
         <ss_produit>ortho</ss_produit>
-        <repertoire_images_source>/mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08</repertoire_images_source>
-        <!-- facultatif -->
-        <!--<repertoire_masques_metadonnees></repertoire_masques_metadonnees>-->
+        <!-- soit un repertoire soit un fichier de dalles source issu d'un calcul de pyramide precedent -->
+        <images_source>/mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08</images_source>
+        <!-- facultatif : soit un repertoire soit un fichier de mtd source issu d'un calcul de pyramide precedent -->
+        <!--<masques_metadonnees></masques_metadonnees>-->
         <systeme_coordonnees_source>LAMB93</systeme_coordonnees_source>
         <!-- a choisir parmi OUI/NON -->
 		<nomenclature_IGN>OUI</nomenclature_IGN>

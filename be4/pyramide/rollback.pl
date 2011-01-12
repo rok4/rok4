@@ -36,8 +36,8 @@ system("rm -f $nom_fichier_last_jobs_param");
 system("rm -f $prefixe_nom_script"."*");
 
 # destruction des fichiers de dallage
-system("rm -f $repertoire_fichiers_dallage/$nom_fichier_dalle_source_param");
-system("rm -f $repertoire_fichiers_dallage/$nom_fichier_mtd_source_param");
+system("rm -f $repertoire_fichiers_dallage/$nom_fichier_dalle_source_param"."*");
+system("rm -f $repertoire_fichiers_dallage/$nom_fichier_mtd_source_param"."*");
 
 # remise a l'ancien LAY s'il existe
 my $old_layer = $fichier_layer.".old";
