@@ -238,12 +238,14 @@ if ($bool_param_ok == 0){
 
 # action 1 : creer dalles_source_image et dalles_source_metadata si on a un repertoire en entree
 my $nom_fichier_dallage_image;
+my ($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
+my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y);
 if(-d $images_source){
 	&ecrit_log("Recensement des images dans $images_source.");
 	my ($ref_images_source, $nb_images) = &cherche_images($images_source);
 	&ecrit_log("$nb_images images dans $images_source.");
 	&ecrit_log("Recensement des infos des images de $images_source.");
-	my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
+	($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
 	&ecrit_log("Ecriture du fichier des dalles source.");
 	$nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
 
@@ -252,6 +254,7 @@ if(-d $images_source){
 	&ecrit_log("Utilisation du fichier des dalles source existant.");
 	$nom_fichier_dallage_image = $rep_fichiers_dallage."/".basename($images_source);
 	copy($images_source, $nom_fichier_dallage_image);
+	($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &extrait_bbox_dallage($nom_fichier_dallage_image);
 }
 
 # seulement si les mtd sont specifiees
@@ -504,8 +507,6 @@ sub ecrit_dallage_source{
 	
 	my $fichier_dallage_source = &cree_nom_fichier_dallage_source($rep_fichier, $type, $compression_pyramide, $annee, $departement);
 	
-	
-	
 	open DALLAGE, ">$fichier_dallage_source" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_dallage_source.";
 	
 	foreach my $image(@tableau_images){
@@ -675,7 +676,7 @@ sub cree_nom_fichier_dallage_source{
 	my $annee_dallage = $_[3];
 	my $dep_dallage = $_[4];
 	
-	$nom_fichier_dallage = $rep_creation."/";
+	my $nom_fichier_dallage = $rep_creation."/";
 	
 	if ($type_dallage eq "image"){
 		$nom_fichier_dallage .= $nom_fichier_dalle_source;
@@ -695,3 +696,46 @@ sub cree_nom_fichier_dallage_source{
 	
 	return $nom_fichier_dallage;
 }
+################################################################################
+sub extrait_bbox_dallage{
+	
+	my $fichier_a_lire = $_[0];
+	
+	# bbox du chantier
+	my $xmin = 99999999999;
+	my $xmax = 0;
+	my $ymin = 99999999999;
+	my $ymax = 0;
+	
+	my @infos;
+	
+	open SOURCE, "<$fichier_a_lire" or die "[PREPARE_PYRAMIDE] Impossible d'ouvrir le fichier $fichier_a_lire.";
+	my @lignes = <SOURCE>;
+	close SOURCE;
+	
+	foreach my $ligne(@lignes){
+		chomp($ligne);
+		my @infos_dalle = split /\t/, $ligne;
+		# remplissage des infos
+		if(! (defined $infos_dalle[0] && defined $infos_dalle[1] && defined $infos_dalle[2] && defined $infos_dalle[3] && defined $infos_dalle[4] && defined $infos_dalle[5] && defined $infos_dalle[6]) ){
+			&ecrit_log("ERREUR de formatage du fichier $fichier_a_lire");
+		}
+	
+		if($infos_dalle[1] < $xmin){
+			$xmin = $infos_dalle[1];
+		}
+		if($infos_dalle[3] > $xmax){
+			$xmax = $infos_dalle[3];
+		}
+		if($infos_dalle[4] < $ymin){
+			$ymin = $infos_dalle[4];
+		}
+		if($infos_dalle[2] > $ymax){
+			$ymax = $infos_dalle[2];
+		}
+		
+	}
+	
+	return ($xmin, $xmax, $ymin, $ymax);
+}
+################################################################################
