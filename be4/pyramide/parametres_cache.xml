@@ -32,5 +32,9 @@
         <pcent_dilatation_reproj>20</pcent_dilatation_reproj>
         <prefixe_nom_script>../tmp/test_75</prefixe_nom_script>
         <nombre_batch_min>16</nombre_batch_min>
+        <!-- facultatif (sauf en cas de compression avec perte et/ou de reprojection-->
+        <localisation_rok4>obernai.ign.fr/rok4/bin/rok4</localisation_rok4>
+        <!-- facultatif (sauf en cas de compression avec perte et/ou de reprojection-->
+        <layer_wms>ORTHO_RAW</layer_wms>
 </param>
 

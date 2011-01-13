@@ -22,6 +22,7 @@ use cache(
 	'$nom_fichier_first_jobs_param',
 	'$nom_fichier_last_jobs_param',
 	'extrait_tms_from_pyr',
+	'$version_wms_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -29,12 +30,9 @@ use File::Basename;
 use List::Util qw( max );
 use POSIX qw(ceil floor);
 
-
-
-
 # pas de bufferisation des sorties
 $| = 1;
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j, $opt_k, $opt_l);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my $color_no_data = $color_no_data_param;
@@ -51,6 +49,7 @@ my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
 # my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
+my $version_wms = $version_wms_param;
 ################################################################################
 
 # verification de l'existence de fichiers et repertoires annexes
@@ -96,7 +95,7 @@ open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $lo
 &ecrit_log("commande : @ARGV");
 
 #### recuperation des parametres
-getopts("p:f:x:m:s:d:r:n:t:j:");
+getopts("p:f:x:m:s:d:r:n:t:j:k:l:");
 
 if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j) ){
 	print "[CALCULE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
@@ -147,6 +146,14 @@ my $nom_script = $opt_n;
 my $taille_dalle_pix = $opt_t;
 my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix, $taille_dalle_pix);
 my $nombre_jobs = $opt_j;
+my $localisation_serveur_rok4;
+if(defined $opt_k){
+	$localisation_serveur_rok4 = $opt_k;
+} 
+my $nom_layer_pour_requetes_wms;
+if(defined $opt_l){
+	$nom_layer_pour_requetes_wms = $opt_l;
+}
 # verifications des parametres
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
 	print "[CALCULE_PYRAMIDE] Produit mal specifie.\n";
@@ -267,6 +274,23 @@ if($format_imgs_pyramide =~ /jpg/i){
 my $bool_reprojection = 0;
 if($systeme_source ne $systeme_target){
 	$bool_reprojection = 1;
+}
+
+# on regarde que la localisation du serveur et du layer sont renseigne s'il y a perte et/ou reprojection
+if(!($bool_perte == 0 && $bool_reprojection == 0)){
+	my $bool_presence_param = 1;
+	if(! defined $localisation_serveur_rok4){
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -k.\n";
+		$bool_presence_param = 0;
+	}
+	if(! defined $nom_layer_pour_requetes_wms){
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
+		$bool_presence_param = 0;
+	}
+	if($bool_presence_param == 0){
+		&usage();
+		exit;
+	}
 }
 
 # action 2 : lire le fichier de dalles source et des mtd
@@ -426,7 +450,7 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	}
 	
 	# on ne cree le script que si des dalles sont creees
-	if ($nombre_dalles_creees_script != 0){
+	if ($string_script_this ne ""){
 		my $nom_script_complet = "$nom_script"."_"."$dalle_arbre_niveau_travail";
 		open SCRIPT, ">$nom_script_complet" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_complet.";
 		# pour la repartition de torque
@@ -507,8 +531,8 @@ foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	
 }
 
+
 # passage en pivot du dernier niveau
-my $dernier_niveau = "$level_max";
 &ecrit_log("Passage en format final niveau $level_max.");
 my @dalles_change_format_haut;
 if(defined $niveau_ref_dalles_inf{"$level_max"}){
@@ -517,16 +541,18 @@ if(defined $niveau_ref_dalles_inf{"$level_max"}){
 $string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_taille_tuile_y{"$level_max"}, \@dalles_change_format_haut);
 
 
-my $nom_script_job17 = "$nom_script"."_"."job17";
-open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
-# pour la repartition de torque
-my $temps_17 = &cree_string_temps_torque($nombre_dalles_job17);
-print JOB17 "$temps_17\n";
-print JOB17 $string_script_creation_rep_temp;
-print JOB17 $string_script4;
-print JOB17 $string_script_destruction_rep_temp;
-close JOB17;
-push(@scripts_last, $nom_script_job17);
+if($string_script4 ne ""){
+	my $nom_script_job17 = "$nom_script"."_"."job17";
+	open JOB17, ">$nom_script_job17" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_script_job17.";
+	# pour la repartition de torque
+	my $temps_17 = &cree_string_temps_torque($nombre_dalles_job17);
+	print JOB17 "$temps_17\n";
+	print JOB17 $string_script_creation_rep_temp;
+	print JOB17 $string_script4;
+	print JOB17 $string_script_destruction_rep_temp;
+	close JOB17;
+	push(@scripts_last, $nom_script_job17);
+}
 
 # on cree 2 fichiers avec les premier et derniers traitements
 open FIRST, ">$nom_fichier_first_jobs" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier_first_jobs.";
@@ -571,7 +597,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print "\nUsage : \ncalcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script -t taille_dalles_pixels -j nombre_jobs_min\n";
+	print "\nUsage : \ncalcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script -t taille_dalles_pixels -j nombre_jobs_min [-k localisation_serveur_rok4 -l nom_layer_a_utiliser]\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";
@@ -579,6 +605,8 @@ sub usage{
 	print "\npourcentage_dilatation : 0 a 100\n";
 	print "%_dilatation_dalles_base : dilatation des dalles du cache pour trouver les dalles source en recouvrement\n";
 	print "%_dilatation_reproj : dilatation des dalles du cache reprojetees pour parer a la deformation de la reprojection\n";
+	print "\nlocalisation du serveur rok4 : ex obernai.ign.fr/rok4/bin/rok4\n";
+	print "\nlayer a utiliser : pour les requetes WMS : ex ORTHO_RAW\n";
 	print "\n\n";
 	
 	$bool_ok = 1;
@@ -964,8 +992,7 @@ sub definit_bloc_dalle{
 		}else{
 			print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 			exit;
-		}
-		
+		}	
 	}
 	
 	# on regarde si la dalle cache est dans la resolution_min
@@ -1032,96 +1059,102 @@ sub calcule_niveau_minimum {
 			
 			my $nom_dalle = $nom_dalle_index_base{$dalle_cache};
 			
-			my $nom_dalle_temp = "$rep_temp/$nom_dalle.tif";
-			# mise en format travail dalle_cache pour image initiale
-			# destruction de la dalle_cache temporaire si elle existe
-			$string_script .= "if [ -r \"$nom_dalle_temp\" ] ; then rm -f $nom_dalle_temp ; fi\n";
+			# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
+			$string_script .= "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
 			
-			# test si on a une dalle (normalement un lien vers une pyramide precedente qui est en format pyramide)
-			#if (-e $dalle_cache ){
-			# avec le script il faut faire autrement
-			if (exists $dalles_liens{$dalle_cache} ){
-				$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp\n";
-				# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
-				$string_script .= "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
-
-			}else{
-				# sinon on fait reference a la dalle no_data
-				if($type eq "image"){
-					$nom_dalle_temp = $dalle_no_data;
-				}elsif($type eq "mtd"){
-					$nom_dalle_temp = $dalle_no_data_mtd;
+			if($bool_reprojection == 0 && $bool_perte == 0){
+				my $nom_dalle_temp = "$rep_temp/$nom_dalle.tif";
+				# mise en format travail dalle_cache pour image initiale
+				# destruction de la dalle_cache temporaire si elle existe
+				$string_script .= "if [ -r \"$nom_dalle_temp\" ] ; then rm -f $nom_dalle_temp ; fi\n";
+				
+				# test si on a une dalle (normalement un lien vers une pyramide precedente qui est en format pyramide)
+				#if (-e $dalle_cache ){
+				# avec le script il faut faire autrement
+				if (exists $dalles_liens{$dalle_cache} ){
+					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp\n";
+				}else{
+					# sinon on fait reference a la dalle no_data
+					if($type eq "image"){
+						$nom_dalle_temp = $dalle_no_data;
+					}elsif($type eq "mtd"){
+						$nom_dalle_temp = $dalle_no_data_mtd;
+					}else{
+						print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
+						exit;
+					}
+				}
+				
+				my $nom_fichier = $rep_enregistr."/".$nom_dalle."_".$type;
+				
+				my $res_x_max_source = 0;
+				my $res_y_max_source = 0;
+				
+				open FIC, ">$nom_fichier" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier.";
+				# dalle cache
+				print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
+				# dalles source a la suite
+				
+				# d'abord la dalle cache temporaire
+				# (puisque $programme_dalles_base ne supporte pas de ne pas avoir de donnees)
+				
+				print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
+				
+				foreach my $src(@liste_dalles_source){
+					if($source_res_x{$src} > $res_x_max_source){
+						$res_x_max_source = $source_res_x{$src};
+					}
+					if($source_res_y{$src} > $res_y_max_source){
+						$res_y_max_source = $source_res_y{$src};
+					}
+					# TODO passer par une image tiff2gray pour la bdparcel
+					print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
+				}
+				
+				# ATTENTION, intuition feminine : l'execution dans certains environnements fait qu'il se melange les pinceaux
+				# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
+				# sleep(1);
+				# moyen de le faire dormir moins que 1s : sleep ne fait que les entiers !!
+				# ~15s pour 1500 images
+				select(undef, undef, undef, 0.01);
+				
+				close FIC;
+				# definition de l'interpolateur
+				my $interpolateur = "bicubique";
+				
+				if($type eq "mtd"){
+					$interpolateur = "ppv";
+				}elsif(($cache_arbre_res{$dalle_cache} / $res_x_max_source < 2) && ($cache_arbre_res{$dalle_cache} / $res_y_max_source)){
+					$interpolateur = "lanczos";
+				}
+				# definition de la couleur no_data
+				my $no_data;
+				if($type eq "mtd"){
+					$no_data = "0";
+				}elsif( $type eq "image"){
+					$no_data = $color_no_data;
+	
 				}else{
 					print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 					exit;
 				}
-			}
-			
-			
-			my $nom_fichier = $rep_enregistr."/".$nom_dalle."_".$type;
-			
-			my $res_x_max_source = 0;
-			my $res_y_max_source = 0;
-			
-			open FIC, ">$nom_fichier" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier.";
-			# dalle cache
-			print FIC "$dalle_cache\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
-			# dalles source a la suite
-			
-			# d'abord la dalle cache temporaire
-			# (puisque $programme_dalles_base ne supporte pas de ne pas avoir de donnees)
-			
-			print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$dalle_cache}\t$cache_arbre_y_max{$dalle_cache}\t$cache_arbre_x_max{$dalle_cache}\t$cache_arbre_y_min{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\t$cache_arbre_res{$dalle_cache}\n";
-			
-			foreach my $src(@liste_dalles_source){
-				if($source_res_x{$src} > $res_x_max_source){
-					$res_x_max_source = $source_res_x{$src};
+				
+				# pour le programme
+				my $type_dalles_base = $type;
+				if($type_dalles_base eq "image"){
+					$type_dalles_base = "img";
 				}
-				if($source_res_y{$src} > $res_y_max_source){
-					$res_y_max_source = $source_res_y{$src};
-				}
-				# TODO passer par une image tiff2gray pour la bdparcel
-				print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
-			}
-			
-			# ATTENTION, intuition feminine : l'execution dans certains environnements fait qu'il se melange les pinceaux
-			# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
-			# sleep(1);
-			# moyen de le faire dormir moins que 1s : sleep ne fait que les entiers !!
-			# ~15s pour 1500 images
-			select(undef, undef, undef, 0.01);
-			
-			close FIC;
-			# definition de l'interpolateur
-			my $interpolateur = "bicubique";
-			
-			if($type eq "mtd"){
-				$interpolateur = "ppv";
-			}elsif(($cache_arbre_res{$dalle_cache} / $res_x_max_source < 2) && ($cache_arbre_res{$dalle_cache} / $res_y_max_source)){
-				$interpolateur = "lanczos";
-			}
-			# definition de la couleur no_data
-			my $no_data;
-			if($type eq "mtd"){
-				$no_data = "0";
-			}elsif( $type eq "image"){
-				$no_data = $color_no_data;
-
+				# TODO nombre de canaux, nombre de bits, couleur en parametre
+				# TODO supprimer no_data qui ne sert a rien
+				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb\n";
 			}else{
-				print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
-				exit;
+				# on recupere directement dans un cache existant une image tiff en format de travail
+				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
 			}
 			
-			# pour le programme
-			my $type_dalles_base = $type;
-			if($type_dalles_base eq "image"){
-				$type_dalles_base = "img";
-			}
-			# TODO nombre de canaux, nombre de bits, couleur en parametre
-			# TODO supprimer no_data qui ne sert a rien
-			$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb\n";
 			$dalles_calculees{$dalle_cache} = "toto";
 			$nb_dal += 1;
+			
 		}
 	}
 	return ($nb_dal, $string_script);
@@ -1156,56 +1189,65 @@ sub calcule_niveaux_inferieurs{
 						$string_script2 .= "if [ -L \"$dal\" ] ; then rm -f $dal ; fi\n";
 					}
 					
-					my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
-					
 					# creation le cas echeant des repertoires parents
 					my $rep_parent_dalle_niveau_inf = dirname($dal);
 					&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle_niveau_inf.");
 					&cree_repertoires_recursifs($rep_parent_dalle_niveau_inf);
 					
-					my $string_dessous = "";
-					foreach my $dalle_dessous(@list_cache_dessous){
-						my $fichier_pointe;
-						# si la dalle n'existe pas on met la dalle no_data
-						#if(!(-e $dalle_dessous)){
-						# avec le script il faut faire autrement
-						if(!(exists $dalles_calculees{$dalle_dessous} || exists $dalles_liens{$dalle_dessous})){
-							if($type_dalle eq "image"){
-								$fichier_pointe = $dalle_no_data;
-							}elsif($type_dalle eq "mtd"){
-								$fichier_pointe = $dalle_no_data_mtd;
+					if($bool_perte == 0 && $bool_reprojection == 0){
+						#calcul
+						
+						my @list_cache_dessous = @{$dalle_cache_dessous{$dal}};
+						
+						my $string_dessous = "";
+						foreach my $dalle_dessous(@list_cache_dessous){
+							my $fichier_pointe;
+							# si la dalle n'existe pas on met la dalle no_data
+							#if(!(-e $dalle_dessous)){
+							# avec le script il faut faire autrement
+							if(!(exists $dalles_calculees{$dalle_dessous} || exists $dalles_liens{$dalle_dessous})){
+								if($type_dalle eq "image"){
+									$fichier_pointe = $dalle_no_data;
+								}elsif($type_dalle eq "mtd"){
+									$fichier_pointe = $dalle_no_data_mtd;
+								}else{
+									print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type_dalle incorrect.\n";
+									exit;
+								}
+								
 							}else{
-								print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type_dalle incorrect.\n";
-								exit;
+# 								# lecture du lien de la dalle cache pour test 
+# 								$fichier_pointe = readlink("$dalle_dessous");
+# 								if ( ! defined $fichier_pointe){
+# 									$fichier_pointe = "$dalle_dessous";
+#								}
+								
+								my $nom_dalle_cache = basename($dalle_dessous);
+								
+								# mise en format travail de la dalle dalle_cache
+								# desctruction de la dalle_cache temporaire si elle existe
+								$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
+								$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n";
+								$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 							}
-							
-						}else{
-# 							# lecture du lien de la dalle cache pour test 
-# 							$fichier_pointe = readlink("$dalle_dessous");
-# 							if ( ! defined $fichier_pointe){
-# 								$fichier_pointe = "$dalle_dessous";
-#							}
-							
-							my $nom_dalle_cache = basename($dalle_dessous);
-							
-							# mise en format travail de la dalle dalle_cache
-							# desctruction de la dalle_cache temporaire si elle existe
-							$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
-							$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n";
-							$fichier_pointe = "$rep_temp/$nom_dalle_cache";
+							$string_dessous .= " $fichier_pointe";
 						}
-						$string_dessous .= " $fichier_pointe";
+						# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
+						$string_script2 .= "$programme_ss_ech $string_dessous $dal\n";
+						
+					}else{
+						# on recupere a partir d'un cache existant une dalle en format de travail						
+						$string_script2 .= "wget --no-proxy -O $dal \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dal}.",".$cache_arbre_y_min{$dal}.",".$cache_arbre_x_max{$dal}.",".$cache_arbre_y_max{$dal}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
 					}
-					# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
-					$string_script2 .= "$programme_ss_ech $string_dessous $dal\n";
+					
 					$dalles_calculees{$dal} = "toto";
-					$nb_calc += 1; 
+					$nb_calc += 1;
+					 
 				}
 				
 			}
 			
 			# Passage en format pivot du niveaux dessous
-			
 			my $niveau_termine = $niveaux_ranges[$i - 1];
 			my @dalles_change_format;
 			# si c'est le niveau le plus bas on n'a pas le hash
@@ -1216,6 +1258,7 @@ sub calcule_niveaux_inferieurs{
 			}
 			&ecrit_log("Passage en format final niveau $niveau_termine.");
 			$string_script2 .= &passage_pivot($niveau_taille_tuile_x{"$niveau_termine"}, $niveau_taille_tuile_y{"$niveau_termine"}, \@dalles_change_format);
+
 		}
 	}
 	

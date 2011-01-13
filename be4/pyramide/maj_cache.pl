@@ -69,6 +69,8 @@ my $pcent_dilatation_reproj;
 my $prefixe_nom_script;
 my $taille_dalles_pixels;
 my $nombre_batch_min;
+my $localisation_rok4;
+my $layer_requetes;
 
 my $bool_nomenclature_IGN = 0;
 my $resolution_x_source;
@@ -148,7 +150,14 @@ my $mtd_source = "";
 if (defined $fichier_mtd_source){
 	$mtd_source = "-m $fichier_mtd_source";
 }
-my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min";
+my $param_requetes = "";
+if(defined $localisation_rok4){
+	$param_requetes .= "-k $localisation_rok4 ";
+}
+if(defined $layer_requetes){
+	$param_requetes .= "-l $layer_requetes";
+}
+my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes";
 my @result_calcule = `$commande_calcule_batch`;
 #etude des resultats
 my $bool_erreur_calcule = 0;
@@ -225,6 +234,14 @@ sub initialise_parametres{
 	$prefixe_nom_script = $data->{prefixe_nom_script};
 	$taille_dalles_pixels = $data->{taille_dalles_pixels};
 	$nombre_batch_min = $data->{nombre_batch_min};
+	if(defined $data->{localisation_rok4}){
+		$localisation_rok4 = $data->{localisation_rok4};
+	}
+	if(defined $data->{layer_wms}){
+		$layer_requetes = $data->{layer_wms};
+	}
+	
+	
 	
 	$bool_ok = 1;
 	
