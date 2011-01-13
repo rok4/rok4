@@ -46,6 +46,7 @@ our @EXPORT=(
 	'cree_nom_pyramide',
 	'cherche_pyramide_recente_lay',
 	'extrait_tms_from_pyr',
+	'$version_wms_param',
 );
 ################################################################################
 
@@ -157,6 +158,8 @@ our %produit_nomenclature_param = (
 
 our $nom_fichier_first_jobs_param = "../tmp/first_jobs.txt";
 our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
+
+our $version_wms_param = "1.3.0";
 
 ################################################################################
 
