@@ -20,7 +20,6 @@ our @EXPORT=(
 	'$nom_fichier_mtd_source_param',
 	'$color_no_data_param',
 	'$dalle_no_data_param',
-	'%produit_res_utiles_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -87,28 +86,6 @@ our $color_no_data_param = "FFFFFF";
 
 our $dalle_no_data_param = "../share/pyramide/4096_4096_FFFFFF.tif";
 our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";
-
-my @res_utiles_ortho = (0.25, 8388608);
-my @res_utiles_parcel = (0.05, 8388608);
-my @res_utiles_franceraster = (0.25, 8388608);
-# TODO determiner resolutions utiles scans
-my @res_utiles_scan25;
-my @res_utiles_scan50;
-my @res_utiles_scan100;
-my @res_utiles_scandep;
-my @res_utiles_scanreg;
-my @res_utiles_scan1000;
-our %produit_res_utiles_param = (
-	"ortho" => \@res_utiles_ortho,
-	"parcellaire" => \@res_utiles_parcel,
-	"franceraster" => \@res_utiles_franceraster,
-	"scan25" => \@res_utiles_scan25,
-	"scan50" => \@res_utiles_scan50,
-	"scan100" => \@res_utiles_scan100,
-	"scandep" => \@res_utiles_scandep,
-	"scanreg" => \@res_utiles_scanreg,
-	"scan1000" => \@res_utiles_scan1000,
-);
 
 # apres deploiement : le ./ est pour etre sur qu'on utilise les programmes compiles en local
 our $programme_ss_ech_param = "merge4tiff";

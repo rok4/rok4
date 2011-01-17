@@ -6,7 +6,6 @@ use cache(
 	'%base10_base_param',
 	'$color_no_data_param',
 	'$dalle_no_data_param',
-	'%produit_res_utiles_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -38,7 +37,6 @@ my %base10_base = %base10_base_param;
 my $color_no_data = $color_no_data_param;
 my $dalle_no_data = $dalle_no_data_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
-my %produit_res_utiles = %produit_res_utiles_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
@@ -210,10 +208,6 @@ mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoi
 my $string_script_creation_rep_temp = "if [ ! -d \"$rep_temp\" ] ; then mkdir $rep_temp ; fi\n";
 my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
 
-# action 0 : determiner les resolutions utiles
-my $ref_niv_utiles = $produit_res_utiles{$ss_produit};
-my ($res_min_produit, $res_max_produit) = @{$ref_niv_utiles};
-
 # action 1 : recuperer les infos de la pyramide
 &ecrit_log("Lecture de la pyramide $fichier_pyramide.");
 my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
@@ -238,20 +232,6 @@ my $res_max = $niveau_res{"$level_max"};
 my @reps_toutes_dalles_liens = (values %niveau_repertoire_image, values %niveau_repertoire_mtd);
 my $ref_dalles_liens = &liste_liens(\@reps_toutes_dalles_liens);
 my %dalles_liens = %{$ref_dalles_liens};
-
-# TODO voir si les elses sont corrects
-my $res_min_utile;
-my $res_max_utile;
-if($res_min_produit <= $res_min){
-	$res_min_utile = $res_min;
-}else{
-	$res_min_utile = $res_min_produit;
-}
-if($res_max_produit >= $res_max){
-	$res_max_utile = $res_max;
-}else{
-	$res_max_utile = $res_max_produit;
-}
 
 my $x_min_niveau_max = $niveau_origine_x{"$level_max"};
 my $y_max_niveau_max = $niveau_origine_y{"$level_max"};
@@ -296,7 +276,7 @@ if(!($bool_perte == 0 && $bool_reprojection == 0)){
 # action 2 : lire le fichier de dalles source et des mtd
 # => bbox des donnees, hashes des xmin, xmax, ymin, ymax, resx, resy
 &ecrit_log("Lecture du fichier d'images source $fichier_dalle_source.");
-my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &lecture_fichier_dalles_source($fichier_dalle_source, 1);
+my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $resolution_minimum_source, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &lecture_fichier_dalles_source($fichier_dalle_source, 1);
 my %source_x_min = %{$reference_hash_x_min};
 my %source_x_max = %{$reference_hash_x_max};
 my %source_y_min = %{$reference_hash_y_min};
@@ -313,9 +293,10 @@ my %mtd_source_y_max;
 my %mtd_source_res_x;
 my %mtd_source_res_y ;
 my @mtd_source;
+my $ref_inutile2;
 if (defined $fichier_mtd_source){
 	&ecrit_log("Lecture du fichier de mtd source $fichier_mtd_source.");
-	($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
+	($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y, $ref_inutile2) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
 	%mtd_source_x_min = %{$ref_hash_x_min};
 	%mtd_source_x_max = %{$ref_hash_x_max};
 	%mtd_source_y_min = %{$ref_hash_y_min};
@@ -325,7 +306,22 @@ if (defined $fichier_mtd_source){
 	@mtd_source = keys %mtd_source_x_min;
 }
 
-# action 3 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
+# action 3 : determination de la resolution_min utile (la res max est celle de la pyramide)
+# iniitlalisee a la resolution min de la pyramide
+my $res_min_utile = $res_min;
+
+# ATTENTION : au cas ou toutes les reoslution ne sont pas identiques, on prend la plus petite
+# (issue de lecture_fichier_dalles_source)
+
+# comparaison avec les niveaux de la pyr
+# la plus grande resolution de la pyramide inferieure ou egale a la resolution source
+foreach my $niveau(keys %niveau_res){
+	if($niveau_res{"$niveau"} > $res_min_utile && $niveau_res{"$niveau"} <= $resolution_minimum_source){
+		$res_min_utile = $niveau_res{"$niveau"};
+	}
+}
+
+# action 4 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
 my ($ref_liste_niveau_travail, $ref_travail_x_min, $ref_travail_x_max, $ref_travail_y_min, $ref_travail_y_max, $ref_liste_niveau_max, $ref_niv_max_x_min, $ref_niv_max_x_max, $ref_niv_max_y_min, $ref_niv_max_y_max, $res_travail, $indice_travail, $niveau_travail) = &infos_niveau_travail_niveau_max($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $y_max_niveau_max, $res_max, $taille_image_pix_x, $taille_image_pix_y, $indice_niveau_max, $level_max, $systeme_source, $systeme_target);
 
 my @liste_dalles_arbre_niveau_travail = @{$ref_liste_niveau_travail};
@@ -340,7 +336,7 @@ my %dalle_niveau_max_x_max = %{$ref_niv_max_x_max};
 my %dalle_niveau_max_y_min = %{$ref_niv_max_y_min};
 my %dalle_niveau_max_y_max = %{$ref_niv_max_y_max};
 
-# action 4 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
+# action 5 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
 
 # liste des scripts en first ou last
 my @scripts_first;
@@ -408,11 +404,11 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	
 	#recursivite descendante et mise en memoire pour chacune des dalles cache
 	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.");
-	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
+	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min_utile, $res_dalle0);
 	&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.");
-		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min, $res_dalle0);
+		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min_utile, $res_dalle0);
 		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
 	}
 	
@@ -853,6 +849,8 @@ sub lecture_fichier_dalles_source{
 	my $ymin = 99999999999;
 	my $ymax = 0;
 	
+	my $resolution_min_source = 99999999999;
+	
 	my @infos;
 	
 	open SOURCE, "<$fichier_a_lire" or die "[CALCULE_PYRAMIDE] Impossible d'ouvrir le fichier $fichier_a_lire.";
@@ -872,6 +870,10 @@ sub lecture_fichier_dalles_source{
 		$hash_y_max{"$infos_dalle[0]"} = $infos_dalle[2];
 		$hash_res_x{"$infos_dalle[0]"} = $infos_dalle[5];
 		$hash_res_y{"$infos_dalle[0]"} = $infos_dalle[6];
+		
+		# resolution minimum des source
+		$resolution_min_source = min($resolution_min_source, $hash_res_x{"$infos_dalle[0]"}, $hash_res_y{"$infos_dalle[0]"});
+		
 		if($bool_bbox == 1){
 			if($infos_dalle[1] < $xmin){
 				$xmin = $infos_dalle[1];
@@ -888,7 +890,13 @@ sub lecture_fichier_dalles_source{
 		}
 		
 	}
-	push(@infos, \%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y);
+	
+	# on regarde que les infos ont bien ete mises a jour
+	if($resolution_min_source == 99999999999){
+		&ecrit_log("ERREUR de deduction de la resolution minimum des dalles source.");
+	}
+	
+	push(@infos, \%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $resolution_min_source);
 	if($bool_bbox == 1){
 		push(@infos, $xmin, $xmax, $ymin, $ymax);
 	}
