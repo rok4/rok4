@@ -118,10 +118,13 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 	std::getline(file,str);
 	double resx, resy;
 	int nb;
+
 	if ( (nb=sscanf(str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
-		*width = (int) (bbox->xmax - bbox->xmin)/resx;	
-		*height = (int) (bbox->ymax - bbox->ymin)/resy;
+		// Arrondi a la valeur entiere la plus proche
+		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
+		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
 	}
+
 	return nb;
 }
 
@@ -148,6 +151,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 		return -1;
 	}
 	*ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE);
+
 	if (*ppImageOut==NULL){
 		LOGGER_ERROR("Impossible de creer " << filename);
 		return -1;
@@ -229,7 +233,7 @@ bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPh
 bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2));}
 
 /*
-* @brief Tri des dalles source en paquets de dalles superposables (memes phases et reolsuions en x et y)A
+* @brief Tri des dalles source en paquets de dalles superposables (memes phases et resolutions en x et y)
 * @param ImageIn : vecteur contenant les images non triees
 * @param pTabImageIn : tableau de vecteurs conteant chacun des images superposables
 * @return 0 en cas de succes, -1 sinon
@@ -238,23 +242,28 @@ bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPh
 int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {
 	std::vector<Image*> vTmp;
+	
 	// Initilisation du tableau de sortie
 	pTabImageIn->push_back(ImageIn);
 
 	// Creation de vecteurs contenant des images avec une resolution en x homogene
 	for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
-	{
-		std::sort(it->begin(),it->end(),InfResx);	
-		for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-			if ((*it2)->getresx()!=(*(it2+1))->getresx() && it2+2!=it->end())
-			{
-				it->assign(it->begin(),it2);
+        {
+                std::sort(it->begin(),it->end(),InfResx); 
+                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
+                        if ((*it2)->getresy()!=(*(it2+1))->getresy() && it2+2!=it->end())
+                        {
 				vTmp.assign(it2+1,it->end());
-				pTabImageIn->push_back(vTmp);
-				it++;
-			}
-	}
+                                it->assign(it->begin(),it2+1);
+                                pTabImageIn->push_back(vTmp);
 
+				return 0;
+                                it++;
+                        }
+        }
+
+//TODO : A refaire proprement
+/*
 	// Creation de vecteurs contenant des images avec une resolution en x et en y homogenes
         for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
@@ -296,7 +305,7 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
                 	        it++;
                 	}
         }
-
+*/
 	return 0;
 }
 
@@ -323,7 +332,8 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn)
 	}
 
 	extendedCompoundImageFactory ECImgfactory ;
-	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage((xmax-xmin)/(*TabImageIn.begin())->getresx(),(ymax-ymin)/(*TabImageIn.begin())->getresy() ,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn);
+	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
+	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn);
 
 	return pECI ;
 }
@@ -341,14 +351,14 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double ratiox = pImageOut->getresx() / resx ;
 	double ratioy = pImageOut->getresy() / resy ;
 	double decalx = ratiox * interpolation, decaly = ratioy * interpolation ;
-	int newwidth = int( ((xmax - xmin)/resx - 2*decalx) / ratiox );
-	int newheight = int( ((ymax - ymin)/resy - 2*decaly) / ratioy );
+
+	int newwidth = int( ((xmax - xmin)/resx - 2*decalx) / ratiox + 0.5 );
+	int newheight = int( ((ymax - ymin)/resy - 2*decaly) / ratioy + 0.5 );
 	BoundingBox<double> newbbox(xmin +decalx*resx, ymin +decaly*resy, xmax -decalx*resx, ymax -decaly*resy);
 
 	// creation de la RI en passant la newbbox sur le dernier parametre
 	ResampledImage* pRImage = new ResampledImage( (Image*) pECI, newwidth, newheight, decalx, decaly, ratiox, ratioy,
 			interpolation, newbbox );
-
 	return pRImage ;
 }
 
@@ -387,6 +397,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			pOverlayedImage.push_back( pRImage );
         	}
 	}
+
 	// Assemblage des paquets et decoupage aux dimensions de la dalle de sortie
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
 			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage))==NULL) {
@@ -427,7 +438,6 @@ int h2i(char s)
 */
 
 int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t photometric, char* nodata) {
-
         // Ouverture du fichier
         TIFF* output=TIFFOpen(pName,"w");
         if (output==NULL) {
@@ -478,7 +488,6 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 */
 
 int main(int argc, char **argv) {
-
 	char liste_dalles_filename[256], nodata[6];
 	uint16_t sampleperpixel, bitspersample, photometric;
 	int type=-1;
@@ -496,6 +505,10 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(WARN , acc);
         Logger::setAccumulator(ERROR, acc);
         Logger::setAccumulator(FATAL, acc);
+
+	std::ostream &log = LOGGER(DEBUG);
+        log.precision(18);
+	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,photometric)<0){
@@ -523,6 +536,7 @@ int main(int argc, char **argv) {
 	}
 
 	// Fusion des paquets de dalles
+
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
 	}
