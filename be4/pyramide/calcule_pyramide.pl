@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 
+### IMPORTATION DE MODULES EXTERNES
 use strict;
 use cache(
 	'$base_param',
@@ -9,8 +10,6 @@ use cache(
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
-# 	'%produit_format_param',
-# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -26,11 +25,13 @@ use cache(
 use Getopt::Std;
 use XML::Simple;
 use File::Basename;
-use List::Util qw( max );
+use List::Util qw( max min );
 use POSIX qw(ceil floor);
 
+### VARIABLES IMPORTEES DES MODULES EXTERNES
 # pas de bufferisation des sorties
 $| = 1;
+# Variables locales recuperees de la ligne de commande
 our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j, $opt_k, $opt_l);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
@@ -43,12 +44,11 @@ my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
 my $nom_fichier_first_jobs = $nom_fichier_first_jobs_param;
 my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
-# my %produit_format = %produit_format_param;
-# my $path_tms = $path_tms_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
-################################################################################
+
+### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
 # verification de l'existence de fichiers et repertoires annexes
 if(!(-e $dalle_no_data && -f $dalle_no_data)){
@@ -59,10 +59,6 @@ if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
 	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_mtd est introuvable.\n";
 	exit;
 }
-# if(!(-e $path_tms && -d $path_tms)){
-# 	print "[CALCULE_PYRAMIDE] Le repertoire $path_tms est introuvable.\n";
-# 	exit;
-# }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
 my $verif_programme_dalle_base = `which $programme_dalles_base`;
 if ($verif_programme_dalle_base eq ""){
@@ -92,7 +88,7 @@ open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $lo
 
 &ecrit_log("commande : @ARGV");
 
-#### recuperation des parametres
+#### RECUPERATION DES PARAMETRES DE LA LIGNE DE COMMANDE
 getopts("p:f:x:m:s:d:r:n:t:j:k:l:");
 
 if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j) ){
@@ -129,30 +125,32 @@ if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r an
 	exit;
 }
 
-my $produit = $opt_p;
-my $ss_produit;
-my $fichier_dalle_source = $opt_f;
-my $fichier_mtd_source;
+### DECLARATIONS DE VARIABLES
+my $produit = $opt_p;			# Ex : ortho, scan
+my $ss_produit;				# Ex : scan25
+my $fichier_dalle_source = $opt_f;	# Ex : Fichier issu de prepare_pyramide.pl qui contient toutes les caracteristiques de dalles sources
+my $fichier_mtd_source;			# Idem pour les mtd
 if (defined $opt_m){
 	$fichier_mtd_source = $opt_m;
 }
-my $fichier_pyramide = $opt_x;
+my $fichier_pyramide = $opt_x;		# .pyr
 my $systeme_source = "IGNF:".$opt_s;
 my $pourcentage_dilatation = $opt_d;
 my $dilatation_reproj = $opt_r;
-my $nom_script = $opt_n;
-my $taille_dalle_pix = $opt_t;
-my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix, $taille_dalle_pix);
-my $nombre_jobs = $opt_j;
-my $localisation_serveur_rok4;
+my $nom_script = $opt_n;		# prefixe des scripts qui vont etre crees
+my $taille_dalle_pix = $opt_t;		# taille des dalles du cache en pixel (ex:4096)
+my ($taille_image_pix_x, $taille_image_pix_y) = ($taille_dalle_pix, $taille_dalle_pix);		# dedoublement du parametre precedent en x et y
+my $nombre_jobs = $opt_j;		
+my $localisation_serveur_rok4;		# ex : http://deuchars.ign.fr/rok4/bin/rok4
 if(defined $opt_k){
 	$localisation_serveur_rok4 = $opt_k;
 } 
-my $nom_layer_pour_requetes_wms;
+my $nom_layer_pour_requetes_wms;	# Nom du layer WMS dans lequel on recupere par WMS des dalles source
 if(defined $opt_l){
 	$nom_layer_pour_requetes_wms = $opt_l;
 }
-# verifications des parametres
+
+### VERIFICATION DES VARIABLES
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
 	print "[CALCULE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
@@ -201,16 +199,22 @@ if ($nombre_jobs !~ /^\d+$/ && $nombre_jobs > 0){
 	print "[CALCULE_PYRAMIDE] Le nombre de batchs -j $nombre_jobs est incorrect.\n";
 	exit;
 }
-########### traitement
+
+### TRAITEMENT
+
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = "../tmp/CALCULE_PYRAMIDE_".$time;
 mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoire $rep_temp.";
 my $string_script_creation_rep_temp = "if [ ! -d \"$rep_temp\" ] ; then mkdir $rep_temp ; fi\n";
 my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
 
-# action 1 : recuperer les infos de la pyramide
+# ACTION 1 : recuperer les infos de la pyramide
 &ecrit_log("Lecture de la pyramide $fichier_pyramide.");
+
+# Lecture du fichier .pyr
 my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
+
+# Variables recuperees du .pyr
 my @niveaux_ranges = @{$ref_niveau_ordre_croissant};
 my %niveau_repertoire_image = %{$ref_rep_images};
 my %niveau_repertoire_mtd = %{$ref_rep_mtd};
@@ -222,17 +226,20 @@ my %niveau_origine_y = %{$ref_origine_y};
 my %niveau_profondeur = %{$ref_profondeur};
 my %niveau_taille_tuile_x = %{$ref_taille_tuile_x};
 my %niveau_taille_tuile_y = %{$ref_taille_tuile_y};
+
 my $level_min = $niveaux_ranges[0];
 my $res_min = $niveau_res{"$level_min"};
+
 my $indice_niveau_max = @niveaux_ranges - 1;
 my $level_max = $niveaux_ranges[$indice_niveau_max];
 my $res_max = $niveau_res{"$level_max"};
 
-# liste des dalles liens (cles seulement)
+# liste des dalles liens, cad qui sont des liens symboliques (cles seulement)
 my @reps_toutes_dalles_liens = (values %niveau_repertoire_image, values %niveau_repertoire_mtd);
 my $ref_dalles_liens = &liste_liens(\@reps_toutes_dalles_liens);
 my %dalles_liens = %{$ref_dalles_liens};
 
+# Emprise du niveau max (le plus haut, de resolution max)
 my $x_min_niveau_max = $niveau_origine_x{"$level_max"};
 my $y_max_niveau_max = $niveau_origine_y{"$level_max"};
 my $x_max_niveau_max = $x_min_niveau_max + $niveau_taille_m_x{"$level_max"};
@@ -250,13 +257,14 @@ if($format_imgs_pyramide =~ /jpg/i){
 	$compress = "none";
 }
 
-# determination d'une reprojection
+# Faut-il une reprojection?
 my $bool_reprojection = 0;
 if($systeme_source ne $systeme_target){
 	$bool_reprojection = 1;
 }
 
-# on regarde que la localisation du serveur et du layer sont renseigne s'il y a perte et/ou reprojection
+# on regarde que la localisation du serveur et du layer sont renseignes s'il y a perte et/ou reprojection (donc recours au WMS)
+# car ces parametres sont necessaires pour faire du WMS
 if(!($bool_perte == 0 && $bool_reprojection == 0)){
 	my $bool_presence_param = 1;
 	if(! defined $localisation_serveur_rok4){
@@ -273,10 +281,14 @@ if(!($bool_perte == 0 && $bool_reprojection == 0)){
 	}
 }
 
-# action 2 : lire le fichier de dalles source et des mtd
-# => bbox des donnees, hashes des xmin, xmax, ymin, ymax, resx, resy
+# ACTION 2 : lire le fichier de dalles source et des mtd
+# => bbox de l'ensemble des dalles sources, et hashes des xmin, xmax, ymin, ymax, resx, resy pour chaque dalle source
 &ecrit_log("Lecture du fichier d'images source $fichier_dalle_source.");
+
+# Lecture du fichier des dalles source
 my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $resolution_minimum_source, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &lecture_fichier_dalles_source($fichier_dalle_source, 1);
+
+# Variables recuperees
 my %source_x_min = %{$reference_hash_x_min};
 my %source_x_max = %{$reference_hash_x_max};
 my %source_y_min = %{$reference_hash_y_min};
@@ -284,7 +296,8 @@ my %source_y_max = %{$reference_hash_y_max};
 my %source_res_x = %{$reference_hash_res_x};
 my %source_res_y = %{$reference_hash_res_y};
 my @dalles_source = keys %source_x_min; # ou un autre
-# mtd seulement si definies
+
+# variables pour les mtd seulement si definies
 my ($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y);
 my %mtd_source_x_min;
 my %mtd_source_x_max;
@@ -294,6 +307,8 @@ my %mtd_source_res_x;
 my %mtd_source_res_y ;
 my @mtd_source;
 my $ref_inutile2;
+
+# Idem avec les mtd
 if (defined $fichier_mtd_source){
 	&ecrit_log("Lecture du fichier de mtd source $fichier_mtd_source.");
 	($ref_hash_x_min, $ref_hash_x_max, $ref_hash_y_min, $ref_hash_y_max, $ref_hash_res_x, $ref_hash_res_y, $ref_inutile2) = &lecture_fichier_dalles_source($fichier_mtd_source, 0);
@@ -306,51 +321,68 @@ if (defined $fichier_mtd_source){
 	@mtd_source = keys %mtd_source_x_min;
 }
 
-# action 3 : determination de la resolution_min utile (la res max est celle de la pyramide)
-# iniitlalisee a la resolution min de la pyramide
-my $res_min_utile = $res_min;
+# ACTION 3 : determination de la resolution_min utile (la res max est celle de la pyramide)
+# et du niveau minimum utile
+# cad le niveau de la pyr a partir duquel on va faire les calculs
 
-# ATTENTION : au cas ou toutes les reoslution ne sont pas identiques, on prend la plus petite
+# initialisation au niveau min de la pyramide
+my $res_min_utile = $res_min;
+my $level_min_utile = $level_min;
+my $indice_level_min_utile = 0;
+
+# ATTENTION : au cas ou toutes les resolutions des dalles source ne sont pas identiques, on prend la plus petite
 # (issue de lecture_fichier_dalles_source)
 
 # comparaison avec les niveaux de la pyr
 # la plus grande resolution de la pyramide inferieure ou egale a la resolution source
-foreach my $niveau(keys %niveau_res){
-	if($niveau_res{"$niveau"} > $res_min_utile && $niveau_res{"$niveau"} <= $resolution_minimum_source){
-		$res_min_utile = $niveau_res{"$niveau"};
+for (my $indice_niveau_temp = 0; $indice_niveau_temp < @niveaux_ranges ; $indice_niveau_temp ++){
+	if($niveau_res{"$niveaux_ranges[$indice_niveau_temp]"} > $res_min_utile && $niveau_res{"$niveaux_ranges[$indice_niveau_temp]"} <= $resolution_minimum_source){
+		$level_min_utile = $niveaux_ranges[$indice_niveau_temp];
+		$res_min_utile = $niveau_res{"$level_min_utile"};
+		$indice_level_min_utile = $indice_niveau_temp;
 	}
 }
 
-# action 4 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
+# ACTION 4 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
+# C'est a partir de ce niveau qu'on fait des calculs d'arbre
+
+# Fonction qui determine le niveau de travail
 my ($ref_liste_niveau_travail, $ref_travail_x_min, $ref_travail_x_max, $ref_travail_y_min, $ref_travail_y_max, $ref_liste_niveau_max, $ref_niv_max_x_min, $ref_niv_max_x_max, $ref_niv_max_y_min, $ref_niv_max_y_max, $res_travail, $indice_travail, $niveau_travail) = &infos_niveau_travail_niveau_max($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $x_min_niveau_max, $y_max_niveau_max, $res_max, $taille_image_pix_x, $taille_image_pix_y, $indice_niveau_max, $level_max, $systeme_source, $systeme_target);
 
+# Liste des dalles du niveau de travail sous forme d'indice d'arbre (Ex : 300213)
 my @liste_dalles_arbre_niveau_travail = @{$ref_liste_niveau_travail};
+# Hash des dalles du niveau de travail avec les coordonnees des dalles
 my %dalle_travail_x_min = %{$ref_travail_x_min};
 my %dalle_travail_x_max = %{$ref_travail_x_max};
 my %dalle_travail_y_min = %{$ref_travail_y_min};
 my %dalle_travail_y_max = %{$ref_travail_y_max};
 
+# Idem sur le niveau max
 my @liste_dalles_arbre_niveau_max = @{$ref_liste_niveau_max};
 my %dalle_niveau_max_x_min = %{$ref_niv_max_x_min};
 my %dalle_niveau_max_x_max = %{$ref_niv_max_x_max};
 my %dalle_niveau_max_y_min = %{$ref_niv_max_y_min};
 my %dalle_niveau_max_y_max = %{$ref_niv_max_y_max};
 
-# action 5 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
+# ACTION 5 : creer arbre : cree_arbre_dalles_cache pour chaque dalle du niveau de travail
+# Determine un arbre descendant jusqu'au niveau minimum utile pour chaque dalle du niveau de travail
 
-# liste des scripts en first ou last
+# liste des scripts en first (les 16 -ou n- premiers jobs a etre executes avant le 17eme -ou le n+1eme) ou last (le denier job)
 my @scripts_first;
 my @scripts_last;
 
 # liste des dalles calculees (cles seulement)
+# cad celles qui recouvrent les dalles source
 my %dalles_calculees;
-
+# hash de ces dalles pour stocker leurs emprises et res
 my %cache_arbre_x_min;
 my %cache_arbre_x_max;
 my %cache_arbre_y_min;
 my %cache_arbre_y_max;
 my %cache_arbre_res;
+
 # correspondance entre index de la dalle cache dans l'arbre et liste des dalles source recouvrantes
+# cad pour chaque dalle de l'arbre, on asscoie les dalles source en recouvrement
 my %index_arbre_liste_dalle;
 my %index_arbre_liste_mtd;
 # seules les cles sont utilisees
@@ -358,16 +390,25 @@ my %dalles_cache_plus_bas;
 my %dalle_arbre_niveau;
 my %dalle_arbre_indice_niveau;
 # pour la transfo vers cache
+# liste des dalles de l'arbre qui vont etre calculees ( et integrees au cache) sous forme d'index dans l'arbre !!!
 my @liste_dalles_cache_index_arbre;
+# Association dalle cache du niveau mimum utile (donc a calculer) avec la liste des dalles source recouvrantes
 my %dalle_cache_min_liste_dalle;
+# Idem pour les mtd
 my %mtd_cache_min_liste_mtd;
+# Association de chaque dalle cache a calculer avec les 4 dalles en dessous
 my %dalle_cache_dessous;
+# Association niveau (clé) avec la liste de sdalles du niveau inferieur
 my %niveau_ref_dalles_inf;
+# Idem mtd
 my %niveau_ref_mtd_inf;
+# Hash nom de la dalle cache (nomenclature finale) avec le nom de la dalle cache en base36
 my %nom_dalle_index_base;
 
+### Boucle sur les dalles du niveau de travail
 foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
-	
+
+	# Chaine de caracteres correspondant a la ligne a rajouter dans le script	
 	my $string_script_this = "";
 	my $nombre_dalles_creees_script = 0;
 	
@@ -390,19 +431,24 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	%niveau_ref_dalles_inf = ();
 	%niveau_ref_mtd_inf = ();
 	%nom_dalle_index_base = ();
-	
+
+	# Aliases pour simplifier	
 	my $x_min_dalle0 = $dalle_travail_x_min{"$dalle_arbre_niveau_travail"};
 	my $x_max_dalle0 = $dalle_travail_x_max{"$dalle_arbre_niveau_travail"};
 	my $y_min_dalle0 = $dalle_travail_y_min{"$dalle_arbre_niveau_travail"};
 	my $y_max_dalle0 = $dalle_travail_y_max{"$dalle_arbre_niveau_travail"};
+	# Resolution du niveau de travail
 	my $res_dalle0 = $res_travail;
+	# Indice du niveau de travail
+	# Indice d'un niveau : rang (en base 0) du niveau dans une liste des niveaux ordonnee par resolutions croissantes
 	my $indice_niveau0 = $indice_travail;
 	my $level_niveau0 = $niveau_travail;
-	# initialisation pour la dalle0
+
+	# initialisation pour la dalle0 (cad la dalle courante de la boucle)
 	$dalle_arbre_niveau{"dalle0"} = $level_niveau0;
 	$dalle_arbre_indice_niveau{"dalle0"} = $indice_niveau0;
 	
-	#recursivite descendante et mise en memoire pour chacune des dalles cache
+	# recursivite descendante et mise en memoire pour chacune des dalles cache
 	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_travail.");
 	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min_utile, $res_dalle0);
 	&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
@@ -415,9 +461,10 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	# transformation des index dans l'arbre en nom des dalles cache
 	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 	&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_travail aux donnees cache.");
-	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);	
-	
-	#action 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
+	print "AAA $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0\n";
+	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);
+
+	# ACTION 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
 	&ecrit_log("Definition des images du niveau le plus bas.");
 	my ($nombre_dalles_minimum_calc, $string_script_niveau_min_img) = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_temp, "image");
 	$string_script_this .= $string_script_niveau_min_img;
@@ -431,15 +478,16 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 		&ecrit_log("$nombre_mtd_minimum_calc mtd du plus bas niveau a calculer.");
 	}
 	
-	# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
+	# ACTION 7 : calculer les niveaux inferieurs du (niveau minimum utile + 1) jusqu'au niveau de travail
+	my $indice_premier_niveau_inferieur = $indice_level_min_utile + 1;
 	&ecrit_log("Definition des images des niveaux inferieurs.");
-	my ($nombre_dalles_niveaux_inf, $string_script_niveaux_inf_img) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", 1, $indice_niveau0);
+	my ($nombre_dalles_niveaux_inf, $string_script_niveaux_inf_img) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", $indice_premier_niveau_inferieur, $indice_niveau0);
 	$string_script_this .= $string_script_niveaux_inf_img;
 	$nombre_dalles_creees_script += $nombre_dalles_niveaux_inf;
 	&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd des niveaux inferieurs.");
-		my ($nombre_mtd_niveaux_inf, $string_script_niveaux_inf_mtd) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", 1, $indice_niveau0);
+		my ($nombre_mtd_niveaux_inf, $string_script_niveaux_inf_mtd) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", $indice_premier_niveau_inferieur, $indice_niveau0);
 		$string_script_this .= $string_script_niveaux_inf_mtd;
 		$nombre_dalles_creees_script += $nombre_mtd_niveaux_inf;
 		&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
@@ -460,7 +508,7 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	
 }
 
-# action 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
+### ACTION 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
 my $string_script4 = "";
 my $nombre_dalles_job17 = 0;
 foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
@@ -485,6 +533,7 @@ foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
 	%niveau_ref_mtd_inf = ();
 	%nom_dalle_index_base = ();
 	
+	# Aliases	
 	my $x_min_dalle0 = $dalle_niveau_max_x_min{"$dalle_arbre_niveau_max"};
 	my $x_max_dalle0 = $dalle_niveau_max_x_max{"$dalle_arbre_niveau_max"};
 	my $y_min_dalle0 = $dalle_niveau_max_y_min{"$dalle_arbre_niveau_max"};
@@ -715,10 +764,12 @@ sub xy2index10{
 	return @index10;
 }
 ################################################################################
+# Exprimer un nombre en base 36
 sub nb2base{
 
 	my $base_utilisee = $_[0];
-	my $nb_a_convertir = $_[1];
+	# Arrondi
+	my $nb_a_convertir = int($_[1]+0.5);
 	my $nb_base = "";
 	
 	# reste de la division euclidienne %
@@ -751,42 +802,7 @@ sub formate_zero_base{
 	return $variable;
   
 }
-################################################################################
-# sub complete_pyramide_initiale{
-# 
-# 	my $ref_list_dal_cach = $_[0];
-# 	my @liste_dalles = @{$ref_list_dal_cach};
-# 	my $type_dal = $_[1];
-# 	
-# 	my $nombre_dalles_ajoutees = 0;
-# 	
-# 	foreach my $dalle_cache(@liste_dalles){
-# 		if (!(-e $dalle_cache)){
-# 			my $dalle_a_copier;
-# 			if($type_dal eq "image"){
-# 				$dalle_a_copier = $dalle_no_data;
-# 			}elsif($type_dal eq "mtd"){
-# 				$dalle_a_copier = $dalle_no_data_mtd;
-# 			}else{
-# 				print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type_dal incorrect.";
-# 				exit;
-# 			}
-# 			ecrit_log("Creation des eventuels repertoires manquants.");
-# 			&cree_repertoires_recursifs(dirname($dalle_cache));
-# 			my $return = copy($dalle_a_copier, $dalle_cache);
-# 			if ($return == 0){
-# 				&ecrit_log("ERREUR a la copie de $dalle_a_copier vers $dalle_cache");
-# 			}else{
-# 				&ecrit_log("Copie de $dalle_a_copier vers $dalle_cache");
-# 				$nombre_dalles_ajoutees += 1;
-# 				
-# 			}
-# 			
-# 		}
-# 	}
-# 	
-# 	return $nombre_dalles_ajoutees;
-# }
+
 ################################################################################
 sub indice_arbre2xy{
 	
@@ -991,7 +1007,6 @@ sub definit_bloc_dalle{
 	
 	# on tronconne direct en ne mettant que les dalles interessantes :
 	# dans les niveaux utiles
-	# TODO remplacer $res_max et $res_min par les vraies des niveaux utiles
 	if( ($res_dalle <= $res_max_calcul) && ($res_dalle >= $res_min_calcul) ){
 		if ($type eq "mtd"){
 			$index_arbre_liste_mtd{$id_dalle} = \@dalles_recouvrantes;
@@ -1004,7 +1019,7 @@ sub definit_bloc_dalle{
 	}
 	
 	# on regarde si la dalle cache est dans la resolution_min
-	if($res_dalle == $res_min){
+	if($res_dalle == $res_min_utile){
 		# la dalle cache est une dalle a faire a partir de dalles source
 		$dalles_cache_plus_bas{$id_dalle} = "toto";
 		return $nombre_dalles_traitees;
@@ -1259,7 +1274,7 @@ sub calcule_niveaux_inferieurs{
 			my $niveau_termine = $niveaux_ranges[$i - 1];
 			my @dalles_change_format;
 			# si c'est le niveau le plus bas on n'a pas le hash
-			if($niveau_termine eq "$level_min" && defined $ref_niveau_bas){
+			if($niveau_termine eq "$level_min_utile" && defined $ref_niveau_bas){
 				@dalles_change_format = keys %{$ref_niveau_bas};
 			}elsif(defined $hash_niveau_liste{"$niveau_termine"}){
 				@dalles_change_format = @{$hash_niveau_liste{"$niveau_termine"}};
@@ -1606,7 +1621,10 @@ sub reproj_rectangle{
 	
 	return ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
 }
+
 ################################################################################
+# Renvoie une liste de dalles de caches qui vont etre calculees pour un niveau donne (qui correspond a la resolution)
+# Calcule pour l'emprise de ces dalles
 sub dalles_impactees{
 	
 	my $origine_x_dallage = $_[0];
@@ -1618,7 +1636,7 @@ sub dalles_impactees{
 	my $y_min_dalles_source = $_[6];
 	my $y_max_dalles_source = $_[7];
 	my $bool_nombre = $_[8];
-	
+
 	# indice des dalles dans le dallage (commencent a 0)
 	# (i,j) <= ($x_min_dalles_source, $y_max_dalles_source)
 	# (m,n) <= ($x_max_dalles_source, $y_min_dalles_source)
@@ -1664,6 +1682,11 @@ sub dalles_impactees{
 			$hash_dalles_x_max{"$indice_dalle_arbre"} = $origine_x_dallage + (($x + 1) * $pas_x_dallage);
 			$hash_dalles_y_min{"$indice_dalle_arbre"} = $origine_y_dallage - (($y + 1) * $pas_y_dallage);
 			$hash_dalles_y_max{"$indice_dalle_arbre"} = $origine_y_dallage - ( $y * $pas_y_dallage);
+
+			if ($pas_y_dallage == 6553.6){
+				print "AAA $hash_dalles_y_min{\"$indice_dalle_arbre\"}\n";
+			}
+			
 		}
 	}
 	
@@ -1685,30 +1708,28 @@ sub formate_zero{
   
 }
 ################################################################################
+# Calcule l'indice d'une cordonnee dans un dallage
+
 sub calcule_indice_dallage{
 	
 	my $origine_coord = $_[0];
 	my $pas = $_[1];
 	my $coord = $_[2];
 	
-	my $indice;
-	
 	#indice de la dalle en ligne ou en colonne dans le dallage
-	# abs(coord - origine) = q * pas + rest on prend la valeur absolue car les y vont en descendant
-	my $rest = (abs($coord - $origine_coord)) % $pas;
-	
-	# si le reste est nul on decale d'un cran a gauche pour etre sur d'avoir tout les recouvrements
-	if($rest == 0){
-		# indice = abs(q - 1)
-		$indice = ( (abs($coord - $origine_coord)) / $pas ) - 1 ;
-	}else{
-		# indice = q
-		$indice = (abs($coord - $origine_coord) - $rest) / $pas;
+
+	my $quotient = (abs($coord - $origine_coord))/$pas;
+	my $indice = floor($quotient);
+	if (abs($quotient-$indice)<0.0000001){
+		$indice -= 1;
 	}
-	
+
 	return $indice;
 }
+
 ################################################################################
+# Renvoie des infos sur le niveau de travail et le niveau maxi
+
 sub infos_niveau_travail_niveau_max{
 	
 	my $x_min_source = $_[0];
@@ -1752,14 +1773,15 @@ sub infos_niveau_travail_niveau_max{
 		$pas_y /= 2;
 		$nombre_dalles_impactees = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 1);
 	}
-	# infos du niveau d'elagage
+	# infos du niveau d'elagage (cad de travail)
 	my ($ref_liste_dalles_impactees, $ref_hash_x_min_travail, $ref_hash_x_max_travail, $ref_hash_y_min_travail, $ref_hash_y_max_travail) = &dalles_impactees($x_min_niveau_maxi, $y_max_niveau_maxi, $pas_x, $pas_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source, 0);
+
 	my @liste_dalles_niveau_travail = @{$ref_liste_dalles_impactees};
 	my %dal_travail_x_min = %{$ref_hash_x_min_travail};
 	my %dal_travail_x_max = %{$ref_hash_x_max_travail};
 	my %dal_travail_y_min = %{$ref_hash_y_min_travail};
 	my %dal_travail_y_max = %{$ref_hash_y_max_travail};
-	
+
 	return (\@liste_dalles_niveau_travail, \%dal_travail_x_min, \%dal_travail_x_max, \%dal_travail_y_min, \%dal_travail_y_max, \@liste_dalles_niveau_max, \%dal_niveau_max_x_min, \%dal_niveau_max_x_max, \%dal_niveau_max_y_min, \%dal_niveau_max_y_max, $res_temp, $indice_level_temp, $niveau_temp);
 	
 }

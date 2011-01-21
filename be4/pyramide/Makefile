@@ -17,6 +17,8 @@ all: makedir
 	cp $(PLSCRIPTS) $(BINDIR)
 	cp $(PLMODULES) $(BINDIR)
 	cp $(IMGSHARE) $(SHAREPYRAMIDEDIR)
+	pngs="`ls $(SHAREPYRAMIDEDIR)/*.tif | grep _png`";for png in `echo $(pngs)`;do pngout=`echo $(png) | sed -e 's#_png##'`;`echo $(png)`;done; 
+	#$(BINDIR)/tiffcp -c none $(png) $(pngout);done;
 	cp gdalinfo $(BINDIR)
 	chmod +x $(BINDIR)/*.pl
 	chmod +x $(BINDIR)/gdalinfo
