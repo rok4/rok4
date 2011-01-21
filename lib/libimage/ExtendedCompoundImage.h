@@ -102,26 +102,33 @@ public:
 * @class ExtendedCompoundImageFactory
 * @brief Fabrique de extendedCompoundImageFactory
 * @return Un pointeur sur l'ExtendedCOmpoundImage creee, NULL en cas d'echec
-* La creation par une fabrique permet de procder a certaines verifications
+* La creation par une fabrique permet de proceder a certaines verifications
 */
+
+#define epsilon 0.001
 
 class extendedCompoundImageFactory {
 public:
 	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images)
 	{
 		uint i;
-		double intpart;
+		double intpart, phasex0, phasey0, phasex1, phasey1;
 		for (i=0;i<images.size()-1;i++)
 		{
-			if (images[i]->getresx()!=images[i+1]->getresx() || images[i]->getresy()!=images[i+1]->getresy() )
+			if ( fabs(images[i]->getresx()-images[i+1]->getresx())>epsilon || fabs(images[i]->getresy()-images[i+1]->getresy())>epsilon )
 			{
-				LOGGER_DEBUG("Les images ne sont pas toutes a la meme resolution");
+				LOGGER_DEBUG("Les images ne sont pas toutes a la meme resolution "<<images[i]->getresx()<<" "<<images[i+1]->getresx()<<" "<<images[i]->getresy()<<" "<<images[i+1]->getresy());
 				return NULL;				
 			}
-			if (modf(images[i]->getxmin()/images[i]->getresx(),&intpart)!=modf(images[i+1]->getxmin()/images[i+1]->getresx(),&intpart)
-					|| modf(images[i]->getymax()/images[i]->getresy(),&intpart)!=modf(images[i+1]->getymax()/images[i+1]->getresy(),&intpart))
+			phasex0 = modf(images[i]->getxmin()/images[i]->getresx(),&intpart);
+			phasex1 = modf(images[i+1]->getxmin()/images[i+1]->getresx(),&intpart);
+			phasey0 = modf(images[i]->getymax()/images[i]->getresy(),&intpart);
+			phasey0 = modf(images[i+1]->getymax()/images[i+1]->getresy(),&intpart);
+			if ( (fabs(phasex1-phasex0)>epsilon && ( (fabs(phasex0)>epsilon && fabs(1-phasex0)>epsilon) || (fabs(phasex1)>epsilon && fabs(1-phasex1)>epsilon)))
+			|| (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
 			{
-				LOGGER_DEBUG("Les images ne sont pas toutes en phase");
+				LOGGER_DEBUG("Les images ne sont pas toutes en phase "<<phasex0<<" "<<phasex1<<" "<<phasey0<<" "<<phasey1);
+				LOGGER_DEBUG("ZZZ "<<fabs(phasey1-phasey0)<<" "<<fabs(phasey0)<<" "<<fabs(1-phasey0)<<" "<<fabs(phasey1)<<" "<<fabs(1-phasey1));
 				return NULL;
 			}
 		}
