@@ -251,12 +251,11 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
         {
                 std::sort(it->begin(),it->end(),InfResx); 
                 for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                        if ((*it2)->getresy()!=(*(it2+1))->getresy() && it2+2!=it->end())
+                        if ((*it2)->getresy()!=(*(it2+1))->getresy())
                         {
 				vTmp.assign(it2+1,it->end());
                                 it->assign(it->begin(),it2+1);
                                 pTabImageIn->push_back(vTmp);
-
 				return 0;
                                 it++;
                         }
