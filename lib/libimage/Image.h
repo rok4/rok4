@@ -66,8 +66,8 @@ class Image {
 		BoundingBox<double> inline getbbox() const {return bbox;}
 
 		/** Fonctions de passage terrain <-> image */
-		int inline x2c(double x) {return (int)((x-bbox.xmin)/resx);}
-		int inline y2l(double y) {return (int)((bbox.ymax-y)/resy);}
+		int inline x2c(double x) {return (int)((x-bbox.xmin)/resx+0.5);}
+		int inline y2l(double y) {return (int)((bbox.ymax-y)/resy+0.5);}
 		double inline c2x(int c) {return (bbox.xmin+c*resx);}
 		double inline l2y(int l) {return (bbox.ymax-l*resy);}
 
