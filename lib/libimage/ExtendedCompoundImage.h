@@ -36,6 +36,7 @@ class ExtendedCompoundImage : public Image {
 private:
 
 	std::vector<Image*> images;
+	uint8_t nodata;
 
 	/**
 	@fn _getline(T* buffer, int line)
@@ -47,6 +48,8 @@ private:
 
 	template<typename T>
 	int _getline(T* buffer, int line) {
+		for (int i=0;i<width*channels;i++)
+			buffer[i]=(T)nodata;
 		double y=l2y(line);
 		for (uint i=0;i<images.size();i++){
                         /* On écarte les images qui ne se trouvent pas sur la ligne*/
@@ -65,7 +68,6 @@ private:
                                    &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
                                    (c1-c0)*channels*sizeof(T));
                         delete [] buffer_t;
-
 		}
 		return width*channels*sizeof(T);
 	}
@@ -77,9 +79,10 @@ protected:
   	* Les Image sont detruites ensuite en meme temps que l'objet
   	* Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata) :
 		Image(width, height, channels,bbox),
-		images(images) {}
+		images(images),
+		nodata(nodata) {}
 
 public:
 	/** Implementation de getline pour les uint8_t */
@@ -108,7 +111,7 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images)
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata)
 	{
 		uint i;
 		double intpart, phasex0, phasey0, phasex1, phasey1;
@@ -132,7 +135,7 @@ public:
 			}
 		}
 
-		return new ExtendedCompoundImage(width,height,channels,bbox,images);
+		return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata);
 	}
 };
 
