@@ -50,7 +50,7 @@ void usage() {
 
 /* Lecture des parametres de la ligne de commande */
 
-int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& photometric) {
 
 	if (argc != 15) {
 		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
@@ -108,6 +108,52 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 	}
 
 	return 0;
+}
+
+/*
+* @brief Enregistrement d'une image TIFF
+* @param Image : Image a enregistrer
+* @param pName : nom du fichier TIFF
+* @param sampleperpixel : nombre de canaux de l'image TIFF
+* @parama bitspersample : nombre de bits par canal de l'image TIFF
+* @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
+* @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
+* TODO : gerer tous les types de couleur pour la valeur NODATA
+* @return : 0 en cas de succes, -1 sinon
+*/
+
+int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t photometric) {
+        // Ouverture du fichier
+        TIFF* output=TIFFOpen(pName,"w");
+        if (output==NULL) {
+                LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
+                return -1;
+        }
+
+        // Ecriture de l'en-tete
+        TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
+        TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
+        TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
+        TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
+        TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
+        TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+        TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+        TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
+        TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
+
+        // Initilisation du buffer
+        unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
+
+        // Ecriture de l'image
+        for( int line = 0; line < pImage->height; line++) {
+                pImage->getline(buf_line,line);
+                TIFFWriteScanline(output, buf_line, line, 0); // en contigu (entrelace) on prend chanel=0 (!)
+        }
+
+        // Liberation
+        _TIFFfree(buf_line);
+        TIFFClose(output);
+        return 0;
 }
 
 /* Lecture d une ligne du fichier de dalles */
@@ -308,13 +354,27 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 	return 0;
 }
 
+/* Hexadecimal -> int  */
+
+int h2i(char s)
+{
+        if('0' <= s && s <= '9')
+                return (s - '0');
+        if('a' <= s && s <= 'f')
+                return (s - 'a' + 10);
+        if('A' <= s && s <= 'F')
+                return (10 + s - 'A');
+        else
+                return -1; /* invalid input! */
+}
+
 /* 
 * @brief Assemblage de dalles superposables
 * @param TabImageIn : vecteur de dalles a assembler
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn)
+ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* nodata)
 {
 	if (TabImageIn.empty()) {
 		LOGGER_ERROR("Assemblage d'un tableau de dalles de taille nulle");
@@ -332,7 +392,8 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn)
 
 	extendedCompoundImageFactory ECImgfactory ;
 	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
-	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn);
+	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
+	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,r);
 
 	return pECI ;
 }
@@ -343,7 +404,7 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn)
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation )
+ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation)
 {
 	double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
 	double resx = pECI->getresx(), resy = pECI->getresy() ;
@@ -355,9 +416,9 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	int newheight = int( ((ymax - ymin)/resy - 2*decaly) / ratioy + 0.5 );
 	BoundingBox<double> newbbox(xmin +decalx*resx, ymin +decaly*resy, xmax -decalx*resx, ymax -decaly*resy);
 
-	// creation de la RI en passant la newbbox sur le dernier parametre
-	ResampledImage* pRImage = new ResampledImage( (Image*) pECI, newwidth, newheight, decalx, decaly, ratiox, ratioy,
-			interpolation, newbbox );
+	// cCreation de la RI en passant la newbbox sur le dernier parametre
+	ResampledImage* pRImage = new ResampledImage( /*(Image*)*/ pECI, newwidth, newheight, decalx, decaly, ratiox, ratioy, interpolation, newbbox );
+
 	return pRImage ;
 }
 
@@ -370,7 +431,7 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation)
+int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata)
 {
 	extendedCompoundImageFactory ECImgfactory ;
 	std::vector<Image*> pOverlayedImage;
@@ -379,7 +440,8 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		// Mise en superposition du paquet d'images en 2 etapes
 
 	        // Etape 1 : Creation d'une image composite
-        	ExtendedCompoundImage * pECI = compoundDalles(TabImageIn.at(i));
+        	ExtendedCompoundImage * pECI = compoundDalles(TabImageIn.at(i),nodata);
+
 	        if (pECI==NULL) {
         	        LOGGER_ERROR("Impossible d'assembler les images");
                 	return -1;
@@ -389,6 +451,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		else {
         		// Etape 2 : Reechantillonnage de l'image composite si necessaire
 	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation);
+
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
 	                	return -1;
@@ -398,8 +461,9 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	}
 
 	// Assemblage des paquets et decoupage aux dimensions de la dalle de sortie
+	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
-			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage))==NULL) {
+			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,r))==NULL) {
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
 		return -1;
 	}
@@ -407,79 +471,6 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 //	delete pTabResampledImage;
 
 	return 0;
-}
-
-/* Hexadecimal -> int  */
-
-int h2i(char s)
-{
-        if('0' <= s && s <= '9')
-                return (s - '0');
-        if('a' <= s && s <= 'f')
-                return (s - 'a' + 10);
-        if('A' <= s && s <= 'F')
-                return (10 + s - 'A');
-        else
-                return -1; /* invalid input! */
-}
-
-
-/*
-* @brief Enregistrement d'une image TIFF
-* @param Image : Image a enregistrer
-* @param pName : nom du fichier TIFF
-* @param sampleperpixel : nombre de canaux de l'image TIFF
-* @parama bitspersample : nombre de bits par canal de l'image TIFF
-* @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
-* @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
-* TODO : gerer tous les types de couleur pour la valeur NODATA
-* @return : 0 en cas de succes, -1 sinon
-*/
-
-int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t photometric, char* nodata) {
-        // Ouverture du fichier
-        TIFF* output=TIFFOpen(pName,"w");
-        if (output==NULL) {
-                LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
-                return -1;
-        }
-
-        // Ecriture de l'en-tete
-        TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
-        TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
-        TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
-        TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
-        TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
-        TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-        TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
-        TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
-
-        // Initilisation des buffers
-        unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
-        unsigned char * buf_nodata = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
-        unsigned char r=h2i(nodata[0])*16 + h2i(nodata[1]), g=h2i(nodata[2])*16 + h2i(nodata[3]), b=h2i(nodata[4])*16 + h2i(nodata[5]);
-        if (pImage->channels == 3 ) {
-                for (long k=0; k<(pImage->width)*3*bitspersample/8; k+=3){
-                        buf_nodata[k]=r; buf_nodata[k+1]=g; buf_nodata[k+2]=b;
-                }
-        } else {
-                for (long k=0; k<(pImage->width)*1*bitspersample/8; k+=1)
-                        buf_nodata[k]=r;
-        }
-
-        // Ecriture de l'image
-        for( int line = 0; line < pImage->height; line++) {
-                _TIFFmemcpy(buf_line, buf_nodata, pImage->width*pImage->channels*bitspersample/8);
-                pImage->getline(buf_line,line);
-                TIFFWriteScanline(output, buf_line, line, 0); // en contigu (entrelace) on prend chanel=0 (!)
-        }
-
-        // Liberation
-        _TIFFfree(buf_line);
-        _TIFFfree(buf_nodata);
-        TIFFClose(output);
-        return 0;
 }
 
 /**
@@ -506,7 +497,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-        log.precision(18);
+        log.precision(6);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
@@ -536,12 +527,12 @@ int main(int argc, char **argv) {
 
 	// Fusion des paquets de dalles
 
-	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation) < 0){
+	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
 	}
 
 	// Enregistrement de la dalle fusionnee
-	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric,nodata)<0){
+	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale"); return -1;
 	}
 
