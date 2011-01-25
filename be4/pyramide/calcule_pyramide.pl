@@ -461,7 +461,6 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	# transformation des index dans l'arbre en nom des dalles cache
 	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
 	&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_travail aux donnees cache.");
-	print "AAA $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0\n";
 	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);
 
 	# ACTION 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
@@ -1682,11 +1681,6 @@ sub dalles_impactees{
 			$hash_dalles_x_max{"$indice_dalle_arbre"} = $origine_x_dallage + (($x + 1) * $pas_x_dallage);
 			$hash_dalles_y_min{"$indice_dalle_arbre"} = $origine_y_dallage - (($y + 1) * $pas_y_dallage);
 			$hash_dalles_y_max{"$indice_dalle_arbre"} = $origine_y_dallage - ( $y * $pas_y_dallage);
-
-			if ($pas_y_dallage == 6553.6){
-				print "AAA $hash_dalles_y_min{\"$indice_dalle_arbre\"}\n";
-			}
-			
 		}
 	}
 	
