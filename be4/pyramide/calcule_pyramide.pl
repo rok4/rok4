@@ -770,6 +770,8 @@ sub nb2base{
 
 	my $base_utilisee = $_[0];
 	# Arrondi
+	# On choisit la fonction int plutot que floor pour etre sur de recuperer un entier
+	# Ajouter 0.5 permet d'arrondir a coup sur
 	my $nb_a_convertir = int($_[1]+0.5);
 	my $nb_base = "";
 	
@@ -1683,8 +1685,6 @@ sub dalles_impactees{
 			$hash_dalles_x_max{"$indice_dalle_arbre"} = $origine_x_dallage + (($x + 1) * $pas_x_dallage);
 			$hash_dalles_y_min{"$indice_dalle_arbre"} = $origine_y_dallage - (($y + 1) * $pas_y_dallage);
 			$hash_dalles_y_max{"$indice_dalle_arbre"} = $origine_y_dallage - ( $y * $pas_y_dallage);
-			}
-			
 		}
 	}
 	
