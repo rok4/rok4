@@ -10,6 +10,8 @@ use cache(
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
+# 	'%produit_format_param',
+# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -1094,7 +1096,7 @@ sub calcule_niveau_minimum {
 				#if (-e $dalle_cache ){
 				# avec le script il faut faire autrement
 				if (exists $dalles_liens{$dalle_cache} ){
-					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_cache $nom_dalle_temp\n";
+					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n";
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
@@ -1681,6 +1683,8 @@ sub dalles_impactees{
 			$hash_dalles_x_max{"$indice_dalle_arbre"} = $origine_x_dallage + (($x + 1) * $pas_x_dallage);
 			$hash_dalles_y_min{"$indice_dalle_arbre"} = $origine_y_dallage - (($y + 1) * $pas_y_dallage);
 			$hash_dalles_y_max{"$indice_dalle_arbre"} = $origine_y_dallage - ( $y * $pas_y_dallage);
+			}
+			
 		}
 	}
 	
@@ -1792,7 +1796,8 @@ sub liste_liens{
 		foreach my $fichier(@fichiers){
 			next if ($fichier =~ /^\.\.?$/);
 			if(-l "$rep/$fichier"){
-				$hash_liens{"$rep/$fichier"} = "toto";
+				my $fichier_pointe = readlink("$rep/$fichier");
+				$hash_liens{"$rep/$fichier"} = $fichier_pointe;
 			}elsif(-d "$rep/$fichier"){
 				my @tab_temp = ("$rep/$fichier");
 				my %hash_temp = %{&liste_liens(\@tab_temp)};
