@@ -12,6 +12,7 @@
 #include <cstring>
 #include "Logger.h"
 #include "math.h"
+#include "Utils.h"
 
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
@@ -36,6 +37,7 @@ class ExtendedCompoundImage : public Image {
 private:
 
 	std::vector<Image*> images;
+	std::vector<Image*> masks;
 	uint8_t nodata;
 
 	/**
@@ -48,25 +50,40 @@ private:
 
 	template<typename T>
 	int _getline(T* buffer, int line) {
-		for (int i=0;i<width*channels;i++)
+		unsigned int i;
+		for (i=0;i<width*channels;i++)
 			buffer[i]=(T)nodata;
 		double y=l2y(line);
-		for (uint i=0;i<images.size();i++){
-                        /* On écarte les images qui ne se trouvent pas sur la ligne*/
+		for (i=0;i<images.size();i++){
+                        // On ecarte les images qui ne se trouvent pas sur la ligne
                         if (images[i]->getymin()>=y||images[i]->getymax()<y)
                                 continue;
                         if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
                                 continue;
-                 	/* c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
+
+                 	// c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
                         int c0=__max(0,x2c(images[i]->getxmin()));
-                        /* c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante */
+                        // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
                         int c1=__min(width,x2c(images[i]->getxmax()));
+
+			// c2 : indicde de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
+			int c2=-(__min(0,x2c(images[i]->getxmin())));
 
                         T* buffer_t = new T[images[i]->width*images[i]->channels];
                         images[i]->getline(buffer_t,images[i]->y2l(y));
-                        memcpy(&buffer[c0*channels],
-                                   &buffer_t[-(__min(0,x2c(images[i]->getxmin())))*channels],
-                                   (c1-c0)*channels*sizeof(T));
+		
+			if (masks.empty())
+	                        memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
+			else{
+				unsigned int j;
+				uint8_t* buffer_m = new uint8_t[masks[i]->width];
+				masks[i]->getline(buffer_m,masks[i]->y2l(y));
+				for (j=0;j<c1-c0;j++)
+					if (buffer_m[c2+j]==255)
+                                           memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
+				delete buffer_m;
+			}
+
                         delete [] buffer_t;
 		}
 		return width*channels*sizeof(T);
@@ -84,7 +101,15 @@ protected:
 		images(images),
 		nodata(nodata) {}
 
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata) :
+                Image(width, height, channels,bbox),
+		images(images),
+                masks(masks),
+		nodata(nodata) {}
+
 public:
+	std::vector<Image*>* getimages() {return &images;}
+
 	/** Implementation de getline pour les uint8_t */
 	int getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
 
@@ -130,13 +155,79 @@ public:
 			|| (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
 			{
 				LOGGER_DEBUG("Les images ne sont pas toutes en phase "<<phasex0<<" "<<phasex1<<" "<<phasey0<<" "<<phasey1);
-				LOGGER_DEBUG("ZZZ "<<fabs(phasey1-phasey0)<<" "<<fabs(phasey0)<<" "<<fabs(1-phasey0)<<" "<<fabs(phasey1)<<" "<<fabs(1-phasey1));
 				return NULL;
 			}
 		}
 
 		return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata);
 	}
+
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks,uint8_t nodata)
+	{
+		// TODO : controler que les images et les masques sont superposables a l'image
+		return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata);
+	}
+};
+
+/*
+* @class ExtendedCompoundMaskImage
+* @brief Masque d'une ExtendedCompoundImage
+* 1 : si une image occupe un pixel, 0 sinon
+*/
+
+class ExtendedCompoundMaskImage : public Image {
+
+private:
+        ExtendedCompoundImage* ECI;
+
+        /**
+        @fn _getline(uint8_t* buffer, int line)
+        @brief Remplissage iteratif d'une ligne
+        @param le numero de la ligne
+        @return le nombre d'octets de la ligne
+        */
+
+        int _getline(uint8_t* buffer, int line) {
+                memset(buffer,0,width*channels);
+                double y=l2y(line);
+                for (uint i=0;i<ECI->getimages()->size();i++){
+                        // On ecarte les images qui ne se trouvent pas sur la ligne
+                        if (ECI->getimages()->at(i)->getymin()>=y||ECI->getimages()->at(i)->getymax()<y)
+                                continue;
+                        if (ECI->getimages()->at(i)->getxmin()>=getxmax()||ECI->getimages()->at(i)->getxmax()<=getxmin())
+                                continue;
+
+                        // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+                        int c0=__max(0,x2c(ECI->getimages()->at(i)->getxmin()));
+                        // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+                        int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
+
+                        memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+                }
+                return width*channels*sizeof(uint8_t);
+        }
+
+public:
+	/** Constructeur */
+        ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
+                Image(ECI->width, ECI->height, 1,ECI->getbbox()),
+                ECI(ECI) {}
+
+        /** Implementation de getline pour les uint8_t */
+        int getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
+	/** Implementation de getline pour les float */
+	int getline(float* buffer, int line) {
+        	uint8_t* buffer_t = new uint8_t[width*channels];
+        	getline(buffer_t,line);
+        	convert(buffer,buffer_t,width*channels);
+        	delete [] buffer_t;
+        	return width*channels;
+	}
+
+        /** Destructeur
+      Suppression des images */
+        virtual ~ExtendedCompoundMaskImage() {}
+
 };
 
 #endif
