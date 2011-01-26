@@ -22,7 +22,7 @@
 *
 * Contrainte:
 * Toutes les dalles sont dans le meme SRS (pas de reprojection)
-* FIXME : meme pixels (nombre de canaux, poids, couleurs) en entree et en sortie
+* FIXME : meme type de pixels (nombre de canaux, poids, couleurs) en entree et en sortie
 */
 
 #include <iostream>
@@ -404,20 +404,24 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation)
+ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
 	double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
-	double resx = pECI->getresx(), resy = pECI->getresy() ;
-	double ratiox = pImageOut->getresx() / resx ;
-	double ratioy = pImageOut->getresy() / resy ;
-	double decalx = ratiox * interpolation, decaly = ratioy * interpolation ;
+	double resx_src = pECI->getresx(),resy_src = pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy() ;
+	double ratiox = resx_dst / resx_src ;
+	double ratioy = resy_dst / resy_src ;
+	double offx = ratiox * interpolation, offy = ratioy * interpolation ;
 
-	int newwidth = int( ((xmax - xmin)/resx - 2*decalx) / ratiox + 0.5 );
-	int newheight = int( ((ymax - ymin)/resy - 2*decaly) / ratioy + 0.5 );
-	BoundingBox<double> newbbox(xmin +decalx*resx, ymin +decaly*resy, xmax -decalx*resx, ymax -decaly*resy);
+	int newwidth = int( ((xmax - xmin)/resx_src - 2*offx) / ratiox + 0.5 );
+	int newheight = int( ((ymax - ymin)/resy_src - 2*offy) / ratioy + 0.5 );
 
-	// cCreation de la RI en passant la newbbox sur le dernier parametre
-	ResampledImage* pRImage = new ResampledImage( /*(Image*)*/ pECI, newwidth, newheight, decalx, decaly, ratiox, ratioy, interpolation, newbbox );
+	BoundingBox<double> newbbox(xmin + resx_dst*interpolation, ymin + resy_dst*interpolation, xmax -interpolation*resx_src, ymax -interpolation*resy_dst);
+
+	// Reechantillonnage
+	ResampledImage* pRImage = new ResampledImage(pECI, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
+
+	// Reechantillonage du masque
+	resampledMask = new ResampledImage( mask, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
 
 	return pRImage ;
 }
@@ -435,35 +439,43 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 {
 	extendedCompoundImageFactory ECImgfactory ;
 	std::vector<Image*> pOverlayedImage;
+	std::vector<Image*> pMask;
 
 	for (unsigned int i=0; i<TabImageIn.size(); i++) {
 		// Mise en superposition du paquet d'images en 2 etapes
 
 	        // Etape 1 : Creation d'une image composite
-        	ExtendedCompoundImage * pECI = compoundDalles(TabImageIn.at(i),nodata);
+        	ExtendedCompoundImage* pECI = compoundDalles(TabImageIn.at(i),nodata);
+		ExtendedCompoundMaskImage* mask = new ExtendedCompoundMaskImage(pECI);
 
 	        if (pECI==NULL) {
         	        LOGGER_ERROR("Impossible d'assembler les images");
                 	return -1;
 	        }
 		if (areOverlayed(pImageOut,pECI))
+		{
 			pOverlayedImage.push_back(pECI);
+			pMask.push_back(mask);
+		}
 		else {
         		// Etape 2 : Reechantillonnage de l'image composite si necessaire
-	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation);
+			ResampledImage* pResampledMask;
+	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
 	                	return -1;
 			}
-			pOverlayedImage.push_back( pRImage );
+			pOverlayedImage.push_back(pRImage);
+			//saveImage(pResampledMask,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			pMask.push_back(pResampledMask);
         	}
 	}
 
 	// Assemblage des paquets et decoupage aux dimensions de la dalle de sortie
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
-			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,r))==NULL) {
+			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,r))==NULL) {
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
 		return -1;
 	}
