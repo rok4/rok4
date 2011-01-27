@@ -2,7 +2,7 @@
 <Pyramid>
 	<tileMatrixSet>LAMB93_50cm</tileMatrixSet>
 	<level>
-		<tileMatrix>0_5</tileMatrix>
+		<tileMatrix>18</tileMatrix>
 		<baseDir>../config/pyramids/ORTHO_JPEG_TEST/512</baseDir>
 		<format>TIFF_JPG_INT8</format>
 		<metadata type='INT32_DB_LZW'>
@@ -21,7 +21,7 @@
 		</TMSLimits>
 	</level>
 	<level>
-		<tileMatrix>1</tileMatrix>
+		<tileMatrix>17</tileMatrix>
 		<baseDir>../config/pyramids/ORTHO_JPEG_TEST/1024</baseDir>
 		<format>TIFF_JPG_INT8</format>
 		<metadata type='INT32_DB_LZW'>
