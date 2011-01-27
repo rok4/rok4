@@ -194,16 +194,16 @@ if($compression_pyramide !~ /^raw|jpeg|png$/i){
 	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
 	$bool_param_ok = 0;
 }
-if(defined $departement && $departement !~ /^\d{2,3}|2[AB]$/i){
-	print "[PREPARE_PYRAMIDE] Departement mal specifie.\n";
-	&ecrit_log("ERREUR Departement mal specifie : $departement.");
-	$bool_param_ok = 0;
-}
-if($annee !~ /^\d{4}(?:\-\d{2})?$/i){
-	print "[PREPARE_PYRAMIDE] Annee mal specifiee.\n";
-	&ecrit_log("ERREUR Annee mal specifiee : $annee.");
-	$bool_param_ok = 0;
-}
+# if(defined $departement && $departement !~ /^\d{2,3}|2[AB]$/i){
+# 	print "[PREPARE_PYRAMIDE] Departement mal specifie.\n";
+# 	&ecrit_log("ERREUR Departement mal specifie : $departement.");
+# 	$bool_param_ok = 0;
+# }
+# if($annee !~ /^\d{4}(?:\-\d{2})?$/i){
+# 	print "[PREPARE_PYRAMIDE] Annee mal specifiee.\n";
+# 	&ecrit_log("ERREUR Annee mal specifiee : $annee.");
+# 	$bool_param_ok = 0;
+# }
 if($taille_dalle_pix !~ /^\d+$/i){
 	print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
 	&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
