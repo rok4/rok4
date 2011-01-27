@@ -123,7 +123,7 @@ fi
 
 # 2.2.2. Jpeg Tile
 let NTESTS+=1
-wget  --no-proxy -O tmp.jpg "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=0_5&LAYER=ORTHO_JPEG_TEST&STYLES=&FORMAT=image/jpeg&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
+wget  --no-proxy -O tmp.jpg "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=18&LAYER=ORTHO_JPEG_TEST&STYLES=&FORMAT=image/jpeg&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_50cm&VERSION=1.0.0"
 sum="`md5sum tmp.jpg | cut -d ' ' -f 1`"
 echo $sum
 if [ "$sum" = "8f221b367d8302dcdc773698ca780ecd" ]
@@ -137,7 +137,7 @@ fi
 
 # 2.2.3. Png Tile
 let NTESTS+=1
-wget  --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=0_5&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
+wget  --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=6300&tileRow=79932&tileMatrix=18&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_50cm&VERSION=1.0.0"
 sum="`md5sum tmp.png | cut -d ' ' -f 1`"
 echo $sum
 if [ "$sum" = "9f014aaeb661494d03f81859ebcd8f44" ]
@@ -151,7 +151,7 @@ fi
 
 # 2.2.4 Nodata Tile
 let NTESTS+=1
-wget --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=3000&tileRow=80000&tileMatrix=0_5&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=FR_LAMB93&VERSION=1.0.0"
+wget --no-proxy -O tmp.png "$1?SERVICE=WMTS&REQUEST=GetTile&tileCol=3000&tileRow=80000&tileMatrix=18&LAYER=PARCELLAIRE_PNG_TEST&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_50cm&VERSION=1.0.0"
 sum="`md5sum tmp.png | cut -d ' ' -f 1`"
 echo $sum
 if [ "$sum" = "feb53fd5638f3f97f4edcc4338a0ce2a" ]

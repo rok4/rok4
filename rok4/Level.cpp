@@ -125,6 +125,7 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
 		return getwindow(bbox_int);
 	}
 
+	// Rappel : les coordonnees de la bbox sont ici en pixels
 	double ratio_x = (bbox.xmax - bbox.xmin) / width;
 	double ratio_y = (bbox.ymax - bbox.ymin) / height;
 

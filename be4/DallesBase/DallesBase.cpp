@@ -34,7 +34,6 @@
 #include <string>
 #include <fstream>
 #include "tiffio.h"
-#include "config.h"
 #include "Logger.h"
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
@@ -406,24 +405,60 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 
 ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
-	double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
-	double resx_src = pECI->getresx(),resy_src = pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy() ;
-	double ratiox = resx_dst / resx_src ;
-	double ratioy = resy_dst / resy_src ;
-	double offx = ratiox * interpolation, offy = ratioy * interpolation ;
+/*	const Kernel& K = Kernel::getInstance(interpolation);
 
-	int newwidth = int( ((xmax - xmin)/resx_src - 2*offx) / ratiox + 0.5 );
-	int newheight = int( ((ymax - ymin)/resy_src - 2*offy) / ratioy + 0.5 );
+	double xmin_src=pECI->getxmin(), ymin_src=pECI->getymin(), xmax_src=pECI->getxmax(), ymax_src=pECI->getymax();
+	double resx_src=pECI->getresx(), resy_src=pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
+	double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
-	BoundingBox<double> newbbox(xmin + resx_dst*interpolation, ymin + resy_dst*interpolation, xmax -interpolation*resx_src, ymax -interpolation*resy_dst);
+	double xmin_dst=__max(xmin_src+K.size(ratio_x),pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x),pImageOut->getxmax()),
+	       ymin_dst=__max(ymin_src+K.size(ratio_y),pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y),pImageOut->getymax());
+
+	xmin_dst/=resx_dst;
+	xmin_dst=floor(xmin_dst+0.1);
+	ymin_dst/=resy_dst;
+        ymin_dst=floor(ymin_dst+0.1);
+	xmax_dst/=resx_dst;
+        xmax_dst=ceil(xmax_dst-0.1);
+	ymax_dst/=resy_dst;
+        ymax_dst=ceil(ymax_dst-0.1);	
+	int width_dst = int(xmax_dst-xmin_dst+0.1);
+        int height_dst = int(ymax_dst-ymin_dst+0.1);	
+	xmin_dst*=resx_dst;
+	xmax_dst*=resx_dst;
+	ymin_dst*=resy_dst;
+        ymax_dst*=resy_dst;
+
+	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
+
+	BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
 
 	// Reechantillonnage
-	ResampledImage* pRImage = new ResampledImage(pECI, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
+	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
 	// Reechantillonage du masque
-	resampledMask = new ResampledImage( mask, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
+	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
-	return pRImage ;
+	return pRImage;*/
+
+        double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
+        double resx_src = pECI->getresx(),resy_src = pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy() ;
+        double ratiox = resx_dst / resx_src ;
+        double ratioy = resy_dst / resy_src ;
+        double offx = ratiox * interpolation, offy = ratioy * interpolation ;
+
+        int newwidth = int( ((xmax - xmin)/resx_src - 2*offx) / ratiox + 0.5 );
+        int newheight = int( ((ymax - ymin)/resy_src - 2*offy) / ratioy + 0.5 );
+
+        BoundingBox<double> newbbox(xmin + resx_dst*interpolation, ymin + resy_dst*interpolation, xmax -interpolation*resx_src, ymax -interpolation*resy_dst);
+
+        // Reechantillonnage
+        ResampledImage* pRImage = new ResampledImage(pECI, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
+
+        // Reechantillonage du masque
+        resampledMask = new ResampledImage( mask, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
+
+        return pRImage ;
 }
 
 /*
@@ -493,7 +528,7 @@ int main(int argc, char **argv) {
 	char liste_dalles_filename[256], nodata[6];
 	uint16_t sampleperpixel, bitspersample, photometric;
 	int type=-1;
-	Kernel::KernelType interpolation = DEFAULT_INTERPOLATION;
+	Kernel::KernelType interpolation;
 
 	LibtiffImage * pImageOut ;
 	std::vector<Image*> ImageIn;
@@ -521,7 +556,7 @@ int main(int argc, char **argv) {
 	if (type==0) {
 		LOGGER_ERROR("Le type mtd n'est pas pris en compte"); return -1;
 	}
-
+LOGGER_DEBUG("Load");
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles"); return -1;
@@ -536,13 +571,12 @@ int main(int argc, char **argv) {
 	if (sortDalles(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des dalles"); return -1;
 	}
-
+LOGGER_DEBUG("Merge");
 	// Fusion des paquets de dalles
-
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
 	}
-
+LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale"); return -1;
