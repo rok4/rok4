@@ -3,7 +3,7 @@ SHAREDIR=${TGTDIR}/share
 DOCDIR=${TGTDIR}/share/doc
 DOCBE4DIR=${TGTDIR}/share/doc/be4
 
-TOOLS= DallesBase merge4tiff pyramide tiff2tile
+TOOLS= DallesBase merge4tiff pyramide tiff2tile tiff2gray
 DOCS= $(wildcard *.txt)
 
 all: dirs

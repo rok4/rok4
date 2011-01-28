@@ -8,6 +8,8 @@
 *
 * Les dalles source ne sont pas necessairement entierement recouvrantes.
 *
+* Pas de fichier TIFF tuile ou LUT en entree
+*
 * Parametres d'entree :
 * 1. Un fichier texte contenant les dalles source et la dalle finale avec leur georeferencement (resolution, emprise)
 * 2. Un mode d'interpolation
@@ -211,6 +213,8 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 			LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
 			return -1;
 		}
+		if (iligne==2)
+			saveImage(pImage,"test.tif",3,8,PHOTOMETRIC_RGB);
 		pImageIn->push_back(pImage);
 		iligne++;
 	}
@@ -490,6 +494,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
+			//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
 			pMask.push_back(mask);
 		}
 		else {
@@ -502,7 +507,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	                	return -1;
 			}
 			pOverlayedImage.push_back(pRImage);
-			//saveImage(pResampledMask,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pRImage,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
 			pMask.push_back(pResampledMask);
         	}
 	}
