@@ -142,7 +142,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
-        // Initilisation du buffer
+        // Initialisation du buffer
         unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
 
         // Ecriture de l'image
@@ -205,7 +205,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 	}
 
 	// Lecture et creation des dalles source
-	int iligne=2, nb=0;
+	int nb=0;
 	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7)
 	{
 		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
@@ -213,10 +213,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 			LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
 			return -1;
 		}
-		if (iligne==2)
-			saveImage(pImage,"test.tif",3,8,PHOTOMETRIC_RGB);
 		pImageIn->push_back(pImage);
-		iligne++;
 	}
 	if (nb>=0 && nb!=7)
 	{
