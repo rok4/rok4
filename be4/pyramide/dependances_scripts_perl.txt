@@ -20,10 +20,17 @@ Fichiers :
 ../config/pyramids/pyramid.xsd
 
 Programmes :
-./merge4tiff
-./tiff2tile
-./dalles_base
-./cs2cs
+merge4tiff
+tiff2tile
+dalles_base
+cs2cs
 ./gdalinfo
+tiffcp
 hostname
 which
+rm
+wget
+java
+
+Variables d'environnement : 
+xerces_home

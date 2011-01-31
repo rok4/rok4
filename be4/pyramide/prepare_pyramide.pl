@@ -297,13 +297,13 @@ my $nom_fichier_pyramide = $nom_pyramide.".pyr";
 &ecrit_log("Creation de $nom_fichier_pyramide.");
 my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 
-# TODO validation du .pyr par le xsd
-# &ecrit_log("Validation de $nom_fichier_pyramide.");
-# my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
-# if ($valid ne ""){
-# 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
-# 	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
-# }
+# validation du .pyr par le xsd
+&ecrit_log("Validation de $nom_fichier_pyramide.");
+my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
+if ($valid ne ""){
+	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
+	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
+}
 
 # action 3 : creer les sous-repertoires utiles
 &ecrit_log("Creation des repertoires des niveaux de la pyramide.");
@@ -662,7 +662,18 @@ sub valide_xml{
 	
 	my $reponse = '';
 	
-	$reponse = `/usr/local/j2sdk/bin/java -classpath /usr/local/xerces/xercesSamples.jar:/usr/local/xerces/xml-apis.jar:/usr/local/xerces/xercesImpl.jar:/usr/local/xerces/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -f -a $schema -i $document 2>&1`;
+	my $xerces_home = $ENV{'xerces_home'};
+	if (!defined $xerces_home){
+		print "[PREPARE_PYRAMIDE] Variable d'environnement xerces_home non trouvee.\n";
+		&ecrit_log("Variable d'environnement xerces_home non trouvee.");
+		exit;
+	}
+	# TODO voir si on dedouble le flux vers le log avec 
+	# | tee -a ".$log
+	# en fin de $commande_valide
+	my $commande_valide = "java -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
+	
+	$reponse = `$commande_valide`;
 	
 	return $reponse;
 	
