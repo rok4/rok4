@@ -243,7 +243,13 @@ sub maj_limites_tms{
 	# remplacement dans la structure memorisee
 	foreach my $level_pyr(keys %hash_level_ref_limites){
 		# on sait qu'il n'y a qu'un TMSLimits, qu'un minTileRow...
+		# TODO exit si pas de level
 		my $node_limits = $doc->find("//level[tileMatrix = '$level_pyr']/TMSLimits")->get_node(0);
+		if( ! defined $node_limits){
+			print "[INITIALISE_PYRAMIDE] Le niveau $level_pyr n'a pas ete trouve dans $xml_pyr.\nLe TMS est-il bien en accord avec $xml_pyr ??.\n";
+			&ecrit_log("Le niveau $level_pyr n'a pas ete trouve dans $xml_pyr.");
+			exit;
+		}
 		my $node_min_x_src = $node_limits->find("./minTileRow/text()")->get_node(0);
 		my $node_max_x_src = $node_limits->find("./maxTileRow/text()")->get_node(0);
 		my $node_min_y_src = $node_limits->find("./minTileCol/text()")->get_node(0);
