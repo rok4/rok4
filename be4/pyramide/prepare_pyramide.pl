@@ -362,7 +362,7 @@ sub cherche_images{
 	
 	my @img_trouvees;
 	
-	
+
 	opendir REP, $repertoire or die "[PREPARE_PYRAMIDE] Impossible d'ouvrir le repertoire $repertoire.";
 	my @fichiers = readdir REP;
 	closedir REP;
@@ -385,7 +385,7 @@ sub cherche_images{
 			next;
 		}
 	}
-	
+
 	my $nombre = @img_trouvees;
 	
 	return (\@img_trouvees, $nombre);
@@ -657,10 +657,24 @@ sub ecrit_log{
 ################################################################################
 sub valide_xml{
 
-	my $schema = $_[0];
-	my $document = $_[1];
+	my $document = $_[0];
+	my $schema = $_[1];
 	
 	my $reponse = '';
+
+	my $proxy_Host = $ENV{'proxy_Host'};
+        if (!defined $proxy_Host){
+                print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Host non trouvee.\n";
+                &ecrit_log("Variable d'environnement proxy_Host non trouvee.");
+                exit;
+        }
+
+	my $proxy_Port = $ENV{'proxy_Port'};
+        if (!defined $proxy_Port){
+                print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Port non trouvee.\n";
+                &ecrit_log("Variable d'environnement proxy_Port non trouvee.");
+                exit;
+        }
 	
 	my $xerces_home = $ENV{'xerces_home'};
 	if (!defined $xerces_home){
@@ -668,11 +682,12 @@ sub valide_xml{
 		&ecrit_log("Variable d'environnement xerces_home non trouvee.");
 		exit;
 	}
+
 	# TODO voir si on dedouble le flux vers le log avec 
 	# | tee -a ".$log
 	# en fin de $commande_valide
-	my $commande_valide = "java -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
-	
+	my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
+
 	$reponse = `$commande_valide`;
 	
 	return $reponse;

@@ -18,8 +18,7 @@ class TiffReader {
 
     uint8_t *LineBuffer;   // temporary buffer
 
-
-    int sampleSize;        // Taille en octet d'un pixel (RGB = 3, Gray = 1)
+    int sampleSize;        // Taille en octets d'un pixel (RGB = 3, Gray = 1)
 
     int BufferSize;     // Nombre de lignes(tuiles) que peut contenir le Buffer.
     uint8_t **_Buffer;  // Contient un cache des lignes ou tuiles
