@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w4.org/2001/XMLSchema">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xs:element name="Pyramid">
 		<xs:complexType>
 			<xs:sequence>
@@ -7,14 +7,16 @@
 			<xs:element name="level" minOccurs="1" maxOccurs="unbounded">
 				<xs:complexType>
 				<xs:sequence>
-					<!-- id du tilMatrix utilisé -->
+					<!-- id du tileMatrix utilisé -->
 					<xs:element name="tileMatrix"     type="xs:string"/>
 					<!-- repertoire racine des données du level -->
 					<xs:element name="baseDir"        type="xs:string"/>
 					<!-- format des images du cache (ne pas confondre avec celui des tuiles) -->
 					<xs:element name="format"         type="imageFormat"/>
+					<!-- informations sur les métadonnées -->
+					<xs:element name="metadata" type="metadataContent"/>
 					<!-- nombre de canaux utilisés dans les images (et tuiles) -->
-					<xs:element name="channels"       type="xs:positiveInteger"/>
+                                        <xs:element name="channels"       type="xs:positiveInteger"/>
 					<!-- nombre de tuiles par dalle en largeur--> 
 					<xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
 					<!-- nombre de tuiles par dalles en hauteur --> 
@@ -23,24 +25,23 @@
 					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
 					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
 					<xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
-					<xs:element name="metadata"		>
-						<xs:complexType>
-						<xs:sequence>
-							<!-- type de métadonnées encodées -->
-							   					<xs:element name="type"        type="metadataType"/>
-							<!-- repertoire racine des données du level pour les métadonnées-->
-		                                        <xs:element name="baseDir"        type="xs:string"/>
-							<!-- format des masques de métadonnées du cache -->
-                                        		<xs:element name="format"         type="imageFormat"/>
-						</xs:sequence>
-						</xs:complexType>
-					</xs:element>
 				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
+	
+	<xs:complexType name="metadataContent">
+        	<xs:sequence>
+                <!-- repertoire racine des données du level pour les métadonnées-->
+                <xs:element name="baseDir"        type="xs:string"/>
+                <!-- format des masques de métadonnées du cache -->
+		<xs:element name="format"         type="imageFormat"/>
+                </xs:sequence>
+		<xs:attribute name="type"        type="metadataType"/>
+ 	</xs:complexType>
+
 
 	<!-- liste des formats autorisés pour les images du cache -->
 	<xs:simpleType name="imageFormat">
