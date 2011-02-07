@@ -40,7 +40,7 @@
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
-
+#include "MirrorImage.h"
 
 /* Usage de la ligne de commande */
 
@@ -205,7 +205,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 	}
 
 	// Lecture et creation des dalles source
-	int nb=0;
+	int nb=0,i;
 	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7)
 	{
 		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
@@ -214,10 +214,11 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 			return -1;
 		}
 		pImageIn->push_back(pImage);
+		i++;
 	}
 	if (nb>=0 && nb!=7)
 	{
-		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne " << iligne);
+		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne " << i);
 		return -1;
 	}
 
@@ -398,6 +399,97 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 	return pECI ;
 }
 
+/* 
+* @brief Ajout de miroirs a une ExtendedCompoundImage
+* L'image en entree doit etre composee d'un assemblage regulier d'images (de type CompoundImage)
+* Objectif : mettre des miroirs la ou il n'y a pas d'images afin d'eviter des effets de bord en cas de reechantillonnage
+* @param pECI : l'image à completer
+*/
+
+void addMirrors(ExtendedCompoundImage* pECI)
+{
+	int w=pECI->getimages()->at(0)->width;
+	int h=pECI->getimages()->at(0)->height;
+	double resx=pECI->getimages()->at(0)->getresx();
+	double resy=pECI->getimages()->at(0)->getresy();
+
+	unsigned int i,j;
+	double intpart;
+	for (i=0;i<pECI->getimages()->size();i++){	
+		if (pECI->getimages()->at(i)->getresx()!=resx
+		|| pECI->getimages()->at(i)->getresy()!=resy
+		|| pECI->getimages()->at(i)->width!=w
+		|| pECI->getimages()->at(i)->height!=h
+		|| modf(pECI->getimages()->at(i)->getxmin()-pECI->getxmin()/(w*resx),&intpart)!=0
+		|| modf(pECI->getimages()->at(i)->getymax()-pECI->getymax()/(h*resy),&intpart)!=0)
+		LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
+		return;
+	}
+	
+	unsigned int nx=(unsigned int)floor((pECI->getxmax()-pECI->getxmin())/resx + 0.5),
+	    	     ny=(unsigned int)floor((pECI->getymax()-pECI->getymin())/resy + 0.5);
+
+	unsigned int k,l;
+	Image*pI0,*pI1,*pI2,*pI3;
+	double xmin,ymax;
+	mirrorImageFactory MIFactory;
+	for (i=0;i<nx;i++)
+		for (j=0;j<ny;j++){
+			for (k=0;k<pECI->getimages()->size();k++)
+				if (pECI->getimages()->at(k)->getxmin()==pECI->getxmin()+i*w*resx
+				 && pECI->getimages()->at(k)->getymax()==pECI->getymax()-j*h*resy)
+					break;
+			if (k==pECI->getimages()->size()){
+				// Image 0
+				pI0=NULL;
+				xmin=pECI->getxmin()+(i-1)*w*resx;
+				ymax=pECI->getymax()-j*h*resy;
+				for (l=0;l<pECI->getimages()->size();l++)
+					if (pECI->getimages()->at(l)->getxmin()==xmin
+					 || pECI->getimages()->at(l)->getymax()==ymax)
+				if (l<pECI->getimages()->size())
+					pI0=pECI->getimages()->at(k);
+				// Image 1
+                                pI1=NULL;
+                                xmin=pECI->getxmin()+i*w*resx;
+                                ymax=pECI->getymax()-(j-1)*h*resy;
+                                for (l=0;l<pECI->getimages()->size();l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin
+                                         || pECI->getimages()->at(l)->getymax()==ymax)
+                                if (l<pECI->getimages()->size())
+                                        pI1=pECI->getimages()->at(k);
+				// Image 2
+                                pI2=NULL;
+                                xmin=pECI->getxmin()+(i+1)*w*resx;
+                                ymax=pECI->getymax()-j*h*resy;
+                                for (l=0;l<pECI->getimages()->size();l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin
+                                         || pECI->getimages()->at(l)->getymax()==ymax)
+                                if (l<pECI->getimages()->size())
+                                        pI2=pECI->getimages()->at(k);
+                                // Image 3
+                                pI3=NULL;
+                                xmin=pECI->getxmin()+i*w*resx;
+                                ymax=pECI->getymax()-(j+1)*h*resy;
+                                for (l=0;l<pECI->getimages()->size();l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin
+                                         || pECI->getimages()->at(l)->getymax()==ymax)
+                                if (l<pECI->getimages()->size())
+                                        pI3=pECI->getimages()->at(k);
+			}
+			MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
+			if (mirror!=NULL)
+				pECI->getimages()->push_back(mirror);
+		} 
+}
+
+#ifndef __max
+#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 /*
 * @brief Reechantillonnage d'une dalle de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
@@ -406,15 +498,24 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 
 ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
-/*	const Kernel& K = Kernel::getInstance(interpolation);
+	const Kernel& K = Kernel::getInstance(interpolation);
 
 	double xmin_src=pECI->getxmin(), ymin_src=pECI->getymin(), xmax_src=pECI->getxmax(), ymax_src=pECI->getymax();
 	double resx_src=pECI->getresx(), resy_src=pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
 	double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
+	// L'image reechantillonnee est limitee a l'image de sortie
 	double xmin_dst=__max(xmin_src+K.size(ratio_x),pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x),pImageOut->getxmax()),
 	       ymin_dst=__max(ymin_src+K.size(ratio_y),pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y),pImageOut->getymax());
 
+	// Exception : l'image d'entree n'intersecte pas l'image finale
+        if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())
+{
+                LOGGER_ERROR("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
+		return NULL;	
+        }
+	
+	// Coordonnees de l'image reechantillonnee en pixels
 	xmin_dst/=resx_dst;
 	xmin_dst=floor(xmin_dst+0.1);
 	ymin_dst/=resy_dst;
@@ -422,13 +523,17 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	xmax_dst/=resx_dst;
         xmax_dst=ceil(xmax_dst-0.1);
 	ymax_dst/=resy_dst;
-        ymax_dst=ceil(ymax_dst-0.1);	
+        ymax_dst=ceil(ymax_dst-0.1);
+	// Dimension de l'image reechantillonnee
 	int width_dst = int(xmax_dst-xmin_dst+0.1);
-        int height_dst = int(ymax_dst-ymin_dst+0.1);	
+        int height_dst = int(ymax_dst-ymin_dst+0.1);
+	//LOGGER_DEBUG(width_dst<<" "<<height_dst<<"   "<<xmin_dst<<" "<<ymax_dst<<" "<<xmax_dst<<" "<<ymin_dst);
+	//LOGGER_DEBUG(xmin_dst*resx_dst<<" "<<ymax_dst*resx_dst<<" "<<xmax_dst*resx_dst<<" "<<ymin_dst*resx_dst);
 	xmin_dst*=resx_dst;
 	xmax_dst*=resx_dst;
 	ymin_dst*=resy_dst;
         ymax_dst*=resy_dst;
+	//LOGGER_DEBUG(xmin_dst<<" "<<ymax_dst<<" "<<xmax_dst<<" "<<ymin_dst);
 
 	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
@@ -440,8 +545,8 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Reechantillonage du masque
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
-	return pRImage;*/
-
+	return pRImage;
+/*
         double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
         double resx_src = pECI->getresx(),resy_src = pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy() ;
         double ratiox = resx_dst / resx_src ;
@@ -459,7 +564,7 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         // Reechantillonage du masque
         resampledMask = new ResampledImage( mask, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
 
-        return pRImage ;
+        return pRImage ;*/
 }
 
 /*
@@ -491,11 +596,13 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
 			pMask.push_back(mask);
 		}
 		else {
         		// Etape 2 : Reechantillonnage de l'image composite si necessaire
+			
+			// addMirrors(pECI);
+
 			ResampledImage* pResampledMask;
 	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation, mask, pResampledMask);
 
@@ -506,6 +613,9 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			pOverlayedImage.push_back(pRImage);
 			//saveImage(pRImage,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
 			pMask.push_back(pResampledMask);
+			saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			saveImage(mask,"test1.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			saveImage(pResampledMask,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
@@ -516,6 +626,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
 		return -1;
 	}
+	(*ppECImage)->getbbox().print();
 
 //	delete pTabResampledImage;
 
@@ -546,7 +657,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-        log.precision(6);
+        log.precision(12);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
