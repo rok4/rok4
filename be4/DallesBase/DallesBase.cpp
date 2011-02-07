@@ -497,7 +497,7 @@ void addMirrors(ExtendedCompoundImage* pECI)
 */
 
 ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
-{
+{/*
 	const Kernel& K = Kernel::getInstance(interpolation);
 
 	double xmin_src=pECI->getxmin(), ymin_src=pECI->getymin(), xmax_src=pECI->getxmax(), ymax_src=pECI->getymax();
@@ -546,7 +546,7 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
 	return pRImage;
-/*
+*/
         double xmin=pECI->getxmin(), ymin=pECI->getymin(), xmax=pECI->getxmax(), ymax=pECI->getymax() ;
         double resx_src = pECI->getresx(),resy_src = pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy() ;
         double ratiox = resx_dst / resx_src ;
@@ -564,7 +564,7 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         // Reechantillonage du masque
         resampledMask = new ResampledImage( mask, newwidth, newheight, offx, offy, ratiox, ratioy, interpolation, newbbox );
 
-        return pRImage ;*/
+        return pRImage ;
 }
 
 /*
