@@ -86,7 +86,8 @@ int LibtiffImage::getline(uint8_t* buffer, int line)
 // le buffer est déjà alloue
 // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
-	TIFFReadScanline(tif,buffer,line,0);
+	if (TIFFReadScanline(tif,buffer,line,0)<0)
+		LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
 	return width*channels;
 }
 
