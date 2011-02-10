@@ -46,6 +46,8 @@ our @EXPORT=(
 	'cherche_pyramide_recente_lay',
 	'extrait_tms_from_pyr',
 	'$version_wms_param',
+	'$nb_bits_param',
+	'%produit_couleur_param',
 );
 ################################################################################
 
@@ -97,6 +99,15 @@ our %produit_nb_canaux_param = (
 	"parcellaire" => 1,
 	"franceraster" => 3,
 	"scan" => 3,
+);
+
+our $nb_bits_param = 8;
+
+our %produit_couleur_param = (
+	"ortho" => "rgb",
+	"parcellaire" => "min_is_black",
+	"franceraster" => "rgb",
+	"scan" => "rgb",
 );
 
 # apres deploiement

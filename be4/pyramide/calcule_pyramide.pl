@@ -23,6 +23,8 @@ use cache(
 	'$nom_fichier_last_jobs_param',
 	'extrait_tms_from_pyr',
 	'$version_wms_param',
+	'$nb_bits_param',
+	'%produit_couleur_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -49,6 +51,8 @@ my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
+my $nb_bits = $nb_bits_param; 
+my %produit_couleur = %produit_couleur_param;
 
 ### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
@@ -204,6 +208,8 @@ if ($nombre_jobs !~ /^\d+$/ && $nombre_jobs > 0){
 
 ### TRAITEMENT
 
+my $couleur = $produit_couleur{$produit};
+
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = "../tmp/CALCULE_PYRAMIDE_".$time;
 mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoire $rep_temp.";
@@ -214,7 +220,7 @@ my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
 &ecrit_log("Lecture de la pyramide $fichier_pyramide.");
 
 # Lecture du fichier .pyr
-my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
+my ($ref_niveau_ordre_croissant, $ref_rep_images, $ref_rep_mtd, $ref_res, $ref_taille_m_x, $ref_taille_m_y, $ref_origine_x, $ref_origine_y, $ref_profondeur, $ref_nb_channels, $ref_taille_tuile_x, $ref_taille_tuile_y, $systeme_target, $format_imgs_pyramide) = &lecture_pyramide($fichier_pyramide);
 
 # Variables recuperees du .pyr
 my @niveaux_ranges = @{$ref_niveau_ordre_croissant};
@@ -226,6 +232,7 @@ my %niveau_taille_m_y = %{$ref_taille_m_y};
 my %niveau_origine_x = %{$ref_origine_x};
 my %niveau_origine_y = %{$ref_origine_y};
 my %niveau_profondeur = %{$ref_profondeur};
+my %niveau_nb_channels = %{$ref_nb_channels};
 my %niveau_taille_tuile_x = %{$ref_taille_tuile_x};
 my %niveau_taille_tuile_y = %{$ref_taille_tuile_y};
 
@@ -345,6 +352,9 @@ for (my $indice_niveau_temp = 0; $indice_niveau_temp < @niveaux_ranges ; $indice
 	}
 }
 
+# determiner le nombre de channels du niveau le plus bas
+my $nb_channels_niveau_min = $niveau_nb_channels{"$level_min_utile"};
+
 # ACTION 4 :determiner le niveau de travail (ou il y aura un nombre de jobs > $nombre_jobs) et le niveau max
 # C'est a partir de ce niveau qu'on fait des calculs d'arbre
 
@@ -445,7 +455,9 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	# Indice d'un niveau : rang (en base 0) du niveau dans une liste des niveaux ordonnee par resolutions croissantes
 	my $indice_niveau0 = $indice_travail;
 	my $level_niveau0 = $niveau_travail;
-
+	
+	
+	
 	# initialisation pour la dalle0 (cad la dalle courante de la boucle)
 	$dalle_arbre_niveau{"dalle0"} = $level_niveau0;
 	$dalle_arbre_indice_niveau{"dalle0"} = $indice_niveau0;
@@ -458,7 +470,7 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_travail.");
 		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_min_utile, $res_dalle0);
 		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
-	}
+	}	
 	
 	# transformation des index dans l'arbre en nom des dalles cache
 	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
@@ -466,14 +478,15 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);
 
 	# ACTION 6 : calculer le niveau minimum : en WMS si compression avec perte ou reprojection
+	
 	&ecrit_log("Definition des images du niveau le plus bas.");
-	my ($nombre_dalles_minimum_calc, $string_script_niveau_min_img) = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_temp, "image");
+	my ($nombre_dalles_minimum_calc, $string_script_niveau_min_img) = &calcule_niveau_minimum(\%dalle_cache_min_liste_dalle, $rep_temp, "image", $nb_channels_niveau_min);
 	$string_script_this .= $string_script_niveau_min_img;
 	$nombre_dalles_creees_script += $nombre_dalles_minimum_calc;
 	&ecrit_log("$nombre_dalles_minimum_calc image(s) du plus bas niveau a calculer.");
 	if (defined $fichier_mtd_source){
 		&ecrit_log("Definition des mtd du niveau le plus bas.");
-		my ($nombre_mtd_minimum_calc, $string_script_niveau_min_mtd) = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_temp, "mtd");
+		my ($nombre_mtd_minimum_calc, $string_script_niveau_min_mtd) = &calcule_niveau_minimum(\%mtd_cache_min_liste_mtd, $rep_temp, "mtd", $nb_channels_niveau_min);
 		$string_script_this .= $string_script_niveau_min_mtd;
 		$nombre_dalles_creees_script += $nombre_mtd_minimum_calc;
 		&ecrit_log("$nombre_mtd_minimum_calc mtd du plus bas niveau a calculer.");
@@ -1067,6 +1080,8 @@ sub calcule_niveau_minimum {
 	my $ref_hash_list_dal_source = $_[0];
 	my $rep_enregistr = $_[1];
 	my $type = $_[2];
+	my $nb_canaux = $_[3];
+	
 	my %hash_dalle_cache_dalles_source = %{$ref_hash_list_dal_source};
 	
 	my $nb_dal = 0;
@@ -1172,7 +1187,7 @@ sub calcule_niveau_minimum {
 				}
 				# TODO nombre de canaux, nombre de bits, couleur en parametre
 				# TODO supprimer no_data qui ne sert a rien
-				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s 3 -b 8 -p rgb\n";
+				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nb_canaux -b $nb_bits -p $couleur\n";
 			}else{
 				# on recupere directement dans un cache existant une image tiff en format de travail
 				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
@@ -1429,7 +1444,7 @@ sub lecture_pyramide{
 	
 	my $xml_pyramide = $_[0];
 	
-	my (%id_rep_images, %id_rep_mtd, %id_res, %id_taille_m_x, %id_taille_m_y, %id_origine_x, %id_origine_y, %id_profondeur, %id_taille_pix_tuile_x, %id_taille_pix_tuile_y);
+	my (%id_rep_images, %id_rep_mtd, %id_res, %id_taille_m_x, %id_taille_m_y, %id_origine_x, %id_origine_y, %id_profondeur, %id_nb_channels, %id_taille_pix_tuile_x, %id_taille_pix_tuile_y);
 	
 	my @refs_infos_levels;
 	
@@ -1473,6 +1488,7 @@ sub lecture_pyramide{
 		}else{
 			$id_rep_mtd{"$id"} = abs_path($rep2);
 		}
+		$id_nb_channels{"$id"} = $level->{channels};
 		$id_profondeur{"$id"} = $level->{pathDepth};
 		# lecture dans le  TMS associe
 		$id_res{"$id"} = $tms_level_resolution{"$id"};
@@ -1499,7 +1515,7 @@ sub lecture_pyramide{
 		$format_images_pyramide = $formats_temp[0];
 	}
 	
-	push(@refs_infos_levels, \@niveaux_croissants, \%id_rep_images, \%id_rep_mtd, \%id_res, \%id_taille_m_x, \%id_taille_m_y, \%id_origine_x, \%id_origine_y, \%id_profondeur, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y, $srs, $format_images_pyramide);
+	push(@refs_infos_levels, \@niveaux_croissants, \%id_rep_images, \%id_rep_mtd, \%id_res, \%id_taille_m_x, \%id_taille_m_y, \%id_origine_x, \%id_origine_y, \%id_profondeur, \%id_nb_channels, \%id_taille_pix_tuile_x, \%id_taille_pix_tuile_y, $srs, $format_images_pyramide);
 	
 	return @refs_infos_levels;
 	
