@@ -197,7 +197,8 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne 0");
 		return -1;
 	}
-	*ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE);
+
+	*ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
 	if (*ppImageOut==NULL){
 		LOGGER_ERROR("Impossible de creer " << filename);
