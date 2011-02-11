@@ -613,9 +613,9 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			pOverlayedImage.push_back(pRImage);
 			//saveImage(pRImage,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
 			pMask.push_back(pResampledMask);
-			saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			saveImage(mask,"test1.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			saveImage(pResampledMask,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			//saveImage(mask,"test1.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pResampledMask,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
@@ -669,7 +669,7 @@ int main(int argc, char **argv) {
 	if (type==0) {
 		LOGGER_ERROR("Le type mtd n'est pas pris en compte"); return -1;
 	}
-LOGGER_DEBUG("Load");
+
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles"); return -1;
@@ -679,7 +679,7 @@ LOGGER_DEBUG("Load");
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles"); return -1;
 	}
-
+LOGGER_DEBUG("Sort");
 	// Tri des dalles
 	if (sortDalles(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des dalles"); return -1;
