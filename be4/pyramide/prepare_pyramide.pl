@@ -300,7 +300,7 @@ my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyra
 # validation du .pyr par le xsd
 &ecrit_log("Validation de $nom_fichier_pyramide.");
 my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
-if ($valid ne ""){
+if ((!defined $valid) || $valid ne ""){
 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
 	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
 }
