@@ -33,7 +33,7 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 // 
 //
   
-	LOGGER(DEBUG) << "Constructeur Level " << format << std::endl;
+//	LOGGER(DEBUG) << "Constructeur Level " << format << std::endl;
 
 
 	if (format.compare("TIFF_INT8")==0) {
@@ -49,10 +49,7 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 		noDataSource = new BufferedDataSource(dataStream);
 	}
 
-	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
-
-
-
+//	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
 }
 
 TileMatrix const Level::getTm(){return tm;}

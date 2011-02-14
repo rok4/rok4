@@ -17,7 +17,7 @@ size_t BilEncoder::read(uint8_t *buffer, size_t size) {
 }
 
 BilEncoder::~BilEncoder() {
-	LOGGER_DEBUG( "delete BilEncoder");
+	//LOGGER_DEBUG( "delete BilEncoder");
 	delete image;
 }
 

@@ -19,6 +19,26 @@ std::string genStatusHeader(int statusCode) {
 }
 
 /**
+ * Methode commune pour afficher les codes d'erreur FCGI
+ */
+
+void displayFCGIError(int error)
+{
+	if (error>0)
+		LOGGER_ERROR("Code erreur : "<<error); // Erreur errno(2) (Cf. manpage )
+        else if (error==FCGX_UNSUPPORTED_VERSION)
+        	LOGGER_ERROR("Version FCGI non supportee");
+        else if (error==FCGX_UNSUPPORTED_VERSION)
+        	LOGGER_ERROR("Erreur de protocole");
+        else if (error==FCGX_CALL_SEQ_ERROR)
+        	LOGGER_ERROR("Erreur de parametre");
+        else if (error==FCGX_UNSUPPORTED_VERSION)
+        	LOGGER_ERROR("Preconditions non remplies");
+        else
+        	LOGGER_ERROR("Erreur inconnue");
+}
+
+/**
  * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
  * @return -1 en cas d'erreur
  * @return 0 sinon
@@ -42,6 +62,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 		int w = FCGX_PutStr((char*)(buffer + wr), buffer_size,request->out);
 		if(w < 0) {
 			LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
+			displayFCGIError(FCGX_GetError(request->out));
 			delete source;
 			delete[] buffer;
 			return -1;
@@ -82,6 +103,7 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 			int w = FCGX_PutStr((char*)(buffer + wr), read_size,request->out);
 			if(w < 0) {
 				LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
+				displayFCGIError(FCGX_GetError(request->out));
 				delete stream;
 				delete[] buffer;
 				return -1;
