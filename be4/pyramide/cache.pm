@@ -19,7 +19,8 @@ our @EXPORT=(
 	'%base10_base_param',
 	'$nom_fichier_mtd_source_param',
 	'$color_no_data_param',
-	'$dalle_no_data_param',
+	'$dalle_no_data_rgb_param',
+	'$dalle_no_data_gray_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -86,7 +87,8 @@ our %base10_base_param = (
 
 our $color_no_data_param = "FFFFFF";
 
-our $dalle_no_data_param = "../share/pyramide/4096_4096_FFFFFF.tif";
+our $dalle_no_data_rgb_param = "../share/pyramide/4096_4096_FFFFFF_rgb.tif";
+our $dalle_no_data_gray_param = "../share/pyramide/4096_4096_FFFFFF_gray.tif";
 our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";
 
 # apres deploiement : le ./ est pour etre sur qu'on utilise les programmes compiles en local

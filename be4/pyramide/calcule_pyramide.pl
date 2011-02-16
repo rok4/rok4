@@ -6,7 +6,8 @@ use cache(
 	'$base_param',
 	'%base10_base_param',
 	'$color_no_data_param',
-	'$dalle_no_data_param',
+	'$dalle_no_data_rgb_param',
+	'$dalle_no_data_gray_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -41,7 +42,8 @@ our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $op
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my $color_no_data = $color_no_data_param;
-my $dalle_no_data = $dalle_no_data_param;
+my $dalle_no_data_rgb = $dalle_no_data_rgb_param;
+my $dalle_no_data_gray = $dalle_no_data_rgb_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
@@ -59,8 +61,12 @@ my $string_erreur_batch = $string_erreur_batch_param;
 ### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
 # verification de l'existence de fichiers et repertoires annexes
-if(!(-e $dalle_no_data && -f $dalle_no_data)){
-	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data est introuvable.\n";
+if(!(-e $dalle_no_data_rgb && -f $dalle_no_data_rgb)){
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_rgb est introuvable.\n";
+	exit;
+}
+if(!(-e $dalle_no_data_gray && -f $dalle_no_data_gray)){
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_gray est introuvable.\n";
 	exit;
 }
 if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
@@ -1119,7 +1125,14 @@ sub calcule_niveau_minimum {
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
-						$nom_dalle_temp = $dalle_no_data;
+						if($couleur == "rgb"){
+							$nom_dalle_temp = $dalle_no_data_rgb;
+						}elsif($couleur =~ /gray|min_is_black/){
+							$nom_dalle_temp = $dalle_no_data_gray;
+						}else{
+							print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
+							exit;
+						}
 					}elsif($type eq "mtd"){
 						$nom_dalle_temp = $dalle_no_data_mtd;
 					}else{
@@ -1150,7 +1163,6 @@ sub calcule_niveau_minimum {
 					if($source_res_y{$src} > $res_y_max_source){
 						$res_y_max_source = $source_res_y{$src};
 					}
-					# TODO passer par une image tiff2gray pour la bdparcel
 					print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
 				}
 				
@@ -1176,7 +1188,6 @@ sub calcule_niveau_minimum {
 					$no_data = "0";
 				}elsif( $type eq "image"){
 					$no_data = $color_no_data;
-	
 				}else{
 					print "[CALCULE_PYRAMIDE] Probleme de programmation : type $type incorrect.\n";
 					exit;
@@ -1250,7 +1261,14 @@ sub calcule_niveaux_inferieurs{
 							# avec le script il faut faire autrement
 							if(!(exists $dalles_calculees{$dalle_dessous} || exists $dalles_liens{$dalle_dessous})){
 								if($type_dalle eq "image"){
-									$fichier_pointe = $dalle_no_data;
+									if($couleur eq "rgb"){
+										$fichier_pointe = $dalle_no_data_rgb;
+									}elsif($couleur =~ /gray|min_is_black/){
+										$fichier_pointe = $dalle_no_data_gray;
+									}else{
+										print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
+										exit;
+									}
 								}elsif($type_dalle eq "mtd"){
 									$fichier_pointe = $dalle_no_data_mtd;
 								}else{
