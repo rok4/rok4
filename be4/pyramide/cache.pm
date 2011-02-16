@@ -48,6 +48,7 @@ our @EXPORT=(
 	'$version_wms_param',
 	'$nb_bits_param',
 	'%produit_couleur_param',
+	'$string_erreur_batch_param',
 );
 ################################################################################
 
@@ -147,6 +148,8 @@ our $nom_fichier_first_jobs_param = "../tmp/first_jobs.txt";
 our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
 
 our $version_wms_param = "1.3.0";
+
+our $string_erreur_batch = "if [ \$? != 0] ; then echo Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; fi\n";
 
 ################################################################################
 

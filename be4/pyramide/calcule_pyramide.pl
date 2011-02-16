@@ -25,6 +25,7 @@ use cache(
 	'$version_wms_param',
 	'$nb_bits_param',
 	'%produit_couleur_param',
+	'$string_erreur_batch_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -53,6 +54,7 @@ my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
 my $nb_bits = $nb_bits_param; 
 my %produit_couleur = %produit_couleur_param;
+my $string_erreur_batch = $string_erreur_batch_param;
 
 ### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
@@ -410,7 +412,7 @@ my %dalle_cache_min_liste_dalle;
 my %mtd_cache_min_liste_mtd;
 # Association de chaque dalle cache a calculer avec les 4 dalles en dessous
 my %dalle_cache_dessous;
-# Association niveau (cl√©) avec la liste de sdalles du niveau inferieur
+# Association niveau (cl ©) avec la liste de sdalles du niveau inferieur
 my %niveau_ref_dalles_inf;
 # Idem mtd
 my %niveau_ref_mtd_inf;
@@ -1113,7 +1115,7 @@ sub calcule_niveau_minimum {
 				#if (-e $dalle_cache ){
 				# avec le script il faut faire autrement
 				if (exists $dalles_liens{$dalle_cache} ){
-					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n";
+					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
@@ -1187,7 +1189,7 @@ sub calcule_niveau_minimum {
 				}
 				# TODO nombre de canaux, nombre de bits, couleur en parametre
 				# TODO supprimer no_data qui ne sert a rien
-				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nb_canaux -b $nb_bits -p $couleur\n";
+				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nb_canaux -b $nb_bits -p $couleur\n".$string_erreur_batch;
 			}else{
 				# on recupere directement dans un cache existant une image tiff en format de travail
 				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
@@ -1268,13 +1270,13 @@ sub calcule_niveaux_inferieurs{
 								# mise en format travail de la dalle dalle_cache
 								# desctruction de la dalle_cache temporaire si elle existe
 								$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
-								$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n";
+								$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n".$string_erreur_batch;
 								$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 							}
 							$string_dessous .= " $fichier_pointe";
 						}
 						# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
-						$string_script2 .= "$programme_ss_ech $string_dessous $dal\n";
+						$string_script2 .= "$programme_ss_ech $string_dessous $dal\n".$string_erreur_batch;
 						
 					}else{
 						# on recupere a partir d'un cache existant une dalle en format de travail						
@@ -1535,7 +1537,7 @@ sub passage_pivot{
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire la couleur dans $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n";
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
