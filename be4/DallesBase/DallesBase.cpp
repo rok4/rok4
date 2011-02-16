@@ -186,6 +186,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 
 	// Ouverture du fichier texte listant les dalles
 	std::ifstream file;
+
 	file.open(liste_dalles_filename);
 	if (!file) {
 		LOGGER_ERROR("Impossible d'ouvrir le fichier " << liste_dalles_filename);
@@ -240,6 +241,10 @@ int checkDalles(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 		if (ImageIn.at(i)->getresx()*ImageIn.at(i)->getresy()==0.) {	
 			LOGGER_ERROR("Resolution de la dalle d entre " << i+1 << " sur " << ImageIn.size() << " egale a 0");
                 	return -1;
+		}
+		if (ImageIn.at(i)->channels!=pImageOut->channels){
+			LOGGER_ERROR("Nombre de canaux de la dalle d entree " << i+1 << " sur " << ImageIn.size() << " differente de la dalle de sortie");
+                        return -1;
 		}
 	}
 	if (pImageOut->getresx()*pImageOut->getresy()==0.){
@@ -396,6 +401,9 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,r);
+
+	LOGGER_DEBUG("AAA "<< w<<" "<<h<<" "<<(*TabImageIn.begin())->channels<<" " <<TabImageIn.size());
+	LOGGER_DEBUG(xmin<<" "<<ymin<<" "<<xmax<<" "<<ymax);	
 
 	return pECI ;
 }
@@ -597,6 +605,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
+			//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
 			pMask.push_back(mask);
 		}
 		else {
