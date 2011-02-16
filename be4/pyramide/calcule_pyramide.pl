@@ -1125,7 +1125,7 @@ sub calcule_niveau_minimum {
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
-						if($couleur == "rgb"){
+						if($couleur eq "rgb"){
 							$nom_dalle_temp = $dalle_no_data_rgb;
 						}elsif($couleur =~ /gray|min_is_black/){
 							$nom_dalle_temp = $dalle_no_data_gray;
