@@ -95,7 +95,7 @@ our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";
 our $programme_ss_ech_param = "merge4tiff";
 our $programme_format_pivot_param = "tiff2tile";
 our $programme_dalles_base_param = "dalles_base";
-our $programme_copie_image_param = "tiffcp";
+our $programme_copie_image_param = "tiffcpbe4";
 
 our %produit_nb_canaux_param = (
     "ortho" => 3,

@@ -1123,7 +1123,7 @@ sub calcule_niveau_minimum {
 				#if (-e $dalle_cache ){
 				# avec le script il faut faire autrement
 				if (exists $dalles_liens{$dalle_cache} ){
-					$string_script .= &cree_string_copie_image($taille_dalle_pix, $niveau_taille_tuile_x{"$level_min_utile"}, $niveau_taille_tuile_y{"$level_min_utile"}, $dalles_liens{$dalle_cache}, $nom_dalle_temp);;
+					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
@@ -1290,7 +1290,7 @@ sub calcule_niveaux_inferieurs{
 								# mise en format travail de la dalle dalle_cache
 								# desctruction de la dalle_cache temporaire si elle existe
 								$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
-								$string_script2 .= &cree_string_copie_image($taille_dalle_pix, $niveau_taille_tuile_x{"$niveau_inf"}, $niveau_taille_tuile_y{"$niveau_inf"}, $dalle_dessous, "$rep_temp/$nom_dalle_cache");;
+								$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n".$string_erreur_batch;
 								$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 							}
 							$string_dessous .= " $fichier_pointe";
@@ -1861,67 +1861,4 @@ sub cree_string_temps_torque{
 	my $temps_torque = "#PBS -l cput=".$nb_heures.":".$minutes.":00";
 	
 	return $temps_torque;
-}
-################################################################################
-sub cree_string_copie_image{
-	
-	my $taille_dalle = $_[0];
-	my $taille_tuile_x_cache = $_[1];
-	my $taille_tuile_y_cache = $_[2];
-	my $dalle_ini = $_[3];
-	my $dalle_fin = $_[4];
-	
-	my $string_copie = "";
-	
-	my $bool_format_pivot = 1;
-
-	if(-e $dalle_ini){
-	
-		# on fait un tiffinfo sur l'image initiale : si c'est du format pivot on utilise l'otil de Stephane, sinon tiffcp
-	        # TODO ajouter ./ devant tiffinfo ???
-	        my @result_tiffinfo = `tiffinfo $dalle_ini`;
-	        my $bool_tile = 0;
-	        my $taille_tuile_x;
-	        my $taille_tuile_y;
-	        foreach my $ligne_tiffinfo(@result_tiffinfo){
-	                # test sur la taile des images
-	                if($ligne_tiffinfo =~ /Image\s*Width\s*:\s*(\d+)\s*Image\s*Length\s*:\s*(\d+)/i){
-	                        if($1 != $taille_dalle || $2 != $taille_dalle){
-	                                $bool_format_pivot = 0;
-	                                last;
-	                        }
-	                }
-	                # test sur la compression
-	                elsif($ligne_tiffinfo =~ /Compression\s*Scheme\s*:\s*([^\s]+)/i){
-	                        if($1 !~ /AdobeDeflate/i){
-	                                $bool_format_pivot = 0;
-	                                last;
-	                        }
-	                }
-	                # test sur les tuiles
-	                elsif($ligne_tiffinfo =~ /Tile\s*Width\s*:\s*(\d+)\s*Tile\s*Length\s*:\s*(\d+)/i){
-	                        $bool_tile = 1;
-	                        $taille_tuile_x = $1;
-	                        $taille_tuile_y = $2;
-	                }
-	        }
-	        # test sur les tuiles : s'il n'y en a pas ou pas de la bonne taille ce n'est pas du pivot
-	        if($bool_tile == 0 ||  ( $bool_tile == 1 && ( !($taille_tuile_x == $taille_tuile_x_cache && $taille_tuile_y == $taille_tuile_y_cache) ) ) ){
-	                $bool_format_pivot = 0;
-	        }
-	}else{
-		return $string_copie;
-	}	
-		
-	if($bool_format_pivot == 0){
-		$string_copie = "$programme_copie_image -s -r $taille_dalle $dalle_ini $dalle_fin\n".$string_erreur_batch;
-	}else{
-		print "[CALCULE_PYRAMIDE] ATTENTION, le programme n'est pas encore adapte a la copie d'image en format pivot.\n";
-		&ecrit_log("ATTENTION, le programme n'est pas encore adapte a la copie d'image en format pivot.");
-		exit;
-	}
-	
-	
-	return $string_copie;
-
 }
