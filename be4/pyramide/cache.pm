@@ -151,7 +151,7 @@ our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
 
 our $version_wms_param = "1.3.0";
 
-our $string_erreur_batch_param = "if [ \$? != 0 ] ; then echo Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; fi\n";
+our $string_erreur_batch_param = "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; fi\n";
 
 ################################################################################
 
