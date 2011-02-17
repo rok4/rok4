@@ -1871,42 +1871,48 @@ sub cree_string_copie_image{
 	my $dalle_ini = $_[3];
 	my $dalle_fin = $_[4];
 	
-	my $string_copie;
+	my $string_copie = "";
 	
-	# on fait un tiffinfo sur l'image initiale : si c'est du format pivot on utilise l'otil de Stephane, sinon tiffcp
-	# TODO ajouter ./ devant tiffinfo ???
-	my @result_tiffinfo = `tiffinfo $dalle_ini`;
 	my $bool_format_pivot = 1;
-	my $bool_tile = 0;
-	my $taille_tuile_x;
-	my $taille_tuile_y;
-	foreach my $ligne_tiffinfo(@result_tiffinfo){
-		# test sur la taile des images
-		if($ligne_tiffinfo =~ /Image\s*Width\s*:\s*(\d+)\s*Image\s*Length\s*:\s*(\d+)/i){
-			if($1 != $taille_dalle || $2 != $taille_dalle){
-				$bool_format_pivot = 0;
-				last;
-			}
-		}
-		# test sur la compression
-		elsif($ligne_tiffinfo =~ /Compression\s*Scheme\s*:\s*([^\s]+)/i){
-			if($1 !~ /AdobeDeflate/i){
-				$bool_format_pivot = 0;
-				last;
-			}
-		}
-		# test sur les tuiles
-		elsif($ligne_tiffinfo =~ /Tile\s*Width\s*:\s*(\d+)\s*Tile\s*Length\s*:\s*(\d+)/i){
-			$bool_tile = 1;
-			$taille_tuile_x = $1;
-			$taille_tuile_y = $2;
-		}
-	}
-	# test sur les tuiles : s'il n'y en a pas ou pas de la bonne taille ce n'est pas du pivot
-	if($bool_tile == 0 ||  ( $bool_tile == 1 && ( !($taille_tuile_x == $taille_tuile_x_cache && $taille_tuile_y == $taille_tuile_y_cache) ) ) ){
-		$bool_format_pivot = 0;
-	}
+
+	if(-e $dalle_ini){
 	
+		# on fait un tiffinfo sur l'image initiale : si c'est du format pivot on utilise l'otil de Stephane, sinon tiffcp
+	        # TODO ajouter ./ devant tiffinfo ???
+	        my @result_tiffinfo = `tiffinfo $dalle_ini`;
+	        my $bool_tile = 0;
+	        my $taille_tuile_x;
+	        my $taille_tuile_y;
+	        foreach my $ligne_tiffinfo(@result_tiffinfo){
+	                # test sur la taile des images
+	                if($ligne_tiffinfo =~ /Image\s*Width\s*:\s*(\d+)\s*Image\s*Length\s*:\s*(\d+)/i){
+	                        if($1 != $taille_dalle || $2 != $taille_dalle){
+	                                $bool_format_pivot = 0;
+	                                last;
+	                        }
+	                }
+	                # test sur la compression
+	                elsif($ligne_tiffinfo =~ /Compression\s*Scheme\s*:\s*([^\s]+)/i){
+	                        if($1 !~ /AdobeDeflate/i){
+	                                $bool_format_pivot = 0;
+	                                last;
+	                        }
+	                }
+	                # test sur les tuiles
+	                elsif($ligne_tiffinfo =~ /Tile\s*Width\s*:\s*(\d+)\s*Tile\s*Length\s*:\s*(\d+)/i){
+	                        $bool_tile = 1;
+	                        $taille_tuile_x = $1;
+	                        $taille_tuile_y = $2;
+	                }
+	        }
+	        # test sur les tuiles : s'il n'y en a pas ou pas de la bonne taille ce n'est pas du pivot
+	        if($bool_tile == 0 ||  ( $bool_tile == 1 && ( !($taille_tuile_x == $taille_tuile_x_cache && $taille_tuile_y == $taille_tuile_y_cache) ) ) ){
+	                $bool_format_pivot = 0;
+	        }
+	}else{
+		return $string_copie;
+	}	
+		
 	if($bool_format_pivot == 0){
 		$string_copie = "$programme_copie_image -s -r $taille_dalle $dalle_ini $dalle_fin\n".$string_erreur_batch;
 	}else{
