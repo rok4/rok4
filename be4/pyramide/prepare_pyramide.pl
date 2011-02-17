@@ -301,8 +301,13 @@ my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyra
 &ecrit_log("Validation de $nom_fichier_pyramide.");
 my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
 if ((!defined $valid) || $valid ne ""){
+	my $string_valid = "Pas de message sur la validation";
+	if(defined $valid){
+		$string_valid = $valid;
+	}
 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
-	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $valid");
+	print "$string_valid\n";
+	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $string_valid");
 }
 
 # action 3 : creer les sous-repertoires utiles
