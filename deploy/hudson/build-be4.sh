@@ -27,9 +27,10 @@ cp bin/*.pm $ROK4BASE/bin/
 cp bin/dalles_base $ROK4BASE/bin
 cp bin/merge4tiff $ROK4BASE/bin
 cp bin/tiff2tile $ROK4BASE/bin
+cp bin/tiffcpbe4 $ROK4BASE/tiffcpbe4
 cp bin/gdalinfo $ROK4BASE/bin
 cp config/pyramids/pyramid.xsd $ROK4BASE/bin/
 if [ ! -d $ROK4BASE/share/pyramide ] ; then mkdir $ROK4BASE/share/pyramide ; fi
-cp share/pyramide/4096_4096_FFFFFF.tif  share/pyramide/mtd_4096_4096_black_32b.tif $ROK4BASE/share/pyramide
+cp share/pyramide/4096_4096_FFFFFF_gray.tif share/pyramide/4096_4096_FFFFFF_rgb.tif share/pyramide/mtd_4096_4096_black_32b.tif $ROK4BASE/share/pyramide
 cp docs/be4/dependances_scripts_perl.txt $ROK4BASE/docs/be4
 cp docs/be4/how_to_fr.txt $ROK4BASE/docs/be4
