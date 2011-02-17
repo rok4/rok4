@@ -4,7 +4,7 @@ INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
 BINDIR=${TGTDIR}/bin
 
-LIBS= libcppunit libproj libfcgi libtinyxml libz liblogger libtiff libimage libjpeg
+LIBS= libcppunit libproj libfcgi libtinyxml libz liblogger libtiff libimage libjpeg libxerces
 
 
 
