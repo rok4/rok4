@@ -533,79 +533,81 @@ foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 ### ACTION 8 : definition du job des images plus hautes que le niveau de travail : LE 17 EME JOB !!
 my $string_script4 = "";
 my $nombre_dalles_job17 = 0;
-foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
-	
-	# remise a zero des variables d'arbre
-	%cache_arbre_x_min = ();
-	%cache_arbre_x_max = ();
-	%cache_arbre_y_min = ();
-	%cache_arbre_y_max = ();
-	%cache_arbre_res = ();
-	%index_arbre_liste_dalle = ();
-	%index_arbre_liste_mtd = ();
-	%dalles_cache_plus_bas = ();
-	%dalle_arbre_niveau = ();
-	%dalle_arbre_indice_niveau = ();
-	
-	@liste_dalles_cache_index_arbre = ();
-	%dalle_cache_min_liste_dalle = ();
-	%mtd_cache_min_liste_mtd = ();
-	%dalle_cache_dessous = ();
-	%niveau_ref_dalles_inf = ();
-	%niveau_ref_mtd_inf = ();
-	%nom_dalle_index_base = ();
-	
-	# Aliases	
-	my $x_min_dalle0 = $dalle_niveau_max_x_min{"$dalle_arbre_niveau_max"};
-	my $x_max_dalle0 = $dalle_niveau_max_x_max{"$dalle_arbre_niveau_max"};
-	my $y_min_dalle0 = $dalle_niveau_max_y_min{"$dalle_arbre_niveau_max"};
-	my $y_max_dalle0 = $dalle_niveau_max_y_max{"$dalle_arbre_niveau_max"};
-	my $res_dalle0 = $res_max;
-	my $indice_niveau0 = $indice_niveau_max;
-	my $level_niveau0 = $level_max;
-	# initialisation pour la dalle0
-	$dalle_arbre_niveau{"dalle0"} = $level_niveau0;
-	$dalle_arbre_indice_niveau{"dalle0"} = $indice_niveau0;
-	
-	#recursivite descendante et mise en memoire pour chacune des dalles cache
-	&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_max.");
-	my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
-	&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
-	if (defined $fichier_mtd_source){
-		&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_max.");
-		my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
-		&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
+if( $indice_niveau_max > $indice_travail){
+	foreach my $dalle_arbre_niveau_max(@liste_dalles_arbre_niveau_max){
+		
+		# remise a zero des variables d'arbre
+		%cache_arbre_x_min = ();
+		%cache_arbre_x_max = ();
+		%cache_arbre_y_min = ();
+		%cache_arbre_y_max = ();
+		%cache_arbre_res = ();
+		%index_arbre_liste_dalle = ();
+		%index_arbre_liste_mtd = ();
+		%dalles_cache_plus_bas = ();
+		%dalle_arbre_niveau = ();
+		%dalle_arbre_indice_niveau = ();
+		
+		@liste_dalles_cache_index_arbre = ();
+		%dalle_cache_min_liste_dalle = ();
+		%mtd_cache_min_liste_mtd = ();
+		%dalle_cache_dessous = ();
+		%niveau_ref_dalles_inf = ();
+		%niveau_ref_mtd_inf = ();
+		%nom_dalle_index_base = ();
+		
+		# Aliases	
+		my $x_min_dalle0 = $dalle_niveau_max_x_min{"$dalle_arbre_niveau_max"};
+		my $x_max_dalle0 = $dalle_niveau_max_x_max{"$dalle_arbre_niveau_max"};
+		my $y_min_dalle0 = $dalle_niveau_max_y_min{"$dalle_arbre_niveau_max"};
+		my $y_max_dalle0 = $dalle_niveau_max_y_max{"$dalle_arbre_niveau_max"};
+		my $res_dalle0 = $res_max;
+		my $indice_niveau0 = $indice_niveau_max;
+		my $level_niveau0 = $level_max;
+		# initialisation pour la dalle0
+		$dalle_arbre_niveau{"dalle0"} = $level_niveau0;
+		$dalle_arbre_indice_niveau{"dalle0"} = $indice_niveau0;
+		
+		#recursivite descendante et mise en memoire pour chacune des dalles cache
+		&ecrit_log("Calcul de l'arbre image issu de $dalle_arbre_niveau_max.");
+		my $nombre_dalles_cache = &cree_arbre_dalles_cache(\@dalles_source, "image", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
+		&ecrit_log("$nombre_dalles_cache image(s) definie(s).");
+		if (defined $fichier_mtd_source){
+			&ecrit_log("Calcul de l'arbre mtd issu de $dalle_arbre_niveau_max.");
+			my $nombre_mtd_cache = &cree_arbre_dalles_cache(\@mtd_source, "mtd", $pourcentage_dilatation, "dalle0", $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0, $res_dalle0, $indice_niveau0, $res_travail, $res_dalle0);
+			&ecrit_log("$nombre_mtd_cache image(s) definie(s).");
+		}
+		
+		# transformation des index dans l'arbre en nom des dalles cache
+		@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
+		&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_max aux donnees cache.");
+		&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);	
+		
+		# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
+		&ecrit_log("Definition des images des niveaux inferieurs.");
+		my ($nombre_dalles_niveaux_inf, $string_script_temp) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", $indice_travail + 1, $indice_niveau0);
+		$string_script4 .= $string_script_temp;
+		&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
+		$nombre_dalles_job17 += $nombre_dalles_niveaux_inf;
+		if (defined $fichier_mtd_source){
+			&ecrit_log("Definition des mtd des niveaux inferieurs.");
+			my ($nombre_mtd_niveaux_inf, $string_script_temp2) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", $indice_travail + 1, $indice_niveau0);
+			$string_script4 .= $string_script_temp2;
+			&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
+			$nombre_dalles_job17 += $nombre_mtd_niveaux_inf;
+		}
+		
 	}
-	
-	# transformation des index dans l'arbre en nom des dalles cache
-	@liste_dalles_cache_index_arbre = keys %index_arbre_liste_dalle;
-	&ecrit_log("Passage des donnees arbre issu de $dalle_arbre_niveau_max aux donnees cache.");
-	&arbre2cache(\@liste_dalles_cache_index_arbre, $x_min_dalle0, $x_max_dalle0, $y_min_dalle0, $y_max_dalle0);	
-	
-	# action 7 : calculer les niveaux inferieurs de 1 jusqu'au niveau de travail
-	&ecrit_log("Definition des images des niveaux inferieurs.");
-	my ($nombre_dalles_niveaux_inf, $string_script_temp) = &calcule_niveaux_inferieurs(\%niveau_ref_dalles_inf, "MOYENNE", \%dalle_cache_min_liste_dalle, "image", $indice_travail, $indice_niveau0);
-	$string_script4 .= $string_script_temp;
-	&ecrit_log("$nombre_dalles_niveaux_inf image(s) a calculer.");
-	$nombre_dalles_job17 += $nombre_dalles_niveaux_inf;
-	if (defined $fichier_mtd_source){
-		&ecrit_log("Definition des mtd des niveaux inferieurs.");
-		my ($nombre_mtd_niveaux_inf, $string_script_temp2) = &calcule_niveaux_inferieurs(\%niveau_ref_mtd_inf, "PPV", \%mtd_cache_min_liste_mtd, "mtd", $indice_travail, $indice_niveau0);
-		$string_script4 .= $string_script_temp2;
-		&ecrit_log("$nombre_mtd_niveaux_inf image(s) a calculer.");
-		$nombre_dalles_job17 += $nombre_mtd_niveaux_inf;
+
+	# passage en pivot du dernier niveau
+	&ecrit_log("Passage en format final niveau $level_max.");
+	my @dalles_change_format_haut;
+	if(defined $niveau_ref_dalles_inf{"$level_max"}){
+		@dalles_change_format_haut = @{$niveau_ref_dalles_inf{"$level_max"}};
 	}
-	
-}
+	$string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_taille_tuile_y{"$level_max"}, \@dalles_change_format_haut);
 
-
-# passage en pivot du dernier niveau
-&ecrit_log("Passage en format final niveau $level_max.");
-my @dalles_change_format_haut;
-if(defined $niveau_ref_dalles_inf{"$level_max"}){
-	@dalles_change_format_haut = @{$niveau_ref_dalles_inf{"$level_max"}};
 }
-$string_script4 .= &passage_pivot($niveau_taille_tuile_x{"$level_max"}, $niveau_taille_tuile_y{"$level_max"}, \@dalles_change_format_haut);
 
 
 if($string_script4 ne ""){
@@ -1121,7 +1123,7 @@ sub calcule_niveau_minimum {
 				#if (-e $dalle_cache ){
 				# avec le script il faut faire autrement
 				if (exists $dalles_liens{$dalle_cache} ){
-					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
+					$string_script .= &cree_string_copie_image($taille_dalle_pix, $niveau_taille_tuile_x{"$level_min_utile"}, $niveau_taille_tuile_y{"$level_min_utile"}, $dalles_liens{$dalle_cache}, $nom_dalle_temp);;
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
@@ -1288,7 +1290,7 @@ sub calcule_niveaux_inferieurs{
 								# mise en format travail de la dalle dalle_cache
 								# desctruction de la dalle_cache temporaire si elle existe
 								$string_script2 .= "if [ -r \"$rep_temp/$nom_dalle_cache\" ] ; then rm -f $rep_temp/$nom_dalle_cache ; fi\n";
-								$string_script2 .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $rep_temp/$nom_dalle_cache\n".$string_erreur_batch;
+								$string_script2 .= &cree_string_copie_image($taille_dalle_pix, $niveau_taille_tuile_x{"$niveau_inf"}, $niveau_taille_tuile_y{"$niveau_inf"}, $dalle_dessous, "$rep_temp/$nom_dalle_cache");;
 								$fichier_pointe = "$rep_temp/$nom_dalle_cache";
 							}
 							$string_dessous .= " $fichier_pointe";
@@ -1859,4 +1861,61 @@ sub cree_string_temps_torque{
 	my $temps_torque = "#PBS -l cput=".$nb_heures.":".$minutes.":00";
 	
 	return $temps_torque;
+}
+################################################################################
+sub cree_string_copie_image{
+	
+	my $taille_dalle = $_[0];
+	my $taille_tuile_x_cache = $_[1];
+	my $taille_tuile_y_cache = $_[2];
+	my $dalle_ini = $_[3];
+	my $dalle_fin = $_[4];
+	
+	my $string_copie;
+	
+	# on fait un tiffinfo sur l'image initiale : si c'est du format pivot on utilise l'otil de Stephane, sinon tiffcp
+	# TODO ajouter ./ devant tiffinfo ???
+	my @result_tiffinfo = `tiffinfo $dalle_ini`;
+	my $bool_format_pivot = 1;
+	my $bool_tile = 0;
+	my $taille_tuile_x;
+	my $taille_tuile_y;
+	foreach my $ligne_tiffinfo(@result_tiffinfo){
+		# test sur la taile des images
+		if($ligne_tiffinfo =~ /Image\s*Width\s*:\s*(\d+)\s*Image\s*Length\s*:\s*(\d+)/i){
+			if($1 != $taille_dalle || $2 != $taille_dalle){
+				$bool_format_pivot = 0;
+				last;
+			}
+		}
+		# test sur la compression
+		elsif($ligne_tiffinfo =~ /Compression\s*Scheme\s*:\s*([^\s]+)/i){
+			if($1 !~ /AdobeDeflate/i){
+				$bool_format_pivot = 0;
+				last;
+			}
+		}
+		# test sur les tuiles
+		elsif($ligne_tiffinfo =~ /Tile\s*Width\s*:\s*(\d+)\s*Tile\s*Length\s*:\s*(\d+)/i){
+			$bool_tile = 1;
+			$taille_tuile_x = $1;
+			$taille_tuile_y = $2;
+		}
+	}
+	# test sur les tuiles : s'il n'y en a pas ou pas de la bonne taille ce n'est pas du pivot
+	if($bool_tile == 0 ||  ( $bool_tile == 1 && ( !($taille_tuile_x == $taille_tuile_x_cache && $taille_tuile_y == $taille_tuile_y_cache) ) ) ){
+		$bool_format_pivot = 0;
+	}
+	
+	if($bool_format_pivot == 0){
+		$string_copie = "$programme_copie_image -s -r $taille_dalle $dalle_ini $dalle_fin\n".$string_erreur_batch;
+	}else{
+		print "[CALCULE_PYRAMIDE] ATTENTION, le programme n'est pas encore adapte a la copie d'image en format pivot.\n";
+		&ecrit_log("ATTENTION, le programme n'est pas encore adapte a la copie d'image en format pivot.");
+		exit;
+	}
+	
+	
+	return $string_copie;
+
 }

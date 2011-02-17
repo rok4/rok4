@@ -14,7 +14,8 @@ XML::LibXML
 XML::Simple
 
 Fichiers :
-../share/pyramide/4096_4096_FFFFFF.tif
+../share/pyramide/4096_4096_FFFFFF_rgb.tif
+../share/pyramide/4096_4096_FFFFFF_gray.tif
 ../share/pyramide/mtd_4096_4096_black_32b.tif
 ../config/tileMatrixSet/FR_LAMB93.tms
 ../config/pyramids/pyramid.xsd
@@ -31,6 +32,7 @@ which
 rm
 wget
 java
+tiffinfo
 
 Variables d'environnement : 
 xerces_home
