@@ -1123,7 +1123,13 @@ sub calcule_niveau_minimum {
 				#if (-e $dalle_cache ){
 				# avec le script il faut faire autrement
 				if (exists $dalles_liens{$dalle_cache} ){
-					$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
+					if($compress eq "png"){
+						# on recupere directement dans un cache existant une image tiff en format de travail
+						$string_script .= "wget --no-proxy -O $nom_dalle_temp \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
+					}else{
+						$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
+					}
+					
 				}else{
 					# sinon on fait reference a la dalle no_data
 					if($type eq "image"){
