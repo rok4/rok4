@@ -2,7 +2,7 @@
 	<crs>IGNF:LAMB93</crs>
 	<tileMatrix>
 		<id>0</id>
-		<resolution>128000</resolution>
+		<resolution>102400</resolution>
 		<topLeftCornerX> 0 </topLeftCornerX>
 		<topLeftCornerY> 12000000 </topLeftCornerY>
 		<tileWidth>256</tileWidth>
