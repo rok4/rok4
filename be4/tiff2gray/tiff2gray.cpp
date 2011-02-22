@@ -258,7 +258,6 @@ int main(int argc, char* argv[]) {
      ! TIFFSetField(OUTPUT, TIFFTAG_COMPRESSION, compression))
     error("Error writing output file: " + string(output_file));
 
-
   switch(pack(planarconfig,photometric,samplesperpixel,bitspersample)) {
     case pack(PLANARCONFIG_CONTIG,PHOTOMETRIC_MINISWHITE,1,1) : tiff_copy<bw_mw2gray>(INPUT, OUTPUT); break;
     case pack(PLANARCONFIG_CONTIG,PHOTOMETRIC_MINISBLACK,1,1) : tiff_copy<bw2gray>(INPUT, OUTPUT); break;

@@ -42,7 +42,7 @@ class DataSourceDecoder : public DataSource {
 		}
 
 		const uint8_t* getData(size_t &size) {
-			LOGGER(DEBUG) << "==> "  << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
+			//LOGGER(DEBUG) << "==> "  << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			if(!decData && encData) {
 				decData = Decoder::decode(encData, decSize);
 				if(!decData) {
@@ -51,7 +51,7 @@ class DataSourceDecoder : public DataSource {
 				}
 			}
 			size = decSize;
-			LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
+			//LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			return decData;
 		}
 
