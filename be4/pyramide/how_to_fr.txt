@@ -103,7 +103,7 @@ le parametre -k (optionnel) contient la localisation du serveur ROK4 (obligatoir
 le parametre -l (optionnel) contient le nom du LAYER du serveur WMS sur lequel on doit faire les requetes (obligatoire en cas de compression avec perte ou de reprojection)
 
 Exemple :
-"calcule_pyramide.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide -t 4096 -j 16 -k obernai.ign.fr/rok4/bin/rok4 -l ORTHO_RAW"
+"calcule_pyramide.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s IGNF:LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide -t 4096 -j 16 -k obernai.ign.fr/rok4/bin/rok4 -l ORTHO_RAW"
 
 
 

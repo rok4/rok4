@@ -6,7 +6,7 @@
         <images_source>/mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08</images_source>
         <!-- facultatif : soit un repertoire soit un fichier de mtd source issu d'un calcul de pyramide precedent -->
         <!--<masques_metadonnees></masques_metadonnees>-->
-        <systeme_coordonnees_source>LAMB93</systeme_coordonnees_source>
+        <systeme_coordonnees_source>IGNF:LAMB93</systeme_coordonnees_source>
         <!-- a choisir parmi OUI/NON -->
 		<nomenclature_IGN>OUI</nomenclature_IGN>
 		<!-- facultatif (UNITES DU SRS) -->
@@ -25,7 +25,7 @@
         <fichier_layer>/mnt/geoportail/Chataigner/TestCache/ORTHO_RAW.lay</fichier_layer>
         <!-- a choisir parmi raw/jpeg/png -->
         <compression_images_pyramide>raw</compression_images_pyramide>
-        <systeme_coordonnees_pyramide>LAMB93</systeme_coordonnees_pyramide>
+        <systeme_coordonnees_pyramide>IGNF:LAMB93</systeme_coordonnees_pyramide>
         <repertoire_fichiers_dallage>/mnt/geoportail/Chataigner/TestCache</repertoire_fichiers_dallage>
         <taille_dalles_pixels>4096</taille_dalles_pixels>
         <pcent_dilatation_dalles_base>10</pcent_dilatation_dalles_base>

@@ -46,7 +46,9 @@ if(-e $old_layer && -f $old_layer){
 }
 
 # destruction du rep de la pyramide
-my $srs_pyramide = "IGNF_".uc($systeme_coordonnees_pyramide);
+# CD 22/02/11 IGNF est deja dans le XML de parametrage
+#my $srs_pyramide = "IGNF_".uc($systeme_coordonnees_pyramide);
+my $srs_pyramide = uc($systeme_coordonnees_pyramide);
 my $nom_pyramide = &cree_nom_pyramide($produit, $compression_images_pyramide, $srs_pyramide, $annee, $departement);
 system("rm -rf $repertoire_pyramide/$nom_pyramide");
 

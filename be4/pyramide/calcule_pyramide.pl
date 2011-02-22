@@ -148,7 +148,9 @@ if (defined $opt_m){
 	$fichier_mtd_source = $opt_m;
 }
 my $fichier_pyramide = $opt_x;		# .pyr
-my $systeme_source = "IGNF:".$opt_s;
+# CD 22/02/11 IGNF: est dans le XML de parametres
+#my $systeme_source = "IGNF:".$opt_s;
+my $systeme_source = $opt_s;
 my $pourcentage_dilatation = $opt_d;
 my $dilatation_reproj = $opt_r;
 my $nom_script = $opt_n;		# prefixe des scripts qui vont etre crees

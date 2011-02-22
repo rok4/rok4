@@ -278,7 +278,10 @@ if(defined $masque_mtd){
 }
 
 # action 2 : creer pyramid.pyr en XML
-my $srs_pyramide = "IGNF_".uc($RIG);
+# CD 22/02/11 IGNF est dans le XMl de parametres : on remplace les : par _
+#my $srs_pyramide = "IGNF_".uc($RIG);
+my $srs_pyramide = uc($RIG);
+$srs_pyramide =~ s/:/_/g;
 my $nom_pyramide = &cree_nom_pyramide($produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
 
 my $format_images = $format_format_pyr{lc($compression_pyramide)};
