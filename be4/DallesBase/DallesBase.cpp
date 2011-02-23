@@ -255,35 +255,43 @@ int checkDalles(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 	return 0;
 }
 
+#define epsilon 0.001
+
 /* Calcul de la phase en X d'une image */
 
 double getPhasex(Image* pImage) {
         double intpart;
-        return ( modf( pImage->getxmin()/pImage->getresx(), &intpart)) ;
+        double phi=modf( pImage->getxmin()/pImage->getresx(), &intpart);
+	if (fabs(1-phi)<epsilon)
+		phi=0.0000001;
+	return phi;
 }
 
 /* Calcul de la phase en Y d'une image */
 
 double getPhasey(Image* pImage) {
         double intpart;
-        return ( modf( pImage->getymax()/pImage->getresy(), &intpart)) ;
+        double phi=modf( pImage->getymax()/pImage->getresy(), &intpart);
+	if (fabs(1-phi)<epsilon)
+                phi=0.0000001;
+        return phi;
 }
 
 /* Teste si 2 images sont superposabbles */
 bool areOverlayed(Image* pImage1, Image* pImage2)
 {
-	if (pImage1->getresx()!=pImage2->getresx()) return false;
-        if (pImage1->getresy()!=pImage2->getresy()) return false;
-	if (getPhasex(pImage1)!=getPhasex(pImage2)) return false;
-        if (getPhasey(pImage1)!=getPhasey(pImage2)) return false;
+	if (fabs(pImage1->getresx()-pImage2->getresx())>epsilon) return false;
+        if (fabs(pImage1->getresy()-pImage2->getresy())>epsilon) return false;
+	if (fabs(getPhasex(pImage1)-getPhasex(pImage2))>epsilon) return false;
+        if (fabs(getPhasey(pImage1)-getPhasey(pImage2))>epsilon) return false;
 	return true;
 } 
 
 /* Fonctions d'ordre */
-bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx());}
-bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy());}
-bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2));}
-bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2));}
+bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx()-epsilon);}
+bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy()-epsilon);}
+bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2)-epsilon);}
+bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2)-epsilon);}
 
 /*
 * @brief Tri des dalles source en paquets de dalles superposables (memes phases et resolutions en x et y)
@@ -304,7 +312,7 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
         {
                 std::sort(it->begin(),it->end(),InfResx); 
                 for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                        if ((*it2)->getresy()!=(*(it2+1))->getresy())
+                        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy())>epsilon)
                         {
 				vTmp.assign(it2+1,it->end());
                                 it->assign(it->begin(),it2+1);
@@ -401,9 +409,6 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,r);
-
-	LOGGER_DEBUG("AAA "<< w<<" "<<h<<" "<<(*TabImageIn.begin())->channels<<" " <<TabImageIn.size());
-	LOGGER_DEBUG(xmin<<" "<<ymin<<" "<<xmax<<" "<<ymax);	
 
 	return pECI ;
 }
@@ -605,7 +610,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
+			saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
 			pMask.push_back(mask);
 		}
 		else {
@@ -667,7 +672,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-        log.precision(12);
+        log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
@@ -689,12 +694,12 @@ int main(int argc, char **argv) {
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles"); return -1;
 	}
-LOGGER_DEBUG("Sort");
+LOGGER_DEBUG("Sort ");
 	// Tri des dalles
 	if (sortDalles(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des dalles"); return -1;
 	}
-LOGGER_DEBUG("Merge");
+LOGGER_DEBUG("Merge "<<ImageIn.size()<<" "<<TabImageIn.size()<<" "<<TabImageIn[0].size());
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
