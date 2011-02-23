@@ -21,7 +21,6 @@ all: makedir
 	$(BINDIR)/tiffcp -c none $(SHAREPYRAMIDEDIR)/4096_4096_FFFFFF_rgb_png.tif $(SHAREPYRAMIDEDIR)/4096_4096_FFFFFF_rgb.tif
 	$(BINDIR)/tiffcp -c none $(SHAREPYRAMIDEDIR)/4096_4096_FFFFFF_gray_png.tif $(SHAREPYRAMIDEDIR)/4096_4096_FFFFFF_gray.tif
 	#$(BINDIR)/tiffcp -c none $(png) $(pngout);done;
-	cp tiffcpbe4 $(BINDIR)
 	cp gdalinfo $(BINDIR)
 	chmod +x $(BINDIR)/*.pl
 	chmod +x $(BINDIR)/gdalinfo
