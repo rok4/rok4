@@ -610,7 +610,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			i//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
+			//saveImage(pECI,"test.tif",3,8,PHOTOMETRIC_RGB);
 			pMask.push_back(mask);
 		}
 		else {
