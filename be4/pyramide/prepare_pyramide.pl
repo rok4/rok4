@@ -120,6 +120,7 @@ if ($bool_getopt_ok == 0){
 }
 
 my $produit = $opt_p;
+my $ss_produit;
 my $images_source = $opt_i;
 my $masque_mtd;
 if (defined $opt_m){
@@ -148,13 +149,17 @@ if (defined $opt_f){
 my $fichier_layer = $opt_l;
 # verifier les parametres
 my $bool_param_ok = 1;
-if ($produit !~ /^ortho|parcellaire|scan|franceraster$/i){
+if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster)$/i){
 	print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
 	$bool_param_ok = 0;
 }else{
-	$produit = lc($produit);
-	
+	$ss_produit = lc($produit);
+	if($produit =~ /^scan(?:25|50|100|dep|reg|1000)$/i){
+		$produit = "scan";
+	}else{
+		$produit = $ss_produit;
+	}
 }
 
 if (! (-e $fichier_layer && -f $fichier_layer) ){
@@ -282,7 +287,7 @@ if(defined $masque_mtd){
 #my $srs_pyramide = "IGNF_".uc($RIG);
 my $srs_pyramide = uc($RIG);
 $srs_pyramide =~ s/:/_/g;
-my $nom_pyramide = &cree_nom_pyramide($produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
+my $nom_pyramide = &cree_nom_pyramide($ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
 
 my $format_images = $format_format_pyr{lc($compression_pyramide)};
 my $nb_channels = $produit_nb_canaux{$produit};
@@ -342,9 +347,9 @@ sub usage{
 	
 	my $bool_ok = 0;
 
-	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels\n";
+	print "\nUsage : \nprepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -t path/repertoire_fichiers_dallage -s systeme_coordonnees_pyramide -n annee [-d departement] -x taille_dalles_pixels -l nom_layer\n";
 	print "\nproduit :\n";
- 	print "\tortho\n\tparcellaire\n\tscan\n\tfranceraster\n";
+ 	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\n-f (optionnel) : pour utiliser la nomenclature standard des produits IGN\n";
  	print "\t-a resolution en X ; -y resolution en Y en UNITES DU SRS des images SOURCE si -f est defini, sinon aucun effet\n";
  	print "\t-w taille pixels en X ; -h taille pixels en Y des images SOURCE si -f est defini, sinon aucun effet\n";
