@@ -53,7 +53,6 @@ if ($verif_programme_rollback eq ""){
 
 # parametres dans le fichier
 my $ss_produit;
-my $produit;
 my $images_source;
 my $masques_metadonnees;
 my $repertoire_pyramide;
@@ -98,7 +97,7 @@ my $param_IGN = "";
 if($bool_nomenclature_IGN == 1){
 	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
 }
-my $commande_prepare = "$programme_prepare_pyramide -p $produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
+my $commande_prepare = "$programme_prepare_pyramide -p $ss_produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats
 my $bool_erreur_prepare = 0;
@@ -191,11 +190,6 @@ sub initialise_parametres{
 	my $data = $xml_fictif->XMLin("$xml_parametres");
 	
 	$ss_produit = $data->{ss_produit};
-	if ($ss_produit =~ /scan/){
-		$produit = "scan";
-	}else{
-		$produit = $ss_produit;
-	}
 	
 	$images_source = $data->{images_source};
 	if (defined $data->{masques_metadonnees}){
