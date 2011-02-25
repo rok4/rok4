@@ -58,7 +58,7 @@ my $masques_metadonnees;
 my $repertoire_pyramide;
 my $compression_images_pyramide;
 my $systeme_coordonnees_pyramide;
-my $repertoire_fichiers_dallage;
+my $repertoire_fichiers_temp;
 my $annee;
 my $departement;
 my $fichier_layer;
@@ -97,7 +97,7 @@ my $param_IGN = "";
 if($bool_nomenclature_IGN == 1){
 	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
 }
-my $commande_prepare = "$programme_prepare_pyramide -p $ss_produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_dallage -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
+my $commande_prepare = "$programme_prepare_pyramide -p $ss_produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_temp -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats
 my $bool_erreur_prepare = 0;
@@ -156,7 +156,7 @@ if(defined $localisation_rok4){
 if(defined $layer_requetes){
 	$param_requetes .= "-l $layer_requetes";
 }
-my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes";
+my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes -m $repertoire_fichiers_temp";
 my @result_calcule = `$commande_calcule_batch`;
 #etude des resultats
 my $bool_erreur_calcule = 0;
@@ -198,7 +198,7 @@ sub initialise_parametres{
 	$repertoire_pyramide = $data->{repertoire_pyramide};
 	$compression_images_pyramide = $data->{compression_images_pyramide};
 	$systeme_coordonnees_pyramide = $data->{systeme_coordonnees_pyramide};
-	$repertoire_fichiers_dallage = $data->{repertoire_fichiers_dallage};
+	$repertoire_fichiers_temp = $data->{repertoire_fichiers_temporaires};
 	$annee = $data->{annee};
 	if (defined $data->{departement} ){
 		$departement = $data->{departement};

@@ -146,8 +146,8 @@ our %produit_nomenclature_param = (
  	"scan" => "SC\\w{2,4}(?:_\\w{3,4})?_(\\d{4})_(\\d{4})",
 );
 
-our $nom_fichier_first_jobs_param = "../tmp/first_jobs.txt";
-our $nom_fichier_last_jobs_param = "../tmp/last_jobs.txt";
+our $nom_fichier_first_jobs_param = "first_jobs.txt";
+our $nom_fichier_last_jobs_param = "last_jobs.txt";
 
 our $version_wms_param = "1.3.0";
 

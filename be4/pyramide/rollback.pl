@@ -12,7 +12,7 @@ use cache(
 my $fichier_parametres = $ARGV[0];
 
 my $repertoire_pyramide;
-my $repertoire_fichiers_dallage;
+my $repertoire_fichiers_temp;
 my $fichier_layer;
 my $prefixe_nom_script;
 my $systeme_coordonnees_pyramide;
@@ -29,15 +29,15 @@ print colored ("[ROLLBACK] Annulation...", 'white on_green');
 print "\n";
 
 # destruction des scripts first et last 
-system("rm -f $nom_fichier_first_jobs_param");
-system("rm -f $nom_fichier_last_jobs_param");
+system("rm -f $repertoire_fichiers_temp/$nom_fichier_first_jobs_param");
+system("rm -f $repertoire_fichiers_temp/$nom_fichier_last_jobs_param");
 
 # destruction des scripts
 system("rm -f $prefixe_nom_script"."*");
 
 # destruction des fichiers de dallage
-system("rm -f $repertoire_fichiers_dallage/$nom_fichier_dalle_source_param"."*");
-system("rm -f $repertoire_fichiers_dallage/$nom_fichier_mtd_source_param"."*");
+system("rm -f $repertoire_fichiers_temp/$nom_fichier_dalle_source_param"."*");
+system("rm -f $repertoire_fichiers_temp/$nom_fichier_mtd_source_param"."*");
 
 # remise a l'ancien LAY s'il existe
 my $old_layer = $fichier_layer.".old";
@@ -74,7 +74,7 @@ sub initialise_parametres{
 	}
 
 	$repertoire_pyramide = $data->{repertoire_pyramide};
-	$repertoire_fichiers_dallage = $data->{repertoire_fichiers_dallage};
+	$repertoire_fichiers_temp = $data->{repertoire_fichiers_temporaires};
 	$prefixe_nom_script = $data->{prefixe_nom_script};
 	$systeme_coordonnees_pyramide = $data->{systeme_coordonnees_pyramide};
 	$compression_images_pyramide = $data->{compression_images_pyramide};

@@ -70,7 +70,7 @@ Exemple :
 ETAPE 3 : CREATION DE SCRIPTS DE CALCUL DU CACHE PROPREMENT DIT
 
 Lancer :
-"calcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script -t taille_dalles_pixels -j nombre_jobs_min [-k localisation_serveur_rok4 -l nom_layer_a_utiliser]"
+"calcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/nom_script -t taille_dalles_pixels -j nombre_jobs_min [-k localisation_serveur_rok4 -l nom_layer_a_utiliser] -m repertoire_temporaire"
 
 produit :
  		ortho
@@ -101,9 +101,10 @@ le parametre -t contient la taille des images du cache en pixels
 le parametre -j contient le nombre de jobs minimum crees par le programme
 le parametre -k (optionnel) contient la localisation du serveur ROK4 (obligatoire en cas de compression avec perte ou de reprojection)
 le parametre -l (optionnel) contient le nom du LAYER du serveur WMS sur lequel on doit faire les requetes (obligatoire en cas de compression avec perte ou de reprojection)
+le parametre -m contient le chemin vers un repertoire de fichiers temporaires crees par le programme
 
 Exemple :
-"calcule_pyramide.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s IGNF:LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide -t 4096 -j 16 -k obernai.ign.fr/rok4/bin/rok4 -l ORTHO_RAW"
+"calcule_pyramide.pl -p ortho -f /home/charlotte/rep_fichiers_pyramide/dalles_source_image.txt -s IGNF:LAMBE -x /home/charlotte/rep_pyramide/ORTHO_IGNF_LAMB93_2008_75/ORTHO_IGNF_LAMB93_2008_75.pyr -d 10 -r 20 -n /home/charlotte/script_pyramide -t 4096 -j 16 -k obernai.ign.fr/rok4/bin/rok4 -l ORTHO_RAW -m /home/charlotte//tmp"
 
 
 

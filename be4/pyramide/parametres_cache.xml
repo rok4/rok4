@@ -26,7 +26,7 @@
         <!-- a choisir parmi raw/jpeg/png -->
         <compression_images_pyramide>raw</compression_images_pyramide>
         <systeme_coordonnees_pyramide>IGNF:LAMB93</systeme_coordonnees_pyramide>
-        <repertoire_fichiers_dallage>/mnt/geoportail/Chataigner/TestCache</repertoire_fichiers_dallage>
+        <repertoire_fichiers_temporaires>/mnt/geoportail/Chataigner/TestCache</repertoire_fichiers_temporaires>
         <taille_dalles_pixels>4096</taille_dalles_pixels>
         <pcent_dilatation_dalles_base>10</pcent_dilatation_dalles_base>
         <pcent_dilatation_reproj>20</pcent_dilatation_reproj>

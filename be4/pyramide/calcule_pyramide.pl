@@ -38,7 +38,7 @@ use POSIX qw(ceil floor);
 # pas de bufferisation des sorties
 $| = 1;
 # Variables locales recuperees de la ligne de commande
-our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j, $opt_k, $opt_l);
+our ($opt_p, $opt_f, $opt_x, $opt_m, $opt_s, $opt_d, $opt_r, $opt_n, $opt_t, $opt_j, $opt_k, $opt_l, $opt_e);
 my $base = $base_param;
 my %base10_base = %base10_base_param;
 my $color_no_data = $color_no_data_param;
@@ -49,8 +49,6 @@ my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
 my $programme_copie_image = $programme_copie_image_param;
-my $nom_fichier_first_jobs = $nom_fichier_first_jobs_param;
-my $nom_fichier_last_jobs = $nom_fichier_last_jobs_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
@@ -103,9 +101,9 @@ open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $lo
 &ecrit_log("commande : @ARGV");
 
 #### RECUPERATION DES PARAMETRES DE LA LIGNE DE COMMANDE
-getopts("p:f:x:m:s:d:r:n:t:j:k:l:");
+getopts("p:f:x:m:s:d:r:n:t:j:k:l:m:");
 
-if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j) ){
+if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j and $opt_e) ){
 	print "[CALCULE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 	&ecrit_log("ERREUR : Nombre d'arguments incorrect.");
 	if(! defined $opt_p){
@@ -134,6 +132,9 @@ if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r an
 	}
 	if(! defined $opt_j){
 		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -j.\n";
+	}
+	if(! defined $opt_e){
+		print "[CALCULE_PYRAMIDE] Veuillez specifier un parametre -e.\n";
 	}
 	&usage();
 	exit;
@@ -165,6 +166,7 @@ my $nom_layer_pour_requetes_wms;	# Nom du layer WMS dans lequel on recupere par 
 if(defined $opt_l){
 	$nom_layer_pour_requetes_wms = $opt_l;
 }
+my $repertoire_tempo = $opt_e; # repertoire des fichiers temporaires
 
 ### VERIFICATION DES VARIABLES
 if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
@@ -215,13 +217,19 @@ if ($nombre_jobs !~ /^\d+$/ && $nombre_jobs > 0){
 	print "[CALCULE_PYRAMIDE] Le nombre de batchs -j $nombre_jobs est incorrect.\n";
 	exit;
 }
-
+if (! (-e $repertoire_tempo && -d $repertoire_tempo)){
+	print "[CALCULE_PYRAMIDE] Le repertoire $repertoire_tempo n'existe pas.\n";
+	&ecrit_log("ERREUR : Le repertoire $repertoire_tempo n'existe pas.");
+	exit;
+}
 ### TRAITEMENT
 
 my $couleur = $produit_couleur{$produit};
 
 # creation d'un rep temporaire pour les calculs intermediaires
-my $rep_temp = "../tmp/CALCULE_PYRAMIDE_".$time;
+my $rep_temp = $repertoire_tempo."/CALCULE_PYRAMIDE_".$time;
+my $nom_fichier_first_jobs = $rep_temp."/".$nom_fichier_first_jobs_param;
+my $nom_fichier_last_jobs = $rep_temp."/".$nom_fichier_last_jobs_param;
 mkdir $rep_temp, 0755 or die "[CALCULE_PYRAMIDE] Impossible de creer le repertoire $rep_temp.";
 my $string_script_creation_rep_temp = "if [ ! -d \"$rep_temp\" ] ; then mkdir $rep_temp ; fi\n";
 my $string_script_destruction_rep_temp = "rm -rf $rep_temp\n";
