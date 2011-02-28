@@ -348,6 +348,13 @@ if (defined $fichier_mtd_source){
 	@mtd_source = keys %mtd_source_x_min;
 }
 
+# creation de la BBOX des dalles source en SRS de la pyramide
+# initialisation en proj source
+my ($x_min_bbox_proj_pyr, $x_max_bbox_proj_pyr, $y_min_bbox_proj_pyr, $y_max_bbox_proj_pyr) = ($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
+if($bool_reprojection == 1){
+	($x_min_bbox_proj_pyr, $x_max_bbox_proj_pyr, $y_min_bbox_proj_pyr, $y_max_bbox_proj_pyr) = &reproj_rectangle($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $systeme_source, $systeme_target, $dilatation_reproj);
+}
+
 # ACTION 3 : determination de la resolution_min utile (la res max est celle de la pyramide)
 # et du niveau minimum utile
 # cad le niveau de la pyr a partir duquel on va faire les calculs
@@ -998,15 +1005,10 @@ sub definit_bloc_dalle{
 	
 	my $nombre_dalles_traitees = 0;
 	
-	# pour les reproj
-	my ($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles) = ($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache);
-	# sortie si la dalle n'est pas dans la bbox des dalles source
-	if ($bool_reprojection){
-		($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles) = &reproj_rectangle($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $systeme_source, $systeme_target, $dilatation_reproj);
-	}
+	# calcul d'intersection avec la BBOX eventuellement reprojetee
 	my $interieur_ok = 0;
-	
-	if ( intersects($x_min_dalle_cache_proj_dalles, $x_max_dalle_cache_proj_dalles, $y_min_dalle_cache_proj_dalles, $y_max_dalle_cache_proj_dalles, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) ){
+	# sortie si la dalle n'est pas dans la bbox des dalles source
+	if ( intersects($x_min_dalle_cache, $x_max_dalle_cache, $y_min_dalle_cache, $y_max_dalle_cache, $x_min_bbox_proj_pyr, $x_max_bbox_proj_pyr, $y_min_bbox_proj_pyr, $y_max_bbox_proj_pyr) ){
 		$interieur_ok = 1;
 	}
 	if($interieur_ok == 0){
@@ -1022,14 +1024,13 @@ sub definit_bloc_dalle{
 	my $y_min_dilate = $y_min_dalle_cache - (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
 	my $y_max_dilate = $y_max_dalle_cache + (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
 	
-	# pour les reproj
-	my ($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles) = ($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate);
-	if ($bool_reprojection){
-		($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles) = &reproj_rectangle($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $systeme_source, $systeme_target, $dilatation_reproj);
-	}
-	
 	foreach my $source(@dalles_initiales){
-		if( intersects($x_min_dilate_proj_dalles, $x_max_dilate_proj_dalles, $y_min_dilate_proj_dalles, $y_max_dilate_proj_dalles, $source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}) ){
+		# on reprojette enventuellement le rectangle englobant la dalle source en SRS de la pyramide pour tester l'intersection
+		my ($x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) = ($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source});
+		if($bool_reprojection == 1){
+			($x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) = &reproj_rectangle($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}, $systeme_source, $systeme_target, $dilatation_reproj);
+		}
+		if( intersects($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) ){
 			push(@dalles_recouvrantes, $source);
 		}
 	}
