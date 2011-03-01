@@ -44,6 +44,7 @@ our @EXPORT=(
 	'$nb_bits_param',
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
+	'$srs_wgs84g_param',
 );
 ################################################################################
 
@@ -172,6 +173,9 @@ our $version_wms_param = "1.3.0";
 # chaine de caracteres a inserer dans les scripts : indique si une erreur s'est produite (code de retour d'un programme != 0) et a quelle ligne
 our $string_erreur_batch_param = "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; fi\n";
 
+# systeme de coordonnees pour exprimer l'emprise des layers
+# TODO eventuellement changer la def en fonction des specs
+our $srs_wgs84g_param = "IGNF:WGS84G";
 ################################################################################
 
 ########## FONCTIONS
