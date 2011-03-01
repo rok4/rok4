@@ -683,7 +683,7 @@ close LOG;
 sub usage{
 	my $bool_ok = 0;
 	
-	print "\nUsage : \ncalcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script -t taille_dalles_pixels -j nombre_jobs_min [-k localisation_serveur_rok4 -l nom_layer_a_utiliser]\n";
+	print "\nUsage : \ncalcule_pyramide.pl -p produit -f path/fichier_dalles_source [-m path/fichier_mtd_source] -s systeme_coordonnees_source -x path/fichier_pyramide.pyr -d %_dilatation_dalles_base -r %_dilatation_reproj -n path/prefixe_nom_script -t taille_dalles_pixels -j nombre_jobs_min [-k localisation_serveur_rok4 -l nom_layer_a_utiliser] -e path/repertoire_fichiers_temporaires\n";
 	print "\nproduit :\n";
  	print "\tortho\n\tparcellaire\n\tscan[25|50|100|dep|reg|1000]\n\tfranceraster\n";
  	print "\nsysteme_coordonnees_source :\n";
@@ -1136,7 +1136,7 @@ sub calcule_niveau_minimum {
 				if (exists $dalles_liens{$dalle_cache} ){
 					if($compress eq "png"){
 						# on recupere directement dans un cache existant une image tiff en format de travail
-						$string_script .= "wget --no-proxy -O $nom_dalle_temp \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
+						$string_script .= "wget --no-proxy -O $nom_dalle_temp \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
 					}else{
 						$string_script .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
 					}
@@ -1222,7 +1222,7 @@ sub calcule_niveau_minimum {
 				$string_script .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nb_canaux -b $nb_bits -p $couleur\n".$string_erreur_batch;
 			}else{
 				# on recupere directement dans un cache existant une image tiff en format de travail
-				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
+				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
 			}
 			
 			$dalles_calculees{$dalle_cache} = "toto";
@@ -1317,7 +1317,7 @@ sub calcule_niveaux_inferieurs{
 						
 					}else{
 						# on recupere a partir d'un cache existant une dalle en format de travail						
-						$string_script2 .= "wget --no-proxy -O $dal \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dal}.",".$cache_arbre_y_min{$dal}.",".$cache_arbre_x_max{$dal}.",".$cache_arbre_y_max{$dal}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"";
+						$string_script2 .= "wget --no-proxy -O $dal \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dal}.",".$cache_arbre_y_min{$dal}.",".$cache_arbre_x_max{$dal}.",".$cache_arbre_y_max{$dal}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
 					}
 					
 					$dalles_calculees{$dal} = "toto";
