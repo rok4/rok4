@@ -11,8 +11,6 @@ use cache(
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
-# 	'%produit_format_param',
-# 	'$path_tms_param',
 	'lecture_tile_matrix_set',
 	'$dalle_no_data_mtd_param',
 	'$programme_dalles_base_param',
@@ -101,7 +99,7 @@ open LOG, ">>$log" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $lo
 &ecrit_log("commande : @ARGV");
 
 #### RECUPERATION DES PARAMETRES DE LA LIGNE DE COMMANDE
-getopts("p:f:x:m:s:d:r:n:t:j:k:l:m:");
+getopts("p:f:x:m:s:d:r:n:t:j:k:l:e:");
 
 if ( ! defined ($opt_p and $opt_f and $opt_x and $opt_s and $opt_d and $opt_r and $opt_n and $opt_t and $opt_j and $opt_e) ){
 	print "[CALCULE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
