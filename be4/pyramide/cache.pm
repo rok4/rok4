@@ -346,7 +346,7 @@ sub reproj_point{
 	# pour etre sur que proj utilise le bon parametrage
 	&proj4_env_variable;
 	
-	# lancement du programme de reperojection et stockage du resultat dans une variable
+	# lancement du programme de reprojection et stockage du resultat dans une variable
 	my $result = `echo $x_point $y_point | $programme_reproj_param -f %.8f +init=$srs_ini +to +init=$srs_fin`;
 	# on separe le resultat selon n'importe quel espace
 	my @split2 = split /\s/, $result;
