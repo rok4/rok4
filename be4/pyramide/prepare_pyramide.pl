@@ -7,7 +7,6 @@ use File::Basename;
 use File::Copy;
 use POSIX qw(ceil floor);
 use cache(
-# 	'%produit_format_param',
 	'$type_mtd_pyr_param',
 	'$format_mtd_pyr_param',
 	'$profondeur_pyr_param',
@@ -16,7 +15,6 @@ use cache(
 	'$nom_rep_mtd_param',
 	'$nom_fichier_mtd_source_param',
 	'%produit_nb_canaux_param',
-# 	'%produit_tms_param',
 	'$xsd_pyramide_param',
 	'lecture_tile_matrix_set',
 	'$rep_logs_param',
@@ -30,24 +28,35 @@ use cache(
 $| = 1;
 our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
 
-# my %produit_format = %produit_format_param;
+# nom du fichier de dallage des dalles source (description des caracteristiques des images)
 my $nom_fichier_dalle_source = $nom_fichier_dalle_source_param;
+# nom du fichier de dallages de masques de mts source (description des caracteristiques des masques)
 my $nom_fichier_mtd_source = $nom_fichier_mtd_source_param;
+# nom du repertoire des images dans la pyramide
 my $nom_rep_images = $nom_rep_images_param;
+# nom du repertoire des mtd dans la pyramide
 my $nom_rep_mtd = $nom_rep_mtd_param;
 
+# type de mtd dans la pyramide
 my $type_mtd_pyr = $type_mtd_pyr_param;
+# format des mtd dans la pyramide
 my $format_mtd_pyr = $format_mtd_pyr_param;
+# profondeur de chemin des fichiers dans la pyramide
 my $profondeur_pyr = $profondeur_pyr_param;
+# association entre grande famille de produit de nombre de canaux des images
 my %produit_nb_canaux = %produit_nb_canaux_param;
-# my %produit_tms = %produit_tms_param;
+# chemin vers le schema XML qui contraint les fichiers XML de pyramide
 my $xsd_pyramide = $xsd_pyramide_param;
+# chemin vers le repertoire ou mettre les logs
 my $rep_log = $rep_logs_param;
+# association entre type de compression des images et format dans la pyramide
 my %format_format_pyr = %format_format_pyr_param;
+# association entre grande famille de produit et nomenclature standard des dalles IGN (sous forme d'expression reguliere)
 my %produit_nomenclature = %produit_nomenclature_param;
 ################################################################################
 
 # verification de l'existence des fichiers annexes
+# sortie si le fichier de schema XML des pyramides n'existe
 if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
 	exit;
@@ -55,14 +64,18 @@ if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
 
 ##### MAIN
 my $time = time();
+# nom du fichier de log
 my $log = $rep_log."/log_prepare_pyramide_$time.log";
 
+# creation du fichier de log
 open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
 &ecrit_log("commande : @ARGV");
 
+# recuperation des parametres de la ligne de commande
 getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:");
 
 my $bool_getopt_ok = 1;
+# sortie si tous les parametres obligatoires ne sont pas presents
 if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l) ){
 	$bool_getopt_ok = 0;
 	print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
@@ -95,6 +108,7 @@ if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t an
 		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
 	}
 }
+# si le parametre -f a ete specifie, il faut absolument les parametres a, y, w et h
 if(defined $opt_f){
 	if(! defined $opt_a){
 		$bool_getopt_ok = 0;
@@ -119,35 +133,54 @@ if ($bool_getopt_ok == 0){
 	exit;
 }
 
+# nom de la grande famille de produits
 my $produit = $opt_p;
+# nom du produit
 my $ss_produit;
+# chemin vers le repertoire des images source ou chemin vers un fichier de dallage issu d'un calcul precedent
 my $images_source = $opt_i;
+# chemin vers le repertoire des masques de mtd source ou chemin vers un fichier de dallage issu d'un calcul precedent
 my $masque_mtd;
 if (defined $opt_m){
 	$masque_mtd = $opt_m;
 }
+# repertoire ou creer la pyramide
 my $rep_pyramide = $opt_r;
+# type de compression des images de la pyramide
 my $compression_pyramide = $opt_c;
+# systeme de coordonnees de la pyramide
 my $RIG = $opt_s;
+# repertoire des fichiers de dallage a creer
 my $rep_fichiers_dallage = $opt_t;
+# annee de production (ou trimestre) des dalles source (ex : 2010 ou 2010-01)
 my $annee = $opt_n;
+# departement des dalles source (optionnel)
 my $departement;
 if (defined $opt_d){
 	$departement = uc($opt_d);
 }
+# taille des dalles de la pyramide en pixels
 my $taille_dalle_pix = $opt_x;
+# resolution des images source selon l'axe X (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $resolution_source_x;
+# resolution des images source selon l'axe Y (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $resolution_source_y;
+# taille des images source en pixels selon l'axe X (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $taille_pix_source_x;
+# taille des images source en pixels selon l'axe Y (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $taille_pix_source_y;
+# affectation des variables si la nomenclature IGN est utilisee
 if (defined $opt_f){
 	$resolution_source_x = $opt_a;
 	$resolution_source_y = $opt_y;
 	$taille_pix_source_x = $opt_w;
 	$taille_pix_source_y = $opt_h;
 }
+# chemin vers le fichier layer concernant la pyramide
 my $fichier_layer = $opt_l;
+
 # verifier les parametres
+# sortie si un des parametres est mal formate ou un des fichiers ou repertoires attendus est absent
 my $bool_param_ok = 1;
 if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster)$/i){
 	print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
@@ -166,13 +199,13 @@ if (! (-e $fichier_layer && -f $fichier_layer) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $fichier_layer est introuvable.\n";
 	$bool_param_ok = 0;
 }
-# extraction du pyr depuis le lay
+# extraction du precedent .pyr depuis le fichier de layer
 my $fichier_pyr_ancien = &cherche_pyramide_recente_lay($fichier_layer);
 if (! (-e $fichier_pyr_ancien && -f $fichier_pyr_ancien) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $fichier_pyr_ancien est introuvable.\n";
 	$bool_param_ok = 0;
 }
-#extraction du tms depuis le pyr
+# extraction du nom du tms depuis le .pyr
 my $fichier_tms = &extrait_tms_from_pyr($fichier_pyr_ancien);
 if (! (-e $fichier_tms && -f $fichier_tms) ){
 	print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
@@ -199,16 +232,6 @@ if($compression_pyramide !~ /^raw|jpeg|png$/i){
 	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
 	$bool_param_ok = 0;
 }
-# if(defined $departement && $departement !~ /^\d{2,3}|2[AB]$/i){
-# 	print "[PREPARE_PYRAMIDE] Departement mal specifie.\n";
-# 	&ecrit_log("ERREUR Departement mal specifie : $departement.");
-# 	$bool_param_ok = 0;
-# }
-# if($annee !~ /^\d{4}(?:\-\d{2})?$/i){
-# 	print "[PREPARE_PYRAMIDE] Annee mal specifiee.\n";
-# 	&ecrit_log("ERREUR Annee mal specifiee : $annee.");
-# 	$bool_param_ok = 0;
-# }
 if($taille_dalle_pix !~ /^\d+$/i){
 	print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
 	&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
@@ -240,56 +263,74 @@ if ($bool_param_ok == 0){
 	exit;
 }
 
-
 # action 1 : creer dalles_source_image et dalles_source_metadata si on a un repertoire en entree
+# chemin vers le fichier de dallage des images source (a creer)
 my $nom_fichier_dallage_image;
+# coordonnees des coins du rectangle englobant les donnees source
 my ($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
+# references vers des hash d'association entre chemin d'une image source et son x_min, son x_max, son y_min, son y_max, sa resolution en x, sa resolution en y
 my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y);
+# si le parametre $images_source est un repertoire, on etudie les images
 if(-d $images_source){
 	&ecrit_log("Recensement des images dans $images_source.");
+	# constitution d'une reference vers un tableau contenant tous les chmins vers les images source
 	my ($ref_images_source, $nb_images) = &cherche_images($images_source);
+	# on donne le nombre d'images source trouvees
 	&ecrit_log("$nb_images images dans $images_source.");
 	&ecrit_log("Recensement des infos des images de $images_source.");
+	# les variables definies precedemmenet sont affectees en examinant chaque dalle
 	($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
 	&ecrit_log("Ecriture du fichier des dalles source.");
+	# ecriture du fichier de dallage en fonction des caracteristiques des images stockees dans les variables precedentes
 	$nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
 
 }elsif(-f $images_source){
-	#on utilise l'existant
+	# le parametre $images_source est un fichier : on utilise l'existant
 	&ecrit_log("Utilisation du fichier des dalles source existant.");
 	$nom_fichier_dallage_image = $rep_fichiers_dallage."/".basename($images_source);
+	# copie de l'ancien fichier de dallage dans l'emplacement du nouveau
 	copy($images_source, $nom_fichier_dallage_image);
+	# extraction du rectangle englobant les donness source du fichier de dallage
 	($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &extrait_bbox_dallage($nom_fichier_dallage_image);
 }
 
+# idem pour les mtd
 # seulement si les mtd sont specifiees
 my $nom_fichier_dallage_mtd = "";
 if(defined $masque_mtd){
-	# si on a un repertoire
+	# si le parametre $masque_mtd est un repertoire, on etudie les msques de mtd
 	if(-d $masque_mtd){
 		&ecrit_log("Recensement des mtd dans $masque_mtd.");
+		# constitution d'une reference vers un tableau contenant tous les chmins vers les masques de mtd source
 		my ($ref_mtd_source, $nb_mtd) = &cherche_images($masque_mtd);
+		# on donne le nombre de masques de mtd source trouves
 		&ecrit_log("$nb_mtd mtd dans $masque_mtd.");
 		&ecrit_log("Recensement des infos des mtd de $masque_mtd.");
+		# references vers des hash d'association entre chemin d'un masque de mtd source et son x_min, son x_max, son y_min, son y_max, sa resolution en x, sa resolution en y
 		my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_mtd_source);
 		&ecrit_log("Ecriture du fichier des mtd source.");
+		# ecriture du fichier de dallage en fonction des caracteristiques des masques de mtd stockees dans les variables precedentes
 		$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
 	}elsif(-f $masque_mtd){
-		#on utilise l'existant
+		# le parametre $masque_mtd est un fichier : on utilise l'existant
 		&ecrit_log("Utilisation du fichier des mtd source existant.");
 		$nom_fichier_dallage_mtd = $rep_fichiers_dallage."/".basename($masque_mtd);
+		# copie de l'ancien fichier de dallage dans l'emplacement du nouveau
 		copy($masque_mtd, $nom_fichier_dallage_mtd);
 	}
 }
 
 # action 2 : creer pyramid.pyr en XML
-# CD 22/02/11 IGNF est dans le XMl de parametres : on remplace les : par _
-#my $srs_pyramide = "IGNF_".uc($RIG);
+# formattage du SRS en majuscule
 my $srs_pyramide = uc($RIG);
+# on remplace les : par des _ car cette string peut etre le nom d'un repertoire 
 $srs_pyramide =~ s/:/_/g;
+# nom de la pyramide (et nom de son repertoire)
 my $nom_pyramide = &cree_nom_pyramide($ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
 
+# format des images de la pyramide
 my $format_images = $format_format_pyr{lc($compression_pyramide)};
+# nombre de canaux des images de la pyramide
 my $nb_channels = $produit_nb_canaux{$produit};
 
 # creation du repertoire de la pyramide
@@ -301,8 +342,10 @@ if ( !(-e "$rep_pyramide/$nom_pyramide" && -d "$rep_pyramide/$nom_pyramide") ){
 	mkdir "$rep_pyramide/$nom_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide/$nom_pyramide.";
 }
 
+# nom du fichier XML de pyramide
 my $nom_fichier_pyramide = $nom_pyramide.".pyr";
 &ecrit_log("Creation de $nom_fichier_pyramide.");
+# creation du fichier XML de pyramide et recuperation de la liste des repertoires de la pyramide sous forme de reference
 my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 
 # validation du .pyr par le xsd
@@ -313,6 +356,7 @@ if ((!defined $valid) || $valid ne ""){
 	if(defined $valid){
 		$string_valid = $valid;
 	}
+	# on sort le resultat de la validation
 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
 	print "$string_valid\n";
 	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $string_valid");
@@ -328,7 +372,7 @@ foreach my $rep_a_creer(@repertoires){
 }
 &ecrit_log("Repertoires de la pyramide crees.");
 
-# pour recuperation par d'autres scripts
+# pour recuperation par d'autres scripts, on ecrit sur la sortie standard
 # 1 nom fichier pyr
 print "$nom_fichier_final\n";
 # 2 nom dallage_image
@@ -369,100 +413,136 @@ sub usage{
 	return $bool_ok;
 }
 ################################################################################
+# examine recursivement un repertoire et en extrait un reference vers un tableau contenant la liste des images
 sub cherche_images{
 	
+	# parametre : chemin vers le repertoire a examiner
 	my $repertoire = $_[0];
 	
+	# liste des images
 	my @img_trouvees;
 	
-
+	# ouverture du repertoire et stockage de la liste de ses fichiers dans un tableau
 	opendir REP, $repertoire or die "[PREPARE_PYRAMIDE] Impossible d'ouvrir le repertoire $repertoire.";
 	my @fichiers = readdir REP;
 	closedir REP;
+	# boucle sur les fichiers
 	foreach my $fic(@fichiers){
+		# on ecarte . et .. sinon on boucle a l'infini
 		next if ($fic =~ /^\.\.?$/);
+		# si le fichier a une extension .tif et qu'elle ne contient pas 10m dans son nom (on écarte les imagettes)
 		if ($fic =~ /\.tif$/i && $fic !~ /10m/){
 			my $image;
-			if(substr("$repertoire/$fic", 0, 1) eq "/"){
+			# si le repertoire etudie est en absolu (comment par un /), on stocke directement le chemin de l'image tel quel
+			if(substr("$repertoire", 0, 1) eq "/"){
 				$image = "$repertoire/$fic";
 			}else{
+				# sinon on prend le chemin absolu
 				$image = abs_path("$repertoire/$fic");
 			}
 			push(@img_trouvees, $image);
 			next;
 		}
+		# si le fichier est en realite un repertoire (mais pas un repertoire d'imagettes contenant 10m dans son nom)
 		if(-d "$repertoire/$fic" && $fic !~ /10m/){
+			# on ajoute les images de ce sous-repertoire a celles du repertoire examine
 			my ($ref_images, $nb_temp) = &cherche_images("$repertoire/$fic");
 			my @images_supp = @{$ref_images};
 			push(@img_trouvees, @images_supp);
 			next;
 		}
 	}
-
+	
+	# determination du nombre d'images trouvees
 	my $nombre = @img_trouvees;
 	
 	return (\@img_trouvees, $nombre);
 
 }
 ################################################################################
+# extraction des caracteristiques de chaque image de la liste en parametre : x_min, x_max, y_min, y_max, resolution en x, resolution en y
+# et extraction des coordonnees de coins du rectangle englobant ces donnees
 sub cherche_infos_dalle{
 	
+	# parametre : reference vers un tableau contenant une liste de chemins vers des images
 	my $ref_images = $_[0];
+	# recuperation du parametre precedent ous forme de tableau
 	my @imgs = @{$ref_images};
-		
+	
+	# association entre chemin d'une image et x_min
 	my %hash_x_min;
+	# association entre chemin d'une image et x_max
 	my %hash_x_max;
+	# association entre chemin d'une image et y_min
 	my %hash_y_min;
+	# association entre chemin d'une image et y_max
 	my %hash_y_max;
 	
+	# association entre chemin d'une image et resolution en x
 	my %hash_res_x;
+	# association entre chemin d'une image et resolution en y
 	my %hash_res_y;
 	
+	# x_min du rectangle englobant les images
 	my $x_min_source = 9999999999999;
+	# x_max du rectangle englobant les images
 	my $x_max_source = 0;
+	# y_min du rectangle englobant les images
 	my $y_min_source = 9999999999999;
+	# y_max du rectangle englobant les images
 	my $y_max_source = 0;
 	
-	my $bool_ok = 0;
-	
-	my $nb_dalles = @imgs;
-	my $pourcent = 0;
-	
+	# boucle sur les chemin des images en utilisant un indice d'incrementation
 	for(my $i = 0; $i < @imgs; $i++){
-#	foreach my $image(@imgs){
-		
+		# cas ou on utilise la noenclature standard des dalles IGN
 		if(defined $opt_f){
+			# on ne recupere que le nom de l'image (sans chemin)
 			my $nom_image = basename($imgs[$i]);
+			# test si le nom de l'image correspond bien a la nomenclature attendue
 			if($nom_image =~ /^$produit_nomenclature{$produit}/i){
+				# initialisation d'un multiplicateur (utilise pour calculer les coordonnees des coins de la dalle)
 				my $multiplicateur = 1000;
+				# traditionnellement les coordonnees sont exprimees en km, mais il peut arriver qu'elles soient en hm
 				#  si on est en hexadecimal
 				if(length($1) == 5 && length($2) == 5){
+					# on doit seulement multiplier par 100 les coordonnees pour les obtenir en metres
 					$multiplicateur = 100;
 				}
+				# association entre chemin de l'image et son x_min
 				$hash_x_min{$imgs[$i]} = $1 * $multiplicateur;
+				# association entre chemin de l'image et son y_max
 				$hash_y_max{$imgs[$i]} = $2 * $multiplicateur;
+				# association entre chemin de l'image et sa resolution en x
 				$hash_res_x{$imgs[$i]} = $resolution_source_x;
+				# association entre chemin de l'image et sa resolution en y
 				$hash_res_y{$imgs[$i]} = $resolution_source_y;
+				# calcul du x_max de la dalle puis association au chemin de l'image
 				$hash_x_max{$imgs[$i]} = $hash_x_min{$imgs[$i]} + $resolution_source_x * $taille_pix_source_x;
+				# calcul du y_min de la dalle puis association au chemin de l'image
 				$hash_y_min{$imgs[$i]} = $hash_y_max{$imgs[$i]} - $resolution_source_y * $taille_pix_source_y;
 			}else{
+				# on indique que la dalle n'a pas la nomanclature attendue
 				print "[PREPARE_PYRAMIDE] ERREUR : Nomenclature de $nom_image incorrecte.\n";
 				&ecrit_log("ERREUR Nomenclature de $nom_image incorrecte.");
 			}
 			
 		}else{
-			# recuperation x_min x_max y_min y_max res_x res_y
+			# recuperation x_min x_max y_min y_max res_x res_y par appel au programme gdalinfo
+			# stockage du resultat de l'appel au programme dans un tableau
 			my @result = `.\/gdalinfo $imgs[$i]`;
 			
+			# boucle sur les lignes du resultat obtenu par gdalinfo
 			foreach my $resultat(@result){
+				# cette ligne correspond a l'expression reguliere : on va en deduire le x_min et le y_max
 				if($resultat =~ /Upper Left\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
 					$hash_x_min{$imgs[$i]} = $1;
 					$hash_y_max{$imgs[$i]} = $2;
-					
+				# cette ligne correspond a l'expression reguliere : on va en deduire le x_max et le y_min
 				}elsif($resultat =~ /Lower Right\s*\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\)/i){
 					$hash_x_max{$imgs[$i]} = $1;
 					$hash_y_min{$imgs[$i]} = $2;
-					
+				# cette ligne correspond a l'expression reguliere : on va en deduire la resolution en x et en y
+				# la reoslution en y est prise positive par convention alors que gdalinfo nous la donne en negatif
 				}elsif($resultat =~ /Pixel Size = \((\d+)\.(\d+), ?\-(\d+)\.(\d+)\)/){
 					$hash_res_x{$imgs[$i]} = $1 + ( $2 / (10**length($2)));
 					$hash_res_y{$imgs[$i]} = $3 + ( $4 / (10**length($4)));
@@ -470,14 +550,14 @@ sub cherche_infos_dalle{
 			}
 		}
 		
-		# actualisation des xmin et ymax du chantier
+		# actualisation des xmin et ymax du rectangle enblobant les donnees initiales avec la nouvelle dalle etudiee
 		if($hash_x_min{$imgs[$i]} < $x_min_source){
 			$x_min_source = $hash_x_min{$imgs[$i]};
 		}
 		if($hash_y_max{$imgs[$i]} > $y_max_source){
 			$y_max_source = $hash_y_max{$imgs[$i]}
 		}
-		# actualisation des xmax et ymin du chantier
+		# actualisation des xmax et ymin du rectangle enblobant les donnees initiales avec la nouvelle dalle etudiee
 		if($hash_x_max{$imgs[$i]} > $x_max_source){
 			$x_max_source = $hash_x_max{$imgs[$i]};
 		}
@@ -489,123 +569,196 @@ sub cherche_infos_dalle{
 
 	my @refs = (\%hash_x_min, \%hash_x_max, \%hash_y_min, \%hash_y_max, \%hash_res_x, \%hash_res_y, $x_min_source, $x_max_source, $y_min_source, $y_max_source);
 	
+	# on retourne : 
+	# reference vers un hash d'association entre chemin de l'image et x_min
+	# reference vers un hash d'association entre chemin de l'image et x_max
+	# reference vers un hash d'association entre chemin de l'image et y_min
+	# reference vers un hash d'association entre chemin de l'image et y_max
+	# reference vers un hash d'association entre chemin de l'image et resolution en x
+	# reference vers un hash d'association entre chemin de l'image et resolution en y
+	# coordonnees des 4 coins de la bbox des dalles initiales
 	return @refs;
 	
 }
 ################################################################################
+# cree le fichier de dallage et donne son nom en retour
 sub ecrit_dallage_source{
 	
+	# parametre : reference vers un tableau contenant la liste des chemins de images
 	my $ref_tableau_image = $_[0];
-	
+	# recuperation du parametre precednet sous forme de tableau
 	my @tableau_images = @{$ref_tableau_image};
 	
+	# parametre : reference vers un hash associant au chemin d'une image son x_min
 	my $ref_hash_x_min = $_[1];
+	# parametre : reference vers un hash associant au chemin d'une image son x_max
 	my $ref_hash_x_max = $_[2];
+	# parametre : reference vers un hash associant au chemin d'une image son y_min
 	my $ref_hash_y_min = $_[3];
+	# parametre : reference vers un hash associant au chemin d'une image son y_max
 	my $ref_hash_y_max = $_[4];
-	
+	# recuperation des 4 parametres precedents sous forme de hash
 	my %dalle_x_min = %{$ref_hash_x_min};
 	my %dalle_x_max = %{$ref_hash_x_max};
 	my %dalle_y_min = %{$ref_hash_y_min};
 	my %dalle_y_max = %{$ref_hash_y_max};
 	
+	# parametre : reference vers un hash associant au chemin d'une image sa resolution en x
 	my $ref_hash_res_x = $_[5];
+	# parametre : reference vers un hash associant au chemin d'une image sa resolution en y
 	my $ref_hash_res_y = $_[6];
-	
+	# recuperation des 2 parametres precedents sous forme de hash
 	my %dalle_res_x = %{$ref_hash_res_x};
 	my %dalle_res_y = %{$ref_hash_res_y};
 	
+	# parametre : chemin vers le repertoire ou creer le fichier de dallage
 	my $rep_fichier = $_[7];
+	# parametre : type de fichier a creer (image ou mtd)
 	my $type = $_[8];
 	
+	# nom du fichier de dallage
 	my $fichier_dallage_source = &cree_nom_fichier_dallage_source($rep_fichier, $type, $compression_pyramide, $annee, $departement);
 	
+	# creation du fichier
 	open DALLAGE, ">$fichier_dallage_source" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_dallage_source.";
 	
+	# boucle sur les chemins des images du tableau
 	foreach my $image(@tableau_images){
+		# ecriture des caracteristiques de l'image dans le fichier semon un formalisme etabli : 
+		# chemin_image	x_min	y_max	x_max	y_min	resolution_x	resolution_y
 		print DALLAGE "$image\t$dalle_x_min{$image}\t$dalle_y_max{$image}\t$dalle_x_max{$image}\t$dalle_y_min{$image}\t$dalle_res_x{$image}\t$dalle_res_y{$image}\n";
 	}
 	close DALLAGE;
-		
+	
+	# on retourne le nom du fichier cree
 	return $fichier_dallage_source;
 }
 ################################################################################
+# creation du fichier XML de pyramide et deduction des repertoires des donnes de la pyramide
 sub cree_xml_pyramide{
 	
+	# parametre : nom du fichier de pyramide a creer
 	my $nom_fichier = $_[0];
+	# parametre : chemin vers le repertoire de la pyramide
 	my $rep_pyr = $_[1];
+	# parametre : chemin vers le XML du TMS
 	my $tms = $_[2];
+	# parametre : taille des dalle sde la pyramide en pixels
 	my $taille_dalle = $_[3];
+	# parametre : format des images de la pyramide
 	my $format_dalle = $_[4];
+	# parametre : nombre de canaux des images de la pyramide
 	my $nb_canaux = $_[5];
+	# parametre : type des mtd de la pyramide
  	my $type_mtd = $_[6];
+ 	# parametre : format des mtd de la pyramide
  	my $format_mtd = $_[7];
+ 	# parametre : profondeur de chemin des donnes de la pyramide
 	my $profondeur = $_[8];
+	# 4 parametre : coordonnees de la BBox des dalles composant la pyramide
 	my $x_min_donnees = $_[9];
 	my $x_max_donnees = $_[10];
 	my $y_min_donnees = $_[11];
 	my $y_max_donnees = $_[12];
 	
+	# tableau contenant la liste des repertoire des donnes de la pyramide (image et mtd compris)
 	my @liste_repertoires = ();
 	
+	# lecture du TMS associe a la pyramide pour en deduire des informations
 	my ($ref_id, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_origine_x, $ref_origine_y, $var_inutile1) = &lecture_tile_matrix_set($tms);
+	# tableau contenant la liste des identifiant des TM du TMS
 	my @id_tms = @{$ref_id};
+	# association entre id du niveau et resolution
 	my %tms_level_resolution = %{$ref_id_resolution};
+	# association entre id du niveau et taille des tuiles en pixels selon l'axe x
 	my %tms_level_taille_pix_tuile_x = %{$ref_id_taille_pix_tuile_x};
+	# association entre id du niveau et taille des tuiles en pixels selon l'axe y
 	my %tms_level_taille_pix_tuile_y = %{$ref_id_taille_pix_tuile_y};
+	# association entre id du niveau et origine du TM en x (coin NO)
 	my %tms_level_origine_x = %{$ref_origine_x};
+	# association entre id du niveau et origine du TM en y (coin NO)
 	my %tms_level_origine_y = %{$ref_origine_y};
 	
+	# nom du TMS (debarrasse de son chemin et de son extension) qui apparait dans le XML de pyramide
 	my $nom_tms = substr(basename($tms), 0, length(basename($tms)) - 4);
 	
+	# chemin vers le repertoire des images de la pyramide
 	my $rep_images;
+	# chemin vers le repertoire des mtd de la pyramide
 	my $rep_mtd;
+	# si le chemin vers le repertoire de la pyramide est absolu (commence par un /), on l'utilise directement
 	if (substr($rep_pyr, 0, 1) eq "/"){
 		$rep_images = $rep_pyr."/".$nom_rep_images;
 		$rep_mtd = $rep_pyr."/".$nom_rep_mtd;
+	# on doit passer par la fonction qui retourne le chemin absolu
 	}else{
 		$rep_images = abs_path($rep_pyr."/".$nom_rep_images);
 		$rep_mtd = abs_path($rep_pyr."/".$nom_rep_mtd);
 	}
 	
+	# la liste des repertoires de la pyramide commence par les repertoires d'image et de mtd
 	push(@liste_repertoires, "$rep_images", "$rep_mtd");
 	
+	# chemin vers le fichier XML de pyramide
 	my $fichier_complet = "$rep_pyr/$nom_fichier";
 	
+	# creation du fichier XML de pyramide
 	open PYRAMIDE, ">$fichier_complet" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $fichier_complet.";
+	# ecriture dans le fichier
 	print PYRAMIDE "<?xml version='1.0' encoding='US-ASCII'?>\n";
 	print PYRAMIDE "<Pyramid>\n";
 	print PYRAMIDE "\t<tileMatrixSet>$nom_tms</tileMatrixSet>\n";
+	# boucle sur les niveaux du TMS
 	foreach my $level(@id_tms){
 		
+		# resolution des donnees du niveau
 		my $resolution = $tms_level_resolution{"$level"};
+		# emprise en metres des donnees du niveau
 		my $taille_image_m = $resolution * $taille_dalle;
+		# taille des tuiles en pixels selon l'axe x des donnees du niveau
 		my $taille_tuile_x = $tms_level_taille_pix_tuile_x{"$level"};
+		# taille des tuiles en pixels selon l'axe y des donnees du niveau
 		my $taille_tuile_y = $tms_level_taille_pix_tuile_y{"$level"};
+		# origine en x du repere du niveau
 		my $origine_x = $tms_level_origine_x{"$level"};
+		# origine en y du repere du niveau
 		my $origine_y = $tms_level_origine_y{"$level"};
 		
+		# on regarde si la taille des dalles est bien un multiple de la taille des tuiles
+		# division euclidienne 
 		my $reste_x = $taille_dalle % $taille_tuile_x;
 		my $reste_y = $taille_dalle % $taille_tuile_y;
 		
 		# si la taille n'est pas un multiple de la taille des tuiles on sort
 		if($reste_x != 0 || $reste_y != 0){
+			# fermeture du handler du fichier
 			close PYRAMIDE;
+			# suppression du fichier
 			unlink "$fichier_complet";
+			# ecriture de l'anomalie dans le log	
 			print "[PREPARE_PYRAMIDE] ERREUR : Taille images $taille_dalle non multiple taille tuile du TMS au niveau $level.\n";
 			&ecrit_log("ERREUR Taille des images $taille_dalle non multiple taille tuile du TMS au niveau $level.");
 			exit;
 		}
 		
+		# nombre de tuiles dans une dalle selon l'axe x
 		my $nb_tuile_x = $taille_dalle / $taille_tuile_x;
+		# nombre de tuiles dans une dalle selon l'axe y
 		my $nb_tuile_y = $taille_dalle / $taille_tuile_y;
 		
-		# bbox des sources : indice de la tuile dans le dallage du niveau du TMS
+		# on doit indiquer dans le fichier l'emprise des dalles source (de leur rectangle englobant)
+		# en termes d'indice (de numero) de tuile dans le niveau pour chaque coin
+		# calcul de cet indice pour les 4 coins
+		# indice de la tuile dans le TM du x_min de la BBox des dalles source
 		my $min_tuile_x = floor(($x_min_donnees - $origine_x) / ($resolution * $taille_tuile_x));
+		# indice de la tuile dans le TM du x_max de la BBox des dalles source
 		my $max_tuile_x = floor(($x_max_donnees - $origine_x) / ($resolution * $taille_tuile_x));
+		# indice de la tuile dans le TM du y_min de la BBox des dalles source
 		my $min_tuile_y = floor(($origine_y - $y_max_donnees) / ($resolution * $taille_tuile_y));
+		# indice de la tuile dans le TM du y_max de la BBox des dalles source
 		my $max_tuile_y = floor(($origine_y - $y_min_donnees) / ($resolution * $taille_tuile_y));
 		
+		# ecriture dans le fichier
 		print PYRAMIDE "\t<level>\n";
 		print PYRAMIDE "\t\t<tileMatrix>$level</tileMatrix>\n";
 		print PYRAMIDE "\t\t<baseDir>$rep_images/$taille_image_m</baseDir>\n";
@@ -618,8 +771,8 @@ sub cree_xml_pyramide{
 		print PYRAMIDE "\t\t<tilesPerWidth>$nb_tuile_x</tilesPerWidth>\n";
 		print PYRAMIDE "\t\t<tilesPerHeight>$nb_tuile_y</tilesPerHeight>\n";
 		print PYRAMIDE "\t\t<pathDepth>$profondeur</pathDepth>\n";
-		# les limites sont mises par rapport aux donnees mises a jour
-		# l'info sera corrigee dans l'initialisation de la pyramide
+		# les limites sont mises par rapport aux donnees source mises a jour
+		# l'info sera corrigee dans l'initialisation de la pyramide (en fonction des donnees deja presentes dans le layer)
 		print PYRAMIDE "\t\t<TMSLimits>\n";
 		print PYRAMIDE "\t\t\t<minTileRow>$min_tuile_x</minTileRow>\n";
 		print PYRAMIDE "\t\t\t<maxTileRow>$max_tuile_x</maxTileRow>\n";
@@ -627,68 +780,67 @@ sub cree_xml_pyramide{
 		print PYRAMIDE "\t\t\t<maxTileCol>$max_tuile_y</maxTileCol>\n";
 		print PYRAMIDE "\t\t</TMSLimits>\n";
 		print PYRAMIDE "\t</level>\n";
+		# le chemin vers le repertoire des images (et des mtd) de ce niveau fait partie de la liste des repertoires
 		push(@liste_repertoires, "$rep_images/$taille_image_m", "$rep_mtd/$taille_image_m");
 	}
 	
 	print PYRAMIDE "</Pyramid>\n";
+	# fermeture du handler du fichier
 	close PYRAMIDE;
-		
+	
+	# on retourne :
+	# reference vers un tableau contenant la liste des chemins absolus vers les tous les repertoires de donnees de la pyramide
+	# nom du fichier cree
 	return (\@liste_repertoires, $fichier_complet);
 }
 
 ################################################################################
-sub calcule_valeur_ronde{
-
-	my $nombre = $_[0];
-	my $pas = $_[1];
-	
-	# calcule l'entier multiple de $pas le plus proche et inferieur a $nombre
-	
-	my $reste = $nombre % $pas;
-	my $new_nombre = $nombre - $reste;
-	
-	return $new_nombre;
-
-}
-################################################################################
+# ecrit un message dans le fichier de log
 sub ecrit_log{
 	
+	# parametre : chaine de caracteres a inserer dans le log
 	my $message = $_[0];
 	
 	my $bool_ok = 0;
 	
-	# machine sur Linux
+	# recuperation du nom de la machine sur Linux
     chomp(my $machine_utilisee = `hostname`);
 	
-	# largement inspire par P.PONS et gen_cache.pl
+	# pour dater le message
 	my $T = localtime();
+	# ecriture dans le fichier de log
 	printf LOG "$machine_utilisee %s %s\n", $T, $message;
 	
 	$bool_ok = 1;
 	return $bool_ok;
 }
 ################################################################################
+# validation d'un fichier XML par un schema
 sub valide_xml{
-
+	
+	# parametre : chemin vers le fichier XML a valider
 	my $document = $_[0];
+	# parametre : chemin vers le fichier de schema XML validant
 	my $schema = $_[1];
 	
+	# resultat de la validation
 	my $reponse = '';
-
-	my $proxy_Host = $ENV{'proxy_Host'};
-        if (!defined $proxy_Host){
-                print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Host non trouvee.\n";
-                &ecrit_log("Variable d'environnement proxy_Host non trouvee.");
-                exit;
-        }
-
-	my $proxy_Port = $ENV{'proxy_Port'};
-        if (!defined $proxy_Port){
-                print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Port non trouvee.\n";
-                &ecrit_log("Variable d'environnement proxy_Port non trouvee.");
-                exit;
-        }
 	
+	# on regarde si la variable d'environnement proxy_Host existe, sinon on ne peut pas valider => on sort
+	my $proxy_Host = $ENV{'proxy_Host'};
+	if (!defined $proxy_Host){
+		print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Host non trouvee.\n";
+		&ecrit_log("Variable d'environnement proxy_Host non trouvee.");
+		exit;
+	}
+	# on regarde si la variable d'environnement proxy_Port existe, sinon on ne peut pas valider => on sort
+	my $proxy_Port = $ENV{'proxy_Port'};
+	if (!defined $proxy_Port){
+		print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Port non trouvee.\n";
+		&ecrit_log("Variable d'environnement proxy_Port non trouvee.");
+		exit;
+	}
+	# on regarde si la variable d'environnement xerces_home existe, sinon on ne peut pas valider => on sort
 	my $xerces_home = $ENV{'xerces_home'};
 	if (!defined $xerces_home){
 		print "[PREPARE_PYRAMIDE] Variable d'environnement xerces_home non trouvee.\n";
@@ -696,70 +848,91 @@ sub valide_xml{
 		exit;
 	}
 
+	# creation de la ligne de commande qui valide un XML selon un schema
+	my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
+	&ecrit_log("Validation du XML de pyramide : $commande_valide");
+	
 	# TODO voir si on dedouble le flux vers le log avec 
 	# | tee -a ".$log
 	# en fin de $commande_valide
-	my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
-
+	# execution de la commande et recuperation du resultat dans une variable
 	$reponse = `$commande_valide`;
 	
+	# on retourne le resultat de la validation
 	return $reponse;
 	
 }
 ################################################################################
+# creation du chemin vers un fichier de dallage
 sub cree_nom_fichier_dallage_source{
 	
+	# parametre : chemin vers le repertoire de creation du fichier
 	my $rep_creation = $_[0];
+	# parametre : type de dallage (image ou mtd)
 	my $type_dallage = $_[1];
+	# parametre : compression des images de la pyramide
 	my $compression = $_[2];
+	# parametre : annee de production des donnees source
 	my $annee_dallage = $_[3];
+	# parametre optionnel : departement des donnees source
 	my $dep_dallage = $_[4];
 	
+	# le chemin vers le fichier commence par le chemin vers le repertoire du fichier
 	my $nom_fichier_dallage = $rep_creation."/";
 	
+	# le prefixe du nom du fichier est different selon qu'il s'agit d'images ou de masques de mtd
 	if ($type_dallage eq "image"){
 		$nom_fichier_dallage .= $nom_fichier_dalle_source;
 	}elsif($type_dallage eq "mtd"){
 		$nom_fichier_dallage .= $nom_fichier_mtd_source;
 	}else{
+		# si on a affaire a un troisieme type, on sort
 		print "[PREPARE_PYRAMIDE] Probleme de programmation : type $type_dallage incorrect.\n";
 		exit;
 	}
 	
-	#ajout du suffixe
+	# ajout du suffixe en fonction des caraceristiques
 	$nom_fichier_dallage .= "_".$compression."_".$annee_dallage;
 	if(defined $dep_dallage){
 		$nom_fichier_dallage .= "_".$dep_dallage;
 	}
 	$nom_fichier_dallage .= ".txt";
 	
+	# on retourene le nom du fichier complet
 	return $nom_fichier_dallage;
 }
 ################################################################################
+# lit un fichier de dallage pour en extraire la BBox de ses donnees
 sub extrait_bbox_dallage{
 	
+	# parametre : chemin vers le ficheir de dallage a lire
 	my $fichier_a_lire = $_[0];
 	
-	# bbox du chantier
+	# coordonnees des 4 coins de la bbox du chantier
 	my $xmin = 99999999999;
 	my $xmax = 0;
 	my $ymin = 99999999999;
 	my $ymax = 0;
 	
-	my @infos;
-	
+	# ouverture du fichier et stockage de son contenu dans un tableau
 	open SOURCE, "<$fichier_a_lire" or die "[PREPARE_PYRAMIDE] Impossible d'ouvrir le fichier $fichier_a_lire.";
 	my @lignes = <SOURCE>;
 	close SOURCE;
 	
+	# boucle sur les lignes du fichier (entites du tableau)
 	foreach my $ligne(@lignes){
+		# suppression du saut de ligne final eventuel
 		chomp($ligne);
+		# decoupage de la ligne selon les tabulations et stackage dans un tableau
 		my @infos_dalle = split /\t/, $ligne;
-		# remplissage des infos
+		# s'il n'y a pas au moins 7 valeurs, c'est que le fichier est mal formatte, on ne peut pas extraire les infos 
 		if(! (defined $infos_dalle[0] && defined $infos_dalle[1] && defined $infos_dalle[2] && defined $infos_dalle[3] && defined $infos_dalle[4] && defined $infos_dalle[5] && defined $infos_dalle[6]) ){
 			&ecrit_log("ERREUR de formatage du fichier $fichier_a_lire");
+			print "[PREPARE_PYRAMIDE] Le fichier $fichier_a_lire est mal formatte, on ne peut extraire la BBox des dalles source.\n";
+			exit;
 		}
-	
+		
+		# mise a jour de la BBox en fonction de la dalle etudiee
 		if($infos_dalle[1] < $xmin){
 			$xmin = $infos_dalle[1];
 		}
@@ -775,6 +948,8 @@ sub extrait_bbox_dallage{
 		
 	}
 	
+	# on retourne :
+	# les coordonnees des 4 coins de la BBox des donnees du dallage
 	return ($xmin, $xmax, $ymin, $ymax);
 }
 ################################################################################
