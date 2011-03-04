@@ -747,7 +747,8 @@ sub nom_dalle_cache{
 	my $nom_dalle = $rep_niveau."/".$nom_first_ss_rep."/".$nom_reps_suiv.$nom_image;
 	
 	#remplissage association entre nom_dalle et index (pour les noms de fichiers)
-	$nom_dalle_index_base{$nom_dalle} = $index_base;
+	# on la prefixe par la taille de l'image pour l'unicite (plusieurs niveaux concernes)
+	$nom_dalle_index_base{$nom_dalle} = $taille_x."_".$index_base;
 	
 	return $nom_dalle;
 }
@@ -955,6 +956,7 @@ sub lecture_fichier_dalles_source{
 	if($bool_bbox == 1){
 		push(@infos, $xmin, $xmax, $ymin, $ymax);
 	}
+	
 	return @infos;
 }
 ################################################################################
@@ -1108,7 +1110,7 @@ sub calcule_niveau_minimum {
 	while ( my($dalle_cache, $ref_dalles_source) = each %hash_dalle_cache_dalles_source ){
 		if(defined $ref_dalles_source ){
 			&ecrit_log("Calcul de $dalle_cache.");
-			
+			$string_script .= "################ Calcul $dalle_cache ################\n";
 			# creation le cas echeant des repertoires parents
 			my $rep_parent_dalle = dirname($dalle_cache);
 			&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle.");
@@ -1118,7 +1120,7 @@ sub calcule_niveau_minimum {
 			$string_script .= "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
 			
 			if($bool_reprojection == 0 && $bool_perte == 0){
-				$string_script .= &calcule_avec_programme_dalles_base($dalle_cache, $ref_dalles_source, $rep_tempo, $type, $nb_canaux);
+				$string_script .= &calcule_avec_programme_dalles_base($dalle_cache, $ref_dalles_source, $rep_tempo, $type, $nb_canaux, 1);
 			}else{
 				# on recupere directement dans un cache existant une image tiff en format de travail
 				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
@@ -1156,7 +1158,7 @@ sub calcule_niveaux_inferieurs{
 			foreach my $dal(@dalles_a_calc){
 				if (defined $dalle_cache_dessous{$dal}){
 					&ecrit_log("Calcul de $dal.");
-					
+					$string_script2 .= "################ Calcul $dal ################\n";
 					# si la dalle existe en lien symbolique, on doit casser le lien pour ne pas deteriorer
 					if (exists $dalles_liens{$dal}){
 						$string_script2 .= "if [ -L \"$dal\" ] ; then rm -f $dal ; fi\n";
@@ -1181,11 +1183,11 @@ sub calcule_niveaux_inferieurs{
 							}
 						}
 						
-						# si au moins 1 n'a pas de liens au niveau n-1 et que le lien existe ici, on fait un dalles_base 
+						# si au moins 1 n'a pas de liens au niveau n-1 et que le lien existe ici, on calcule avec $programme_dalles_base
 						if($bool_absence_lien_niveau_dessous == 1 && exists $dalles_liens{$dal}){
-							$string_script2 .= &calcule_avec_programme_dalles_base($dal, $ref_liste_dalles_dessous, $rep_temporaire, $type_dalle, $niveau_nb_channels{"$niveau_inf"});
+							$string_script2 .= &calcule_avec_programme_dalles_base($dal, $ref_liste_dalles_dessous, $rep_temporaire, $type_dalle, $niveau_nb_channels{"$niveau_inf"}, 0);
 						}else{
-							# on calcule avec merge4tiff
+							# on calcule avec $programme_ss_ech
 							$string_script2 .= &calcule_avec_programme_ss_ech($dal, $ref_liste_dalles_dessous, $type_dalle, $rep_temporaire);
 						}
 						
@@ -1247,18 +1249,20 @@ sub arbre2cache{
 		my $new_nom_dalle = &nom_dalle_cache($x_min_dalle_arbre, $y_max_dalle_arbre, $x_m_origine, $y_m_origine, $taille_dalle_x, $taille_dalle_y, $rep_niveau_dalle, $profondeur);
 		my $new_nom_mtd = &nom_dalle_cache($x_min_dalle_arbre, $y_max_dalle_arbre, $x_m_origine, $y_m_origine, $taille_dalle_x, $taille_dalle_y, $rep_niveau_mtd, $profondeur);
 		
-		# remplissage des infos de la dalle cache
-		$cache_arbre_x_min{$new_nom_dalle} = $x_min_dalle_arbre;
-		$cache_arbre_x_max{$new_nom_dalle} = $x_max_dalle_arbre;
-		$cache_arbre_y_min{$new_nom_dalle} = $y_min_dalle_arbre;
-		$cache_arbre_y_max{$new_nom_dalle} = $y_max_dalle_arbre;
-		$cache_arbre_res{$new_nom_dalle} = $niveau_res{"$niveau_dalle"};
-		
-		$cache_arbre_x_min{$new_nom_mtd} = $cache_arbre_x_min{$new_nom_dalle};
-		$cache_arbre_x_max{$new_nom_mtd} = $cache_arbre_x_max{$new_nom_dalle};
-		$cache_arbre_y_min{$new_nom_mtd} = $cache_arbre_y_min{$new_nom_dalle};
-		$cache_arbre_y_max{$new_nom_mtd} = $cache_arbre_y_max{$new_nom_dalle};
-		$cache_arbre_res{$new_nom_mtd} = $cache_arbre_res{$new_nom_dalle};
+		# remplissage des infos de la dalle cache (si elle n'ont pas deja ete remplies)
+		if(!(exists $cache_arbre_x_min{$new_nom_dalle})){
+			$cache_arbre_x_min{$new_nom_dalle} = $x_min_dalle_arbre;
+			$cache_arbre_x_max{$new_nom_dalle} = $x_max_dalle_arbre;
+			$cache_arbre_y_min{$new_nom_dalle} = $y_min_dalle_arbre;
+			$cache_arbre_y_max{$new_nom_dalle} = $y_max_dalle_arbre;
+			$cache_arbre_res{$new_nom_dalle} = $niveau_res{"$niveau_dalle"};
+			
+			$cache_arbre_x_min{$new_nom_mtd} = $cache_arbre_x_min{$new_nom_dalle};
+			$cache_arbre_x_max{$new_nom_mtd} = $cache_arbre_x_max{$new_nom_dalle};
+			$cache_arbre_y_min{$new_nom_mtd} = $cache_arbre_y_min{$new_nom_dalle};
+			$cache_arbre_y_max{$new_nom_mtd} = $cache_arbre_y_max{$new_nom_dalle};
+			$cache_arbre_res{$new_nom_mtd} = $cache_arbre_res{$new_nom_dalle};
+		}
 		
 		# si la dalle est dans le niveau le plus bas
 		if(exists $dalles_cache_plus_bas{"$dalle_arbre"}){
@@ -1292,6 +1296,66 @@ sub arbre2cache{
 			my $mtd4 = &nom_dalle_cache($x_min_dalle_arbre, $y_intermediaire, $x_m_origine, $y_m_origine, $taille_x_dessous, $taille_y_dessous, $rep_dessous_mtd, $profondeur);
 			my @liste_cache_mtd = ($mtd1, $mtd2, $mtd4, $mtd3);
 			$dalle_cache_dessous{$new_nom_mtd} = \@liste_cache_mtd;
+			
+			# on doit remplir les informations sur les dalles du dessous (meme celles qui ne sont pas des dalles calculees dans ce traitement)
+			# puisque le programme $programme_dalles_base a besoin des infos de toutes les dalles
+			# on teste su une des infos (car elle ne sont remplies que dans cette fonction)
+			if(!(exists $cache_arbre_x_min{$dalle1})){
+				# dalle1
+				$cache_arbre_x_min{$dalle1} = $x_min_dalle_arbre;
+				$cache_arbre_x_max{$dalle1} = $x_intermediaire;
+				$cache_arbre_y_min{$dalle1} = $y_intermediaire;
+				$cache_arbre_y_max{$dalle1} = $y_max_dalle_arbre;
+				$cache_arbre_res{$dalle1} = $res_dessous;
+				# mtd1
+				$cache_arbre_x_min{$mtd1} = $cache_arbre_x_min{$dalle1};
+				$cache_arbre_x_max{$mtd1} = $cache_arbre_x_max{$dalle1};
+				$cache_arbre_y_min{$mtd1} = $cache_arbre_y_min{$dalle1};
+				$cache_arbre_y_max{$mtd1} = $cache_arbre_y_max{$dalle1};
+				$cache_arbre_res{$mtd1} = $cache_arbre_res{$dalle1};
+			}
+			if(!(exists $cache_arbre_x_min{$dalle2})){
+				# dalle2
+				$cache_arbre_x_min{$dalle2} = $x_intermediaire;
+				$cache_arbre_x_max{$dalle2} = $x_max_dalle_arbre;
+				$cache_arbre_y_min{$dalle2} = $y_intermediaire;
+				$cache_arbre_y_max{$dalle2} = $y_max_dalle_arbre;
+				$cache_arbre_res{$dalle2} = $res_dessous;
+				# mtd2
+				$cache_arbre_x_min{$mtd2} = $cache_arbre_x_min{$dalle2};
+				$cache_arbre_x_max{$mtd2} = $cache_arbre_x_max{$dalle2};
+				$cache_arbre_y_min{$mtd2} = $cache_arbre_y_min{$dalle2};
+				$cache_arbre_y_max{$mtd2} = $cache_arbre_y_max{$dalle2};
+				$cache_arbre_res{$mtd2} = $cache_arbre_res{$dalle2};
+			}
+			if(!(exists $cache_arbre_x_min{$dalle3})){
+				# dalle3
+				$cache_arbre_x_min{$dalle3} = $x_intermediaire;
+				$cache_arbre_x_max{$dalle3} = $x_max_dalle_arbre;
+				$cache_arbre_y_min{$dalle3} = $y_min_dalle_arbre;
+				$cache_arbre_y_max{$dalle3} = $y_intermediaire;
+				$cache_arbre_res{$dalle3} = $res_dessous;
+				# mtd3
+				$cache_arbre_x_min{$mtd3} = $cache_arbre_x_min{$dalle3};
+				$cache_arbre_x_max{$mtd3} = $cache_arbre_x_max{$dalle3};
+				$cache_arbre_y_min{$mtd3} = $cache_arbre_y_min{$dalle3};
+				$cache_arbre_y_max{$mtd3} = $cache_arbre_y_max{$dalle3};
+				$cache_arbre_res{$mtd3} = $cache_arbre_res{$dalle3};
+			}
+			if(!(exists $cache_arbre_x_min{$dalle4})){
+				# dalle4
+				$cache_arbre_x_min{$dalle4} = $x_min_dalle_arbre;
+				$cache_arbre_x_max{$dalle4} = $x_intermediaire;
+				$cache_arbre_y_min{$dalle4} = $y_min_dalle_arbre;
+				$cache_arbre_y_max{$dalle4} = $y_intermediaire;
+				$cache_arbre_res{$dalle4} = $res_dessous;
+				# mtd4
+				$cache_arbre_x_min{$mtd4} = $cache_arbre_x_min{$dalle4};
+				$cache_arbre_x_max{$mtd4} = $cache_arbre_x_max{$dalle4};
+				$cache_arbre_y_min{$mtd4} = $cache_arbre_y_min{$dalle4};
+				$cache_arbre_y_max{$mtd4} = $cache_arbre_y_max{$dalle4};
+				$cache_arbre_res{$mtd4} = $cache_arbre_res{$dalle4};
+			}
 			
 			#remplissage de la correspondance entre niveau et liste de dalles inferieures (pour les calculer dans l'ordre)
 			my @liste_prov_dalle;
@@ -1445,6 +1509,7 @@ sub passage_pivot{
 	
 	foreach my $dal2(@dalles_travail){
 		&ecrit_log("Passage en format pivot de $dal2.");
+		$string_script3 .= "################ Pivot $dal2 ################\n";
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire la couleur dans $programme_format_pivot
@@ -1761,6 +1826,7 @@ sub calcule_avec_programme_dalles_base{
 	my $repertoire_fichier_temp = $_[2];
 	my $type_donnees = $_[3];
 	my $nombre_canaux = $_[4];
+	my $bool_niveau_minimum = $_[5];
 	
 	my @liste_dalles_source = @{$ref_dalles_utiles};
 	
@@ -1815,20 +1881,11 @@ sub calcule_avec_programme_dalles_base{
 		exit;
 	}
 	
-	# definition de l'interpolateur
-	my $interpolateur = "bicubique";
-	if($type_donnees eq "mtd"){
-		$interpolateur = "ppv";
-	}elsif(($cache_arbre_res{$chemin_dalle_cache} / $res_x_max_source < 2) && ($cache_arbre_res{$chemin_dalle_cache} / $res_y_max_source < 2)){
-		$interpolateur = "lanczos";
-	}
-	
 	# pour le programme
 	my $type_dalles_base = $type_donnees;
 	if($type_dalles_base eq "image"){
 		$type_dalles_base = "img";
 	}
-	
 	
 	my $nom_fichier = $repertoire_fichier_temp."/".$nom_dalle_court."_".$type_donnees;
 	
@@ -1841,13 +1898,38 @@ sub calcule_avec_programme_dalles_base{
 	print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$chemin_dalle_cache}\t$cache_arbre_y_max{$chemin_dalle_cache}\t$cache_arbre_x_max{$chemin_dalle_cache}\t$cache_arbre_y_min{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\n";
 	
 	foreach my $src(@liste_dalles_source){
-		if($source_res_x{$src} > $res_x_max_source){
-			$res_x_max_source = $source_res_x{$src};
+		&ecrit_log("debut src : $src");
+		my $res_x_dalle;
+		my $res_y_dalle;
+		my $x_min_dalle_utile;
+		my $x_max_dalle_utile;
+		my $y_min_dalle_utile;
+		my $y_max_dalle_utile;
+		if ($bool_niveau_minimum == 1){
+			&ecrit_log("niveau min => $source_res_x{$src} $source_res_y{$src} $source_x_min{$src} $source_x_max{$src} $source_y_min{$src} $source_y_max{$src}");
+			$res_x_dalle = $source_res_x{$src};
+			$res_y_dalle = $source_res_y{$src};
+			$x_min_dalle_utile = $source_x_min{$src};
+			$x_max_dalle_utile = $source_x_max{$src};
+			$y_min_dalle_utile = $source_y_min{$src};
+			$y_max_dalle_utile = $source_y_max{$src};
+		}else{
+			&ecrit_log("niveau INF => $cache_arbre_res{$src} $cache_arbre_res{$src} $cache_arbre_x_min{$src} $cache_arbre_x_max{$src} $cache_arbre_y_min{$src} $cache_arbre_y_max{$src}");
+			$res_x_dalle = $cache_arbre_res{$src};
+			$res_y_dalle = $cache_arbre_res{$src};
+			$x_min_dalle_utile = $cache_arbre_x_min{$src};
+			$x_max_dalle_utile = $cache_arbre_x_max{$src};
+			$y_min_dalle_utile = $cache_arbre_y_min{$src};
+			$y_max_dalle_utile = $cache_arbre_y_max{$src};
 		}
-		if($source_res_y{$src} > $res_y_max_source){
-			$res_y_max_source = $source_res_y{$src};
+		if( $res_x_dalle > $res_x_max_source){
+			$res_x_max_source = $res_x_dalle;
 		}
-		print FIC "$src\t$source_x_min{$src}\t$source_y_max{$src}\t$source_x_max{$src}\t$source_y_min{$src}\t$source_res_x{$src}\t$source_res_y{$src}\n";
+		if( $res_y_dalle > $res_y_max_source){
+			$res_y_max_source = $res_y_dalle;
+		}
+		print FIC "$src\t$x_min_dalle_utile\t$y_max_dalle_utile\t$x_max_dalle_utile\t$y_min_dalle_utile\t$res_x_dalle\t$res_y_dalle\n";
+		ecrit_log("fin src : $src");
 	}
 	# ATTENTION, intuition feminine : l'execution dans certains environnements fait qu'il se melange les pinceaux
 	# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
@@ -1857,6 +1939,14 @@ sub calcule_avec_programme_dalles_base{
 	select(undef, undef, undef, 0.01);
 	
 	close FIC;
+	
+	# definition de l'interpolateur
+	my $interpolateur = "bicubique";
+	if($type_donnees eq "mtd"){
+		$interpolateur = "ppv";
+	}elsif(($cache_arbre_res{$chemin_dalle_cache} / $res_x_max_source < 2) && ($cache_arbre_res{$chemin_dalle_cache} / $res_y_max_source < 2)){
+		$interpolateur = "lanczos";
+	}
 	
 	# TODO nombre de canaux, nombre de bits, couleur en parametre
 	# TODO supprimer no_data qui ne sert a rien
