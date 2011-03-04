@@ -440,6 +440,12 @@ my %niveau_ref_mtd_inf;
 # Hash nom de la dalle cache (nomenclature finale) avec le nom de la dalle cache en base36
 my %nom_dalle_index_base;
 
+# hash d'association entre dalle source et coordonnees de la BBox de la dalle reprojetee dans le SRS de la pyramide
+my %source_x_min_proj_pyr;
+my %source_x_max_proj_pyr;
+my %source_y_min_proj_pyr;
+my %source_y_max_proj_pyr;
+
 ### Boucle sur les dalles du niveau de travail
 foreach my $dalle_arbre_niveau_travail(@liste_dalles_arbre_niveau_travail){
 
@@ -1023,12 +1029,16 @@ sub definit_bloc_dalle{
 	my $y_max_dilate = $y_max_dalle_cache + (($y_max_dalle_cache - $y_min_dalle_cache) * ($pcent_dilat / 100));
 	
 	foreach my $source(@dalles_initiales){
-		# on reprojette enventuellement le rectangle englobant la dalle source en SRS de la pyramide pour tester l'intersection
-		my ($x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) = ($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source});
-		if($bool_reprojection == 1){
-			($x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) = &reproj_rectangle($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}, $systeme_source, $systeme_target, $dilatation_reproj);
+		# on test l'existence que sur le x_min puisque tous les 4 ne sont remplis qu'ici
+		if(!(exists $source_x_min_proj_pyr{$source})){
+			# on reprojette enventuellement le rectangle englobant la dalle source en SRS de la pyramide pour tester l'intersection
+			if($bool_reprojection == 1){
+				($source_x_min_proj_pyr{$source}, $source_x_max_proj_pyr{$source}, $source_y_min_proj_pyr{$source}, $source_y_max_proj_pyr{$source}) = &reproj_rectangle($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}, $systeme_source, $systeme_target, $dilatation_reproj);
+			}else{
+				($source_x_min_proj_pyr{$source}, $source_x_max_proj_pyr{$source}, $source_y_min_proj_pyr{$source}, $source_y_max_proj_pyr{$source}) = ($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source});
+			}
 		}
-		if( intersects($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $x_min_source_proj_pyr, $x_max_source_proj_pyr, $y_min_source_proj_pyr, $y_max_source_proj_pyr) ){
+		if( intersects($x_min_dilate, $x_max_dilate, $y_min_dilate, $y_max_dilate, $source_x_min_proj_pyr{$source}, $source_x_max_proj_pyr{$source}, $source_y_min_proj_pyr{$source}, $source_y_max_proj_pyr{$source}) ){
 			push(@dalles_recouvrantes, $source);
 		}
 	}
