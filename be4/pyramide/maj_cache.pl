@@ -6,6 +6,13 @@ use XML::Simple;
 
 my $fichier_parametres = $ARGV[0];
 
+if(! defined $fichier_parametres){
+	print colored ("[MAJ_CACHE] Il manque un parametre.", 'white on_red');
+	print "\n";
+	print "\nUsage : maj_cache.pl path/fichier_parametrage.xml\n";
+	exit; 
+}
+
 # programme de preparation des pyramides
 my $programme_prepare_pyramide = "./prepare_pyramide.pl";
 # programme d'initialisation des pyramides
@@ -208,7 +215,7 @@ if(defined $layer_requetes){
 	$param_requetes .= "-l $layer_requetes";
 }
 # creation de la ligne de commande de calcul des scripts
-my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes -m $repertoire_fichiers_temp";
+my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes -e $repertoire_fichiers_temp";
 # execution de la commande et recuperation des sorties dans un tableau
 my @result_calcule = `$commande_calcule_batch`;
 #etude des resultats
