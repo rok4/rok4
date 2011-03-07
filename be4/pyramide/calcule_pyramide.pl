@@ -1125,15 +1125,12 @@ sub calcule_niveau_minimum {
 			my $rep_parent_dalle = dirname($dalle_cache);
 			&ecrit_log("Creation des eventuels repertoires manquants de $rep_parent_dalle.");
 			&cree_repertoires_recursifs($rep_parent_dalle);
-						
-			# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
-			$string_script .= "if [ -L \"$dalle_cache\" ] ; then rm -f $dalle_cache ; fi\n";
 			
 			if($bool_reprojection == 0 && $bool_perte == 0){
 				$string_script .= &calcule_avec_programme_dalles_base($dalle_cache, $ref_dalles_source, $rep_tempo, $type, $nb_canaux, 1);
 			}else{
 				# on recupere directement dans un cache existant une image tiff en format de travail
-				$string_script .= "wget --no-proxy -O $dalle_cache \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dalle_cache}.",".$cache_arbre_y_min{$dalle_cache}.",".$cache_arbre_x_max{$dalle_cache}.",".$cache_arbre_y_max{$dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
+				$string_script .= &calcule_avec_wget($dalle_cache, $cache_arbre_x_min{$dalle_cache}, $cache_arbre_x_max{$dalle_cache}, $cache_arbre_y_min{$dalle_cache}, $cache_arbre_y_max{$dalle_cache});
 			}
 			
 			$dalles_calculees{$dalle_cache} = "toto";
@@ -1169,10 +1166,6 @@ sub calcule_niveaux_inferieurs{
 				if (defined $dalle_cache_dessous{$dal}){
 					&ecrit_log("Calcul de $dal.");
 					$string_script2 .= "################ Calcul $dal ################\n";
-					# si la dalle existe en lien symbolique, on doit casser le lien pour ne pas deteriorer
-					if (exists $dalles_liens{$dal}){
-						$string_script2 .= "if [ -L \"$dal\" ] ; then rm -f $dal ; fi\n";
-					}
 					
 					# creation le cas echeant des repertoires parents
 					my $rep_parent_dalle_niveau_inf = dirname($dal);
@@ -1203,7 +1196,7 @@ sub calcule_niveaux_inferieurs{
 						
 					}else{
 						# on recupere a partir d'un cache existant une dalle en format de travail						
-						$string_script2 .= "wget --no-proxy -O $dal \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$dal}.",".$cache_arbre_y_min{$dal}.",".$cache_arbre_x_max{$dal}.",".$cache_arbre_y_max{$dal}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
+						$string_script2 .= &calcule_avec_wget($dal, $cache_arbre_x_min{$dal}, $cache_arbre_x_max{$dal}, $cache_arbre_y_min{$dal}, $cache_arbre_y_max{$dal});
 					}
 					
 					$dalles_calculees{$dal} = "toto";
@@ -1853,11 +1846,12 @@ sub calcule_avec_programme_dalles_base{
 	if (exists $dalles_liens{$chemin_dalle_cache} ){
 		if($compress eq "png"){
 			# on recupere directement dans un cache existant une image tiff en format de travail
-			$string_commande_dalles_base .= "wget --no-proxy -O $nom_dalle_temp \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$cache_arbre_x_min{$chemin_dalle_cache}.",".$cache_arbre_y_min{$chemin_dalle_cache}.",".$cache_arbre_x_max{$chemin_dalle_cache}.",".$cache_arbre_y_max{$chemin_dalle_cache}."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
+			$string_commande_dalles_base .= &calcule_avec_wget($nom_dalle_temp, $cache_arbre_x_min{$chemin_dalle_cache}, $cache_arbre_x_max{$chemin_dalle_cache}, $cache_arbre_y_min{$chemin_dalle_cache}, $cache_arbre_y_max{$chemin_dalle_cache});
 		}else{
 			$string_commande_dalles_base .= "$programme_copie_image -s -r $taille_dalle_pix $dalles_liens{$chemin_dalle_cache} $nom_dalle_temp\n".$string_erreur_batch;
+			# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
+ 			$string_commande_dalles_base .= "if [ -L \"$chemin_dalle_cache\" ] ; then rm -f $chemin_dalle_cache ; fi\n";
 		}
-		
 	}else{
 		# sinon on fait reference a la dalle no_data
 		if($type_donnees eq "image"){
@@ -1975,6 +1969,9 @@ sub calcule_avec_programme_ss_ech{
 	my @list_cache_dessous = @{$ref_dalles_utilisees};
 	my $string_commande_ss_ech = "";
 	
+	# si la dalle existe en lien symbolique, on doit casser le lien pour ne pas deteriorer
+	$string_commande_ss_ech .= "if [ -L \"$dalle_niveau_inferieur\" ] ; then rm -f $dalle_niveau_inferieur ; fi\n";
+	
 	my $string_dessous = "";
 	foreach my $dalle_dessous(@list_cache_dessous){
 		my $fic_pointe;
@@ -2005,6 +2002,7 @@ sub calcule_avec_programme_ss_ech{
 			$string_commande_ss_ech .= "if [ -r \"$repertoire_fichiers_temporaires/$nom_dalle_cache\" ] ; then rm -f $repertoire_fichiers_temporaires/$nom_dalle_cache ; fi\n";
 			$string_commande_ss_ech .= "$programme_copie_image -s -r $taille_dalle_pix $dalle_dessous $repertoire_fichiers_temporaires/$nom_dalle_cache\n".$string_erreur_batch;
 			$fic_pointe = "$repertoire_fichiers_temporaires/$nom_dalle_cache";
+
 		}
 		$string_dessous .= " $fic_pointe";
 	}
@@ -2014,4 +2012,22 @@ sub calcule_avec_programme_ss_ech{
 	
 	return $string_commande_ss_ech;
 
+}
+################################################################################
+sub calcule_avec_wget{
+	
+	my $dalle_a_calculer = $_[0];
+	my $x_min_dalle_a_calculer = $_[1];
+	my $x_max_dalle_a_calculer = $_[2];
+	my $y_min_dalle_a_calculer = $_[3];
+	my $y_max_dalle_a_calculer = $_[4];
+	
+	my $string_commande_wget = "";
+	
+	# suppression du lien symbolique preexistant sinon la creation va abimer les anciennes pyramides
+	$string_commande_wget .= "if [ -L \"$dalle_a_calculer\" ] ; then rm -f $dalle_a_calculer ; fi\n";
+	
+	$string_commande_wget .= "wget --no-proxy -O $dalle_a_calculer \"http://".$localisation_serveur_rok4."?LAYERS=".$nom_layer_pour_requetes_wms."&SERVICE=WMS&VERSION=".$version_wms."&REQUEST=GetMap&FORMAT=image/tiff&CRS=".$systeme_target."&BBOX=".$x_min_dalle_a_calculer.",".$y_min_dalle_a_calculer.",".$x_max_dalle_a_calculer.",".$y_max_dalle_a_calculer."&WIDTH=".$taille_image_pix_x."&HEIGHT=".$taille_image_pix_y."\"\n".$string_erreur_batch;
+	
+	return $string_commande_wget;
 }
