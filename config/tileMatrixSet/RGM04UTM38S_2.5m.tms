@@ -163,7 +163,7 @@
         </tileMatrix>
 	<tileMatrix>
                 <id>16</id>
-                <resolution>3.2</resolution>
+                <resolution>2.5</resolution>
                 <topLeftCornerX> 0 </topLeftCornerX>
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>

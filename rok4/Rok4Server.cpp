@@ -152,7 +152,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	if(format=="image/png")
 		return new PNGEncoder(image);
 	else if(format == "image/tiff")
-		return new TiffEncoderStream(image);
+		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
 	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
@@ -179,9 +179,7 @@ DataSource* Rok4Server::getTile(Request* request)
 		return errorResp;
 	}
 
-
 	return  L->gettile(tileCol, tileRow, tileMatrix);
-
 }
 
 

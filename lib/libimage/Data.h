@@ -19,7 +19,7 @@ class DataSource {
 		 * Donne un accès direct mémoire en lecture aux données. Les données pointées sont en lecture seule.
 		 *
 		 * @return size Taille des données en octets (0 en cas d'échec)
-		 * @return Pointeur vers les données qui ne doit pas être utilisé après destrucion ou libération des données (0 en cas d'échec)
+		 * @return Pointeur vers les données qui ne doit pas être utilisé après destruction ou libération des données (0 en cas d'échec)
 		 *
 		 */
 		virtual const uint8_t* getData(size_t &size) = 0;

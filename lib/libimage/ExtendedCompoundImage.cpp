@@ -26,6 +26,10 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         double y=l2y(line);
         for (i=0;i<(int)images.size();i++){
 
+
+		if (line==0)
+			LOGGER_DEBUG(images[i]->getxmin()<<" "<<images[i]->getymax());
+
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
         	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
@@ -33,6 +37,9 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         		continue;
         	if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
         		continue;
+
+		                if (line==0)
+                        LOGGER_DEBUG("Suite "<<images[i]->getxmin()<<" "<<images[i]->getymax());
 
          	// c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
          	int c0=__max(0,x2c(images[i]->getxmin()));

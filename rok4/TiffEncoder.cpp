@@ -55,7 +55,7 @@ const uint8_t TIFF_HEADER_GRAY[128]  = {
                 8, 0,   8, 0,   8, 0};                         // 122| 3x 8 sur 16 bits (pointés par les samplesperpixels)
 // 128
 
-size_t TiffEncoderStream::read(uint8_t *buffer, size_t size_to_read) {
+size_t TiffEncoder::read(uint8_t *buffer, size_t size_to_read) {
 	size_t offset = 0, header_size=128, linesize=image->width*image->channels;
 	if(line == -1) { // écrire le header tiff
 		// Si pas assez de place pour le header, ne rien écrire.
@@ -81,53 +81,16 @@ size_t TiffEncoderStream::read(uint8_t *buffer, size_t size_to_read) {
 		image->getline((uint8_t*)(buffer + offset), line);
 		offset += linesize*sizeof(uint8_t);
 	}
+
 	return offset;
 }
 
-bool TiffEncoderStream::eof()
+bool TiffEncoder::eof()
 {
 	return (line>=image->height);	
 }
 
-TiffEncoderStream::~TiffEncoderStream() {
-	LOGGER_DEBUG("delete TiffEncoderStream");
+TiffEncoder::~TiffEncoder() {
+	//LOGGER_DEBUG("delete TiffEncoderStream");
 	delete image;
-}
-
-
-TiffEncoderSource::TiffEncoderSource(int w, int h, int channels, DataSource* source)
-{
-        size_t header_size=128;
-        const uint8_t* raw_data=source->getData(size);
-        tif_data=new uint8_t[size+header_size];
-        if (channels==1)
-                memcpy(tif_data, TIFF_HEADER_GRAY, header_size);
-        else if (channels==3)
-                memcpy(tif_data, TIFF_HEADER_RGB, header_size);
-        else if (channels==4)
-                memcpy(tif_data, TIFF_HEADER_RGBA, header_size);
-        *((uint32_t*)(tif_data+18))  = w;
-        *((uint32_t*)(tif_data+30))  = h;
-        *((uint32_t*)(tif_data+102)) = h;
-        *((uint32_t*)(tif_data+114)) = w*h*channels;
-        memcpy(&tif_data[header_size],raw_data,size);
-        size+=header_size;
-}
-
-const uint8_t* TiffEncoderSource::getData(size_t &tif_size)
-{
-	tif_size=size;
-	return tif_data;
-}	
-
-bool TiffEncoderSource::releaseData()
-{
-	if (tif_data)
-		delete tif_data;
-	return true;
-}
-
-TiffEncoderSource::~TiffEncoderSource() {
-        LOGGER_DEBUG("delete TiffEncoderSource");
- //       delete image;
 }

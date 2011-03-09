@@ -9,7 +9,6 @@
 #include "Image.h"
 #include "Utils.h"
 
-
 struct JpegDecoder {
 	static const uint8_t* decode(DataSource* encData, size_t &size);
 };

@@ -64,5 +64,6 @@ const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	}
 	size=tile_size;
 	close(fildes);
+
 	return data;
 }

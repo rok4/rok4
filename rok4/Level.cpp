@@ -4,6 +4,7 @@
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
+#include "RawImage.h"
 
 //#include "DecodedImage.h"
 
@@ -222,7 +223,14 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	LOGGER_DEBUG(getfilepath(x, y));
-	return new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());	
+	FileDataSource* source=new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
+	if (format.compare("TIFF_INT8")==0 && source!=0){
+		RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
+		TiffEncoder TiffStream(raw);
+		return new BufferedDataSource(TiffStream);
+	}
+	else
+		return source;	
 }
 
 DataSource* Level::getDecodedTile(int x, int y)

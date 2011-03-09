@@ -127,14 +127,6 @@ const uint8_t* JpegDecoder::decode(DataSource* source, size_t &size) {
 	return raw_data;
 }
 
-
-
-
-
-
-
-
-
 /**
  * Decodage de donnee PNG
  */
@@ -149,7 +141,7 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 	size_t encSize;
 	const uint8_t* encData = source->getData(encSize);
 
-	LOGGER(DEBUG) << (intptr_t) encData << std::endl;
+//	LOGGER(DEBUG) << (intptr_t) encData << std::endl;
 
 	if(!encData) return 0;
 
@@ -187,7 +179,7 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 		default:; // TODO ERROR;
 	}
 
-	LOGGER(DEBUG) << width << " " << height << " " << channels << std::endl;
+//	LOGGER(DEBUG) << width << " " << height << " " << channels << std::endl;
 
 
 	uint8_t* raw_data = new uint8_t[height * width * channels];
