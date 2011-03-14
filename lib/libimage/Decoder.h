@@ -50,7 +50,7 @@ class DataSourceDecoder : public DataSource {
 				}
 			}
 			size = decSize;
-			//LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
+			LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			return decData;
 		}
 
@@ -110,7 +110,7 @@ class ImageDecoder : public Image {
 					delete dataSource;
 					dataSource = 0;
 				}
-			}			
+			}		
 			return getNoDataline(buffer, line);
 		}
 
@@ -135,11 +135,13 @@ class ImageDecoder : public Image {
 			if(dataSource) {
 				dataSource->releaseData();
 				delete dataSource;
+				delete [] rawData;
 			}
 		}
 
 
 };
+
 
 
 #endif

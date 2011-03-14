@@ -44,7 +44,7 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 
 
 		float* B = __buffer;
-
+LOGGER_DEBUG("height="<<image->height);
 		src_line_buffer = new float*[image->height];
 		for(int i = 0; i < image->height; i++) {
 			src_line_buffer[i] = B; B += sz1;
@@ -77,11 +77,15 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 			ymin[i] = K.weight(Wy[i], nby, 1./2048. + double(i)/1024., ratio_y);
 		}
 
-		LOGGER_DEBUG("ratio_x =" << ratio_x << " ratio_y= " << ratio_y << " Kx = " << Kx << " Ky = " << Ky);
+		LOGGER_DEBUG("ratio_x =" << ratio_x << " ratio_y= " << ratio_y << " Kx = " << Kx << " Ky = " << Ky );
 
 
 		// TODO : ne pas charger toute l'image source au démarrage.
-		for(int y = 0; y < image->height; y++) image->getline(src_line_buffer[y], y);
+		for(int y = 0; y < image->height; y++)
+{
+			image->getline(src_line_buffer[y], y);
+}
+		LOGGER_DEBUG("Fin");
 	}
 
 

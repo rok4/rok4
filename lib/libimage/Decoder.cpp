@@ -87,7 +87,7 @@ const uint8_t* JpegDecoder::decode(DataSource* source, size_t &size) {
 		return 0;
 	}
 
-  uint8_t* raw_data = 0;
+	uint8_t* raw_data = 0;
 
 	// Lecture
 	if (jpeg_read_header(&cinfo, TRUE)==JPEG_HEADER_OK) {
@@ -132,8 +132,7 @@ const uint8_t* JpegDecoder::decode(DataSource* source, size_t &size) {
  */
 const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 
-	LOGGER(DEBUG) << (intptr_t) source << std::endl;
-
+//	LOGGER(DEBUG) << (intptr_t) source << std::endl;
 
 	size = 0;
 	if(!source) return 0;
@@ -141,10 +140,7 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 	size_t encSize;
 	const uint8_t* encData = source->getData(encSize);
 
-//	LOGGER(DEBUG) << (intptr_t) encData << std::endl;
-
 	if(!encData) return 0;
-
 
 	// Initialisation du flux
 	z_stream zstream;
@@ -179,15 +175,11 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 		default:; // TODO ERROR;
 	}
 
-//	LOGGER(DEBUG) << width << " " << height << " " << channels << std::endl;
-
-
 	uint8_t* raw_data = new uint8_t[height * width * channels];
 	int linesize = width * channels;
 
 	zstream.next_in = (uint8_t*)(encData + 41); // 41 = 33 header + 8(chunk idat)
 	zstream.avail_in = encSize - 57;     // 57 = 41 + 4(crc) + 12(IEND)
-
 
 	// Decompression du flux ligne par ligne
 	uint8_t tmp;
@@ -221,6 +213,6 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 
 	LOGGER(DEBUG) << "Decompression OK" << std::endl;
 	size = width * height * channels;
+
 	return raw_data;
 }
-
