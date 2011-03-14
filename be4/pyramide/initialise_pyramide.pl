@@ -203,18 +203,22 @@ sub cree_liens_syboliques_recursifs{
 		# si fichier est un fichier ou un deja un lien symbolique
 		if( -f "$rep_ini/$fic" || -l "$rep_ini/$fic"){
 			
+			my $new_nom = "$rep_ini/$fic";
+			my $dernier_new_nom = $new_nom;
+			
 			# on rebondit sur les differents liens
 			# un lien symbolique pointe alors toujours sur un fichier physique et non pas sur un autre lien symbolique
-			my $new_nom = "$rep_ini/$fic";
-			my $dernier_new_nom;
-			# boucle jusqu'a ce qu'on tombre sur un vrai fichier
+			# boucle jusqu'a ce qu'on tombe sur un vrai fichier
 			while(defined $new_nom){
 				$dernier_new_nom = $new_nom;
 				$new_nom = readlink($new_nom);
 			}
 			
-			# creatio du lien symbolique (equivalent a la commande linux ln -l)
-			my $return = symlink("$dernier_new_nom","$rep_fin/$fic");
+			# chemin relatif du fichier pointe par rapport au repertoire du lien a creer
+			my $chemin_lien_relatif = File::Spec->abs2rel($dernier_new_nom, $rep_fin);
+			
+			# creation du lien symbolique (equivalent a la commande linux ln -l)
+			my $return = symlink("$chemin_lien_relatif","$rep_fin/$fic");
 			if ($return != 1){
 				&ecrit_log("ERREUR a la creation du lien symbolique $rep_ini/$fic -> $rep_fin/$fic.");
 			}else{
@@ -222,8 +226,8 @@ sub cree_liens_syboliques_recursifs{
 			}
 			next;
 		}elsif(-d "$rep_ini/$fic"){
-			# si le fichier est en realite un reperttoire, on descend en prenant soin de verifier que le rep
-			# du nouveau cache existe (creation el ca echeant)
+			# si le fichier est en realite un repertoire, on descend en prenant soin de verifier que le rep
+			# du nouveau cache existe (creation le cas echeant)
 			if( !(-e "$rep_fin/$fic" && -d "$rep_fin/$fic") ){
 				&ecrit_log("Creation du repertoire $rep_fin/$fic.");
 				mkdir "$rep_fin/$fic", 0775 or die "[INITIALISE_PYRAMIDE] Impossible de creer le repertoire $rep_fin/$fic.";
@@ -254,7 +258,7 @@ sub lecture_limites_tms_pyramide{
 	# lire le fichier XML
 	my $data = $xml_fictif2->XMLin("$fichier_pyramide");
 	
-	# boucle sur les balises <level> dy .pyr
+	# boucle sur les balises <level> du .pyr
 	foreach my $level (@{$data->{level}}){
 		# contenu de la balise <tileMatrix>
 		my $id = $level->{tileMatrix};
@@ -306,7 +310,7 @@ sub maj_limites_tms{
 		# cela devient le contexte XPath
 		my $node_limits = $doc->find("//level[tileMatrix = '$level_pyr']/TMSLimits")->get_node(0);
 		if( ! defined $node_limits){
-			print "[INITIALISE_PYRAMIDE] Le niveau $level_pyr n'a pas ete trouve dans $xml_pyr.\nLe TMS est-il bien en accord avec $xml_pyr ??.\n";
+			print "[INITIALISE_PYRAMIDE] Le niveau $level_pyr n'a pas ete trouve dans $xml_pyr.\nLe TMS est-il bien en accord avec $xml_pyr ??\n";
 			&ecrit_log("Le niveau $level_pyr n'a pas ete trouve dans $xml_pyr.");
 			exit;
 		}

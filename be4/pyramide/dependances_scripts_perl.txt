@@ -6,6 +6,7 @@ Cwd
 Exporter
 File::Basename
 File::Copy
+File::Spec
 Getopt::Std
 POSIX
 strict
@@ -17,7 +18,7 @@ Fichiers :
 ../share/pyramide/4096_4096_FFFFFF_rgb.tif
 ../share/pyramide/4096_4096_FFFFFF_gray.tif
 ../share/pyramide/mtd_4096_4096_black_32b.tif
-../config/tileMatrixSet/FR_LAMB93.tms
+../config/tileMatrixSet
 ../config/pyramids/pyramid.xsd
 
 Programmes :
@@ -36,3 +37,4 @@ tiffinfo
 
 Variables d'environnement : 
 xerces_home
+proxy_Host
