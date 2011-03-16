@@ -27,6 +27,7 @@ all: makedir
 	cp ../../config/pyramids/pyramid.xsd $(PYRAMIDSDIR)
 	cp dependances_scripts_perl.txt $(DOCBE4DIR)
 	cp how_to_fr.txt $(DOCBE4DIR)
+	cp parametres_cache.xsd $(SHAREPYRAMIDEDIR)
 makedir:
 	if [ ! -d $(SHAREDIR) ] ; then mkdir $(SHAREDIR) ; fi
 	if [ ! -d $(SHAREPYRAMIDEDIR) ] ; then mkdir $(SHAREPYRAMIDEDIR) ; fi

@@ -130,7 +130,7 @@ our %produit_couleur_param = (
 our $xsd_pyramide_param = "../config/pyramids/pyramid.xsd";
 
 # chemin vers le schema contraignant les fichiers XML de parametrage de cache en entre de maj_cache.pl
-our $xsd_parametres_cache_param = "./parametres_cache.xsd";
+our $xsd_parametres_cache_param = "../share/pyramide/parametres_cache.xsd";
 
 # chemin vers le repertoire contenant les TMS
 my $path_tms_param = "../config/tileMatrixSet";
