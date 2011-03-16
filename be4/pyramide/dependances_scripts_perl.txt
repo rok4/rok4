@@ -21,7 +21,7 @@ Fichiers :
 ../share/pyramide/mtd_4096_4096_black_32b.tif
 ../config/tileMatrixSet
 ../config/pyramids/pyramid.xsd
-./parametres_cache.xsd
+../share/pyramide/parametres_cache.xsd
 
 Programmes :
 merge4tiff
