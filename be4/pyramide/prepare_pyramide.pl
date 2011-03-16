@@ -5,7 +5,7 @@ use Getopt::Std;
 use Cwd 'abs_path';
 use File::Basename;
 use File::Copy;
-use POSIX qw(ceil floor);
+use POSIX qw(floor);
 use cache(
 	'$type_mtd_pyr_param',
 	'$format_mtd_pyr_param',
@@ -23,6 +23,7 @@ use cache(
 	'cree_nom_pyramide',
 	'cherche_pyramide_recente_lay',
 	'extrait_tms_from_pyr',
+	'valide_xml',
 );
 # CONSTANTES
 $| = 1;
@@ -350,7 +351,8 @@ my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyra
 
 # validation du .pyr par le xsd
 &ecrit_log("Validation de $nom_fichier_pyramide.");
-my $valid = &valide_xml($nom_fichier_final, $xsd_pyramide);
+my ($valid, $string_temp_log) = &valide_xml($nom_fichier_final, $xsd_pyramide);
+&ecrit_log($string_temp_log);
 if ((!defined $valid) || $valid ne ""){
 	my $string_valid = "Pas de message sur la validation";
 	if(defined $valid){
@@ -360,6 +362,7 @@ if ((!defined $valid) || $valid ne ""){
 	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
 	print "$string_valid\n";
 	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $string_valid");
+	exit;
 }
 
 # action 3 : creer les sous-repertoires utiles
@@ -813,54 +816,6 @@ sub ecrit_log{
 	
 	$bool_ok = 1;
 	return $bool_ok;
-}
-################################################################################
-# validation d'un fichier XML par un schema
-sub valide_xml{
-	
-	# parametre : chemin vers le fichier XML a valider
-	my $document = $_[0];
-	# parametre : chemin vers le fichier de schema XML validant
-	my $schema = $_[1];
-	
-	# resultat de la validation
-	my $reponse = '';
-	
-	# on regarde si la variable d'environnement proxy_Host existe, sinon on ne peut pas valider => on sort
-	my $proxy_Host = $ENV{'proxy_Host'};
-	if (!defined $proxy_Host){
-		print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Host non trouvee.\n";
-		&ecrit_log("Variable d'environnement proxy_Host non trouvee.");
-		exit;
-	}
-	# on regarde si la variable d'environnement proxy_Port existe, sinon on ne peut pas valider => on sort
-	my $proxy_Port = $ENV{'proxy_Port'};
-	if (!defined $proxy_Port){
-		print "[PREPARE_PYRAMIDE] Variable d'environnement proxy_Port non trouvee.\n";
-		&ecrit_log("Variable d'environnement proxy_Port non trouvee.");
-		exit;
-	}
-	# on regarde si la variable d'environnement xerces_home existe, sinon on ne peut pas valider => on sort
-	my $xerces_home = $ENV{'xerces_home'};
-	if (!defined $xerces_home){
-		print "[PREPARE_PYRAMIDE] Variable d'environnement xerces_home non trouvee.\n";
-		&ecrit_log("Variable d'environnement xerces_home non trouvee.");
-		exit;
-	}
-
-	# creation de la ligne de commande qui valide un XML selon un schema
-	my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
-	&ecrit_log("Validation du XML de pyramide : $commande_valide");
-	
-	# TODO voir si on dedouble le flux vers le log avec 
-	# | tee -a ".$log
-	# en fin de $commande_valide
-	# execution de la commande et recuperation du resultat dans une variable
-	$reponse = `$commande_valide`;
-	
-	# on retourne le resultat de la validation
-	return $reponse;
-	
 }
 ################################################################################
 # creation du chemin vers un fichier de dallage

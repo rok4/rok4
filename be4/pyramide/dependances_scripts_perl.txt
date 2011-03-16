@@ -8,6 +8,7 @@ File::Basename
 File::Copy
 File::Spec
 Getopt::Std
+List::Util
 POSIX
 strict
 Term::ANSIColor
@@ -20,6 +21,7 @@ Fichiers :
 ../share/pyramide/mtd_4096_4096_black_32b.tif
 ../config/tileMatrixSet
 ../config/pyramids/pyramid.xsd
+./parametres_cache.xsd
 
 Programmes :
 merge4tiff
@@ -38,3 +40,4 @@ tiffinfo
 Variables d'environnement : 
 xerces_home
 proxy_Host
+proxy_Port

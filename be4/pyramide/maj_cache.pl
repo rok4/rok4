@@ -3,7 +3,10 @@
 use strict;
 use Term::ANSIColor;
 use XML::Simple;
-
+use cache(
+	'valide_xml',
+	'$xsd_parametres_cache_param',
+);
 my $fichier_parametres = $ARGV[0];
 
 if(! defined $fichier_parametres){
@@ -25,6 +28,8 @@ my $programme_maj_conf_serveur = "./maj_conf_serveur.pl";
 my $programme_pyramide_lecture_seule = "./pyramide_lecture_seule.pl";
 # programme de retour en arriere a une etape donnee
 my $programme_rollback = "./rollback.pl";
+# schema validant le fichier de parametrage
+my $xsd_parametres_cache = $xsd_parametres_cache_param;
 
 # verification de la presence des perl
 my $verif_programme_prepare_pyramide = `which $programme_prepare_pyramide`;
@@ -60,6 +65,12 @@ if ($verif_programme_pyramide_lecture_seule eq ""){
 my $verif_programme_rollback = `which $programme_rollback`;
 if ($verif_programme_rollback eq ""){
 	print colored ("[MAJ_CACHE] Le programme (annulation des actions non validees) $programme_rollback est introuvable.", 'white on_red');
+	print "\n";
+	exit;
+}
+# verification de la presence du schema XML
+if(!(-e $xsd_parametres_cache && -f $xsd_parametres_cache)){
+	print colored ("[MAJ_CACHE] Le fichier ($xsd_parametres_cache est introuvable.", 'white on_red');
 	print "\n";
 	exit;
 }
@@ -114,6 +125,20 @@ my $taille_pix_x_source;
 # taille des dalles source en pixels selon l'axe Y (uniquement pour la nomenclature IGN)
 my $taille_pix_y_source;
 
+# on regarde si le XML de parametrage est bien valide par rapport a son schema
+my ($valid, $string_log) = &valide_xml($fichier_parametres, $xsd_parametres_cache);
+if ((!defined $valid) || $valid ne ""){
+	my $string_valid = "Pas de message sur la validation";
+	if(defined $valid){
+		$string_valid = $valid;
+	}
+	# on sort le resultat de la validation
+	print colored ("[MAJ_CACHE] Le document $fichier_parametres n'est pas valide!", 'white on_red');
+	print "\n";
+	print "$string_valid\n";
+	exit;
+}
+
 # lecture du fichier de parametrage pour initialiser les variables
 &initialise_parametres($fichier_parametres);
 
@@ -150,7 +175,7 @@ my @result_prepare = `$commande_prepare`;
 my $bool_erreur_prepare = 0;
 foreach my $ligne_prepare(@result_prepare){
 	# si on a eu des erreurs : le programme precede ses sorties de son nom entre crochets et/ou indique l'usage
-	if($ligne_prepare =~ /\[prepare_pyramide\]|usage/i){
+	if($ligne_prepare =~ /\[prepare_pyramide\]|\[cache\]|usage/i){
 		$bool_erreur_prepare = 1;
 		last;
 	}
@@ -185,7 +210,7 @@ my @result_intialise = `$commande_initialise`;
 my $bool_erreur_initialise = 0;
 foreach my $ligne_init(@result_intialise){
 	# si on a eu des erreurs : le programme precede ses sorties de son nom entre crochets et/ou affiche l'usage
-	if($ligne_init =~ /\[initialise_pyramide\]|usage/i){
+	if($ligne_init =~ /\[initialise_pyramide\]|\[cache\]|usage/i){
 		$bool_erreur_initialise = 1;
 		last;
 	}
@@ -206,16 +231,8 @@ my $mtd_source = "";
 if (defined $fichier_mtd_source){
 	$mtd_source = "-m $fichier_mtd_source";
 }
-# string ajoutee a la ligne de commande an cas de calcul de pyramide avec perte et/ou reprojection impliquant des requetes WMS
-my $param_requetes = "";
-if(defined $localisation_rok4){
-	$param_requetes .= "-k $localisation_rok4 ";
-}
-if(defined $layer_requetes){
-	$param_requetes .= "-l $layer_requetes";
-}
 # creation de la ligne de commande de calcul des scripts
-my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min $param_requetes -e $repertoire_fichiers_temp";
+my $commande_calcule_batch = "$programme_calcule_pyramide -p $ss_produit -f $fichier_dalles_source $mtd_source -s $systeme_coordonnees_source -x $fichier_pyramide -d $pcent_dilatation_dalles_base -r $pcent_dilatation_reproj -n $prefixe_nom_script -t $taille_dalles_pixels -j $nombre_batch_min -k $localisation_rok4 -l $layer_requetes -e $repertoire_fichiers_temp";
 # execution de la commande et recuperation des sorties dans un tableau
 my @result_calcule = `$commande_calcule_batch`;
 #etude des resultats
@@ -223,7 +240,7 @@ my @result_calcule = `$commande_calcule_batch`;
 my $bool_erreur_calcule = 0;
 foreach my $ligne_calc(@result_calcule){
 	# si on a eu des erreurs le programme precede ses sorties de son nom entre crochets et/ou affiche l'usage
-	if($ligne_calc =~ /\[calcule_pyramide\]|usage/i){
+	if($ligne_calc =~ /\[calcule_pyramide\]|\[cache\]|usage/i){
 		$bool_erreur_calcule = 1;
 		last;
 	}
@@ -253,87 +270,70 @@ sub initialise_parametres{
 	# lire le fichier XML
 	my $data = $xml_fictif->XMLin("$xml_parametres");
 	
+	# contenu de la balise <source>
+	my $source = $data->{source};
 	# contenu de la balise <ss_produit>
-	$ss_produit = $data->{ss_produit};
-	
+	$ss_produit = $source->{ss_produit};
 	# contenu de la balise <images_source>
-	$images_source = $data->{images_source};
+	$images_source = $source->{images_source};
 	# la balise <masques_metadonnees> est optionnelle (car le traitement des mtd est optionnel)
-	if (defined $data->{masques_metadonnees}){
+	if (defined $source->{masques_metadonnees}){
 		# contenu de la balise <masques_metadonnees>
-		$masques_metadonnees = $data->{masques_metadonnees};
+		$masques_metadonnees = $source->{masques_metadonnees};
 	}
-	# contenu de la balise <repertoire_pyramide>
-	$repertoire_pyramide = $data->{repertoire_pyramide};
-	# contenu de la balise <compression_images_pyramide>
-	$compression_images_pyramide = $data->{compression_images_pyramide};
-	# contenu de la balise <systeme_coordonnees_pyramide>
-	$systeme_coordonnees_pyramide = $data->{systeme_coordonnees_pyramide};
-	# contenu de la balise <repertoire_fichiers_temporaires>
-	$repertoire_fichiers_temp = $data->{repertoire_fichiers_temporaires};
+	# contenu de la balise <systeme_coordonnees>
+	$systeme_coordonnees_source = $source->{systeme_coordonnees};
+	# on regarde si on va utiliser la nomenclature IGN : si la balise <nomenclature_IGN> est presente
+	if (defined $source->{nomenclature_IGN}){
+		$bool_nomenclature_IGN = 1;
+		# contenu de la balise <nomenclature_IGN>
+		my $nomenclature_IGN = $source->{nomenclature_IGN};
+		# contenu de la balise <resolution_x_source>
+		$resolution_x_source = $nomenclature_IGN->{resolution_x_source};
+		# contenu de la balise <resolution_y_source>
+		$resolution_y_source = $nomenclature_IGN->{resolution_y_source};
+		# contenu de la balise <taille_pixels_x_source>
+		$taille_pix_x_source = $nomenclature_IGN->{taille_pixels_x_source};
+		# contenu de la balise <taille_pixels_y_source>
+		$taille_pix_y_source = $nomenclature_IGN->{taille_pixels_y_source};
+	}	
 	# contenu de la balise <annee>
-	$annee = $data->{annee};
+	$annee = $source->{annee};
 	# la balise <departement> est optionnelle (car les pyramides ne sont pas necessairement calculees par departement)
-	if (defined $data->{departement} ){
+	if (defined $source->{departement} ){
 		# contenu de la balise <departement>
-		$departement = $data->{departement};
-	}
-	# on regarde si on va utiliser la nomenclature IGN = OUI ou NON dans le XML
-	# contenu de la balise <nomenclature_IGN>
-	my $nomenclature_IGN = $data->{nomenclature_IGN};
-	# on attend uniquement un contenu du type "oui" ou "non"
-	if($nomenclature_IGN !~ /^oui|non$/i){
-		print colored ("[MAJ_CACHE] Balise nomenclature_IGN non conforme dans $xml_parametres.", 'white on_red');
-		print "\n";
-		exit;
-	}else{
-		if(lc($nomenclature_IGN) eq "oui"){
-			# il faut que les 4 infos ci-dessous soient renseignees pour etre utilisees
-			if (defined $data->{resolution_x_source} && defined $data->{resolution_y_source} && defined $data->{taille_pixels_x_source} && defined $data->{taille_pixels_y_source}){
-				$bool_nomenclature_IGN = 1;
-				# contenu de la balise <resolution_x_source>
-				$resolution_x_source = $data->{resolution_x_source};
-				# contenu de la balise <resolution_y_source>
-				$resolution_y_source = $data->{resolution_y_source};
-				# contenu de la balise <taille_pixels_x_source>
-				$taille_pix_x_source = $data->{taille_pixels_x_source};
-				# contenu de la balise <taille_pixels_y_source>
-				$taille_pix_y_source = $data->{taille_pixels_y_source};
-			}else{
-				# sinon la preparation de la pyramide va echouer
-				print colored ("[MAJ_CACHE] Les balises resolution_x_source, resolution_y_source, taille_pixels_x_source, taille_pixels_y_source doivent etre renseignees pour utiliser la nomenclature IGN.", 'white on_red');
-				print "\n";
-				exit;
-			}
-		}
+		$departement = $source->{departement};
 	}
 	
+	# contenu de la balise <pyramide>
+	my $pyramide = $data->{pyramide};
+	# contenu de la balise <systeme_coordonnees>
+	$systeme_coordonnees_pyramide = $pyramide->{systeme_coordonnees};
+	# contenu de la balise <compression>
+	$compression_images_pyramide = $pyramide->{compression};
+	# contenu de la balise <repertoire_pyramide>
+	$repertoire_pyramide = $pyramide->{repertoire_pyramide};
 	# contenu de la balise <fichier_layer>
-	$fichier_layer = $data->{fichier_layer};
-	# contenu de la balise <systeme_coordonnees_source>
-	$systeme_coordonnees_source = $data->{systeme_coordonnees_source};
-	# contenu de la balise <pcent_dilatation_dalles_base>
-	$pcent_dilatation_dalles_base = $data->{pcent_dilatation_dalles_base};
-	# contenu de la balise <pcent_dilatation_reproj>
-	$pcent_dilatation_reproj = $data->{pcent_dilatation_reproj};
-	# contenu de la balise <prefixe_nom_script>
-	$prefixe_nom_script = $data->{prefixe_nom_script};
+	$fichier_layer = $pyramide->{fichier_layer};
 	# contenu de la balise <taille_dalles_pixels>
-	$taille_dalles_pixels = $data->{taille_dalles_pixels};
+	$taille_dalles_pixels = $pyramide->{taille_dalles_pixels};
+	
+	# contenu de la balise <traitement>
+	my $traitement = $data->{traitement};
+	# contenu de la balise <repertoire_fichiers_temporaires>
+	$repertoire_fichiers_temp = $traitement->{repertoire_fichiers_temporaires};
+	# contenu de la balise <pcent_dilatation_dalles_base>
+	$pcent_dilatation_dalles_base = $traitement->{pcent_dilatation_dalles_base};
+	# contenu de la balise <pcent_dilatation_reproj>
+	$pcent_dilatation_reproj = $traitement->{pcent_dilatation_reproj};
+	# contenu de la balise <prefixe_nom_script>
+	$prefixe_nom_script = $traitement->{prefixe_nom_script};
 	# contenu de la balise <nombre_batch_min>
-	$nombre_batch_min = $data->{nombre_batch_min};
-	# la balise <localisation_rok4> est optionnelle (car les pyramides ne sont pas necessairement calculees a partir de pyramides existantes)
-	if(defined $data->{localisation_rok4}){
-		# contenu de la balise <localisation_rok4>
-		$localisation_rok4 = $data->{localisation_rok4};
-	}
-	# la balise <layer_wms> est optionnelle (car les pyramides ne sont pas necessairement calculees a partir de pyramides existantes)
-	if(defined $data->{layer_wms}){
-		# contenu de la balise <layer_wms>
-		$layer_requetes = $data->{layer_wms};
-	}
-	
-	
+	$nombre_batch_min = $traitement->{nombre_batch_min};
+	# contenu de la balise <localisation_rok4>
+	$localisation_rok4 = $traitement->{localisation_rok4};
+	# contenu de la balise <layer_wms>
+	$layer_requetes = $traitement->{layer_wms};
 	
 	$bool_ok = 1;
 	

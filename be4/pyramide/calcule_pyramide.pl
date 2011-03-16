@@ -1912,7 +1912,6 @@ sub calcule_avec_programme_dalles_base{
 	print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$chemin_dalle_cache}\t$cache_arbre_y_max{$chemin_dalle_cache}\t$cache_arbre_x_max{$chemin_dalle_cache}\t$cache_arbre_y_min{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\n";
 	
 	foreach my $src(@liste_dalles_source){
-		&ecrit_log("debut src : $src");
 		my $res_x_dalle;
 		my $res_y_dalle;
 		my $x_min_dalle_utile;
@@ -1920,7 +1919,6 @@ sub calcule_avec_programme_dalles_base{
 		my $y_min_dalle_utile;
 		my $y_max_dalle_utile;
 		if ($bool_niveau_minimum == 1){
-			&ecrit_log("niveau min => $source_res_x{$src} $source_res_y{$src} $source_x_min{$src} $source_x_max{$src} $source_y_min{$src} $source_y_max{$src}");
 			$res_x_dalle = $source_res_x{$src};
 			$res_y_dalle = $source_res_y{$src};
 			$x_min_dalle_utile = $source_x_min{$src};
@@ -1928,7 +1926,6 @@ sub calcule_avec_programme_dalles_base{
 			$y_min_dalle_utile = $source_y_min{$src};
 			$y_max_dalle_utile = $source_y_max{$src};
 		}else{
-			&ecrit_log("niveau INF => $cache_arbre_res{$src} $cache_arbre_res{$src} $cache_arbre_x_min{$src} $cache_arbre_x_max{$src} $cache_arbre_y_min{$src} $cache_arbre_y_max{$src}");
 			$res_x_dalle = $cache_arbre_res{$src};
 			$res_y_dalle = $cache_arbre_res{$src};
 			$x_min_dalle_utile = $cache_arbre_x_min{$src};
@@ -1943,7 +1940,6 @@ sub calcule_avec_programme_dalles_base{
 			$res_y_max_source = $res_y_dalle;
 		}
 		print FIC "$src\t$x_min_dalle_utile\t$y_max_dalle_utile\t$x_max_dalle_utile\t$y_min_dalle_utile\t$res_x_dalle\t$res_y_dalle\n";
-		ecrit_log("fin src : $src");
 	}
 	# ATTENTION, intuition feminine : l'execution dans certains environnements fait qu'il se melange les pinceaux
 	# et cree des fichiers vides, en le faisant dormir, ca a l'air de reparer
@@ -1962,7 +1958,6 @@ sub calcule_avec_programme_dalles_base{
 		$interpolateur = "lanczos";
 	}
 	
-	# TODO nombre de canaux, nombre de bits, couleur en parametre
 	# TODO supprimer no_data qui ne sert a rien
 	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur\n".$string_erreur_batch;
 	
