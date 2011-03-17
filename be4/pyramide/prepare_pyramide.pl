@@ -25,9 +25,7 @@ use cache(
 	'extrait_tms_from_pyr',
 	'valide_xml',
 );
-# CONSTANTES
-$| = 1;
-our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
+#### CONSTANTES
 
 # nom du fichier de dallage des dalles source (description des caracteristiques des images)
 my $nom_fichier_dalle_source = $nom_fichier_dalle_source_param;
@@ -37,7 +35,6 @@ my $nom_fichier_mtd_source = $nom_fichier_mtd_source_param;
 my $nom_rep_images = $nom_rep_images_param;
 # nom du repertoire des mtd dans la pyramide
 my $nom_rep_mtd = $nom_rep_mtd_param;
-
 # type de mtd dans la pyramide
 my $type_mtd_pyr = $type_mtd_pyr_param;
 # format des mtd dans la pyramide
@@ -56,112 +53,37 @@ my %format_format_pyr = %format_format_pyr_param;
 my %produit_nomenclature = %produit_nomenclature_param;
 ################################################################################
 
-# verification de l'existence des fichiers annexes
-# sortie si le fichier de schema XML des pyramides n'existe
-if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
-	print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
-	exit;
-}
+# pas de bufferisation des sorties ecran
+$| = 1;
 
-##### MAIN
-my $time = time();
+#### VARIABLES GLOBALES
+
+# valeur des parametres de la ligne de commande
+our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
 # nom du fichier de log
-my $log = $rep_log."/log_prepare_pyramide_$time.log";
-
-# creation du fichier de log
-open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
-&ecrit_log("commande : @ARGV");
-
-# recuperation des parametres de la ligne de commande
-getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:");
-
-my $bool_getopt_ok = 1;
-# sortie si tous les parametres obligatoires ne sont pas presents
-if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l) ){
-	$bool_getopt_ok = 0;
-	print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
-	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
-	if(! defined $opt_p){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
-	}
-	if(! defined $opt_i){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -i.\n";
-	}
-	if(! defined $opt_r){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -r.\n";
-	}
-	if(! defined $opt_s){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -s.\n";
-	}
-	if(! defined $opt_c){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -c.\n";
-	}
-	if(! defined $opt_t){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -t.\n";
-	}
-	if(! defined $opt_n){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -n.\n";
-	}
-	if(! defined $opt_x){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
-	}
-	if(! defined $opt_l){
-		print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
-	}
-}
-# si le parametre -f a ete specifie, il faut absolument les parametres a, y, w et h
-if(defined $opt_f){
-	if(! defined $opt_a){
-		$bool_getopt_ok = 0;
-		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -a.\n";
-	}
-	if(! defined $opt_y){
-		$bool_getopt_ok = 0;
-		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -y.\n";
-	}
-	if(! defined $opt_w){
-		$bool_getopt_ok = 0;
-		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -w.\n";
-	}
-	if(! defined $opt_h){
-		$bool_getopt_ok = 0;
-		print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -h.\n";
-	}
-}
-
-if ($bool_getopt_ok == 0){
-	&usage();
-	exit;
-}
-
+my $log;
 # nom de la grande famille de produits
-my $produit = $opt_p;
+my $produit;
 # nom du produit
 my $ss_produit;
 # chemin vers le repertoire des images source ou chemin vers un fichier de dallage issu d'un calcul precedent
-my $images_source = $opt_i;
+my $images_source;
 # chemin vers le repertoire des masques de mtd source ou chemin vers un fichier de dallage issu d'un calcul precedent
 my $masque_mtd;
-if (defined $opt_m){
-	$masque_mtd = $opt_m;
-}
 # repertoire ou creer la pyramide
-my $rep_pyramide = $opt_r;
+my $rep_pyramide;
 # type de compression des images de la pyramide
-my $compression_pyramide = $opt_c;
+my $compression_pyramide;
 # systeme de coordonnees de la pyramide
-my $RIG = $opt_s;
+my $srs_pyramide;
 # repertoire des fichiers de dallage a creer
-my $rep_fichiers_dallage = $opt_t;
+my $rep_fichiers_dallage;
 # annee de production (ou trimestre) des dalles source (ex : 2010 ou 2010-01)
-my $annee = $opt_n;
+my $annee;
 # departement des dalles source (optionnel)
 my $departement;
-if (defined $opt_d){
-	$departement = uc($opt_d);
-}
 # taille des dalles de la pyramide en pixels
-my $taille_dalle_pix = $opt_x;
+my $taille_dalle_pix;
 # resolution des images source selon l'axe X (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $resolution_source_x;
 # resolution des images source selon l'axe Y (utilise seulement si la nomenclature des dalles IGN est specifiee)
@@ -170,222 +92,50 @@ my $resolution_source_y;
 my $taille_pix_source_x;
 # taille des images source en pixels selon l'axe Y (utilise seulement si la nomenclature des dalles IGN est specifiee)
 my $taille_pix_source_y;
-# affectation des variables si la nomenclature IGN est utilisee
-if (defined $opt_f){
-	$resolution_source_x = $opt_a;
-	$resolution_source_y = $opt_y;
-	$taille_pix_source_x = $opt_w;
-	$taille_pix_source_y = $opt_h;
-}
-# chemin vers le fichier layer concernant la pyramide
-my $fichier_layer = $opt_l;
+# fichier du tms
+my $fichier_tms;
 
-# verifier les parametres
-# sortie si un des parametres est mal formate ou un des fichiers ou repertoires attendus est absent
-my $bool_param_ok = 1;
-if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster)$/i){
-	print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
-	&ecrit_log("ERREUR Produit mal specifie.");
-	$bool_param_ok = 0;
-}else{
-	$ss_produit = lc($produit);
-	if($produit =~ /^scan(?:25|50|100|dep|reg|1000)$/i){
-		$produit = "scan";
-	}else{
-		$produit = $ss_produit;
-	}
-}
+#### VARIABLES GLOBALES NON INITIALISEES
 
-if (! (-e $fichier_layer && -f $fichier_layer) ){
-	print "[PREPARE_PYRAMIDE] Le fichier $fichier_layer est introuvable.\n";
-	$bool_param_ok = 0;
-}
-# extraction du precedent .pyr depuis le fichier de layer
-my $fichier_pyr_ancien = &cherche_pyramide_recente_lay($fichier_layer);
-if (! (-e $fichier_pyr_ancien && -f $fichier_pyr_ancien) ){
-	print "[PREPARE_PYRAMIDE] Le fichier $fichier_pyr_ancien est introuvable.\n";
-	$bool_param_ok = 0;
-}
-# extraction du nom du tms depuis le .pyr
-my $fichier_tms = &extrait_tms_from_pyr($fichier_pyr_ancien);
-if (! (-e $fichier_tms && -f $fichier_tms) ){
-	print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
-	$bool_param_ok = 0;
-}
-
-if (!(-e $images_source)){
-	print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $images_source n'existe pas.\n";
-	&ecrit_log("ERREUR Le repertoire ou le fichier $images_source n'existe pas.");
-	$bool_param_ok = 0;
-}
-if (defined $masque_mtd && (!(-e $masque_mtd))){
-	print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $masque_mtd n'existe pas.\n";
-	&ecrit_log("ERREUR Le repertoire ou le fichier $masque_mtd n'existe pas.");
-	$bool_param_ok = 0;
-}
-if (!(-e $rep_fichiers_dallage && -d $rep_fichiers_dallage)){
-	print "[PREPARE_PYRAMIDE] Le repertoire $rep_fichiers_dallage n'existe pas.\n";
-	&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
-	$bool_param_ok = 0;
-}
-if($compression_pyramide !~ /^raw|jpeg|png$/i){
-	print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
-	&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
-	$bool_param_ok = 0;
-}
-if($taille_dalle_pix !~ /^\d+$/i){
-	print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
-	&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
-	$bool_param_ok = 0;
-}
-if(defined $opt_f){
-	if($resolution_source_x !~ /^\d+(?:\.\d+)?$/){
-		print "[PREPARE_PYRAMIDE] Resolution X des dalles source mal specifiee.\n";
-		&ecrit_log("ERREUR Resolution X des dalles source mal specifiee : $resolution_source_x.");
-		$bool_param_ok = 0;
-	}
-	if($resolution_source_y !~ /^\d+(?:\.\d+)?$/){
-		print "[PREPARE_PYRAMIDE] Resolution Y des dalles source mal specifiee.\n";
-		&ecrit_log("ERREUR Resolution Y des dalles source mal specifiee : $resolution_source_y.");
-		$bool_param_ok = 0;
-	}
-	if($taille_pix_source_x !~ /^\d+$/){
-		print "[PREPARE_PYRAMIDE] Taille pixel X des dalles source mal specifiee.\n";
-		&ecrit_log("ERREUR Taille pixel X des dalles source mal specifiee : $taille_pix_source_x.");
-		$bool_param_ok = 0;
-	}
-	if($taille_pix_source_y !~ /^\d+$/){
-		print "[PREPARE_PYRAMIDE] Taille pixel Y des dalles source mal specifiee.\n";
-		&ecrit_log("ERREUR Taille pixel Y des dalles source mal specifiee : $taille_pix_source_y.");
-		$bool_param_ok = 0;
-	}
-}
-if ($bool_param_ok == 0){
-	exit;
-}
-
-# action 1 : creer dalles_source_image et dalles_source_metadata si on a un repertoire en entree
 # chemin vers le fichier de dallage des images source (a creer)
 my $nom_fichier_dallage_image;
+# chemin vers le fichier de dallage des mtd source (a creer)
+my $nom_fichier_dallage_mtd;
 # coordonnees des coins du rectangle englobant les donnees source
 my ($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
-# references vers des hash d'association entre chemin d'une image source et son x_min, son x_max, son y_min, son y_max, sa resolution en x, sa resolution en y
-my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y);
-# si le parametre $images_source est un repertoire, on etudie les images
-if(-d $images_source){
-	&ecrit_log("Recensement des images dans $images_source.");
-	# constitution d'une reference vers un tableau contenant tous les chmins vers les images source
-	my ($ref_images_source, $nb_images) = &cherche_images($images_source);
-	# on donne le nombre d'images source trouvees
-	&ecrit_log("$nb_images images dans $images_source.");
-	&ecrit_log("Recensement des infos des images de $images_source.");
-	# les variables definies precedemmenet sont affectees en examinant chaque dalle
-	($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cherche_infos_dalle($ref_images_source);
-	&ecrit_log("Ecriture du fichier des dalles source.");
-	# ecriture du fichier de dallage en fonction des caracteristiques des images stockees dans les variables precedentes
-	$nom_fichier_dallage_image = &ecrit_dallage_source($ref_images_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $rep_fichiers_dallage, "image");
+# chemin vers le fichier de pyramide .pyr
+my $fichier_pyramide_final;
 
-}elsif(-f $images_source){
-	# le parametre $images_source est un fichier : on utilise l'existant
-	&ecrit_log("Utilisation du fichier des dalles source existant.");
-	$nom_fichier_dallage_image = $rep_fichiers_dallage."/".basename($images_source);
-	# copie de l'ancien fichier de dallage dans l'emplacement du nouveau
-	copy($images_source, $nom_fichier_dallage_image);
-	# extraction du rectangle englobant les donness source du fichier de dallage
-	($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &extrait_bbox_dallage($nom_fichier_dallage_image);
-}
+##### MAIN
 
-# idem pour les mtd
-# seulement si les mtd sont specifiees
-my $nom_fichier_dallage_mtd = "";
-if(defined $masque_mtd){
-	# si le parametre $masque_mtd est un repertoire, on etudie les msques de mtd
-	if(-d $masque_mtd){
-		&ecrit_log("Recensement des mtd dans $masque_mtd.");
-		# constitution d'une reference vers un tableau contenant tous les chmins vers les masques de mtd source
-		my ($ref_mtd_source, $nb_mtd) = &cherche_images($masque_mtd);
-		# on donne le nombre de masques de mtd source trouves
-		&ecrit_log("$nb_mtd mtd dans $masque_mtd.");
-		&ecrit_log("Recensement des infos des mtd de $masque_mtd.");
-		# references vers des hash d'association entre chemin d'un masque de mtd source et son x_min, son x_max, son y_min, son y_max, sa resolution en x, sa resolution en y
-		my ($mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $non_utilise1, $non_utilise2) = &cherche_infos_dalle($ref_mtd_source);
-		&ecrit_log("Ecriture du fichier des mtd source.");
-		# ecriture du fichier de dallage en fonction des caracteristiques des masques de mtd stockees dans les variables precedentes
-		$nom_fichier_dallage_mtd = &ecrit_dallage_source($ref_mtd_source, $mtd_hash_x_min, $mtd_hash_x_max, $mtd_hash_y_min, $mtd_hash_y_max, $mtd_hash_res_x, $mtd_hash_res_y, $rep_fichiers_dallage, "mtd");
-	}elsif(-f $masque_mtd){
-		# le parametre $masque_mtd est un fichier : on utilise l'existant
-		&ecrit_log("Utilisation du fichier des mtd source existant.");
-		$nom_fichier_dallage_mtd = $rep_fichiers_dallage."/".basename($masque_mtd);
-		# copie de l'ancien fichier de dallage dans l'emplacement du nouveau
-		copy($masque_mtd, $nom_fichier_dallage_mtd);
-	}
-}
-
-# action 2 : creer pyramid.pyr en XML
-# formattage du SRS en majuscule
-my $srs_pyramide = uc($RIG);
-# on remplace les : par des _ car cette string peut etre le nom d'un repertoire 
-$srs_pyramide =~ s/:/_/g;
-# nom de la pyramide (et nom de son repertoire)
-my $nom_pyramide = &cree_nom_pyramide($ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement);
-
-# format des images de la pyramide
-my $format_images = $format_format_pyr{lc($compression_pyramide)};
-# nombre de canaux des images de la pyramide
-my $nb_channels = $produit_nb_canaux{$produit};
-
-# creation du repertoire de la pyramide
-if ( !(-e $rep_pyramide && -d $rep_pyramide) ){
-	mkdir "$rep_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide.";
-}
-# creation du sous-repertoire de la pyramide
-if ( !(-e "$rep_pyramide/$nom_pyramide" && -d "$rep_pyramide/$nom_pyramide") ){
-	mkdir "$rep_pyramide/$nom_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide/$nom_pyramide.";
-}
-
-# nom du fichier XML de pyramide
-my $nom_fichier_pyramide = $nom_pyramide.".pyr";
-&ecrit_log("Creation de $nom_fichier_pyramide.");
-# creation du fichier XML de pyramide et recuperation de la liste des repertoires de la pyramide sous forme de reference
-my ($ref_repertoires, $nom_fichier_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $fichier_tms, $taille_dalle_pix, $format_images, $nb_channels, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
-
-# validation du .pyr par le xsd
-&ecrit_log("Validation de $nom_fichier_pyramide.");
-my ($valid, $string_temp_log) = &valide_xml($nom_fichier_final, $xsd_pyramide);
-&ecrit_log($string_temp_log);
-if ((!defined $valid) || $valid ne ""){
-	my $string_valid = "Pas de message sur la validation";
-	if(defined $valid){
-		$string_valid = $valid;
-	}
-	# on sort le resultat de la validation
-	print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
-	print "$string_valid\n";
-	&ecrit_log("ERREUR a la validation de $nom_fichier_final par $xsd_pyramide : $string_valid");
+# verification des parametres et initialisation des variables globales
+my $bool_init_ok = &init();
+if($bool_init_ok == 0){
 	exit;
 }
 
-# action 3 : creer les sous-repertoires utiles
-&ecrit_log("Creation des repertoires des niveaux de la pyramide.");
-my @repertoires = @{$ref_repertoires};
-foreach my $rep_a_creer(@repertoires){
-	if ( !(-e $rep_a_creer && -d $rep_a_creer) ){
-		mkdir $rep_a_creer, 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_a_creer.";
-	}
-}
-&ecrit_log("Repertoires de la pyramide crees.");
+# action 1 : creer dalles_source_image
+($nom_fichier_dallage_image, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cree_fichier_dallage($images_source, $rep_fichiers_dallage , "image", $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
+
+# action 2 : creer dalles_source_metadata
+($nom_fichier_dallage_mtd, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cree_fichier_dallage($masque_mtd, $rep_fichiers_dallage, "mtd", $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
+
+# action 3 : creer le pyramide en XML et les repertoires sur le systeme de fichiers
+$fichier_pyramide_final = &cree_pyramide($produit, $ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement, $fichier_tms, $taille_dalle_pix, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $xsd_pyramide);
+
 
 # pour recuperation par d'autres scripts, on ecrit sur la sortie standard
 # 1 nom fichier pyr
-print "$nom_fichier_final\n";
+print "$fichier_pyramide_final\n";
 # 2 nom dallage_image
 print "$nom_fichier_dallage_image\n";
 # 3 nom_dallage_mtd
 if($nom_fichier_dallage_mtd ne ""){
 	print "$nom_fichier_dallage_mtd\n";
 }
-&ecrit_log("Traitement termine.");
-close LOG;
+
+&fin();
+
 ################################################################################
 
 ###### FONCTIONS
@@ -908,3 +658,371 @@ sub extrait_bbox_dallage{
 	return ($xmin, $xmax, $ymin, $ymax);
 }
 ################################################################################
+# initialise le traitement : verification des parametres et initialisation des variables globales
+sub init{
+	
+	# verification de l'existence des fichiers annexes
+	# sortie si le fichier de schema XML des pyramides n'existe pas
+	if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
+		print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
+		exit;
+	}
+	
+	# le nom du log va comporter une info de date
+	my $time = time();
+	# nom du fichier de log
+	$log = $rep_log."/log_prepare_pyramide_$time.log";
+	
+	# creation du fichier de log
+	open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
+	&ecrit_log("commande : @ARGV");
+	
+	# recuperation des parametres de la ligne de commande
+	getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:");
+	
+	my $bool_getopt_ok = 1;
+	# sortie si tous les parametres obligatoires ne sont pas presents
+	if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l) ){
+		$bool_getopt_ok = 0;
+		print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
+		&ecrit_log("ERREUR Nombre d'arguments incorrect.");
+		if(! defined $opt_p){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
+		}
+		if(! defined $opt_i){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -i.\n";
+		}
+		if(! defined $opt_r){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -r.\n";
+		}
+		if(! defined $opt_s){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -s.\n";
+		}
+		if(! defined $opt_c){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -c.\n";
+		}
+		if(! defined $opt_t){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -t.\n";
+		}
+		if(! defined $opt_n){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -n.\n";
+		}
+		if(! defined $opt_x){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -x.\n";
+		}
+		if(! defined $opt_l){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
+		}
+	}
+	# si le parametre -f a ete specifie, il faut absolument les parametres a, y, w et h
+	if(defined $opt_f){
+		if(! defined $opt_a){
+			$bool_getopt_ok = 0;
+			print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -a.\n";
+		}
+		if(! defined $opt_y){
+			$bool_getopt_ok = 0;
+			print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -y.\n";
+		}
+		if(! defined $opt_w){
+			$bool_getopt_ok = 0;
+			print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -w.\n";
+		}
+		if(! defined $opt_h){
+			$bool_getopt_ok = 0;
+			print "[PREPARE_PYRAMIDE] -f est present : veuillez specifier un parametre -h.\n";
+		}
+	}
+	
+	# on sort de la fonction si deja les parametres ne sont pas tous presents
+	if ($bool_getopt_ok == 0){
+		&usage();
+		return $bool_getopt_ok;
+	}
+	
+	# nom de la grande famille de produits
+	$produit = $opt_p;
+	# chemin vers le repertoire des images source ou chemin vers un fichier de dallage issu d'un calcul precedent
+	$images_source = $opt_i;
+	# chemin vers le repertoire des masques de mtd source ou chemin vers un fichier de dallage issu d'un calcul precedent
+	if (defined $opt_m){
+		$masque_mtd = $opt_m;
+	}
+	# repertoire ou creer la pyramide
+	$rep_pyramide = $opt_r;
+	# creation du repertoire de la pyramide
+	if ( !(-e $rep_pyramide && -d $rep_pyramide) ){
+		mkdir "$rep_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide.";
+	}
+	# type de compression des images de la pyramide
+	$compression_pyramide = $opt_c;
+	# systeme de coordonnees de la pyramide
+	my $RIG = $opt_s;
+	# formattage du SRS en majuscule
+	$srs_pyramide = uc($RIG);
+	# on remplace les : par des _ car cette string peut etre le nom d'un repertoire 
+	$srs_pyramide =~ s/:/_/g;
+	# repertoire des fichiers de dallage a creer
+	$rep_fichiers_dallage = $opt_t;
+	# annee de production (ou trimestre) des dalles source (ex : 2010 ou 2010-01)
+	$annee = $opt_n;
+	# departement des dalles source (optionnel)
+	if (defined $opt_d){
+		$departement = uc($opt_d);
+	}
+	# taille des dalles de la pyramide en pixels
+	$taille_dalle_pix = $opt_x;
+	# affectation des variables $resolution_source_x $resolution_source_y $taille_pix_source_x $taille_pix_source_y si la nomenclature IGN est utilisee
+	if (defined $opt_f){
+		$resolution_source_x = $opt_a;
+		$resolution_source_y = $opt_y;
+		$taille_pix_source_x = $opt_w;
+		$taille_pix_source_y = $opt_h;
+	}
+	# chemin vers le fichier layer concernant la pyramide
+	my $fichier_layer = $opt_l;
+	
+	# verifier les parametres
+	# sortie si un des parametres est mal formate ou un des fichiers ou repertoires attendus est absent
+	my $bool_param_ok = 1;
+	if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster)$/i){
+		print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
+		&ecrit_log("ERREUR Produit mal specifie.");
+		$bool_param_ok = 0;
+	}else{
+		$ss_produit = lc($produit);
+		if($produit =~ /^scan(?:25|50|100|dep|reg|1000)$/i){
+			$produit = "scan";
+		}else{
+			$produit = $ss_produit;
+		}
+	}
+	# verification de la presence du fichier lay
+	if (! (-e $fichier_layer && -f $fichier_layer) ){
+		print "[PREPARE_PYRAMIDE] Le fichier $fichier_layer est introuvable.\n";
+		$bool_param_ok = 0;
+	}
+	# extraction du precedent .pyr depuis le fichier de layer
+	my $fichier_pyr_ancien = &cherche_pyramide_recente_lay($fichier_layer);
+	if (! (-e $fichier_pyr_ancien && -f $fichier_pyr_ancien) ){
+		print "[PREPARE_PYRAMIDE] Le fichier $fichier_pyr_ancien est introuvable.\n";
+		$bool_param_ok = 0;
+	}
+	# extraction du nom du tms depuis le .pyr
+	$fichier_tms = &extrait_tms_from_pyr($fichier_pyr_ancien);
+	if (! (-e $fichier_tms && -f $fichier_tms) ){
+		print "[PREPARE_PYRAMIDE] Le fichier $fichier_tms est introuvable.\n";
+		$bool_param_ok = 0;
+	}
+	if (!(-e $images_source)){
+		print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $images_source n'existe pas.\n";
+		&ecrit_log("ERREUR Le repertoire ou le fichier $images_source n'existe pas.");
+		$bool_param_ok = 0;
+	}
+	if (defined $masque_mtd && (!(-e $masque_mtd))){
+		print "[PREPARE_PYRAMIDE] Le repertoire ou le fichier $masque_mtd n'existe pas.\n";
+		&ecrit_log("ERREUR Le repertoire ou le fichier $masque_mtd n'existe pas.");
+		$bool_param_ok = 0;
+	}
+	if (!(-e $rep_fichiers_dallage && -d $rep_fichiers_dallage)){
+		print "[PREPARE_PYRAMIDE] Le repertoire $rep_fichiers_dallage n'existe pas.\n";
+		&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
+		$bool_param_ok = 0;
+	}
+	if($compression_pyramide !~ /^raw|jpeg|png$/i){
+		print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
+		&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
+		$bool_param_ok = 0;
+	}
+	if($taille_dalle_pix !~ /^\d+$/i){
+		print "[PREPARE_PYRAMIDE] Taille des dalles en pixels mal specifiee.\n";
+		&ecrit_log("ERREUR Taille des dalles en pixels mal specifiee : $taille_dalle_pix.");
+		$bool_param_ok = 0;
+	}
+	if(defined $opt_f){
+		if($resolution_source_x !~ /^\d+(?:\.\d+)?$/){
+			print "[PREPARE_PYRAMIDE] Resolution X des dalles source mal specifiee.\n";
+			&ecrit_log("ERREUR Resolution X des dalles source mal specifiee : $resolution_source_x.");
+			$bool_param_ok = 0;
+		}
+		if($resolution_source_y !~ /^\d+(?:\.\d+)?$/){
+			print "[PREPARE_PYRAMIDE] Resolution Y des dalles source mal specifiee.\n";
+			&ecrit_log("ERREUR Resolution Y des dalles source mal specifiee : $resolution_source_y.");
+			$bool_param_ok = 0;
+		}
+		if($taille_pix_source_x !~ /^\d+$/){
+			print "[PREPARE_PYRAMIDE] Taille pixel X des dalles source mal specifiee.\n";
+			&ecrit_log("ERREUR Taille pixel X des dalles source mal specifiee : $taille_pix_source_x.");
+			$bool_param_ok = 0;
+		}
+		if($taille_pix_source_y !~ /^\d+$/){
+			print "[PREPARE_PYRAMIDE] Taille pixel Y des dalles source mal specifiee.\n";
+			&ecrit_log("ERREUR Taille pixel Y des dalles source mal specifiee : $taille_pix_source_y.");
+			$bool_param_ok = 0;
+		}
+	}
+	
+	# on retourne :
+	# un booleen : 1 pour OK , 0 sinon
+	return $bool_param_ok;
+}
+################################################################################
+# cree un fichier de dallage source et extrait la BBOX des donnees source
+sub cree_fichier_dallage{
+	
+	# source du dallage : repertoire ou fichier
+	my $source = $_[0];
+	# repertoire destination du fichier de dallage
+	my $repertoire_fichier_dallage = $_[1];
+	# type des donnes (image ou mtd)
+	my $type_donnees = $_[2];
+	# BBOX des donnees avant etudes des sources
+	my $x_min_bbox_ini = $_[3];
+	my $x_max_bbox_ini = $_[4];
+	my $y_min_bbox_ini = $_[5];
+	my $y_max_bbox_ini = $_[6];
+	
+	# chemin vers le fichier de dallage
+	my $nom_fichier_dallage = "";
+	# BBOX des donnees
+	my($x_min_bbox_dallage, $x_max_bbox_dallage, $y_min_bbox_dallage, $y_max_bbox_dallage);
+	
+	# initialisation de la BBOX
+	if(defined $x_min_bbox_ini && defined $x_max_bbox_ini && defined $y_min_bbox_ini && defined $y_max_bbox_ini){
+		($x_min_bbox_dallage, $x_max_bbox_dallage, $y_min_bbox_dallage, $y_max_bbox_dallage) = ($x_min_bbox_ini, $x_max_bbox_ini, $y_min_bbox_ini, $y_max_bbox_ini);
+	}
+	
+	if(defined $source){
+		# references vers des hash d'association entre chemin d'une source et son x_min, son x_max, son y_min, son y_max, sa resolution en x, sa resolution en y
+		my ($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y);
+		# si le parametre $source est un repertoire, on etudie les images
+		if(-d $source){
+			&ecrit_log("Recensement $type_donnees dans $source.");
+			# constitution d'une reference vers un tableau contenant tous les chemins vers les source
+			my ($ref_source, $nb_source) = &cherche_images($source);
+			# on donne le nombre d'images source trouvees
+			&ecrit_log("$nb_source $type_donnees dans $source.");
+			&ecrit_log("Recensement infos $type_donnees de $source.");
+			# les variables definies precedemment sont affectees en examinant chaque dalle
+			($reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $x_min_bbox_dallage, $x_max_bbox_dallage, $y_min_bbox_dallage, $y_max_bbox_dallage) = &cherche_infos_dalle($ref_source);
+			&ecrit_log("Ecriture du fichier des dalles source.");
+			# ecriture du fichier de dallage en fonction des caracteristiques des images stockees dans les variables precedentes
+			$nom_fichier_dallage = &ecrit_dallage_source($ref_source, $reference_hash_x_min, $reference_hash_x_max, $reference_hash_y_min, $reference_hash_y_max, $reference_hash_res_x, $reference_hash_res_y, $repertoire_fichier_dallage, $type_donnees);
+		
+		}elsif(-f $source){
+			# le parametre $source est un fichier : on utilise l'existant
+			&ecrit_log("Utilisation du fichier des dalles source existant.");
+			$nom_fichier_dallage = $repertoire_fichier_dallage."/".basename($source);
+			# copie de l'ancien fichier de dallage dans l'emplacement du nouveau
+			copy($source, $nom_fichier_dallage);
+			# extraction du rectangle englobant les donness source du fichier de dallage si besoin
+			if( !(defined $x_min_bbox_dallage && defined $x_max_bbox_dallage && defined $y_min_bbox_dallage && defined $y_max_bbox_dallage)){
+				($x_min_bbox_dallage, $x_max_bbox_dallage, $y_min_bbox_dallage, $y_max_bbox_dallage) = &extrait_bbox_dallage($nom_fichier_dallage);
+			}
+			
+		}
+	}
+	
+	# on retourne :
+	# nom du fichier de dallage cree
+	# coins de la BBOX des donnees
+	return ($nom_fichier_dallage, $x_min_bbox_dallage, $x_max_bbox_dallage, $y_min_bbox_dallage, $y_max_bbox_dallage);
+}
+################################################################################
+# cree la pyramide (XML et repertoires)
+sub cree_pyramide{
+	# nom de la grande famille de produits
+	my $produit_pyr = $_[0];
+	# nom du produit
+	my $ss_produit_pyr = $_[1];
+	# type de compression des images de la pyramide
+	my $compression_pyr = $_[2];
+	# systeme de coordonnees de la pyramide
+	my $srs_pyr = $_[3];
+	# annee de production (ou trimestre) des dalles source (ex : 2010 ou 2010-01)
+	my $annee_pyr = $_[4];
+	# departement des dalles source
+	my $departement_pyr = $_[5];
+	# fichier du tms
+	my $tms_pyr = $_[6];
+	# taille des dalles de la pyramide en pixels
+	my $taille_dalle_pix_pyr = $_[7];
+	# type de mtd dans la pyramide
+	my $type_mtd_pyramide = $_[8];
+	# format des mtd dans la pyramide
+	my $format_mtd_pyramide = $_[9];
+	# profondeur de chemin des fichiers dans la pyramide
+	my $profondeur_pyramide = $_[10];
+	# coordonnees des coins du rectangle englobant les donnees source
+	my $x_min_bbox_pyr = $_[11];
+	my $x_max_bbox_pyr = $_[12];
+	my $y_min_bbox_pyr = $_[13];
+	my $y_max_bbox_pyr = $_[14];
+	# chemin vers le schema XML qui contraint les fichiers XML de pyramide
+	my $xsd_pyr = $_[15];
+	
+	# nom de la pyramide (et nom de son repertoire)
+	my $nom_pyramide = &cree_nom_pyramide($ss_produit_pyr, $compression_pyr, $srs_pyr, $annee_pyr, $departement_pyr);
+	
+	# format des images de la pyramide
+	my $format_images = $format_format_pyr{lc($compression_pyr)};
+	# nombre de canaux des images de la pyramide
+	my $nb_channels = $produit_nb_canaux{$produit_pyr};
+	
+	# creation du sous-repertoire de la pyramide
+	if ( !(-e "$rep_pyramide/$nom_pyramide" && -d "$rep_pyramide/$nom_pyramide") ){
+		mkdir "$rep_pyramide/$nom_pyramide", 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_pyramide/$nom_pyramide.";
+	}
+	
+	# nom du fichier XML de pyramide
+	my $nom_fichier_pyramide = $nom_pyramide.".pyr";
+	
+	&ecrit_log("Creation de $nom_fichier_pyramide.");
+	# creation du fichier XML de pyramide et recuperation de la liste des repertoires de la pyramide sous forme de reference
+	my ($ref_repertoires_a_creer, $nom_fichier_pyramide_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $tms_pyr, $taille_dalle_pix_pyr, $format_images, $nb_channels, $type_mtd_pyramide, $format_mtd_pyramide, $profondeur_pyramide, $x_min_bbox_pyr, $x_max_bbox_pyr, $y_min_bbox_pyr, $y_max_bbox_pyr);
+	
+	# validation du .pyr par le xsd
+	&ecrit_log("Validation de $nom_fichier_pyramide_final.");
+	my ($valid, $string_temp_log) = &valide_xml($nom_fichier_pyramide_final, $xsd_pyr);
+	if(defined $string_temp_log){
+		&ecrit_log($string_temp_log);
+		if($string_temp_log !~ /erreur/i){
+			if ((!defined $valid) || $valid ne ""){
+				my $string_valid = "Pas de message sur la validation";
+				if(defined $valid){
+					$string_valid = $valid;
+				}
+				# on sort le resultat de la validation
+				print "[PREPARE_PYRAMIDE] Le document n'est pas valide!\n";
+				print "$string_valid\n";
+				&ecrit_log("ERREUR a la validation de $nom_fichier_pyramide_final par $xsd_pyr : $string_valid");
+				exit;
+			}
+		}else{
+			exit;
+		}
+	}
+	
+	# creer les sous-repertoires utiles
+	&ecrit_log("Creation des repertoires des niveaux de la pyramide.");
+	my @repertoires = @{$ref_repertoires_a_creer};
+	foreach my $rep_a_creer(@repertoires){
+		if ( !(-e $rep_a_creer && -d $rep_a_creer) ){
+			mkdir $rep_a_creer, 0775 or die "[PREPARE_PYRAMIDE] Impossible de creer le repertoire $rep_a_creer.";
+		}
+	}
+	&ecrit_log("Repertoires de la pyramide crees.");
+	
+	# on retourne :
+	# chemin vers le fichier de pyramide
+	return $nom_fichier_pyramide_final;
+}
+################################################################################
+sub fin{
+	
+	&ecrit_log("Traitement termine.");
+	# fermeture du handler du fichier de log
+	close LOG;
+	# sortie du programme
+	exit;
+}

@@ -127,16 +127,23 @@ my $taille_pix_y_source;
 
 # on regarde si le XML de parametrage est bien valide par rapport a son schema
 my ($valid, $string_log) = &valide_xml($fichier_parametres, $xsd_parametres_cache);
-if ((!defined $valid) || $valid ne ""){
-	my $string_valid = "Pas de message sur la validation";
-	if(defined $valid){
-		$string_valid = $valid;
+if(defined $string_log){
+	&ecrit_log($string_log);
+	if($string_log !~ /erreur/i){
+		if ((!defined $valid) || $valid ne ""){
+			my $string_valid = "Pas de message sur la validation";
+			if(defined $valid){
+				$string_valid = $valid;
+			}
+			# on sort le resultat de la validation
+			print colored ("[MAJ_CACHE] Le document $fichier_parametres n'est pas valide!", 'white on_red');
+			print "\n";
+			print "$string_valid\n";
+			exit;
+		}
+	}else{
+		exit;
 	}
-	# on sort le resultat de la validation
-	print colored ("[MAJ_CACHE] Le document $fichier_parametres n'est pas valide!", 'white on_red');
-	print "\n";
-	print "$string_valid\n";
-	exit;
 }
 
 # lecture du fichier de parametrage pour initialiser les variables

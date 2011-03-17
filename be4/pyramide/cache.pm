@@ -453,37 +453,43 @@ sub valide_xml{
 	# resultat de la validation
 	my $reponse = '';
 	
-	my $string_log;
+	# chaine de caractere a inscrire dans un log
+	my $string_log = "";
+	
+	# booleen indiquant que les variables d'environnement existent
+	my $bool_env_ok = 1;
 	
 	# on regarde si la variable d'environnement proxy_Host existe, sinon on ne peut pas valider => on sort
 	my $proxy_Host = $ENV{'proxy_Host'};
 	if (!defined $proxy_Host){
-		$string_log = "Variable d'environnement proxy_Host non trouvee.\n";
-		print "[CACHE] $string_log\n";
-		return ($reponse, $string_log);
+		$string_log .= "ERREUR : Variable d'environnement proxy_Host non trouvee.\n";
+		$bool_env_ok = 0;
 	}
 	# on regarde si la variable d'environnement proxy_Port existe, sinon on ne peut pas valider => on sort
 	my $proxy_Port = $ENV{'proxy_Port'};
 	if (!defined $proxy_Port){
-		$string_log = "Variable d'environnement proxy_Port non trouvee.\n";
-		print "[CACHE] $string_log\n";
-		return ($reponse, $string_log);
+		$string_log .= "ERREUR : Variable d'environnement proxy_Port non trouvee.\n";
+		$bool_env_ok = 0;
 	}
 	# on regarde si la variable d'environnement xerces_home existe, sinon on ne peut pas valider => on sort
 	my $xerces_home = $ENV{'xerces_home'};
 	if (!defined $xerces_home){
-		$string_log = "Variable d'environnement xerces_home non trouvee.\n";
-		print "[CACHE] $string_log\n";		
-		return ($reponse, $string_log);
+		$string_log .= "ERREUR : Variable d'environnement xerces_home non trouvee.\n";
+		$bool_env_ok = 0;
 	}
-
-	# creation de la ligne de commande qui valide un XML selon un schema
-	my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
-	$string_log = "Validation du XML de pyramide : $commande_valide";
 	
-	# execution de la commande et recuperation du resultat dans une variable
-	$reponse = `$commande_valide`;
-	
+	# si les variables d'environnement sont OK
+	if($bool_env_ok == 1){
+		# creation de la ligne de commande qui valide un XML selon un schema
+		my $commande_valide = "java -Dhttp.proxyHost=".$proxy_Host." -Dhttp.proxyPort=".$proxy_Port." -classpath ".$xerces_home."/xercesSamples.jar:".$xerces_home."/xml-apis.jar:".$xerces_home."/xercesImpl.jar:".$xerces_home."/resolver.jar:/usr/local/j2sdk/lib/tools.jar xni.XMLGrammarBuilder -F -a ".$schema." -i ".$document." 2>&1";
+		$string_log .= "Validation du XML de pyramide : $commande_valide";
+		
+		# execution de la commande et recuperation du resultat dans une variable
+		$reponse = `$commande_valide`;
+	}else{
+		print "[CACHE] $string_log\n";
+	}
+		
 	# on retourne le resultat de la validation
 	return ($reponse, $string_log);
 	
