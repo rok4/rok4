@@ -75,9 +75,11 @@ foreach my $rep(@repertoires){
 print colored ("[PYRAMIDE_LECTURE_SEULE] $nombre_fichiers fichiers et $nombre_repertoires repertoires mis en lecture seule.", 'green');
 print "\n";
 close LOG;
-################################################################################
+
+### FIN MAIN
 
 ######## FONCTIONS
+################################################################################
 sub usage{
 	my $bool_ok = 0;
 	

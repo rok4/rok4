@@ -60,8 +60,7 @@ $| = 1;
 
 # valeur des parametres de la ligne de commande
 our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
-# nom du fichier de log
-my $log;
+
 # nom de la grande famille de produits
 my $produit;
 # nom du produit
@@ -661,17 +660,10 @@ sub extrait_bbox_dallage{
 # initialise le traitement : verification des parametres et initialisation des variables globales
 sub init{
 	
-	# verification de l'existence des fichiers annexes
-	# sortie si le fichier de schema XML des pyramides n'existe pas
-	if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
-		print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
-		exit;
-	}
-	
 	# le nom du log va comporter une info de date
 	my $time = time();
 	# nom du fichier de log
-	$log = $rep_log."/log_prepare_pyramide_$time.log";
+	my $log = $rep_log."/log_prepare_pyramide_$time.log";
 	
 	# creation du fichier de log
 	open LOG, ">>$log" or die "[PREPARE_PYRAMIDE] Impossible de creer le fichier $log.";
@@ -860,6 +852,12 @@ sub init{
 			&ecrit_log("ERREUR Taille pixel Y des dalles source mal specifiee : $taille_pix_source_y.");
 			$bool_param_ok = 0;
 		}
+	}
+	# verification de l'existence des fichiers annexes
+	if (!(-e $xsd_pyramide && -f $xsd_pyramide) ){
+		print "[PREPARE_PYRAMIDE] Le fichier $xsd_pyramide est introuvable.\n";
+		&ecrit_log("ERREUR Le fichier $xsd_pyramide est introuvable.");
+		$bool_param_ok = 0;
 	}
 	
 	# on retourne :

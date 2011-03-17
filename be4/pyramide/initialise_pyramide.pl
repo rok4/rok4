@@ -5,6 +5,7 @@ use Getopt::Std;
 use XML::Simple;
 use XML::LibXML;
 use File::Basename;
+use Cwd;
 use Cwd 'abs_path';
 use cache(
 	'cree_repertoires_recursifs',
@@ -12,135 +13,53 @@ use cache(
 	'lecture_repertoires_pyramide',
 	'cherche_pyramide_recente_lay',
 );
-$| = 1;
-our($opt_l,$opt_p);
 
-# association entre les repertoires de l'ancien cache et du nouveau
-my %rep_ancien_nouveau;
+#### CONSTANTES
 # repertoire ou mettre le log
 my $rep_log = $rep_logs_param;
+
+################################################################################
+
+# pas de bufferisation des sorties ecran
+$| = 1;
+
+#### VARIABLES GLOBALES
+
+# valeur des parametres de la ligne de commande
+our($opt_l,$opt_p);
+
+# chemin vers le fichier de layer concerne par la pyramide
+my $lay_ancien;
+# chemin vers le fichier XML de la pyramide (.pyr)
+my $fichier_pyr;
+
+# chemin vers le fichier XML de la pyramide precedente (.pyr)
+my $ancien_pyr;
+# association entre les repertoires de l'ancien cache et du nouveau sous forme de reference
+my $ref_rep_ancien_nouveau;
 ################################################################################
 
 ################ MAIN
-my $time = time();
-# nom du log
-my $log = $rep_log."/log_initialise_pyramide_$time.log";
 
-# creation du log
-open LOG, ">>$log" or die "[INITIALISE_PYRAMIDE] Impossible de creer le fichier $log.";
-&ecrit_log("commande : @ARGV");
-
-# recuperation des parametres de la ligne de commande
-getopts("l:p:");
-
-# sortie si tous les parametres obligatoires ne sont pas presents
-if ( ! defined ($opt_l and $opt_p ) ){
-	print "[INITIALISE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
-	&usage();
-	&ecrit_log("ERREUR Nombre d'arguments incorrect.");
-	if(! defined $opt_l){
-		print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
-	}
-	if(! defined $opt_p){
-		print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
-	}
-	exit;
-}
-
-# chemin vers le fichier de layer concerne par la pyramide
-my $lay_ancien = $opt_l;
-# chemin vers le fichier XML de la pyramide (.pyr)
-my $fichier_pyr = $opt_p;
-
-# verification des parametres
-# sortie si le fichier de layer n'existe pas
-if (! (-e $lay_ancien && -f $lay_ancien)){
-	print "[INITIALISE_PYRAMIDE] Le fichier $lay_ancien n'existe pas.\n";
-	&ecrit_log("ERREUR Le fichier $lay_ancien n'existe pas.");
-	exit;
-}
-# sortie si le fichier XMl de pyramide n'existe pas
-if (! (-e $fichier_pyr && -f $fichier_pyr)){
-	print "[INITIALISE_PYRAMIDE] Le fichier $fichier_pyr n'existe pas.\n";
-	&ecrit_log("ERREUR Le fichier $fichier_pyr n'existe pas.");
+# verification des parametres et initialisation des variables globales
+my $bool_init_ok = &init();
+if($bool_init_ok == 0){
 	exit;
 }
 
 # action 1 : determiner la pyramide la plus recente
-&ecrit_log("Lecture de la configuration.");
-my $ancien_pyr = &cherche_pyramide_recente_lay($lay_ancien);
-# test si le chemin est en absolu (commence par un /) ou en relatif
-# (dans ce cas on ajoute le repertoire du lay car le .pyr est en relatif par rapport au lay)
-if( $ancien_pyr !~ /^\//){
-	$ancien_pyr = dirname($lay_ancien)."/".$ancien_pyr;
-}
-&ecrit_log("Pyramide la plus recente : $ancien_pyr.");
+$ancien_pyr = &extrait_fichier_pyramide($lay_ancien);
 
 # action 2 : mise a jour des indices de tuiles limites dans les niveaux de la pyramide
-&ecrit_log("Mise a jour des limites dans le TMS avec $ancien_pyr.");
-# sortie si l'ancien fichier de pyramide (extrait du lay) n'existe pas
-if ( -e $ancien_pyr && -f $ancien_pyr ){
-	# recuperation d'une reference vers le limites du TMS
-	# (sous forme de hash associant l'id du level a une reference vers un tableau du type (x_min, x_max, y_min, y_max) )
-	my $ref_tms_limits = &lecture_limites_tms_pyramide($ancien_pyr);
-	# mise a jour du fichier .pyr avec les limites du TMS
-	&maj_limites_tms($fichier_pyr, $ref_tms_limits)
-}else{
-	&ecrit_log("ERREUR Le fichier $ancien_pyr n'existe pas.");
-	print "[INITIALISE_PYRAMIDE] Le fichier $ancien_pyr n'existe pas.\n";
-	exit;
-}
+&mise_a_jour_tms_limites_nouveau_pyr($ancien_pyr, $fichier_pyr);
 
 # action 3 : acceder au cache et faire le lien entre anciennes et nouvelles dalles
-&ecrit_log("Lecture des repertoires de la pyramide $ancien_pyr.");
-my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($ancien_pyr);
-# association entre id du level et repertoire des images pour l'ancienne pyramide
-my %level_rep_img_ancien = %{$ref_hash_images_ancien};
-# association entre id du level et repertoire des masques de mtd pour l'ancienne pyramide
-my %level_rep_mtd_ancien = %{$ref_hash_mtd_ancien};
-&ecrit_log("Lecture des repertoires de la pyramide $fichier_pyr.");
-my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_repertoires_pyramide($fichier_pyr);
-# association entre id du level et repertoire des images pour la nouvelle pyramide
-my %level_rep_img_nouveau = %{$ref_hash_images_nouveau};
-# assosciation entre id du level et repertoire des masques de mtd pour la nouvelle pyramide
-my %level_rep_mtd_nouveau = %{$ref_hash_mtd_nouveau};
-
-# images
-# boucle sur tous les couples cle-valeur du hash %level_rep_img_nouveau
-while ( my($level,$rep) = each %level_rep_img_nouveau ){
-	# si le level existe dans l'ancienne pyramide on cree la correspondance
-	# entre rep image de l'ancienne pyramide et rep image de la nouvelle pyramide (pour el level donne)
-	if(defined $level_rep_img_ancien{"$level"}){
-		my $rep_ancien = $level_rep_img_ancien{"$level"};
-		$rep_ancien_nouveau{$rep_ancien} = $rep;
-	}
-}
-# idem pour les masques de mtd
-while ( my($level,$rep) = each %level_rep_mtd_nouveau ){
-	if(defined $level_rep_mtd_ancien{"$level"}){
-		my $rep_ancien = $level_rep_mtd_ancien{"$level"};
-		$rep_ancien_nouveau{$rep_ancien} = $rep;
-	}
-}
+$ref_rep_ancien_nouveau = &correspondance_ancien_nouveau($ancien_pyr, $fichier_pyr);
 
 # action 4 : lien-symboliquer les dalles de l'ancien cache vers le nouveau
-&ecrit_log("Creation des liens symboliques entre ancien et nouveau cache.");
-# nombre de liens symboliques crees entre la nouvelle pyramide et les donnes de l'ancienne pyramide
-my $nombre = 0;
-# boucle sur tous les couples cle-valeur du hash %rep_ancien_nouveau
-while( my ($repertoire_ancien_cache, $repertoire_nouveau_cache) = each %rep_ancien_nouveau ){
-	# on cree d'abord les repertoires s'il n'existent pas (car on ne pourrait alors pas creer les liens symboliques)
-	&ecrit_log("Creation des repertoires manquants.");
-	&cree_repertoires_recursifs($repertoire_nouveau_cache);
-	# creation des liens symboliques vers les fichiers de l'ancienne pyramide
-	$nombre += &cree_liens_syboliques_recursifs($repertoire_ancien_cache, $repertoire_nouveau_cache);
-}
+&liens_ancienne_pyramide_nouvelle_pyramide($ref_rep_ancien_nouveau);
 
-&ecrit_log("$nombre dalles de l'ancien cache copiees dans le nouveau.");
-&ecrit_log("Traitement termine.");
-
-# fermeture du handler du fichier de log
-close LOG;
+&fin();
 ################################################################################
 
 ######## FONCTIONS
@@ -182,6 +101,10 @@ sub cree_liens_syboliques_recursifs{
 	# parametre : chemin vers le repertoire de fichiers de la nouvelle pyramide
 	my $rep_fin = $_[1];
 	
+	my $rep_actuel = cwd();
+	
+	chdir "$rep_fin" or die colored ("[INITIALISE_PYRAMIDE] Impossible d'aller dans le repertoire $rep_fin",'white on_red');
+	
 	# nombre de liens symboliques crees
 	my $nb_liens = 0;
 	
@@ -210,13 +133,14 @@ sub cree_liens_syboliques_recursifs{
 			# un lien symbolique pointe alors toujours sur un fichier physique et non pas sur un autre lien symbolique
 			# boucle jusqu'a ce qu'on tombe sur un vrai fichier
 			while(defined $new_nom){
-				$dernier_new_nom = $new_nom;
+				$dernier_new_nom = File::Spec->rel2abs($new_nom, dirname($dernier_new_nom));
 				$new_nom = readlink($new_nom);
 			}
 			
 			# chemin relatif du fichier pointe par rapport au repertoire du lien a creer
-			my $chemin_lien_relatif = File::Spec->abs2rel($dernier_new_nom, $rep_fin);
+# 			my $chemin_lien_relatif = File::Spec->abs2rel($dernier_new_nom, $rep_fin);
 			
+			my $chemin_lien_relatif = File::Spec->abs2rel($dernier_new_nom, $rep_fin);
 			# creation du lien symbolique (equivalent a la commande linux ln -l)
 			my $return = symlink("$chemin_lien_relatif","$rep_fin/$fic");
 			if ($return != 1){
@@ -224,6 +148,8 @@ sub cree_liens_syboliques_recursifs{
 			}else{
 				$nb_liens += 1;
 			}
+# 			print "$rep_ini/$fic\n -> \n$rep_fin/$fic = $chemin_lien_relatif\n";
+# 			exit;
 			next;
 		}elsif(-d "$rep_ini/$fic"){
 			# si le fichier est en realite un repertoire, on descend en prenant soin de verifier que le rep
@@ -237,6 +163,8 @@ sub cree_liens_syboliques_recursifs{
 		}
 		
 	}
+	
+	chdir "$rep_actuel" or die colored ("[INITIALISE_PYRAMIDE] Impossible d'aller dans le repertoire $rep_actuel",'white on_red');
 	
 	return $nb_liens;
 	
@@ -349,4 +277,196 @@ sub maj_limites_tms{
 	
 	$bool_ok = 1;
 	return $bool_ok;
+}
+################################################################################
+# initialise le traitement : verification des parametres et initialisation des variables globales
+sub init{
+	my $time = time();
+	# nom du log
+	my $log = $rep_log."/log_initialise_pyramide_$time.log";
+	
+	# creation du log
+	open LOG, ">>$log" or die "[INITIALISE_PYRAMIDE] Impossible de creer le fichier $log.";
+	&ecrit_log("commande : @ARGV");
+	
+	# recuperation des parametres de la ligne de commande
+	getopts("l:p:");
+	
+	my $bool_getopt_ok = 1;
+	# sortie si tous les parametres obligatoires ne sont pas presents
+	if ( ! defined ($opt_l and $opt_p ) ){
+		$bool_getopt_ok = 0;
+		print "[INITIALISE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
+		&ecrit_log("ERREUR Nombre d'arguments incorrect.");
+		if(! defined $opt_l){
+			print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
+		}
+		if(! defined $opt_p){
+			print "[INITIALISE_PYRAMIDE] Veuillez specifier un parametre -p.\n";
+		}
+	}
+	
+	# on sort de la fonction si deja les parametres ne sont pas tous presents
+	if ($bool_getopt_ok == 0){
+		&usage();
+		return $bool_getopt_ok;
+	}
+	
+	# chemin vers le fichier de layer concerne par la pyramide
+	$lay_ancien = $opt_l;
+	# chemin vers le fichier XML de la pyramide (.pyr)
+	$fichier_pyr = $opt_p;
+	
+	# verification des parametres
+	my $bool_param_ok = 1;
+	# sortie si le fichier de layer n'existe pas
+	if (! (-e $lay_ancien && -f $lay_ancien)){
+		print "[INITIALISE_PYRAMIDE] Le fichier $lay_ancien n'existe pas.\n";
+		&ecrit_log("ERREUR Le fichier $lay_ancien n'existe pas.");
+		$bool_param_ok = 0;
+	}
+	# sortie si le fichier XMl de pyramide n'existe pas
+	if (! (-e $fichier_pyr && -f $fichier_pyr)){
+		print "[INITIALISE_PYRAMIDE] Le fichier $fichier_pyr n'existe pas.\n";
+		&ecrit_log("ERREUR Le fichier $fichier_pyr n'existe pas.");
+		$bool_param_ok = 0;
+	}
+	
+	# on retourne :
+	# un booleen : 1 pour OK , 0 sinon
+	return $bool_param_ok;
+}
+################################################################################
+sub extrait_fichier_pyramide{
+	
+	# chemin vers le fichier de layer
+	my $fichier_layer = $_[0];
+	
+	&ecrit_log("Lecture du fichier $fichier_layer.");
+	# chemin vers le fichier XML de pyramide
+	my $ancien_xml_pyr = &cherche_pyramide_recente_lay($fichier_layer);
+	# test si le chemin est en absolu (commence par un /) ou en relatif
+	# (dans ce cas on ajoute le repertoire du lay car le .pyr est en relatif par rapport au lay)
+	if( $ancien_xml_pyr !~ /^\//){
+		$ancien_xml_pyr = dirname($fichier_layer)."/".$ancien_xml_pyr;
+	}
+	&ecrit_log("Pyramide la plus recente du layer : $ancien_xml_pyr.");
+	
+	# test si ce fichier existe
+	if ( !(-e $ancien_xml_pyr && -f $ancien_xml_pyr )){
+		&ecrit_log("ERREUR Le fichier $ancien_xml_pyr n'existe pas.");
+		print "[INITIALISE_PYRAMIDE] Le fichier $ancien_xml_pyr n'existe pas.\n";
+		exit;
+	}
+	
+	# on retourne :
+	# chemin vers le XML de la pyramide precedente
+	return $ancien_xml_pyr;
+}
+################################################################################
+sub mise_a_jour_tms_limites_nouveau_pyr{
+
+	# chemin vers le XML de la pyramide precedente
+	my $xml_pyr_precedente = $_[0];
+	# chemin vers le XML de la pyramide actuelle
+	my $xml_pyr_actuelle = $_[1];
+	
+	&ecrit_log("Mise a jour des limites dans le TMS avec $xml_pyr_precedente.");
+	# recuperation d'une reference vers le limites du TMS
+	# (sous forme de hash associant l'id du level a une reference vers un tableau du type (x_min, x_max, y_min, y_max) )
+	my $ref_tms_limits = &lecture_limites_tms_pyramide($xml_pyr_precedente);
+	# mise a jour du fichier .pyr avec les limites du TMS
+	&maj_limites_tms($xml_pyr_actuelle, $ref_tms_limits);
+	
+	
+}
+################################################################################
+sub fin{
+	
+	&ecrit_log("Traitement termine.");
+	# fermeture du handler du fichier de log
+	close LOG;
+	# sortie du programme
+	exit;
+}
+################################################################################
+sub liens_ancienne_pyramide_nouvelle_pyramide{
+	
+	# association entre les repertoires de l'ancien cache et du nouveau sous forme de reference
+	my $ref_hash_ancien_nouveau = $_[0];
+	# recuperation sous forme de vrai hash
+	my %hash_ancien_nouveau = %{$ref_hash_ancien_nouveau};
+	
+	&ecrit_log("Creation des liens symboliques entre ancien et nouveau cache.");
+	# nombre de liens symboliques crees entre la nouvelle pyramide et les donnes de l'ancienne pyramide
+	my $nombre = 0;
+	# boucle sur tous les couples cle-valeur du hash %rep_ancien_nouveau
+	while( my ($repertoire_ancien_cache, $repertoire_nouveau_cache) = each %hash_ancien_nouveau ){
+		# on cree d'abord les repertoires s'il n'existent pas (car on ne pourrait alors pas creer les liens symboliques)
+		&ecrit_log("Creation des repertoires manquants.");
+		&cree_repertoires_recursifs($repertoire_nouveau_cache);
+		# creation des liens symboliques vers les fichiers de l'ancienne pyramide
+		$nombre += &cree_liens_syboliques_recursifs($repertoire_ancien_cache, $repertoire_nouveau_cache);
+	}
+	&ecrit_log("$nombre dalles de l'ancien cache copiees dans le nouveau.");
+	
+}
+################################################################################
+sub correspondance_ancien_nouveau{
+	
+	# chemin vers le XML de la pyramide precedente
+	my $xml_precedent = $_[0];
+	# chemin vers le XML de la pyramide actuelle
+	my $xml_actuel = $_[1];
+	
+	&ecrit_log("Lecture des repertoires de la pyramide $xml_precedent.");
+	# association entre id du level et repertoire des images pour l'ancienne pyramide sous forme de reference
+	# association entre id du level et repertoire des masques de mtd pour l'ancienne pyramide sous forme de reference
+	my ($ref_hash_images_ancien, $ref_hash_mtd_ancien) = &lecture_repertoires_pyramide($xml_precedent);
+	
+	&ecrit_log("Lecture des repertoires de la pyramide $xml_actuel.");
+	# association entre id du level et repertoire des images pour la nouvelle pyramide sous forme de reference
+	# assosciation entre id du level et repertoire des masques de mtd pour la nouvelle pyramide sous forme de reference
+	my ($ref_hash_images_nouveau, $ref_hash_mtd_nouveau) = &lecture_repertoires_pyramide($xml_actuel);
+	
+	# correspondance entre les repertoires image de l'ancien cache et du nouveau sous forme de reference
+	my $ref_ancien_nouveau_image = &cree_correspondance($ref_hash_images_nouveau, $ref_hash_images_ancien);
+	# correspondance entre les repertoires mtd de l'ancien cache et du nouveau sous forme de reference
+	my $ref_ancien_nouveau_mtd = &cree_correspondance($ref_hash_mtd_nouveau, $ref_hash_mtd_ancien);
+	
+	# correspondance entre les repertoires de l'ancien cache et du nouveau
+	my %hash_correspondance = (%{$ref_ancien_nouveau_image},%{$ref_ancien_nouveau_mtd});
+	
+	# on retourne :
+	# reference a un hash de correspondance entre les repertoires de l'ancien cache et du nouveau
+	return \%hash_correspondance;
+}
+################################################################################
+sub cree_correspondance{
+	
+	# association entre id du level et repertoire pour la nouvelle pyramide sous forme de reference
+	my $ref_hash_nouveau = $_[0];
+	# recuperation sous forme de hash
+	my %hash_nouveau = %{$ref_hash_nouveau};
+	# association entre id du level et repertoire pour l'ancienne pyramide sous forme de reference
+	my $ref_hash_ancien = $_[1];
+	# recuperation sous forme de hash
+	my %hash_ancien = %{$ref_hash_ancien};
+	
+	# correspondance entre les repertoires de l'ancien cache et du nouveau
+	my %hash_correspondance_temp;
+	
+	# boucle sur tous les couples cle-valeur du hash %hash_nouveau
+	while ( my($level,$rep) = each %hash_nouveau ){
+		# si le level existe dans l'ancienne pyramide on cree la correspondance
+		# entre rep image de l'ancienne pyramide et rep image de la nouvelle pyramide (pour le level donne)
+		if(defined $hash_ancien{"$level"}){
+			my $rep_ancien = $hash_ancien{"$level"};
+			$hash_correspondance_temp{$rep_ancien} = $rep;
+		}
+	}
+	
+	# on retourne :
+	# reference a un hash de correspondance entre les repertoires de l'ancien cache et du nouveau
+	return \%hash_correspondance_temp;
 }
