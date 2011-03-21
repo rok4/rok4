@@ -33,8 +33,8 @@ void* Rok4Server::thread_loop(void* arg)
 	if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
 		LOGGER_FATAL("Le listener FCGI ne peut etre initialise");
 	}
-
-	while(true){
+int n=0;
+	while(n<20){
 		int rc;
 
 		if(FCGX_Accept_r(&fcgxRequest) < 0) {
@@ -57,6 +57,7 @@ void* Rok4Server::thread_loop(void* arg)
 		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
 		server->processRequest(request, fcgxRequest);
 		delete request;
+		n++;
 		FCGX_Finish_r(&fcgxRequest);
 	}
 
@@ -78,8 +79,8 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	//  * Pour lancer rok4 sur plusieurs serveurs distants
 	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
-
-//	sock = FCGX_OpenSocket(":1998", 50);
+	// A décommenter pour utiliser valgrind
+	sock = FCGX_OpenSocket(":1990", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
@@ -205,6 +206,7 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 		S.sendresponse(WMSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "getmap"){
 		S.sendresponse(getMap(request), &fcgxRequest);
+		LOGGER_DEBUG("BUBU");
 	}else{
 		S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wms")),&fcgxRequest);
 	}
@@ -311,6 +313,8 @@ int main(int argc, char** argv) {
 	W.run();
 
 	LOGGER_INFO( "Extinction du serveur ROK4");
+
+	delete acc;
 }
 
 

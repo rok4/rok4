@@ -95,7 +95,7 @@ std::string Request::getParam(std::string paramName){
 }
 
 /*
- * Verficiation et recuperation des parametres d'une requete GetTile
+ * Verfication et recuperation des parametres d'une requete GetTile
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 

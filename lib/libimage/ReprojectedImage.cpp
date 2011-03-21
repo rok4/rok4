@@ -153,10 +153,13 @@ int ReprojectedImage::getline(float* buffer, int line) {
 }
 
 ReprojectedImage::~ReprojectedImage() {
+	LOGGER_DEBUG("delete image");
 	delete image;
+	LOGGER_DEBUG("delete grid");
 	delete grid;
-
+	LOGGER_DEBUG("free buffer");
 	_mm_free(__buffer);
+	LOGGER_DEBUG("delete srcline");
 	delete[] src_line_buffer;
 
 }

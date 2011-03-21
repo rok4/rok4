@@ -5,6 +5,8 @@
  * Constructeur. 
  * Le paramètre dataStream est complètement lu. Il est donc inutilisable par la suite.
  */
+
+// TODOD : peut être optimisé, à mettre au propre
 BufferedDataSource::BufferedDataSource(DataStream& dataStream) : type(dataStream.gettype()), httpStatus(dataStream.getHttpStatus()), dataSize(0) {
 	
 	// On initialise data à une taille arbitraire de 32Ko.

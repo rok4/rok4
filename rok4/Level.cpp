@@ -53,6 +53,12 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 //	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
 }
 
+Level::~Level()
+{
+	LOGGER_DEBUG("Destructeur level");
+	delete noDataSource;
+}
+
 TileMatrix const Level::getTm(){return tm;}
 std::string Level::getFormat(){return format;}
 uint32_t Level::getMaxTileRow(){return maxTileRow;}
@@ -249,22 +255,12 @@ DataSource* Level::getTile(int x, int y) {
 	if (format.compare("TIFF_INT8")==0 && source!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
+		LOGGER_DEBUG("New buffereddatasource");
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
         }
 
 	return new DataSourceProxy(getEncodedTile(x, y), *noDataSource);
 }
-
-
-
-/*
-	switch(tileCoding) {
-		case RAW_UINT8:  return new EncodedTile<RawDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
-		case JPEG_UINT8: return new EncodedTile<JpegDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
-		case PNG_UINT8:  return new EncodedTile<PngDecoder>(tm.getTileW(), tm.getTileH(), channels, encodedSource, *noDataTile, 0,0,tm.getTileW(),tm.getTileH());
-		default: return 0;
-	}
-*/
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			

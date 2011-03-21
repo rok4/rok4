@@ -56,8 +56,8 @@ class DataSourceDecoder : public DataSource {
 
 		bool releaseData() {
 			if(encData) encData->releaseData();
+			if (decData) delete[] decData;
 			decData = 0;
-			delete decData;
 		}
 
 		std::string gettype() {return "image/bil";}
@@ -135,7 +135,7 @@ class ImageDecoder : public Image {
 			if(dataSource) {
 				dataSource->releaseData();
 				delete dataSource;
-				delete [] rawData;
+				//delete [] rawData;
 			}
 		}
 

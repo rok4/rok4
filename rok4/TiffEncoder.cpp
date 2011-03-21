@@ -91,6 +91,7 @@ bool TiffEncoder::eof()
 }
 
 TiffEncoder::~TiffEncoder() {
-	//LOGGER_DEBUG("delete TiffEncoderStream");
+	LOGGER_DEBUG("delete TiffEncoderStream");
 	delete image;
+	LOGGER_DEBUG("Fin delete TiffEncoderStream");
 }

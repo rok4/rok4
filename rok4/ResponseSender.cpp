@@ -91,13 +91,16 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	uint8_t *buffer = new uint8_t[2 << 20];
 	size_t size_to_read = 2 << 20;
 	int pos = 0;
+LOGGER_DEBUG("eeee");
 	// Ecriture progressive du flux d'entree dans le flux de sortie
 	while(true) {
+		LOGGER_DEBUG("1");
 		// Recuperation d'une portion du flux d'entree
 		size_t read_size = stream->read(buffer, size_to_read);
 		if (read_size==0)
 			break;
 		int wr = 0;
+		LOGGER_DEBUG("2");
 		// Ecriture iterative de la portion du flux d'entree dans le flux de sortie
 		while(wr < read_size) {
 			// Taille ecrite dans le flux de sortie
@@ -117,10 +120,14 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 			delete[] buffer;
 			break;
 		}
+		LOGGER_DEBUG("3");
 		pos += read_size;
+		LOGGER_DEBUG("4");
 	}
+LOGGER_DEBUG("eeee");
 	delete stream;
+LOGGER_DEBUG("eeee");
 	delete[] buffer;
-
+LOGGER_DEBUG("eeee");
 	return 0;
 }

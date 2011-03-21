@@ -91,7 +91,7 @@ public:
 	/*
 	 * Destructeur
 	 */
-	~Level() {}
+	~Level();
 
 };
 

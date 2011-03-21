@@ -5,6 +5,8 @@
 #include <cstddef> // pour size_t
 #include <string>  // pour std::string
 
+#include "Logger.h"
+
 /**
  * Interface abstraite permetant d'encapsuler une source de données.
  * La gestion mémoire des données est à la charge des classes d'implémentation.
@@ -154,7 +156,9 @@ class BufferedDataSource : public DataSource {
 		BufferedDataSource(DataStream& dataStream);
 
 		/** Destructeur **/
-		~BufferedDataSource() {delete[] data;}
+		~BufferedDataSource() {
+LOGGER_DEBUG("BUBUTOTO");
+delete[] data;}
 
 		/** Implémentation de l'interface DataSource **/
 		const uint8_t* getData(size_t &size) {

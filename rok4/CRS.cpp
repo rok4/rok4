@@ -18,9 +18,11 @@ bool isCrsProj4Compatible(std::string crs){
         projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
         int *err = pj_get_errno_ref();
         char *msg = pj_strerrno(*err);
-
-        if (pj) return true;
-        else return false;
+	bool isCompatible;
+        if (pj) isCompatible=true;
+	else isCompatible=false;
+	pj_free(pj);
+        return isCompatible;
 }
 
 /*

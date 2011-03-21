@@ -64,6 +64,16 @@ const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	}
 	size=tile_size;
 	close(fildes);
-
 	return data;
+}
+
+/*
+* Liberation du buffer
+* @return true en cas de succes
+*/
+bool FileDataSource::releaseData()
+{
+        delete[] data;
+        data = 0;
+        return true;
 }

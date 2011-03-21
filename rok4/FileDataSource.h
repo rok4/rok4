@@ -22,21 +22,9 @@ public:
 	/*
 	 * @ return le type MIME de la source de donnees
 	 */
-	std::string gettype()
-	{
-		return type;
-	}
+	std::string gettype(){return type;}
 
-	/*
-	 * Liberation du buffer
-	 * @return true en cas de succes
-	 */
-	bool releaseData()
-	{
-		delete[] data;
-		data = 0;
-		return true;
-	}
+	bool releaseData();
 
 	~FileDataSource() {releaseData();}
 	

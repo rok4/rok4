@@ -55,6 +55,9 @@ const char *pj_finder2(const char *name) {
  * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
  * ou proj est une projection de from_srs vers to_srs
  */
+
+// TODO : la projection est faite 2 fois. essayer de ne la faire faire qu'une fois.
+
 bool Grid::reproject(std::string from_srs, std::string to_srs) {
 	LOGGER_DEBUG(from_srs<<" -> " <<to_srs);
 
@@ -74,6 +77,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		int *err = pj_get_errno_ref();
     		char *msg = pj_strerrno(*err);     
     		LOGGER_DEBUG("erreur d initialisation " << to_srs << " " << msg);
+		pj_free(pj_src);
     		pthread_mutex_unlock (& mutex_proj);
     		return false;
 	}
@@ -84,6 +88,9 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 	}
 
 	pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+
+	pj_free(pj_src);
+	pj_free(pj_dst);
 
 	pthread_mutex_unlock (& mutex_proj);
 	update_bbox();

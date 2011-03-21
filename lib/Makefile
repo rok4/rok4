@@ -4,13 +4,14 @@ INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
 BINDIR=${TGTDIR}/bin
 
-LIBS= libcppunit libproj libfcgi libtinyxml libz liblogger libtiff libimage libjpeg libxerces
+LIBS= libcppunit libproj libfcgi libtinyxml libz liblogger libtiff libimage libjpeg
 
 
 
 #all: tgtdir ldir incdir bindir $(LIBS)
 all: tgtdir ldir incdir bindir 
 	$(foreach lib, $(LIBS), test -e $(LIBDIR)/$(lib).a || make -C $(lib) ;)
+	make -C libxerces
 
 clean: $(patsubst %, clean-%, $(LIBS))
 	rm -fr ${INCDIR}
