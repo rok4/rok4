@@ -59,6 +59,7 @@ int n=0;
 		delete request;
 		n++;
 		FCGX_Finish_r(&fcgxRequest);
+		FCGX_Free(&fcgxRequest,1);
 	}
 
 	return 0;
@@ -189,12 +190,7 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 	if (request->request == "getcapabilities"){
 		S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "gettile"){
-//		DataSource * tile= NULL;
 		S.sendresponse(getTile(request), &fcgxRequest);
-		// TODO: cette solution pour préserver les tuiles no-data doit pouvoir être améliore.
-		// Appel au destructeur préservant la zone mémoire de la tuile no-data.
-		// en cas d'erreur retournee, tile peut etre NULL
-//		if (tile!=NULL) delete tile;
 	}else{
 		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
 	}
@@ -238,8 +234,6 @@ int main(int argc, char** argv) {
 	}
 
 	/* Initialisation des Loggers */
-
-
 	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4"/*,86400,1024*/);
 //	Accumulator* acc = new StreamAccumulator(std::cerr);
 
@@ -254,7 +248,6 @@ int main(int argc, char** argv) {
 	// Initialisation de l'accès au paramétrage de la libproj
 	/// Cela evite d'utiliser la variable d'environnement PROJ_LIB
 	pj_set_finder( pj_finder );
-
 
 	/* Chargement de la conf technique du serveur */
 
@@ -271,8 +264,8 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	//chargement de la conf services
-	ServicesConf *servicesConf=ConfLoader::buildServicesConf();
+	// Chargement de la conf services
+	ServicesConf* servicesConf=ConfLoader::buildServicesConf();
 	if(!servicesConf){
 		LOGGER_FATAL("Impossible d'interpréter le fichier de conf services.conf");
 		LOGGER_FATAL("Extinction du serveur ROK4");
@@ -283,7 +276,7 @@ int main(int argc, char** argv) {
 	}
 
 
-	//chargement des TMS
+	// Chargement des TMS
 	std::map<std::string,TileMatrixSet*> tmsList;
 	if(!ConfLoader::buildTMSList(tmsDir,tmsList)){
 		LOGGER_FATAL("Impossible de charger la conf des TileMatrix");
@@ -295,7 +288,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	//chargement des Layers
+	// Chargement des Layers
 	std::map<std::string, Layer*> layerList;
 	if(!ConfLoader::buildLayersList(layerDir,tmsList,layerList)){
 		LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
@@ -307,15 +300,23 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	//construction du serveur.
+	// Construction du serveur.
 	Rok4Server W(nbThread, *servicesConf, layerList, tmsList);
 
 	W.run();
 
+	// Extinction du serveur
 	LOGGER_INFO( "Extinction du serveur ROK4");
+
+	delete servicesConf;
+
+	std::map<std::string,TileMatrixSet*>::iterator iTms;
+        for (iTms=tmsList.begin();iTms!=tmsList.end();iTms++)
+		delete (*iTms).second;
+
+	std::map<std::string, Layer*>::iterator iLayer;
+	for (iLayer=layerList.begin();iLayer!=layerList.end();iLayer++)
+		delete (*iLayer).second;
 
 	delete acc;
 }
-
-
-

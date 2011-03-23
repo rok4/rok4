@@ -394,10 +394,10 @@ void Rok4Server::buildWMTSCapabilities(){
 		TileMatrixSet* tms = itTms->second;
 		tmsEl->LinkEndChild(buildTextNode("ows:Identifier",tms->getId()));
 		tmsEl->LinkEndChild(buildTextNode("ows:SupportedCRS",tms->getCrs().getRequestCode()));
-		std::map<std::string, TileMatrix> tmList = tms->getTmList();
+		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
 
 		// TileMatrix
-		std::map<std::string, TileMatrix>::iterator itTm(tmList.begin()), itTmEnd(tmList.end());
+		std::map<std::string, TileMatrix>::iterator itTm(tmList->begin()), itTmEnd(tmList->end());
 		for (;itTm!=itTmEnd;++itTm){
 			TileMatrix tm =itTm->second;
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");

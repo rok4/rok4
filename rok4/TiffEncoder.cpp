@@ -57,6 +57,7 @@ const uint8_t TIFF_HEADER_GRAY[128]  = {
 
 size_t TiffEncoder::read(uint8_t *buffer, size_t size_to_read) {
 	size_t offset = 0, header_size=128, linesize=image->width*image->channels;
+
 	if(line == -1) { // écrire le header tiff
 		// Si pas assez de place pour le header, ne rien écrire.
 		if(size_to_read < header_size) return 0;
@@ -90,8 +91,7 @@ bool TiffEncoder::eof()
 	return (line>=image->height);	
 }
 
-TiffEncoder::~TiffEncoder() {
-	LOGGER_DEBUG("delete TiffEncoderStream");
+TiffEncoder::~TiffEncoder()
+{
 	delete image;
-	LOGGER_DEBUG("Fin delete TiffEncoderStream");
 }

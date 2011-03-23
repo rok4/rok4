@@ -5,9 +5,7 @@
 #include <vector>
 #include <map>
 #include "TileMatrix.h"
-#include "Logger.h"
 #include "CRS.h"
-
 
 class TileMatrixSet {
 private:
@@ -18,13 +16,9 @@ private:
 	CRS crs;
 	std::map<std::string, TileMatrix> tmList;
 public:
-	// FIXME: comment interdire à l'utilisateur de modifier ce map?
-	std::map<std::string, TileMatrix> getTmList();
-
+	std::map<std::string, TileMatrix>* getTmList();
 	std::string getId();
-
 	CRS getCrs() const {return crs;}
-
 	int best_scale(double resolution_x, double resolution_y);
 
 	TileMatrixSet(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList) :
@@ -38,7 +32,7 @@ public:
 		crs=t.crs;
 		tmList=t.tmList;
 	}
-
+	~TileMatrixSet(){}
 };
 
 #endif /* TILEMATRIXSET_H_ */

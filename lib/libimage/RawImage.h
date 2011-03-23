@@ -4,6 +4,7 @@
 #include "Image.h"
 #include "Data.h"
 #include <cstring> // pour memcpy
+#include "Logger.h"
 
 class RawImage : public Image {
 
@@ -18,7 +19,13 @@ class RawImage : public Image {
 
   virtual int getline(uint8_t *buffer, int line) {
 	size_t size;
-        memcpy(buffer,(uint8_t*)&source->getData(size)[line*channels*width],width*channels*sizeof(uint8_t));
+	const uint8_t* data=source->getData(size);
+	if (!data){
+		buffer=0;
+		return 0;
+	}
+        memcpy(buffer,(uint8_t*)&data[line*channels*width],width*channels*sizeof(uint8_t));
+	return width*channels*sizeof(uint8_t);
   };
   virtual int getline(float *buffer, int line) {
         buffer = 0;

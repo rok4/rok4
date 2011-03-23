@@ -22,7 +22,7 @@ public:
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
 
 	Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms) : levels(levels), tms(tms) {}
-	~Pyramid() {}
+	~Pyramid();
 };
 
 #endif

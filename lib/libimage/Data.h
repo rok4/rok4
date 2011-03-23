@@ -147,7 +147,6 @@ class BufferedDataSource : public DataSource {
 		int httpStatus;
 		size_t dataSize;
 		uint8_t* data;
-
 	public:
 		/** 
 		 * Constructeur. 
@@ -156,9 +155,7 @@ class BufferedDataSource : public DataSource {
 		BufferedDataSource(DataStream& dataStream);
 
 		/** Destructeur **/
-		~BufferedDataSource() {
-LOGGER_DEBUG("BUBUTOTO");
-delete[] data;}
+		~BufferedDataSource() {delete[] data;}
 
 		/** Implémentation de l'interface DataSource **/
 		const uint8_t* getData(size_t &size) {

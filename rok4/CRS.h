@@ -10,10 +10,7 @@ private:
 public:
 	CRS() {};
 	CRS(std::string crs_code);
-        CRS(const CRS& crs){
-		requestCode=crs.requestCode;
-		proj4Code=crs.proj4Code;
-        }
+        CRS(const CRS& crs);
 	void buildProj4Code();
 	bool isProj4Compatible();
 	void setRequestCode(std::string crs);

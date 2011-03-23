@@ -6,9 +6,8 @@
  * Le paramètre dataStream est complètement lu. Il est donc inutilisable par la suite.
  */
 
-// TODOD : peut être optimisé, à mettre au propre
+// TODO : peut être optimisé, à mettre au propre
 BufferedDataSource::BufferedDataSource(DataStream& dataStream) : type(dataStream.gettype()), httpStatus(dataStream.getHttpStatus()), dataSize(0) {
-	
 	// On initialise data à une taille arbitraire de 32Ko.
 	size_t maxSize = 32768;
 	data = new uint8_t[maxSize];
@@ -24,7 +23,6 @@ BufferedDataSource::BufferedDataSource(DataStream& dataStream) : type(dataStream
 			data = tmp;
 		}
 	}
-	
 	// On réalloue exactement la taille nécessaire pour ne pas perdre de place
 	uint8_t* tmp = new uint8_t[dataSize];
 	memcpy(tmp, data, dataSize);

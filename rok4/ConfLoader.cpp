@@ -146,7 +146,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 }//buildTileMatrixSet(std::string)
 
-Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_DEBUG("=>buildPyramid");
 	LOGGER_INFO("load Pyramid:        " << fileName);
 	TileMatrixSet *tms;
@@ -207,9 +207,9 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<id<<" sans tileMatrix!!"); return NULL; }
 		std::string tmName(pElemLvl->GetText());
 		id=tmName;
-		std::map<std::string, TileMatrix> tmList = tms->getTmList();
-		std::map<std::string, TileMatrix>::iterator it = tmList.find(tmName);
-		if(it == tmList.end()){
+		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
+		std::map<std::string, TileMatrix>::iterator it = tmList->find(tmName);
+		if(it == tmList->end()){
 			LOGGER_ERROR(fileName <<" Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
 			return NULL;
 		}
@@ -319,7 +319,6 @@ Pyramid * buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet
 	Pyramid *pyr = new Pyramid(levels, *tms);
 	LOGGER_DEBUG("=>buildPyramid");
 	return pyr;
-
 
 }// buildPyramid()
 
@@ -534,7 +533,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 
 
 	for (pElem=hRoot.FirstChild("pyramidList").FirstChild("pyramid").Element(); pElem; pElem=pElem->NextSiblingElement("pyramid")){
-		Pyramid * pyramid = buildPyramid(pElem->GetText(), tmsList);
+		Pyramid* pyramid = buildPyramid(pElem->GetText(), tmsList);
 		if (!pyramid){
 			LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
 			//FIXME: que faut-il faire des pyramides déjà créées? Faut-il les detruire? ou vector s'en charge?

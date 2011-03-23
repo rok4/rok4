@@ -28,15 +28,8 @@
 
 /** Constructeur */
 Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
-	tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format)
+	tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format), noDataSource(0)
 {
-//	std::vector<uint8_t> color(3, 100);
-// 
-//
-  
-//	LOGGER(DEBUG) << "Constructeur Level " << format << std::endl;
-
-
 	if (format.compare("TIFF_INT8")==0) {
 		BilEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
 		noDataSource = new BufferedDataSource(dataStream);
@@ -49,14 +42,13 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 		PNGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
 		noDataSource = new BufferedDataSource(dataStream);
 	}
-
-//	LOGGER(DEBUG) << "Constructeur Level OK" << std::endl;
+	else
+		LOGGER_ERROR("Format non pris en charge : "<<format);
 }
 
 Level::~Level()
 {
-	LOGGER_DEBUG("Destructeur level");
-	delete noDataSource;
+	if (noDataSource) delete noDataSource;
 }
 
 TileMatrix const Level::getTm(){return tm;}
@@ -82,8 +74,6 @@ std::string Level::getType() {
 		return "image/png";
 	return "text/plain";
 }
-
-
 
 /*
  * A REFAIRE

@@ -38,3 +38,9 @@ std::vector<std::string> Layer::getMimeFormats(){
 	}
 	return formats;
 }
+
+Layer::~Layer()
+{
+	for (int i=0;i<pyramids.size();i++)
+		delete pyramids[i];
+}

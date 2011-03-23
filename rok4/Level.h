@@ -2,7 +2,6 @@
 #define LEVEL_H
 
 #include "Image.h"
-#include "Tile.h"
 #include "BoundingBox.h"
 #include "TileMatrix.h"
 #include "Data.h"
@@ -30,10 +29,8 @@ private:
 
 	std::string getfilepath(int tilex, int tiley);
 
-//	Tile* noDataTile;
 	DataSource* noDataSource;
 	
-
 	DataSource* getEncodedTile(int x, int y);
 	DataSource* getDecodedTile(int x, int y);
 	
@@ -60,7 +57,6 @@ public:
 	int         getTileCoding();
 	std::string getType();
 
-
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs);
@@ -77,10 +73,7 @@ public:
 	
 	DataSource* getTile(int x, int y);
 
-
 	Image* getTile(int x, int y, int left, int top, int right, int bottom);
-
-
 
 	/** D */
 	Level(TileMatrix tm, int channels, std::string baseDir,

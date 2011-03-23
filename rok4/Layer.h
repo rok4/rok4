@@ -62,7 +62,7 @@ public:
 	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
 	{
 	}
-
+	~Layer();
 };
 
 #endif /* LAYER_H_ */

@@ -29,7 +29,7 @@ CPPUBIN = $(BINDIR)/CppUnitTests
 CPPUNIT = $(wildcard ${CPPUNITDIR}/CppUnit*.cpp)
 CPPUNITOBJ  = ${CPPUNITDIR}/main.o $(patsubst %.cpp,%.o,  $(CPPUNIT))
 
-WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o JPEGEncoder.o PNGEncoder.o Request.o Tile.o CapabilitiesBuilder.o FileDataSource.o CRS.o BilEncoder.o
+WMSSOBJ= ServiceException.o Message.o Rok4Server.o ConfLoader.o TileMatrix.o TileMatrixSet.o Layer.o ResponseSender.o Level.o Pyramid.o TiffEncoder.o JPEGEncoder.o PNGEncoder.o Request.o CapabilitiesBuilder.o FileDataSource.o CRS.o BilEncoder.o
 
 all: Rok4Server	noregression
 #
@@ -37,7 +37,7 @@ all: Rok4Server	noregression
 # compile et genere le serveur WMS
 Rok4Server: bindir $(DEPLIB) $(WMSSOBJ)
 	$(CXX) $(LDFLAGS) $(WMSSOBJ) -o Rok4Server $(LDLIBS)  $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp Rok4Server $(BINDIR)/rok4
+	mv Rok4Server $(BINDIR)/rok4
 	cp -rf $(SRCCONFDIR)/* $(TGTCONFDIR)
 
 # règle générique pour lancer les compilations des librairies dépendnates

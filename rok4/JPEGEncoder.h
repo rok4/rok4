@@ -25,11 +25,7 @@ public:
 	JPEGEncoder(Image* image);
 
 	/** D */
-	~JPEGEncoder() {
-		jpeg_destroy_compress(&cinfo);
-		delete[] linebuffer;
-		delete image;
-	}
+	~JPEGEncoder();
 
 	/**
 	 * Lecture du flux JPEG

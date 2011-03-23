@@ -24,7 +24,7 @@ class Logger {
 
 	public:
 		/**
-		 * Obtient un poiinteur vers la sortie du niveau de log.
+		 * Obtient un pointeur vers la sortie du niveau de log.
 		 *
 		 * @return la valeur de retour peut être un pointeur nul, ce qui signifie que le niveau de log est désactivé.
 		 */
@@ -45,18 +45,15 @@ class Logger {
 		 */
 		static void setAccumulator(LogLevel level, Accumulator *A);
 
-
-
 		/**
 		 * utilisation : Logger(DEBUG) << message
 		 */
 		static std::ostream& getLogger(LogLevel level);
 
-
 };
 
 /**
- * Un flux qui fait rien.
+ * Un flux qui ne fait rien.
  * Utilisé pour ne pas formater les sorties des niveaux logs désactivés.
  */
 extern std::ostream nullstream;

@@ -15,9 +15,13 @@ std::string toUpperCase(std::string str){
         return uc_str;
 }
 bool isCrsProj4Compatible(std::string crs){
-        projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
-        int *err = pj_get_errno_ref();
-        char *msg = pj_strerrno(*err);
+	projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
+        if (!pj){
+        	int *err = pj_get_errno_ref();
+        	char *msg = pj_strerrno(*err);
+		LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+		return false;
+	}
 	bool isCompatible;
         if (pj) isCompatible=true;
 	else isCompatible=false;
@@ -32,6 +36,15 @@ bool isCrsProj4Compatible(std::string crs){
 CRS::CRS(std::string crs_code){
 	requestCode=crs_code;
 	buildProj4Code();
+}
+
+/*
+* Contructeur de copie
+*/
+
+CRS::CRS(const CRS& crs){
+	requestCode=crs.requestCode;
+	proj4Code=crs.proj4Code;
 }
 
 /*

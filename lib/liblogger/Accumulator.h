@@ -115,7 +115,7 @@ class Accumulator {
 
 
 /**
- * Implémenation basique d'un accumulateur basé sur un flux de sortie
+ * Implémentation basique d'un accumulateur basé sur un flux de sortie
  */
 class StreamAccumulator : public Accumulator {
   private:
@@ -138,7 +138,6 @@ class StreamAccumulator : public Accumulator {
    */
   virtual ~StreamAccumulator() {stop();}
 };
-
 
 
 /**
