@@ -33,8 +33,8 @@ void* Rok4Server::thread_loop(void* arg)
 	if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0){
 		LOGGER_FATAL("Le listener FCGI ne peut etre initialise");
 	}
-int n=0;
-	while(n<20){
+
+	while(true){
 		int rc;
 
 		if(FCGX_Accept_r(&fcgxRequest) < 0) {
@@ -57,7 +57,7 @@ int n=0;
 		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
 		server->processRequest(request, fcgxRequest);
 		delete request;
-		n++;
+
 		FCGX_Finish_r(&fcgxRequest);
 		FCGX_Free(&fcgxRequest,1);
 	}
@@ -80,8 +80,11 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	//  * Pour lancer rok4 sur plusieurs serveurs distants
 	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
-	// A décommenter pour utiliser valgrind
-	sock = FCGX_OpenSocket(":1990", 50);
+	// A décommenter pour utiliser valgrinda
+	// Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
+	// Ensuite redemmarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
+	
+	// sock = FCGX_OpenSocket(":1990", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
