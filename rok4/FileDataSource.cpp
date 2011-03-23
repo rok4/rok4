@@ -46,7 +46,6 @@ const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	// La taille de la tuile ne doit pas exceder un seuil
 	// Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
 	// (et qui pourraient indiquer des tailles de tuiles excessives)
-	LOGGER_DEBUG("TEST "<<possize<<" "<<tile_size<< " "<<MAX_TILE_SIZE);
 	if(tile_size > MAX_TILE_SIZE)
 	{
 		LOGGER_ERROR( "Tuile trop volumineuse dans le fichier " << filename) ;

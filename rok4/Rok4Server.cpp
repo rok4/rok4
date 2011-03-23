@@ -107,7 +107,6 @@ DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	}
 	capa = capa + wmsCapaFrag.back();
 
-	//LOGGER_DEBUG("=> WMSGetCapabilities" << capa);
 	return new MessageDataStream(capa,"text/xml");
 }
 
@@ -120,7 +119,6 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	}
 	capa = capa + wmtsCapaFrag.back();
 
-	//LOGGER_DEBUG("=> WMTSGetCapabilities" << capa);
 	return new MessageDataStream(capa,"text/xml");
 }
 
@@ -202,7 +200,6 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 		S.sendresponse(WMSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "getmap"){
 		S.sendresponse(getMap(request), &fcgxRequest);
-		LOGGER_DEBUG("BUBU");
 	}else{
 		S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wms")),&fcgxRequest);
 	}
@@ -243,7 +240,7 @@ int main(int argc, char** argv) {
 	Logger::setAccumulator(ERROR, acc);
 	Logger::setAccumulator(FATAL, acc);
 
-	LOGGER_INFO( "Lancement du serveur ROK4");
+	LOGGER_INFO( "*** LANCEMENT DU SERVEUR ROK4 ***");
 
 	// Initialisation de l'accès au paramétrage de la libproj
 	/// Cela evite d'utiliser la variable d'environnement PROJ_LIB

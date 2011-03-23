@@ -61,8 +61,6 @@ ResampledImage::ResampledImage(Image *image, int width, int height, double left,
 			for(int i = nb-1; i >= 0; i--) for(int j = 0; j < 4; j++) W[4*i + j] = W[i]; // On copie chaque poids en 4 exemplaires.
 			W += 4*Kx;
 		}
-		//  LOGGER_DEBUG( "ResampledImage Constructeur => ");
-
 	}
 
 
@@ -111,7 +109,6 @@ int ResampledImage::getline(uint8_t* buffer, int line) {
 
 
 ResampledImage::~ResampledImage() {
-	//  LOGGER_DEBUG( "Destructeur ResampledImage" );
 	_mm_free(__buffer);
 	delete[] resampled_line;
 	delete[] resampled_line_index;

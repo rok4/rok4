@@ -29,7 +29,6 @@ std::string Pyramid::best_level(double resolution_x, double resolution_y) {
 	double best = resolution_x / it->second->getRes();
 	++it;
 	for (;it!=itend;++it){
-//		LOGGER_DEBUG("level teste:" << it->first << "\tmeilleur level:" << best_h << "\tnbre de level:" << levels.size() << "\tlevel.res:" << it->second->getRes());
 		double d = resolution / it->second->getRes();
 		if((best < 0.8 && d > best) ||
 					(best >= 0.8 && d >= 0.8 && d < best)) {

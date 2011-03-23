@@ -133,7 +133,6 @@ const uint8_t* JpegDecoder::decode(DataSource* source, size_t &size) {
 const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 
 //	LOGGER(DEBUG) << (intptr_t) source << std::endl;
-
 	size = 0;
 	if(!source) return 0;
 
@@ -211,7 +210,6 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 		return 0;		
 	}
 
-	LOGGER(DEBUG) << "Decompression OK" << std::endl;
 	size = width * height * channels;
 
 	return raw_data;

@@ -253,12 +253,6 @@ void Rok4Server::buildWMSCapabilities(){
 	}
 	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
 
-	/*	debug: affichage des fragments.
-			for (int i=0; i<wmsCapaFrag.size();i++){
-			LOGGER_DEBUG( "(" << wmsCapaFrag[i] << ")" );
-			}*/
-
-
 }
 
 

@@ -19,7 +19,7 @@ bool isCrsProj4Compatible(std::string crs){
         if (!pj){
         	int *err = pj_get_errno_ref();
         	char *msg = pj_strerrno(*err);
-		LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+		// LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
 		return false;
 	}
 	bool isCompatible;

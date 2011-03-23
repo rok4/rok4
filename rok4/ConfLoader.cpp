@@ -6,8 +6,7 @@
 #include "config.h"
 
 TileMatrixSet* buildTileMatrixSet(std::string fileName){
-	LOGGER_DEBUG("=>buildTileMatrixSet");
-	LOGGER_INFO("load TileMatrixSet: " << fileName);
+	LOGGER_INFO("	Ajout du TMS " << fileName);
 	std::string id;
 	std::string title="";
 	std::string abstract="";
@@ -16,7 +15,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
+		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
 		return NULL;
 	}
 
@@ -26,11 +25,11 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
 	if (!pElem){
-		LOGGER_ERROR(fileName << " impossible de recuperer la racine.");
+		LOGGER_ERROR(fileName << "		Impossible de recuperer la racine.");
 		return NULL;
 	}
 	if (strcmp(pElem->Value(),"tileMatrixSet")){
-		LOGGER_ERROR(fileName << " La racine n'est pas un tileMatrixSet.");
+		LOGGER_ERROR(fileName << "		La racine n'est pas un tileMatrixSet.");
 		return NULL;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -141,14 +140,12 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 		return NULL;
 	}
 	TileMatrixSet * tms = new TileMatrixSet(id,title,abstract,keyWords,crs,listTM);
-	LOGGER_DEBUG("<=buildTileMatrixSet");
 	return tms;
 
 }//buildTileMatrixSet(std::string)
 
 Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("=>buildPyramid");
-	LOGGER_INFO("load Pyramid:        " << fileName);
+	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
 	std::map<std::string, Level *> levels;
 
@@ -317,14 +314,12 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 	}
 
 	Pyramid *pyr = new Pyramid(levels, *tms);
-	LOGGER_DEBUG("=>buildPyramid");
 	return pyr;
 
 }// buildPyramid()
 
 Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("=> buildLayer");
-	LOGGER_INFO("load layer:         " << fileName);
+	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
 	std::string abstract="";
@@ -496,7 +491,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		if (!crs.isProj4Compatible())
 			LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
 		else{
-			LOGGER_DEBUG("Ajout du crs "<<str_crs);
+			LOGGER_INFO("		Ajout du crs "<<str_crs);
 			WMSCRSList.push_back(str_crs);
 		}
 	}
@@ -552,13 +547,11 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
 			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox);
 
-	LOGGER_DEBUG("<= buildLayer");
-
 	return layer;
 }//buildLayer
 
 bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::string &tmsDir){
-	LOGGER_DEBUG("=>getTechnicalParam");
+	LOGGER_INFO("Chargement des parametres techniques depuis "<<SERVER_CONF_PATH);
 	TiXmlDocument doc(SERVER_CONF_PATH);
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVER_CONF_PATH);
@@ -605,13 +598,12 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 		tmsDir=pElem->GetText();
 	}
 
-	LOGGER_DEBUG("<=getTechnicalParam");
 	return true;
 }//getTechnicalParam
 
 
 bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList){
-	LOGGER_DEBUG("=>buildTMSList");
+	LOGGER_INFO("CHARGEMENT DES TMS");
 
 	// lister les fichier du répertoire tmsDir
 	std::vector<std::string> tmsFiles;
@@ -654,13 +646,14 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 		LOGGER_FATAL("Aucun TMS n'a pu être chargé!");
 		return false;
 	}
+	
+	LOGGER_INFO("NOMBRE DE TMS CHARGES : "<<tmsList.size());
 
-	LOGGER_DEBUG("<=buildTMSList");
 	return true;
 }
 
 bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers){
-	LOGGER_DEBUG("=>buildLayersList");
+	LOGGER_INFO("CHARGEMENT DES LAYERS");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
 	std::string layerFileName;
@@ -700,12 +693,12 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 		return false;
 	}
 
-	LOGGER_DEBUG("<=buildLayersList");
+	LOGGER_INFO("NOMBRE DE LAYERS CHARGES : "<<layers.size());
 	return true;
 }
 
 ServicesConf * ConfLoader::buildServicesConf(){
-	LOGGER_DEBUG("=> buildServicesConf");
+	LOGGER_INFO("Construction de la configuration des services depuis "<<SERVICES_CONF_PATH);
 	TiXmlDocument doc(SERVICES_CONF_PATH);
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVICES_CONF_PATH);
@@ -802,6 +795,5 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
 			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion);
 
-	LOGGER_DEBUG("<= buildServicesConf");
 	return servicesConf;
 }

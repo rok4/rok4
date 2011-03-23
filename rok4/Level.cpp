@@ -94,7 +94,7 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_c
 	bbox_int.print();
 	Image* image = getwindow(bbox_int);
 	image->setbbox( BoundingBox<double>(tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin));
-	LOGGER_DEBUG("Reprojection");
+
 	return new ReprojectedImage(image, bbox, grid);
 }
 
@@ -142,7 +142,6 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 	int tile_ymin = bbox.ymin / tm.getTileH();
 	int tile_ymax = (bbox.ymax-1) / tm.getTileH();
 	int nby = tile_ymax - tile_ymin + 1;
-	//LOGGER_DEBUG(" getwindow bbox.xmin:" <<bbox.xmin << "tile_xmin:" << tile_xmin << " tile_xmax:" << tile_xmax << " nb_x:" << nbx << " tileW:" << tm.getTileW() << " " << " nb_y:" << nby  << " tileH:" << tm.getTileH());
 	int left[nbx];   memset(left,   0, nbx*sizeof(int)); left[0] = bbox.xmin % tm.getTileW();
 	int top[nby];    memset(top,    0, nby*sizeof(int)); top[0]  = bbox.ymin % tm.getTileH();
 	int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;

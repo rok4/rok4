@@ -50,7 +50,7 @@ class DataSourceDecoder : public DataSource {
 				}
 			}
 			size = decSize;
-			LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
+			//LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			return decData;
 		}
 
