@@ -1,7 +1,8 @@
 TGTDIR=./target
 
 all: rok4
-
+	make -C be4
+	
 clean:
 	rm -fr ${TGTDIR}
 
