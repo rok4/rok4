@@ -25,7 +25,7 @@ dalles_base: $(DALLESBASEOBJ)
 	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
 	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi
 	$(CXX) $(DALLESBASEOBJ) -o dalles_base $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
-	cp dalles_base $(BINDIR)
+	mv dalles_base $(BINDIR)
 
 clean:
 	rm -f *.o

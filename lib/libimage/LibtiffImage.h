@@ -23,6 +23,9 @@ class LibtiffImage : public Image {
 	uint8_t* strip_buffer;
 	uint16_t current_strip;
 
+	template<typename T>
+        int _getline(T* buffer, int line);
+
 	protected:
   	/** Constructeur */
   	LibtiffImage(int width, int height, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);

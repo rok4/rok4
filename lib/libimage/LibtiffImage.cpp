@@ -91,36 +91,38 @@ LibtiffImage::LibtiffImage(int width,int height, int channels, BoundingBox<doubl
 	strip_buffer=new uint8_t[strip_size];
 }
 
-int LibtiffImage::getline(uint8_t* buffer, int line)
+template<typename T>
+int LibtiffImage::_getline(T* buffer, int line)
 {
 // le buffer est déjà alloue
 // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
 // Cas Non compresse ou (compresse et 1 ligne/bande)
-	if (compression==COMPRESSION_NONE || (compression!=COMPRESSION_NONE && rowsperstrip==1) ){
-		if (TIFFReadScanline(tif,buffer,line,0)<0)
-			LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
-	}
+        if (compression==COMPRESSION_NONE || (compression!=COMPRESSION_NONE && rowsperstrip==1) ){
+                if (TIFFReadScanline(tif,buffer,line,0)<0)
+                        LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
+        }
 
 // Cas compresse et > 1 ligne /bande
-	else{
-		if (line/rowsperstrip!=current_strip){
-			current_strip=line/rowsperstrip;
-			if (TIFFReadEncodedStrip(tif,current_strip,strip_buffer,strip_size)<0)
-				LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
-		}
-		memcpy(buffer,&strip_buffer[(line%rowsperstrip)*width*channels],width*channels*sizeof(uint8_t));
-	}
-	return width*channels;
+        else{
+                if (line/rowsperstrip!=current_strip){
+                        current_strip=line/rowsperstrip;
+                        if (TIFFReadEncodedStrip(tif,current_strip,strip_buffer,strip_size)<0)
+                                LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
+                }
+                memcpy(buffer,&strip_buffer[(line%rowsperstrip)*width*channels],width*channels*sizeof(uint8_t));
+        }
+        return width*channels;
+}
+
+int LibtiffImage::getline(uint8_t* buffer, int line)
+{
+	return _getline(buffer,line);
 }	
 
 int LibtiffImage::getline(float* buffer, int line)
 {
-	uint8_t* buffer_t = new uint8_t[width*channels];
-	getline(buffer_t,line);
-	convert(buffer,buffer_t,width*channels);
-	delete [] buffer_t;
-        return width*channels;
+        return _getline(buffer,line);
 }
 
 LibtiffImage::~LibtiffImage()

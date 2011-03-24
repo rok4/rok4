@@ -143,24 +143,28 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
         // Initialisation du buffer
-        unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
-	float* tmp=0;
-	if (bitspersample==32)
-		tmp=new float[pImage->width*pImage->channels];
-        // Ecriture de l'image
-        for( int line = 0; line < pImage->height; line++) {
-		if (bitspersample==8)
-	                pImage->getline(buf_line,line);
-		else if (bitspersample==32){
-			pImage->getline(tmp,line);
-			convert(buf_line,tmp,pImage->width*pImage->channels);	
+	unsigned char* buf_u=0;
+	float* buf_f=0;
+
+	// Ecriture de l'image
+	if (bitspersample==8){
+		buf_u = (unsigned char*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
+		for( int line = 0; line < pImage->height; line++) {
+                        pImage->getline(buf_u,line);
+                        TIFFWriteScanline(output, buf_u, line, 0);
 		}
-                TIFFWriteScanline(output, buf_line, line, 0);
-        }
+	}
+	else if(bitspersample==32){
+		buf_f = (float*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
+                for( int line = 0; line < pImage->height; line++) {
+                        pImage->getline(buf_f,line);
+                        TIFFWriteScanline(output, buf_f, line, 0);
+		}
+	}
 
         // Liberation
-        _TIFFfree(buf_line);
-	if (tmp) delete [] tmp;
+	if (buf_u) _TIFFfree(buf_u);
+	if (buf_f) _TIFFfree(buf_f);
         TIFFClose(output);
         return 0;
 }
