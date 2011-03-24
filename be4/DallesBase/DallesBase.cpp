@@ -144,15 +144,23 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 
         // Initialisation du buffer
         unsigned char * buf_line = (unsigned char *)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8 );
-
+	float* tmp=0;
+	if (bitspersample==32)
+		tmp=new float[pImage->width*pImage->channels];
         // Ecriture de l'image
         for( int line = 0; line < pImage->height; line++) {
-                pImage->getline(buf_line,line);
-                TIFFWriteScanline(output, buf_line, line, 0); // en contigu (entrelace) on prend chanel=0 (!)
+		if (bitspersample==8)
+	                pImage->getline(buf_line,line);
+		else if (bitspersample==32){
+			pImage->getline(tmp,line);
+			convert(buf_line,tmp,pImage->width*pImage->channels);	
+		}
+                TIFFWriteScanline(output, buf_line, line, 0);
         }
 
         // Liberation
         _TIFFfree(buf_line);
+	if (tmp) delete [] tmp;
         TIFFClose(output);
         return 0;
 }
@@ -250,6 +258,10 @@ int checkDalles(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 	if (pImageOut->getresx()*pImageOut->getresy()==0.){
 		LOGGER_ERROR("Resolution de la dalle de sortie egale a 0 " << pImageOut->getfilename());
 		return -1;
+	}
+	if (pImageOut->getbitspersample()!=8 && pImageOut->getbitspersample()!=32){
+		LOGGER_ERROR("Nombre de bits par sample de la dalle de sortie " << pImageOut->getfilename() << " non gere");
+                return -1;
 	}
 
 	return 0;
@@ -677,37 +689,51 @@ int main(int argc, char **argv) {
 
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec lecture ligne de commande"); return -1;
+		LOGGER_ERROR("Echec lecture ligne de commande");
+		sleep(1);
+		return -1;
 	}
 
 	// TODO : gérer le type mtd !!
 	if (type==0) {
-		LOGGER_ERROR("Le type mtd n'est pas pris en compte"); return -1;
+		LOGGER_ERROR("Le type mtd n'est pas pris en compte");
+		sleep(1);
+		return -1;
 	}
 
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec chargement des dalles"); return -1;
+		LOGGER_ERROR("Echec chargement des dalles"); 
+		sleep(1);
+		return -1;
 	}
 
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
-		LOGGER_ERROR("Echec controle des dalles"); return -1;
+		LOGGER_ERROR("Echec controle des dalles");
+		sleep(1);
+		return -1;
 	}
 LOGGER_DEBUG("Sort ");
 	// Tri des dalles
 	if (sortDalles(ImageIn, &TabImageIn)<0){
-		LOGGER_ERROR("Echec tri des dalles"); return -1;
+		LOGGER_ERROR("Echec tri des dalles");
+		sleep(1);
+		return -1;
 	}
 LOGGER_DEBUG("Merge "<<ImageIn.size()<<" "<<TabImageIn.size()<<" "<<TabImageIn[0].size());
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata) < 0){
-		LOGGER_ERROR("Echec fusion des paquets de dalles"); return -1;
+		LOGGER_ERROR("Echec fusion des paquets de dalles");
+		sleep(1);
+		return -1;
 	}
 LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec enregistrement dalle finale"); return -1;
+		LOGGER_ERROR("Echec enregistrement dalle finale");
+		sleep(1);
+		return -1;
 	}
 
 	// TODO Nettoyage

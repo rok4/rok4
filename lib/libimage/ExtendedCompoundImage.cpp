@@ -41,10 +41,10 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
 
          	// c2 : indicde de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
-
+LOGGER_DEBUG("1");
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
          	images[i]->getline(buffer_t,images[i]->y2l(y));
-
+LOGGER_DEBUG("2");
          	if (masks.empty())
          		memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
          	else{
@@ -58,8 +58,9 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         }
                         delete buffer_m;
                 }
-
+LOGGER_DEBUG("3");
                 delete [] buffer_t;
+LOGGER_DEBUG("4");
 	}
         return width*channels*sizeof(T);
 }
