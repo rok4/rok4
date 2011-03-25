@@ -36,7 +36,6 @@ void* Rok4Server::thread_loop(void* arg)
 
 	while(true){
 		int rc;
-
 		if(FCGX_Accept_r(&fcgxRequest) < 0) {
 			LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
 			break;
@@ -84,7 +83,7 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	// Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
 	// Ensuite redemmarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
 	
-	// sock = FCGX_OpenSocket(":1990", 50);
+	//sock = FCGX_OpenSocket(":1990", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }

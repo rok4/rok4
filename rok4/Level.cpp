@@ -147,8 +147,6 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 	int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;
 	int bottom[nby]; memset(bottom, 0, nby*sizeof(int)); bottom[nby- 1] = tm.getTileH() - ((bbox.ymax -1) % tm.getTileH()) - 1;
 
-//	int tileCoding=getTileCoding();
-
 	std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
 	for(int y = 0; y < nby; y++)
 		for(int x = 0; x < nbx; x++)

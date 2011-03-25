@@ -113,7 +113,6 @@ size_t PNGEncoder::read(uint8_t *buffer, size_t size) {
 		colortype=0;
 	else if (image->channels==3)
 		colortype=2;
-
 	if(line == -1) pos += write_IHDR(buffer, size, colortype);
 	if(line >= 0 && line <= image->height) pos += write_IDAT(buffer + pos, size - pos);
 	if(line == image->height+1) pos += write_IEND(buffer + pos, size - pos);

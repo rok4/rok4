@@ -60,6 +60,8 @@ const uint8_t* JpegDecoder::decode(DataSource* source, size_t &size) {
 	size_t encSize;
 	const uint8_t* encData = source->getData(encSize);
 
+	if (!encData) return 0;
+
 	struct jpeg_decompress_struct cinfo;
 	struct my_error_mgr jerr;
 
