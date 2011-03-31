@@ -8,6 +8,7 @@ use cache(
 	'$color_no_data_param',
 	'$dalle_no_data_rgb_param',
 	'$dalle_no_data_gray_param',
+	'$dalle_no_data_rgealti_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -22,7 +23,7 @@ use cache(
 	'$nom_fichier_last_jobs_param',
 	'extrait_tms_from_pyr',
 	'$version_wms_param',
-	'$nb_bits_param',
+	'%produit_nb_bits_param',
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
 );
@@ -42,6 +43,7 @@ my %base10_base = %base10_base_param;
 my $color_no_data = $color_no_data_param;
 my $dalle_no_data_rgb = $dalle_no_data_rgb_param;
 my $dalle_no_data_gray = $dalle_no_data_gray_param;
+my $dalle_no_data_rgealti = $dalle_no_data_rgealti_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
@@ -50,7 +52,7 @@ my $programme_copie_image = $programme_copie_image_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
-my $nb_bits = $nb_bits_param; 
+my %produit_nb_bits = %produit_nb_bits_param; 
 my %produit_couleur = %produit_couleur_param;
 my $string_erreur_batch = $string_erreur_batch_param;
 
@@ -67,6 +69,10 @@ if(!(-e $dalle_no_data_gray && -f $dalle_no_data_gray)){
 }
 if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
 	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_mtd est introuvable.\n";
+	exit;
+}
+if(!(-e $dalle_no_data_rgealti && -f $dalle_no_data_rgealti)){
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_rgealti est introuvable.\n";
 	exit;
 }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
@@ -167,7 +173,7 @@ if(defined $opt_l){
 my $repertoire_tempo = $opt_e; # repertoire des fichiers temporaires
 
 ### VERIFICATION DES VARIABLES
-if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
+if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster|rgealti$/i){
 	print "[CALCULE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
 	exit;
@@ -223,6 +229,7 @@ if (! (-e $repertoire_tempo && -d $repertoire_tempo)){
 ### TRAITEMENT
 
 my $couleur = $produit_couleur{$produit};
+my $nb_bits = $produit_nb_bits{$produit};
 
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = $repertoire_tempo."/CALCULE_PYRAMIDE_".$time;
@@ -1868,7 +1875,11 @@ sub calcule_avec_programme_dalles_base{
 			if($couleur eq "rgb"){
 				$nom_dalle_temp = $dalle_no_data_rgb;
 			}elsif($couleur =~ /gray|min_is_black/){
-				$nom_dalle_temp = $dalle_no_data_gray;
+				if ($nb_bits == 32) {
+					$nom_dalle_temp = $dalle_no_data_rgealti;
+				} else {
+					$nom_dalle_temp = $dalle_no_data_gray;
+				}
 			}else{
 				print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
 				exit;
@@ -1986,7 +1997,11 @@ sub calcule_avec_programme_ss_ech{
 				if($couleur eq "rgb"){
 					$fic_pointe = $dalle_no_data_rgb;
 				}elsif($couleur =~ /gray|min_is_black/){
-					$fic_pointe = $dalle_no_data_gray;
+					if ($nb_bits == 32) {
+						$fic_pointe = $dalle_no_data_rgealti;
+					} else {
+						$fic_pointe = $dalle_no_data_gray;
+					}
 				}else{
 					print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
 					exit;
