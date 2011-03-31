@@ -45,13 +45,13 @@
 /* Usage de la ligne de commande */
 
 void usage() {
-	LOGGER_INFO(" Parametres : dalles_base -f (fichier de dalles) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
-	LOGGER_INFO(" Exemple : dalles_base -f myfile.txt -i [lanczos/ppv/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
+	LOGGER_INFO(" Parametres : dalles_base -f (fichier de dalles) -a (sampleformat) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
+	LOGGER_INFO(" Exemple : dalles_base -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
 }
 
 /* Lecture des parametres de la ligne de commande */
 
-int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
 	if (argc != 15) {
 		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
@@ -71,6 +71,7 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Kernel::LANCZOS_3; // =4
 				else if(strncmp(argv[i], "ppv",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
 				else if(strncmp(argv[i], "bicubique",9) == 0) interpolation = Kernel::CUBIC; // =2
+				else if(strncmp(argv[i], "linear",6) == 0) interpolation = Kernel::LINEAR; // =2
 				else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
 				break;
 			case 'n': // nodata
@@ -80,7 +81,7 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				break;
 			case 't': // type
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
-				if(strncmp(argv[i], "img",3) == 0) type = 1 ;
+				if(strncmp(argv[i], "image",5) == 0) type = 1 ;
 				else if(strncmp(argv[i], "mtd",3) == 0) type = 0 ;
 				else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
 				break;
@@ -96,9 +97,15 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
 				else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
 				break;
+			case 'a': // sampleformat
+				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				if(strncmp(argv[i],"uint",4) == 0) sampleformat = 1 ;
+				else if(strncmp(argv[i],"float",5) == 0) sampleformat = 3 ;
+				else {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				break;
 			case 'p': // photometric
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
-				if(strncmp(argv[i], "min_is_black",12) == 0) photometric = PHOTOMETRIC_MINISBLACK;
+				if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
 				else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
 				else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
 				else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
@@ -117,44 +124,46 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 * @param pName : nom du fichier TIFF
 * @param sampleperpixel : nombre de canaux de l'image TIFF
 * @parama bitspersample : nombre de bits par canal de l'image TIFF
+* @parama sampleformat : format des données binaires (uint ou float)
 * @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
 * @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
 * TODO : gerer tous les types de couleur pour la valeur NODATA
 * @return : 0 en cas de succes, -1 sinon
 */
 
-int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t photometric) {
+int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric) {
         // Ouverture du fichier
-        TIFF* output=TIFFOpen(pName,"w");
-        if (output==NULL) {
-                LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
-                return -1;
-        }
+    TIFF* output=TIFFOpen(pName,"w");
+    if (output==NULL) {
+        LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
+        return -1;
+    }
 
         // Ecriture de l'en-tete
-        TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
-        TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
-        TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
-        TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
-        TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
-        TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-        TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
-        TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
+    TIFFSetField(output, TIFFTAG_IMAGEWIDTH, pImage->width);
+    TIFFSetField(output, TIFFTAG_IMAGELENGTH, pImage->height);
+    TIFFSetField(output, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel);
+    TIFFSetField(output, TIFFTAG_BITSPERSAMPLE, bitspersample);
+    TIFFSetField(output, TIFFTAG_SAMPLEFORMAT, sampleformat);
+    TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
+    TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+    TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+    TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
+    TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
         // Initialisation du buffer
 	unsigned char* buf_u=0;
 	float* buf_f=0;
 
 	// Ecriture de l'image
-	if (bitspersample==8){
+	if (sampleformat==1){
 		buf_u = (unsigned char*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
 		for( int line = 0; line < pImage->height; line++) {
                         pImage->getline(buf_u,line);
                         TIFFWriteScanline(output, buf_u, line, 0);
 		}
 	}
-	else if(bitspersample==32){
+	else if(sampleformat==3){
 		buf_f = (float*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
                 for( int line = 0; line < pImage->height; line++) {
                         pImage->getline(buf_f,line);
@@ -162,11 +171,11 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 		}
 	}
 
-        // Liberation
+    // Liberation
 	if (buf_u) _TIFFfree(buf_u);
 	if (buf_f) _TIFFfree(buf_f);
-        TIFFClose(output);
-        return 0;
+    TIFFClose(output);
+    return 0;
 }
 
 /* Lecture d une ligne du fichier de dalles */
@@ -178,7 +187,7 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 	double resx, resy;
 	int nb;
 
-	if ( (nb=sscanf(str.c_str(), "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
+	if ( (nb=sscanf(str.c_str(),"DallesBase.cpp:54: error: too few arguments to function ‘int parseCommandLine(int, char**, char*, Kernel::KernelType&, char*, int&, uint16_t&, uint16_t&, uint16_t&, uint16_t&)’" "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
 		// Arrondi a la valeur entiere la plus proche
 		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
 		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
@@ -670,7 +679,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 int main(int argc, char **argv) {
 	char liste_dalles_filename[256], nodata[6];
-	uint16_t sampleperpixel, bitspersample, photometric;
+	uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
 	int type=-1;
 	Kernel::KernelType interpolation;
 
@@ -692,7 +701,7 @@ int main(int argc, char **argv) {
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
-	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,photometric)<0){
+	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec lecture ligne de commande");
 		sleep(1);
 		return -1;
@@ -734,7 +743,7 @@ LOGGER_DEBUG("Merge "<<ImageIn.size()<<" "<<TabImageIn.size()<<" "<<TabImageIn[0
 	}
 LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
-	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,photometric)<0){
+	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");
 		sleep(1);
 		return -1;
