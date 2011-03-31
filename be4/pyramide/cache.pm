@@ -19,6 +19,7 @@ our @EXPORT=(
 	'$color_no_data_param',
 	'$dalle_no_data_rgb_param',
 	'$dalle_no_data_gray_param',
+	'$dalle_no_data_rgealti_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -41,12 +42,13 @@ our @EXPORT=(
 	'cherche_pyramide_recente_lay',
 	'extrait_tms_from_pyr',
 	'$version_wms_param',
-	'$nb_bits_param',
+	'%produit_nb_bits_param',
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
 	'$srs_wgs84g_param',
 	'valide_xml',
 	'$xsd_parametres_cache_param',
+	'%produit_sample_format_param',
 );
 ################################################################################
 
@@ -72,7 +74,7 @@ our $nom_rep_mtd_param = "METADATA";
 
 # base dans laquelle sont exprmiees les noms de dalles
 our $base_param = 36;
-# association entre denomination en base 10 et en base 36
+# association entre denomination en base 10 et en base 36z
 our %base10_base_param = (
 	0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5,
 	6 => 6, 7 => 7, 8 => 8, 9 => 9,	10 => "A",
@@ -92,6 +94,8 @@ our $dalle_no_data_rgb_param = "../share/pyramide/4096_4096_FFFFFF_rgb.tif";
 our $dalle_no_data_gray_param = "../share/pyramide/4096_4096_FFFFFF_gray.tif";
 # chemin vers l'image no_data pour les masques de mtd
 our $dalle_no_data_mtd_param = "../share/pyramide/mtd_4096_4096_black_32b.tif";
+# chemin vers l'image no_data pour le rgealti
+our $dalle_no_data_rgealti_param = "../share/pyramide/4096_4096_-99999_gray.tif";
 
 # apres deploiement : le ./ est pour etre sur qu'on utilise les programmes compiles en local
 # nom du programme permettant d'aggreger 4 images en divisant la reoslution par 2 (niveaux inferieurs de la pyramide)
@@ -113,17 +117,26 @@ our %produit_nb_canaux_param = (
 	"franceraster" => 3,
 	# RGB
 	"scan" => 3,
+	# Z
+	"rgealti" => 1,
 );
 
-# nombre de bits par canal des images
-our $nb_bits_param = 8;
+# association entre grande famille de produit et nombre de bits par canal des images
+our %produit_nb_bits_param = (
+	"ortho" => 8,
+	"parcellaire" => 8,
+	"franceraster" => 8,
+	"scan" => 8,
+	"rgealti" => 32,
+);
 
 # association entre grande famille de produit et denomination de l'espace de couleur
 our %produit_couleur_param = (
 	"ortho" => "rgb",
-	"parcellaire" => "min_is_black",
+	"parcellaire" => "gray",
 	"franceraster" => "rgb",
 	"scan" => "rgb",
+	"rgealti" => "gray",
 );
 
 # chemin vers le schema contraignant les fichiers XML de pyramide
@@ -143,6 +156,7 @@ our %format_format_pyr_param = (
 	"raw" => "TIFF_INT8",
 	"jpeg" => "TIFF_JPG_INT8",
 	"png" => "TIFF_PNG_INT8",
+	"floatraw" => "TIFF_FLOAT32",
 );
 
 # nom du programme permettant de calculer des coordonnees reprojetees
@@ -181,6 +195,15 @@ our $string_erreur_batch_param = "if [ \$? != 0 ] ; then echo \$0 : Erreur a la 
 # systeme de coordonnees pour exprimer l'emprise des layers
 # TODO eventuellement changer la def en fonction des specs
 our $srs_wgs84g_param = "IGNF:WGS84G";
+
+# correspondance entre grande famille de produit et sample format : type entier ou flottant
+our %produit_sample_format_param = (
+	"ortho" => "uint",
+	"parcellaire" => "uint",
+	"franceraster" => "uint",
+	"scan" => "uint",
+	"rgealti" => "float",
+);
 ################################################################################
 
 ########## FONCTIONS
