@@ -29,6 +29,7 @@
 			<xs:enumeration value='scan1000'/>
 			<xs:enumeration value='scandep'/>
 			<xs:enumeration value='scanreg'/>
+			<xs:enumeration value='rgealti'/>
 		</xs:restriction>
 	</xs:simpleType>
 	
@@ -99,6 +100,7 @@
 			<xs:enumeration value='raw'/>
 			<xs:enumeration value='png'/>
 			<xs:enumeration value='jpeg'/>
+			<xs:enumeration value='floatraw'/>
 		</xs:restriction>
 	</xs:simpleType>
 	
