@@ -8,6 +8,7 @@ use cache(
 	'$color_no_data_param',
 	'$dalle_no_data_rgb_param',
 	'$dalle_no_data_gray_param',
+	'$dalle_no_data_rgealti_param',
 	'$programme_ss_ech_param',
 	'cree_repertoires_recursifs',
 	'$programme_format_pivot_param',
@@ -23,8 +24,10 @@ use cache(
 	'extrait_tms_from_pyr',
 	'$version_wms_param',
 	'$nb_bits_param',
+	'%produit_nb_bits_param',
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
+	'%produit_sample_format_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -43,6 +46,7 @@ my $color_no_data = $color_no_data_param;
 my $dalle_no_data_rgb = $dalle_no_data_rgb_param;
 my $dalle_no_data_gray = $dalle_no_data_gray_param;
 my $dalle_no_data_mtd = $dalle_no_data_mtd_param;
+my $dalle_no_data_rgealti = $dalle_no_data_rgealti_param;
 my $programme_ss_ech = $programme_ss_ech_param;
 my $programme_format_pivot = $programme_format_pivot_param;
 my $programme_dalles_base = $programme_dalles_base_param;
@@ -50,10 +54,10 @@ my $programme_copie_image = $programme_copie_image_param;
 my $rep_log = $rep_logs_param;
 my $programme_reproj = $programme_reproj_param;
 my $version_wms = $version_wms_param;
-my $nb_bits = $nb_bits_param; 
+my %produit_nb_bits = %produit_nb_bits_param; 
 my %produit_couleur = %produit_couleur_param;
 my $string_erreur_batch = $string_erreur_batch_param;
-
+my %produit_sample_format = %produit_sample_format_param;
 ### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
 # verification de l'existence de fichiers et repertoires annexes
@@ -67,6 +71,10 @@ if(!(-e $dalle_no_data_gray && -f $dalle_no_data_gray)){
 }
 if(!(-e $dalle_no_data_mtd && -f $dalle_no_data_mtd)){
 	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_mtd est introuvable.\n";
+	exit;
+}
+if(!(-e $dalle_no_data_rgealti && -f $dalle_no_data_rgealti)){
+	print "[CALCULE_PYRAMIDE] Le fichier $dalle_no_data_rgealti est introuvable.\n";
 	exit;
 }
 #verification de la presence des programmes $programme_ss_ech $programme_format_pivot $programme_dalles_base $programme_reproj
@@ -167,7 +175,7 @@ if(defined $opt_l){
 my $repertoire_tempo = $opt_e; # repertoire des fichiers temporaires
 
 ### VERIFICATION DES VARIABLES
-if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster$/i){
+if ($produit !~ /^ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster|rgealti$/i){
 	print "[CALCULE_PYRAMIDE] Produit mal specifie.\n";
 	&ecrit_log("ERREUR Produit mal specifie.");
 	exit;
@@ -223,6 +231,8 @@ if (! (-e $repertoire_tempo && -d $repertoire_tempo)){
 ### TRAITEMENT
 
 my $couleur = $produit_couleur{$produit};
+my $nb_bits = $produit_nb_bits{$produit};
+my $sample_format = $produit_sample_format{$produit};
 
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = $repertoire_tempo."/CALCULE_PYRAMIDE_".$time;
@@ -433,7 +443,7 @@ my %dalle_cache_min_liste_dalle;
 my %mtd_cache_min_liste_mtd;
 # Association de chaque dalle cache a calculer avec les 4 dalles en dessous
 my %dalle_cache_dessous;
-# Association niveau (cl ©) avec la liste de sdalles du niveau inferieur
+# Association niveau (cle) avec la liste des dalles du niveau inferieur
 my %niveau_ref_dalles_inf;
 # Idem mtd
 my %niveau_ref_mtd_inf;
@@ -1508,16 +1518,6 @@ sub passage_pivot{
 	my $ref_dalles_travail = $_[2];
 	my @dalles_travail = @{$ref_dalles_travail};
 	
-	my $couleur_tiff2tile;
-	if($couleur eq "rgb"){
-		$couleur_tiff2tile = $couleur;
-	}elsif($couleur =~ /gray|min_is_black/){
-		$couleur_tiff2tile = "gray";
-	}else{
-		print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
-		exit;
-	}
-	
 	my $string_script3 = "";
 	
 	foreach my $dal2(@dalles_travail){
@@ -1526,7 +1526,7 @@ sub passage_pivot{
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire le nombre de bits dans la commande $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur_tiff2tile -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
@@ -1867,8 +1867,12 @@ sub calcule_avec_programme_dalles_base{
 		if($type_donnees eq "image"){
 			if($couleur eq "rgb"){
 				$nom_dalle_temp = $dalle_no_data_rgb;
-			}elsif($couleur =~ /gray|min_is_black/){
-				$nom_dalle_temp = $dalle_no_data_gray;
+			}elsif($couleur eq "gray"){
+				if ($nb_bits == 32) {
+					$nom_dalle_temp = $dalle_no_data_rgealti;
+				} else {
+					$nom_dalle_temp = $dalle_no_data_gray;
+				}
 			}else{
 				print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
 				exit;
@@ -1958,8 +1962,7 @@ sub calcule_avec_programme_dalles_base{
 		$interpolateur = "lanczos";
 	}
 	
-	# TODO supprimer no_data qui ne sert a rien
-	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur\n".$string_erreur_batch;
+	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur -a $sample_format\n".$string_erreur_batch;
 	
 	return $string_commande_dalles_base;
 }
@@ -1985,8 +1988,12 @@ sub calcule_avec_programme_ss_ech{
 			if($type_dalle_ss_ech eq "image"){
 				if($couleur eq "rgb"){
 					$fic_pointe = $dalle_no_data_rgb;
-				}elsif($couleur =~ /gray|min_is_black/){
-					$fic_pointe = $dalle_no_data_gray;
+				}elsif($couleur eq "gray"){
+					if ($nb_bits == 32) {
+						$fic_pointe = $dalle_no_data_rgealti;
+					} else {
+						$fic_pointe = $dalle_no_data_gray;
+					}
 				}else{
 					print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
 					exit;
@@ -2012,7 +2019,6 @@ sub calcule_avec_programme_ss_ech{
 		$string_dessous .= " $fic_pointe";
 	}
 	
-	# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
 	$string_commande_ss_ech .= "$programme_ss_ech $string_dessous $dalle_niveau_inferieur\n".$string_erreur_batch;
 	
 	return $string_commande_ss_ech;
