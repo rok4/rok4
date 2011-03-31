@@ -821,7 +821,7 @@ sub init{
 		&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
 		$bool_param_ok = 0;
 	}
-	if($compression_pyramide !~ /^raw|jpeg|png/floatraw$/i){
+	if($compression_pyramide !~ /^raw|jpeg|png|floatraw$/i){
 		print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
 		&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
 		$bool_param_ok = 0;
