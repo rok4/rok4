@@ -1898,12 +1898,6 @@ sub calcule_avec_programme_dalles_base{
 		exit;
 	}
 	
-	# pour le programme
-	my $type_dalles_base = $type_donnees;
-	if($type_dalles_base eq "image"){
-		$type_dalles_base = "img";
-	}
-	
 	my $nom_fichier = $repertoire_fichier_temp."/".$nom_dalle_court."_".$type_donnees;
 	
 	open FIC, ">$nom_fichier" or die "[CALCULE_PYRAMIDE] Impossible de creer le fichier $nom_fichier.";
@@ -1961,7 +1955,7 @@ sub calcule_avec_programme_dalles_base{
 		$interpolateur = "lanczos";
 	}
 	
-	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur -a $sample_format\n".$string_erreur_batch;
+	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_donnees -s $nombre_canaux -b $nb_bits -p $couleur -a $sample_format\n".$string_erreur_batch;
 	
 	return $string_commande_dalles_base;
 }
