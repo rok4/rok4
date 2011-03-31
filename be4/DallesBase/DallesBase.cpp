@@ -53,7 +53,7 @@ void usage() {
 
 int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
-	if (argc != 15) {
+	if (argc != 17) {
 		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
 		usage();
 		return -1;
