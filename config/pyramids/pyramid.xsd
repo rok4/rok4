@@ -50,6 +50,7 @@
 			<xs:enumeration value="TIFF_JPG_INT8"/>
 			<xs:enumeration value="TIFF_PNG_INT8"/>
 			<xs:enumeration value="TIFF_LZW_INT8"/>
+			<xs:enumeration value="TIFF_FLOAT32"/>
 		</xs:restriction>
 	</xs:simpleType>
 
