@@ -133,10 +133,10 @@ our %produit_nb_bits_param = (
 # association entre grande famille de produit et denomination de l'espace de couleur
 our %produit_couleur_param = (
 	"ortho" => "rgb",
-	"parcellaire" => "min_is_black",
+	"parcellaire" => "gray",
 	"franceraster" => "rgb",
 	"scan" => "rgb",
-	"rgealti" => "min_is_black",
+	"rgealti" => "gray",
 );
 
 # chemin vers le schema contraignant les fichiers XML de pyramide
