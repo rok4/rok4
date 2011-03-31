@@ -1525,7 +1525,7 @@ sub passage_pivot{
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire le nombre de bits dans la commande $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile  $taille_pix_y_tuile -b $nb_bits $rep_temp/temp.tif\n".$string_erreur_batch;
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
