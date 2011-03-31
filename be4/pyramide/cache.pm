@@ -48,6 +48,7 @@ our @EXPORT=(
 	'$srs_wgs84g_param',
 	'valide_xml',
 	'$xsd_parametres_cache_param',
+	'%produit_sample_format_param',
 );
 ################################################################################
 
@@ -194,6 +195,15 @@ our $string_erreur_batch_param = "if [ \$? != 0 ] ; then echo \$0 : Erreur a la 
 # systeme de coordonnees pour exprimer l'emprise des layers
 # TODO eventuellement changer la def en fonction des specs
 our $srs_wgs84g_param = "IGNF:WGS84G";
+
+# association entre grande famille de produit et sample format : type entier ou flottant
+our %produit_sample_format_param = (
+	"ortho" => "uint",
+	"parcellaire" => "uint",
+	"franceraster" => "uint",
+	"scan" => "uint",
+	"rgealti" => "float",
+);
 ################################################################################
 
 ########## FONCTIONS

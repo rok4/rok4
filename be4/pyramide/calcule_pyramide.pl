@@ -26,6 +26,7 @@ use cache(
 	'%produit_nb_bits_param',
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
+	'%produit_sample_format_param',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -55,7 +56,7 @@ my $version_wms = $version_wms_param;
 my %produit_nb_bits = %produit_nb_bits_param; 
 my %produit_couleur = %produit_couleur_param;
 my $string_erreur_batch = $string_erreur_batch_param;
-
+my %produit_sample_format = %produit_sample_format_param;
 ### CONTROLE DE LA VALEUR DE VARIABLES IMPORTEES DES MODULES EXTERNES
 
 # verification de l'existence de fichiers et repertoires annexes
@@ -230,6 +231,7 @@ if (! (-e $repertoire_tempo && -d $repertoire_tempo)){
 
 my $couleur = $produit_couleur{$produit};
 my $nb_bits = $produit_nb_bits{$produit};
+my $sample_format = $produit_sample_format{$produit};
 
 # creation d'un rep temporaire pour les calculs intermediaires
 my $rep_temp = $repertoire_tempo."/CALCULE_PYRAMIDE_".$time;
@@ -1515,16 +1517,6 @@ sub passage_pivot{
 	my $ref_dalles_travail = $_[2];
 	my @dalles_travail = @{$ref_dalles_travail};
 	
-	my $couleur_tiff2tile;
-	if($couleur eq "rgb"){
-		$couleur_tiff2tile = $couleur;
-	}elsif($couleur =~ /gray|min_is_black/){
-		$couleur_tiff2tile = "gray";
-	}else{
-		print "[CALCULE_PYRAMIDE] Probleme de programmation : couleur $couleur incorrecte.\n";
-		exit;
-	}
-	
 	my $string_script3 = "";
 	
 	foreach my $dal2(@dalles_travail){
@@ -1533,7 +1525,7 @@ sub passage_pivot{
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
 		# TODO introduire le nombre de bits dans la commande $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur_tiff2tile -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile $taille_pix_y_tuile $rep_temp/temp.tif\n".$string_erreur_batch;
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
@@ -1874,7 +1866,7 @@ sub calcule_avec_programme_dalles_base{
 		if($type_donnees eq "image"){
 			if($couleur eq "rgb"){
 				$nom_dalle_temp = $dalle_no_data_rgb;
-			}elsif($couleur =~ /gray|min_is_black/){
+			}elsif($couleur eq "gray"){
 				if ($nb_bits == 32) {
 					$nom_dalle_temp = $dalle_no_data_rgealti;
 				} else {
@@ -1969,8 +1961,7 @@ sub calcule_avec_programme_dalles_base{
 		$interpolateur = "lanczos";
 	}
 	
-	# TODO supprimer no_data qui ne sert a rien
-	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur\n".$string_erreur_batch;
+	$string_commande_dalles_base .= "$programme_dalles_base -f $nom_fichier -i $interpolateur -n $no_data -t $type_dalles_base -s $nombre_canaux -b $nb_bits -p $couleur -a $sample_format\n".$string_erreur_batch;
 	
 	return $string_commande_dalles_base;
 }
@@ -1996,7 +1987,7 @@ sub calcule_avec_programme_ss_ech{
 			if($type_dalle_ss_ech eq "image"){
 				if($couleur eq "rgb"){
 					$fic_pointe = $dalle_no_data_rgb;
-				}elsif($couleur =~ /gray|min_is_black/){
+				}elsif($couleur eq "gray"){
 					if ($nb_bits == 32) {
 						$fic_pointe = $dalle_no_data_rgealti;
 					} else {
