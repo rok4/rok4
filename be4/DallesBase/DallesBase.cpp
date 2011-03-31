@@ -98,10 +98,10 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
 				break;
 			case 'a': // sampleformat
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
 				if(strncmp(argv[i],"uint",4) == 0) sampleformat = 1 ;
 				else if(strncmp(argv[i],"float",5) == 0) sampleformat = 3 ;
-				else {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
 				break;
 			case 'p': // photometric
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
@@ -187,7 +187,7 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 	double resx, resy;
 	int nb;
 
-	if ( (nb=sscanf(str.c_str(),"DallesBase.cpp:54: error: too few arguments to function ‘int parseCommandLine(int, char**, char*, Kernel::KernelType&, char*, int&, uint16_t&, uint16_t&, uint16_t&, uint16_t&)’" "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
+	if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
 		// Arrondi a la valeur entiere la plus proche
 		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
 		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
