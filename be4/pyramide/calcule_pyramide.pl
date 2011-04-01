@@ -1524,8 +1524,7 @@ sub passage_pivot{
 		$string_script3 .= "################ Pivot $dal2 ################\n";
 		$string_script3 .= "if [ -r \"$rep_temp/temp.tif\" ] ; then rm -f $rep_temp/temp.tif ; fi\n";
 		
-		# TODO introduire le nombre de bits dans la commande $programme_format_pivot
-		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile  $taille_pix_y_tuile -b $nb_bits $rep_temp/temp.tif\n".$string_erreur_batch;
+		$string_script3 .= "$programme_format_pivot $dal2 -c $compress -p $couleur -t $taille_pix_x_tuile  $taille_pix_y_tuile -b $nb_bits -a $sample_format $rep_temp/temp.tif\n".$string_erreur_batch;
 		$string_script3 .= "rm -f $dal2\n";
 		$string_script3 .= "mv $rep_temp/temp.tif $dal2\n";
 
@@ -2012,7 +2011,6 @@ sub calcule_avec_programme_ss_ech{
 		$string_dessous .= " $fic_pointe";
 	}
 	
-	# TODO ajouter l'interpolation dans la ligne de commande -i $interpol!!
 	$string_commande_ss_ech .= "$programme_ss_ech $string_dessous $dalle_niveau_inferieur\n".$string_erreur_batch;
 	
 	return $string_commande_ss_ech;
