@@ -26,6 +26,7 @@ TIFF *OUTPUT;
 uint32 width, height, rowsperstrip = -1;
 uint16 bitspersample, sampleperpixel, photometric, compression = -1, planarconfig, nb_extrasamples, sampleformat;
 uint16 *extrasamples;
+float nodata_alti = -99999;
 
 uint8 MERGE[1024];
 
@@ -39,6 +40,10 @@ void init(int argc, char* argv[]) {
         case 'g': 
           if(++i == argc) error("missing parameter in -g argument");
           gamma = atof(argv[i]);
+          break;
+        case 'n': 
+          if(++i == argc) error("missing parameter in -n argument");
+          nodata_alti = atof(argv[i]);
           break;
         case 'h': 
           usage();
@@ -142,8 +147,14 @@ int float32_main() {
 
       for(int pos_in = 0, pos_out = 0; pos_out < nbsamples; pos_in += sampleperpixel) {
         for(int j = sampleperpixel; j--; pos_in++) {
-		  float test = (line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel])/(float)4;
-          line_out[pos_out++] = test;
+		  float sum = line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel];
+		  float val;
+		  if ( sum < -50000 ) { // presence de nodata
+			  val = nodata_alti ;
+			}  else {
+			  val = sum/(float)4;
+		  }
+          line_out[pos_out++] = val;
 		};
 	  };
 	
