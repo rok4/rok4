@@ -7,7 +7,7 @@
 #include <jpeglib.h>
 
 void usage() {
-  std::cerr << "usage : 2pivot input_file -c [none/png/jpeg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] output_file";
+  std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file";
 }
 
 int main(int argc, char **argv) {
@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
   uint16_t compression = COMPRESSION_NONE;
   uint16_t photometric = PHOTOMETRIC_RGB;
   uint32_t bitspersample = 8;
+  uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
   int quality = -1;
 
   for(int i = 1; i < argc; i++) {
@@ -40,24 +41,27 @@ int main(int argc, char **argv) {
           else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
           else photometric = PHOTOMETRIC_RGB;
           break;
-
-        case 't':
+    case 't':
           if(i+2 >= argc) {std::cerr << "Error in -t option" << std::endl; exit(2);}
           tilewidth = atoi(argv[++i]);
           tilelength = atoi(argv[++i]);
           break;
-
+    case 'a':
+          if(++i == argc) {std::cerr << "Error in -a option" << std::endl; exit(2);}
+          if (strncmp(argv[i],"uint",4)==0) {sampleformat = SAMPLEFORMAT_UINT;}
+          else if (strncmp(argv[i],"float",5)==0) {sampleformat = SAMPLEFORMAT_IEEEFP;}
+          break;
 	case 'b':
           if(i+1 >= argc) {std::cerr << "Error in -b option" << std::endl; exit(2);}
-	  bitspersample = atoi(argv[++i]);
-	  break;
+    	  bitspersample = atoi(argv[++i]);
+	      break;
         default: usage();
       }
     }
     else {
       if(input == 0) input = argv[i];
       else if(output == 0) output = argv[i];
-      else {std::cerr << "argument must specify one input file and one output file" << std::endl; exit(2);}
+      else {std::cerr << "argument must specify one input file and one output file" << std::endl; usage(); exit(2);}
     }
   }
 
@@ -68,7 +72,7 @@ int main(int argc, char **argv) {
   TiffReader R(input);
   uint32_t width = R.getWidth();
   uint32_t length = R.getLength();  
-  TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample);
+  TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,sampleformat);
 
   if(width % tilewidth || length % tilelength) {std::cerr << "Image size must be a multiple of tile size" << std::endl; exit(2);}  
   int tilex = width / tilewidth;
