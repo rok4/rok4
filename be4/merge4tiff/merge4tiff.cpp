@@ -147,12 +147,11 @@ int float32_main() {
 
       for(int pos_in = 0, pos_out = 0; pos_out < nbsamples; pos_in += sampleperpixel) {
         for(int j = sampleperpixel; j--; pos_in++) {
-		  float sum = line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel];
 		  float val;
-		  if ( sum < -50000 ) { // presence de nodata
-			  val = nodata_alti ;
+		  if (line1[pos_in] != nodata_alti && line1[pos_in + sampleperpixel] != nodata_alti && line2[pos_in] != nodata_alti && line2[pos_in + sampleperpixel] != nodata_alti) { // presence de nodata
+			  val = (line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel])/(float)4;
 			}  else {
-			  val = sum/(float)4;
+			  val = nodata_alti;
 		  }
           line_out[pos_out++] = val;
 		};
