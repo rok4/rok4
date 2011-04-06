@@ -3,6 +3,10 @@
 	<xs:element name="serverConf">
 		<xs:complexType>
 			<xs:sequence>
+			<!-- Prefixe des fichiers de log -->
+        		<xs:element name="logFilePrefix"    type="xs:string"/>
+			<!-- Periode de validite des fichiers de log (en secondes) -->
+			<xs:element name="logFilePeriod"    type="xs:positiveInteger"/>
 			<!-- nombre de threads exploités pour l'ecoute et le calcul-->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
 			<!-- répertoire des configs des layers -->

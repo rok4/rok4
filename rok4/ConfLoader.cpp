@@ -550,11 +550,11 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::string &tmsDir){
-	LOGGER_INFO("Chargement des parametres techniques depuis "<<SERVER_CONF_PATH);
-	TiXmlDocument doc(SERVER_CONF_PATH);
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& logFilePrefix, int& logFilePeriod, int &nbThread, std::string &layerDir, std::string &tmsDir){
+	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
+	TiXmlDocument doc(serverConfigFile);
 	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVER_CONF_PATH);
+		std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
 		return false;
 	}
 
@@ -564,27 +564,43 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 
 	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
 	if (!pElem){
-		LOGGER_ERROR(SERVER_CONF_PATH << " impossible de recuperer la racine.");
+		std::cerr<<serverConfigFile << " impossible de recuperer la racine."<<std::endl;
 		return false;
 	}
 	if (strcmp(pElem->Value(), "serverConf")){
-		LOGGER_ERROR(SERVER_CONF_PATH << " La racine n'est pas un serverConf.");
+		std::cerr<<serverConfigFile << " La racine n'est pas un serverConf."<<std::endl;
 		return false;
 	}
 	hRoot=TiXmlHandle(pElem);
 
+	pElem=hRoot.FirstChild("logFilePrefix").Element();
+        if (!pElem){
+                std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
+                logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
+        }else{
+                logFilePrefix=pElem->GetText();
+        }
+	pElem=hRoot.FirstChild("logFilePeriod").Element();
+        if (!pElem){
+                std::cerr<<"Pas de logFilePeriod => logFilePeriod = " << DEFAULT_LOG_FILE_PERIOD;
+                logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
+        }else if (!sscanf(pElem->GetText(),"%d",&logFilePeriod))  {
+		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  n'est pas un entier."<<std::endl;	
+                return false;
+        }
+		
 	pElem=hRoot.FirstChild("nbThread").Element();
 	if (!pElem){
-		LOGGER_ERROR("Pas de nbThread => nbThread = " << DEFAULT_NB_THREAD);
+		std::cerr<<"Pas de nbThread => nbThread = " << DEFAULT_NB_THREAD<<std::endl;
 		nbThread = DEFAULT_NB_THREAD;
 	}else if (!sscanf(pElem->GetText(),"%d",&nbThread)){
-		LOGGER_ERROR("Le nbThread [" << pElem->GetText() <<"] n'est pas un entier.");
+		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] n'est pas un entier."<<std::endl;
 		return false;
 	}
 
 	pElem=hRoot.FirstChild("layerDir").Element();
 	if (!pElem){
-		LOGGER_ERROR("Pas de layerDir => layerDir = " << DEFAULT_LAYER_DIR);
+		std::cerr<<"Pas de layerDir => layerDir = " << DEFAULT_LAYER_DIR<<std::endl;
 		layerDir = DEFAULT_LAYER_DIR;
 	}else{
 		layerDir=pElem->GetText();
@@ -592,7 +608,7 @@ bool ConfLoader::getTechnicalParam(int &nbThread, std::string &layerDir, std::st
 
 	pElem=hRoot.FirstChild("tileMatrixSetDir").Element();
 	if (!pElem){
-		LOGGER_ERROR("Pas de tileMatrixSetDir => tileMatrixSetDir = " << DEFAULT_TMS_DIR);
+		std::cerr<<"Pas de tileMatrixSetDir => tileMatrixSetDir = " << DEFAULT_TMS_DIR<<std::endl;
 		tmsDir = DEFAULT_TMS_DIR;
 	}else{
 		tmsDir=pElem->GetText();
