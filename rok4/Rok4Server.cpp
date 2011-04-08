@@ -6,6 +6,7 @@
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
+#include "BilEncoder.h"
 #include <sstream>
 #include <vector>
 #include <map>
@@ -157,6 +158,8 @@ DataStream* Rok4Server::getMap(Request* request)
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
+	else if(format == "image/bil")
+                return new BilEncoder(image);
 	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
 	return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms"));
 }
@@ -279,7 +282,7 @@ int main(int argc, char** argv) {
 	std::string layerDir;
 	std::string tmsDir;
 	if(!ConfLoader::getTechnicalParam(serverConfigFile, logFileprefix, logFilePeriod, nbThread, layerDir, tmsDir)){
-		std::cerr<<"ERREUR FATALE : Impossible d'interpréter le fichier de conf "<<serverConfigFile<<std::endl;
+		std::cerr<<"ERREUR FATALE : Impossible d'interpréter le fichier de configuration du serveur "<<serverConfigFile<<std::endl;
 		std::cerr<<"Extinction du serveur ROK4"<<std::endl;
 		// On attend 10s pour eviter que le serveur web ne le relance tout de suite
 		// avec les mêmes conséquences et sature les logs trop rapidement.
@@ -296,7 +299,7 @@ int main(int argc, char** argv) {
         Logger::setAccumulator(ERROR, acc);
         Logger::setAccumulator(FATAL, acc);
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
-	LOGGER_INFO("Logger initialise");
+	LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
 	// Chargement de la conf services
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf();
