@@ -1907,7 +1907,7 @@ sub calcule_avec_programme_dalles_base{
 	# (puisque $programme_dalles_base ne supporte pas de ne pas avoir de donnees)
 	print FIC "$nom_dalle_temp\t$cache_arbre_x_min{$chemin_dalle_cache}\t$cache_arbre_y_max{$chemin_dalle_cache}\t$cache_arbre_x_max{$chemin_dalle_cache}\t$cache_arbre_y_min{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\t$cache_arbre_res{$chemin_dalle_cache}\n";
 	
-	foreach my $src(@liste_dalles_source){
+	foreach my $src(sort @liste_dalles_source){
 		my $res_x_dalle;
 		my $res_y_dalle;
 		my $x_min_dalle_utile;
@@ -2011,6 +2011,7 @@ sub calcule_avec_programme_ss_ech{
 		$string_dessous .= " $fic_pointe";
 	}
 	
+	# TODO ajouter -n $no_data pour l'alti si besoin
 	$string_commande_ss_ech .= "$programme_ss_ech $string_dessous $dalle_niveau_inferieur\n".$string_erreur_batch;
 	
 	return $string_commande_ss_ech;
