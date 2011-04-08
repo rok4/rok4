@@ -335,7 +335,7 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 	// Creation de vecteurs contenant des images avec une resolution en x homogene
 	for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
-                std::sort(it->begin(),it->end(),InfResx); 
+                std::stable_sort(it->begin(),it->end(),InfResx); 
                 for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
                         if ( fabs((*it2)->getresy()-(*(it2+1))->getresy())>epsilon)
                         {

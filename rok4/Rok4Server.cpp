@@ -83,7 +83,7 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	// Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
 	// Ensuite redemmarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
 	
-	//sock = FCGX_OpenSocket(":1990", 50);
+	// sock = FCGX_OpenSocket(":1990", 50);
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
@@ -225,43 +225,78 @@ const char *pj_finder(const char *name) {
   return PROJ_LIB;
 }
 
+/* Usage de la ligne de commande */
+
+void usage() {
+        std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
+}
+
+/*
+* main
+* @return -1 en cas d'erreur
+*/
+
 int main(int argc, char** argv) {
+	
 	/* the following loop is for fcgi debugging purpose */
 	int stopSleep = 0;
 	while (getenv("SLEEP") != NULL && stopSleep == 0) {
 		sleep(2);
 	}
 
-	/* Initialisation des Loggers */
-	Accumulator* acc = new RollingFileAccumulator("/var/tmp/rok4"/*,86400,1024*/);
-//	Accumulator* acc = new StreamAccumulator(std::cerr);
+	// Lecture des arguments de la ligne de commande
+	std::string serverConfigFile=DEFAULT_SERVER_CONF_PATH;
+	for(int i = 1; i < argc; i++) {
+                if(argv[i][0] == '-') {
+                        switch(argv[i][1]) {
+                        case 'f': // fichier de configuration du serveur
+                                if(i++ >= argc){
+					std::cerr<<"Erreur sur l'option -f"<<std::endl;
+					usage();
+					return -1;
+				}
+                                serverConfigFile.assign(argv[i]);
+                                break;
+			default:
+				usage();
+				return -1;
+			}
+		}
+	}
 
-	Logger::setAccumulator(DEBUG, acc);
-	Logger::setAccumulator(INFO , acc);
-	Logger::setAccumulator(WARN , acc);
-	Logger::setAccumulator(ERROR, acc);
-	Logger::setAccumulator(FATAL, acc);
-
-	LOGGER_INFO( "*** LANCEMENT DU SERVEUR ROK4 ***");
+	std::cout<< "Lancement du serveur rok4..."<<std::endl;
 
 	// Initialisation de l'accès au paramétrage de la libproj
-	/// Cela evite d'utiliser la variable d'environnement PROJ_LIB
+	// Cela evite d'utiliser la variable d'environnement PROJ_LIB
 	pj_set_finder( pj_finder );
 
 	/* Chargement de la conf technique du serveur */
 
-	//chargement de la conf technique
+	// Chargement de la conf technique
+	std::string logFileprefix;
+	int logFilePeriod;
 	int nbThread;
 	std::string layerDir;
 	std::string tmsDir;
-	if(!ConfLoader::getTechnicalParam(nbThread, layerDir, tmsDir)){
-		LOGGER_FATAL("Impossible d'interpréter le fichier de conf server.conf");
-		LOGGER_FATAL("Extinction du serveur ROK4");
+	if(!ConfLoader::getTechnicalParam(serverConfigFile, logFileprefix, logFilePeriod, nbThread, layerDir, tmsDir)){
+		std::cerr<<"ERREUR FATALE : Impossible d'interpréter le fichier de conf "<<serverConfigFile<<std::endl;
+		std::cerr<<"Extinction du serveur ROK4"<<std::endl;
 		// On attend 10s pour eviter que le serveur web ne le relance tout de suite
 		// avec les mêmes conséquences et sature les logs trop rapidement.
-		//sleep(10);
-		return 1;
+		// sleep(10);
+		return -1;
 	}
+
+
+        // Initialisation des loggers
+        RollingFileAccumulator* acc = new RollingFileAccumulator(logFileprefix,logFilePeriod);
+        Logger::setAccumulator(DEBUG, acc);
+        Logger::setAccumulator(INFO , acc);
+        Logger::setAccumulator(WARN , acc);
+        Logger::setAccumulator(ERROR, acc);
+        Logger::setAccumulator(FATAL, acc);
+	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
+	LOGGER_INFO("Logger initialise");
 
 	// Chargement de la conf services
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf();
@@ -270,8 +305,8 @@ int main(int argc, char** argv) {
 		LOGGER_FATAL("Extinction du serveur ROK4");
 		// On attend 10s pour eviter que le serveur web ne le relance tout de suite
 		// avec les mêmes conséquences et sature les logs trop rapidement.
-		//sleep(10);
-		return 1;
+		// sleep(10);
+		return -1;
 	}
 
 
@@ -282,9 +317,8 @@ int main(int argc, char** argv) {
 		LOGGER_FATAL("Extinction du serveur ROK4");
 		// On attend 10s pour eviter que le serveur web ne le relance tout de suite
 		// avec les mêmes conséquences et sature les logs trop rapidement.
-		/* DEBUG
-      	   sleep(10);*/
-		return 1;
+      	   	// sleep(10);
+		return -1;
 	}
 
 	// Chargement des Layers
@@ -296,7 +330,7 @@ int main(int argc, char** argv) {
 		// avec les mêmes conséquences et sature les logs trop rapidement.
 		/* DEBUG
       	    sleep(10);*/
-		return 1;
+		return -1;
 	}
 
 	// Construction du serveur.
