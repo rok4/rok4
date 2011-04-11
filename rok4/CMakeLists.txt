@@ -25,9 +25,6 @@ find_package(Proj REQUIRED)
 find_package(TinyXML REQUIRED)
 find_package(Zlib REQUIRED)
 
-#Rok4 Test
-#find_package(CppUnit REQUIRED)
-#find_package(Xerces REQUIRED) #TODO Use Xerces-C with ccpunit ???
 
 #Be4
 #find_package(TIFF REQUIRED)
@@ -69,7 +66,9 @@ set(CMAKE_C_FLAGS_ROK4SERVER "")
 
 
 #définition des fichiers sources
-set(Rok4Server_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp JPEGEncoder.cpp Layer.cpp Level.cpp Message.cpp PNGEncoder.cpp Pyramid.cpp Request.cpp ResponseSender.cpp Rok4Server.cpp ServiceException.cpp TiffEncoder.cpp TileMatrix.cpp TileMatrixSet.cpp config.h)
+
+set(Rok4Objects_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp JPEGEncoder.cpp Layer.cpp Level.cpp Message.cpp PNGEncoder.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TiffEncoder.cpp TileMatrix.cpp TileMatrixSet.cpp )
+set(Rok4Server_SRCS Rok4Server.cpp ${Rok4Objects_SRCS} )
 
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${ROK4_DEP_INCLUDE_DIR})
@@ -77,3 +76,27 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${ROK4_DEP_INCLUDE_DIR})
 add_executable(Rok4Server ${Rok4Server_SRCS})
 target_link_libraries(Rok4Server ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
+#Rok4 Test
+#Activé uniquement si la variable ROK4TEST est vrai
+if(ROK4TEST)
+  find_package(CppUnit REQUIRED)
+    add_library(cppunit STATIC IMPORTED)
+    set_property(TARGET cppunit PROPERTY IMPORTED_LOCATION ${CPPUNIT_LIBRARY})
+
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${ROK4_DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+    ENABLE_TESTING()
+
+    # Exécution des tests unitaires CppUnit de Rok4
+    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
+  "tests/cppunit/CppUnit*.cpp" )
+    ADD_EXECUTABLE(UnitTester tests/cppunit/main.cpp ${UnitTests_SRCS} ${Rok4Objects_SRCS} )
+    TARGET_LINK_LIBRARIES(UnitTester cppunit ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    FOREACH(test ${UnitTests_SRCS})
+          MESSAGE("  ######  adding test ${test}")
+          GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
+          ADD_TEST(${TestName} UnitTester ${TestName})
+    ENDFOREACH(test)
+	
+
+endif(ROK4TEST)
+#find_package(Xerces REQUIRED) #TODO Use Xerces-C with ccpunit ???
