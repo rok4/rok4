@@ -92,7 +92,7 @@ class Image {
 
 		/** 
 		 * Retourne une ligne en float 32 bits.
-		 * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flotants 32 bits
+		 * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
 		 * une conversion est effectuée.
 		 *
 		 * @param buffer Tableau contenant au moins width*channels float

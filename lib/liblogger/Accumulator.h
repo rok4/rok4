@@ -170,7 +170,7 @@ class RollingFileAccumulator : public Accumulator {
   public:
 
   /** Constructeur */
-  RollingFileAccumulator(std::string filePrefix, int period = 3600, int capacity = 1024) : Accumulator(capacity), filePrefix(filePrefix), validity(0), period(period) {}
+  RollingFileAccumulator(std::string filePrefix, int period, int capacity = 1024) : Accumulator(capacity), filePrefix(filePrefix), validity(0), period(period) {}
 
   /** 
    * Destructeur apellant la fonction stop.

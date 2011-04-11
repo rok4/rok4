@@ -53,7 +53,7 @@ void usage() {
 
 int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
-	if (argc != 15) {
+	if (argc != 17) {
 		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
 		usage();
 		return -1;
@@ -98,10 +98,10 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 				else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
 				break;
 			case 'a': // sampleformat
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
 				if(strncmp(argv[i],"uint",4) == 0) sampleformat = 1 ;
 				else if(strncmp(argv[i],"float",5) == 0) sampleformat = 3 ;
-				else {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
 				break;
 			case 'p': // photometric
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
@@ -187,7 +187,7 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 	double resx, resy;
 	int nb;
 
-	if ( (nb=sscanf(str.c_str(),"DallesBase.cpp:54: error: too few arguments to function ‘int parseCommandLine(int, char**, char*, Kernel::KernelType&, char*, int&, uint16_t&, uint16_t&, uint16_t&, uint16_t&)’" "%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
+	if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
 		// Arrondi a la valeur entiere la plus proche
 		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
 		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
@@ -335,7 +335,7 @@ int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 	// Creation de vecteurs contenant des images avec une resolution en x homogene
 	for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
-                std::sort(it->begin(),it->end(),InfResx); 
+                std::stable_sort(it->begin(),it->end(),InfResx); 
                 for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
                         if ( fabs((*it2)->getresy()-(*(it2+1))->getresy())>epsilon)
                         {

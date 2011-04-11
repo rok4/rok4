@@ -77,20 +77,20 @@ class ImageDecoder : public Image {
 		int margin_left;
 		const uint8_t* rawData;
 
-
-
-		template<typename T> inline int getDataline(T* buffer, int line) {
+		inline int getDataline(uint8_t* buffer, int line) {
 			convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
-
-			//LOGGER(DEBUG) << line << std::endl;
-
 			return width * channels;
 		}
 
+		inline int getDataline(float* buffer, int line) {
+                        //convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
+			memcpy(buffer,rawData + ((margin_top + line) * source_width + margin_left) * channels*sizeof(float),width * channels*sizeof(float));
+
+                        return width * channels;
+                }
+
 		template<typename T> inline int getNoDataline(T* buffer, int line) {
-			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			memset(buffer, 0, width * channels * sizeof(T));
-			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			return width * channels;
 		}
 
@@ -103,8 +103,14 @@ class ImageDecoder : public Image {
 			}
 			else if(dataSource) { // Non alors on essaye de la l'initialiser depuis dataSource
 				size_t size;
-				if(rawData = dataSource->getData(size))
-					return getDataline(buffer, line);
+				if(rawData = dataSource->getData(size)){
+
+LOGGER_DEBUG("YYYEAH");
+					//return getDataline(buffer, line);
+					getDataline(buffer, line);
+					LOGGER_DEBUG("YEAAAAAAH "<<line<< " "<<buffer[0]);
+					return 1;
+				}
 				else {
 					//LOGGER(DEBUG) << "rawdata= 0" << std::endl;
 					delete dataSource;

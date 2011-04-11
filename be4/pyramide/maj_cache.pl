@@ -128,7 +128,6 @@ my $taille_pix_y_source;
 # on regarde si le XML de parametrage est bien valide par rapport a son schema
 my ($valid, $string_log) = &valide_xml($fichier_parametres, $xsd_parametres_cache);
 if(defined $string_log){
-	&ecrit_log($string_log);
 	if($string_log !~ /erreur/i){
 		if ((!defined $valid) || $valid ne ""){
 			my $string_valid = "Pas de message sur la validation";

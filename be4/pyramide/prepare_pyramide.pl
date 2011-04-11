@@ -182,7 +182,7 @@ sub cherche_images{
 	foreach my $fic(@fichiers){
 		# on ecarte . et .. sinon on boucle a l'infini
 		next if ($fic =~ /^\.\.?$/);
-		# si le fichier a une extension .tif et qu'elle ne contient pas 10m dans son nom (on écarte les imagettes)
+		# si le fichier a une extension .tif et qu'elle ne contient pas 10m dans son nom (on ecarte les imagettes)
 		if ($fic =~ /\.tif$/i && $fic !~ /10m/){
 			my $image;
 			# si le repertoire etudie est en absolu (comment par un /), on stocke directement le chemin de l'image tel quel
@@ -777,7 +777,7 @@ sub init{
 	# verifier les parametres
 	# sortie si un des parametres est mal formate ou un des fichiers ou repertoires attendus est absent
 	my $bool_param_ok = 1;
-	if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster)$/i){
+	if ($produit !~ /^(?:ortho|parcellaire|scan(?:25|50|100|dep|reg|1000)|franceraster|rgealti)$/i){
 		print "[PREPARE_PYRAMIDE] Produit mal specifie.\n";
 		&ecrit_log("ERREUR Produit mal specifie.");
 		$bool_param_ok = 0;
@@ -821,7 +821,7 @@ sub init{
 		&ecrit_log("ERREUR Le repertoire $rep_fichiers_dallage n'existe pas.");
 		$bool_param_ok = 0;
 	}
-	if($compression_pyramide !~ /^raw|jpeg|png$/i){
+	if($compression_pyramide !~ /^raw|jpeg|png|floatraw$/i){
 		print "[PREPARE_PYRAMIDE] Le parametre de compression $compression_pyramide est incorrect.\n";
 		&ecrit_log("ERREUR Le parametre de compression $compression_pyramide est incorrect.");
 		$bool_param_ok = 0;

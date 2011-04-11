@@ -28,6 +28,7 @@
 #define TIFFTAG_TILEBYTECOUNTS	325	/* !byte counts for tiles */
 
 #define TIFFTAG_EXTRASAMPLES	338	
+#define TIFFTAG_SAMPLEFORMAT    339     /* !data sample format */
 
 #define	TIFFTAG_YCBCRSUBSAMPLING	530	/* !YCbCr subsampling factors */
 
@@ -41,6 +42,9 @@
 #define PHOTOMETRIC_YCBCR       6       /* !CCIR 601 */
 
 #define RESERVED_SIZE             2048
+
+#define     SAMPLEFORMAT_UINT           1       /* !unsigned integer data */
+#define     SAMPLEFORMAT_IEEEFP         3       /* !IEEE floating point data */
 
 
 /*
@@ -71,6 +75,7 @@ class TiledTiffWriter {
     uint32_t tilelength;   // TIFFTAG_TILELENGTH
 
     uint32_t bitspersample;
+    uint16_t sampleformat;  // TIFFTAG_SAMPLEFORMAT
 
     int tilex;        // = width / tilewidth
     int tiley;        // = length / tilelength
@@ -104,7 +109,7 @@ class TiledTiffWriter {
      * Open a new tiff file and write header and IFD
      */
     TiledTiffWriter(const char *filename, uint32_t width, uint32_t length, uint16_t photometric,
-        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample);
+        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample, uint16_t sampleformat);
 
     /*
      * Write tileoffset and tilebytecounts then close file

@@ -33,8 +33,8 @@ static const uint8_t PNG_HEADER[33] = {
 
 
 TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t length, uint16_t photometric = PHOTOMETRIC_RGB,
-    uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t tilewidth = 256, uint32_t tilelength = 256, uint32_t bitspersample = 8) :
-  width(width), length(length), photometric(photometric), compression(compression), quality(_quality), tilewidth(tilewidth), tilelength(tilelength), bitspersample(bitspersample)
+    uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t tilewidth = 256, uint32_t tilelength = 256, uint32_t bitspersample = 8, uint16_t sampleformat = SAMPLEFORMAT_UINT) :
+  width(width), length(length), photometric(photometric), compression(compression), quality(_quality), tilewidth(tilewidth), tilelength(tilelength), bitspersample(bitspersample), sampleformat(sampleformat)
 {
 // input control
   if(width % tilewidth || length % tilelength) std::cerr << "Image size must be a multiple of tile size" << std::endl;
@@ -72,9 +72,9 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
   *((uint16_t*) (p += 2)) = 8;  //
 
   if(photometric == PHOTOMETRIC_YCBCR) // Number of tags
-    *((uint16_t*) (p += 2)) = 11;
+    *((uint16_t*) (p += 2)) = 12;
   else 
-    *((uint16_t*) (p += 2)) = 10;
+    *((uint16_t*) (p += 2)) = 11;
 
   *((uint16_t*) (p += 2)) = TIFFTAG_IMAGEWIDTH;      //
   *((uint16_t*) (p += 2)) = TIFF_LONG;               //
@@ -125,6 +125,11 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
   *((uint16_t*) (p += 2)) = TIFF_LONG;               //
   *((uint32_t*) (p += 2)) = tilex*tiley;             //
   *((uint32_t*) (p += 4)) = RESERVED_SIZE + 4*tilex*tiley;//
+  
+  *((uint16_t*) (p += 4)) = TIFFTAG_SAMPLEFORMAT;  //
+  *((uint16_t*) (p += 2)) = TIFF_SHORT;            //
+  *((uint32_t*) (p += 2)) = 1;             //
+  *((uint32_t*) (p += 4)) = sampleformat;//
 
   if(photometric == PHOTOMETRIC_YCBCR) {
     *((uint16_t*) (p += 4)) = TIFFTAG_YCBCRSUBSAMPLING;  //

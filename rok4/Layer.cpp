@@ -32,7 +32,10 @@ std::vector<std::string> Layer::getMimeFormats(){
 			formats.push_back("image/png");
 		}else if (format.find("GIF")!=std::string::npos){
 			formats.push_back("image/gif");
-		}else{
+		}else if (format.find("TIFF_FLOAT32")!=std::string::npos){
+			formats.push_back("image/bil");
+		}
+		{
 			formats.push_back("image/tiff");
 		}
 	}

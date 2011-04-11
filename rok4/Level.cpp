@@ -42,6 +42,10 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 		PNGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
 		noDataSource = new BufferedDataSource(dataStream);
 	}
+	else if (format.compare("TIFF_FLOAT32")==0) {
+                BilEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
+                noDataSource = new BufferedDataSource(dataStream);
+        }
 	else
 		LOGGER_ERROR("Format non pris en charge : "<<format);
 }
@@ -215,15 +219,16 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	LOGGER_DEBUG(getfilepath(x, y));
-	return new FileDataSource(getfilepath(x, y).c_str(),posoff,possize,getType());
+	std::string path=getfilepath(x, y);
+	LOGGER_DEBUG(path);
+	return new FileDataSource(path.c_str(),posoff,possize,getType());
 }
 
 DataSource* Level::getDecodedTile(int x, int y)
 {
 	DataSource* encData = getEncodedTile(x, y);
 
-	if (format.compare("TIFF_INT8")==0)
+	if (format.compare("TIFF_INT8")==0 || format.compare("TIFF_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)
 		return new DataSourceDecoder<JpegDecoder>(encData);
