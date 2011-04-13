@@ -74,7 +74,7 @@ protected:
   }
 
   void test_rollingfile() {
-    Accumulator* A = new RollingFileAccumulator("bubu");
+    Accumulator* A = new RollingFileAccumulator("bubu",3600);
     fill_accumulator((void*) A);
     delete A;
   }
