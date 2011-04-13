@@ -49,8 +49,8 @@ set_property(TARGET zlib PROPERTY IMPORTED_LOCATION ${ZLIB_LIBRARY})
 set(LIBIMAGE_DEP_LIBRARY proj logger tiff zlib jpeg)
 
 #Image Build Type
-set(CMAKE_BUILD_TYPE libimageer)
-set(CMAKE_CXX_FLAGS_LIBIMAGE "-O3 -msse -msse2 -msse3")
+set(CMAKE_BUILD_TYPE libimage)
+set(CMAKE_CXX_FLAGS_LIBIMAGE "-O3 -p -msse -msse2 -msse3")
 set(CMAKE_C_FLAGS_LIBIMAGE "")
 
 
