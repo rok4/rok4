@@ -1,4 +1,4 @@
-project(testqtuio)
+project(Rok4Server)
 cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
@@ -57,7 +57,7 @@ set_property(TARGET tinyxml PROPERTY IMPORTED_LOCATION ${TINYXML_LIBRARY})
 add_library(zlib STATIC IMPORTED)
 set_property(TARGET zlib PROPERTY IMPORTED_LOCATION ${ZLIB_LIBRARY})
 
-set(ROK4_DEP_LIBRARY fcgi image jpeg logger proj tinyxml zlib)
+set(ROK4_DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib)
 
 #Rok4 Build Type
 set(CMAKE_BUILD_TYPE rok4server)
@@ -67,14 +67,15 @@ set(CMAKE_C_FLAGS_ROK4SERVER "")
 
 #définition des fichiers sources
 
-set(Rok4Objects_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp JPEGEncoder.cpp Layer.cpp Level.cpp Message.cpp PNGEncoder.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TiffEncoder.cpp TileMatrix.cpp TileMatrixSet.cpp )
-set(Rok4Server_SRCS Rok4Server.cpp ${Rok4Objects_SRCS} )
+set(Rok4Core_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp JPEGEncoder.cpp Layer.cpp Level.cpp Message.cpp PNGEncoder.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TiffEncoder.cpp TileMatrix.cpp TileMatrixSet.cpp )
+set(Rok4Server_SRCS Rok4Server.cpp )
 
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${ROK4_DEP_INCLUDE_DIR})
 
+add_library(Rok4Core STATIC ${Rok4Core_SRCS})
 add_executable(Rok4Server ${Rok4Server_SRCS})
-target_link_libraries(Rok4Server ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(Rok4Server Rok4Core ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 #Rok4 Test
 #Activé uniquement si la variable ROK4TEST est vrai
@@ -89,8 +90,8 @@ if(ROK4TEST)
     # Exécution des tests unitaires CppUnit de Rok4
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester tests/cppunit/main.cpp ${UnitTests_SRCS} ${Rok4Objects_SRCS} )
-    TARGET_LINK_LIBRARIES(UnitTester cppunit ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    ADD_EXECUTABLE(UnitTester tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    TARGET_LINK_LIBRARIES(UnitTester cppunit Rok4Core ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  ######  adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
