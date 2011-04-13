@@ -78,8 +78,8 @@ add_executable(Rok4Server ${Rok4Server_SRCS})
 target_link_libraries(Rok4Server Rok4Core ${ROK4_DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 #Rok4 Test
-#Activé uniquement si la variable ROK4TEST est vrai
-if(ROK4TEST)
+#Activé uniquement si la variable UNITTEST est vrai
+if(UNITTEST)
   find_package(CppUnit REQUIRED)
     add_library(cppunit STATIC IMPORTED)
     set_property(TARGET cppunit PROPERTY IMPORTED_LOCATION ${CPPUNIT_LIBRARY})
@@ -99,5 +99,5 @@ if(ROK4TEST)
     ENDFOREACH(test)
 	
 
-endif(ROK4TEST)
+endif(UNITTEST)
 #find_package(Xerces REQUIRED) #TODO Use Xerces-C with ccpunit ???
