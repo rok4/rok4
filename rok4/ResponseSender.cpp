@@ -121,6 +121,7 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 		}
 		pos += read_size;
 	}
+
 	delete stream;
 	delete[] buffer;
 	return 0;

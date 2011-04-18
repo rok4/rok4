@@ -145,12 +145,16 @@ DataStream* Rok4Server::getMap(Request* request)
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
 	}
+	
+	int error;
+	Image* image = L->getbbox(bbox, width, height, crs, error);
 
-	Image* image = L->getbbox(bbox, width, height, crs);
-
-	if (image == 0)
-		return 0;
-	//FIXME : cela est-il une erreur?
+	if (image == 0){
+		if (error==1)
+			return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms"));
+		else
+			return new SERDataStream(new ServiceException("",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms"));
+	}
 
 	if(format=="image/png")
 		return new PNGEncoder(image);

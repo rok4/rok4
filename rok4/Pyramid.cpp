@@ -50,7 +50,7 @@ TileMatrixSet Pyramid::getTms(){
 }
 
 
-Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs) {
+Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error) {
 	// On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
 	double resolution_x, resolution_y;
 	if(getTms().getCrs()==dst_crs){
@@ -59,16 +59,13 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst
 	}
 	else {
 		Grid* grid = new Grid(width, height, bbox);
-//		try
-//		{
-                	grid->reproject(dst_crs.getProj4Code(),getTms().getCrs().getProj4Code());
-/*			throw ("toto");
+
+		if (!grid->reproject(dst_crs.getProj4Code(),getTms().getCrs().getProj4Code())){
+			// BBOX invalide
+			error=1;
+			return 0;
 		}
-		catch (std::string str)
-		{
-			return 0;	
-		}
-*/		
+
                 resolution_x = (grid->bbox.xmax - grid->bbox.xmin) / width;
                 resolution_y = (grid->bbox.ymax - grid->bbox.ymin) / height;
                 delete grid;		

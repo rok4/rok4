@@ -41,7 +41,7 @@ public:
 	std::string getId();
 
 	DataSource* gettile(int x, int y, std::string tmId);
-	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
+	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error);
 
 	std::string              getAbstract()   const { return abstract;}
 	std::string              getAuthority()  const { return authority;}
