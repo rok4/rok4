@@ -155,7 +155,6 @@ DataStream* Rok4Server::getMap(Request* request)
 		else
 			return new SERDataStream(new ServiceException("",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms"));
 	}
-
 	if(format=="image/png")
 		return new PNGEncoder(image);
 	else if(format == "image/tiff")

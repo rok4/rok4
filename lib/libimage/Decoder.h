@@ -77,17 +77,9 @@ class ImageDecoder : public Image {
 		int margin_left;
 		const uint8_t* rawData;
 
-		inline int getDataline(uint8_t* buffer, int line) {
-			convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
-			return width * channels;
-		}
+		int getDataline(uint8_t* buffer, int line);
 
-		inline int getDataline(float* buffer, int line) {
-                        //convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
-			memcpy(buffer,rawData + ((margin_top + line) * source_width + margin_left) * channels*sizeof(float),width * channels*sizeof(float));
-
-                        return width * channels;
-                }
+		int getDataline(float* buffer, int line);
 
 		template<typename T> inline int getNoDataline(T* buffer, int line) {
 			memset(buffer, 0, width * channels * sizeof(T));

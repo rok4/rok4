@@ -21,7 +21,7 @@ JPEGEncoder::JPEGEncoder(Image* image) : image(image), status(-1) {
         //  else ERROR !!!!!
 
         jpeg_set_defaults(&cinfo);
-
+LOGGER_DEBUG("YEAP");
         linebuffer = new uint8_t[image->width*image->channels];
 }
 
@@ -51,7 +51,7 @@ size_t JPEGEncoder::read(uint8_t *buffer, size_t size) {
         return (size - cinfo.dest->free_in_buffer);
 }
 
-/** Desstructeur */
+/** Destructeur */
 JPEGEncoder::~JPEGEncoder() {
 	delete cinfo.dest;
 	jpeg_destroy_compress(&cinfo);
