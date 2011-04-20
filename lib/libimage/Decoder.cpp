@@ -230,4 +230,3 @@ int ImageDecoder::getDataline(float* buffer, int line) {
 
         return width * channels;
 }
-

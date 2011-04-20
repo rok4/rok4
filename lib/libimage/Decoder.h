@@ -86,32 +86,31 @@ class ImageDecoder : public Image {
 			return width * channels;
 		}
 
-		template<typename T> inline int _getline(T* buffer, int line) {
+		// TODO : a deplacer dans le cpp (je n'y suis pas arrive a cause d un probleme de compilation lie au template)
+		template<typename T>
+		inline int _getline(T* buffer, int line){
 
-			//LOGGER(DEBUG) << "line " << line << " " << height << " " << width << " " << (intptr_t) rawData << " " << (intptr_t) dataSource << std::endl;
-			if(rawData) { // Est ce que l'on a de la données.
-				return getDataline(buffer, line);
-				// TODO: libérer le datSource lorsque l'on lit la dernière ligne de l'image...
-			}
-			else if(dataSource) { // Non alors on essaye de la l'initialiser depuis dataSource
-				size_t size;
-				if(rawData = dataSource->getData(size)){
+                        //LOGGER(DEBUG) << "line " << line << " " << height << " " << width << " " << (intptr_t) rawData << " " << (intptr_t) dataSource << std::endl;
+		        if(rawData) { // Est ce que l'on a de la données.
+                	return getDataline(buffer, line);
+                // TODO: libérer le datSource lorsque l'on lit la dernière ligne de l'image...
+        		}
+        		else if(dataSource) { // Non alors on essaye de la l'initialiser depuis dataSource
+                	size_t size;
+                	if(rawData = dataSource->getData(size)){
 
-LOGGER_DEBUG("YYYEAH");
-					//return getDataline(buffer, line);
-					getDataline(buffer, line);
-					LOGGER_DEBUG("YEAAAAAAH "<<line<< " "<<buffer[0]);
-					return 1;
-				}
-				else {
-					//LOGGER(DEBUG) << "rawdata= 0" << std::endl;
-					delete dataSource;
-					dataSource = 0;
-				}
-			}		
-			return getNoDataline(buffer, line);
-		}
-
+                                        //return getDataline(buffer, line);
+                        	return getDataline(buffer, line);
+                                        //return 1;
+                	}
+                	else {
+                                        //LOGGER(DEBUG) << "rawdata= 0" << std::endl;
+                        	delete dataSource;
+                        	dataSource = 0;
+                	}
+        	}
+        	return getNoDataline(buffer, line);
+	}
 
 	public:
 		ImageDecoder(DataSource* dataSource, int source_width, int source_height, int channels,

@@ -21,7 +21,7 @@ JPEGEncoder::JPEGEncoder(Image* image) : image(image), status(-1) {
         //  else ERROR !!!!!
 
         jpeg_set_defaults(&cinfo);
-LOGGER_DEBUG("YEAP");
+
         linebuffer = new uint8_t[image->width*image->channels];
 }
 
