@@ -11,57 +11,15 @@ cmake_minimum_required(VERSION 2.6)
 #Attention aux chemins
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
 
+if(NOT DEFINED DEP_PATH)
 set(DEP_PATH ${CMAKE_SOURCE_DIR}/../target)
+endif(NOT DEFINED DEP_PATH)
+
+if(NOT DEFINED ROK4LIBSDIR)
+  set(ROK4LIBSDIR ${CMAKE_SOURCE_DIR}/../lib)
+endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
-
-########################################
-#Définition des dépendances.
-#Décommenter les dépendances nécessaires
-
-find_package(Threads REQUIRED)
-if (NOT CMAKE_USE_PTHREADS_INIT)
-  message(FATAL_ERROR "Need the PThread library")
-endif (NOT CMAKE_USE_PTHREADS_INIT)
-add_library(thread STATIC IMPORTED)
-set_property(TARGET thread PROPERTY IMPORTED_LOCATION ${CMAKE_THREAD_LIBS_INIT})
-
-find_package(Fcgi REQUIRED)
-add_library(fcgi STATIC IMPORTED)
-set_property(TARGET fcgi PROPERTY IMPORTED_LOCATION ${FCGI_LIBRARY})
-
-find_package(Image REQUIRED)
-add_library(image STATIC IMPORTED)
-set_property(TARGET image PROPERTY IMPORTED_LOCATION ${IMAGE_LIBRARY})
-
-find_package(Jpeg REQUIRED)
-add_library(jpeg STATIC IMPORTED)
-set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${JPEG_LIBRARY})
-
-find_package(Logger REQUIRED)
-add_library(logger STATIC IMPORTED)
-set_property(TARGET logger PROPERTY IMPORTED_LOCATION ${LOGGER_LIBRARY})
-
-find_package(Proj REQUIRED)
-add_library(proj STATIC IMPORTED)
-set_property(TARGET proj PROPERTY IMPORTED_LOCATION ${PROJ_LIBRARY})
-
-find_package(TinyXML REQUIRED)
-add_library(tinyxml STATIC IMPORTED)
-set_property(TARGET tinyxml PROPERTY IMPORTED_LOCATION ${TINYXML_LIBRARY})
-
-find_package(Zlib REQUIRED)
-add_library(zlib STATIC IMPORTED)
-set_property(TARGET zlib PROPERTY IMPORTED_LOCATION ${ZLIB_LIBRARY})
-
-#find_package(TIFF REQUIRED)
-#add_library(tiff STATIC IMPORTED)
-#set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${TIFF_LIBRARY})
-
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR})
-
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib) 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
 set(CMAKE_BUILD_TYPE specificbuild)
@@ -76,11 +34,22 @@ set(rok4core_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp 
 set(rok4server_SRCS Rok4Server.cpp )
 
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 add_library(rok4core STATIC ${rok4core_SRCS})
-target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable(rok4 ${rok4server_SRCS})
+########################################
+#Définition des dépendances.
+include(ROK4Dependencies)
+
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR})
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
+
+#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib) 
+
+target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rok4 rok4core)
 
 ########################################
@@ -89,27 +58,23 @@ target_link_libraries(rok4 rok4core)
 # Les fichiers tests doivent être nommés CppUnitNOM_DU_TEST.cpp
 # le lanceur de test doit être dans le répertoire tests/cppunit
 # le lanceur de test doit être nommés main.cpp (disponible dans cmake/template)
-# L'éxecutable "UnitTester" sera généré pour lancer tous les tests
+# L'éxecutable "UnitTester-${PROJECT_NAME}" sera généré pour lancer tous les tests
 # Vérifier les bibliothèques liées au lanceur de tests
-#Activé uniquement si la variable UNITTEST est vrai
+#Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
-  find_package(CppUnit REQUIRED)
-    add_library(cppunit STATIC IMPORTED)
-    set_property(TARGET cppunit PROPERTY IMPORTED_LOCATION ${CPPUNIT_LIBRARY})
-
     include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
     ENABLE_TESTING()
 
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-          ADD_TEST(${TestName} UnitTester ${TestName})
+          ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
 endif(UNITTEST)
 
@@ -132,7 +97,7 @@ endif(DOXYGEN_FOUND)
 #Pour installer dans le répertoire /opt/projet :
 #cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 
 
-#Installe les différentes sortie du projet (projet, projetcore ou UnitTester)
+#Installe les différentes sortie du projet (projet, projetcore ou UnitTester-${PROJECT_NAME})
 # ici uniquement "projet"
 INSTALL(TARGETS rok4 
   RUNTIME DESTINATION bin
@@ -149,8 +114,10 @@ INSTALL(TARGETS rok4
 INSTALL(FILES README
   DESTINATION doc/${PROJECT_NAME})
 
+if(DOXYGEN_FOUND)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
+endif(DOXYGEN_FOUND)
 
 #Installe la configuration
 INSTALL(DIRECTORY "../config/"
