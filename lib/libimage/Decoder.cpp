@@ -216,3 +216,17 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 
 	return raw_data;
 }
+
+
+
+int ImageDecoder::getDataline(uint8_t* buffer, int line) {
+	convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
+        return width * channels;
+}
+
+int ImageDecoder::getDataline(float* buffer, int line) {
+	convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
+        //memcpy(buffer,rawData + ((margin_top + line) * source_width + margin_left) * channels*sizeof(float),width * channels*sizeof(float));
+
+        return width * channels;
+}

@@ -43,6 +43,7 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
 }
 
 #include <cstring>
+//TODO : cas d'un fichier de conf charge dynamiquement (option -f)
 char PROJ_LIB2[1024] = "../config/proj";
 const char *pj_finder2(const char *name) {
   strcpy(PROJ_LIB2 + 15, name);
@@ -87,12 +88,24 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		gridY[i] *= DEG_TO_RAD;
 	}
 
-	pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+	int code=pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
 
 	pj_free(pj_src);
 	pj_free(pj_dst);
-
 	pthread_mutex_unlock (& mutex_proj);
+
+	if (code!=0){
+		LOGGER_DEBUG("Code erreur proj4 :"<<code);
+		return false;
+	}
+	for (int i=0;i<nbx*nby;i++){
+		if (gridX[i]==HUGE_VAL || gridY[i]==HUGE_VAL){
+			LOGGER_DEBUG("Valeurs retournees par pj_transform invalides");
+			
+			return false;
+		}
+	}
+
 	update_bbox();
 
 	return true;

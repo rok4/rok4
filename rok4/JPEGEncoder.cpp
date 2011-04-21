@@ -51,7 +51,7 @@ size_t JPEGEncoder::read(uint8_t *buffer, size_t size) {
         return (size - cinfo.dest->free_in_buffer);
 }
 
-/** Desstructeur */
+/** Destructeur */
 JPEGEncoder::~JPEGEncoder() {
 	delete cinfo.dest;
 	jpeg_destroy_compress(&cinfo);
