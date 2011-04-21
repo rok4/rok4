@@ -9,14 +9,14 @@ cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-set(DEP_PATH ${CMAKE_SOURCE_DIR}/../../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SURCE_DIR}/../../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_SOURCE_DIR}/../../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SURCE_DIR}/../../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -62,10 +62,10 @@ target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  ENABLE_TESTING()
 
-    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-    ENABLE_TESTING()
-
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
@@ -77,20 +77,24 @@ if(UNITTEST)
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
+  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
 endif(UNITTEST)
 
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-endif(DOXYGEN_FOUND)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+  find_package(Doxygen)
+  if(DOXYGEN_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
+  endif(DOXYGEN_FOUND)
+endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+
 
 
 ########################################
@@ -112,12 +116,14 @@ INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
 
 #Installe la documentation
-INSTALL(FILES README 
-  DESTINATION doc/${PROJECT_NAME})
-if(DOXYGEN_FOUND)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
+  INSTALL(FILES README 
+    DESTINATION doc/${PROJECT_NAME})
+endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
-endif(DOXYGEN_FOUND)
+endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 
 
 

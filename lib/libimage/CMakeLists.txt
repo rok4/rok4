@@ -9,18 +9,18 @@ cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-set(DEP_PATH ${CMAKE_SOURCE_DIR}/../../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-  set(IMAGE_INCLUDE_DIR ${CMAKE_SOURCE_DIR} PARENT_SCOPE)
+  set(IMAGE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_SOURCE_DIR}/../../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -50,8 +50,8 @@ include(ROK4Dependencies)
 
 set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
+#Listes des bibliothèques à liées avec l'éxecutable
 set(DEP_LIBRARY logger proj jpeg zlib tiff)
 target_link_libraries(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
@@ -72,7 +72,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} )
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)

@@ -9,14 +9,14 @@ cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-set(DEP_PATH ${CMAKE_SOURCE_DIR}/../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SURCE_DIR}/../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_SOURCE_DIR}/../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SURCE_DIR}/../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
