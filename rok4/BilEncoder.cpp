@@ -8,12 +8,12 @@ size_t BilEncoder::read(uint8_t *buffer, size_t size) {
 
 	// Hypothese 1 : tous les bil produits sont en float
 	int linesize = image->width * image->channels * sizeof(float);
-	// Hypothese 2 : le pixel de l'image est de type float
+	// Hypothese 2 : le pixel de l'image source est de type float
 	float* buf_f=new float[image->width*image->channels]; 
 
 	for(; line < image->height && offset + linesize <= size; line++) {
 		
-		//image->getline(buffer + offset, line);
+	//	image->getline(buffer + offset, line);
 		image->getline(buf_f,line);
 
 		// Hypothese 3 : image->channels=1

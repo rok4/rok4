@@ -263,8 +263,10 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	// Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
 	// TODO : cas ou resx, resy et layer->getMinRes() ne sont pas dans les memes unites
 	double resx=(bbox.xmax-bbox.xmin)/width, resy=(bbox.ymax-bbox.ymin)/height;
-	if (resx<layer->getMinRes()||resy<layer->getMinRes()){
-		LOGGER_DEBUG("resx="<<" resy="<<resy<<" minres="<<layer->getMinRes());
+	double epsilon=0.0000001;	// Gestion de la precision de la division
+	// TODO : controler que la valeur de epsilon est adaptee toutes les unites
+	if (resx+epsilon<layer->getMinRes()||resy+epsilon<layer->getMinRes()){
+		LOGGER_DEBUG("resx="<<resx<<" resy="<<resy<<" minres="<<layer->getMinRes());
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
 	}
 	if (resx>layer->getMaxRes()||resy>layer->getMaxRes())

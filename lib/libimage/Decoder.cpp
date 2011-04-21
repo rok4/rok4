@@ -225,8 +225,14 @@ int ImageDecoder::getDataline(uint8_t* buffer, int line) {
 }
 
 int ImageDecoder::getDataline(float* buffer, int line) {
-	convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
-        //memcpy(buffer,rawData + ((margin_top + line) * source_width + margin_left) * channels*sizeof(float),width * channels*sizeof(float));
+	// Cas typique : chargement d'une ligne d'une image avec des pixels de type uint8_t pour interpolation
+	// Conversion des uint8_t en float
+	if (pixel_size==1)
+		convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
+	// Cas typique : chargement d'une ligne d'une image avec des pixels de type float
+	// Pas de conversion des floats
+	else if (pixel_size==4)
+		memcpy(buffer,rawData + ((margin_top + line) * source_width + margin_left) * channels*sizeof(float),width * channels*sizeof(float));
 
         return width * channels;
 }
