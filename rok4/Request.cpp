@@ -221,18 +221,20 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
         // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
         if (k==layer->getWMSCRSList().size())
                 return new SERDataStream(new ServiceException("",WMS_INVALID_CRS,"CRS "+str_crs+" (equivalent PROJ4 "+crs.getProj4Code()+" ) inconnu pour le layer "+str_layer+".","wms"));
-	
+
 	// FORMAT
 	format=getParam("format");
 	if(format == "")
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
-	/*
-	FIXME : plantage inexplique
-	for (k=0;k<servicesConf.getFormatList().size();k++)
-		if (servicesConf.getFormatList().at(k)==format)
+
+	for (k=0;k<servicesConf.getFormatList()->size();k++)
+	{
+		if (servicesConf.getFormatList()->at(k)==format)
 			break;
-	if (k==servicesConf.getFormatList().size())
-		return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Format "+format+" non gere par le service.","wms"));*/
+	}
+	if (k==servicesConf.getFormatList()->size())
+		return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Format "+format+" non gere par le service.","wms"));
+
 	// BBOX
 	std::string strBbox=getParam("bbox");
 	if(strBbox == "")
