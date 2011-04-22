@@ -792,9 +792,11 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
 		std::string format(pElem->GetText());
+		// FIXME : liste non conforme a la liste des types MIME publiee par l'IANA
 		if (format != "image/jpeg" &&
 			format != "image/png"  &&
 			format != "image/tiff" &&
+			format != "image/bil" &&
 			format != "image/gif"){
 			LOGGER_ERROR(SERVICES_CONF_PATH << "le format d'image [" << format << "] n'est pas un type MIME");
 		}else{
