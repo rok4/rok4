@@ -36,7 +36,7 @@ set(BUILD_SHARED_LIBS OFF)
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -r -l ${CMAKE_CURRENT_SOURCE_DIR}/zlib-1.2.5/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/zlib-1.2.5/* src)
 add_custom_command(OUTPUT install/lib/libz.a COMMAND ./configure --static --prefix=${CMAKE_CURRENT_BINARY_DIR}/install COMMAND make COMMAND make install DEPENDS src/configure WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 add_custom_target(zlib-build ALL DEPENDS install/lib/libz.a)

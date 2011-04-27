@@ -85,6 +85,7 @@ endif(UNITTEST)
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
+if(BUILD_DOC)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
@@ -96,6 +97,7 @@ COMMENT "Generating API documentation with Doxygen" VERBATIM
 )
 endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+endif(BUILD_DOC)
 
 
 ########################################
@@ -117,10 +119,12 @@ INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
 
 #Installe la documentation
+if(BUILD_DOC)
 if(DOXYGEN_FOUND)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(DOXYGEN_FOUND)
+endif(BUILD_DOC)
 
 
 

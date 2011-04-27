@@ -36,7 +36,7 @@ set(BUILD_SHARED_LIBS OFF)
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.7.0/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.7.0/* src)
 add_custom_command(OUTPUT install/lib/libproj.a 
   COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install 
   COMMAND make 

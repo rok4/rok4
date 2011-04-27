@@ -17,6 +17,7 @@ endif(NOT DEFINED DEP_PATH)
 
 if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
   set(TIFF_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/install/include PARENT_SCOPE)
+  set(TIFF_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/install/bin PARENT_SCOPE)
 endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 if(NOT DEFINED ROK4LIBSDIR)
@@ -36,7 +37,7 @@ set(BUILD_SHARED_LIBS OFF)
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -r -l ${CMAKE_CURRENT_SOURCE_DIR}/tiff-3.8.2/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/tiff-3.8.2/* src)
 add_custom_command(OUTPUT install/lib/libtiff.a 
   COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --with-zlib-lib-dir=${ZLIB_INCLUDE_DIR}/../lib --with-zlib-include-dir=${ZLIB_INCLUDE_DIR} --with-jpeg-lib-dir=${JPEG_INCLUDE_DIR}/../lib --with-jpeg-include-dir=${JPEG_INCLUDE_DIR}
   COMMAND make 

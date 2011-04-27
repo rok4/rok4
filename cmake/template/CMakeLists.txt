@@ -9,14 +9,14 @@ cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-  set(DEP_PATH ${CMAKE_CURRENT_SURCE_DIR}/../../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_CURRENT_SURCE_DIR}/../../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -83,6 +83,7 @@ endif(UNITTEST)
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
+if(BUILD_DOC)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   find_package(Doxygen)
   if(DOXYGEN_FOUND)
@@ -94,6 +95,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
     )
   endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+endif(BUILD_DOC)
 
 
 
@@ -120,10 +122,12 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
   INSTALL(FILES README 
     DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
+if(BUILD_DOC)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+endif(BUILD_DOC)
 
 
 

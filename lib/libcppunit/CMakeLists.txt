@@ -36,7 +36,7 @@ set(BUILD_SHARED_LIBS OFF)
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -r -l ${CMAKE_CURRENT_SOURCE_DIR}/cppunit-1.12.1/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/cppunit-1.12.1/* src)
 add_custom_command(OUTPUT install/lib/libcppunit.a 
   COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --enable-doxygen=no 
   COMMAND make 
