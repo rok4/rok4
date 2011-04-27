@@ -53,7 +53,7 @@ foreach(_png ${pngin-${PROJECT_NAME}})
    )
 endforeach()
 
-add_custom_target(tiffuncompress ALL DEPENDS ${pngout-${PROJECT_NAME}} tiff) 
+add_custom_target(tiffuncompress ALL DEPENDS ${pngout-${PROJECT_NAME}} ${DEP_LIBRARY}) 
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
