@@ -72,7 +72,7 @@ class Image {
 		double inline l2y(int l) {return (bbox.ymax-l*resy);}
 
 		/** Constructeur */
-		Image(int width, int height, int channels, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
+		Image(int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
 			width(width), height(height), channels(channels), bbox(bbox) {
 				computeResxy();
 			}
@@ -92,7 +92,7 @@ class Image {
 
 		/** 
 		 * Retourne une ligne en float 32 bits.
-		 * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flotants 32 bits
+		 * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
 		 * une conversion est effectuée.
 		 *
 		 * @param buffer Tableau contenant au moins width*channels float

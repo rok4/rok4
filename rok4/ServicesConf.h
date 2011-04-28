@@ -42,7 +42,7 @@ public:
 	unsigned int inline getMaxHeight() const{return maxHeight;}
 	unsigned int inline getMaxWidth() const{return maxWidth;}
 	std::string inline getName() const{return name;}
-	std::vector<std::string> inline getFormatList() const{return formatList;}
+	std::vector<std::string>* getFormatList() {return &formatList;}
 	// WMTS
 	std::string inline getServiceType() {return serviceType;}
 	std::string inline getServiceTypeVersion() {return serviceTypeVersion;}

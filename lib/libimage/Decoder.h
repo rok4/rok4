@@ -23,7 +23,7 @@ struct InvalidDecoder {
 
 
 /**
- *
+ * Classes Decoder
  */
 template <class Decoder>
 class DataSourceDecoder : public DataSource {
@@ -31,7 +31,6 @@ class DataSourceDecoder : public DataSource {
 		DataSource* encData;
 		const uint8_t* decData;
 		size_t decSize;
-
 	public:
 		DataSourceDecoder(DataSource* encData) : encData(encData), decData(0), decSize(0) {}
 
@@ -41,7 +40,6 @@ class DataSourceDecoder : public DataSource {
 		}
 
 		const uint8_t* getData(size_t &size) {
-			//LOGGER(DEBUG) << "==> "  << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			if(!decData && encData) {
 				decData = Decoder::decode(encData, decSize);
 				if(!decData) {
@@ -50,7 +48,6 @@ class DataSourceDecoder : public DataSource {
 				}
 			}
 			size = decSize;
-			//LOGGER(DEBUG) << (intptr_t) encData << " " << (intptr_t) decData << " " << decSize << std::endl;
 			return decData;
 		}
 
@@ -75,56 +72,53 @@ class ImageDecoder : public Image {
 		int source_height;
 		int margin_top;
 		int margin_left;
+	
+		int pixel_size; // type des images source : 1=uint8_t	4=float		
+	
+		// La donnee brute (source) est de type uint8_t
 		const uint8_t* rawData;
 
+		int getDataline(uint8_t* buffer, int line);
 
-
-		template<typename T> inline int getDataline(T* buffer, int line) {
-			convert(buffer, rawData + ((margin_top + line) * source_width + margin_left) * channels, width * channels);
-
-			//LOGGER(DEBUG) << line << std::endl;
-
-			return width * channels;
-		}
+		int getDataline(float* buffer, int line);
 
 		template<typename T> inline int getNoDataline(T* buffer, int line) {
-			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			memset(buffer, 0, width * channels * sizeof(T));
-			//LOGGER(DEBUG) << "getnodata" << line << std::endl;
 			return width * channels;
 		}
 
-		template<typename T> inline int _getline(T* buffer, int line) {
+		// TODO : a deplacer dans le cpp (je n'y suis pas arrive a cause d un probleme de compilation lie au template)
+		template<typename T>
+		inline int _getline(T* buffer, int line){
 
-			//LOGGER(DEBUG) << "line " << line << " " << height << " " << width << " " << (intptr_t) rawData << " " << (intptr_t) dataSource << std::endl;
-			if(rawData) { // Est ce que l'on a de la données.
-				return getDataline(buffer, line);
-				// TODO: libérer le datSource lorsque l'on lit la dernière ligne de l'image...
-			}
-			else if(dataSource) { // Non alors on essaye de la l'initialiser depuis dataSource
-				size_t size;
-				if(rawData = dataSource->getData(size))
-					return getDataline(buffer, line);
-				else {
-					//LOGGER(DEBUG) << "rawdata= 0" << std::endl;
-					delete dataSource;
-					dataSource = 0;
-				}
-			}		
-			return getNoDataline(buffer, line);
+		        if(rawData) { // Est ce que l'on a de la donnee
+                		return getDataline(buffer, line);
+                // TODO: libérer le dataSource lorsque l'on lit la dernière ligne de l'image...
+        		}
+        		else if(dataSource) { // Non alors on essaye de la l'initialiser depuis dataSource
+                		size_t size;
+                		if(rawData = dataSource->getData(size)){
+                        		return getDataline(buffer, line);
+                		}
+                		else {
+                        		delete dataSource;
+                        		dataSource = 0;
+                		}
+        		}
+        		return getNoDataline(buffer, line);
 		}
-
 
 	public:
 		ImageDecoder(DataSource* dataSource, int source_width, int source_height, int channels,
 				BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.),
-				int margin_left = 0, int margin_top = 0, int margin_right = 0, int margin_bottom = 0) :
+				int margin_left = 0, int margin_top = 0, int margin_right = 0, int margin_bottom = 0, int pixel_size=1) :
 			Image(source_width - margin_left - margin_right, source_height - margin_top - margin_bottom, channels, bbox),
 			dataSource(dataSource),
 			source_width(source_width),
 			source_height(source_height),
 			margin_top(margin_top),
 			margin_left(margin_left),
+			pixel_size(pixel_size),
 			rawData(0) {}
 
 		/* Implémentation de l'interface Image */

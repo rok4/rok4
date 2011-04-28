@@ -1,0 +1,48 @@
+ROK4 Server
+
+Compilation
+
+mkdir build 
+cd build 
+cmake .. [-DOPTION1 -DOPTION2]
+make 
+make [install|package]
+
+OPTIONS
+
+les options sont définie par : 
+ -DOPTIONS
+ exemple : cmake .. -DUNITTEST=TRUE -DBUILD_BE4=FALSE
+
+CMAKE_INSTALL_PREFIX : 
+  chemins d'installation du projet (PATH) 
+  par défaut : /usr/local
+
+DEP_PATH : 
+  chemins des dépendances ROK4 déjà compilé et installé (PATH)
+  par défaut : ./target
+  
+BUILD_DEPENDENCIES : 
+  compilation des dépendances de ROK4 manquante (BOOL)
+  les dépendances seront installées avec rok4
+  par défaut : TRUE  
+
+BUILD_ROK4 : 
+  compilation du sous-système ROK4Server (BOOL)
+  par défaut : TRUE  
+  
+BUILD_BE4 : 
+  compilation du sous-système BE4 (BOOL)
+  par défaut : TRUE  
+
+BUILD_DOC : 
+  compilation des documentations avec doxygen (BOOL)
+  Création de la cible "doc" à compiler avant l'utilisation de make install et/ou make package
+    make doc 
+  par défaut : TRUE  
+
+UNITTEST : compilation des tests unitaires (BOOL)
+  Création de la cible "test" 
+    make test 
+  par défaut : FALSE 
+

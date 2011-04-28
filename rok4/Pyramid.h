@@ -19,7 +19,7 @@ public:
 	TileMatrixSet getTms();
 
 	DataSource* getTile(int x, int y, std::string tmId);	
-	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs);
+	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error);
 
 	Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms) : levels(levels), tms(tms) {}
 	~Pyramid();
