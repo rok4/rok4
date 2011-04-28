@@ -101,8 +101,8 @@ void Rok4Server::buildWMSCapabilities(){
 	requestEl->LinkEndChild(getCapabilitiestEl);
 
 	TiXmlElement * getMapEl = new TiXmlElement( "GetMap" );
-	for (unsigned int i=0; i<servicesConf.getFormatList().size(); i++){
-		getMapEl->LinkEndChild(buildTextNode("Format",servicesConf.getFormatList()[i]));
+	for (unsigned int i=0; i<servicesConf.getFormatList()->size(); i++){
+		getMapEl->LinkEndChild(buildTextNode("Format",servicesConf.getFormatList()->at(i)));
 	}
 	DCPTypeEl = new TiXmlElement( "DCPType" );
 	HTTPEl = new TiXmlElement( "HTTP" );
@@ -125,7 +125,7 @@ void Rok4Server::buildWMSCapabilities(){
 	exceptionEl->LinkEndChild(buildTextNode("Format","XML"));
 	capabilityEl->LinkEndChild(exceptionEl);
 
-	// Inspire (extended Capaibility)
+	// Inspire (extended Capability)
 	// TODO : en dur. A mettre dans la confguration du service (prevoir diffrenets profils d'application possibles)
 	TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 

@@ -255,11 +255,14 @@ DataSource* Level::getTile(int x, int y) {
 }
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
+	int pixel_size=1;
+	if (format.compare("TIFF_FLOAT32")==0)
+		pixel_size=4;
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),
 				tm.getY0() + y * tm.getTileH() * tm.getRes(), 
 				tm.getX0() + (x+1) * tm.getTileW() * tm.getRes(),
 				tm.getY0() + (y+1) * tm.getTileH() * tm.getRes()),
-			left, top, right, bottom);
+			left, top, right, bottom, pixel_size);
 }
 

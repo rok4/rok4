@@ -30,7 +30,7 @@ private:
 
 	int sock;
 
-	ServicesConf& servicesConf;
+	ServicesConf servicesConf;
 	std::map<std::string, Layer*> layerList;
 	std::map<std::string, TileMatrixSet*> tmsList;
 
