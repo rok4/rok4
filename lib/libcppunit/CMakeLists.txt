@@ -5,7 +5,7 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "12")
 SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 ########################################
 #Attention aux chemins
