@@ -17,17 +17,17 @@ if(! defined $fichier_parametres){
 }
 
 # programme de preparation des pyramides
-my $programme_prepare_pyramide = "./prepare_pyramide.pl";
+my $programme_prepare_pyramide = "prepare_pyramide.pl";
 # programme d'initialisation des pyramides
-my $programme_initialise_pyramide = "./initialise_pyramide.pl";
+my $programme_initialise_pyramide = "initialise_pyramide.pl";
 # programme de calcul des scripts
-my $programme_calcule_pyramide = "./calcule_pyramide.pl";
+my $programme_calcule_pyramide = "calcule_pyramide.pl";
 # programme de mise a jour de la configuration du serveur
-my $programme_maj_conf_serveur = "./maj_conf_serveur.pl";
+my $programme_maj_conf_serveur = "maj_conf_serveur.pl";
 # programme de mise en lecture seule de la pyramide produite
-my $programme_pyramide_lecture_seule = "./pyramide_lecture_seule.pl";
+my $programme_pyramide_lecture_seule = "pyramide_lecture_seule.pl";
 # programme de retour en arriere a une etape donnee
-my $programme_rollback = "./rollback.pl";
+my $programme_rollback = "rollback.pl";
 # schema validant le fichier de parametrage
 my $xsd_parametres_cache = $xsd_parametres_cache_param;
 
