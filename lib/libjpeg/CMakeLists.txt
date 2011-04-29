@@ -21,7 +21,7 @@ if(NOT DEFINED DEP_PATH)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-  set(JPEG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/ PARENT_SCOPE)
+  set(JPEG_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/install/include PARENT_SCOPE)
 endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 if(NOT DEFINED ROK4LIBSDIR)
@@ -45,8 +45,18 @@ set(BUILD_SHARED_LIBS OFF)
 if(NOT TARGET jpeg)
   add_library(${PROJECT_NAME} STATIC IMPORTED)
 endif(NOT TARGET jpeg)
-set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a)
 
+add_custom_command(OUTPUT install/lib/libjpeg.a 
+  COMMAND mkdir -p install/lib 
+  COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a install/lib
+  COMMAND mkdir -p install/include
+  COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.h install/include
+  )
+
+add_custom_target(jpeg-copy ALL DEPENDS install/lib/libjpeg.a)
+
+set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a)
+add_dependencies(jpeg jpeg-copy)
 
 ########################################
 #Définition des dépendances.
@@ -68,15 +78,17 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester)
 # ici uniquement "projet"
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a 
-  DESTINATION lib
-)
+#INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a 
+#  DESTINATION lib
+#)
 
 #Installe les différents headers nécessaires
-FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.hpp")
-INSTALL(FILES ${headers-${PROJECT_NAME}}
-  DESTINATION include)
+#FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/*.hpp")
+#INSTALL(FILES ${headers-${PROJECT_NAME}}
+#  DESTINATION include)
 
+INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
+  DESTINATION .)
 
 ########################################
 # Paramétrage de la gestion de package CPack
