@@ -17,8 +17,7 @@ Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
 @return le nombre d'octets de la ligne
 */
 
-
-template<typename T>
+template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
 	int i;
         for (i=0;i<width*channels;i++)
@@ -67,11 +66,22 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
 int ExtendedCompoundImage::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
 
 /** Implementation de getline pour les float */
-int ExtendedCompoundImage::getline(float* buffer, int line) { return _getline(buffer, line); }
+int ExtendedCompoundImage::getline(float* buffer, int line)
+{
+	if (sampleformat==1){ 	//uint8_t
+		uint8_t* buffer_t = new uint8_t[width*channels];
+        	getline(buffer_t,line);
+        	convert(buffer,buffer_t,width*channels);
+        	delete [] buffer_t;
+        	return width*channels;
+	}
+	else			//float
+		return _getline(buffer, line);
+}
 
 #define epsilon 0.001
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat)
 {
 	uint i;
         double intpart, phasex0, phasey0, phasex1, phasey1;
@@ -100,13 +110,13 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                 }
         }
 
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata);
+        return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks,uint8_t nodata)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat)
 {
 	// TODO : controler que les images et les masques sont superposables a l'image
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata);
+        return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat);
 }
 
 /**
