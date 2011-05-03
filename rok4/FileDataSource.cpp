@@ -17,18 +17,20 @@ FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, cons
  */
 const uint8_t* FileDataSource::getData(size_t &tile_size) {
 
-/*	// Test : A ENLEVER
-	size=80000;
-	data=new uint8_t[80000];
-	memset(data,0,8000*sizeof(uint8_t));
+	// Test : A ENLEVER
+	size=196608;
+	data=new uint8_t[size];
+	memset(data,0,size*sizeof(uint8_t));
 	LOGGER_DEBUG("ZZZTTZZ ");
 	return data;
-*/
+
 	if (data)
 	{
 		tile_size=size;
 		return data;
 	}
+LOGGER_DEBUG("Lecture fichier ");
+
 
 	// Ouverture du fichier
 	int fildes = open(filename.c_str(), O_RDONLY);
