@@ -39,16 +39,27 @@ my $departement;
 print colored ("[ROLLBACK] Annulation...", 'white on_green');
 print "\n";
 
-# destruction des scripts first et last 
-system("rm -f $repertoire_fichiers_temp/$nom_fichier_first_jobs_param");
-system("rm -f $repertoire_fichiers_temp/$nom_fichier_last_jobs_param");
+if( defined $repertoire_fichiers_temp && $repertoire_fichiers_temp ne ""){
+	# destruction des scripts first et last
+	if(defined $nom_fichier_first_jobs_param && $nom_fichier_first_jobs_param ne ""){
+		system("rm -f $repertoire_fichiers_temp/$nom_fichier_first_jobs_param");
+	}
+	if(defined $nom_fichier_last_jobs_param && $nom_fichier_last_jobs_param ne ""){
+		system("rm -f $repertoire_fichiers_temp/$nom_fichier_last_jobs_param");
+	}
+	# destruction des fichiers de dallage
+	if(defined $nom_fichier_dalle_source_param && $nom_fichier_dalle_source_param ne ""){
+		system("rm -f $repertoire_fichiers_temp/$nom_fichier_dalle_source_param"."*");
+	}
+	if(defined $repertoire_fichiers_temp && $repertoire_fichiers_temp ne ""){
+		system("rm -f $repertoire_fichiers_temp/$nom_fichier_mtd_source_param"."*");
+	}
+}
 
-# destruction des scripts
-system("rm -f $prefixe_nom_script"."*");
-
-# destruction des fichiers de dallage
-system("rm -f $repertoire_fichiers_temp/$nom_fichier_dalle_source_param"."*");
-system("rm -f $repertoire_fichiers_temp/$nom_fichier_mtd_source_param"."*");
+if(defined $prefixe_nom_script && $prefixe_nom_script ne ""){
+	# destruction des scripts
+	system("rm -f $prefixe_nom_script"."*");
+}
 
 # remise a l'ancien LAY s'il existe pour faire comme si la pyramide dont il est question n'avait jamais existe
 my $old_layer = $fichier_layer.".old";
@@ -59,7 +70,10 @@ if(-e $old_layer && -f $old_layer){
 # destruction du repertoire de la pyramide
 my $srs_pyramide = uc($systeme_coordonnees_pyramide);
 my $nom_pyramide = &cree_nom_pyramide($produit, $compression_images_pyramide, $srs_pyramide, $annee, $departement);
-system("rm -rf $repertoire_pyramide/$nom_pyramide");
+if(defined $repertoire_pyramide && $repertoire_pyramide ne "" && defined $nom_pyramide && $nom_pyramide ne ""){
+	system("rm -rf $repertoire_pyramide/$nom_pyramide");
+}
+
 
 print colored ("OK.", 'white on_green');
 print "\n";

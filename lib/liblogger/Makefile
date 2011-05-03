@@ -2,7 +2,7 @@ TGTDIR=../../target
 INCDIR=${TGTDIR}/include
 LIBDIR=${TGTDIR}/lib
 BINDIR=${TGTDIR}/bin
-TESTDIR=test
+TESTDIR=tests/cppunit
 
 
 BINTEST=$(TESTDIR)/test

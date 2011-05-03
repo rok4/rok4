@@ -675,7 +675,7 @@ int main(int argc, char **argv) {
 	ExtendedCompoundImage* pECImage;
 
 	/* Initialisation des Loggers */
-        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",86400/*,1024*/);
+        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",86400,1024);
         Logger::setAccumulator(DEBUG, acc);
         Logger::setAccumulator(INFO , acc);
         Logger::setAccumulator(WARN , acc);
