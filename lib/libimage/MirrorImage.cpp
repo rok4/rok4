@@ -57,8 +57,14 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImage0, Image* pImage
                 ymin=images[i]->getymax();
                 ymax=images[i]->getymax()+h*images[i]->getresy();
         }
-
+return NULL;
+LOGGER_DEBUG(xmin<<" "<<ymin<<" "<<xmax<<" "<<ymax);
+return NULL;
 	BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+
+	bbox.print();
+return NULL;
+
 	return new MirrorImage(w,h,c,bbox,images);
 }
 

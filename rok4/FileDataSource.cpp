@@ -16,6 +16,13 @@ FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, cons
  * Indique le taille de la tuile (inconnue a priori)
  */
 const uint8_t* FileDataSource::getData(size_t &tile_size) {
+
+	// Test : A ENLEVER
+	size=80000;
+	uint8_t* t=new uint8_t[80000];
+	memset(t,0,80000);
+	return t;
+
 	if (data)
 	{
 		tile_size=size;
