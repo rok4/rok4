@@ -241,9 +241,7 @@ DataSource* Level::getDecodedTile(int x, int y)
 
 
 DataSource* Level::getTile(int x, int y) {
-
 	DataSource* source=getEncodedTile(x, y);
-
 	if (format.compare("TIFF_INT8")==0 && source!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);

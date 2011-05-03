@@ -13,21 +13,23 @@ FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, cons
 /*
  * Fonction retournant les données de la tuile
  * Le fichier ne doit etre lu qu une seule fois
- * Indique le taille de la tuile (inconnue a priori)
+ * Indique la taille de la tuile (inconnue a priori)
  */
 const uint8_t* FileDataSource::getData(size_t &tile_size) {
 
-	// Test : A ENLEVER
+/*	// Test : A ENLEVER
 	size=80000;
-	uint8_t* t=new uint8_t[80000];
-	memset(t,0,80000);
-	return t;
-
+	data=new uint8_t[80000];
+	memset(data,0,8000*sizeof(uint8_t));
+	LOGGER_DEBUG("ZZZTTZZ ");
+	return data;
+*/
 	if (data)
 	{
 		tile_size=size;
 		return data;
 	}
+
 	// Ouverture du fichier
 	int fildes = open(filename.c_str(), O_RDONLY);
 	if(fildes < 0) {
