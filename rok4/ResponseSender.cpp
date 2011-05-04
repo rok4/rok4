@@ -55,7 +55,6 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 	// Copie dans le flux de sortie
 	size_t buffer_size;
 
-LOGGER_DEBUG("AAA");
 	const uint8_t *buffer = source->getData(buffer_size);
 
 	int wr = 0;

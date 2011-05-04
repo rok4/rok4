@@ -190,16 +190,24 @@ DataSource* Rok4Server::getTile(Request* request)
 	return  L->gettile(tileCol, tileRow, tileMatrix);
 }
 
+#include <string>
 
 /** Traite les requêtes de type WMTS */
 void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
-	if (request->request == "getcapabilities"){
+
+
+std::string tmp("OOO");
+tmp.resize(70000,'Z');
+
+S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,tmp,"wmts")),&fcgxRequest);
+
+/*	if (request->request == "getcapabilities"){
 		S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
 	}else if (request->request == "gettile"){
 		S.sendresponse(getTile(request), &fcgxRequest);
 	}else{
 		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
-	}
+	}*/
 }
 
 /** Traite les requêtes de type WMS */
