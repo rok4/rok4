@@ -37,6 +37,7 @@ set(lib${PROJECT_NAME}_SRCS TiffReader.cpp TiledTiffWriter.cpp)
 
 
 add_library(lib${PROJECT_NAME} STATIC ${lib${PROJECT_NAME}_SRCS})
+add_dependencies(lib${PROJECT_NAME} tiff)
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 ########################################

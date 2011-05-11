@@ -36,6 +36,7 @@ set(${PROJECT_NAME}_SRCS tiff2gray.cpp )
 
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
+add_dependencies(${PROJECT_NAME} tiff)
 
 ########################################
 #Définition des dépendances.
