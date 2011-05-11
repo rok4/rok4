@@ -82,8 +82,6 @@ INSTALL(FILES ${headers-${PROJECT_NAME}}
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
 
-SET(CPACK_GENERATOR "TGZ")
-
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")
 else()

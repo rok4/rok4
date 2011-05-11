@@ -31,6 +31,13 @@ if(UNITTEST)
   enable_testing()
 endif(UNITTEST)
 
+if(DEB_PACKAGE)
+  set(USE_SYSTEM_LIB TRUE)
+  include(Debian)
+else(DEB_PACKAGE)
+  set(CPACK_GENERATOR "TGZ")
+endif(DEB_PACKAGE)
+
 
 include(ROK4Dependencies)
 

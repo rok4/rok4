@@ -7,7 +7,7 @@
 #    TINYXML_LIBRARY
 
 IF (USE_SYSTEM_LIB)
-  FIND_PATH(TINYXML_INCLUDE_DIR tinyxml.h 
+  FIND_PATH(TINYXML_INCLUDE_DIR tinystr.h 
     /usr/local/include 
     /usr/include 
     c:/msys/local/include
@@ -20,7 +20,7 @@ IF (USE_SYSTEM_LIB)
     C:/dev/cpp/libtinyxml/src
     )
 ELSE (USE_SYSTEM_LIB)
-  FIND_PATH(TINYXML_INCLUDE_DIR NAMES tinyxml.h PATHS  
+  FIND_PATH(TINYXML_INCLUDE_DIR NAMES tinystr.h PATHS  
     ${DEP_PATH}/include
     NO_DEFAULT_PATH
     NO_CMAKE_ENVIRONMENT_PATH
