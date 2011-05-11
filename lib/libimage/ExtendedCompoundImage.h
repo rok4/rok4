@@ -32,6 +32,7 @@ private:
 	std::vector<Image*> images;
 	std::vector<Image*> masks;
 	uint8_t nodata;
+	uint16_t sampleformat;
 
 	template<typename T>
 	int _getline(T* buffer, int line);
@@ -43,16 +44,18 @@ protected:
   	* Les Image sont detruites ensuite en meme temps que l'objet
   	* Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat) :
 		Image(width, height, channels,bbox),
 		images(images),
-		nodata(nodata) {}
+		nodata(nodata),
+		sampleformat(sampleformat) {}
 
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat) :
                 Image(width, height, channels,bbox),
 		images(images),
                 masks(masks),
-		nodata(nodata) {}
+		nodata(nodata),
+		sampleformat(sampleformat) {}
 
 public:
 	std::vector<Image*>* getimages() {return &images;}
@@ -66,8 +69,10 @@ public:
 	/** Destructeur
       Suppression des images */
 	virtual ~ExtendedCompoundImage() {
-		for(uint i = 0; i < images.size(); i++)
+		for(uint i=0; i < images.size(); i++)
 			delete images[i];
+		for(uint i=0; i < masks.size(); i++)
+                        delete masks[i];
 	}
 
 };
@@ -83,9 +88,9 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata);
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat);
 
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks,uint8_t nodata);
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat);
 };
 
 /*

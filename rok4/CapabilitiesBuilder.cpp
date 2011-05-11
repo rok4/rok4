@@ -213,12 +213,20 @@ void Rok4Server::buildWMSCapabilities(){
 		bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
 		bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
 		childLayerEl->LinkEndChild(bbEl);
+	
+		// Scale denominators
+		os.str("");
+		os<<childLayer->getMinRes()*1000/0.28;
+                childLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
+		os.str("");
+                os<<childLayer->getMaxRes()*1000/0.28;
+                childLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
 
+		// TODO : gerer le cas des CRS avec des unites en degres
+		
 		/* TODO:
 		 *
 		 layer->getAuthority();
-		 layer->getMaxRes();
-		 layer->getMinRes();
 		 layer->getOpaque();
 		 layer->getStyles();
 		 */

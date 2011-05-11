@@ -10,7 +10,7 @@ class ResampledImage : public Image {
   // Image source à rééchantilloner.
   Image* image;
 
-  // Noyau de la méthode d'interpollation à utiliser.
+  // Noyau de la méthode d'interpolation à utiliser.
   const Kernel& K;
 
   // Nombre maximal de pixels sources pris en compte pour une interpolation en x.

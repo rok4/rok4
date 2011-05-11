@@ -59,6 +59,9 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImage0, Image* pImage
         }
 
 	BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+
+	bbox.print();
+
 	return new MirrorImage(w,h,c,bbox,images);
 }
 
@@ -84,55 +87,63 @@ int MirrorImage::getline(uint8_t* buffer, int line)
 	// Debut de la ligne
 	c0=0;
 	c1=__min(line, (height-line))*r;
-	if (images[0]!=NULL){
-		for (j=c0;j<c1;j++)
-			memcpy(&buffer[j*channels],&buf0[line_size-j*channels-1],sizeof(uint8_t)*channels);
+	if (c1>c0){
+		if (images[0]!=NULL){
+			for (j=c0;j<c1;j++)
+				memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
+		}
+		else if (line<height/2){
+			if (images[1]!=NULL && c1>c0)
+				memcpy(buffer,buf1,(c1-c0)*channels);
+		}
+		else if (images[3]!=NULL && c1>c0)
+             		memcpy(buffer,buf3,(c1-c0)*channels);
 	}
-	else if (line<height/2){
-		if (images[1]!=NULL && c1>c0)
-			memcpy(buffer,buf1,(c1-c0)*channels);
-	}
-	else if (images[3]!=NULL && c1>c0)
-             memcpy(buffer,buf3,(c1-c0)*channels);
 
 	// Milieu de la ligne
-	c0=c1+1;	
+	if (c0<c1) c0=c1+1;	
 	c1=width-c1-1;
+
 	if (c1>c0){
 		// Partie haute
 		if (line<height/2){
 			if (images[1]!=NULL)
-				memcpy(&buffer[c0],&buf1[c0],(c1-c0)*channels);
+				memcpy(&buffer[c0*channels],&buf1[c0*channels],(c1-c0)*channels);
 			else if (images[0]!=NULL)
 				for (j=c0;j<c1;j++)
-					memcpy(&buffer[j*channels],&buf0[line_size-j*channels-1],sizeof(uint8_t)*channels);
-			else if (images[2]!=NULL && c1>width/2)
-				memcpy(&buffer[(width/2)*channels],&buf2[(width/2)*channels],(c1-width/2)*channels);
+					memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
+			else if (images[2]!=NULL && c1>width/2){
+				for (j=c0;j<c1;j++)
+					memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
+	}
 		}
 		// Partie basse
 		else
 			if (images[3]!=NULL)
-                                memcpy(&buffer[c0],&buf3[c0],(c1-c0)*channels);
+                                memcpy(&buffer[c0*channels],&buf3[c0*channels],(c1-c0)*channels);
                         else if (images[0]!=NULL)
                                 for (j=c0;j<c1;j++)
-                                        memcpy(&buffer[j*channels],&buf0[line_size-j*channels-1],sizeof(uint8_t)*channels);
+                                        memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
                         else if (images[2]!=NULL && c1>width/2)
-                                memcpy(&buffer[(width/2)*channels],&buf2[(width/2)*channels],(c1-width/2)*channels);
+				for (j=c0;j<c1;j++)
+                                	memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
 	}	
 
 	// Fin de la ligne
+
 	c0=c1;
 	c1=width-1;
+
 	if (images[2]!=NULL){
                 for (j=c0;j<c1;j++)
-                        memcpy(&buffer[j*channels],&buf2[line_size-j*channels-1],sizeof(uint8_t)*channels);
+                        memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
         }
         else if (line<height/2){
                 if (images[1]!=NULL && c1>c0)
-                        memcpy(buffer,buf1,(c1-c0)*channels);
+                        memcpy(&buffer[c0*channels],&buf1[c0*channels],(c1-c0)*channels);
         }
         else if (images[3]!=NULL && c1>c0)
-             memcpy(buffer,buf3,(c1-c0)*channels);
+             memcpy(&buffer[c0*channels],&buf3[c0*channels],(c1-c0)*channels);
 
         return width*channels;
 }
