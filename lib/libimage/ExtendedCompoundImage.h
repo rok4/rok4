@@ -69,8 +69,10 @@ public:
 	/** Destructeur
       Suppression des images */
 	virtual ~ExtendedCompoundImage() {
-		for(uint i = 0; i < images.size(); i++)
+		for(uint i=0; i < images.size(); i++)
 			delete images[i];
+		for(uint i=0; i < masks.size(); i++)
+                        delete masks[i];
 	}
 
 };

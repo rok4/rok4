@@ -430,6 +430,11 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 		if (TabImageIn.at(j)->getymax()>ymax)  ymax=TabImageIn.at(j)->getymax();
 	}
 
+/*	ymin-=10;
+	ymax+=10;
+	xmin-=10;
+	xmax-=10;*/
+
 	extendedCompoundImageFactory ECImgfactory ;
 	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
@@ -452,9 +457,9 @@ void addMirrors(ExtendedCompoundImage* pECI)
 	double resx=pECI->getimages()->at(0)->getresx();
 	double resy=pECI->getimages()->at(0)->getresy();
 
-	unsigned int i,j;
+	int i,j;
 	double intpart;
-	for (i=0;i<pECI->getimages()->size();i++){	
+	for (i=1;i<pECI->getimages()->size();i++){	
 		if (pECI->getimages()->at(i)->getresx()!=resx
 		|| pECI->getimages()->at(i)->getresy()!=resy
 		|| pECI->getimages()->at(i)->width!=w
@@ -466,64 +471,70 @@ void addMirrors(ExtendedCompoundImage* pECI)
 		}
 	}
 
-	unsigned int nx=(unsigned int)floor((pECI->getxmax()-pECI->getxmin())/resx + 0.5),
-	    	     ny=(unsigned int)floor((pECI->getymax()-pECI->getymin())/resy + 0.5);
+	int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/w + 0.5),
+	    ny=(int)floor((pECI->getymax()-pECI->getymin())/h + 0.5),
+	    n=pECI->getimages()->size();
 
 	unsigned int k,l;
 	Image*pI0,*pI1,*pI2,*pI3;
 	double xmin,ymax;
 	mirrorImageFactory MIFactory;
 
-	for (i=0;i<nx;i++)
-		for (j=0;j<ny;j++){
-			for (k=0;k<pECI->getimages()->size();k++)
+	for (i=-1;i<nx+1;i++)
+		for (j=-1;j<ny+1;j++){
+
+			if ( (i==-1&&j==-1) || (i==-1&&j==ny) || (i==nx&&j==-1) || (i==nx&&j==nx) )
+				continue;
+
+			for (k=0;k<n;k++)
 				if (pECI->getimages()->at(k)->getxmin()==pECI->getxmin()+i*w*resx
 				 && pECI->getimages()->at(k)->getymax()==pECI->getymax()-j*h*resy)
 					break;
-			if (k==pECI->getimages()->size()){
+
+			if (k==n){
 				// Image 0
 				pI0=NULL;
 				xmin=pECI->getxmin()+(i-1)*w*resx;
 				ymax=pECI->getymax()-j*h*resy;
-				for (l=0;l<pECI->getimages()->size();l++)
-					if (pECI->getimages()->at(l)->getxmin()==xmin
-					 || pECI->getimages()->at(l)->getymax()==ymax)
-				if (l<pECI->getimages()->size())
-					pI0=pECI->getimages()->at(k);
+				for (l=0;l<n;l++)
+					if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+						break;
+				if (l<n)
+					pI0=pECI->getimages()->at(l);
 				// Image 1
                                 pI1=NULL;
                                 xmin=pECI->getxmin()+i*w*resx;
                                 ymax=pECI->getymax()-(j-1)*h*resy;
-                                for (l=0;l<pECI->getimages()->size();l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin
-                                         || pECI->getimages()->at(l)->getymax()==ymax)
-                                if (l<pECI->getimages()->size())
-                                        pI1=pECI->getimages()->at(k);
+                                for (l=0;l<n;l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+						break;
+                                if (l<n)
+                                        pI1=pECI->getimages()->at(l);
 				// Image 2
                                 pI2=NULL;
                                 xmin=pECI->getxmin()+(i+1)*w*resx;
                                 ymax=pECI->getymax()-j*h*resy;
-                                for (l=0;l<pECI->getimages()->size();l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin
-                                         || pECI->getimages()->at(l)->getymax()==ymax)
-                                if (l<pECI->getimages()->size())
-                                        pI2=pECI->getimages()->at(k);
+                                for (l=0;l<n;l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+					break;
+                                if (l<n)
+                                        pI2=pECI->getimages()->at(l);
                                 // Image 3
                                 pI3=NULL;
                                 xmin=pECI->getxmin()+i*w*resx;
                                 ymax=pECI->getymax()-(j+1)*h*resy;
-                                for (l=0;l<pECI->getimages()->size();l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin
-                                         || pECI->getimages()->at(l)->getymax()==ymax)
-                                if (l<pECI->getimages()->size())
-                                        pI3=pECI->getimages()->at(k);
-			}LOGGER_DEBUG(i<<"Q");
-			MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
-			LOGGER_DEBUG(i<<" ZZZ "<<j);return;
+                                for (l=0;l<n;l++)
+                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+						break;
+                                if (l<n)
+                                        pI3=pECI->getimages()->at(l);
+			
+				MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
 
-			if (mirror!=NULL)
-				pECI->getimages()->push_back(mirror);
-		} 
+				if (mirror!=NULL)
+					pECI->getimages()->push_back(mirror);
+			}
+		}
 }
 
 #ifndef __max
@@ -570,13 +581,10 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Dimension de l'image reechantillonnee
 	int width_dst = int(xmax_dst-xmin_dst+0.1);
         int height_dst = int(ymax_dst-ymin_dst+0.1);
-	//LOGGER_DEBUG(width_dst<<" "<<height_dst<<"   "<<xmin_dst<<" "<<ymax_dst<<" "<<xmax_dst<<" "<<ymin_dst);
-	//LOGGER_DEBUG(xmin_dst*resx_dst<<" "<<ymax_dst*resx_dst<<" "<<xmax_dst*resx_dst<<" "<<ymin_dst*resx_dst);
 	xmin_dst*=resx_dst;
 	xmax_dst*=resx_dst;
 	ymin_dst*=resy_dst;
         ymax_dst*=resy_dst;
-	//LOGGER_DEBUG(xmin_dst<<" "<<ymax_dst<<" "<<xmax_dst<<" "<<ymin_dst);
 
 	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
@@ -584,10 +592,8 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
 	// Reechantillonnage
 	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
-
 	// Reechantillonage du masque
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
-
 	return pRImage;
 }
 
@@ -611,7 +617,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 	        // Etape 1 : Creation d'une image composite
         	ExtendedCompoundImage* pECI = compoundDalles(TabImageIn.at(i),nodata,sampleformat);
-		ExtendedCompoundMaskImage* mask = new ExtendedCompoundMaskImage(pECI);
+		ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
 	        if (pECI==NULL) {
         	        LOGGER_ERROR("Impossible d'assembler les images");
@@ -621,6 +627,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		{
 			pOverlayedImage.push_back(pECI);
 			//saveImage(pECI,"test.tif",3,8,1,PHOTOMETRIC_RGB);
+			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
 		}
 		else {
@@ -628,21 +635,26 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			
 			addMirrors(pECI);
 
-			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+			ExtendedCompoundImage* pECI_withMirrors=compoundDalles((*pECI->getimages()),nodata,sampleformat);
+
+			//saveImage(pECI2,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+			//return -1;
+
+			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI, interpolation, mask, pResampledMask);
+	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
 	                	return -1;
 			}
 			pOverlayedImage.push_back(pRImage);
-			//saveImage(pRImage,"test2.tif",3,8,1,PHOTOMETRIC_RGB)
+			//saveImage(pRImage,"test2.tif",3,8,1,PHOTOMETRIC_RGB);
 			pMask.push_back(pResampledMask);
 			//saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			//saveImage(mask,"test1.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			//saveImage(pResampledMask,"test2.tif",1,8,PHOTOMETRIC_MINISBLACK);
+			saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
@@ -653,8 +665,6 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
 		return -1;
 	}
-
-//	delete pTabResampledImage;
 
 	return 0;
 }
@@ -669,7 +679,7 @@ int main(int argc, char **argv) {
 	int type=-1;
 	Kernel::KernelType interpolation;
 
-	LibtiffImage * pImageOut ;
+	LibtiffImage* pImageOut ;
 	std::vector<Image*> ImageIn;
 	std::vector<std::vector<Image*> > TabImageIn;
 	ExtendedCompoundImage* pECImage;
@@ -683,7 +693,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-        log.precision(20);
+//        log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
@@ -735,10 +745,10 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	// TODO Nettoyage
-/*	delete pImageOut ;
-	delete pECImage ;
-*/
+	// Nettoyage
+	delete pImageOut;
+	delete pECImage;
+
 	LOGGER_INFO( " dalles_base ; fin du programme " );
 
 	return 0;

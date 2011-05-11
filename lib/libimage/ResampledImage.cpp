@@ -83,6 +83,7 @@ float* ResampledImage::resample_src_line(int line) {
 			mux_resampled_line, width*channels);
 
 	for(int i = 0; i < 4; i++) resampled_line_index[(4*(line/4)+i)%(Ky+4)] = 4*(line/4)+i;
+
 	return resampled_line[line % (Ky+4)];
 }
 
@@ -91,7 +92,8 @@ float* ResampledImage::resample_src_line(int line) {
 int ResampledImage::getline(float* buffer, int line) {
 	float weights[Ky];
 	int nb_weights = Ky;
-	int ymin = K.weight(weights, nb_weights, top + line * ratio_y, ratio_y); // On calcule les coefficient d'interpollation
+
+	int ymin = K.weight(weights, nb_weights, top + line * ratio_y, ratio_y); // On calcule les coefficient d'interpolation
 
 	mult(buffer, resample_src_line(ymin), weights[0], width*channels);
 	for(int y = 1; y < nb_weights; y++) 
@@ -99,7 +101,6 @@ int ResampledImage::getline(float* buffer, int line) {
 
 	return width*channels;
 }
-
 
 int ResampledImage::getline(uint8_t* buffer, int line) {
 	int nb = getline(dst_line_buffer, line);

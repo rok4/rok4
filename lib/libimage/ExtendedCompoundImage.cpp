@@ -42,8 +42,8 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
 
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
-         	images[i]->getline(buffer_t,images[i]->y2l(y));
 
+         	images[i]->getline(buffer_t,images[i]->y2l(y));
          	if (masks.empty())
          		memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
          	else{
@@ -52,7 +52,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         masks[i]->getline(buffer_m,masks[i]->y2l(y));
                         for (j=0;j<c1-c0;j++)
                         {
-                        	if (buffer_m[c2+j]==255)
+                        	if (buffer_m[c2+j]>=254)   // Seuillage subjectif du masque
                                 	memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
                         }
                         delete buffer_m;

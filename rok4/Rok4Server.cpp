@@ -73,18 +73,21 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
 	int init=FCGX_Init();
 
 
-  // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+  	// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
 	// Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
 	// Utile
 	//  * Pour faire du profiling (grof)
 	//  * Pour lancer rok4 sur plusieurs serveurs distants
 	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
 
-	// A décommenter pour utiliser valgrinda
+	// A décommenter pour utiliser valgrind
 	// Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
 	// Ensuite redemmarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
 	
 	// sock = FCGX_OpenSocket(":1990", 50);
+
+	// Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
+	// Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
