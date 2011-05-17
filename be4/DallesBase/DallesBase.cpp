@@ -703,7 +703,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-//        log.precision(20);
+//      log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande

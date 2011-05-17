@@ -227,11 +227,11 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 }
 
 // TODO : A mettre ailleurs (dupliqué dans ReprojectedImage.cpp)
-char PROJ_LIB[1024] = PROJ_LIB_PATH;
+/*char PROJ_LIB[1024] = PROJ_LIB_PATH;
 const char *pj_finder(const char *name) {
   strcpy(PROJ_LIB + 15, name);
   return PROJ_LIB;
-}
+}*/
 
 /* Usage de la ligne de commande */
 
@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
 
 	// Initialisation de l'accès au paramétrage de la libproj
 	// Cela evite d'utiliser la variable d'environnement PROJ_LIB
-	pj_set_finder( pj_finder );
+	//pj_set_finder( pj_finder );
 
 	/* Chargement de la conf technique du serveur */
 
@@ -303,6 +303,11 @@ int main(int argc, char** argv) {
         Logger::setAccumulator(WARN , acc);
         Logger::setAccumulator(ERROR, acc);
         Logger::setAccumulator(FATAL, acc);
+
+	std::ostream &log = LOGGER(DEBUG);
+	log.precision(8);
+        log.setf(std::ios::fixed,std::ios::floatfield);
+
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
 	LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 

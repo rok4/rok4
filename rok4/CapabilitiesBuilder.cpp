@@ -40,12 +40,12 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilitiesEl->SetAttribute("version","1.3.0");
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
 	// Pour Inspire. Cf. remarque plus bas.
-	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.europa.eu/networkservice/view/1.0");
+	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
 	capabilitiesEl->SetAttribute("xmlns:gmd","http://www.isotc211.org/2005/gmd");
 	capabilitiesEl->SetAttribute("xmlns:gco","http://www.isotc211.org/2005/gco");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd");
 
 
 	// Traitement de la partie service

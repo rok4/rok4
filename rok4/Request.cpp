@@ -255,6 +255,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	bbox.xmax=bb[2];
 	bbox.ymax=bb[3];
 	// TODO : a refaire
+	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris en tre 4000 et 5000
 	if (crs.getProj4Code()=="epsg:4326") {
 		bbox.xmin=bb[1];
         	bbox.ymin=bb[0];
