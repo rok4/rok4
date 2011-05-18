@@ -109,7 +109,7 @@ DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
 	for (int i=1; i < wmsCapaFrag.size()-1; i++){
-		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path;
+		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path + "?";
 	}
 	capa = capa + wmsCapaFrag.back();
 
@@ -121,7 +121,7 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = "";
 	for (int i=0; i < wmtsCapaFrag.size()-1; i++){
-		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path;
+		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path +"?";
 	}
 	capa = capa + wmtsCapaFrag.back();
 

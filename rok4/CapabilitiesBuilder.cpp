@@ -41,11 +41,10 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
 	// Pour Inspire. Cf. remarque plus bas.
 	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
-	capabilitiesEl->SetAttribute("xmlns:gmd","http://www.isotc211.org/2005/gmd");
-	capabilitiesEl->SetAttribute("xmlns:gco","http://www.isotc211.org/2005/gco");
+	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd");
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd");
 
 
 	// Traitement de la partie service
@@ -126,29 +125,27 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Inspire (extended Capability)
-	// TODO : en dur. A mettre dans la confguration du service (prevoir diffrenets profils d'application possibles)
+	// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
 	TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 
 	// MetadataURL
-	TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_vs:MetadataUrl");
-	TiXmlElement * linkageEl = new TiXmlElement("gmd:linkage");
-	linkageEl->LinkEndChild(buildTextNode("gmd:URL", "A specifier"));
-	metadataUrlEl->LinkEndChild(linkageEl);
-	TiXmlElement * apEl = new TiXmlElement("gmd:applicationProfile");
-        apEl->LinkEndChild(buildTextNode("gco:CharacterString", "INSPIRE (EC) 976/2009"));
-        metadataUrlEl->LinkEndChild(apEl);
+	TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+	metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
         extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
 
 	// Languages
-	TiXmlElement * languagesEl = new TiXmlElement("inspire_vs:Languages");
-	TiXmlElement * lLanguageEl = new TiXmlElement("inspire_vs:Language");
-	lLanguageEl->SetAttribute("default","true");
+	TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+	TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+	TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
 	TiXmlText * lfre = new TiXmlText("fre");
-        lLanguageEl->LinkEndChild(lfre);
-	languagesEl->LinkEndChild(lLanguageEl);
-	extendedCapabilititesEl->LinkEndChild(languagesEl);
-	// Currentlanguage
-        extendedCapabilititesEl->LinkEndChild(buildTextNode("inspire_vs:CurrentLanguage","fre"));
+        languageEl->LinkEndChild(lfre);
+	defaultLanguageEl->LinkEndChild(languageEl);
+	supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+	extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+	// Responselanguage
+	TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+	responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+	extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
 	
 	capabilityEl->LinkEndChild(extendedCapabilititesEl);
 
@@ -310,9 +307,9 @@ void Rok4Server::buildWMTSCapabilities(){
 
 
 	//----------------------------------------------------------------------
-	// OpertionsMetadata
+	// OperationsMetadata
 	//----------------------------------------------------------------------
-	TiXmlElement * opMtdEl = new TiXmlElement("ows:OperationMetadata");
+	TiXmlElement * opMtdEl = new TiXmlElement("ows:OperationsMetadata");
 	TiXmlElement * opEl = new TiXmlElement("ows:Operation");
 	opEl->SetAttribute("name","GetCapabilities");
 	TiXmlElement * dcpEl = new TiXmlElement("ows:DCP");
