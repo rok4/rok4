@@ -29,6 +29,19 @@ bool isCrsProj4Compatible(std::string crs){
         return isCompatible;
 }
 
+bool isCrsLongLat(std::string crs){
+	projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
+	if (!pj){
+                int *err = pj_get_errno_ref();
+                char *msg = pj_strerrno(*err);
+                // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+                return false;
+        }
+	bool isLongLat=pj_is_latlong(pj);
+	pj_free(pj);
+	return isLongLat;
+}
+
 /*
 * Contructeur
 */
@@ -70,6 +83,11 @@ void CRS::buildProj4Code(){
 bool CRS::isProj4Compatible(){
 	return proj4Code!=NO_PROJ4_CODE;
 }
+
+bool CRS::isLongLat(){
+        return isCrsLongLat(proj4Code);
+}
+
 
 void CRS::setRequestCode(std::string crs){
 	requestCode=crs;

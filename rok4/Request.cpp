@@ -265,7 +265,17 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	// Gestion des resolutions minimum et maximum
 	// Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
 	// TODO : cas ou resx, resy et layer->getMinRes() ne sont pas dans les memes unites
+
+	// Resolution en x et y en unites du CRS demande
 	double resx=(bbox.xmax-bbox.xmin)/width, resy=(bbox.ymax-bbox.ymin)/height;
+
+	// Resolution en x et y en m
+	// Hypothese : les CRS en geographiques sont en degres
+	if (crs.isLongLat()){
+		resx*=111319;
+		resy*=111319;
+	}
+
 	double epsilon=0.0000001;	// Gestion de la precision de la division
 	// TODO : controler que la valeur de epsilon est adaptee toutes les unites
 	if (resx+epsilon<layer->getMinRes()||resy+epsilon<layer->getMinRes()){
