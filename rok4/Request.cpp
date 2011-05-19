@@ -216,7 +216,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
         crs.setRequestCode(str_crs);
         unsigned int k;
         for (k=0;k<layer->getWMSCRSList().size();k++)
-                if (layer->getWMSCRSList().at(k)==str_crs)
+                if (crs.cmpRequestCode(layer->getWMSCRSList().at(k)))
                         break;
         // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
         if (k==layer->getWMSCRSList().size())

@@ -88,10 +88,13 @@ bool CRS::isLongLat(){
         return isCrsLongLat(proj4Code);
 }
 
-
 void CRS::setRequestCode(std::string crs){
 	requestCode=crs;
 	buildProj4Code();
+}
+
+bool CRS::cmpRequestCode(std::string crs){
+	return toLowerCase(requestCode)==toLowerCase(crs);
 }
 
 std::string CRS::getAuthority(){
