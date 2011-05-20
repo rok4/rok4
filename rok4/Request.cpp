@@ -255,7 +255,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	bbox.xmax=bb[2];
 	bbox.ymax=bb[3];
 	// TODO : a refaire
-	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris en tre 4000 et 5000
+	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris entre 4000 et 5000
 	if (crs.getProj4Code()=="epsg:4326") {
 		bbox.xmin=bb[1];
         	bbox.ymin=bb[0];
@@ -264,7 +264,6 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	}
 	// Gestion des resolutions minimum et maximum
 	// Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
-	// TODO : cas ou resx, resy et layer->getMinRes() ne sont pas dans les memes unites
 
 	// Resolution en x et y en unites du CRS demande
 	double resx=(bbox.xmax-bbox.xmin)/width, resy=(bbox.ymax-bbox.ymin)/height;
@@ -277,7 +276,6 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	}
 
 	double epsilon=0.0000001;	// Gestion de la precision de la division
-	// TODO : controler que la valeur de epsilon est adaptee toutes les unites
 	if (resx+epsilon<layer->getMinRes()||resy+epsilon<layer->getMinRes()){
 		LOGGER_DEBUG("resx="<<resx<<" resy="<<resy<<" minres="<<layer->getMinRes());
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));

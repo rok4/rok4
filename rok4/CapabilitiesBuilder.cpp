@@ -275,8 +275,10 @@ void Rok4Server::buildWMTSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns:ows","http://www.opengis.net/ows/1.1");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
+	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
+	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0");
 	capabilitiesEl->SetAttribute("xmlns:gml","http://www.opengis.net/gml");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd");
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0/inspire_vs_ows_11.xsd");
 
 	//----------------------------------------------------------------------
 	// ServiceIdentification
@@ -316,6 +318,12 @@ void Rok4Server::buildWMTSCapabilities(){
 	TiXmlElement * httpEl = new TiXmlElement("ows:HTTP");
 	TiXmlElement * getEl = new TiXmlElement("ows:Get");
 	getEl->SetAttribute("xlink:href","]HOSTNAME/PATH[");
+	TiXmlElement * constraintEl = new TiXmlElement("ows:Constraint");
+	constraintEl->SetAttribute("name","GetEncoding");
+	TiXmlElement * allowedValuesEl = new TiXmlElement("ows:AllowedValues");
+	allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "KVP"));
+	constraintEl->LinkEndChild(allowedValuesEl);
+	getEl->LinkEndChild(constraintEl);
 	httpEl->LinkEndChild(getEl);
 	dcpEl->LinkEndChild(httpEl);
 	opEl->LinkEndChild(dcpEl);
@@ -328,13 +336,45 @@ void Rok4Server::buildWMTSCapabilities(){
 	httpEl = new TiXmlElement("ows:HTTP");
 	getEl = new TiXmlElement("ows:Get");
 	getEl->SetAttribute("xlink:href","]HOSTNAME/PATH[");
+        constraintEl = new TiXmlElement("ows:Constraint");
+        constraintEl->SetAttribute("name","GetEncoding");
+        allowedValuesEl = new TiXmlElement("ows:AllowedValues");
+        allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "KVP"));
+        constraintEl->LinkEndChild(allowedValuesEl);
+        getEl->LinkEndChild(constraintEl);
 	httpEl->LinkEndChild(getEl);
 	dcpEl->LinkEndChild(httpEl);
 	opEl->LinkEndChild(dcpEl);
 
 	opMtdEl->LinkEndChild(opEl);
 
+	// Inspire (extended Capability)
+        // TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
+        TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+
+        // MetadataURL
+        TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+        metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
+        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+
+        // Languages
+        TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+        TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+        TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
+        TiXmlText * lfre = new TiXmlText("fre");
+        languageEl->LinkEndChild(lfre);
+        defaultLanguageEl->LinkEndChild(languageEl);
+        supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+        extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+        // Responselanguage
+        TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+        responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+        extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
+
+        opMtdEl->LinkEndChild(extendedCapabilititesEl);
+
 	capabilitiesEl->LinkEndChild(opMtdEl);
+
 	//----------------------------------------------------------------------
 	// Contents
 	//----------------------------------------------------------------------
