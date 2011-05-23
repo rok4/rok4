@@ -40,7 +40,8 @@
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
-#include "MirrorImage.h"
+#include "MirrorImage.h"a
+#include "math.h"
 
 /* Usage de la ligne de commande */
 
@@ -191,8 +192,8 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 
 	if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
 		// Arrondi a la valeur entiere la plus proche
-		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
-		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
+		*width = lround((bbox->xmax - bbox->xmin)/resx);	
+		*height = lround((bbox->ymax - bbox->ymin)/resy);
 	}
 
 	return nb;
@@ -634,6 +635,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
+			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
 		}
@@ -660,11 +662,11 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	                	return -1;
 			}
 			pOverlayedImage.push_back(pRImage);
-			saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);
 			pMask.push_back(pResampledMask);
 			//saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
-			saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
@@ -703,7 +705,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-//      log.precision(20);
+      log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande

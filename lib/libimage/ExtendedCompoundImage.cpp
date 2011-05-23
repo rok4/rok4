@@ -38,7 +38,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
          	// c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
          	int c1=__min(width,x2c(images[i]->getxmax()));
 
-         	// c2 : indicde de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
+         	// c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
 
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
@@ -53,7 +53,6 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         for (j=0;j<c1-c0;j++)
                         {
                         	if (buffer_m[c2+j]>=127)   // Seuillage subjectif du masque
-
                                 	memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
                         }
                         delete buffer_m;
