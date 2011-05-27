@@ -1802,7 +1802,7 @@ sub liste_liens{
 			next if ($fichier =~ /^\.\.?$/);
 			if(-l "$rep/$fichier"){
 				my $fichier_pointe = readlink("$rep/$fichier");
-				$hash_liens{"$rep/$fichier"} = $fichier_pointe;
+				$hash_liens{"$rep/$fichier"} = $rep."/".$fichier_pointe;
 			}elsif(-d "$rep/$fichier"){
 				my @tab_temp = ("$rep/$fichier");
 				my %hash_temp = %{&liste_liens(\@tab_temp)};
