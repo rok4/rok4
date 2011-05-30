@@ -40,7 +40,7 @@
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
-#include "MirrorImage.h"a
+#include "MirrorImage.h"
 #include "math.h"
 
 /* Usage de la ligne de commande */
@@ -574,8 +574,8 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())
 {
-                LOGGER_ERROR("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
-		return NULL;	
+                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
+		// return NULL;	
         }
 	
 	// Coordonnees de l'image reechantillonnee en pixels
@@ -646,8 +646,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 			ExtendedCompoundImage* pECI_withMirrors=compoundDalles((*pECI->getimages()),nodata,sampleformat,mirrors);
 
-
-			LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
+			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
 			//saveImage(pECI2,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			//return -1;
@@ -705,7 +704,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-      log.precision(20);
+      	log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
@@ -721,35 +720,35 @@ int main(int argc, char **argv) {
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Load");
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles"); 
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Check");
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Sort");
 	// Tri des dalles
 	if (sortDalles(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Merge");
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");
