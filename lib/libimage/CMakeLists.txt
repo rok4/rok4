@@ -65,6 +65,7 @@ target_link_libraries(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR} ${CPPUNIT_INCLUDE_DIR})
     ENABLE_TESTING()
 
     # Exécution des tests unitaires CppUnit

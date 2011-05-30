@@ -62,7 +62,7 @@ target_link_libraries(rok4 rok4core)
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
-    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
     ENABLE_TESTING()
 
     # Exécution des tests unitaires CppUnit
