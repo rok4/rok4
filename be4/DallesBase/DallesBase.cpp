@@ -41,6 +41,7 @@
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
 #include "MirrorImage.h"
+#include "math.h"
 
 /* Usage de la ligne de commande */
 
@@ -114,6 +115,8 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 			}
 		}
 	}
+
+	LOGGER_DEBUG("dalles_base -f "<<liste_dalles_filename);
 
 	return 0;
 }
@@ -189,8 +192,8 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 
 	if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
 		// Arrondi a la valeur entiere la plus proche
-		*width = (int) ((bbox->xmax - bbox->xmin)/resx + 0.5);	
-		*height = (int) ((bbox->ymax - bbox->ymin)/resy + 0.5);
+		*width = lround((bbox->xmax - bbox->xmin)/resx);	
+		*height = lround((bbox->ymax - bbox->ymin)/resy);
 	}
 
 	return nb;
@@ -414,7 +417,7 @@ int h2i(char s)
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat)
+ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat, uint mirrors)
 {
 	if (TabImageIn.empty()) {
 		LOGGER_ERROR("Assemblage d'un tableau de dalles de taille nulle");
@@ -430,15 +433,10 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 		if (TabImageIn.at(j)->getymax()>ymax)  ymax=TabImageIn.at(j)->getymax();
 	}
 
-/*	ymin-=10;
-	ymax+=10;
-	xmin-=10;
-	xmax-=10;*/
-
 	extendedCompoundImageFactory ECImgfactory ;
 	int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
-	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,r,sampleformat);
+	ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,r,sampleformat,mirrors);
 
 	return pECI ;
 }
@@ -448,10 +446,13 @@ ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* no
 * L'image en entree doit etre composee d'un assemblage regulier d'images (de type CompoundImage)
 * Objectif : mettre des miroirs la ou il n'y a pas d'images afin d'eviter des effets de bord en cas de reechantillonnage
 * @param pECI : l'image à completer
+* @return : le nombre de miroirs ajoutes
 */
 
-void addMirrors(ExtendedCompoundImage* pECI)
+uint addMirrors(ExtendedCompoundImage* pECI)
 {
+	uint mirrors=0;
+
 	int w=pECI->getimages()->at(0)->width;
 	int h=pECI->getimages()->at(0)->height;
 	double resx=pECI->getimages()->at(0)->getresx();
@@ -467,7 +468,7 @@ void addMirrors(ExtendedCompoundImage* pECI)
 		|| modf(pECI->getimages()->at(i)->getxmin()-pECI->getxmin()/(w*resx),&intpart)!=0
 		|| modf(pECI->getimages()->at(i)->getymax()-pECI->getymax()/(h*resy),&intpart)!=0){
 			LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
-			return;
+			return 0;
 		}
 	}
 
@@ -531,10 +532,18 @@ void addMirrors(ExtendedCompoundImage* pECI)
 			
 				MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
 
-				if (mirror!=NULL)
+				if (mirror!=NULL){
 					pECI->getimages()->push_back(mirror);
+
+					LOGGER_DEBUG("Ajout miroir "<<i<<"/"<<nx<<"     "<<j<<"/"<<ny);
+
+					LOGGER_DEBUG(mirrors);
+					mirrors++;
+				}
 			}
 		}
+	LOGGER_DEBUG(mirrors);
+	return mirrors;
 }
 
 #ifndef __max
@@ -565,8 +574,8 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())
 {
-                LOGGER_ERROR("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
-		return NULL;	
+                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
+		// return NULL;	
         }
 	
 	// Coordonnees de l'image reechantillonnee en pixels
@@ -616,7 +625,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		// Mise en superposition du paquet d'images en 2 etapes
 
 	        // Etape 1 : Creation d'une image composite
-        	ExtendedCompoundImage* pECI = compoundDalles(TabImageIn.at(i),nodata,sampleformat);
+        	ExtendedCompoundImage* pECI = compoundDalles(TabImageIn.at(i),nodata,sampleformat,0);
 		ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
 	        if (pECI==NULL) {
@@ -626,16 +635,18 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			//saveImage(pECI,"test.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
 		}
 		else {
         		// Etape 2 : Reechantillonnage de l'image composite si necessaire
 			
-			addMirrors(pECI);
+			uint mirrors=addMirrors(pECI);
 
-			ExtendedCompoundImage* pECI_withMirrors=compoundDalles((*pECI->getimages()),nodata,sampleformat);
+			ExtendedCompoundImage* pECI_withMirrors=compoundDalles((*pECI->getimages()),nodata,sampleformat,mirrors);
+
+			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
 			//saveImage(pECI2,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			//return -1;
@@ -650,18 +661,18 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	                	return -1;
 			}
 			pOverlayedImage.push_back(pRImage);
-			//saveImage(pRImage,"test2.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);
 			pMask.push_back(pResampledMask);
 			//saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
-			saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
 	// Assemblage des paquets et decoupage aux dimensions de la dalle de sortie
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
-			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,r,sampleformat))==NULL) {
+			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,r,sampleformat,0))==NULL) {
 		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
 		return -1;
 	}
@@ -693,7 +704,7 @@ int main(int argc, char **argv) {
         Logger::setAccumulator(FATAL, acc);
 
 	std::ostream &log = LOGGER(DEBUG);
-//        log.precision(20);
+      	log.precision(20);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
@@ -709,35 +720,35 @@ int main(int argc, char **argv) {
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Load");
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles"); 
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Check");
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Sort");
 	// Tri des dalles
 	if (sortDalles(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Merge");
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles");
 		sleep(1);
 		return -1;
 	}
-
+//LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");
@@ -748,8 +759,6 @@ int main(int argc, char **argv) {
 	// Nettoyage
 	delete pImageOut;
 	delete pECImage;
-
-	LOGGER_INFO( " dalles_base ; fin du programme " );
 
 	return 0;
 }

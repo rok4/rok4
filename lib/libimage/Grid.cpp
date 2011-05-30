@@ -44,7 +44,7 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
 
 #include <cstring>
 //TODO : cas d'un fichier de conf charge dynamiquement (option -f)
-char PROJ_LIB2[1024] = "../config/proj";
+char PROJ_LIB2[1024] = "../config/proj/";
 const char *pj_finder2(const char *name) {
   strcpy(PROJ_LIB2 + 15, name);
   return PROJ_LIB2;
@@ -65,6 +65,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
   	pthread_mutex_lock (& mutex_proj);
 
 	pj_set_finder( pj_finder2 );
+	LOGGER_DEBUG(pj_finder2("test"));
 
   	projPJ pj_src, pj_dst;  
   	if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
@@ -83,12 +84,17 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		return false;
 	}
 
+	LOGGER_DEBUG(from_srs<<" "<<to_srs);
+	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
+
 	if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
     		gridX[i] *= DEG_TO_RAD;
     		gridY[i] *= DEG_TO_RAD;
 	}
 
 	int code=pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
+
+	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
 
 	pj_free(pj_src);
 	pj_free(pj_dst);

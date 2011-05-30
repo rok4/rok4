@@ -20,11 +20,13 @@ Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
 template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
 	int i;
+//if (line==0)
+//	LOGGER_DEBUG("A");
+
         for (i=0;i<width*channels;i++)
         	buffer[i]=(T)nodata;
         double y=l2y(line);
         for (i=0;i<(int)images.size();i++){
-
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
         	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
@@ -38,26 +40,58 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
          	// c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
          	int c1=__min(width,x2c(images[i]->getxmax()));
 
-         	// c2 : indicde de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
+         	// c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
 
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
+//if (line==1152)
+  //      LOGGER_DEBUG("ZZZ "<<images[i]->y2l(y)<<" "<<i);
 
          	images[i]->getline(buffer_t,images[i]->y2l(y));
+
+//if (line==0)
+  //      LOGGER_DEBUG("A3");
+//if (line==1152)
+  //      LOGGER_DEBUG("ZZZ");
          	if (masks.empty())
+	{
+
+	
+//if (line==1153)
+  //      LOGGER_DEBUG("ZZZ");
+//if (line==0)
+  //      LOGGER_DEBUG("A5");
          		memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
+//if (line==0)
+  //      LOGGER_DEBUG("A6");
+}
          	else{
+//			if (line==1152)
+  //      LOGGER_DEBUG("ZZZ");
          		int j;
                 	uint8_t* buffer_m = new uint8_t[masks[i]->width];
+
+//			if (line==0)
+  //      LOGGER_DEBUG("A4");
+
                         masks[i]->getline(buffer_m,masks[i]->y2l(y));
+//if (line==1152)
+  //      LOGGER_DEBUG("ZZZ");
                         for (j=0;j<c1-c0;j++)
                         {
-                        	if (buffer_m[c2+j]>=254)   // Seuillage subjectif du masque
+                        	if (buffer_m[c2+j]>=127)   // Seuillage subjectif du masque
                                 	memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
                         }
                         delete buffer_m;
                 }
+//if (line==1152)
+  //      LOGGER_DEBUG("ZZZ");
+
                 delete [] buffer_t;
+
+//		if (line==0)
+  //      LOGGER_DEBUG("A6");
+
 	}
         return width*channels*sizeof(T);
 }
@@ -81,7 +115,7 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
 
 #define epsilon 0.001
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat, uint mirrors)
 {
 	uint i;
         double intpart, phasex0, phasey0, phasex1, phasey1;
@@ -110,13 +144,13 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                 }
         }
 
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat);
+        return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat, uint mirrors)
 {
 	// TODO : controler que les images et les masques sont superposables a l'image
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat);
+        return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors);
 }
 
 /**
@@ -128,7 +162,8 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
 	memset(buffer,0,width*channels);
-        for (uint i=0;i<ECI->getimages()->size();i++){
+	// Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
+        for (uint i=0;i<ECI->getimages()->size()-ECI->getmirrors();i++){
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
         	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche

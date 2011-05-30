@@ -31,6 +31,13 @@ private:
 
 	std::vector<Image*> images;
 	std::vector<Image*> masks;
+
+	// Certaines images peuvent etre des miroirs (MirrorImage)
+	// Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage
+	// Hypothese : ces images sont stockees en dernier
+	// A partir du nombre total de miroirs, on peut donc determiner si une image est un miroir ou non
+	uint mirrors;
+
 	uint8_t nodata;
 	uint16_t sampleformat;
 
@@ -44,21 +51,24 @@ protected:
   	* Les Image sont detruites ensuite en meme temps que l'objet
   	* Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
 	 */
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat, uint mirrors) :
 		Image(width, height, channels,bbox),
 		images(images),
 		nodata(nodata),
-		sampleformat(sampleformat) {}
+		sampleformat(sampleformat),
+		mirrors(mirrors) {}
 
-	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat) :
+	ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat, uint mirrors) :
                 Image(width, height, channels,bbox),
 		images(images),
                 masks(masks),
 		nodata(nodata),
-		sampleformat(sampleformat) {}
+		sampleformat(sampleformat),
+		mirrors(mirrors) {}
 
 public:
 	std::vector<Image*>* getimages() {return &images;}
+	uint getmirrors() {return mirrors;}
 
 	/** Implementation de getline pour les uint8_t */
 	int getline(uint8_t* buffer, int line);
@@ -88,9 +98,9 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat);
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat, uint mirrors);
 
-	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat);
+	ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat, uint mirrors);
 };
 
 /*

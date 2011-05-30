@@ -689,7 +689,7 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 
 	if (layerFiles.empty()){
 		LOGGER_FATAL("Aucun fichier *.lay dans le répertoire " << layerDir);
-		LOGGER_FATAL("Le serveur n'a aucune données à servir. Domage...");
+		LOGGER_FATAL("Le serveur n'a aucune données à servir. Dommage...");
 		return false;
 	}
 

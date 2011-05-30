@@ -109,7 +109,7 @@ DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
 	for (int i=1; i < wmsCapaFrag.size()-1; i++){
-		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path;
+		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path + "?";
 	}
 	capa = capa + wmsCapaFrag.back();
 
@@ -121,7 +121,7 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = "";
 	for (int i=0; i < wmtsCapaFrag.size()-1; i++){
-		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path;
+		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path +"?";
 	}
 	capa = capa + wmtsCapaFrag.back();
 
@@ -303,6 +303,11 @@ int main(int argc, char** argv) {
         Logger::setAccumulator(WARN , acc);
         Logger::setAccumulator(ERROR, acc);
         Logger::setAccumulator(FATAL, acc);
+
+	std::ostream &log = LOGGER(DEBUG);
+	log.precision(8);
+        log.setf(std::ios::fixed,std::ios::floatfield);
+
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
 	LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 

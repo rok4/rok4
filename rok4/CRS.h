@@ -13,7 +13,9 @@ public:
         CRS(const CRS& crs);
 	void buildProj4Code();
 	bool isProj4Compatible();
+	bool isLongLat();
 	void setRequestCode(std::string crs);
+	bool cmpRequestCode(std::string crs);
 	std::string getAuthority();	// Renvoie l'autorite du code passe dans la requete WMS (Ex: EPSG,epsg,IGNF,etc.)
 	std::string getIdentifier();	// Renvoie l'identifiant du code passe dans la requete WMS (Ex: 4326,LAMB93,etc.)
 	bool operator==(const CRS crs) const;

@@ -59,12 +59,15 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst
 	}
 	else {
 		Grid* grid = new Grid(width, height, bbox);
+		
 
+		LOGGER_DEBUG("debut pyramide");
 		if (!grid->reproject(dst_crs.getProj4Code(),getTms().getCrs().getProj4Code())){
 			// BBOX invalide
 			error=1;
 			return 0;
 		}
+		LOGGER_DEBUG("fin pyramide");
 
                 resolution_x = (grid->bbox.xmax - grid->bbox.xmin) / width;
                 resolution_y = (grid->bbox.ymax - grid->bbox.ymin) / height;
