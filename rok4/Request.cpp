@@ -254,15 +254,20 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	bbox.ymin=bb[1];
 	bbox.xmax=bb[2];
 	bbox.ymax=bb[3];
-	// TODO : a refaire
+	// L'ordre des coordonnees (X,Y) de chque coin de la bbox doit suivre l'ordre des axes du CS associe au SRS
 	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris entre 4000 et 5000
-	if (crs.getProj4Code()=="epsg:4326") {
-		bbox.xmin=bb[1];
-        	bbox.ymin=bb[0];
-        	bbox.xmax=bb[3];
-        	bbox.ymax=bb[2];
+	if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
+		int code=atoi(crs.getIdentifier().c_str());
+		if (code>=4000 && code<5000){	
+			bbox.xmin=bb[1];
+        		bbox.ymin=bb[0];
+        		bbox.xmax=bb[3];
+        		bbox.ymax=bb[2];	
+		}
 	}
-	// Gestion des resolutions minimum et maximum
+
+	// SCALE DENOMINATORS
+	
 	// Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
 
 	// Resolution en x et y en unites du CRS demande
@@ -275,13 +280,18 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 		resy*=111319;
 	}
 
+	// Le serveur ne doit pas renvoyer d'exception
+	// Cf. WMS 1.3.0 - 7.2.4.6.9
+
 	double epsilon=0.0000001;	// Gestion de la precision de la division
-	if (resx+epsilon<layer->getMinRes()||resy+epsilon<layer->getMinRes()){
-		LOGGER_DEBUG("resx="<<resx<<" resy="<<resy<<" minres="<<layer->getMinRes());
-		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
-	}
-	if (resx>layer->getMaxRes()||resy>layer->getMaxRes())
-                return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
+	if (resx>0.)
+		if (resx+epsilon<layer->getMinRes()||resy+epsilon<layer->getMinRes()){
+			;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
+		}
+	if (resy>0.)
+		if (resx>layer->getMaxRes()||resy>layer->getMaxRes())
+                	;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
+
 	// EXCEPTION
 	std::string str_exception=getParam("exception");
 	if (str_exception!=""&&str_exception!="XML")

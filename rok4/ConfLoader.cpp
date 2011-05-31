@@ -393,7 +393,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 
 	pElem = hRoot.FirstChild("minRes").Element();
 	if (!pElem){
-		minRes=0; //convention pour non contraint...
+		minRes=0.;
 	}else if (!sscanf(pElem->GetText(),"%lf",&minRes)){
 		LOGGER_ERROR("La resolution min est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
@@ -401,7 +401,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 
 	pElem = hRoot.FirstChild("maxRes").Element();
 	if (!pElem){
-		maxRes=0; //convention pour non contraint...
+		maxRes=0.;
 	}else if (!sscanf(pElem->GetText(),"%lf",&maxRes)){
 		LOGGER_ERROR("La resolution max est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
@@ -792,11 +792,11 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
 		std::string format(pElem->GetText());
-		// FIXME : liste non conforme a la liste des types MIME publiee par l'IANA
 		if (format != "image/jpeg" &&
 			format != "image/png"  &&
 			format != "image/tiff" &&
-			format != "image/bil" &&
+			format != "image/x-bil" &&
+			format != "image/x-bil;bits=32" &&
 			format != "image/gif"){
 			LOGGER_ERROR(SERVICES_CONF_PATH << "le format d'image [" << format << "] n'est pas un type MIME");
 		}else{
