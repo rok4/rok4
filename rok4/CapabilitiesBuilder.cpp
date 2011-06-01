@@ -20,7 +20,7 @@ std::string numToStr(int i){
  */
 std::string doubleToStr(float f){
         std::ostringstream strstr;
-	strstr.setf(0/*std::ios::fixed*/,std::ios::floatfield);
+	strstr.setf(std::ios::fixed,std::ios::floatfield);
 	strstr.precision(6);
         strstr << f;
         return strstr.str();
