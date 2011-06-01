@@ -5,7 +5,7 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "12")
 SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 ########################################
 #Attention aux chemins
@@ -16,7 +16,7 @@ if(NOT DEFINED DEP_PATH)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-  set(CPPUNIT_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/install/include/cppunit PARENT_SCOPE)
+  set(CPPUNIT_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/install/include PARENT_SCOPE)
 endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 if(NOT DEFINED ROK4LIBSDIR)
@@ -92,7 +92,6 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
 
-SET(CPACK_GENERATOR "TGZ")
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")

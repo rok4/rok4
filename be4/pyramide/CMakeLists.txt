@@ -67,7 +67,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
   ENABLE_TESTING()
 
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
@@ -144,8 +144,6 @@ endif(BUILD_DOC)
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
-
-SET(CPACK_GENERATOR "TGZ")
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")

@@ -46,3 +46,12 @@ UNITTEST : compilation des tests unitaires (BOOL)
     make test 
   par défaut : FALSE 
 
+DEB_PACKAGE : (EXPERIMENTAL)
+  Création d'un paquet pour debian à la place d'un tar.gz 
+  dépend des bibliothèques systèmes
+  make all doc package
+  par défaut : FALSE 
+
+USE_SYSTEM_LIB : (EXPERIMENTAL)
+  force la compilation à utiliser les bibliothèques du système
+  par défaut : FALSE 

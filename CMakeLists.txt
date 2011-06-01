@@ -5,9 +5,10 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${Rok4_SOURCE_DIR}/cmake/Modules ${CMAKE_MODULE_PATH})
+message(STATUS "Modules CMake : ${CMAKE_MODULE_PATH}")
 
 if(NOT DEFINED DEP_PATH)
   set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/target)
@@ -31,8 +32,15 @@ if(UNITTEST)
   enable_testing()
 endif(UNITTEST)
 
+if(DEB_PACKAGE)
+  set(USE_SYSTEM_LIB TRUE)
+  include(Debian)
+else(DEB_PACKAGE)
+  set(CPACK_GENERATOR "TGZ")
+endif(DEB_PACKAGE)
 
-include(ROK4Dependencies)
+
+include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
 if(BUILD_ROK4)
 MESSAGE(STATUS "Building ROK4 Server")
