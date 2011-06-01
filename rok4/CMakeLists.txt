@@ -30,7 +30,7 @@ set(CMAKE_C_FLAGS_SPECIFICBUILD "")
 ########################################
 #définition des fichiers sources
 
-set(rok4core_SRCS BilEncoder.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp JPEGEncoder.cpp Layer.cpp Level.cpp Message.cpp PNGEncoder.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TiffEncoder.cpp TileMatrix.cpp TileMatrixSet.cpp )
+set(rok4core_SRCS CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp )
 set(rok4server_SRCS Rok4Server.cpp )
 
 

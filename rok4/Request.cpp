@@ -178,6 +178,12 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
  */
 
 DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format){
+        // VERSION
+        std::string version=getParam("version");
+        if (version=="")
+                return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre VERSION absent.","wms"));
+        if (version!="1.3.0")
+                return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.3.0 disponible seulement))","wmts"));
 	// LAYER
 	std::string str_layer=getParam("layers");
 	if(str_layer == "")
