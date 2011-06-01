@@ -13,7 +13,7 @@ public:
 	~BilEncoder();
 	size_t read(uint8_t *buffer, size_t size);
 	int getHttpStatus() {return 200;}
-	std::string gettype() {return "image/bil";}
+	std::string gettype() {return "image/x-bil";}
 	bool eof();
 
 };

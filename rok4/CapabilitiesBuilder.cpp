@@ -16,6 +16,17 @@ std::string numToStr(int i){
 }
 
 /**
+ * Conversion de double en std::string.
+ */
+std::string doubleToStr(float f){
+        std::ostringstream strstr;
+	strstr.setf(0/*std::ios::fixed*/,std::ios::floatfield);
+	strstr.precision(6);
+        strstr << f;
+        return strstr.str();
+}
+
+/**
  * construit un noeud xml simple (de type text).
  */
 TiXmlElement * buildTextNode(std::string elementName, std::string value){
@@ -441,7 +452,7 @@ void Rok4Server::buildWMTSCapabilities(){
 			TileMatrix tm =itTm->second;
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
 			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
-			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",numToStr(tm.getRes()/0.00028)));
+			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr(tm.getRes()/0.00028)));
 			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
 			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
 			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));

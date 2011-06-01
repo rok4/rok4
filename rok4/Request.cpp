@@ -289,7 +289,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 			;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
 		}
 	if (resy>0.)
-		if (resx>layer->getMaxRes()||resy>layer->getMaxRes())
+		if (resx>layer->getMaxRes()+epsilon||resy>layer->getMaxRes()+epsilon)
                 	;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
 
 	// EXCEPTION
