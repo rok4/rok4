@@ -1,5 +1,5 @@
 #Défini le nom du projet 
-project(dalles_bases)
+project(dalles_base)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")

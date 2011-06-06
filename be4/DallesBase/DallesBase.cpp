@@ -598,10 +598,11 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
 	BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
-
+LOGGER_DEBUG("YEAH1 "<< width_dst<<" "<< height_dst<<" "<<off_x<<" "<<off_y<<" "<< ratio_x<<" "<< ratio_y);
 	// Reechantillonnage
 	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	// Reechantillonage du masque
+LOGGER_DEBUG("YEAH2");
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	return pRImage;
 }
@@ -720,14 +721,14 @@ int main(int argc, char **argv) {
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Load");
+LOGGER_DEBUG("Load");
 	// Chargement des dalles
 	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des dalles"); 
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Check");
+LOGGER_DEBUG("Check");
 	// Controle des dalles
 	if (checkDalles(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des dalles");
@@ -741,14 +742,14 @@ int main(int argc, char **argv) {
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Merge");
+LOGGER_DEBUG("Merge");
 	// Fusion des paquets de dalles
 	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets de dalles");
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Save");
+LOGGER_DEBUG("Save");
 	// Enregistrement de la dalle fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement dalle finale");

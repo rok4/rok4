@@ -80,4 +80,4 @@ cppubin: include bindir $(DEPLIB) archive $(CPPUNITOBJ)
 
 # documentation doxygen
 doc : docdir
-	doxygen $(DOCDIR)/doxygen_libimage.cfg
+	doxygen $(SRCDOCDIR)/doxygen_libimage.cfg
