@@ -3,7 +3,7 @@
 septembre 2010
 
 ---------------------------------------------------------------------------------------------
-./target/bin/dalles_base -f test/fichiertest.txt -i lanczos -n 990099 -t img -s 3 -b 8 -p rgb
+mergeNtiff -f test/fichiertest.txt -i lanczos -n 990099 -t img -s 3 -b 8 -p rgb
 ---------------------------------------------------------------------------------------------
 
 

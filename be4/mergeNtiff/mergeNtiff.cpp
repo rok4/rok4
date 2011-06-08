@@ -1,20 +1,20 @@
 /**
- * \file DallesBase.cpp
- * \brief Creation d une dalle georeference a partir de n dalles source
+ * \file mergeNtiff.cpp
+ * \brief Creation d une image georeference a partir de n images source
  * \author IGN
 *
 * Ce programme est destine a etre utilise dans la chaine de generation de cache be4.
-* Il est appele pour calculer le niveau minimum d'une pyramide, pour chaque nouvelle dalle.
+* Il est appele pour calculer le niveau minimum d'une pyramide, pour chaque nouvelle image.
 *
-* Les dalles source ne sont pas necessairement entierement recouvrantes.
+* Les images source ne sont pas necessairement entierement recouvrantes.
 *
 * Pas de fichier TIFF tuile ou LUT en entree
 *
 * Parametres d'entree :
-* 1. Un fichier texte contenant les dalles source et la dalle finale avec leur georeferencement (resolution, emprise)
+* 1. Un fichier texte contenant les images source et l image finale avec leur georeferencement (resolution, emprise)
 * 2. Un mode d'interpolation
 * 3. Une couleur de NoData
-* 4. Un type de dalle (Data/Metadata)
+* 4. Un type d image (Data/Metadata)
 * 5. Le nombre de canaux des images
 * 6. Nombre d'octets par canal
 * 7. La colorimetrie
@@ -23,7 +23,7 @@
 * Ou, erreurs (voir dans le main)
 *
 * Contrainte:
-* Toutes les dalles sont dans le meme SRS (pas de reprojection)
+* Toutes les images sont dans le meme SRS (pas de reprojection)
 * FIXME : meme type de pixels (nombre de canaux, poids, couleurs) en entree et en sortie
 */
 
@@ -46,16 +46,16 @@
 /* Usage de la ligne de commande */
 
 void usage() {
-	LOGGER_INFO(" Parametres : dalles_base -f (fichier de dalles) -a (sampleformat) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
-	LOGGER_INFO(" Exemple : dalles_base -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
+	LOGGER_INFO(" Parametres : mergeNtiff -f (fichier liste des images source) -a (sampleformat) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
+	LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
 }
 
 /* Lecture des parametres de la ligne de commande */
 
-int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
 	if (argc != 17) {
-		LOGGER_ERROR(" Nombre de parametres incorrect : !!");
+		LOGGER_ERROR(" Nombre de parametres incorrect");
 		usage();
 		return -1;
 	}
@@ -63,9 +63,9 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 	for(int i = 1; i < argc; i++) {
 		if(argv[i][0] == '-') {
 			switch(argv[i][1]) {
-			case 'f': // fichier de dalles
+			case 'f': // fichier de liste des images source
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
-				strcpy(liste_dalles_filename,argv[i]);
+				strcpy(imageListFilename,argv[i]);
 				break;
 			case 'i': // interpolation
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
@@ -116,7 +116,7 @@ int parseCommandLine(int argc, char** argv, char* liste_dalles_filename, Kernel:
 		}
 	}
 
-	LOGGER_DEBUG("dalles_base -f "<<liste_dalles_filename);
+	LOGGER_DEBUG("mergeNtiff -f " << imageListFilename);
 
 	return 0;
 }
@@ -181,7 +181,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
     	return 0;
 }
 
-/* Lecture d une ligne du fichier de dalles */
+/* Lecture d une ligne du fichier de la liste d images source */
 
 int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
 {
@@ -201,25 +201,25 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 
 /* Chargement des images depuis le fichier texte donné en parametre */
 
-int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
+int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
 {
 	char filename[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
 	BoundingBox<double> bbox(0.,0.,0.,0.);
 	int width, height;
 	libtiffImageFactory factory;
 
-	// Ouverture du fichier texte listant les dalles
+	// Ouverture du fichier texte listant les images
 	std::ifstream file;
 
-	file.open(liste_dalles_filename);
+	file.open(imageListFilename);
 	if (!file) {
-		LOGGER_ERROR("Impossible d'ouvrir le fichier " << liste_dalles_filename);
+		LOGGER_ERROR("Impossible d'ouvrir le fichier " << imageListFilename);
 		return -1;
 	}
 
-	// Lecture et creation de la dalle de sortie
+	// Lecture et creation de l image de sortie
 	if (readFileLine(file,filename,&bbox,&width,&height)<0){
-		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne 0");
+		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0");
 		return -1;
 	}
 
@@ -230,7 +230,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 		return -1;
 	}
 
-	// Lecture et creation des dalles source
+	// Lecture et creation des images source
 	int nb=0,i;
 	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7)
 	{
@@ -244,7 +244,7 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 	}
 	if (nb>=0 && nb!=7)
 	{
-		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << liste_dalles_filename << " a la ligne " << i);
+		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << i);
 		return -1;
 	}
 
@@ -255,28 +255,28 @@ int loadDalles(char* liste_dalles_filename, LibtiffImage** ppImageOut, std::vect
 }
 
 
-/* Controle des dalles
+/* Controle des images
 * TODO : ajouter des controles
 */
 
-int checkDalles(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
+int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 {
 	for (unsigned int i=0;i<ImageIn.size();i++) {
 		if (ImageIn.at(i)->getresx()*ImageIn.at(i)->getresy()==0.) {	
-			LOGGER_ERROR("Resolution de la dalle d entre " << i+1 << " sur " << ImageIn.size() << " egale a 0");
+			LOGGER_ERROR("Resolution de l image source " << i+1 << " sur " << ImageIn.size() << " egale a 0");
                 	return -1;
 		}
 		if (ImageIn.at(i)->channels!=pImageOut->channels){
-			LOGGER_ERROR("Nombre de canaux de la dalle d entree " << i+1 << " sur " << ImageIn.size() << " differente de la dalle de sortie");
+			LOGGER_ERROR("Nombre de canaux de l image source " << i+1 << " sur " << ImageIn.size() << " differente de l image de sortie");
                         return -1;
 		}
 	}
 	if (pImageOut->getresx()*pImageOut->getresy()==0.){
-		LOGGER_ERROR("Resolution de la dalle de sortie egale a 0 " << pImageOut->getfilename());
+		LOGGER_ERROR("Resolution de l image de sortie egale a 0 " << pImageOut->getfilename());
 		return -1;
 	}
 	if (pImageOut->getbitspersample()!=8 && pImageOut->getbitspersample()!=32){
-		LOGGER_ERROR("Nombre de bits par sample de la dalle de sortie " << pImageOut->getfilename() << " non gere");
+		LOGGER_ERROR("Nombre de bits par sample de l image de sortie " << pImageOut->getfilename() << " non gere");
                 return -1;
 	}
 
@@ -322,13 +322,13 @@ bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPh
 bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2)-epsilon);}
 
 /*
-* @brief Tri des dalles source en paquets de dalles superposables (memes phases et resolutions en x et y)
+* @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
 * @param ImageIn : vecteur contenant les images non triees
 * @param pTabImageIn : tableau de vecteurs conteant chacun des images superposables
 * @return 0 en cas de succes, -1 sinon
 */
 
-int sortDalles(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
+int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {
 	std::vector<Image*> vTmp;
 	
@@ -412,19 +412,19 @@ int h2i(char s)
 }
 
 /* 
-* @brief Assemblage de dalles superposables
-* @param TabImageIn : vecteur de dalles a assembler
+* @brief Assemblage d images superposables
+* @param TabImageIn : vecteur d images a assembler
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundDalles(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat, uint mirrors)
 {
 	if (TabImageIn.empty()) {
-		LOGGER_ERROR("Assemblage d'un tableau de dalles de taille nulle");
+		LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
 		return NULL;
 	}
 
-	// Rectangle englobant des dalles d entree
+	// Rectangle englobant des images d entree
 	double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
 	for (unsigned int j=0;j<TabImageIn.size();j++) {
 		if (TabImageIn.at(j)->getxmin()<xmin)  xmin=TabImageIn.at(j)->getxmin();
@@ -554,12 +554,12 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 #endif
 
 /*
-* @brief Reechantillonnage d'une dalle de type ExtendedCompoundImage
+* @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
 	const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -574,8 +574,8 @@ ResampledImage* resampleDalles(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())
 {
-                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de la dalle finale");
-		// return NULL;	
+                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
+		return NULL;	
         }
 	
 	// Coordonnees de l'image reechantillonnee en pixels
@@ -608,15 +608,15 @@ LOGGER_DEBUG("YEAH2");
 }
 
 /*
-* @brief Fusion des dalles
-* @param pImageOut : dalle de sortie
+* @brief Fusion des images
+* @param pImageOut : image de sortie
 * @param TabImageIn : tableau de vecteur d images superposables
 * @param ppECImage : image composite creee
 * @param interpolation : type d'interpolation utilise
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata, uint16_t sampleformat)
 {
 	extendedCompoundImageFactory ECImgfactory ;
 	std::vector<Image*> pOverlayedImage;
@@ -626,7 +626,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		// Mise en superposition du paquet d'images en 2 etapes
 
 	        // Etape 1 : Creation d'une image composite
-        	ExtendedCompoundImage* pECI = compoundDalles(TabImageIn.at(i),nodata,sampleformat,0);
+        	ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,sampleformat,0);
 		ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
 	        if (pECI==NULL) {
@@ -645,7 +645,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			
 			uint mirrors=addMirrors(pECI);
 
-			ExtendedCompoundImage* pECI_withMirrors=compoundDalles((*pECI->getimages()),nodata,sampleformat,mirrors);
+			ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
 
 			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
@@ -655,7 +655,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleDalles(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
@@ -670,7 +670,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
         	}
 	}
 
-	// Assemblage des paquets et decoupage aux dimensions de la dalle de sortie
+	// Assemblage des paquets et decoupage aux dimensions de l image de sortie
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
 			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,r,sampleformat,0))==NULL) {
@@ -686,7 +686,7 @@ int mergeTabDalles(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 */
 
 int main(int argc, char **argv) {
-	char liste_dalles_filename[256], nodata[6];
+	char imageListFilename[256], nodata[6];
 	uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
 	int type=-1;
 	Kernel::KernelType interpolation;
@@ -709,7 +709,7 @@ int main(int argc, char **argv) {
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
-	if (parseCommandLine(argc, argv,liste_dalles_filename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
+	if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec lecture ligne de commande");
 		sleep(1);
 		return -1;
@@ -722,37 +722,37 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 LOGGER_DEBUG("Load");
-	// Chargement des dalles
-	if (loadDalles(liste_dalles_filename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec chargement des dalles"); 
+	// Chargement des images
+	if (loadImages(imageListFilename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
+		LOGGER_ERROR("Echec chargement des images"); 
 		sleep(1);
 		return -1;
 	}
 LOGGER_DEBUG("Check");
-	// Controle des dalles
-	if (checkDalles(pImageOut,ImageIn)<0){
-		LOGGER_ERROR("Echec controle des dalles");
+	// Controle des images
+	if (checkImages(pImageOut,ImageIn)<0){
+		LOGGER_ERROR("Echec controle des images");
 		sleep(1);
 		return -1;
 	}
 //LOGGER_DEBUG("Sort");
-	// Tri des dalles
-	if (sortDalles(ImageIn, &TabImageIn)<0){
-		LOGGER_ERROR("Echec tri des dalles");
+	// Tri des images
+	if (sortImages(ImageIn, &TabImageIn)<0){
+		LOGGER_ERROR("Echec tri des images");
 		sleep(1);
 		return -1;
 	}
 LOGGER_DEBUG("Merge");
-	// Fusion des paquets de dalles
-	if (mergeTabDalles(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
-		LOGGER_ERROR("Echec fusion des paquets de dalles");
+	// Fusion des paquets d images
+	if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
+		LOGGER_ERROR("Echec fusion des paquets d images");
 		sleep(1);
 		return -1;
 	}
 LOGGER_DEBUG("Save");
-	// Enregistrement de la dalle fusionnee
+	// Enregistrement de l image fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
-		LOGGER_ERROR("Echec enregistrement dalle finale");
+		LOGGER_ERROR("Echec enregistrement de l image finale");
 		sleep(1);
 		return -1;
 	}

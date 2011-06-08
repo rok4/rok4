@@ -103,7 +103,7 @@ our $programme_ss_ech_param = "merge4tiff";
 # nom du programme permettant de convertir des images en format cache
 our $programme_format_pivot_param = "tiff2tile";
 # nom du programme permettant de creer les images du niveau le plus bas de la pyramide
-our $programme_dalles_base_param = "dalles_base";
+our $programme_dalles_base_param = "mergeNtiff";
 # nom du programme permettant de copier (et/ou transformer en termes de format, compression) des images
 our $programme_copie_image_param = "tiffcp";
 

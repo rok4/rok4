@@ -20,16 +20,16 @@ Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
 template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
 	int i;
-//if (line==0)
-//	LOGGER_DEBUG("A");
 
         for (i=0;i<width*channels;i++)
         	buffer[i]=(T)nodata;
         double y=l2y(line);
+
         for (i=0;i<(int)images.size();i++){
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
         	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
+
         	if (y2l(images[i]->getymin())<=line||y2l(images[i]->getymax())>line)
         		continue;
         	if (images[i]->getxmin()>=getxmax()||images[i]->getxmax()<=getxmin())
@@ -44,39 +44,16 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
 
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
-//if (line==1152)
-  //      LOGGER_DEBUG("ZZZ "<<images[i]->y2l(y)<<" "<<i);
 
          	images[i]->getline(buffer_t,images[i]->y2l(y));
 
-//if (line==0)
-  //      LOGGER_DEBUG("A3");
-//if (line==1152)
-  //      LOGGER_DEBUG("ZZZ");
          	if (masks.empty())
-	{
-
-	
-//if (line==1153)
-  //      LOGGER_DEBUG("ZZZ");
-//if (line==0)
-  //      LOGGER_DEBUG("A5");
          		memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
-//if (line==0)
-  //      LOGGER_DEBUG("A6");
-}
          	else{
-//			if (line==1152)
-  //      LOGGER_DEBUG("ZZZ");
          		int j;
                 	uint8_t* buffer_m = new uint8_t[masks[i]->width];
 
-//			if (line==0)
-  //      LOGGER_DEBUG("A4");
-
                         masks[i]->getline(buffer_m,masks[i]->y2l(y));
-//if (line==1152)
-  //      LOGGER_DEBUG("ZZZ");
                         for (j=0;j<c1-c0;j++)
                         {
                         	if (buffer_m[c2+j]>=127)   // Seuillage subjectif du masque
@@ -84,13 +61,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         }
                         delete buffer_m;
                 }
-//if (line==1152)
-  //      LOGGER_DEBUG("ZZZ");
-
                 delete [] buffer_t;
-
-//		if (line==0)
-  //      LOGGER_DEBUG("A6");
 
 	}
         return width*channels*sizeof(T);
