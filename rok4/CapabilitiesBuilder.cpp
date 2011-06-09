@@ -18,11 +18,11 @@ std::string numToStr(int i){
 /**
  * Conversion de double en std::string.
  */
-std::string doubleToStr(float f){
+std::string doubleToStr(long double d){
         std::ostringstream strstr;
 	strstr.setf(std::ios::fixed,std::ios::floatfield);
-	strstr.precision(6);
-        strstr << f;
+	strstr.precision(16);
+        strstr << d;
         return strstr.str();
 }
 
@@ -452,7 +452,7 @@ void Rok4Server::buildWMTSCapabilities(){
 			TileMatrix tm =itTm->second;
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
 			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
-			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr(tm.getRes()/0.00028)));
+			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr((long double)tm.getRes()/0.00028)));
 			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
 			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
 			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));
