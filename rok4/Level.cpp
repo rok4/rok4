@@ -76,6 +76,8 @@ std::string Level::getType() {
 		return "image/jpeg";
 	else if (format.compare("TIFF_PNG_INT8")==0)
 		return "image/png";
+	else if (format.compare("TIFF_FLOAT32")==0)
+                return "image/x-bil;bits=32";
 	return "text/plain";
 }
 
