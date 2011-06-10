@@ -84,7 +84,10 @@ add_dependencies(proj proj-build)
 #  DESTINATION include)
 
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
-  DESTINATION .)
+  DESTINATION .
+  PATTERN "bin/*"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                      GROUP_EXECUTE GROUP_READ)
 
 
 

@@ -17,16 +17,16 @@ LDLIBS = -lpthread
 # Liste de librairies dépendantes embarquées
 DEPLIB= libtiff libz libjpeg liblogger libimage
 
-DALLESBASEOBJ= DallesBase.o
+MERGENTIFFOBJ= mergeNtiff.o
 
-all: clean dalles_base
+all: clean mergeNtiff
 
-dalles_base: $(DALLESBASEOBJ)
+mergeNtiff: $(MERGENTIFFOBJ)
 	if [ ! -d $(LOGDIR) ] ; then mkdir $(LOGDIR) ; fi
 	if [ ! -d $(TMPDIR) ] ; then mkdir $(TMPDIR) ; fi
-	$(CXX) $(DALLESBASEOBJ) -o dalles_base $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
-	mv dalles_base $(BINDIR)
+	$(CXX) $(MERGENTIFFOBJ) -o mergeNtiff $(LDLIBS) $(DEPLIB:%=$(LIBDIR)/%.a)
+	mv mergeNtiff $(BINDIR)
 
 clean:
 	rm -f *.o
-	rm -f dalles_base
+	rm -f mergeNtiff

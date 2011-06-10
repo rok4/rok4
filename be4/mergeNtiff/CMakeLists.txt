@@ -1,5 +1,5 @@
 #Défini le nom du projet 
-project(dalles_base)
+project(mergeNtiff)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "0")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
@@ -31,7 +31,7 @@ set(BUILD_SHARED_LIBS OFF)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS DallesBase.cpp )
+set(${PROJECT_NAME}_SRCS mergeNtiff.cpp )
 
 
 
