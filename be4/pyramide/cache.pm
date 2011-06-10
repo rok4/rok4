@@ -49,6 +49,7 @@ our @EXPORT=(
 	'valide_xml',
 	'$xsd_parametres_cache_param',
 	'%produit_sample_format_param',
+	'reproj_rectangle',
 );
 ################################################################################
 
@@ -516,5 +517,100 @@ sub valide_xml{
 	# on retourne le resultat de la validation
 	return ($reponse, $string_log);
 	
+}
+#reprojection d'un rectangle avec dilatation de securite
+################################################################################
+sub reproj_rectangle{
+
+	my $x_min_poly = $_[0];
+	my $x_max_poly = $_[1];
+	my $y_min_poly = $_[2];
+	my $y_max_poly = $_[3];
+	my $srs_ini_poly = $_[4];
+	my $srs_fin_poly = $_[5];
+	my $dilat_securite = $_[6];
+	
+	my ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
+	
+	# schema du rectangle
+	# 01 12
+	# 23 43
+	my ($x0,$y0) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x1,$y1) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	my ($x2,$y2) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+	
+	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
+		return ("erreur", "erreur", "erreur", "erreur");
+	}
+	# teste si les coordonnees ne sont pas hors champ
+	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
+		return ("hors_champ", "hors_champ", "hors_champ", "hors_champ");
+	}
+	
+	# determination de la bbox resultat
+	my $x_min_result = 99999999999;
+	if($x0 < $x_min_result){
+		$x_min_result = $x0;
+	}
+	if($x1 < $x_min_result){
+		$x_min_result = $x1;
+	}
+	if($x3 < $x_min_result){
+		$x_min_result = $x3;
+	}
+	if($x2 < $x_min_result){
+		$x_min_result = $x2;
+	}
+	my $x_max_result = -99999999999;
+	if($x0 > $x_max_result){
+		$x_max_result = $x0;
+	}
+	if($x1 > $x_max_result){
+		$x_max_result = $x1;
+	}
+	if($x3 > $x_max_result){
+		$x_max_result = $x3;
+	}
+	if($x2 > $x_max_result){
+		$x_max_result = $x2;
+	}
+	my $y_min_result = 99999999999;
+	if($y0 < $y_min_result){
+		$y_min_result = $y0;
+	}
+	if($y1 < $y_min_result){
+		$y_min_result = $y1;
+	}
+	if($y3 < $y_min_result){
+		$y_min_result = $y3;
+	}
+	if($y2 < $y_min_result){
+		$y_min_result = $y2;
+	}
+	my $y_max_result = -99999999999;
+	if($y0 > $y_max_result){
+		$y_max_result = $y0;
+	}
+	if($y1 > $y_max_result){
+		$y_max_result = $y1;
+	}
+	if($y3 > $y_max_result){
+		$y_max_result = $y3;
+	}
+	if($y2 > $y_max_result){
+		$y_max_result = $y2;
+	}
+	
+	# dilatataion de la bbox resultat
+	my $dilat_x = ($x_max_result - $x_min_result) * ($dilat_securite / 100);
+	my $dilat_y = ($y_max_result - $y_min_result) * ($dilat_securite / 100);
+	$x_min_reproj = $x_min_result - $dilat_x;
+	$x_max_reproj = $x_max_result + $dilat_x;
+	$y_min_reproj = $y_min_result - $dilat_y;
+	$y_max_reproj = $y_max_result + $dilat_y;
+	
+	return ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
 }
 1;

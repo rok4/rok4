@@ -173,7 +173,7 @@ if($bool_nomenclature_IGN == 1){
 	$param_IGN = "-f -a $resolution_x_source -y $resolution_y_source -w $taille_pix_x_source -h $taille_pix_y_source"
 }
 # creation de la ligne de commande de preparation de la pyramide
-my $commande_prepare = "$programme_prepare_pyramide -p $ss_produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_temp -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer";
+my $commande_prepare = "$programme_prepare_pyramide -p $ss_produit $param_IGN -i $images_source $rep_mtd -r $repertoire_pyramide -c $compression_images_pyramide -s $systeme_coordonnees_pyramide -t $repertoire_fichiers_temp -n $annee $dep -x $taille_dalles_pixels -l $fichier_layer -g $systeme_coordonnees_source";
 # execution de la commande et recuperation des sorties dans un tableau
 my @result_prepare = `$commande_prepare`; 
 #etude des resultats

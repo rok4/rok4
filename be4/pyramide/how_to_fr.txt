@@ -1,7 +1,7 @@
 ETAPE 1 : PREPARATION DES FICHIERS NECESSAIRES A LA PYRAMIDE
 
 Lancer : 
-"prepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels"
+"prepare_pyramide.pl -p produit [-f -a resolution_x_source -y resolution_y_source -w taille_pix_x_source -h taille_pix_x_source] -i images_source [-m masques_metadonnees] -r path/repertoire_pyramide -c compression_images_pyramide -s systeme_coordonnees_pyr -t path/repertoire_fichiers_dallage -n annee [-d departement] -x taille_dalles_pixels -g systeme_coordonnees_donnees"
 
 produit :
         ortho
@@ -48,7 +48,7 @@ le parametre -d contient le nom du departement cocnerne (le cas echeant)
 le parametre -x contient la taille en pixels des dalles du cache
 
 Exemple : 
-"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -r /home/charlotte/rep_pyramide -c jpeg -s LAMB93 -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75 -x 4096"
+"prepare_pyramide.pl -p ortho -i /mnt/bdortho/TIF-RVB-0M50-L93/BDO_RVB_0M50_TIF_LAMB93_D75-ED08 -r /home/charlotte/rep_pyramide -c jpeg -s LAMB93 -t /home/charlotte/rep_fichiers_pyramide -n 2008 -d 75 -x 4096 -g LAMB93"
 
 
 

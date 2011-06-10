@@ -24,6 +24,7 @@ use cache(
 	'cherche_pyramide_recente_lay',
 	'extrait_tms_from_pyr',
 	'valide_xml',
+	'reproj_rectangle',
 );
 #### CONSTANTES
 
@@ -59,7 +60,7 @@ $| = 1;
 #### VARIABLES GLOBALES
 
 # valeur des parametres de la ligne de commande
-our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l);
+our($opt_p, $opt_i, $opt_r, $opt_c, $opt_s, $opt_t, $opt_n, $opt_d, $opt_m, $opt_x, $opt_f, $opt_a, $opt_y, $opt_w, $opt_h, $opt_l, $opt_g);
 
 # nom de la grande famille de produits
 my $produit;
@@ -73,8 +74,12 @@ my $masque_mtd;
 my $rep_pyramide;
 # type de compression des images de la pyramide
 my $compression_pyramide;
-# systeme de coordonnees de la pyramide
+# systeme de coordonnees de la pyramide formatte (sans :)
 my $srs_pyramide;
+# systeme de coordonnees de la pyramide autorite:proj
+my $RIG;
+# systeme de coordonnees des donnees autorite:proj
+my $srs_ini;
 # repertoire des fichiers de dallage a creer
 my $rep_fichiers_dallage;
 # annee de production (ou trimestre) des dalles source (ex : 2010 ou 2010-01)
@@ -120,7 +125,7 @@ if($bool_init_ok == 0){
 ($nom_fichier_dallage_mtd, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cree_fichier_dallage($masque_mtd, $rep_fichiers_dallage, "mtd", $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 
 # action 3 : creer le pyramide en XML et les repertoires sur le systeme de fichiers
-$fichier_pyramide_final = &cree_pyramide($produit, $ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement, $fichier_tms, $taille_dalle_pix, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $xsd_pyramide);
+$fichier_pyramide_final = &cree_pyramide($produit, $ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement, $fichier_tms, $taille_dalle_pix, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $xsd_pyramide, $srs_ini);
 
 
 # pour recuperation par d'autres scripts, on ecrit sur la sortie standard
@@ -412,12 +417,14 @@ sub cree_xml_pyramide{
 	my $x_max_donnees = $_[10];
 	my $y_min_donnees = $_[11];
 	my $y_max_donnees = $_[12];
+	my $proj_donnees = $_[13];
+	my $proj_pyramide = $_[14];
 	
 	# tableau contenant la liste des repertoire des donnes de la pyramide (image et mtd compris)
 	my @liste_repertoires = ();
 	
 	# lecture du TMS associe a la pyramide pour en deduire des informations
-	my ($ref_id, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_origine_x, $ref_origine_y, $var_inutile1) = &lecture_tile_matrix_set($tms);
+	my ($ref_id, $ref_id_resolution, $ref_id_taille_pix_tuile_x, $ref_id_taille_pix_tuile_y, $ref_origine_x, $ref_origine_y, $variable_inutile0) = &lecture_tile_matrix_set($tms);
 	# tableau contenant la liste des identifiant des TM du TMS
 	my @id_tms = @{$ref_id};
 	# association entre id du niveau et resolution
@@ -471,9 +478,9 @@ sub cree_xml_pyramide{
 		my $taille_tuile_x = $tms_level_taille_pix_tuile_x{"$level"};
 		# taille des tuiles en pixels selon l'axe y des donnees du niveau
 		my $taille_tuile_y = $tms_level_taille_pix_tuile_y{"$level"};
-		# origine en x du repere du niveau
+		# origine en x du repere du niveau en projection finale
 		my $origine_x = $tms_level_origine_x{"$level"};
-		# origine en y du repere du niveau
+		# origine en y du repere du niveau en projection finale
 		my $origine_y = $tms_level_origine_y{"$level"};
 		
 		# on regarde si la taille des dalles est bien un multiple de la taille des tuiles
@@ -498,7 +505,19 @@ sub cree_xml_pyramide{
 		# nombre de tuiles dans une dalle selon l'axe y
 		my $nb_tuile_y = $taille_dalle / $taille_tuile_y;
 		
-		# on doit indiquer dans le fichier l'emprise des dalles source (de leur rectangle englobant)
+		# on doit indiquer dans le fichier l'emprise des dalles source (de leur rectangle englobant en projection finale)
+		# on reprojete la bbox des donnees si il y a besoin
+		if($proj_donnees != $proj_pyramide){
+			($x_min_donnees, $x_max_donnees, $y_min_donnees, $y_max_donnees) = &reproj_rectangle($x_min_donnees, $x_max_donnees, $y_min_donnees, $y_max_donnees, $proj_donnees, $proj_pyramide, 0);
+			if($x_min_donnees eq "erreur"){
+				&ecrit_log("Erreur a la reprojection de $proj_donnees en $proj_pyramide.");
+				exit;
+			}elsif($x_min_donnees eq "hors_champ"){
+				&ecrit_log("Erreur a la reprojection de $proj_donnees en $proj_pyramide, coordonnees potentiellement hors champ.");
+				exit;
+			}
+		}
+		
 		# en termes d'indice (de numero) de tuile dans le niveau pour chaque coin
 		# calcul de cet indice pour les 4 coins
 		# indice de la tuile dans le TM du x_min de la BBox des dalles source
@@ -670,11 +689,11 @@ sub init{
 	&ecrit_log("commande : @ARGV");
 	
 	# recuperation des parametres de la ligne de commande
-	getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:");
+	getopts("p:i:r:c:s:t:n:d:m:x:fa:y:w:h:l:g:");
 	
 	my $bool_getopt_ok = 1;
 	# sortie si tous les parametres obligatoires ne sont pas presents
-	if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l) ){
+	if ( ! defined ($opt_p and $opt_i and $opt_r and $opt_c and $opt_s and $opt_t and $opt_n and $opt_x and $opt_l and $opt_g) ){
 		$bool_getopt_ok = 0;
 		print "[PREPARE_PYRAMIDE] Nombre d'arguments incorrect.\n\n";
 		&ecrit_log("ERREUR Nombre d'arguments incorrect.");
@@ -704,6 +723,9 @@ sub init{
 		}
 		if(! defined $opt_l){
 			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -l.\n";
+		}
+		if(! defined $opt_g){
+			print "[PREPARE_PYRAMIDE] Veuillez specifier un parametre -g.\n";
 		}
 	}
 	# si le parametre -f a ete specifie, il faut absolument les parametres a, y, w et h
@@ -748,10 +770,10 @@ sub init{
 	}
 	# type de compression des images de la pyramide
 	$compression_pyramide = $opt_c;
-	# systeme de coordonnees de la pyramide
-	my $RIG = $opt_s;
-	# formattage du SRS en majuscule
-	$srs_pyramide = uc($RIG);
+	# systeme de coordonnees de la pyramide en majuscule
+	$RIG = uc($opt_s);
+	# formattage du SRS
+	$srs_pyramide = $RIG;
 	# on remplace les : par des _ car cette string peut etre le nom d'un repertoire 
 	$srs_pyramide =~ s/:/_/g;
 	# repertoire des fichiers de dallage a creer
@@ -773,6 +795,8 @@ sub init{
 	}
 	# chemin vers le fichier layer concernant la pyramide
 	my $fichier_layer = $opt_l;
+	
+	$srs_ini = uc($opt_g);
 	
 	# verifier les parametres
 	# sortie si un des parametres est mal formate ou un des fichiers ou repertoires attendus est absent
@@ -958,6 +982,7 @@ sub cree_pyramide{
 	my $y_max_bbox_pyr = $_[14];
 	# chemin vers le schema XML qui contraint les fichiers XML de pyramide
 	my $xsd_pyr = $_[15];
+	my $srs_donnees = $_[16];
 	
 	# nom de la pyramide (et nom de son repertoire)
 	my $nom_pyramide = &cree_nom_pyramide($ss_produit_pyr, $compression_pyr, $srs_pyr, $annee_pyr, $departement_pyr);
@@ -977,7 +1002,7 @@ sub cree_pyramide{
 	
 	&ecrit_log("Creation de $nom_fichier_pyramide.");
 	# creation du fichier XML de pyramide et recuperation de la liste des repertoires de la pyramide sous forme de reference
-	my ($ref_repertoires_a_creer, $nom_fichier_pyramide_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $tms_pyr, $taille_dalle_pix_pyr, $format_images, $nb_channels, $type_mtd_pyramide, $format_mtd_pyramide, $profondeur_pyramide, $x_min_bbox_pyr, $x_max_bbox_pyr, $y_min_bbox_pyr, $y_max_bbox_pyr);
+	my ($ref_repertoires_a_creer, $nom_fichier_pyramide_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $tms_pyr, $taille_dalle_pix_pyr, $format_images, $nb_channels, $type_mtd_pyramide, $format_mtd_pyramide, $profondeur_pyramide, $x_min_bbox_pyr, $x_max_bbox_pyr, $y_min_bbox_pyr, $y_max_bbox_pyr, $srs_donnees, $srs_pyr);
 	
 	# validation du .pyr par le xsd
 	&ecrit_log("Validation de $nom_fichier_pyramide_final.");

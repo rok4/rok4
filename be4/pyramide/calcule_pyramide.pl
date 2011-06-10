@@ -18,7 +18,7 @@ use cache(
 	'$programme_copie_image_param',
 	'$rep_logs_param',
 	'$programme_reproj_param',
-	'reproj_point',
+# 	'reproj_point',
 	'$nom_fichier_first_jobs_param',
 	'$nom_fichier_last_jobs_param',
 	'extrait_tms_from_pyr',
@@ -27,6 +27,7 @@ use cache(
 	'%produit_couleur_param',
 	'$string_erreur_batch_param',
 	'%produit_sample_format_param',
+	'reproj_rectangle',
 );
 use Getopt::Std;
 use XML::Simple;
@@ -360,6 +361,13 @@ if (defined $fichier_mtd_source){
 my ($x_min_bbox_proj_pyr, $x_max_bbox_proj_pyr, $y_min_bbox_proj_pyr, $y_max_bbox_proj_pyr) = ($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 if($bool_reprojection == 1){
 	($x_min_bbox_proj_pyr, $x_max_bbox_proj_pyr, $y_min_bbox_proj_pyr, $y_max_bbox_proj_pyr) = &reproj_rectangle($x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $systeme_source, $systeme_target, $dilatation_reproj);
+	if($x_min_bbox_proj_pyr eq "erreur"){
+		&ecrit_log("Erreur a la reprojection de $systeme_source en $systeme_target.");
+		exit;
+	}elsif($x_min_bbox_proj_pyr eq "hors_champ"){
+		&ecrit_log("Erreur a la reprojection de $systeme_source en $systeme_target, coordonnees potentiellement hors champ.");
+		exit;
+	}
 }
 
 # ACTION 3 : determination de la resolution_min utile (la res max est celle de la pyramide)
@@ -1043,6 +1051,13 @@ sub definit_bloc_dalle{
 			# on reprojette enventuellement le rectangle englobant la dalle source en SRS de la pyramide pour tester l'intersection
 			if($bool_reprojection == 1){
 				($source_x_min_proj_pyr{$source}, $source_x_max_proj_pyr{$source}, $source_y_min_proj_pyr{$source}, $source_y_max_proj_pyr{$source}) = &reproj_rectangle($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source}, $systeme_source, $systeme_target, $dilatation_reproj);
+				if($source_x_min_proj_pyr{$source} eq "erreur"){
+					&ecrit_log("Erreur a la reprojection de $systeme_source en $systeme_target.");
+					exit;
+				}elsif($source_x_min_proj_pyr{$source} eq "hors_champ"){
+					&ecrit_log("Erreur a la reprojection de $systeme_source en $systeme_target, coordonnees potentiellement hors champ.");
+					exit;
+				}
 			}else{
 				($source_x_min_proj_pyr{$source}, $source_x_max_proj_pyr{$source}, $source_y_min_proj_pyr{$source}, $source_y_max_proj_pyr{$source}) = ($source_x_min{$source}, $source_x_max{$source}, $source_y_min{$source}, $source_y_max{$source});
 			}
@@ -1533,102 +1548,102 @@ sub passage_pivot{
 	return $string_script3;
 	
 }
-################################################################################
-sub reproj_rectangle{
-
-	my $x_min_poly = $_[0];
-	my $x_max_poly = $_[1];
-	my $y_min_poly = $_[2];
-	my $y_max_poly = $_[3];
-	my $srs_ini_poly = $_[4];
-	my $srs_fin_poly = $_[5];
-	my $dilat_securite = $_[6];
-	
-	my ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
-	
-	# schema du rectangle
-	# 01 12
-	# 23 43
-	my ($x0,$y0) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
-	my ($x1,$y1) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
-	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
-	my ($x2,$y2) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
-	
-	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
-	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
-		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly.");
-		exit;
-	}
-	# teste si les coordonnees ne sont pas hors champ
-	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
-		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly, coordonnees potentiellement hors champ.");
-		exit;
-	}
-	
-	# determination de la bbox resultat
-	my $x_min_result = 99999999999;
-	if($x0 < $x_min_result){
-		$x_min_result = $x0;
-	}
-	if($x1 < $x_min_result){
-		$x_min_result = $x1;
-	}
-	if($x3 < $x_min_result){
-		$x_min_result = $x3;
-	}
-	if($x2 < $x_min_result){
-		$x_min_result = $x2;
-	}
-	my $x_max_result = -99999999999;
-	if($x0 > $x_max_result){
-		$x_max_result = $x0;
-	}
-	if($x1 > $x_max_result){
-		$x_max_result = $x1;
-	}
-	if($x3 > $x_max_result){
-		$x_max_result = $x3;
-	}
-	if($x2 > $x_max_result){
-		$x_max_result = $x2;
-	}
-	my $y_min_result = 99999999999;
-	if($y0 < $y_min_result){
-		$y_min_result = $y0;
-	}
-	if($y1 < $y_min_result){
-		$y_min_result = $y1;
-	}
-	if($y3 < $y_min_result){
-		$y_min_result = $y3;
-	}
-	if($y2 < $y_min_result){
-		$y_min_result = $y2;
-	}
-	my $y_max_result = -99999999999;
-	if($y0 > $y_max_result){
-		$y_max_result = $y0;
-	}
-	if($y1 > $y_max_result){
-		$y_max_result = $y1;
-	}
-	if($y3 > $y_max_result){
-		$y_max_result = $y3;
-	}
-	if($y2 > $y_max_result){
-		$y_max_result = $y2;
-	}
-	
-	# dilatataion de la bbox resultat
-	my $dilat_x = ($x_max_result - $x_min_result) * ($dilat_securite / 100);
-	my $dilat_y = ($y_max_result - $y_min_result) * ($dilat_securite / 100);
-	$x_min_reproj = $x_min_result - $dilat_x;
-	$x_max_reproj = $x_max_result + $dilat_x;
-	$y_min_reproj = $y_min_result - $dilat_y;
-	$y_max_reproj = $y_max_result + $dilat_y;
-	
-	return ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
-}
+##############################################################################
+# sub reproj_rectangle{
+# 
+# 	my $x_min_poly = $_[0];
+# 	my $x_max_poly = $_[1];
+# 	my $y_min_poly = $_[2];
+# 	my $y_max_poly = $_[3];
+# 	my $srs_ini_poly = $_[4];
+# 	my $srs_fin_poly = $_[5];
+# 	my $dilat_securite = $_[6];
+# 	
+# 	my ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
+# 	
+# 	# schema du rectangle
+# 	# 01 12
+# 	# 23 43
+# 	my ($x0,$y0) = &reproj_point($x_min_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+# 	my ($x1,$y1) = &reproj_point($x_max_poly, $y_max_poly, $srs_ini_poly, $srs_fin_poly);
+# 	my ($x3,$y3) = &reproj_point($x_max_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+# 	my ($x2,$y2) = &reproj_point($x_min_poly, $y_min_poly, $srs_ini_poly, $srs_fin_poly);
+# 	
+# 	# on ne teste que les x car reproj est implemente comme ca, si erreur x et y en erreur
+# 	if(!($x0 ne "erreur" && $x1 ne "erreur" && $x2 ne "erreur" && $x3 ne "erreur")){
+# 		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly.");
+# 		exit;
+# 	}
+# 	# teste si les coordonnees ne sont pas hors champ
+# 	if(!($x0 ne "*" && $x1 ne "*" && $x2 ne "*" && $x3 ne "*" && $y0 ne "*" && $y1 ne "*" && $y2 ne "*" && $y3 ne "*" )){
+# 		&ecrit_log("Erreur a la reprojection de $srs_ini_poly en $srs_fin_poly, coordonnees potentiellement hors champ.");
+# 		exit;
+# 	}
+# 	
+# 	# determination de la bbox resultat
+# 	my $x_min_result = 99999999999;
+# 	if($x0 < $x_min_result){
+# 		$x_min_result = $x0;
+# 	}
+# 	if($x1 < $x_min_result){
+# 		$x_min_result = $x1;
+# 	}
+# 	if($x3 < $x_min_result){
+# 		$x_min_result = $x3;
+# 	}
+# 	if($x2 < $x_min_result){
+# 		$x_min_result = $x2;
+# 	}
+# 	my $x_max_result = -99999999999;
+# 	if($x0 > $x_max_result){
+# 		$x_max_result = $x0;
+# 	}
+# 	if($x1 > $x_max_result){
+# 		$x_max_result = $x1;
+# 	}
+# 	if($x3 > $x_max_result){
+# 		$x_max_result = $x3;
+# 	}
+# 	if($x2 > $x_max_result){
+# 		$x_max_result = $x2;
+# 	}
+# 	my $y_min_result = 99999999999;
+# 	if($y0 < $y_min_result){
+# 		$y_min_result = $y0;
+# 	}
+# 	if($y1 < $y_min_result){
+# 		$y_min_result = $y1;
+# 	}
+# 	if($y3 < $y_min_result){
+# 		$y_min_result = $y3;
+# 	}
+# 	if($y2 < $y_min_result){
+# 		$y_min_result = $y2;
+# 	}
+# 	my $y_max_result = -99999999999;
+# 	if($y0 > $y_max_result){
+# 		$y_max_result = $y0;
+# 	}
+# 	if($y1 > $y_max_result){
+# 		$y_max_result = $y1;
+# 	}
+# 	if($y3 > $y_max_result){
+# 		$y_max_result = $y3;
+# 	}
+# 	if($y2 > $y_max_result){
+# 		$y_max_result = $y2;
+# 	}
+# 	
+# 	# dilatataion de la bbox resultat
+# 	my $dilat_x = ($x_max_result - $x_min_result) * ($dilat_securite / 100);
+# 	my $dilat_y = ($y_max_result - $y_min_result) * ($dilat_securite / 100);
+# 	$x_min_reproj = $x_min_result - $dilat_x;
+# 	$x_max_reproj = $x_max_result + $dilat_x;
+# 	$y_min_reproj = $y_min_result - $dilat_y;
+# 	$y_max_reproj = $y_max_result + $dilat_y;
+# 	
+# 	return ($x_min_reproj, $x_max_reproj, $y_min_reproj, $y_max_reproj);
+# }
 
 ################################################################################
 # Renvoie une liste de dalles de caches qui vont etre calculees pour un niveau donne (qui correspond a la resolution)
