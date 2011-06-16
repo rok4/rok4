@@ -43,6 +43,13 @@ else(DEB_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(DEB_PACKAGE)
 
+if(RPM_PACKAGE)
+  set(USE_SYSTEM_LIB FALSE)
+  include(RPM)
+else(RPM_PACKAGE)
+  set(CPACK_GENERATOR "TGZ")
+endif(RPM_PACKAGE)
+
 
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
