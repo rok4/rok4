@@ -49,7 +49,7 @@ public:
 	double                   getMaxRes()     const { return maxRes;}
 	double                   getMinRes()     const { return minRes;}
 	bool                     getOpaque()     const { return opaque;}
-	std::vector<Pyramid*>    getPyramids()   const { return pyramids;}
+	std::vector<Pyramid*>&   getPyramids()   { return pyramids;}
 	std::string              getResampling() const { return resampling;}
 	std::vector<std::string> getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }

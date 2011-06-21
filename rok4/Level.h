@@ -27,8 +27,6 @@ private:
 	uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
 	const std::string noDataFile;
 
-	std::string getfilepath(int tilex, int tiley);
-
 	DataSource* noDataSource;
 	
 	DataSource* getEncodedTile(int x, int y);
@@ -56,6 +54,10 @@ public:
 	std::string getId();
 	int         getTileCoding();
 	std::string getType();
+	uint32_t      getTilesPerWidth();
+	uint32_t      getTilesPerHeight();
+
+	std::string getFilePath(int tilex, int tiley);
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);
 

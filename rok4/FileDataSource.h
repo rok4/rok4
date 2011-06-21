@@ -22,7 +22,7 @@ public:
 	/*
 	 * @ return le type MIME de la source de donnees
 	 */
-	std::string gettype(){return type;}
+	std::string getType(){return type;}
 
 	bool releaseData();
 

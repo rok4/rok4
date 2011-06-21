@@ -41,7 +41,7 @@ class DataSource {
 		/**
 		 * Indique le type MIME associé à la donnée source.
 		 */
-		virtual std::string gettype() = 0;
+		virtual std::string getType() = 0;
 
 		/**
 		 * Indique le statut Http associé à la donnée source.
@@ -86,7 +86,7 @@ class DataStream {
 		/**
 		 * Indique le type MIME associé au flux.
 		 */
-		virtual std::string gettype() = 0;
+		virtual std::string getType() = 0;
 
 		/**
 		 * Indique le statut Http associé au flux.
@@ -130,7 +130,7 @@ class DataSourceProxy : public DataSource {
 
 		inline const uint8_t* getData(size_t &size) {return getDataSource().getData(size);}
 		inline bool releaseData()                   {return getDataSource().releaseData();}
-		inline std::string gettype()                {return getDataSource().gettype();}
+		inline std::string getType()                {return getDataSource().getType();}
 		inline int getHttpStatus()                  {return getDataSource().getHttpStatus();}
 };
 
@@ -170,7 +170,7 @@ class BufferedDataSource : public DataSource {
 		bool releaseData() {return false;}
 
 		/** @return le type du dataStream */
-		std::string gettype() {return type;}
+		std::string getType() {return type;}
 
 		/** @return le status du dataStream */
 		int getHttpStatus() {return httpStatus;}

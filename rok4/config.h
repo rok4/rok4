@@ -21,7 +21,7 @@
 #define MAX_TILE_SIZE 1048576
 
 #define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
-#define SERVICES_CONF_PATH "../config/services.conf"
+#define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
 
 #define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
 #define DEFAULT_LOG_FILE_PERIOD 3600

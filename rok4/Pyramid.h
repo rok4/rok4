@@ -15,8 +15,9 @@ private:
 
 public:
 
-	Level * getFirstLevel();
+	Level* getFirstLevel();
 	TileMatrixSet getTms();
+	std::map<std::string, Level*>& getLevels() {return levels;}
 
 	DataSource* getTile(int x, int y, std::string tmId);	
 	Image* getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error);

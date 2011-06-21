@@ -125,7 +125,7 @@ if($bool_init_ok == 0){
 ($nom_fichier_dallage_mtd, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox) = &cree_fichier_dallage($masque_mtd, $rep_fichiers_dallage, "mtd", $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox);
 
 # action 3 : creer le pyramide en XML et les repertoires sur le systeme de fichiers
-$fichier_pyramide_final = &cree_pyramide($produit, $ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement, $fichier_tms, $taille_dalle_pix, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $xsd_pyramide, $srs_ini);
+$fichier_pyramide_final = &cree_pyramide($produit, $ss_produit, $compression_pyramide, $srs_pyramide, $annee, $departement, $fichier_tms, $taille_dalle_pix, $type_mtd_pyr, $format_mtd_pyr, $profondeur_pyr, $x_min_bbox, $x_max_bbox, $y_min_bbox, $y_max_bbox, $xsd_pyramide, $srs_ini,$RIG);
 
 
 # pour recuperation par d'autres scripts, on ecrit sur la sortie standard
@@ -507,7 +507,7 @@ sub cree_xml_pyramide{
 		
 		# on doit indiquer dans le fichier l'emprise des dalles source (de leur rectangle englobant en projection finale)
 		# on reprojete la bbox des donnees si il y a besoin
-		if($proj_donnees != $proj_pyramide){
+		if($proj_donnees ne $proj_pyramide){
 			($x_min_donnees, $x_max_donnees, $y_min_donnees, $y_max_donnees) = &reproj_rectangle($x_min_donnees, $x_max_donnees, $y_min_donnees, $y_max_donnees, $proj_donnees, $proj_pyramide, 0);
 			if($x_min_donnees eq "erreur"){
 				&ecrit_log("Erreur a la reprojection de $proj_donnees en $proj_pyramide.");
@@ -983,6 +983,7 @@ sub cree_pyramide{
 	# chemin vers le schema XML qui contraint les fichiers XML de pyramide
 	my $xsd_pyr = $_[15];
 	my $srs_donnees = $_[16];
+	my $rig_pyr = $_[17];
 	
 	# nom de la pyramide (et nom de son repertoire)
 	my $nom_pyramide = &cree_nom_pyramide($ss_produit_pyr, $compression_pyr, $srs_pyr, $annee_pyr, $departement_pyr);
@@ -1002,7 +1003,7 @@ sub cree_pyramide{
 	
 	&ecrit_log("Creation de $nom_fichier_pyramide.");
 	# creation du fichier XML de pyramide et recuperation de la liste des repertoires de la pyramide sous forme de reference
-	my ($ref_repertoires_a_creer, $nom_fichier_pyramide_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $tms_pyr, $taille_dalle_pix_pyr, $format_images, $nb_channels, $type_mtd_pyramide, $format_mtd_pyramide, $profondeur_pyramide, $x_min_bbox_pyr, $x_max_bbox_pyr, $y_min_bbox_pyr, $y_max_bbox_pyr, $srs_donnees, $srs_pyr);
+	my ($ref_repertoires_a_creer, $nom_fichier_pyramide_final) = &cree_xml_pyramide($nom_fichier_pyramide, "$rep_pyramide/$nom_pyramide", $tms_pyr, $taille_dalle_pix_pyr, $format_images, $nb_channels, $type_mtd_pyramide, $format_mtd_pyramide, $profondeur_pyramide, $x_min_bbox_pyr, $x_max_bbox_pyr, $y_min_bbox_pyr, $y_max_bbox_pyr, $srs_donnees, $rig_pyr);
 	
 	# validation du .pyr par le xsd
 	&ecrit_log("Validation de $nom_fichier_pyramide_final.");

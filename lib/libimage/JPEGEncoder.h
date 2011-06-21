@@ -34,7 +34,7 @@ public:
 
 	bool eof() {return(cinfo.next_scanline >= cinfo.image_height);}
 
-	std::string gettype() {return "image/jpeg";}
+	std::string getType() {return "image/jpeg";}
 	
 	int getHttpStatus() {return 200;}
 };

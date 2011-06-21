@@ -18,6 +18,8 @@
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
 
+const char *pj_finder(const char *name);
+
 /**
 * \class Rok4Server 
 *
@@ -33,6 +35,8 @@ private:
 	ServicesConf servicesConf;
 	std::map<std::string, Layer*> layerList;
 	std::map<std::string, TileMatrixSet*> tmsList;
+        std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+        std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
 
 	static void* thread_loop(void* arg);
 
@@ -48,8 +52,11 @@ private:
 	void        processRequest(Request *request, FCGX_Request&  fcgxRequest);
 
 public:
-	std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
-	std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+	ServicesConf& getServicesConf() {return servicesConf;}
+	std::map<std::string, Layer*>& getLayerList() {return layerList;}
+	std::map<std::string, TileMatrixSet*>& getTmsList() {return tmsList;}
+	std::vector<std::string>& getWmsCapaFrag() {return wmsCapaFrag;}
+	std::vector<std::string>& getWmtsCapaFrag() {return wmtsCapaFrag;}
 
 	void run();
 	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);

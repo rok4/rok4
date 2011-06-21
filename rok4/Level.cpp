@@ -63,6 +63,8 @@ uint32_t Level::getMaxTileCol(){return maxTileCol;}
 uint32_t Level::getMinTileCol(){return minTileCol;}
 double Level::getRes(){return tm.getRes();}
 std::string Level::getId(){return tm.getId();}
+uint32_t Level::getTilesPerWidth(){return tilesPerWidth;}
+uint32_t Level::getTilesPerHeight(){return tilesPerHeight;}
 
 
 /*
@@ -171,7 +173,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /*
  * Recuperation du nom de fichier de la dalle du cache en fonction de son indice
  */
-std::string Level::getfilepath(int tilex, int tiley)
+std::string Level::getFilePath(int tilex, int tiley)
 {
 	// Cas normalement filtré en amont (exception WMS/WMTS)
 	if (tilex < 0 || tiley < 0)
@@ -221,7 +223,7 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	int n=(y%tilesPerHeight)*tilesPerWidth + (x%tilesPerWidth);
 	// Les index sont stockés à partir de l'octet 2048
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-	std::string path=getfilepath(x, y);
+	std::string path=getFilePath(x, y);
 	LOGGER_DEBUG(path);
 	return new FileDataSource(path.c_str(),posoff,possize,getType());
 }

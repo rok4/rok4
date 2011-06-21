@@ -15,7 +15,8 @@ protected:
 public:
 	MessageDataSource(std::string message, std::string type) : message(message), type(type) {}
 	const uint8_t* getData(size_t& size) {size=message.length();return (const uint8_t*)message.data();}
-	std::string gettype() {return type.c_str();}
+        int getHttpStatus() {return 200;}
+	std::string getType() {return type.c_str();}
 	bool releaseData() {}
 };
 
@@ -64,7 +65,7 @@ public:
 		return size;
 	}
 	bool eof() {return (pos==message.length());}
-	std::string gettype() {return type.c_str();}
+	std::string getType() {return type.c_str();}
 	int getHttpStatus() {return 200;}
 };
 

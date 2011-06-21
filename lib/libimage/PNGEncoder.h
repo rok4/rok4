@@ -30,7 +30,7 @@ public:
 	size_t read(uint8_t* buffer, size_t size);
 	bool eof();
 
-	std::string gettype() {return "image/png";}
+	std::string getType() {return "image/png";}
 
 	int getHttpStatus() {return 200;}
 };

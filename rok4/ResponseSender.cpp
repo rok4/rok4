@@ -50,7 +50,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 	std::string statusHeader= genStatusHeader(source->getHttpStatus()) ;
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(source->gettype().c_str(), strlen(source->gettype().c_str()),request->out);
+	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	size_t buffer_size;
@@ -87,7 +87,7 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	std::string statusHeader= genStatusHeader(stream->getHttpStatus());
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(stream->gettype().c_str(), strlen(stream->gettype().c_str()),request->out);
+	FCGX_PutStr(stream->getType().c_str(), strlen(stream->getType().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	uint8_t *buffer = new uint8_t[2 << 20];

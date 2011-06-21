@@ -713,11 +713,11 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	return true;
 }
 
-ServicesConf * ConfLoader::buildServicesConf(){
-	LOGGER_INFO("Construction de la configuration des services depuis "<<SERVICES_CONF_PATH);
-	TiXmlDocument doc(SERVICES_CONF_PATH);
+ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
+	LOGGER_INFO("Construction de la configuration des services depuis "<<servicesConfigFile);
+	TiXmlDocument doc(servicesConfigFile);
 	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVICES_CONF_PATH);
+		LOGGER_ERROR("Ne peut pas charger le fichier " << servicesConfigFile);
 		return NULL;
 	}
 
@@ -727,11 +727,11 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
 	if (!pElem){
-		LOGGER_ERROR(SERVICES_CONF_PATH << " impossible de recuperer la racine.");
+		LOGGER_ERROR(servicesConfigFile << " impossible de recuperer la racine.");
 		return NULL;
 	}
 	if (pElem->ValueStr() != "servicesConf"){
-		LOGGER_ERROR(SERVICES_CONF_PATH << " La racine n'est pas un servicesConf.");
+		LOGGER_ERROR(servicesConfigFile << " La racine n'est pas un servicesConf.");
 		return NULL;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -778,7 +778,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	if (!pElem){
 		maxWidth=MAX_IMAGE_WIDTH;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
-		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
+		LOGGER_ERROR(servicesConfigFile << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
 	}
 
@@ -786,7 +786,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	if (!pElem){
 		maxHeight=MAX_IMAGE_HEIGHT;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
-		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
+		LOGGER_ERROR(servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
 		return false;
 	}
 
@@ -798,7 +798,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 			format != "image/x-bil" &&
 			format != "image/x-bil;bits=32" &&
 			format != "image/gif"){
-			LOGGER_ERROR(SERVICES_CONF_PATH << "le format d'image [" << format << "] n'est pas un type MIME");
+			LOGGER_ERROR(servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME");
 		}else{
 			formatList.push_back(format);
 		}

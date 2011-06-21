@@ -126,8 +126,8 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
 * @param Image : Image a enregistrer
 * @param pName : nom du fichier TIFF
 * @param sampleperpixel : nombre de canaux de l'image TIFF
-* @parama bitspersample : nombre de bits par canal de l'image TIFF
-* @parama sampleformat : format des données binaires (uint ou float)
+* @param bitspersample : nombre de bits par canal de l'image TIFF
+* @param sampleformat : format des données binaires (uint ou float)
 * @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
 * @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
 * TODO : gerer tous les types de couleur pour la valeur NODATA
@@ -232,8 +232,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
 	// Lecture et creation des images source
 	int nb=0,i;
-	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7)
-	{
+	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7){
 		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
 		if (pImage==NULL){
 			LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
@@ -242,8 +241,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 		pImageIn->push_back(pImage);
 		i++;
 	}
-	if (nb>=0 && nb!=7)
-	{
+	if (nb>=0 && nb!=7){
 		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << i);
 		return -1;
 	}
@@ -598,11 +596,11 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
 	BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
-LOGGER_DEBUG("YEAH1 "<< width_dst<<" "<< height_dst<<" "<<off_x<<" "<<off_y<<" "<< ratio_x<<" "<< ratio_y);
+//LOGGER_DEBUG("YEAH1 "<< width_dst<<" "<< height_dst<<" "<<off_x<<" "<<off_y<<" "<< ratio_x<<" "<< ratio_y);
 	// Reechantillonnage
 	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	// Reechantillonage du masque
-LOGGER_DEBUG("YEAH2");
+//LOGGER_DEBUG("YEAH2");
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	return pRImage;
 }
@@ -742,14 +740,14 @@ LOGGER_DEBUG("Check");
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Merge");
+//LOGGER_DEBUG("Merge");
 	// Fusion des paquets d images
 	if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets d images");
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Save");
+//LOGGER_DEBUG("Save");
 	// Enregistrement de l image fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement de l image finale");

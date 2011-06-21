@@ -492,3 +492,4 @@ void Rok4Server::buildWMTSCapabilities(){
 		*/
 
 }
+

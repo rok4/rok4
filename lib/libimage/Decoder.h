@@ -57,7 +57,7 @@ class DataSourceDecoder : public DataSource {
 			decData = 0;
 		}
 
-		std::string gettype() {return "image/bil";}
+		std::string getType() {return "image/bil";}
 		int getHttpStatus() {return 200;}
 };
 
