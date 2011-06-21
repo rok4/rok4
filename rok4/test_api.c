@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
 	fprintf(stdout,"GetTile n°2 : \n");
 
-	HttpResponse* error2=rok4GetTile"SERVICE=WMTS&REQUEST=GetTile&tileCol=9479&tileRow=109474&tileMatrix=20&LAYER=PARCELLAIRE_PNG_IGNF_LAMB93&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0", "localhost", "/target/bin/rok4", server, filename, &posoff, &possize);
+	HttpResponse* error2=rok4GetTile("SERVICE=WMTS&REQUEST=GetTile&tileCol=9479&tileRow=109474&tileMatrix=20&LAYER=PARCELLAIRE_PNG_IGNF_LAMB93&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0", "localhost", "/target/bin/rok4", server, filename, &posoff, &possize);
 
 	fprintf(stdout,"filename : %s\noff=%d\nsize=%d\n",filename[0],posoff,possize);
 
