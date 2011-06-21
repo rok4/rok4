@@ -55,6 +55,11 @@ endforeach()
 
 add_custom_target(tiffuncompress ALL DEPENDS ${pngout-${PROJECT_NAME}} ${DEP_LIBRARY}) 
 
+add_custom_command(OUTPUT log
+    COMMAND mkdir log COMMAND touch log/.empty
+)
+add_custom_target(pyramidelogdir ALL DEPENDS log ) 
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
@@ -138,6 +143,8 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 endif(BUILD_DOC)
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/log/"
+  DESTINATION log)
 
 
 

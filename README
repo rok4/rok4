@@ -46,6 +46,11 @@ UNITTEST : compilation des tests unitaires (BOOL)
     make test 
   par défaut : FALSE 
 
+RPM_PACKAGE : (EXPERIMENTAL)
+  Création d'un paquet RPM à la place d'un tar.gz 
+  make all doc package
+  par défaut : FALSE 
+
 DEB_PACKAGE : (EXPERIMENTAL)
   Création d'un paquet pour debian à la place d'un tar.gz 
   dépend des bibliothèques systèmes
