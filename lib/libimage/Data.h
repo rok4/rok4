@@ -122,7 +122,6 @@ class DataSourceProxy : public DataSource {
 
 	public:
 
-
 		DataSourceProxy	(DataSource* dataSource, DataSource& noDataSource) :
 			status(UNKNOWN), dataSource(dataSource), noDataSource(noDataSource) {}
 

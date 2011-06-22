@@ -18,8 +18,6 @@
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
 
-const char *pj_finder(const char *name);
-
 /**
 * \class Rok4Server 
 *
@@ -44,9 +42,7 @@ private:
 	void buildWMTSCapabilities();
 
 	DataStream* getMap (Request* request);
-	DataSource* getTile(Request* request);
 	DataStream* WMSGetCapabilities (Request* request);
-	DataStream* WMTSGetCapabilities(Request* request);
 	void        processWMS    (Request *request, FCGX_Request&  fcgxRequest);
 	void        processWMTS   (Request *request, FCGX_Request&  fcgxRequest);
 	void        processRequest(Request *request, FCGX_Request&  fcgxRequest);
@@ -57,9 +53,11 @@ public:
 	std::map<std::string, TileMatrixSet*>& getTmsList() {return tmsList;}
 	std::vector<std::string>& getWmsCapaFrag() {return wmsCapaFrag;}
 	std::vector<std::string>& getWmtsCapaFrag() {return wmtsCapaFrag;}
+	DataSource* getTile(Request* request);
+	DataStream* WMTSGetCapabilities(Request* request);
 
 	void run();
-	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
+	Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 

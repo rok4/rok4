@@ -8,6 +8,9 @@ cmake .. [-DOPTION1 -DOPTION2]
 make 
 make [install|package]
 
+Exemple:
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target -DDEP_PATH=/tmp ..
+
 OPTIONS
 
 les options sont définie par : 

@@ -9,6 +9,8 @@
 			<xs:element name="logFilePeriod"    type="xs:positiveInteger"/>
 			<!-- nombre de threads exploités pour l'ecoute et le calcul-->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
+			<!-- Fichier contenant les parametres de service -->
+			<xs:element name="servicesConf"         type="xs:string"/>
 			<!-- répertoire des configs des layers -->
 			<xs:element name="layerDir"         type="xs:string"/>
 			<!-- répertoire des configs des tileMatrixSet -->

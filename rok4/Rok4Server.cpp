@@ -14,10 +14,8 @@
 #include <fstream>
 #include <cstring>
 #include "Logger.h"
-#include "Pyramid.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
-#include "ConfLoader.h"
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include <proj_api.h>
@@ -37,7 +35,7 @@ void* Rok4Server::thread_loop(void* arg)
 
 	while(true){
 		int rc;
-		if(FCGX_Accept_r(&fcgxRequest) < 0) {
+		if((rc=FCGX_Accept_r(&fcgxRequest)) < 0) {
 			LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
 			break;
 		}
@@ -66,26 +64,11 @@ void* Rok4Server::thread_loop(void* arg)
 }
 
 /**
-Construction du serveur
- */
-Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
+* @brief Construction du serveur
+*/
+Rok4Server::Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
                        sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
 
-  	// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
-	// Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
-	// Utile
-	//  * Pour faire du profiling (grof)
-	//  * Pour lancer rok4 sur plusieurs serveurs distants
-	//  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
-
-	// A décommenter pour utiliser valgrind
-	// Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
-	// Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
-	
-	// sock = FCGX_OpenSocket(":1990", 50);
-
-	// Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
-	// Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
 	buildWMSCapabilities();
 	buildWMTSCapabilities();
 }
@@ -95,6 +78,23 @@ Rok4Server::Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::st
  */
 void Rok4Server::run() {
 	 int init=FCGX_Init();
+
+// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+        // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
+        // Utile
+        //  * Pour faire du profiling (grof)
+        //  * Pour lancer rok4 sur plusieurs serveurs distants
+        //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
+
+        // A décommenter pour utiliser valgrind
+        // Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
+        // Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
+
+        // sock = FCGX_OpenSocket(":1990", 50);
+
+        // Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
+        // Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
+
 
 	for(int i = 0; i < threads.size(); i++){
 		pthread_create(&(threads[i]), NULL, Rok4Server::thread_loop, (void*) this);
@@ -224,11 +224,4 @@ void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ){
 	}else{
 		S.sendresponse(new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le service "+request->service+" est inconnu pour ce serveur.","wmts")),&fcgxRequest);
 	}
-}
-
-// TODO : A mettre ailleurs (dupliqué dans Grid.cpp)
-char PROJ_LIB[1024] = PROJ_LIB_PATH;
-const char *pj_finder(const char *name) {
-  strcpy(PROJ_LIB + 15, name);
-  return PROJ_LIB;
 }

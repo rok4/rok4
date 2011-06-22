@@ -10,21 +10,49 @@
 #include "Message.h"
 #include "Request.h"
 
-/*
+/**
+* @brief Initialisation d'une reponse a partir d'une source
+* @brief Les donnees source sont copiees dans la reponse
+*/
+
+HttpResponse* initResponseFromSource(DataSource* source){
+        HttpResponse* response=new HttpResponse;
+        response->status=source->getHttpStatus();
+        response->type=new char[source->getType().length()+1];
+        strcpy(response->type,source->getType().c_str());
+        size_t buffer_size;
+        const uint8_t *buffer = source->getData(buffer_size);
+	// TODO : tester sans copie memoire (attention, la source devrait etre supprimee plus tard)
+
+        response->content=new char[buffer_size+1];
+        strcpy(response->content,(char*)buffer);
+        return response;
+}
+
+/**
+* @brief Finder pour utiliser la fonction callback pj_set_finder de la libproj
+*/
+
+char PROJ_LIB[1024] = PROJ_LIB_PATH;
+const char *pj_finder(const char *name) {
+  strcpy(PROJ_LIB + 15, name);
+  return PROJ_LIB;
+}
+
+/**
 * @brief Initialisation du serveur ROK4
 * @param serverConfigFile : nom du fichier de configuration des parametres techniques
-* @param servicesConfigFile : nom du fichier de configuration des services
 * @return : pointeur sur le serveur ROK4, NULL en cas d'erreur (forcement fatale)
 */
 
-Rok4Server* rok4InitServer(const char* serverConfigFile, const char* servicesConfigFile){
+Rok4Server* rok4InitServer(const char* serverConfigFile){
 	// Initialisation de l'acces au parametrage de la libproj
 	pj_set_finder( pj_finder );
 
 	// Initialisation des parametres techniques
 	int nbThread,logFilePeriod;
-	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strLayerDir,strTmsDir;
-	if (!ConfLoader::getTechnicalParam(strServerConfigFile, strLogFileprefix, logFilePeriod, nbThread, strLayerDir, strTmsDir)){
+	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir;
+	if (!ConfLoader::getTechnicalParam(strServerConfigFile, strLogFileprefix, logFilePeriod, nbThread, strServicesConfigFile, strLayerDir, strTmsDir)){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
@@ -42,8 +70,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile, const char* servicesCon
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
-	// Construction des parametres de service (nom de fichier dans la varaible d'environnement SERVICES_CONF_PATH)
-	std::string strServicesConfigFile=servicesConfigFile;
+	// Construction des parametres de service
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf(strServicesConfigFile);
 	if (servicesConf==NULL){
 		LOGGER_FATAL("Impossible d'interpreter le fichier de conf "<<strServicesConfigFile);
@@ -74,7 +101,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile, const char* servicesCon
 	return new Rok4Server(nbThread, *servicesConf, layerList, tmsList);
 }
 
-/*
+/**
 * @brief Implementation de l'operation GetCapabilities pour le WMTS
 * @param query
 * @param hostname
@@ -85,34 +112,16 @@ Rok4Server* rok4InitServer(const char* serverConfigFile, const char* servicesCon
 */
 
 HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Rok4Server* server){
-	// Construction des capabilities a partir des fragments invariants de capabilities du serveur
-	std::string strHostname=hostname, strPath=path;
-	std::string capa = "";
-        for (int i=0; i < server->getWmtsCapaFrag().size()-1; i++)
-                capa = capa + server->getWmtsCapaFrag()[i] + "http://" + strHostname + strPath +"?";
-        capa = capa + server->getWmtsCapaFrag().back();
-
-	MessageDataSource message(capa,"text/xml");
-
-	HttpResponse* response=new HttpResponse;
-	response->status=message.getHttpStatus();
-        response->type=new char[message.getType().length()+1];
-        strcpy(response->type,message.getType().c_str());
-        size_t buffer_size;
-	// TODO Essayer content*=(char*)message.getData(buffer_size);
-	// pour eviter une copie memoire
-        const uint8_t *buffer = message.getData(buffer_size);
-        response->content=new char[buffer_size+1];
-        strcpy(response->content,(char*)buffer);
-
+        Request* request=new Request(0,(char*)hostname,(char*)path);
+	DataStream* stream=server->WMTSGetCapabilities(request);
+	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
+	delete request;
+	delete stream;
 	return response;
-
-	// TODO Verifier la bonne destruction du message
 }
 
-/*
+/**
 * @brief Implementation de l'operation GetTile
-* @brief La tuile n'est pas lue, les elements recuperes sont le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * @param query
 * @param hostname
 * @param path
@@ -122,13 +131,33 @@ HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Ro
 * hostname="localhost"
 * path="/target/bin/rok4"
 * @param server : serveur
+* @return Reponse
+*/
+
+HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server){
+        std::string strQuery=query;
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostname,(char*)path);
+	DataSource* source=server->getTile(request);
+	HttpResponse* response=initResponseFromSource(source);
+	delete request;
+        delete source;
+        return response;
+}
+
+/**
+* @brief Implementation de l'operation GetTile modifiee
+* @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* @param query
+* @param hostname
+* @param path
+* @param server : serveur
 * @param filename : nom du fichier
 * @param posoff : position d'enregistrement de l'offset de la tuile
 * @param possize : position d'enregistrement de la taille de la tuile
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server, char** filename, uint32_t* posoff, uint32_t* possize){
+HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, char** filename, uint32_t* posoff, uint32_t* possize){
 	// Initialisation
 	std::string strQuery=query;
 
@@ -142,14 +171,7 @@ HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* p
 	// Exception
         if (errorResp){
                 LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
-		HttpResponse* error=new HttpResponse;
-		error->status=errorResp->getHttpStatus();
-		error->type=new char[errorResp->getType().length()+1];
-		strcpy(error->type,errorResp->getType().c_str());
-		size_t buffer_size;
-        	const uint8_t *buffer = errorResp->getData(buffer_size);
-		error->content=new char[buffer_size+1];
-		strcpy(error->content,(char*)buffer);
+		HttpResponse* error=initResponseFromSource(errorResp);
 		delete errorResp;
 		return error;
         }
@@ -164,11 +186,13 @@ HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* p
         std::string imageFilePath=level->getFilePath(x, y);
 	*filename=new char[imageFilePath.length()+1];
 	strcpy(*filename,imageFilePath.c_str());
+
+	delete request;
 	return 0;
 }
 
-/*
-* Extinction du serveur
+/**
+* @brief Extinction du serveur
 */
 
 void rok4KillServer(Rok4Server* server){

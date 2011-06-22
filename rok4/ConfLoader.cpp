@@ -550,7 +550,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& logFilePrefix, int& logFilePeriod, int &nbThread, std::string &layerDir, std::string &tmsDir){
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& logFilePrefix, int& logFilePeriod, int &nbThread, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir){
 	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
 	TiXmlDocument doc(serverConfigFile);
 	if (!doc.LoadFile()){
@@ -597,6 +597,14 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] n'est pas un entier."<<std::endl;
 		return false;
 	}
+
+	pElem=hRoot.FirstChild("servicesConfigFile").Element();
+        if (!pElem){
+                std::cerr<<"Pas de servicesConfigFile => servicesConfigFile = " << DEFAULT_SERVICES_CONF_PATH <<std::endl;
+                servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
+        }else{
+                servicesConfigFile=pElem->GetText();
+        }
 
 	pElem=hRoot.FirstChild("layerDir").Element();
 	if (!pElem){

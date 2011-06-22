@@ -29,9 +29,10 @@ typedef void Rok4Server;
 
 // Functions
 
-Rok4Server* rok4InitServer(const char* serverConfigFile, const char* servicesConfigFile);
+Rok4Server* rok4InitServer(const char* serverConfigFile);
 HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Rok4Server* server);
-HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server, char** filename, uint32_t* posoff, uint32_t* possize);
+HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server);
+HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, char** filename, uint32_t* posoff, uint32_t* possize);
 void rok4KillServer(Rok4Server* server);
 
 #ifdef __cplusplus
