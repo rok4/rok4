@@ -2,7 +2,9 @@
 #include <fcntl.h>
 #include "Logger.h"
 #include <cstdio>
-#include "config.h"
+
+// Taille maximum d'une tuile WMTS
+#define MAX_TILE_SIZE 1048576
 
 FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, const uint32_t possize, std::string type) : filename(filename), posoff(posoff), possize(possize), type(type)
 {
