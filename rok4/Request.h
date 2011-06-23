@@ -7,6 +7,12 @@
 #include "CRS.h"
 #include "Layer.h"
 #include "ServicesConf.h"
+
+/**
+* @brief Classe request
+* @brief Decodage d'une requete HTTP
+*/
+
 class Request {
 private:
 	void url_decode(char *src);

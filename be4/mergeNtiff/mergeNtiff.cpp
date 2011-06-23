@@ -43,14 +43,20 @@
 #include "MirrorImage.h"
 #include "math.h"
 
-/* Usage de la ligne de commande */
+/**
+* @fn void usage()
+* Usage de la ligne de commande
+*/
 
 void usage() {
 	LOGGER_INFO(" Parametres : mergeNtiff -f (fichier liste des images source) -a (sampleformat) -i (interpolation) -n (couleur NoData) -t (type) -s (nb de sample par pixel) -b (nb de bit par sample) -p(photometric) ");
 	LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
 }
 
-/* Lecture des parametres de la ligne de commande */
+/**
+* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
+* Lecture des parametres de la ligne de commande
+*/
 
 int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
@@ -121,7 +127,8 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
 	return 0;
 }
 
-/*
+/**
+* @fn int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric)
 * @brief Enregistrement d'une image TIFF
 * @param Image : Image a enregistrer
 * @param pName : nom du fichier TIFF
@@ -181,7 +188,10 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
     	return 0;
 }
 
-/* Lecture d une ligne du fichier de la liste d images source */
+/**
+* @fn int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
+* Lecture d une ligne du fichier de la liste d images source
+*/
 
 int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
 {
@@ -199,7 +209,10 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 	return nb;
 }
 
-/* Chargement des images depuis le fichier texte donné en parametre */
+/**
+* @fn int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
+* Chargement des images depuis le fichier texte donné en parametre
+*/
 
 int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
 {
@@ -253,7 +266,9 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 }
 
 
-/* Controle des images
+/**
+* @fn int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
+* @brief Controle des images
 * TODO : ajouter des controles
 */
 
@@ -283,7 +298,10 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 
 #define epsilon 0.001
 
-/* Calcul de la phase en X d'une image */
+/**
+* @fn double getPhasex(Image* pImage)
+* @brief Calcul de la phase en X d'une image
+*/
 
 double getPhasex(Image* pImage) {
         double intpart;
@@ -293,7 +311,10 @@ double getPhasex(Image* pImage) {
 	return phi;
 }
 
-/* Calcul de la phase en Y d'une image */
+/**
+* @fn double getPhasey(Image* pImage)
+* @brief Calcul de la phase en Y d'une image
+*/
 
 double getPhasey(Image* pImage) {
         double intpart;
@@ -319,7 +340,7 @@ bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2
 bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2)-epsilon);}
 bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2)-epsilon);}
 
-/*
+/**
 * @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
 * @param ImageIn : vecteur contenant les images non triees
 * @param pTabImageIn : tableau de vecteurs conteant chacun des images superposables
@@ -395,7 +416,10 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 	return 0;
 }
 
-/* Hexadecimal -> int  */
+/**
+*@fn int h2i(char s)
+* Hexadecimal -> int
+*/
 
 int h2i(char s)
 {
@@ -409,7 +433,8 @@ int h2i(char s)
                 return -1; /* invalid input! */
 }
 
-/* 
+/**
+* @fn ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat, uint mirrors) 
 * @brief Assemblage d images superposables
 * @param TabImageIn : vecteur d images a assembler
 * @return Image composee de type ExtendedCompoundImage
@@ -439,7 +464,8 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,char* no
 	return pECI ;
 }
 
-/* 
+/** 
+* @fn uint addMirrors(ExtendedCompoundImage* pECI)
 * @brief Ajout de miroirs a une ExtendedCompoundImage
 * L'image en entree doit etre composee d'un assemblage regulier d'images (de type CompoundImage)
 * Objectif : mettre des miroirs la ou il n'y a pas d'images afin d'eviter des effets de bord en cas de reechantillonnage
@@ -551,7 +577,8 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-/*
+/**
+* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 * @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
@@ -596,16 +623,15 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
 	BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
-//LOGGER_DEBUG("YEAH1 "<< width_dst<<" "<< height_dst<<" "<<off_x<<" "<<off_y<<" "<< ratio_x<<" "<< ratio_y);
 	// Reechantillonnage
 	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	// Reechantillonage du masque
-//LOGGER_DEBUG("YEAH2");
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	return pRImage;
 }
 
-/*
+/**
+* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata, uint16_t sampleformat)
 * @brief Fusion des images
 * @param pImageOut : image de sortie
 * @param TabImageIn : tableau de vecteur d images superposables
@@ -680,7 +706,8 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 }
 
 /**
-* Fonction principale
+* @fn int main(int argc, char **argv)
+* @brief Fonction principale
 */
 
 int main(int argc, char **argv) {

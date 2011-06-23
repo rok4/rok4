@@ -97,10 +97,10 @@ std::string Request::getParam(std::string paramName){
 	return it->second;
 }
 
-/*
- * Verfication et recuperation des parametres d'une requete GetTile
- * @return message d'erreur en cas d'erreur (NULL sinon)
- */
+/**
+* @vrief Verification et recuperation des parametres d'une requete GetTile
+* @return message d'erreur en cas d'erreur (NULL sinon)
+*/
 
 DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
 {
@@ -175,8 +175,8 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 	}
 }
 
-/*
- * Récuperation et vérification des parametres d'une requete GetMap
+/**
+ * @brife Recuperation et verification des parametres d'une requete GetMap
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 

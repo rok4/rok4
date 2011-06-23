@@ -35,7 +35,7 @@ class Logger {
 		/**
 		 * Définit la sortie d'un niveau de log.
 		 *
-		 * Pour désactiver un niveau de log, utliser un pointeur nul
+		 * Pour désactiver un niveau de log, utiliser un pointeur nul
 		 * Le même accumulateur peut être utilisé par plusieurs niveau de log.
 		 *
 		 * La classe Logger se charge de détruire les Accumulateurs non utilisés.

@@ -6,6 +6,11 @@
 #include "TileMatrixSet.h"
 #include "CRS.h"
 
+/**
+* @class Pyramid
+* @brief Implementation des pyramides
+* Une pyramide est associee a un layer et comporte plusieurs niveaux
+*/
 
 class Pyramid {  
 private:

@@ -3,6 +3,11 @@
 
 #include <string>
 
+/**
+* @class CRS
+* @brief Gestion des CRS
+*/
+
 class CRS {
 private:
 	std::string requestCode;	// Code du CRS tel qu'il est ecrit dans la requete WMS

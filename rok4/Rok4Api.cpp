@@ -30,6 +30,7 @@ HttpResponse* initResponseFromSource(DataSource* source){
 }
 
 /**
+* @fn const char *pj_finder(const char *name)
 * @brief Finder pour utiliser la fonction callback pj_set_finder de la libproj
 */
 
@@ -103,12 +104,10 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 
 /**
 * @brief Implementation de l'operation GetCapabilities pour le WMTS
-* @param query
-* @param hostname
-* @param path
-* @brief Les variables sont allouees et doivent etre desallouees ensuite. 
-* @param server : serveur
-* @return Reponse
+* @param[in] hostname
+* @param[in] path
+* @param[in] server : serveur
+* @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
 HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Rok4Server* server){
@@ -122,16 +121,16 @@ HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Ro
 
 /**
 * @brief Implementation de l'operation GetTile
-* @param query
-* @param hostname
-* @param path
+* @param[in] query
+* @param[in] hostname
+* @param[in] path
 * Exemple :
 * http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
 * query="SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0"
 * hostname="localhost"
 * path="/target/bin/rok4"
-* @param server : serveur
-* @return Reponse
+* @param[in] server : serveur
+* @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
 HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server){
@@ -147,18 +146,17 @@ HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* p
 /**
 * @brief Implementation de l'operation GetTile modifiee
 * @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
-* @param query
-* @param hostname
-* @param path
-* @param server : serveur
-* @param filename : nom du fichier
-* @param posoff : position d'enregistrement de l'offset de la tuile
-* @param possize : position d'enregistrement de la taille de la tuile
+* @param[in] query
+* @param[in] hostname
+* @param[in] path
+* @param[in] server : serveur
+* @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, char** filename, uint32_t* posoff, uint32_t* possize){
+HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, TileRef* tileRef){
 	// Initialisation
+	tileRef=0;
 	std::string strQuery=query;
 
 	Request* request=new Request((char*)strQuery.c_str(),(char*)hostname,(char*)path);
@@ -181,11 +179,13 @@ HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, con
 
 	Level* level=layer->getPyramids()[0]->getLevels().find(tmId)->second;
 	int n=(y%level->getTilesPerHeight())*level->getTilesPerWidth() + (x%level->getTilesPerWidth());
-        *posoff=2048+4*n;
-	*possize=2048+4*n +level->getTilesPerWidth()*level->getTilesPerHeight()*4;
+	
+	tileRef->posoff=2048+4*n;
+	tileRef->possize=2048+4*n +level->getTilesPerWidth()*level->getTilesPerHeight()*4;
+
         std::string imageFilePath=level->getFilePath(x, y);
-	*filename=new char[imageFilePath.length()+1];
-	strcpy(*filename,imageFilePath.c_str());
+	tileRef->filename=new char[imageFilePath.length()+1];
+	strcpy(tileRef->filename,imageFilePath.c_str());
 
 	delete request;
 	return 0;

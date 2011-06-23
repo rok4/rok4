@@ -21,7 +21,7 @@ class Accumulator {
 
   /**
    * Etat de la classe utilisé pour la destruction du thread encapsulé.
-   * status  > 0 : Etat normale
+   * status  > 0 : Etat normal
    * status <= 0 : En cours de destruction, le thread d'écriture écrit les messages du buffer avant destruction effective, aucun nouveau message n'est accepté.
    */
   int status;
@@ -86,7 +86,7 @@ class Accumulator {
 
 
   /**
-   * Rentre dans l'état "en cours de destruction" et attend que le thread encapsulé s'arrêter proprement.
+   * Rentre dans l'état "en cours de destruction" et attend que le thread encapsulé s'arrête proprement.
    * Cette fonction doit être apellée par le destructeur de la classe fille.
    * Question : pourquoi ne pas le faire dans le destructeur de Accumulator ?
    * Réponse : parceque lorsqu'on rentre dans le destructeur de Accumulator, la classe fille a déjà été détruite

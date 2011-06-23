@@ -51,7 +51,7 @@ CRS::CRS(std::string crs_code){
 	buildProj4Code();
 }
 
-/*
+/**
 * Contructeur de copie
 */
 
@@ -115,7 +115,7 @@ std::string CRS::getIdentifier(){
         return(requestCode.substr(pos+1));
 }
 
-/*
+/**
 * Test d'egalite de 2 CRS
 * @return true s'ils ont le meme code Proj4, false sinon
 */
