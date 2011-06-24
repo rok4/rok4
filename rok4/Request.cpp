@@ -59,7 +59,7 @@ void toLowerCase(char* str){
         if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
 }
 
-Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
+Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path)/*,service("")*/,request("") {
 	LOGGER_DEBUG("QUERY="<<strquery);
 	LOGGER_DEBUG("HOSTNAME="<<hostName);
 	LOGGER_DEBUG("PATH="<<path);
@@ -77,7 +77,7 @@ Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName)
 
 		if (strcmp(key,"service")==0){
 			toLowerCase(value);
-			service = value;
+			//service = value;
 		}else if (strcmp(key,"request")==0){
 			toLowerCase(value);
 			request = value;

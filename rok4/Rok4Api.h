@@ -22,6 +22,14 @@ typedef void Rok4Server;
 #endif
 
 typedef struct{
+	char* queryString;
+	char* hostName;
+	char* scriptName;
+	char* service;
+	char* operationType;
+} HttpRequest;
+
+typedef struct{
         int status;
         char* type;
         char* content;
@@ -36,9 +44,12 @@ typedef struct{
 // Functions
 
 Rok4Server* rok4InitServer(const char* serverConfigFile);
-HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Rok4Server* server);
-HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server);
-HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, TileRef* tileRef);
+HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName);
+HttpResponse* rok4GetWMTSCapabilities(const char* hostName, const char* scriptName, Rok4Server* server);
+HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef);
+HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
+
 void rok4KillServer(Rok4Server* server);
 
 #ifdef __cplusplus

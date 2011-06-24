@@ -9,6 +9,16 @@ Programme-test en C de l'API ROK4
 #include <pthread.h>
 #include "Rok4Api.h"
 
+static int c;
+
+static pthread_mutex_t mutex_c= PTHREAD_MUTEX_INITIALIZER;
+
+static char query_list[3][400] = {
+	"SERVICE=WMTS&REQUEST=GetCapabilities",
+	"SERVICE=WMTS&REQUEST=GetTile&tileCol=9479&tileRow=109474&tileMatrix=20&LAYER=PARCELLAIRE_PNG_IGNF_LAMB93&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0",
+	"SERVICE=WMS"
+};
+
 /**
 * @fn void usage() Usage de la ligne de commande
 */
@@ -74,41 +84,55 @@ void* processThread(void* arg){
         }
         fprintf(stdout,"Serveur initialise\n");
 
-        // GetCapabilities
-        fprintf(stdout,"GetCapabilites : \n");
-
-        HttpResponse* capabilities=rok4GetWMTSCapabilities("localhost","/target/bin/rok4",server);
-
-        fprintf(stdout,"Statut=%d\n",capabilities->status);
-        fprintf(stdout,"type=%s\n",capabilities->type);
-
-        FILE* C=fopen("capabilities.xml","w");
-        fprintf(C,"%s",capabilities->content);
-        fclose(C);
-
-/*        // GetTile
-	TileRef tileRef;
-        int errorStatus;
-
-        fprintf(stdout,"GetTile n°1 : \n");
-
-        HttpResponse* error1=rok4GetTileReferences("SERVICE=WMTS&REQUEST=GetCapabilities", "localhost", "/target/bin/rok4", server, &tileRef);
-
-        if (error1){
-                fprintf(stdout,"Statut=%d\n",error1->status);
-                fprintf(stdout,"type=%s\n",error1->type);
-                fprintf(stdout,"error content=%s\n",error1->content);
-        }
-
-        fprintf(stdout,"GetTile n°2 : \n");
-
-        HttpResponse* error2=rok4GetTileReferences("SERVICE=WMTS&REQUEST=GetTile&tileCol=9479&tileRow=109474&tileMatrix=20&LAYER=PARCELLAIRE_PNG_IGNF_LAMB93&STYLES=&FORMAT=image/png&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0", "localhost", "/target/bin/rok4", server, &tileRef);
-
-        fprintf(stdout,"filename : %s\noff=%d\nsize=%d\n",tileRef.filename,tileRef.posoff,tileRef.possize);
+	// Traitement des requetes
+	while (c<3){
+		char query[400];
+		pthread_mutex_lock(& mutex_c);
+		strcpy(query,query_list[c]);
+		fprintf(stdout,"Requete n°%d : %s",c,query);
+		c++;
+		pthread_mutex_unlock(&mutex_c);
+		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4");
+		
+		if (strcmp(request->service,"WMTS")!=0){
+			fprintf(stdout,"Service non gere\n");
+			free(request);
+			continue;
+		}
+		
+		// GetCapabilities	
+		if (strcmp(request->operationType,"GetCapabilites")==0){
+			HttpResponse* capabilities=rok4GetWMTSCapabilities("localhost","/target/bin/rok4",server);
+			fprintf(stdout,"Statut=%d\n",capabilities->status);
+                        fprintf(stdout,"type=%s\n",capabilities->type);
+			FILE* C=fopen("capabilities.xml","w");
+        		fprintf(C,"%s",capabilities->content);
+        		fclose(C);
+		}
+		// GetTile
+		else if ( strcmp(request->operationType,"GetTile")==0  ){
+			TileRef tileRef;
+			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4", server, &tileRef);
+			if (error){
+        		        fprintf(stdout,"Statut=%d\n",error->status);
+                		fprintf(stdout,"type=%s\n",error->type);
+                		fprintf(stdout,"error content=%s\n",error->content);
+        		}
+			else
+				fprintf(stdout,"filename : %s\noff=%d\nsize=%d\n",tileRef.filename,tileRef.posoff,tileRef.possize);
+		}
+		// Operation non prise en charge
+		else{
+			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4",server);
+			fprintf(stdout,"Statut=%d\n",response->status);
+                	fprintf(stdout,"type=%s\n",response->type);
+		}
+		free(request);
+	}
 
         // Extinction du serveur
         rok4KillServer(server);
-*/	
+	
 	return 0;
 }
 
@@ -126,6 +150,8 @@ int main(int argc, char* argv[]) {
 		usage();
                 return -1;
 	}
+	
+	c=0;
 
 	pthread_t* threads= (pthread_t*)malloc(nb_threads*sizeof(pthread_t));
 

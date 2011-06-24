@@ -103,15 +103,50 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 }
 
 /**
+* @fn HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName)
+* @brief Initialisation d'une requete
+* @param[in] queryString
+* @param[in] hostName
+* @param[in] scriptName
+* @return Requete (memebres alloues ici, doivent etre desalloues ensuite)
+* Requete HTTP, basee sur la terminologie des variables d'environnement Apache et completee par le type d'operation (au sens WMS/WMTS) de la requete
+* Exemple :
+* http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
+* queryString="SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0"
+* hostName="localhost"
+* scriptName="/target/bin/rok4"
+* service="WMTS"
+* operationType="GetTile"
+*/
+
+HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName){
+	std::string strQuery=queryString;
+       	HttpRequest* request=new HttpRequest;
+       	request->queryString=new char[strQuery.length()+1];
+        strcpy(request->queryString,strQuery.c_str());
+	request->hostName=new char[strlen(hostName)+1];
+	strcpy(request->hostName,hostName);
+	request->scriptName=new char[strlen(scriptName)+1];
+        strcpy(request->scriptName,scriptName);
+	Request* rok4Request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+	request->service=new char[rok4Request->service.length()+1];
+        strcpy(request->service,rok4Request->service.c_str());
+	request->operationType=new char[rok4Request->request.length()+1];
+	strcpy(request->operationType,rok4Request->request.c_str());
+	delete rok4Request;
+	return request;
+}
+
+/**
 * @brief Implementation de l'operation GetCapabilities pour le WMTS
-* @param[in] hostname
-* @param[in] path
+* @param[in] hostName
+* @param[in] scriptName
 * @param[in] server : serveur
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Rok4Server* server){
-        Request* request=new Request(0,(char*)hostname,(char*)path);
+HttpResponse* rok4GetWMTSCapabilities(const char* hostName, const char* scriptName, Rok4Server* server){
+        Request* request=new Request(0,(char*)hostName,(char*)scriptName);
 	DataStream* stream=server->WMTSGetCapabilities(request);
 	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
 	delete request;
@@ -121,21 +156,16 @@ HttpResponse* rok4GetWMTSCapabilities(const char* hostname, const char* path, Ro
 
 /**
 * @brief Implementation de l'operation GetTile
-* @param[in] query
-* @param[in] hostname
-* @param[in] path
-* Exemple :
-* http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
-* query="SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0"
-* hostname="localhost"
-* path="/target/bin/rok4"
+* @param[in] queryString
+* @param[in] hostName
+* @param[in] scriptName
 * @param[in] server : serveur
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* path, Rok4Server* server){
-        std::string strQuery=query;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostname,(char*)path);
+HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+        std::string strQuery=queryString;
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	DataSource* source=server->getTile(request);
 	HttpResponse* response=initResponseFromSource(source);
 	delete request;
@@ -146,20 +176,20 @@ HttpResponse* rok4GetTile(const char* query, const char* hostname, const char* p
 /**
 * @brief Implementation de l'operation GetTile modifiee
 * @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
-* @param[in] query
-* @param[in] hostname
-* @param[in] path
+* @param[in] queryString
+* @param[in] hostName
+* @param[in] scriptName
 * @param[in] server : serveur
 * @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, const char* path, Rok4Server* server, TileRef* tileRef){
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef){
 	// Initialisation
 	tileRef=0;
-	std::string strQuery=query;
+	std::string strQuery=queryString;
 
-	Request* request=new Request((char*)strQuery.c_str(),(char*)hostname,(char*)path);
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	Layer* layer;
         std::string tmId,format;
         int x,y;
@@ -189,6 +219,21 @@ HttpResponse* rok4GetTileReferences(const char* query, const char* hostname, con
 
 	delete request;
 	return 0;
+}
+
+/**
+* @brief Renvoi d'une exception pour une operation non prise en charge
+*/
+
+HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+
+	std::string strQuery=queryString;
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        DataSource* source=new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts"));
+        HttpResponse* response=initResponseFromSource(source);
+        delete request;
+        delete source;
+        return response;
 }
 
 /**

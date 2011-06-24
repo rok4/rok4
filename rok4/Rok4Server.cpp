@@ -200,7 +200,7 @@ void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest){
 	}else if (request->request == "gettile"){
 		S.sendresponse(getTile(request), &fcgxRequest);
 	}else{
-		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wmts")),&fcgxRequest);
+		S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts")),&fcgxRequest);
 	}
 }
 
@@ -211,7 +211,7 @@ void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
 	}else if (request->request == "getmap"){
 		S.sendresponse(getMap(request), &fcgxRequest);
 	}else{
-		S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"La requete "+request->request+" n'est pas connue pour ce serveur.","wms")),&fcgxRequest);
+		S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wms")),&fcgxRequest);
 	}
 }
 
