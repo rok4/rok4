@@ -74,7 +74,6 @@ bool parseCommandLine(int argc, char* argv[], char* server_config_file, int* nb_
 * @param[in] arg : pointeur sur le fichier de configurtion du serveur
 */
 
-
 void* processThread(void* arg){
 	// Initialisation du serveur
         void* server=rok4InitServer((char*)arg);
@@ -89,43 +88,47 @@ void* processThread(void* arg){
 		char query[400];
 		pthread_mutex_lock(& mutex_c);
 		strcpy(query,query_list[c]);
-		fprintf(stdout,"Requete n°%d : %s",c,query);
+		fprintf(stdout,"\nRequete n°%d : %s\n",c,query);
 		c++;
 		pthread_mutex_unlock(&mutex_c);
 		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4");
 		
-		if (strcmp(request->service,"WMTS")!=0){
-			fprintf(stdout,"Service non gere\n");
+		if (strcmp(request->service,"wmts")!=0){
+			fprintf(stdout,"\tService %s non gere\n",request->service);
 			free(request);
 			continue;
 		}
 		
 		// GetCapabilities	
-		if (strcmp(request->operationType,"GetCapabilites")==0){
-			HttpResponse* capabilities=rok4GetWMTSCapabilities("localhost","/target/bin/rok4",server);
-			fprintf(stdout,"Statut=%d\n",capabilities->status);
-                        fprintf(stdout,"type=%s\n",capabilities->type);
+		if (strcmp(request->operationType,"getcapabilities")==0){
+			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4",server);
+			fprintf(stdout,"\tStatut=%d\n",capabilities->status);
+                        fprintf(stdout,"\ttype=%s\n",capabilities->type);
 			FILE* C=fopen("capabilities.xml","w");
         		fprintf(C,"%s",capabilities->content);
         		fclose(C);
+			free(capabilities);
 		}
 		// GetTile
-		else if ( strcmp(request->operationType,"GetTile")==0  ){
+		else if ( strcmp(request->operationType,"gettile")==0  ){
 			TileRef tileRef;
 			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4", server, &tileRef);
 			if (error){
-        		        fprintf(stdout,"Statut=%d\n",error->status);
-                		fprintf(stdout,"type=%s\n",error->type);
-                		fprintf(stdout,"error content=%s\n",error->content);
+        		        fprintf(stdout,"\tStatut=%d\n",error->status);
+                		fprintf(stdout,"\ttype=%s\n",error->type);
+                		fprintf(stdout,"\terror content=%s\n",error->content);
+				free(error);
         		}
 			else
-				fprintf(stdout,"filename : %s\noff=%d\nsize=%d\n",tileRef.filename,tileRef.posoff,tileRef.possize);
+				fprintf(stdout,"\tfilename : %s\noff=%d\nsize=%d\n",tileRef.filename,tileRef.posoff,tileRef.possize);
 		}
 		// Operation non prise en charge
 		else{
 			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4",server);
-			fprintf(stdout,"Statut=%d\n",response->status);
-                	fprintf(stdout,"type=%s\n",response->type);
+			fprintf(stdout,"\tStatut=%d\n",response->status);
+                	fprintf(stdout,"\ttype=%s\n",response->type);
+			fprintf(stdout,"\terror content=%s\n",response->content);
+			free(response);
 		}
 		free(request);
 	}

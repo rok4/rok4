@@ -45,7 +45,7 @@ typedef struct{
 
 Rok4Server* rok4InitServer(const char* serverConfigFile);
 HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName);
-HttpResponse* rok4GetWMTSCapabilities(const char* hostName, const char* scriptName, Rok4Server* server);
+HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
 HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
 HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef);
 HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);

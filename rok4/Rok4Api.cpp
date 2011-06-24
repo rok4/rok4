@@ -115,8 +115,8 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 * queryString="SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0"
 * hostName="localhost"
 * scriptName="/target/bin/rok4"
-* service="WMTS"
-* operationType="GetTile"
+* service="wmts" (en minuscules)
+* operationType="Gettile" (en minuscules)
 */
 
 HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName){
@@ -145,13 +145,14 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetWMTSCapabilities(const char* hostName, const char* scriptName, Rok4Server* server){
-        Request* request=new Request(0,(char*)hostName,(char*)scriptName);
+HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+	std::string strQuery=queryString;
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	DataStream* stream=server->WMTSGetCapabilities(request);
 	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
 	delete request;
 	delete stream;
-	return response;
+	return new HttpResponse;
 }
 
 /**
