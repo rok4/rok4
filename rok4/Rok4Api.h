@@ -32,7 +32,8 @@ typedef struct{
 typedef struct{
         int status;
         char* type;
-        char* content;
+        uint8_t* content;
+	size_t contentSize;
 } HttpResponse;
 
 typedef struct{

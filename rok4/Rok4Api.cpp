@@ -23,9 +23,9 @@ HttpResponse* initResponseFromSource(DataSource* source){
         size_t buffer_size;
         const uint8_t *buffer = source->getData(buffer_size);
 	// TODO : tester sans copie memoire (attention, la source devrait etre supprimee plus tard)
-
-        response->content=new char[buffer_size+1];
-        strcpy(response->content,(char*)buffer);
+        response->content=new uint8_t[buffer_size];
+        memcpy(response->content,(uint8_t*)buffer,buffer_size);
+	response->contentSize=buffer_size;
         return response;
 }
 
@@ -149,10 +149,11 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 	std::string strQuery=queryString;
         Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	DataStream* stream=server->WMTSGetCapabilities(request);
+	BufferedDataSource* source=new BufferedDataSource(*stream);
 	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
 	delete request;
 	delete stream;
-	return new HttpResponse;
+	return response;
 }
 
 /**
@@ -187,7 +188,6 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 
 HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef){
 	// Initialisation
-	tileRef=0;
 	std::string strQuery=queryString;
 
 	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
