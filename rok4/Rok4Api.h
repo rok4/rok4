@@ -40,6 +40,7 @@ typedef struct{
 	char* filename;
 	uint32_t posoff;
 	uint32_t possize;
+	char* type;
 } TileRef;
 
 // Functions

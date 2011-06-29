@@ -218,6 +218,9 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	tileRef->filename=new char[imageFilePath.length()+1];
 	strcpy(tileRef->filename,imageFilePath.c_str());
 
+	tileRef->type=new char[format.length()+1];
+        strcpy(tileRef->type,format.c_str());
+
 	delete request;
 	return 0;
 }

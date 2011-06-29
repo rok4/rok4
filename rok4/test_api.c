@@ -129,7 +129,7 @@ void* processThread(void* arg){
 				free(error);
         		}
 			else
-				fprintf(stdout,"\tfilename : %s\noff=%d\nsize=%d\n",tileRef.filename,tileRef.posoff,tileRef.possize);
+				fprintf(stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef.filename,tileRef.posoff,tileRef.possize,tileRef.type);
 			free(error);			
 
 			// Tile
