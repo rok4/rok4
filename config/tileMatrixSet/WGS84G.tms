@@ -1,5 +1,5 @@
 <tileMatrixSet>
-	<crs>IGN:WGS84G</crs>
+	<crs>IGNF:WGS84G</crs>
 	<tileMatrix>
 		<id>0</id>
 		<resolution>0.703125</resolution>

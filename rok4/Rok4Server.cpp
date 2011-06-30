@@ -164,7 +164,7 @@ DataStream* Rok4Server::getMap(Request* request)
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
 		return new JPEGEncoder(image);
-	else if(format == "image/bil")
+	else if(format == "image/x-bil;bits=32")
                 return new BilEncoder(image);
 	LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
 	return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms"));

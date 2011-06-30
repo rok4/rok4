@@ -149,7 +149,6 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 	std::string strQuery=queryString;
         Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	DataStream* stream=server->WMTSGetCapabilities(request);
-	BufferedDataSource* source=new BufferedDataSource(*stream);
 	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
 	delete request;
 	delete stream;
