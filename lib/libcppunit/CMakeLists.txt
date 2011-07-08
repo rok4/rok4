@@ -27,9 +27,9 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-#set(CMAKE_BUILD_TYPE specificbuild)
-#set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-#set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 
 
 ########################################
@@ -37,12 +37,19 @@ set(BUILD_SHARED_LIBS OFF)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/cppunit-1.12.1/* src)
+
 add_custom_command(OUTPUT install/lib/libcppunit.a 
-  COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --enable-doxygen=no 
+  COMMAND ./configure CXXFLAGS=-O3 CFLAGS=-O3 --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --enable-doxygen=no 
   COMMAND make 
   COMMAND make install 
   DEPENDS src/configure 
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+
+#add_custom_command(OUTPUT install/lib/libcppunit.a 
+#   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build.sh ${CMAKE_CURRENT_BINARY_DIR}/install
+#   DEPENDS src/configure 
+#  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+
 
 add_custom_target(cppunit-build ALL DEPENDS install/lib/libcppunit.a)
 

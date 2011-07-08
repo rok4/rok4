@@ -28,8 +28,8 @@ set(BUILD_SHARED_LIBS OFF)
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
 #set(CMAKE_BUILD_TYPE specificbuild)
-#set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-#set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 
 
 ########################################

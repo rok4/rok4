@@ -28,9 +28,9 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-#set(CMAKE_BUILD_TYPE specificbuild)
-#set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-#set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 
 
 ########################################
@@ -39,7 +39,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/tiff-3.8.2/* src)
 add_custom_command(OUTPUT install/lib/libtiff.a 
-  COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --with-zlib-lib-dir=${ZLIB_INCLUDE_DIR}/../lib --with-zlib-include-dir=${ZLIB_INCLUDE_DIR} --with-jpeg-lib-dir=${JPEG_INCLUDE_DIR}/../lib --with-jpeg-include-dir=${JPEG_INCLUDE_DIR}
+  COMMAND ./configure CFLAGS=-O3 CXXFLAGS=-O3 --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --with-zlib-lib-dir=${ZLIB_INCLUDE_DIR}/../lib --with-zlib-include-dir=${ZLIB_INCLUDE_DIR} --with-jpeg-lib-dir=${JPEG_INCLUDE_DIR}/../lib --with-jpeg-include-dir=${JPEG_INCLUDE_DIR}
   COMMAND make 
   COMMAND make install 
   DEPENDS src/configure 
