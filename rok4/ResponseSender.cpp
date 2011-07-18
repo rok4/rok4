@@ -97,7 +97,11 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	// Ecriture progressive du flux d'entree dans le flux de sortie
 	while(true) {
 		// Recuperation d'une portion du flux d'entree
+
 		size_t read_size = stream->read(buffer, size_to_read);
+
+		LOGGER_DEBUG(read_size);
+
 		if (read_size==0)
 			break;
 		int wr = 0;

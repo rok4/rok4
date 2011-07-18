@@ -70,14 +70,16 @@ int main(int argc, char **argv) {
 
 
   TiffReader R(input);
+
   uint32_t width = R.getWidth();
   uint32_t length = R.getLength();  
+
   TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,sampleformat);
 
   if(width % tilewidth || length % tilelength) {std::cerr << "Image size must be a multiple of tile size" << std::endl; exit(2);}  
   int tilex = width / tilewidth;
   int tiley = length / tilelength;
- 
+
   uint8_t* data=new uint8_t[tilelength*tilewidth*R.getSampleSize()];
 
   for(int y = 0; y < tiley; y++) for(int x = 0; x < tilex; x++) {

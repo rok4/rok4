@@ -44,8 +44,9 @@ protected:
 
 
 public:
-	TileMatrix const getTm();
+	TileMatrix getTm();
 	std::string getFormat();
+	int	    getChannels();
 	uint32_t    getMaxTileRow();
 	uint32_t    getMinTileRow();
 	uint32_t    getMaxTileCol();

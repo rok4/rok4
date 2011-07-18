@@ -266,6 +266,7 @@ size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
 
 
 int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
+
   if(n > tilex*tiley || n < 0) {std::cerr << "invalid tile number" << std::endl; return -1;}
   size_t size;
   

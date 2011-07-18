@@ -9,6 +9,8 @@
 #include "ConfLoader.h"
 #include "Message.h"
 #include "Request.h"
+#include "RawImage.h"
+#include "TiffEncoder.h"
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -220,8 +222,24 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	tileRef->type=new char[format.length()+1];
         strcpy(tileRef->type,format.c_str());
 
+	tileRef->width=level->getTm().getTileW();
+	tileRef->height=level->getTm().getTileH();
+	tileRef->channels=level->getChannels();
+
 	delete request;
 	return 0;
+}
+
+/**
+* @brief Construction d'un en-tete TIFF
+*/
+
+TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
+	TiffHeader* header = new TiffHeader;
+	RawImage* rawImage=new RawImage(width,height,channels,0);
+        TiffEncoder tiffStream(rawImage);
+	tiffStream.read(header->data,128);
+	return header;
 }
 
 /**

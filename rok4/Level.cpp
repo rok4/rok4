@@ -55,8 +55,9 @@ Level::~Level()
 	if (noDataSource) delete noDataSource;
 }
 
-TileMatrix const Level::getTm(){return tm;}
+TileMatrix Level::getTm(){return tm;}
 std::string Level::getFormat(){return format;}
+int Level::getChannels(){return channels;}
 uint32_t Level::getMaxTileRow(){return maxTileRow;}
 uint32_t Level::getMinTileRow(){return minTileRow;}
 uint32_t Level::getMaxTileCol(){return maxTileCol;}

@@ -41,7 +41,14 @@ typedef struct{
 	uint32_t posoff;
 	uint32_t possize;
 	char* type;
+	int width;
+	int height;
+	int channels;
 } TileRef;
+
+typedef struct{
+	uint8_t data[128];
+} TiffHeader;
 
 // Functions
 
@@ -50,6 +57,7 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
 HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
 HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef);
+TiffHeader* rok4GetTiffHeader(int width, int height, int channels); 
 HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
 
 void rok4KillServer(Rok4Server* server);

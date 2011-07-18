@@ -128,9 +128,19 @@ void* processThread(void* arg){
                 		fprintf(stdout,"\terror content=%s\n",error->content);
 				free(error);
         		}
-			else
+			else{
 				fprintf(stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef.filename,tileRef.posoff,tileRef.possize,tileRef.type);
-			free(error);			
+				if (strcmp(tileRef.type,"image/tiff")==0){
+					TiffHeader* header=rok4GetTiffHeader(tileRef.width,tileRef.height,tileRef.channels);
+					fprintf(stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef.width,tileRef.height,tileRef.channels);
+					int i;
+					for (i=0;i<128;i++)
+						fprintf(stdout,"%c",header->data[i]);
+					fprintf(stdout,"\n");
+					free(header);
+				}
+			}
+			free(error);
 
 			// Tile
 			HttpResponse* tile=rok4GetTile(query, "localhost", "/target/bin/rok4", server);
