@@ -13,8 +13,11 @@ DataSource* Pyramid::getTile(int x, int y, std::string tmId) {
 
 	LOGGER_DEBUG("Niveau="<<tmId);
 
-        for (it=levels.begin();it!=levels.end();it++)
-                LOGGER_INFO((*it).first);
+       // for (it=levels.begin();it!=levels.end();it++)
+         //       LOGGER_INFO((*it).first);
+
+	LOGGER_DEBUG("Niveau="<<tmId);
+	sleep(1);
 
 	// Cas normalement filtre en amont (exception WMTS)
 	if (it==levels.end())

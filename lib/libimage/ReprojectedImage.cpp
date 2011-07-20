@@ -24,7 +24,6 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 		ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / double(height);
 
 		LOGGER_DEBUG("ratiox="<<ratio_x<<" ratioy="<<ratio_y<<" width="<<width<<" height="<<height);
-		
 
 		Kx = ceil(2 * K.size(ratio_x));
 		Ky = ceil(2 * K.size(ratio_y));

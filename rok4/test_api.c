@@ -112,6 +112,7 @@ void* processThread(void* arg){
 			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4",server);
 			fprintf(stdout,"\tStatut=%d\n",capabilities->status);
                         fprintf(stdout,"\ttype=%s\n",capabilities->type);
+			fprintf(stdout,"\tcontentSize=%d\n",capabilities->contentSize);
 			FILE* C=fopen("capabilities.xml","w");
         		fprintf(C,"%s",capabilities->content);
         		fclose(C);
