@@ -11,6 +11,11 @@ DataSource* Pyramid::getTile(int x, int y, std::string tmId) {
 
 	std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
 
+	LOGGER_DEBUG("Niveau="<<tmId);
+
+        for (it=levels.begin();it!=levels.end();it++)
+                LOGGER_INFO((*it).first);
+
 	// Cas normalement filtre en amont (exception WMTS)
 	if (it==levels.end())
 		LOGGER_ERROR("Erreur WMTS : niveau manquant");

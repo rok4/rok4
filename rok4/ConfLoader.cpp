@@ -206,6 +206,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		id=tmName;
 		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
 		std::map<std::string, TileMatrix>::iterator it = tmList->find(tmName);
+
 		if(it == tmList->end()){
 			LOGGER_ERROR(fileName <<" Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
 			return NULL;
@@ -305,6 +306,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
+		
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels
 

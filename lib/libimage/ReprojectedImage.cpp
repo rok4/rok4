@@ -23,6 +23,9 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 		ratio_x = (grid->bbox.xmax - grid->bbox.xmin) / double(width); 
 		ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / double(height);
 
+		LOGGER_DEBUG("ratiox="<<ratio_x<<" ratioy="<<ratio_y<<" width="<<width<<" height="<<height);
+		
+
 		Kx = ceil(2 * K.size(ratio_x));
 		Ky = ceil(2 * K.size(ratio_y));
 
@@ -41,7 +44,6 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 
 		__buffer = (float*) _mm_malloc(sz, 16);  // Allocation allignée sur 16 octets pour SSE
 		memset(__buffer, 0, sz);
-
 
 		float* B = __buffer;
 
@@ -77,8 +79,6 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 			ymin[i] = K.weight(Wy[i], nby, 1./2048. + double(i)/1024., ratio_y);
 		}
 
-		LOGGER_DEBUG("ratio_x =" << ratio_x << " ratio_y= " << ratio_y << " Kx = " << Kx << " Ky = " << Ky );
-
 		// TODO : ne pas charger toute l'image source au démarrage.
 		for(int y = 0; y < image->height; y++)
 			image->getline(src_line_buffer[y], y);
@@ -86,6 +86,7 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 
 
 float* ReprojectedImage::compute_dst_line(int line) {
+
 	if(line/4 == dst_line_index) return dst_line_buffer[line%4];
 	dst_line_index = line/4;
 
@@ -100,12 +101,10 @@ float* ReprojectedImage::compute_dst_line(int line) {
 	int Ix[4], Iy[4];
 
 	for(int x = 0; x < width; x++) {
-
 		for(int i = 0; i < 4; i++) {
 			Ix[i] = (X[i][x] - floor(X[i][x])) * 1024;
 			Iy[i] = (Y[i][x] - floor(Y[i][x])) * 1024;
 		}
-
 
 		multiplex(WWx, Wx[Ix[0]], Wx[Ix[1]], Wx[Ix[2]], Wx[Ix[3]], Kx);
 		multiplex(WWy, Wy[Iy[0]], Wy[Iy[1]], Wy[Iy[2]], Wy[Iy[3]], Ky);
@@ -128,10 +127,8 @@ float* ReprojectedImage::compute_dst_line(int line) {
 					Kx * channels);
 			dot_prod(channels, Kx, TMP2 + 4*j*channels, TMP1, WWx);
 		}
-
 		dot_prod(channels, Ky, mux_dst_line_buffer + 4*x*channels, TMP2, WWy);        
 	}
-
 	demultiplex(dst_line_buffer[0], dst_line_buffer[1], dst_line_buffer[2], dst_line_buffer[3], mux_dst_line_buffer, width*channels);
 	return dst_line_buffer[line%4]; 
 }

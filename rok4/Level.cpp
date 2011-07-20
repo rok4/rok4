@@ -89,18 +89,23 @@ std::string Level::getType() {
  */
 Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs) {
 	Grid* grid = new Grid(width, height, bbox);
-	grid->bbox.print();
 
 	grid->reproject(dst_crs.getProj4Code(), src_crs.getProj4Code());
 
-	grid->bbox.print();
-	BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - 50),
-			floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - 50),
-			ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + 50),
-			ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + 50));
-	// TODO : remplacer 50 par un buffer calculé en fonction du noyau d'interpolation
+	// Calcul de la taille du noyau
+	// TODO : type de noyau a parametrer
+	const Kernel& kk = Kernel::getInstance(Kernel::LANCZOS_2);
+	double ratio_x = (grid->bbox.xmax - grid->bbox.xmin) / (tm.getRes()*double(width));
+        double ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / (tm.getRes()*double(height));
+	double bufx=kk.size(ratio_x);
+	double bufy=kk.size(ratio_y);
+	bufx<50?bufx=50:0;bufy<50?bufy=50:0; // Pour etre sur de ne pas regresser
 
-	bbox_int.print();
+	BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - bufx),
+			floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - bufy),
+			ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + bufx),
+			ceil ((tm.getY0() - grid->bbox.ymin)/tm.getRes() + bufy));
+
 	Image* image = getwindow(bbox_int);
 	image->setbbox( BoundingBox<double>(tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin));
 

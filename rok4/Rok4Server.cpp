@@ -125,7 +125,7 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	}
 	capa = capa + wmtsCapaFrag.back();
 
-	return new MessageDataStream(capa,"text/xml");
+	return new MessageDataStream(capa,"application/xml");
 }
 
 /*

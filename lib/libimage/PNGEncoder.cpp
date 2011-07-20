@@ -110,19 +110,13 @@ size_t PNGEncoder::read(uint8_t *buffer, size_t size) {
 	// On traite 2 cas : 'Greyscale' et 'Truecolor'
 	// cf: http://www.w3.org/TR/PNG/#11IHDR
 
-
-	LOGGER_DEBUG("EEEEEEE");
 	if (image->channels==1)
 		colortype=0;
 	else if (image->channels==3)
 		colortype=2;
-LOGGER_DEBUG("EdEEEEE");
 	if(line == -1) pos += write_IHDR(buffer, size, colortype);
-LOGGER_DEBUG("LINE"<<line);
 	if(line >= 0 && line <= image->height) pos += write_IDAT(buffer + pos, size - pos);
-LOGGER_DEBUG("POS="<<pos);
 	if(line == image->height+1) pos += write_IEND(buffer + pos, size - pos);
-LOGGER_DEBUG("EESSSS "<<line<<" "<<pos<<" "<<size);
 	return pos;
 }
 

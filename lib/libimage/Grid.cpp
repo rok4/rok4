@@ -84,8 +84,8 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		return false;
 	}
 
-	LOGGER_DEBUG(from_srs<<" "<<to_srs);
-	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
+//	LOGGER_DEBUG(from_srs<<" "<<to_srs);
+//	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
 
 	if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
     		gridX[i] *= DEG_TO_RAD;
@@ -94,7 +94,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
 	int code=pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
 
-	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
+//	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
 
 	pj_free(pj_src);
 	pj_free(pj_dst);
