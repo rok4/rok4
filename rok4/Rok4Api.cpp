@@ -81,7 +81,6 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 		sleep(1);	// Pour laisser le temps au logger pour se vider	
 		return NULL;
 	}
-
 	// Chargement des TMS
 	std::map<std::string,TileMatrixSet*> tmsList;
 	if (!ConfLoader::buildTMSList(strTmsDir,tmsList)){
@@ -151,7 +150,8 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 	std::string strQuery=queryString;
         Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	DataStream* stream=server->WMTSGetCapabilities(request);
-	HttpResponse* response=initResponseFromSource(new BufferedDataSource(*stream));
+	DataSource* source= new BufferedDataSource(*stream);
+	HttpResponse* response=initResponseFromSource(/*new BufferedDataSource(*stream)*/source);
 	delete request;
 	delete stream;
 	return response;

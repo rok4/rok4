@@ -60,7 +60,7 @@ public:
 
 	size_t read(uint8_t *buffer, size_t size){
 		if(size > message.length() - pos) size = message.length() - pos;
-		memcpy(buffer,(uint8_t*)message.data(),size);
+		memcpy(buffer,(uint8_t*)(message.data()+pos),size);
 		pos+=size;
 		return size;
 	}

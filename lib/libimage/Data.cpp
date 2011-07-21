@@ -1,5 +1,6 @@
 #include "Data.h"
 #include <cstring> // pour memcpy
+#include "Logger.h"
 
 /** 
  * Constructeur. 

@@ -114,7 +114,8 @@ void* processThread(void* arg){
                         fprintf(stdout,"\ttype=%s\n",capabilities->type);
 			fprintf(stdout,"\tcontentSize=%d\n",capabilities->contentSize);
 			FILE* C=fopen("capabilities.xml","w");
-        		fprintf(C,"%s",capabilities->content);
+        		//fprintf(C,"%s",capabilities->content);
+			fwrite(capabilities->content,1,capabilities->contentSize,C);
         		fclose(C);
 			free(capabilities);
 		}
