@@ -207,9 +207,10 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
         }
 
 	// References de la tuile
-	// TODO : controler l existence du level
-
-	Level* level=layer->getPyramids()[0]->getLevels().find(tmId)->second;
+	std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find(tmId);
+	if (itLevel==layer->getDataPyramid()->getLevels().end())
+                return 0;
+	Level* level=layer->getDataPyramid()->getLevels().find(tmId)->second;
 	int n=(y%level->getTilesPerHeight())*level->getTilesPerWidth() + (x%level->getTilesPerWidth());
 	
 	tileRef->posoff=2048+4*n;

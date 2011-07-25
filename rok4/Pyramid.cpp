@@ -3,24 +3,74 @@
 #include "Logger.h"
 #include "Message.h"
 #include "Grid.h"
+#include "Decoder.h"
+#include "JPEGEncoder.h"
+#include "PNGEncoder.h"
+#include "TiffEncoder.h"
+#include "BilEncoder.h"
 
-/*
+/**
+* @fn std::string extern getMimeType(std::string format)
+* @return Le type MIME correspindant au format passe en argument
+*/
 
- */
+std::string getMimeType(std::string format){
+        if (format.compare("TIFF_INT8")==0)
+                return "image/tiff";
+        else if (format.compare("TIFF_JPG_INT8")==0)
+                return "image/jpeg";
+        else if (format.compare("TIFF_PNG_INT8")==0)
+                return "image/png";
+        else if (format.compare("TIFF_FLOAT32")==0)
+                return "image/x-bil;bits=32";
+        return "text/plain";
+}
+
+Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::string format, int channels) : levels(levels), tms(tms), format(format), channels(channels){
+
+	std::map<std::string, TileMatrix>::iterator itTm;
+	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){
+		DataSource* noDataSource;
+		if (format.compare("TIFF_INT8")==0) {
+	                BilEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+        	        noDataSource = new BufferedDataSource(dataStream);
+        	}
+        	else if (format.compare("TIFF_JPG_INT8")==0) {
+                	JPEGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	noDataSource = new BufferedDataSource(dataStream);
+        	}
+        	else if (format.compare("TIFF_PNG_INT8")==0) {
+                	PNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	noDataSource = new BufferedDataSource(dataStream);
+        	}
+        	else if (format.compare("TIFF_FLOAT32")==0) {
+                	BilEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	noDataSource = new BufferedDataSource(dataStream);
+        	}
+        	else
+			// Cas normalement filtre avant l'appel au constructeur
+                	LOGGER_ERROR("Format non pris en charge : "<<format);
+		noDataSources.insert(std::pair<std::string, DataSource*> (itTm->second.getId(), noDataSource));
+
+		std::map<std::string, Level*>::const_iterator itLevel=levels.find(itTm->second.getId());
+		if (itLevel!=levels.end())
+			itLevel->second->setNoDataSource(noDataSource);
+	}
+}
+
 DataSource* Pyramid::getTile(int x, int y, std::string tmId) {
 
-	std::map<std::string, Level*>::const_iterator it=levels.find(tmId);
-
-	LOGGER_DEBUG("Niveau="<<tmId);
-
-       // for (it=levels.begin();it!=levels.end();it++)
-         //       LOGGER_INFO((*it).first);
-
-	// Cas normalement filtre en amont (exception WMTS)
-	if (it==levels.end())
-		LOGGER_ERROR("Erreur WMTS : niveau manquant");
-
-	return it->second->getTile(x, y);
+	std::map<std::string, Level*>::const_iterator itLevel=levels.find(tmId);
+	if (itLevel==levels.end()){
+		std::map<std::string, DataSource*>::const_iterator itNoDataSource=noDataSources.find(tmId);
+		if (itNoDataSource!=noDataSources.end())
+			return new DataSourceProxy(new FileDataSource("ttt.jpg",0,0,""), *(itNoDataSource->second));
+		else{
+			LOGGER_ERROR("pas de nodata disponible pour le TM "<<tmId);
+			return 0;
+		}
+	}
+	return itLevel->second->getTile(x, y);
 }
 
 std::string Pyramid::best_level(double resolution_x, double resolution_y) {
@@ -90,8 +140,8 @@ Image* Pyramid::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst
 
 Pyramid::~Pyramid()
 {
-	std::map<std::string, Level*>::iterator iLevel;
-         for (iLevel=levels.begin();iLevel!=levels.end();iLevel++)
-                delete (*iLevel).second;
+	std::map<std::string, DataSource*>::iterator itDataSource;
+	for (itDataSource=noDataSources.begin();itDataSource!=noDataSources.end();itDataSource++)
+		delete (*itDataSource).second; 
 }
 

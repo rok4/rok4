@@ -26,7 +26,8 @@ private:
 	std::string title;
 	std::string abstract;
 	std::vector<std::string> keyWords;
-	std::vector<Pyramid*> pyramids;
+	Pyramid* dataPyramid;
+	// TODO Rajouter une metadataPyramid
 	std::vector<std::string> styles; //FIXME: la représentation d'un style n'est certainement pas un string.
 	double minRes;
 	double maxRes;
@@ -49,17 +50,16 @@ public:
 	double                   getMaxRes()     const { return maxRes;}
 	double                   getMinRes()     const { return minRes;}
 	bool                     getOpaque()     const { return opaque;}
-	std::vector<Pyramid*>&   getPyramids()   { return pyramids;}
+	Pyramid*&		 getDataPyramid() { return dataPyramid;}
 	std::string              getResampling() const { return resampling;}
 	std::vector<std::string> getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
 	GeographicBoundingBoxWMS getGeographicBoundingBox() const { return geographicBoundingBox; }
 	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
-	std::vector<std::string> getMimeFormats();
 
-	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, std::vector<Pyramid*> & pyramids, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
-	:id(id), title(title), abstract(abstract), keyWords(keyWords), pyramids(pyramids), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
+	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, Pyramid*& dataPyramid, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
+	:id(id), title(title), abstract(abstract), keyWords(keyWords), dataPyramid(dataPyramid), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
 	{
 	}
 	~Layer();

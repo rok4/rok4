@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include "Logger.h"
 #include <cstdio>
+#include <errno.h>
 
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
@@ -18,6 +19,7 @@ FileDataSource::FileDataSource(const char* filename, const uint32_t posoff, cons
  * Indique la taille de la tuile (inconnue a priori)
  */
 const uint8_t* FileDataSource::getData(size_t &tile_size) {
+	return 0;
 	if (data)
 	{
 		tile_size=size;
@@ -31,16 +33,21 @@ const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	}
 	// Lecture de la position de la tuile dans le fichier
 	uint32_t pos;
-	if(pread(fildes, &pos, sizeof(pos), posoff) < 0) {
-		LOGGER_ERROR( "Erreur lors de la lecture de la position de la tuile dans le fichier " << filename);
+	size_t read_size;
+	if(read_size=pread(fildes, &pos, sizeof(uint32_t), posoff) != 4) {
+		LOGGER_ERROR("Erreur lors de la lecture de la position de la tuile dans le fichier " << filename);
+		if (read_size<0)
+			LOGGER_ERROR("Code erreur="<<errno);
 		close(fildes);
 		return 0;
 	}
 	// Lecture de la taille de la tuile dans le fichier
 	// Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
 	uint32_t tmp;
-	if(pread(fildes, &tmp, sizeof(uint32_t), possize) < 0) {
+	if(read_size=pread(fildes, &tmp, sizeof(uint32_t), possize) != 4) {
 		LOGGER_ERROR( "Erreur lors de la lecture de la taille de la tuile dans le fichier " << filename);
+		if (read_size<0)
+                        LOGGER_ERROR("Code erreur="<<errno);
 		close(fildes);
 		return 0;
 	}
@@ -56,9 +63,11 @@ const uint8_t* FileDataSource::getData(size_t &tile_size) {
 	}
 	// Lecture de la tuile
 	data = new uint8_t[tile_size];
-	size_t read_size=pread(fildes, data, tile_size, pos);
+	read_size=pread(fildes, data, tile_size, pos);
 	if (read_size!=tile_size) {
 		LOGGER_ERROR( "Impossible de lire la tuile dans le fichier " << filename );
+		if (read_size<0)
+                        LOGGER_ERROR("Code erreur="<<errno);
 		delete[] data;
 		close(fildes);
 		return 0;

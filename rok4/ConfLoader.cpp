@@ -147,6 +147,8 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
+	std::string format;	
+	int channels;
 	std::map<std::string, Level *> levels;
 
 	TiXmlDocument doc(fileName.c_str());
@@ -172,7 +174,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 	pElem=hRoot.FirstChild("tileMatrixSet").Element();
 	if (!pElem){
-		LOGGER_ERROR(fileName << "La pyramide n'a pas de TMS. C'est un problème.");
+		LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de TMS. C'est un problème.");
 		return NULL;
 	}
 	std::string tmsName=pElem->GetText();
@@ -184,13 +186,36 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 	}
 	tms=it->second;
 
+	pElem=hRoot.FirstChild("format").Element();
+        if (!pElem){
+                LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de format.");
+                return NULL;
+        }
+	format=pElem->GetText();
+        if (format.compare("TIFF_INT8")!=0
+         && format.compare("TIFF_JPG_INT8")!=0
+         && format.compare("TIFF_PNG_INT8")!=0
+         && format.compare("TIFF_LZW_INT8")!=0
+         && format.compare("TIFF_FLOAT32")!=0){
+                LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
+                return NULL;
+        }
+        format=pElem->GetText();
+
+	pElem=hRoot.FirstChild("channels").Element();
+        if (!pElem){
+		LOGGER_ERROR("La pyramide ["<< fileName <<"] Pas de channels => channels = " << DEFAULT_CHANNELS);
+                channels=DEFAULT_CHANNELS;
+                return NULL;
+        }else if (!sscanf(pElem->GetText(),"%d",&channels)){
+                LOGGER_ERROR("La pyramide ["<< fileName <<"] : channels=[" << pElem->GetText() <<"] n'est pas un entier.");
+                return NULL;
+        }
 
 	for( pElem=hRoot.FirstChild( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement( "level")){
 		TileMatrix *tm;
 		std::string id;
-		std::string format;
 		std::string baseDir;
-		int channels;
 		int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
@@ -216,19 +241,6 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
 		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
 		baseDir=pElemLvl->GetText();
-
-		pElemLvl = hLvl.FirstChild("format").Element();
-		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans format!!"); return NULL; }
-		format=pElemLvl->GetText(); // FIXME: controle de la valeur a faire
-
-		pElemLvl = hLvl.FirstChild("channels").Element();
-		if (!pElemLvl){
-			LOGGER_ERROR(fileName <<" Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
-			channels=DEFAULT_CHANNELS;
-		}else if (!sscanf(pElemLvl->GetText(),"%d",&channels)){
-			LOGGER_ERROR(fileName <<" Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
-			return NULL;
-		}
 
 		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
 		if (!pElemLvl){
@@ -303,7 +315,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 				return NULL;
 			}
 		}
-
+		
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
 		
@@ -315,7 +327,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		return NULL;
 	}
 
-	Pyramid *pyr = new Pyramid(levels, *tms);
+	Pyramid *pyr = new Pyramid(levels, *tms, format, channels);
 	return pyr;
 
 }// buildPyramid()
@@ -334,7 +346,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	bool opaque;
 	std::string authority="";
 	std::string resampling;
-	std::vector<Pyramid*> pyramids;
+	Pyramid* pyramid;
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
 
@@ -528,25 +540,23 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		resampling = pElem->GetText();
 	}
 
-
-	for (pElem=hRoot.FirstChild("pyramidList").FirstChild("pyramid").Element(); pElem; pElem=pElem->NextSiblingElement("pyramid")){
-		Pyramid* pyramid = buildPyramid(pElem->GetText(), tmsList);
+	pElem=hRoot.FirstChild("pyramid").Element();
+	if (pElem){
+		pyramid = buildPyramid(pElem->GetText(), tmsList);
 		if (!pyramid){
-			LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
-			//FIXME: que faut-il faire des pyramides déjà créées? Faut-il les detruire? ou vector s'en charge?
-			return NULL;
-		}
-		pyramids.push_back(pyramid);
+                        LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
+                        return NULL;
+                }
 	}
-	if (pyramids.size()==0){
+	else{
 		// FIXME: pas forcément critique si on a un cache d'une autre nature (jpeg2000 par exemple).
-		LOGGER_ERROR("Aucune pyramide associé au layer "<< fileName);
-		return NULL;
+                LOGGER_ERROR("Aucune pyramide associé au layer "<< fileName);
+                return NULL;
 	}
 
 	Layer *layer;
 
-	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
+	layer = new Layer(id, title, abstract, keyWords, pyramid, styles, minRes, maxRes,
 			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox);
 
 	return layer;

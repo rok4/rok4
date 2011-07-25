@@ -1,88 +1,19 @@
-
 #include "Level.h"
 #include "FileDataSource.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
 #include "RawImage.h"
-
-//#include "DecodedImage.h"
-
 #include "Decoder.h"
-
+#include "TiffEncoder.h"
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
-
 #include <vector>
-
-
-#include "JPEGEncoder.h"
-#include "PNGEncoder.h"
-#include "TiffEncoder.h"
-#include "BilEncoder.h"
+#include "Pyramid.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
-
-
-/** Constructeur */
-Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth, int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol, int pathDepth, std::string format) :
-	tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format), noDataSource(0)
-{
-	if (format.compare("TIFF_INT8")==0) {
-		BilEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
-		noDataSource = new BufferedDataSource(dataStream);
-	}
-	else if (format.compare("TIFF_JPG_INT8")==0) {
-		JPEGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
-		noDataSource = new BufferedDataSource(dataStream);
-	}
-	else if (format.compare("TIFF_PNG_INT8")==0) {
-		PNGEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
-		noDataSource = new BufferedDataSource(dataStream);
-	}
-	else if (format.compare("TIFF_FLOAT32")==0) {
-                BilEncoder dataStream(new ImageDecoder(0, tm.getTileW(), tm.getTileH(), channels));
-                noDataSource = new BufferedDataSource(dataStream);
-        }
-	else
-		LOGGER_ERROR("Format non pris en charge : "<<format);
-}
-
-Level::~Level()
-{
-	if (noDataSource) delete noDataSource;
-}
-
-TileMatrix Level::getTm(){return tm;}
-std::string Level::getFormat(){return format;}
-int Level::getChannels(){return channels;}
-uint32_t Level::getMaxTileRow(){return maxTileRow;}
-uint32_t Level::getMinTileRow(){return minTileRow;}
-uint32_t Level::getMaxTileCol(){return maxTileCol;}
-uint32_t Level::getMinTileCol(){return minTileCol;}
-double Level::getRes(){return tm.getRes();}
-std::string Level::getId(){return tm.getId();}
-uint32_t Level::getTilesPerWidth(){return tilesPerWidth;}
-uint32_t Level::getTilesPerHeight(){return tilesPerHeight;}
-
-
-/*
- * @return le type MIME du format
- */
-
-std::string Level::getType() {
-	if (format.compare("TIFF_INT8")==0)
-		return "image/tiff";
-	else if (format.compare("TIFF_JPG_INT8")==0)
-		return "image/jpeg";
-	else if (format.compare("TIFF_PNG_INT8")==0)
-		return "image/png";
-	else if (format.compare("TIFF_FLOAT32")==0)
-                return "image/x-bil;bits=32";
-	return "text/plain";
-}
 
 /*
  * A REFAIRE
@@ -171,7 +102,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 }
 
 /*
- * Tableau statique des caractères Base36 (pour système de fichieri non cas-sensitive)
+ * Tableau statique des caractères Base36 (pour système de fichier non cas-sensitive)
  */
 // static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -231,7 +162,7 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	std::string path=getFilePath(x, y);
 	LOGGER_DEBUG(path);
-	return new FileDataSource(path.c_str(),posoff,possize,getType());
+	return new FileDataSource(path.c_str(),posoff,possize,getMimeType(format));
 }
 
 DataSource* Level::getDecodedTile(int x, int y)
@@ -259,7 +190,7 @@ DataSource* Level::getTile(int x, int y) {
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
         }
 
-	return new DataSourceProxy(getEncodedTile(x, y), *noDataSource);
+	return new DataSourceProxy(source, *noDataSource);
 }
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {

@@ -1,6 +1,7 @@
 #include "Request.h"
 #include "Message.h"
 #include "CRS.h"
+#include "Pyramid.h"
 #include <cstdlib>
 #include <climits>
 #include <vector>
@@ -151,11 +152,7 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
         if(format == "")
                 return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
 	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
-	unsigned int k;
-	for (k=0;k<layer->getMimeFormats().size();k++)
-		if (layer->getMimeFormats().at(k)==format)
-			break;
-	if (k==layer->getMimeFormats().size())
+	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	return NULL;
 }

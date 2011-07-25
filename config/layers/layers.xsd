@@ -58,15 +58,8 @@
 			<xs:element name="authority" type="xs:string"/>
 			<!-- Identifiant de l’algo de rééchantillonage (spécifique ROK4) -->
 			<xs:element name="resampling" type="xs:string"/>
-			<!-- Liste des pyramides du layer (une seule au 07/2010) -->
-			<xs:element name="pyramidList">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="pyramid" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
-				</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			</xs:sequence>
+			<!-- Pyramide du layer -->
+			<xs:element name="pyramid" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 

@@ -27,6 +27,7 @@ BufferedDataSource::BufferedDataSource(DataStream& dataStream) : type(dataStream
 
 	// On réalloue exactement la taille nécessaire pour ne pas perdre de place
 	uint8_t* tmp = new uint8_t[dataSize];
+//LOGGER_DEBUG("datasize="<<dataSize);
 	memcpy(tmp, data, dataSize);
 	delete[] data;
 	data = tmp;

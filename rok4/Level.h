@@ -17,7 +17,7 @@ private:
 	std::string   baseDir;
 	int           pathDepth;
 	TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
-	const std::string format; //format d'image des block de tuiles du cache.
+	const std::string format; //format d'image des tuiles
 	const int     channels;
 	const int32_t maxTileRow;
 	const int32_t minTileRow;
@@ -44,19 +44,17 @@ protected:
 
 
 public:
-	TileMatrix getTm();
-	std::string getFormat();
-	int	    getChannels();
-	uint32_t    getMaxTileRow();
-	uint32_t    getMinTileRow();
-	uint32_t    getMaxTileCol();
-	uint32_t    getMinTileCol();
-	double      getRes();
-	std::string getId();
-	int         getTileCoding();
-	std::string getType();
-	uint32_t      getTilesPerWidth();
-	uint32_t      getTilesPerHeight();
+	TileMatrix getTm(){return tm;}
+	std::string getFormat(){return format;}
+	int	    getChannels(){return channels;}
+	uint32_t    getMaxTileRow(){return maxTileRow;}
+	uint32_t    getMinTileRow(){return minTileRow;}
+	uint32_t    getMaxTileCol(){return maxTileCol;}
+	uint32_t    getMinTileCol(){return minTileCol;}
+	double      getRes(){return tm.getRes();}
+	std::string getId(){return tm.getId();}
+	uint32_t      getTilesPerWidth(){return tilesPerWidth;}
+	uint32_t      getTilesPerHeight(){return tilesPerHeight;}
 
 	std::string getFilePath(int tilex, int tiley);
 
@@ -78,16 +76,18 @@ public:
 
 	Image* getTile(int x, int y, int left, int top, int right, int bottom);
 
+	void setNoDataSource(DataSource* source) {noDataSource=source;}
+	
 	/** D */
 	Level(TileMatrix tm, int channels, std::string baseDir,
 			int tilesPerWidth, int tilesPerHeight,
 			uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-			int pathDepth, std::string format);
+			int pathDepth, std::string format) : tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format), noDataSource(0){}
 
 	/*
 	 * Destructeur
 	 */
-	~Level();
+	~Level(){}
 
 };
 
