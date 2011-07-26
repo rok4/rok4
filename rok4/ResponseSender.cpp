@@ -47,7 +47,7 @@ void displayFCGIError(int error)
 int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
 	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(source->getHttpStatus()) ;
+	std::string statusHeader= genStatusHeader(source->getHttpStatus());
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);

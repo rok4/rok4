@@ -183,13 +183,12 @@ DataSource* Level::getDecodedTile(int x, int y)
 
 DataSource* Level::getTile(int x, int y) {
 	DataSource* source=getEncodedTile(x, y);
-	if (format.compare("TIFF_INT8")==0 && source!=0){
+	size_t size;
+	if (format.compare("TIFF_INT8")==0 && source!=0 && source->getData(size)!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
-		LOGGER_DEBUG("New buffereddatasource");
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
         }
-
 	return new DataSourceProxy(source, *noDataSource);
 }
 

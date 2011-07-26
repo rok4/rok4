@@ -815,7 +815,6 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 		if (format != "image/jpeg" &&
 			format != "image/png"  &&
 			format != "image/tiff" &&
-			format != "image/x-bil" &&
 			format != "image/x-bil;bits=32" &&
 			format != "image/gif"){
 			LOGGER_ERROR(servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME");

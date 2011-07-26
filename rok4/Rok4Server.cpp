@@ -191,7 +191,7 @@ DataSource* Rok4Server::getTile(Request* request)
 		return errorResp;
 	}
 
-	return  L->gettile(tileCol, tileRow, tileMatrix);
+	return L->gettile(tileCol, tileRow, tileMatrix);
 }
 
 /** Traite les requêtes de type WMTS */

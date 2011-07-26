@@ -32,7 +32,7 @@ Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::
 	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){
 		DataSource* noDataSource;
 		if (format.compare("TIFF_INT8")==0) {
-	                BilEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+	                TiffEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
         	        noDataSource = new BufferedDataSource(dataStream);
         	}
         	else if (format.compare("TIFF_JPG_INT8")==0) {
@@ -64,7 +64,7 @@ DataSource* Pyramid::getTile(int x, int y, std::string tmId) {
 	if (itLevel==levels.end()){
 		std::map<std::string, DataSource*>::const_iterator itNoDataSource=noDataSources.find(tmId);
 		if (itNoDataSource!=noDataSources.end())
-			return new DataSourceProxy(new FileDataSource("ttt.jpg",0,0,""), *(itNoDataSource->second));
+			return new DataSourceProxy(new FileDataSource("",0,0,""), *(itNoDataSource->second));
 		else{
 			LOGGER_ERROR("pas de nodata disponible pour le TM "<<tmId);
 			return 0;
