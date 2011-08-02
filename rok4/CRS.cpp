@@ -15,10 +15,11 @@ std::string toUpperCase(std::string str){
         return uc_str;
 }
 bool isCrsProj4Compatible(std::string crs){
-	projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
+	projCtx ctx = pj_ctx_alloc();
+	projPJ pj=pj_init_plus_ctx(ctx,("+init=" + crs +" +wktext").c_str());
         if (!pj){
-        	int *err = pj_get_errno_ref();
-        	char *msg = pj_strerrno(*err);
+        	int err = pj_ctx_get_errno(ctx);
+        	char *msg = pj_strerrno(err);
 		// LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
 		return false;
 	}
@@ -26,19 +27,22 @@ bool isCrsProj4Compatible(std::string crs){
         if (pj) isCompatible=true;
 	else isCompatible=false;
 	pj_free(pj);
+        pj_ctx_free(ctx);
         return isCompatible;
 }
 
 bool isCrsLongLat(std::string crs){
-	projPJ pj=pj_init_plus(("+init=" + crs +" +wktext").c_str());
+	projCtx ctx = pj_ctx_alloc();
+	projPJ pj=pj_init_plus_ctx(ctx,("+init=" + crs +" +wktext").c_str());
 	if (!pj){
-                int *err = pj_get_errno_ref();
-                char *msg = pj_strerrno(*err);
+                int err = pj_ctx_get_errno(ctx);
+                char *msg = pj_strerrno(err);
                 // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
                 return false;
         }
 	bool isLongLat=pj_is_latlong(pj);
 	pj_free(pj);
+	pj_ctx_free(ctx);
 	return isLongLat;
 }
 
