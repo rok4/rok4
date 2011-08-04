@@ -64,22 +64,25 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
   	pthread_mutex_lock (& mutex_proj);
 
+	projCtx ctx = pj_ctx_alloc();
 	pj_set_finder( pj_finder2 );
 	LOGGER_DEBUG(pj_finder2("test"));
 
   	projPJ pj_src, pj_dst;  
-  	if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
-    		int *err = pj_get_errno_ref();
-    		char *msg = pj_strerrno(*err);     
+  	if(!(pj_src = pj_init_plus_ctx(ctx,  ("+init=" + from_srs +" +wktext" ).c_str()))) {
+    		int err = pj_ctx_get_errno(ctx);
+    		char *msg = pj_strerrno(err);     
     		LOGGER_DEBUG("erreur d initialisation " << from_srs << " " << msg);
-    		pthread_mutex_unlock (& mutex_proj);
+    		pj_ctx_free(ctx);
+		pthread_mutex_unlock (& mutex_proj);
     		return false;
   	}
-  	if(!(pj_dst = pj_init_plus(  ("+init=" + to_srs +" +wktext" ).c_str()))) {
-    		int *err = pj_get_errno_ref();
-    		char *msg = pj_strerrno(*err);     
+  	if(!(pj_dst = pj_init_plus_ctx(ctx,  ("+init=" + to_srs +" +wktext" ).c_str()))) {
+    		int err = pj_ctx_get_errno(ctx);
+    		char *msg = pj_strerrno(err);     
     		LOGGER_DEBUG("erreur d initialisation " << to_srs << " " << msg);
 		pj_free(pj_src);
+    		pj_ctx_free(ctx);
     		pthread_mutex_unlock (& mutex_proj);
     		return false;
 	}
