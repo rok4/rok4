@@ -45,7 +45,7 @@ class Accumulator {
   int size;
 
   /** Buffer de string contenant les messages */
-	std::vector<std::string> buffer;
+  std::vector<std::string> buffer;
 
   /**
    * Boucle principale d'écriture exécutée par un thread spcifique encapsulé dans la classe.

@@ -13,7 +13,6 @@ Image* Layer::getbbox(BoundingBox<double> bbox, int width, int height, CRS dst_c
 
 std::string Layer::getId(){return id;}
 
-Layer::~Layer()
-{
+Layer::~Layer(){
 		delete dataPyramid;
 }

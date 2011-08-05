@@ -53,23 +53,30 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 	pj_set_finder( pj_finder );
 
 	// Initialisation des parametres techniques
+	LogOutput logOutput;
 	int nbThread,logFilePeriod;
+	LogLevel logLevel;
+	bool reprojectionCapability;
 	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir;
-	if (!ConfLoader::getTechnicalParam(strServerConfigFile, strLogFileprefix, logFilePeriod, nbThread, strServicesConfigFile, strLayerDir, strTmsDir)){
+	if (!ConfLoader::getTechnicalParam(strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir)){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
 
-	//Initialisation du logger
-	RollingFileAccumulator* acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
-	Logger::setAccumulator(DEBUG, acc);
-        Logger::setAccumulator(INFO , acc);
-        Logger::setAccumulator(WARN , acc);
-        Logger::setAccumulator(ERROR, acc);
-        Logger::setAccumulator(FATAL, acc);
-	std::ostream &log = LOGGER(DEBUG);
-        log.precision(8);
-        log.setf(std::ios::fixed,std::ios::floatfield);
+	Logger::setOutput(logOutput);
+	// Initialisation du logger
+	if (logOutput==ROLLING_FILE){
+		RollingFileAccumulator* acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+		for (int i=0;i<=logLevel;i++)
+			Logger::setAccumulator((LogLevel)i, acc);
+		std::ostream &log = LOGGER(DEBUG);
+        	log.precision(8);
+	        log.setf(std::ios::fixed,std::ios::floatfield);
+	}
+	else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
+	}
+
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
@@ -92,7 +99,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 	
 	// Chargement des layers
 	std::map<std::string, Layer*> layerList;
-	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList)){
+	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList,reprojectionCapability)){
 		LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
                 LOGGER_FATAL("Extinction du serveur ROK4");
 		sleep(1);       // Pour laisser le temps au logger pour se vider

@@ -64,7 +64,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 			LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
 			displayFCGIError(FCGX_GetError(request->out));
 			delete source;
-			delete[] buffer;
+			//delete[] buffer;
 			return -1;
 		}
 		wr += w;

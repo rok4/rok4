@@ -20,8 +20,10 @@
 #define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
 #define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
 
+#define DEFAULT_LOG_OUTPUT ROLLING_FILE
 #define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
 #define DEFAULT_LOG_FILE_PERIOD 3600
+#define DEFAULT_LOG_LEVEL  ERROR
 #define DEFAULT_NB_THREAD  1
 #define DEFAULT_LAYER_DIR  "../config/layers/"
 #define DEFAULT_TMS_DIR    "../config/tileMatrixSet"

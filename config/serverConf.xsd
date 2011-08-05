@@ -3,17 +3,40 @@
 	<xs:element name="serverConf">
 		<xs:complexType>
 			<xs:sequence>
+			<!-- Liste outputs de log disponibles -->
+			<xs:simpleType name="logOutputType">
+                                <xs:restriction base="xs:string">
+                                        <xs:enumeration value="rolling_file"/>
+                                        <xs:enumeration value="standard_output_stream_for_errors"/>
+                                </xs:restriction>
+                        </xs:simpleType>
+			<!-- Sortie des logs (rolling_file|standard_output_stream) -->
+                        <xs:element name="logOutput"         type="logOutputType"/>
 			<!-- Prefixe des fichiers de log -->
         		<xs:element name="logFilePrefix"    type="xs:string"/>
 			<!-- Periode de validite des fichiers de log (en secondes) -->
 			<xs:element name="logFilePeriod"    type="xs:positiveInteger"/>
-			<!-- nombre de threads exploités pour l'ecoute et le calcul-->
+			<!-- Liste des niveaux de log disponibles -->
+			<xs:simpleType name="logLevelType">
+				<xs:restriction base="xs:string">
+                        		<xs:enumeration value="fatal"/>
+                        		<xs:enumeration value="error"/>
+                        		<xs:enumeration value="warn"/>
+                        		<xs:enumeration value="info"/>
+					<xs:enumeration value="debug"/>
+                		</xs:restriction>
+			</xs:simpleType>
+			<!-- Niveau maximum des log -->
+			<xs:element name="logLevel"         type="logLevelType"/>
+			<!-- Nombre de threads exploités pour l'ecoute et le calcul -->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
+			<!-- Capacite a reprojeter -->
+			<xs:element name="reprojectionCapability"        	type="xs:boolean"/>
 			<!-- Fichier contenant les parametres de service -->
 			<xs:element name="servicesConf"         type="xs:string"/>
-			<!-- répertoire des configs des layers -->
+			<!-- Répertoire des configs des layers -->
 			<xs:element name="layerDir"         type="xs:string"/>
-			<!-- répertoire des configs des tileMatrixSet -->
+			<!-- Répertoire des configs des tileMatrixSet -->
 			<xs:element name="tileMatrixSetDir" type="xs:string"/>
 			</xs:sequence>
 		</xs:complexType>

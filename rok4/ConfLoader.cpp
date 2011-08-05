@@ -332,7 +332,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 }// buildPyramid()
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool reprojectionCapability){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
@@ -497,16 +497,17 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
                 }
 	}
 
-	
-	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
-		std::string str_crs(pElem->GetText());
-		// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-		CRS crs(str_crs);
-		if (!crs.isProj4Compatible())
-			LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
-		else{
-			LOGGER_INFO("		Ajout du crs "<<str_crs);
-			WMSCRSList.push_back(str_crs);
+	if (reprojectionCapability==true){
+		for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
+			std::string str_crs(pElem->GetText());
+			// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+			CRS crs(str_crs);
+			if (!crs.isProj4Compatible())
+				LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
+			else{
+				LOGGER_INFO("		Ajout du crs "<<str_crs);
+				WMSCRSList.push_back(str_crs);
+			}
 		}
 	}
 	if (WMSCRSList.size()==0){
@@ -562,7 +563,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& logFilePrefix, int& logFilePeriod, int &nbThread, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir){
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir){
 	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
 	TiXmlDocument doc(serverConfigFile);
 	if (!doc.LoadFile()){
@@ -585,6 +586,18 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 	}
 	hRoot=TiXmlHandle(pElem);
 
+	pElem=hRoot.FirstChild("logOutput").Element();
+	std::string strLogOutput=(pElem->GetText());
+        if (!pElem){
+                std::cerr<<"Pas de logOutput => logOutput = " << DEFAULT_LOG_OUTPUT;
+                logOutput = DEFAULT_LOG_OUTPUT;
+        }else if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
+	else if (strLogOutput=="standard_output_stream_for_errors") logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
+	else{
+		std::cerr<<"Le logOutput [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
+                return false;
+	}
+
 	pElem=hRoot.FirstChild("logFilePrefix").Element();
         if (!pElem){
                 std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
@@ -600,6 +613,21 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  n'est pas un entier."<<std::endl;	
                 return false;
         }
+
+	pElem=hRoot.FirstChild("logLevel").Element();
+	std::string strLogLevel(pElem->GetText());
+        if (!pElem){
+                std::cerr<<"Pas de logLevel => logLevel = " << DEFAULT_LOG_LEVEL;
+                logLevel = DEFAULT_LOG_LEVEL;
+        }else if (strLogLevel=="fatal") logLevel=FATAL;
+	else if (strLogLevel=="error") logLevel=ERROR;
+	else if (strLogLevel=="warn") logLevel=WARN; 
+	else if (strLogLevel=="info") logLevel=INFO;
+        else if (strLogLevel=="debug") logLevel=DEBUG;
+	else{
+               	std::cerr<<"Le logLevel [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
+               	return false;
+        }
 		
 	pElem=hRoot.FirstChild("nbThread").Element();
 	if (!pElem){
@@ -609,6 +637,20 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] n'est pas un entier."<<std::endl;
 		return false;
 	}
+	
+	pElem=hRoot.FirstChild("reprojectionCapability").Element();
+        if (!pElem){
+                std::cerr<<"Pas de reprojectionCapability => reprojectionCapability = true"<<std::endl;
+                reprojectionCapability = true;
+        }else{
+		std::string strReprojection(pElem->GetText());
+		if (strReprojection=="true") reprojectionCapability=true;
+		else if (strReprojection=="false") reprojectionCapability=false;
+		else{
+			std::cerr<<"Le reprojectionCapability [" << pElem->GetText() <<"] n'est pas un booleen."<<std::endl;
+                	return false;
+		}
+        }
 
 	pElem=hRoot.FirstChild("servicesConfigFile").Element();
         if (!pElem){
@@ -688,7 +730,7 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 	return true;
 }
 
-bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers){
+bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers, bool reprojectionCapability){
 	LOGGER_INFO("CHARGEMENT DES LAYERS");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
@@ -716,7 +758,7 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	// générer les Layers décrits par les fichiers.
 	for (unsigned int i=0; i<layerFiles.size(); i++){
 		Layer * layer;
-		layer = buildLayer(layerFiles[i], tmsList);
+		layer = buildLayer(layerFiles[i], tmsList, reprojectionCapability);
 		if (layer){
 			layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
 		}else{

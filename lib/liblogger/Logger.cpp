@@ -11,7 +11,9 @@
 /* nullstream est initialisé sans streambuf, son badbit sera activé et les formatages seront alors ignorées */
 std::ostream nullstream(0);
 
-const char* LogLevelText[nbLogLevel] = {"DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
+LogOutput Logger::logOutput=ROLLING_FILE;
+
+const char* LogLevelText[nbLogLevel] = {"FATAL", "ERROR", "WARN", "INFO", "DEBUG"};
 
 class logbuffer : public std::stringbuf {
   private:
@@ -29,7 +31,6 @@ int logbuffer::sync() {
 	str("");
 	return 0;
 }
-
 
 Accumulator* Logger::accumulator[nbLogLevel] = {0};
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;

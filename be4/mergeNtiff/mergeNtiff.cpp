@@ -722,6 +722,8 @@ int main(int argc, char **argv) {
 	ExtendedCompoundImage* pECImage;
 
 	/* Initialisation des Loggers */
+        Logger::setOutput(ROLLING_FILE);
+
         Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",86400,1024);
         Logger::setAccumulator(DEBUG, acc);
         Logger::setAccumulator(INFO , acc);
