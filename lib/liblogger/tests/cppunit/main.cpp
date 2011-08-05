@@ -1,9 +1,13 @@
 #include <cppunit/BriefTestProgressListener.h>
 #include <cppunit/CompilerOutputter.h>
+#include <cppunit/XmlOutputter.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/TestResult.h>
 #include <cppunit/TestResultCollector.h>
 #include <cppunit/TestRunner.h>
+#include <iostream>
+#include <fstream>
+
 
 
 int
@@ -30,6 +34,12 @@ main( int argc, char* argv[] )
   // Print test in a compiler compatible format.
   CPPUNIT_NS::CompilerOutputter outputter( &result, std::cerr );
   outputter.write();   
+
+  //XML Output
+  std::ofstream xmlFileOut("cpptestresults.xml");
+  CPPUNIT_NS::XmlOutputter xmlOut(&result, xmlFileOut);
+  xmlOut.write();
+
   
   return result.wasSuccessful() ? 0 : 1;
 }
