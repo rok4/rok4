@@ -78,7 +78,17 @@ if(UNITTEST)
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
-    ENDFOREACH(test)
+    ENDFOREACH(test) 
+
+    #Transformation des sorties Xml CppUnit en Xml Junit
+    find_package(Xsltproc)
+    if(XSLTPROC_FOUND)
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml
+                COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml)
+    endif(XSLTPROC_FOUND)
+
 endif(UNITTEST)
 
 ########################################

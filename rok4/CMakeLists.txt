@@ -9,14 +9,14 @@ cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-  set(DEP_PATH ${CMAKE_CURRENT_SURCE_DIR}/../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_CURRENT_SURCE_DIR}/../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -80,6 +80,18 @@ if(UNITTEST)
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
+
+    #Transformation des sorties Xml CppUnit en Xml Junit
+    find_package(Xsltproc)
+    if(XSLTPROC_FOUND)
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml
+		COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml)
+    endif(XSLTPROC_FOUND)
+    
+
+
 endif(UNITTEST)
 
 ########################################
