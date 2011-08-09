@@ -59,6 +59,10 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef);
 TiffHeader* rok4GetTiffHeader(int width, int height, int channels); 
 HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server);
+void rok4DeleteRequest(HttpRequest* request);
+void rok4DeleteResponse(HttpResponse* response);
+void rok4DeleteTileRef(TileRef* tileRef);
+void rok4DeleteTiffHeader(TiffHeader* header);
 
 void rok4KillServer(Rok4Server* server);
 

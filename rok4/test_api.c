@@ -103,7 +103,7 @@ void* processThread(void* arg){
 		
 		if (strcmp(request->service,"wmts")!=0){
 			fprintf(stdout,"\tService %s non gere\n",request->service);
-			free(request);
+			rok4DeleteRequest(request);
 			continue;
 		}
 		
@@ -117,7 +117,7 @@ void* processThread(void* arg){
         		//fprintf(C,"%s",capabilities->content);
 			fwrite(capabilities->content,1,capabilities->contentSize,C);
         		fclose(C);
-			free(capabilities);
+			rok4DeleteResponse(capabilities);
 		}
 		// GetTile
 		else if ( strcmp(request->operationType,"gettile")==0  ){
@@ -128,7 +128,7 @@ void* processThread(void* arg){
         		        fprintf(stdout,"\tStatut=%d\n",error->status);
                 		fprintf(stdout,"\ttype=%s\n",error->type);
                 		fprintf(stdout,"\terror content=%s\n",error->content);
-				free(error);
+				rok4DeleteResponse(error);
         		}
 			else{
 				fprintf(stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef.filename,tileRef.posoff,tileRef.possize,tileRef.type);
@@ -139,7 +139,7 @@ void* processThread(void* arg){
 					for (i=0;i<128;i++)
 						fprintf(stdout,"%c",header->data[i]);
 					fprintf(stdout,"\n");
-					free(header);
+					rok4DeleteTiffHeader(header);
 				}
 			}
 			free(error);
@@ -151,7 +151,7 @@ void* processThread(void* arg){
 			FILE* T=fopen(tileName,"w");
 	                fwrite(tile->content,tile->contentSize,1,T);
                         fclose(T);
-			free(tile);
+			rok4DeleteResponse(tile);
 
 		}
 		// Operation non prise en charge
@@ -160,9 +160,9 @@ void* processThread(void* arg){
 			fprintf(stdout,"\tStatut=%d\n",response->status);
                 	fprintf(stdout,"\ttype=%s\n",response->type);
 			fprintf(stdout,"\terror content=%s\n",response->content);
-			free(response);
+			rok4DeleteResponse(response);
 		}
-		free(request);
+		rok4DeleteRequest(request);
 	}
 
         // Extinction du serveur

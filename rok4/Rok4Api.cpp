@@ -266,6 +266,47 @@ HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, con
 }
 
 /**
+* @brief Suppression d'une requete
+*/
+
+void rok4DeleteRequest(HttpRequest* request){
+	delete[] request->queryString;
+	delete[] request->hostName;
+	delete[] request->scriptName;
+	delete[] request->service;
+	delete[] request->operationType;
+	delete request;
+}
+
+/**
+* @brief Suppression d'une reponse
+*/
+
+void rok4DeleteResponse(HttpResponse* response){
+	delete[] response->type;
+	delete[] response->content;
+	delete response;
+}
+
+/**
+* @brief Suppression d'une reference de tuile
+*/
+
+void rok4DeleteTileRef(TileRef* tileRef){
+	delete[] tileRef->filename;
+        delete[] tileRef->type;
+	delete tileRef;
+}
+
+/**
+* @brief Suppression d'un en-tete TIFF
+*/
+
+void rok4DeleteTiffHeader(TiffHeader* header){
+	delete header;
+}
+
+/**
 * @brief Extinction du serveur
 */
 
