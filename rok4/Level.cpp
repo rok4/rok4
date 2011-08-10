@@ -30,8 +30,8 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height, CRS src_c
         double ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / (tm.getRes()*double(height));
 	double bufx=kk.size(ratio_x);
 	double bufy=kk.size(ratio_y);
-	bufx<50?bufx=50:0;bufy<50?bufy=50:0; // Pour etre sur de ne pas regresser
 
+	bufx<50?bufx=50:0;bufy<50?bufy=50:0; // Pour etre sur de ne pas regresser
 	BoundingBox<int64_t> bbox_int(floor((grid->bbox.xmin - tm.getX0())/tm.getRes() - bufx),
 			floor((tm.getY0() - grid->bbox.ymax)/tm.getRes() - bufy),
 			ceil ((grid->bbox.xmax - tm.getX0())/tm.getRes() + bufx),
@@ -78,19 +78,38 @@ Image* Level::getbbox(BoundingBox<double> bbox, int width, int height) {
 	return new ResampledImage(getwindow(bbox_int), width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y);
 }
 
+int euclideanDivisionQuotient(int64_t i, int n){
+	int q=i/n;	// Division tronquee
+	if (q<0) q-=1;
+	if (q==0 && i<0) q=-1;
+	return q;
+}
+
+int euclideanDivisionRemainder(int64_t i, int n){
+	int r=i%n;
+	if (r<0) r+=n;
+	return r;
+}
 
 Image* Level::getwindow(BoundingBox<int64_t> bbox) {
-	int tile_xmin = bbox.xmin / tm.getTileW();
-	int tile_xmax = (bbox.xmax -1)/ tm.getTileW();
+	int tile_xmin=euclideanDivisionQuotient(bbox.xmin,tm.getTileW());
+	int tile_xmax=euclideanDivisionQuotient(bbox.xmax -1,tm.getTileW());
 	int nbx = tile_xmax - tile_xmin + 1;
 
-	int tile_ymin = bbox.ymin / tm.getTileH();
-	int tile_ymax = (bbox.ymax-1) / tm.getTileH();
+	int tile_ymin=euclideanDivisionQuotient(bbox.ymin,tm.getTileH());
+	int tile_ymax = euclideanDivisionQuotient(bbox.ymax-1,tm.getTileH());
 	int nby = tile_ymax - tile_ymin + 1;
-	int left[nbx];   memset(left,   0, nbx*sizeof(int)); left[0] = bbox.xmin % tm.getTileW();
-	int top[nby];    memset(top,    0, nby*sizeof(int)); top[0]  = bbox.ymin % tm.getTileH();
-	int right[nbx];  memset(right,  0, nbx*sizeof(int)); right[nbx - 1] = tm.getTileW() - ((bbox.xmax -1) % tm.getTileW()) - 1;
-	int bottom[nby]; memset(bottom, 0, nby*sizeof(int)); bottom[nby- 1] = tm.getTileH() - ((bbox.ymax -1) % tm.getTileH()) - 1;
+
+	int left[nbx];
+	memset(left,   0, nbx*sizeof(int));
+	left[0]=euclideanDivisionRemainder(bbox.xmin,tm.getTileW());
+	int top[nby];
+	memset(top,    0, nby*sizeof(int));
+	top[0]=euclideanDivisionRemainder(bbox.ymin,tm.getTileH());
+	int right[nbx];  memset(right,  0, nbx*sizeof(int));
+	right[nbx - 1] = tm.getTileW() - euclideanDivisionRemainder(bbox.xmax -1,tm.getTileW()) -1;
+	int bottom[nby]; memset(bottom, 0, nby*sizeof(int));
+	bottom[nby- 1] = tm.getTileH() - euclideanDivisionRemainder(bbox.ymax -1,tm.getTileH()) - 1;
 
 	std::vector<std::vector<Image*> > T(nby, std::vector<Image*>(nbx));
 	for(int y = 0; y < nby; y++)
@@ -102,7 +121,7 @@ Image* Level::getwindow(BoundingBox<int64_t> bbox) {
 }
 
 /*
- * Tableau statique des caractères Base36 (pour système de fichier non cas-sensitive)
+ * Tableau statique des caractères Base36 (pour systeme de fichier non case-sensitive)
  */
 // static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
 static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -149,10 +168,8 @@ std::string Level::getFilePath(int tilex, int tiley)
 }
 
 /*
- * @ return la tuile d'indice (x,y) du niveau
+ * @return la tuile d'indice (x,y) du niveau
  */
-
-
 
 DataSource* Level::getEncodedTile(int x, int y) {
 	// TODO: return 0 sur des cas d'erreur..
@@ -165,10 +182,8 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	return new FileDataSource(path.c_str(),posoff,possize,getMimeType(format));
 }
 
-DataSource* Level::getDecodedTile(int x, int y)
-{
+DataSource* Level::getDecodedTile(int x, int y) {
 	DataSource* encData = getEncodedTile(x, y);
-
 	if (format.compare("TIFF_INT8")==0 || format.compare("TIFF_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)

@@ -141,6 +141,7 @@ void* processThread(void* arg){
 					fprintf(stdout,"\n");
 					rok4DeleteTiffHeader(header);
 				}
+				rok4FlushTileRef(&tileRef);
 			}
 			free(error);
 

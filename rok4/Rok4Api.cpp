@@ -289,13 +289,13 @@ void rok4DeleteResponse(HttpResponse* response){
 }
 
 /**
-* @brief Suppression d'une reference de tuile
+* @brief Suppression des champs d'une reference de tuile
+* La reference n est pas supprimee
 */
 
-void rok4DeleteTileRef(TileRef* tileRef){
+void rok4FlushTileRef(TileRef* tileRef){
 	delete[] tileRef->filename;
         delete[] tileRef->type;
-	delete tileRef;
 }
 
 /**
