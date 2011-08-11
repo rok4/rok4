@@ -71,7 +71,7 @@ if(UNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
     TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} )
     FOREACH(test ${UnitTests_SRCS})
@@ -83,10 +83,12 @@ if(UNITTEST)
     #Transformation des sorties Xml CppUnit en Xml Junit
     find_package(Xsltproc)
     if(XSLTPROC_FOUND)
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml
-                COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
 
-    add_custom_target(junitxml DEPENDS ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml)
+     add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+                COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
     endif(XSLTPROC_FOUND)
 
 endif(UNITTEST)

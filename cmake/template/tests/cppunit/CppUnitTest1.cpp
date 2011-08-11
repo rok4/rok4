@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <unistd.h>
 
 
 
@@ -46,6 +47,6 @@ void CppUnitTest1::test1methodeXXX()
 
 
 void CppUnitTest1::test2comportementYYY()
-{
-	CPPUNIT_ASSERT(true);
+{ 
+	CPPUNIT_ASSERT(false);
 } // test2comportementYYY

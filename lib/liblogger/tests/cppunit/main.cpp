@@ -7,18 +7,19 @@
 #include <cppunit/TestRunner.h>
 #include <iostream>
 #include <fstream>
+#include "TimedTestListener.h"
+#include "XmlTimedTestOutputterHook.h"
 
-
-
-int
 main( int argc, char* argv[] )
 {
   // Create the event manager and test controller
   CPPUNIT_NS::TestResult controller;
+  TimedTestListener ttlistener;
 
   // Add a listener that colllects test result
   CPPUNIT_NS::TestResultCollector result;
   controller.addListener( &result );        
+  controller.addListener( &ttlistener);
 
   // Add a listener that print dots as test run.
   //CPPUNIT_NS::BriefTestProgressListener progress;
@@ -38,8 +39,9 @@ main( int argc, char* argv[] )
   //XML Output
   std::ofstream xmlFileOut("cpptestresults.xml");
   CPPUNIT_NS::XmlOutputter xmlOut(&result, xmlFileOut);
+  XmlTimedTestOutputterHook *xmlTimeHook = new XmlTimedTestOutputterHook(&ttlistener);
+  xmlOut.addHook(xmlTimeHook);
   xmlOut.write();
-
   
   return result.wasSuccessful() ? 0 : 1;
 }
