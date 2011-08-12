@@ -228,11 +228,14 @@ int pj_transform( PJ *srcdefn, PJ *dstdefn, long point_count, int point_offset,
                             x, y, z ) != 0 )
     {
 //Quickfix service=wms&request=GetMap&version=1.3.0&layers=ORTHO_JPEG_EPSG_3857&crs=IGNF:LAMB93&bbox=648987,6843006,671996,6863014&width=1000&height=1000&format=image/jpeg
-/*        if( srcdefn->ctx->last_errno != 0 )
-            return srcdefn->ctx->last_errno;
-        else
-            return dstdefn->ctx->last_errno;*/
-            srcdefn->ctx->last_errno;
+        if( srcdefn->ctx->last_errno != 0 ) {
+	    if ( srcdefn->ctx->last_errno != -38 )
+                return srcdefn->ctx->last_errno;
+        }
+        else {
+	    if ( dstdefn->ctx->last_errno != -38 )
+                return dstdefn->ctx->last_errno;
+        }
     }
 
 /* -------------------------------------------------------------------- */
