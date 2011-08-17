@@ -92,6 +92,15 @@ bool CRS::isLongLat(){
         return isCrsLongLat(proj4Code);
 }
 
+long double CRS::getMetersPerUnit(){
+	// Hypothese : un CRS en long/lat est en degres
+	// R=6378137m
+	if (isLongLat())
+		return 111319.49079327357264771338267056;
+	else
+		return 1.0;
+}
+
 void CRS::setRequestCode(std::string crs){
 	requestCode=crs;
 	buildProj4Code();

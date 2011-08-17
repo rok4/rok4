@@ -551,7 +551,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	}
 	else{
 		// FIXME: pas forcément critique si on a un cache d'une autre nature (jpeg2000 par exemple).
-                LOGGER_ERROR("Aucune pyramide associé au layer "<< fileName);
+                LOGGER_ERROR("Aucune pyramide associee au layer "<< fileName);
                 return NULL;
 	}
 
