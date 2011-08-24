@@ -355,6 +355,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 	pTabImageIn->push_back(ImageIn);
 
 	// Creation de vecteurs contenant des images avec une resolution en x homogene
+	// TODO : Attention, ils ne sont forcement en phase
 	for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
                 std::stable_sort(it->begin(),it->end(),InfResx); 
@@ -558,10 +559,8 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 
 				if (mirror!=NULL){
 					pECI->getimages()->push_back(mirror);
-
-					LOGGER_DEBUG("Ajout miroir "<<i<<"/"<<nx<<"     "<<j<<"/"<<ny);
-
-					LOGGER_DEBUG(mirrors);
+					//LOGGER_DEBUG("Ajout miroir "<<i<<"/"<<nx<<"     "<<j<<"/"<<ny);
+					//LOGGER_DEBUG(mirrors);
 					mirrors++;
 				}
 			}
@@ -660,7 +659,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pECI,"test0.tif",1,32,3,PHOTOMETRIC_RGB);
 			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
 		}
@@ -673,13 +672,13 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-			//saveImage(pECI2,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pECI_withMirrors,"test0.tif",1,32,3,PHOTOMETRIC_MINISBLACK);
 			//return -1;
 
-			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
+			mask = new ExtendedCompoundMaskImage(/*pECI_withMirrors*/pECI);
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+	        	ResampledImage* pRImage = resampleImages(pImageOut, /*pECI_withMirrors*/ pECI, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
@@ -724,16 +723,20 @@ int main(int argc, char **argv) {
 	/* Initialisation des Loggers */
         Logger::setOutput(ROLLING_FILE);
 
-        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",86400,1024);
+        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",3600,1024);
         Logger::setAccumulator(DEBUG, acc);
         Logger::setAccumulator(INFO , acc);
         Logger::setAccumulator(WARN , acc);
         Logger::setAccumulator(ERROR, acc);
         Logger::setAccumulator(FATAL, acc);
 
-	std::ostream &log = LOGGER(DEBUG);
-      	log.precision(20);
-	log.setf(std::ios::fixed,std::ios::floatfield);
+	std::ostream &logd = LOGGER(DEBUG);
+      	logd.precision(16);
+	logd.setf(std::ios::fixed,std::ios::floatfield);
+
+	std::ostream &logw = LOGGER(WARN);
+        logw.precision(16);
+        logw.setf(std::ios::fixed,std::ios::floatfield);
 
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
@@ -762,21 +765,21 @@ LOGGER_DEBUG("Check");
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Sort");
+LOGGER_DEBUG("Sort");
 	// Tri des images
 	if (sortImages(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des images");
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Merge");
+LOGGER_DEBUG("Merge");
 	// Fusion des paquets d images
 	if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets d images");
 		sleep(1);
 		return -1;
 	}
-//LOGGER_DEBUG("Save");
+LOGGER_DEBUG("Save");
 	// Enregistrement de l image fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement de l image finale");

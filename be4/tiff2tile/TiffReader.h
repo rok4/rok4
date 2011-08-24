@@ -14,7 +14,7 @@ class TiffReader {
 
     uint32_t tileWidth;    // TIFFTAG_IMAGELENGTH
     uint32_t tileLength;   // TIFFTAG_IMAGEWIDTH
-    uint32_t bitspersample;
+    uint16_t bitspersample;
 
     uint8_t *LineBuffer;   // temporary buffer
 

@@ -24,7 +24,6 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         for (i=0;i<width*channels;i++)
         	buffer[i]=(T)nodata;
         double y=l2y(line);
-
         for (i=0;i<(int)images.size();i++){
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
@@ -106,7 +105,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                 phasex0 = modf(images[i]->getxmin()/images[i]->getresx(),&intpart);
                 phasex1 = modf(images[i+1]->getxmin()/images[i+1]->getresx(),&intpart);
                 phasey0 = modf(images[i]->getymax()/images[i]->getresy(),&intpart);
-                phasey0 = modf(images[i+1]->getymax()/images[i+1]->getresy(),&intpart);
+                phasey1 = modf(images[i+1]->getymax()/images[i+1]->getresy(),&intpart);
                 if ( (fabs(phasex1-phasex0)>epsilon && ( (fabs(phasex0)>epsilon && fabs(1-phasex0)>epsilon) || (fabs(phasex1)>epsilon && fabs(1-phasex1)>epsilon)))
                 || (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
                 {
@@ -135,6 +134,7 @@ int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
 	memset(buffer,0,width*channels);
 	// Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
         for (uint i=0;i<ECI->getimages()->size()-ECI->getmirrors();i++){
+	if (line==0)
         	// On ecarte les images qui ne se trouvent pas sur la ligne
         	// On evite de comparer des coordonnees terrain (comparaison de flottants)
         	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche

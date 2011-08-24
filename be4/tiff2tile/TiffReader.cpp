@@ -3,8 +3,6 @@
 #include <string.h>
 #include "TiffReader.h"
 
-
-
 TiffReader::TiffReader(const char* filename) {
   input = TIFFOpen(filename, "r");
   if(!input) {std::cerr << "Unable to open file" << std::endl; exit(2);}
@@ -14,8 +12,9 @@ TiffReader::TiffReader(const char* filename) {
   TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &photometric);
 
   uint16_t sampleperpixel;
-  TIFFGetFieldDefaulted(input, TIFFTAG_BITSPERSAMPLE, &bitspersample);
+  TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &bitspersample);
   TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel);
+
   sampleSize = (bitspersample * sampleperpixel) / 8;
 
   if(TIFFIsTiled(input)) {
