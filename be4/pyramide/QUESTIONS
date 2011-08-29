@@ -1,0 +1,53 @@
+* Lors d'un changement de projection ou/et de compression, il faut les données sources (native) afin de calculer le Quad-Tree.
+Les indexes des dalles à moissonner sont fournis par le Quad-Tree. La pyramide native (raw) ne fournit pas les informations
+necessaires au Quad-Tree car BE4 ne lit pas en entrée de programme les données d'une pyramide.
+
+* La notion de 'cut level id' dans la construction du Quad-Tree est determinée par le nombre de job (scripts) que nous voulons
+creer :
+  - Le nombre de noeud du niveau, qui est inferieur strictement aux nombres de job demandés, est le niveau de decoupage de l'arbre.
+  - On se retrouve avec un script de calcul par noeud, qui va calculé les tuiles de la pyramide de ce niveau vers le niveau le 
+  plus bas.
+  - S'il y'a moins de noeud que de job demandés, des scripts vides sont crees... 
+
+La notion de 'bottom level id' est determinée par la resolution des données sources :
+  - Le niveau de base du calcul est le premier niveau dont la résolution (réduite de 5%) est meilleure que celle des données sources.
+  - S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau le plus bas de la pyramide.
+
+Par contre, le 'top level id' est tout simplement le niveau le plus haut de la pyramide, cad le niveau fournit par le TMS.
+
+Un dernier scripts est crée, le FINISHER, il doit calculer les tuiles de la pyramide du niveau 'cut level id' jusqu'au niveau
+'top level id'.
+
+* La commande 'Convert' pour le deboguage des pyramides permet de detourer et numeroter (indexes + caches) les dalles de travail 
+avant tuilage. Cette option peut être placer dans la methode 'work2cache()' de la Classe Process.
+ex :
+To surround an icon with an ornamental border to use with Mosaic(1), use:
+  convert -mattecolor "#697B8F" -frame 6x6 bird.jpg icon.png
+
+To annotate an image with blue text using font 12x24 at position (100,100), use:
+  convert -font helvetica -fill blue -draw "text 100,100 Cockatoo" bird.jpg bird.miff
+
+les options utiles :
+-border x
+surround the image with a border of color
+-bordercolor
+the border color
+-draw
+annotate an image with one or more graphic primitives
+-font
+use this font when annotating the image with text
+-frame x++
+surround the image with an ornamental border
+
+http://linux.about.com/od/commands/l/blcmdl1_convert.htm
+
+* L'avancement des calculs des scripts est realisé par la commande 'echo',
+ex : 
+on connait les informations suivantes
+ toplevelid    = 1
+ cutlevelid    = 15
+ bottomlevelid = 18
+ nombre de dalles du niveau 15, 16, 17 et 18 (ex: 234)
+soit un conteur simple d'affichage du type : n°/234 ou n° est le numero de la dalle courante...
+
+Ces informations sont fournies par le Quad-Tree.
