@@ -43,9 +43,8 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
          	int c2=-(__min(0,x2c(images[i]->getxmin())));
 
          	T* buffer_t = new T[images[i]->width*images[i]->channels];
-
+		LOGGER_DEBUG(i<<" "<<line<<" "<<images[i]->y2l(y));
          	images[i]->getline(buffer_t,images[i]->y2l(y));
-
          	if (masks.empty())
          		memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
          	else{

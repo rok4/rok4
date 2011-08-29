@@ -18,7 +18,7 @@ class Kernel {
   /**
    * Taille du noyau en nombre de pixels pour un ratio de 1.
    * Pour calculer la valeur d'un pixel rééchantillonné x les pixels
-   * sources entre x - kernel_sie et x + kernel_size seront utilisés.
+   * sources entre x - kernel_size et x + kernel_size seront utilisés.
    */
   const double kernel_size;
 

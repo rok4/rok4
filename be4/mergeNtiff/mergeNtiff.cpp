@@ -106,8 +106,8 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
 				break;
 			case 'a': // sampleformat
 				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
-				if(strncmp(argv[i],"uint",4) == 0) sampleformat = 1 ;
-				else if(strncmp(argv[i],"float",5) == 0) sampleformat = 3 ;
+				if(strncmp(argv[i],"uint",4) == 0) sampleformat = SAMPLEFORMAT_UINT ;
+				else if(strncmp(argv[i],"float",5) == 0) sampleformat = SAMPLEFORMAT_IEEEFP ;
 				else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
 				break;
 			case 'p': // photometric
@@ -166,14 +166,14 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 	float* buf_f=0;
 
 	// Ecriture de l'image
-	if (sampleformat==1){
+	if (sampleformat==SAMPLEFORMAT_UINT){
 		buf_u = (unsigned char*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
 		for( int line = 0; line < pImage->height; line++) {
                         pImage->getline(buf_u,line);
                         TIFFWriteScanline(output, buf_u, line, 0);
 		}
 	}
-	else if(sampleformat==3){
+	else if(sampleformat==SAMPLEFORMAT_IEEEFP){
 		buf_f = (float*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
                 for( int line = 0; line < pImage->height; line++) {
                         pImage->getline(buf_f,line);
@@ -592,8 +592,8 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
 	// L'image reechantillonnee est limitee a l'image de sortie
-	double xmin_dst=__max(xmin_src+K.size(ratio_x),pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x),pImageOut->getxmax()),
-	       ymin_dst=__max(ymin_src+K.size(ratio_y),pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y),pImageOut->getymax());
+	double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src/*-d*/,pImageOut->getxmax()),
+	       ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src/*-d*/,pImageOut->getymax());
 
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())
@@ -624,6 +624,9 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
 	// Reechantillonnage
 	ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+	
+	//saveImage(pRImage,"test1.tif",3,8,1,PHOTOMETRIC_RGB);
+
 	// Reechantillonage du masque
 	resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 	return pRImage;
@@ -659,7 +662,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		if (areOverlayed(pImageOut,pECI))
 		{
 			pOverlayedImage.push_back(pECI);
-			//saveImage(pECI,"test0.tif",1,32,3,PHOTOMETRIC_RGB);
+			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
 		}
@@ -672,13 +675,13 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-			//saveImage(pECI_withMirrors,"test0.tif",1,32,3,PHOTOMETRIC_MINISBLACK);
+			//saveImage(/*pECI_withMirrors*/pECI,"test1.tif",3,8,1,PHOTOMETRIC_RGB);
 			//return -1;
 
-			mask = new ExtendedCompoundMaskImage(/*pECI_withMirrors*/pECI);
+			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleImages(pImageOut, /*pECI_withMirrors*/ pECI, interpolation, mask, pResampledMask);
+	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
@@ -751,35 +754,38 @@ int main(int argc, char **argv) {
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Load");
+
+	LOGGER_DEBUG("Load");
 	// Chargement des images
 	if (loadImages(imageListFilename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
 		LOGGER_ERROR("Echec chargement des images"); 
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Check");
+
+
+	LOGGER_DEBUG("Check");
 	// Controle des images
 	if (checkImages(pImageOut,ImageIn)<0){
 		LOGGER_ERROR("Echec controle des images");
 		sleep(1);
 		return -1;
-	}
-LOGGER_DEBUG("Sort");
+	 }
+	LOGGER_DEBUG("Sort");
 	// Tri des images
 	if (sortImages(ImageIn, &TabImageIn)<0){
 		LOGGER_ERROR("Echec tri des images");
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Merge");
+	LOGGER_DEBUG("Merge");
 	// Fusion des paquets d images
 	if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
 		LOGGER_ERROR("Echec fusion des paquets d images");
 		sleep(1);
 		return -1;
 	}
-LOGGER_DEBUG("Save");
+	LOGGER_DEBUG("Save");
 	// Enregistrement de l image fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
 		LOGGER_ERROR("Echec enregistrement de l image finale");
