@@ -145,6 +145,7 @@ void checkImages(
       		if(compression == (uint16)(-1)) TIFFGetField(input, TIFFTAG_COMPRESSION, &compression);
       		if(rowsperstrip == (uint32)(-1)) TIFFGetField(input, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
       		if(planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
+		if (width%2!=0 || height%2) error ("Sorry : only even dimensions for input images are supported");
     		}
 		
     		else { // check if the others input files have compatible parameters      
@@ -164,11 +165,15 @@ void checkImages(
           			error("Error : all input files must have the same parameters (width, height, etc...)");
     		}
 	}
+
+	BACKGROUND=0;
+
 	if (inputImages[0]&&inputImages[1]&&inputImages[2]&&inputImages[3])
 		backgroundImage=0;
 
 	if (backgroundImage){
-		BACKGROUND=TIFFOpen(backgroundImage, "w");
+		BACKGROUND=TIFFOpen(backgroundImage, "r");
+		if (BACKGROUND==NULL) error("Unable to open background image: "+std::string(backgroundImage));
 		if( ! TIFFGetField(BACKGROUND, TIFFTAG_IMAGEWIDTH, &_width)                        ||
 	            ! TIFFGetField(BACKGROUND, TIFFTAG_IMAGELENGTH, &_height)                      ||
                     ! TIFFGetField(BACKGROUND, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
@@ -196,57 +201,79 @@ void checkImages(
         	error("Error writting output file: " + std::string(outputImage));     
 }
 
-int float32_main(uint32_t width, uint32_t height, uint16_t sampleperpixel,float nodata,TIFF* INPUT[2][2], TIFF* OUTPUT) {
+int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
 	int nbsamples = width * sampleperpixel;
+	uint8  line_background[nbsamples];
   	float  line1[2*nbsamples];
   	float  line2[2*nbsamples];
   	float  line_out[nbsamples];
-
-  	for(int y = 0; y < 2; y++)
+	int left,right;
+  	for(int y = 0; y < 2; y++){
+		if (INPUT[y][0]) left=0; else left=nbsamples/2;
+                if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
     		for(uint32 h = 0; h < height/2; h++) {
-      			if(  TIFFReadScanline(INPUT[y][0], line1, 2*h)               == -1
-		      	|| TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)   == -1
-        		|| TIFFReadScanline(INPUT[y][0], line2, 2*h+1)             == -1
-        		|| TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1) == -1) error("Unable to read data");
-      			for(int pos_in = 0, pos_out = 0; pos_out < nbsamples; pos_in += sampleperpixel) 
-        		for(int j = sampleperpixel; j--; pos_in++) {
-		  		if (line1[pos_in] != nodata && line1[pos_in + sampleperpixel] != nodata && line2[pos_in] != nodata && line2[pos_in + sampleperpixel] != nodata)
-			  		line_out[pos_out++] = (line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel])/(float)4;
-				else
-			  		line_out[pos_out++] = nodata;
-			}
+			if (BACKGROUND)
+                                if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+                        if (INPUT[y][0])
+                                if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
+                        if (INPUT[y][1])
+                                if (TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)==-1) error("Unable to read data");
+                        if (INPUT[y][0])
+                                if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
+                        if (INPUT[y][1])
+                                if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
+                        memcpy(line_out,line_background,nbsamples);
+      			for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) 
+        			for(int j = sampleperpixel; j--; pos_in++) {
+		  			if (line1[pos_in] != nodata && line1[pos_in + sampleperpixel] != nodata && line2[pos_in] != nodata && line2[pos_in + sampleperpixel] != nodata)
+			  			line_out[pos_out++] = (line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel])/(float)4;
+					else
+			  			line_out[pos_out++] = nodata;
+				}
 			if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
     		}
-  
+	}
+	if (BACKGROUND) TIFFClose(BACKGROUND); 
 	for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) TIFFClose(INPUT[i][j]);
 	TIFFClose(OUTPUT);
 	return 0;
 };
 
-int uint8_main(uint32_t width, uint32_t height, uint16_t sampleperpixel,double gamma, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double gamma, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
 	uint8 MERGE[1024];
 	for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gamma) * 255.);
 
 	int nbsamples = width * sampleperpixel;
+	uint8  line_background[nbsamples];
 	uint8  line1[2*nbsamples];
 	uint8  line2[2*nbsamples];
 	uint8  line_out[nbsamples];
-
-  	for(int y = 0; y < 2; y++)
+	int left,right;
+  	for(int y = 0; y < 2; y++){
+		if (INPUT[y][0]) left=0; else left=nbsamples/2;
+		if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
     		for(uint32 h = 0; h < height/2; h++) {
-			if(  TIFFReadScanline(INPUT[y][0], line1, 2*h)               == -1
-		        || TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)   == -1
-		        || TIFFReadScanline(INPUT[y][0], line2, 2*h+1)             == -1
-		        || TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1) == -1) error("Unable to read data");
+			if (BACKGROUND)
+				if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+			if (INPUT[y][0])
+				if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
+		        if (INPUT[y][1])
+				if (TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)==-1) error("Unable to read data");
+		        if (INPUT[y][0])
+				if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
+		        if (INPUT[y][1])
+				if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
+			memcpy(line_out,line_background,nbsamples);
 
-	      		for(int pos_in = 0, pos_out = 0; pos_out < nbsamples; pos_in += sampleperpixel) 
+	      		for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
         			for(int j = sampleperpixel; j--; pos_in++) 
           				line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + sampleperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + sampleperpixel])];
 
       			if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
     		}
-  
-	for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) TIFFClose(INPUT[i][j]);
+	}
+  	if (BACKGROUND) TIFFClose(BACKGROUND);
+	for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
   	TIFFClose(OUTPUT);
   	return 0;
 }
@@ -267,13 +294,13 @@ int main(int argc, char* argv[]) {
 
 	checkImages(width,height,rowsperstrip,bitspersample,sampleperpixel,sampleformat,photometric,compression,planarconfig,backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
 
-  	if (sampleformat == 3 && bitspersample == 32)  // le contenu est en flottant 32bits
-    		return float32_main(width,height,sampleperpixel,nodata,INPUT,OUTPUT);
-	else if (sampleformat == 1 && bitspersample == 8) // le contenu est en entier 8bits
-    		return uint8_main(width,height,sampleperpixel,gamma,INPUT,OUTPUT);
-	else if (sampleformat == 1 && bitspersample == 32) // cas des MTDs
-		error("Les dalles de masque ne sont pas encore gérées par merge4tiff.");
-   	else 
-    		error("Le format des données (bitspersample et sampleformat) n'est pas encore géré par merge4tiff.");  
+	// Cas MNT
+  	if (sampleformat == 3 && bitspersample == 32)
+    		return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
+	// Cas images
+	else if (sampleformat == 1 && bitspersample == 8)
+    		return merge4uint8(width,height,sampleperpixel,gamma,BACKGROUND,INPUT,OUTPUT);
+	else
+		error("sampleformat/bitspersample not rsdupported");
 }
 
