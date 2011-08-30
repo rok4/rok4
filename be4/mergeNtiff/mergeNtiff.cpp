@@ -592,8 +592,8 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
 	// L'image reechantillonnee est limitee a l'image de sortie
-	double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src/*-d*/,pImageOut->getxmax()),
-	       ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src/*-d*/,pImageOut->getymax());
+	double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax()),
+	       ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)<pImageOut->getxmin() || xmin_src+K.size(ratio_x)>pImageOut->getxmax() || ymax_src-K.size(ratio_y)<pImageOut->getymin() || ymin_src+K.size(ratio_y)>pImageOut->getymax())

@@ -14,6 +14,9 @@
 
 void usage() {
 	std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
+	std::cerr << "Images spatial distribution :" << std::endl;
+	std::cerr << "   image1 - image2" << std::endl;
+	std::cerr << "   image3 - image4" << std::endl;
 }
 
 void error(std::string message) {
