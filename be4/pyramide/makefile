@@ -78,11 +78,22 @@ doc: buildnatural.doc buildhtml.doc
 	@ echo "> Ok, Doc $* !" ;
 
 buildnatural:
+	@( if [ ! -d docs ] ; then \
+		install -d docs ;\
+	fi)
+	@( if [ ! -d docs/Natural ] ; then \
+                install -d docs/Natural ;\
+        fi)
 	@( naturaldocs -r -i bin/ -i lib/ -img docs/Natural/UML -o HTML docs/Natural -p docs/Natural/NaturalDocs ) ;
 	@( echo "> Ok, NaturalDocs !" ) ;
 
 buildhtml:
-	@( mkdir -p docs/Html ) ;
+	@( if [ ! -d docs ] ; then \
+                install -d docs ;\
+        fi)
+	@( if [ ! -d docs/Html ] ; then \
+                install -d docs/Html ;\
+        fi)
 	@(for f in `find lib -name "*.pm"` ;\
             do \
               h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\

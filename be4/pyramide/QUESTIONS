@@ -28,6 +28,7 @@ To annotate an image with blue text using font 12x24 at position (100,100), use:
   convert -font helvetica -fill blue -draw "text 100,100 Cockatoo" bird.jpg bird.miff
 
 les options utiles :
+-crop
 -border x
 surround the image with a border of color
 -bordercolor
@@ -51,3 +52,5 @@ on connait les informations suivantes
 soit un conteur simple d'affichage du type : n°/234 ou n° est le numero de la dalle courante...
 
 Ces informations sont fournies par le Quad-Tree.
+
+* Integration à prevoir des outils tiff2gray, ... pour la conversion des formats d'images !!! 

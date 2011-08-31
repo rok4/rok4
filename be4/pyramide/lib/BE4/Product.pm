@@ -48,7 +48,7 @@ INIT {
   %TILES = (
     bitspersample     => [8,32],
     sampleformat      => ['uint','float'],
-    compressionscheme => ['none','png','jpg'],  # ie 'jpeg','zip','packbits','lzw','deflate'
+    compressionscheme => ['none','zip','jpeg','packbits','lzw','deflate'],
     photometric       => ['rgb','gray','mask'], # ie 'min_is_black'
     samplesperpixel   => [1,3],
     interpolation     => ['lanczos','ppv','linear','bicubique'],
@@ -83,7 +83,7 @@ END {}
 #  
 #  bitspersample               = 8,32
 #  sampleformat                = uint,float
-#  compressionscheme           = none,jpg,png (lzw,deflate,zip,packbits)
+#  compressionscheme           = none,jpeg,lzw,deflate,zip,packbits
 #  photometric                 = rgb,gray,(mask?)
 #  samplesperpixel             = 1,3
 #  ; rowsstrip                 = 1
@@ -182,7 +182,7 @@ sub is_BitsPerSample {
   foreach (@{$TILES{bitspersample}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'bitspersample' !");
+  ERROR ("Can not define 'bitspersample' (unsupported)!");
   return FALSE;
 }
 sub is_SampleFormat {
@@ -196,7 +196,7 @@ sub is_SampleFormat {
   foreach (@{$TILES{sampleformat}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'sampleformat' !");
+  ERROR ("Can not define 'sampleformat' (unsupported)!");
   return FALSE;
 }
 sub is_CompressionScheme {
@@ -210,7 +210,7 @@ sub is_CompressionScheme {
   foreach (@{$TILES{compressionscheme}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'compressionscheme' !");
+  ERROR ("Can not define 'compressionscheme' (unsupported)!");
   return FALSE;
 }
 sub is_Photometric {
@@ -224,7 +224,7 @@ sub is_Photometric {
   foreach (@{$TILES{photometric}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'photometric' !");
+  ERROR ("Can not define 'photometric' (unsupported)!");
   return FALSE;
 }
 sub is_SamplesPerPixel {
@@ -238,7 +238,7 @@ sub is_SamplesPerPixel {
   foreach (@{$TILES{samplesperpixel}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'samplesperpixel' !");
+  ERROR ("Can not define 'samplesperpixel' (unsupported)!");
   return FALSE;
 }
 sub is_Interpolation {
@@ -252,7 +252,7 @@ sub is_Interpolation {
   foreach (@{$TILES{interpolation}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'interpolation' !");
+  ERROR ("Can not define 'interpolation' (unsupported)!");
   return FALSE;
 }
 ################################################################################
@@ -305,6 +305,10 @@ __END__
   $objP->setSampleFormat("decimal");  # Can not define 'sampleformat' !
 
 =head1 DESCRIPTION
+
+The parameter 'compressionscheme' is usefull for the following programs :
+ - merge4tiff
+ - tiff2gray
 
 Notice : with tiffinfo (and gdalinfo)
   

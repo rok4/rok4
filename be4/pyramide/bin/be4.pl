@@ -462,6 +462,8 @@ sub doIt {
     #######################
     # create process script
     
+    return TRUE if ! main::HasDataSource();
+    
     ALWAYS(">>> Load Process ...");
   
     $objProcess = BE4::Process->new(
@@ -654,14 +656,14 @@ But you can combine the following sections for more readibility :
  # 
  pyr_name_old  =
  pyr_name_new  =
- pyr_path      = 
- compression  =
- image_width  = 
- image_height =
- dir_depth    = 
- dir_root     = 
- dir_image    = 
- dir_metadata =
+ pyr_descpath  =
+ pyr_datapath  =
+ compression   =
+ image_width   = 
+ image_height  =
+ dir_depth     =  
+ dir_image     = 
+ dir_metadata  =
  
  [ process ]
  ...
@@ -682,10 +684,15 @@ Few sections can be optional, depending on the selected use cases :
 And few parameters must be declared, whatever the use cases selected :
 
  [ pyramid ]
-     pyr_path
-     tms_path
-     pyr_name_new
-     compression
+    pyr_descpath
+    pyr_datapath
+    tms_path
+    pyr_name_new
+    compression
+    dir_depth
+    dir_image
+    dir_metadata
+    path_nodata
 
 These parameters can be null because of parameters by default :
 
@@ -693,9 +700,17 @@ These parameters can be null because of parameters by default :
    path      - null
    level     - WARN
    file      - STDOUT
- [ nodata ]
+ 
+ [ nodata ] or [ pyramid ]
    color     - FFFFFF
    imagesize - 4096
+ 
+ [ tile ] or [ pyramid ]
+   interpolation   - bicubique
+   photometric     - rgb
+ 
+ [ pyramid ]
+   compression - raw
 
 =head1 OPTIONS
 

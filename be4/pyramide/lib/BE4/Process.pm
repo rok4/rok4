@@ -88,9 +88,6 @@ sub _init {
     return FALSE;
   }
   
-  # FIXME : 
-  #    use case with only a transformation proj or compression without data ?
-  #    data may be null and optional ?
   
   # it's an object and it's optional !
   $self->{datasource} = $src;
@@ -195,10 +192,11 @@ sub cache2work {
   
   TRACE;
   
-  my $imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+  # FIXME avec cette histoire de taille de dalle cache ?
+  my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
   my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
 
-  my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize, $cacheName , $workName, RESULT_TEST);
+  my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[0], $cacheName , $workName, RESULT_TEST);
   return $cmd;
 }
 
@@ -392,7 +390,7 @@ sub computeBottomImage {
     }
     my $confFilePath          = File::Spec->catfile($confDirPath,
                                   join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
-    my $confFilePathForScript = File::Spec->catfile('\${TMP_DIR}/mergeNtiff',
+    my $confFilePathForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',
                                   join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
     
     DEBUG (sprintf "create mergeNtiff");
@@ -673,7 +671,7 @@ sub prepareScript {
   # definition des variables d'environnement du script
   my $pyrName = $self->{pyramid}->getPyrName();
   my $tmpDir  = $self->getScriptTmpDir($scriptId);
-  my $pyrpath = File::Spec->catdir($self->{pyramid}->getDirRoot(),
+  my $pyrpath = File::Spec->catdir($self->{pyramid}->getPyrDataPath(),
                                    $pyrName);
   
   my $code = sprintf ("# Variables d'environnement\n");

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use Math::Base36 ':all';
+# use Math::Base36 ':all';
 use XML::Simple;
 use XML::LibXML;
 
@@ -51,8 +51,9 @@ END {}
 # properties :
 #
 #    [ pyramid ]
-#    
-#    pyr_path      =
+#
+#    pyr_descpath      =
+#    pyr_datapath      =
 #    ; pyr_schema_path = 
 #    ; pyr_schema_name =
 #    
@@ -65,12 +66,10 @@ END {}
 #    tms_path     =
 #    ; tms_schema_path = 
 #    ; tms_schema_name =
-
-#    ; eq. imagesize...
+#
 #    image_width  = 
 #    image_height =
 #
-#    ; eg section [ compression ]
 #    compression  =
 #
 #    ; eg section [ tile ]
@@ -82,7 +81,6 @@ END {}
 #    interpolation       = 
 #    
 #    dir_depth    =
-#    dir_root     =
 #    dir_image    = IMAGE
 #    dir_metadata = METADATA
 #
@@ -98,6 +96,8 @@ my $STRPYRTMPLT   = <<"TPYR";
 <?xml version='1.0' encoding='US-ASCII'?>
 <Pyramid>
     <tileMatrixSet>__TMSNAME__</tileMatrixSet>
+    <format>__FORMATIMG__</format>
+    <channels>__CHANNEL__</channels>
 <!-- __LEVELS__ -->
 </Pyramid>
 TPYR
@@ -106,9 +106,7 @@ my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
         <tileMatrix>__ID__</tileMatrix>
         <baseDir>__DIRIMG__</baseDir>
-        <format>__FORMATIMG__</format>
 <!-- __MTD__ -->
-        <channels>__CHANNEL__</channels>
         <tilesPerWidth>__TILEW__</tilesPerWidth>
         <tilesPerHeight>__TILEH__</tilesPerHeight>
         <pathDepth>__DEPTH__</pathDepth>
@@ -145,25 +143,26 @@ sub new {
     #
     # > in a HASH entry only (no ref) !
     #
-    
+    #
     # the choice is on the parameter 'pyr_name_old'
-    # 1) if param is null, it's a new pyramid only !
-    # 2) if param is not null, it's an existing pyramid !
-    
+    #   1) if param is null, it's a new pyramid only !
+    #   2) if param is not null, it's an existing pyramid !
+    #
     
     # IN
-    pyramid   => { # it's all possible parameters !
+    #  it's all possible parameters !
+    pyramid   => { 
                     pyr_name_new => undef, # string name
                     pyr_name_old => undef, # string name
-                    pyr_path     => undef, # path
+                    pyr_descpath => undef, # path
+                    pyr_datapath => undef, # path
                     #
                     tms_name     => undef, # string name
                     tms_path     => undef, # path
                     #
-                    compression  => undef, # string value
+                    compression  => undef, # string value ie raw by default !
                     #
                     dir_depth    => undef, # number
-                    dir_root     => undef, # path
                     dir_image    => undef, # dir name
                     dir_metadata => undef, # dir name
                     image_width  => undef, # number
@@ -172,13 +171,13 @@ sub new {
                     bitspersample           => undef,# number
                     sampleformat            => undef,# number
                     compressionscheme       => undef,# string value
-                    photometric             => undef,# string value
+                    photometric             => undef,# string value ie rgb by default !
                     samplesperpixel         => undef,# number
-                    interpolation           => undef,# string value
+                    interpolation           => undef,# string value ie bicubique by default !
                     #
-                    path_nodata     => undef,
-                    imagesize       => undef, # ie 4096 px by default !
-                    color           => undef, # ie FFFFFF by default !
+                    path_nodata     => undef, # path
+                    imagesize       => undef, # number ie 4096 px by default !
+                    color           => undef, # string value ie FFFFFF by default !
                  },
     # OUT
     tile       => undef,   # it's an object !
@@ -200,7 +199,7 @@ sub new {
   # init. parameters 
   return undef if (! $self->_init(@_));
   
-  # init. (constructors) :
+  # init. :
   # a new pyramid or from existing pyramid !
   return undef if (! $self->_load());
   
@@ -226,58 +225,95 @@ sub _init {
     my $pyr = $self->{pyramid};
     
     if ($self->{isnewpyramid}) {
+        # To a new pyramid, you must have to this parameters !
         #
-        $pyr->{compression}  = $params->{compression}  || ( ERROR ("key/value required to 'compression' !") && return FALSE );
+        # you can choice this option by default !
+        if (! exists($params->{compression})) {
+            WARN ("key/value optional to 'compression' (value by default) !");
+            $params->{compression} = 'raw';
+        }
+        $pyr->{compression}  = $params->{compression};
         #
-        $pyr->{tms_name} = $params->{tms_name} || ( ERROR ("key/value required to 'tms_name' !") && return FALSE );
+        $pyr->{image_width}  = $params->{image_width}  || ( ERROR ("key/value required to 'image_width' !") && return FALSE );
+        $pyr->{image_height} = $params->{image_height} || ( ERROR ("key/value required to 'image_height' !") && return FALSE );
         #
-        $pyr->{bitspersample} = $params->{bitspersample} || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
-        $pyr->{sampleformat} = $params->{sampleformat}  || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
-        $pyr->{compressionscheme} = $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
-        $pyr->{photometric} = $params->{photometric}       || ( ERROR ("key/value required to 'photometric' !") && return FALSE );
-        $pyr->{samplesperpixel} = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE );
-        $pyr->{interpolation} = $params->{interpolation}     || ( ERROR ("key/value required to 'interpolation' !") && return FALSE );
-        
+        $pyr->{tms_name}     = $params->{tms_name} || ( ERROR ("key/value required to 'tms_name' !") && return FALSE );
+        #
+        $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
+        $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
+        $pyr->{compressionscheme}= $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
+        $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE ); 
        
     }
     else {
+        # To an existing pyramid, you must have to this parameters !
+        #
         $pyr->{pyr_name_old} = $params->{pyr_name_old} || ( ERROR ("key/value required to 'pyr_name_old' !") && return FALSE );
         #
-        $pyr->{tms_name}     = $params->{tms_name}     || ( WARN  ("key/value optional to 'tms_name' !")); # optional ?
-        $pyr->{compression}  = $params->{compression}  || ( WARN  ("key/value optional to 'compression' !") ); # optional ?
+        # this option can be determined !
+        #
+        if (! exists($params->{tms_name})) {
+            WARN ("key/value optional to 'tms_name' (can be determined) !");
+            $params->{tms_name} = undef;
+        }
+        #
+        if (! exists($params->{compression})) {
+            WARN ("key/value optional to 'compression' (can be determined) !");
+            $params->{compression} = undef;
+        }
     }
-    
+    #
+    # All parameters are mandatory (or initializate by default) whatever the pyramid !
+    # 
     $pyr->{pyr_name_new} = $params->{pyr_name_new} || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
-    $pyr->{pyr_path}     = $params->{pyr_path}     || ( ERROR ("key/value required to 'pyr_path' !") && return FALSE );
+    $pyr->{pyr_descpath} = $params->{pyr_descpath} || ( ERROR ("key/value required to 'pyr_descpath' !") && return FALSE );
+    $pyr->{pyr_datapath} = $params->{pyr_datapath} || ( ERROR ("key/value required to 'pyr_datapath' !") && return FALSE );
     #
     $pyr->{tms_path}     = $params->{tms_path}     || ( ERROR ("key/value required to 'tms_path' !") && return FALSE );
     #
-    $pyr->{dir_root}     = $params->{dir_root}     || ( ERROR ("key/value required to 'dir_root' !") && return FALSE );
     $pyr->{dir_depth}    = $params->{dir_depth}    || ( ERROR ("key/value required to 'dir_depth' !") && return FALSE );
     $pyr->{dir_image}    = $params->{dir_image}    || ( ERROR ("key/value required to 'dir_image' !") && return FALSE );
-    $pyr->{dir_metadata} = $params->{dir_metadata} || ( WARN  ("key/value optional to 'dir_metadata' !")); # optional ?
     #
-    $pyr->{image_width}  = $params->{image_width}  || ( ERROR ("key/value required to 'image_width' !") && return FALSE );
-    $pyr->{image_height} = $params->{image_height} || ( ERROR ("key/value required to 'image_height' !") && return FALSE );
+    # this option is optional !
     #
-    $pyr->{path_nodata}  = $params->{path_nodata} || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
-    if (! exists($params->{imagesize})) {
-        WARN ("key/value optional to 'imagesize' !");
-        $params->{imagesize} = undef;
+    if (! exists($params->{dir_metadata})) {
+        WARN ("key/value optional to 'dir_metadata' !");
+        $params->{dir_metadata} = undef;
     }
-    $pyr->{imagesize}    = $params->{imagesize};
+    $pyr->{path_nodata}  = $params->{path_nodata} || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
+    # 
+    # you can choice this option by default !
+    #
+    if (! exists($params->{imagesize})) {
+        WARN ("key/value optional to 'imagesize' (value by default) !");
+        $params->{imagesize} = '4096';
+    }
+    $pyr->{imagesize} = $params->{imagesize};
+    # 
     if (! exists($params->{color})) {
-        WARN ("key/value optional to 'color' !");
-        $params->{color} = undef;
+        WARN ("key/value optional to 'color' (value by default) !");
+        $params->{color} = 'FFFFFF';
     }
     $pyr->{color} = $params->{color};
-    
+    #
+    if (! exists($params->{interpolation})) {
+        WARN ("key/value optional to 'interpolation' (value by default) !");
+        $params->{interpolation} = 'bicubique';
+    }
+    $pyr->{interpolation} = $params->{interpolation};
+    #
+    if (! exists($params->{photometric})) {
+        WARN ("key/value optional to 'photometric' (value by default) !");
+        $params->{photometric} = 'rgb';
+    }
+    $pyr->{photometric} = $params->{photometric};
+
     # TODO path !
     if (! -d $pyr->{path_nodata}) {}
-    if (! -d $pyr->{pyr_path}) {}
+    if (! -d $pyr->{pyr_descpath}) {}
     if (! -d $pyr->{tms_path}) {}
-    if (! -d $pyr->{dir_root}) {}
-        
+    if (! -d $pyr->{pyr_datapath}) {}
+    
     return TRUE;
 }
 
@@ -286,10 +322,11 @@ sub _load {
 
   TRACE;
   
-  # new pyramid !
   if ($self->{isnewpyramid}) {
     
-    # create all object usefull !
+    # It's a new pyramid !
+    
+    # create Tile !
     my $objTile = BE4::Product->new({
         bitspersample    => $self->{pyramid}->{bitspersample},
         sampleformat     => $self->{pyramid}->{sampleformat},
@@ -307,24 +344,7 @@ sub _load {
     $self->{tile} = $objTile;
     DEBUG (sprintf "TILE = %s", Dumper($objTile));
     
-    my $objNodata = BE4::NoData->new({
-            path_nodata      => $self->{pyramid}->{path_nodata},
-            bitspersample    => $objTile->getBitsPerSample(),
-            sampleformat     => $objTile->getSampleFormat(),
-            photometric      => $objTile->getPhotometric(),
-            samplesperpixel  => $objTile->getSamplesPerPixel(),
-            imagesize        => $self->{pyramid}->{imagesize}, 
-            color            => $self->{pyramid}->{color},
-    });
-  
-    if (! defined $objNodata) {
-      ERROR ("Can not load NoData !");
-      return FALSE;
-    }
-    
-    $self->{nodata} = $objNodata;
-    DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
-    
+    # create Compress !
     my $objCompress = BE4::Compression->new($self->{pyramid}->{compression});
     
     if (! defined $objCompress) {
@@ -335,8 +355,9 @@ sub _load {
     $self->{compression} = $objCompress;
     DEBUG (sprintf "COMPRESSION = %s", Dumper($objCompress));
     
-    
-    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},$self->{pyramid}->{tms_name}));
+    # create TileMatrixSet !
+    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
+                                                             $self->{pyramid}->{tms_name}));
     
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
@@ -351,16 +372,18 @@ sub _load {
     
     return FALSE if (! $self->_fillToPyramid());
   }
-  
-  # a new pyramid from existing pyramid !
-  if (! $self->{isnewpyramid}) {
-    
+  else 
+  {
+    # a new pyramid from existing pyramid !
+    #
     # init. process hasn't checked all parameters,
     # so, we must read file pyramid to initialyze them...
     
     return FALSE if (! $self->_fillFromPyramid());
-        
-    my $objNodata = BE4::NoData->new({
+  }
+
+  # create NoData !
+  my $objNodata = BE4::NoData->new({
             path_nodata      => $self->{pyramid}->{path_nodata},
             bitspersample    => $self->getTile()->getBitsPerSample(),
             sampleformat     => $self->getTile()->getSampleFormat(),
@@ -368,24 +391,16 @@ sub _load {
             samplesperpixel  => $self->getTile()->getSamplesPerPixel(),
             imagesize        => $self->{pyramid}->{imagesize}, 
             color            => $self->{pyramid}->{color}
-    });
+  });
   
-    if (! defined $objNodata) {
-      ERROR ("Can not load NoData !");
-      return FALSE;
-    }
-    
-    $self->{nodata} = $objNodata;
-    DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
-    
-    
+  if (! defined $objNodata) {
+    ERROR ("Can not load NoData !");
+    return FALSE;
   }
-  
-   # fill parameters missing !
-   my $pyr = $self->{pyramid};
-   $pyr->{tms_name} = $self->getTileMatrixSet()->getFile();
-   $pyr->{tms_path} = $self->getTileMatrixSet()->getPath();
     
+  $self->{nodata} = $objNodata;
+  DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
+   
   return TRUE;
   
 }
@@ -406,20 +421,11 @@ sub _fillToPyramid {
   my $i = ($objTMS->getFirstTileMatrix())->getID();
   while(defined (my $objTm = $objTMS->getNextTileMatrix($i))) {
     
-    # tile info
-    my @size = $self->getCacheImageSize();
-    
-    if (($size[0] % $objTm->getTileWidth()) ||
-        ($size[1] % $objTm->getTileHeight())) {
-        ERROR("this tile is not a multiple of the tile image size !");
-        return FALSE;
-    }
-    
-    my $tileperwidth     = $size[0] / $objTm->getTileWidth();  # the result is an integer !
-    my $tileperheight    = $size[1] / $objTm->getTileHeight(); # the result is an integer !
+    my $tileperwidth     = $self->getTilePerWidth(); 
+    my $tileperheight    = $self->getTilePerHeight();
     
     # base dir image
-    my $baseimage = File::Spec->catdir($self->getDirRoot(),  # all directories structure of pyramid ! 
+    my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
                                   $self->getPyrName(),
                                   $self->getDirImage(),
                                   $objTm->getID()               # FIXME : level = id !
@@ -427,7 +433,7 @@ sub _fillToPyramid {
     
     # TODO : metadata
     #   compression, type ...
-    my $basemetadata = File::Spec->catdir($self->getDirRoot(),  # all directories structure of pyramid ! 
+    my $basemetadata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
                                   $self->getPyrName(),
                                   $self->getDirMetadata(),
                                   $objTm->getID()                  # FIXME : level = id !
@@ -439,7 +445,7 @@ sub _fillToPyramid {
     # params to level
     my $params = {
             id                => $objTm->getID(),
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrPath()), # FIXME rel with the pyr path !
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             compress_image    => $self->getCompression()->getCode(), # ie raw => TIFF_INT8 !
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_INT8,
@@ -458,7 +464,7 @@ sub _fillToPyramid {
     }
     push @{$self->{level}}, $objLevel;
     # push dir to create
-    push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getDirRoot());
+    push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
   
@@ -481,7 +487,8 @@ sub _fillFromPyramid {
     return FALSE;
   }
   
-  my $cachepyramid = File::Spec->catdir($self->getDirRoot(), $self->getPyrNameOld());
+  my $cachepyramid = File::Spec->catdir($self->getPyrDataPath(),
+                                        $self->getPyrNameOld());
   
   if (! $self->readCachePyramid($cachepyramid)) {
     ERROR (sprintf "Can not read the Directory Cache Pyramid : %s !", $cachepyramid);
@@ -514,6 +521,12 @@ sub writeConfPyramid {
   my $tmsname  = $self->getTmsName();
   $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
   #
+  my $formatimg = $self->getCompression()->getCode(); # ie TIFF_INT8 !
+  $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
+  #  
+  my $channel  = $self->getTile()->getSamplesPerPixel();
+  $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+  
   my @levels = $self->getLevels();
   foreach my $objLevel (@levels){
     
@@ -526,11 +539,11 @@ sub writeConfPyramid {
     my $dirimg   = $objLevel->{dir_image};
     $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
     
-    my $formatimg = $objLevel->{compress_image}; # ie TIFF_INT8 !
-    $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
-    
-    my $channel  = $objLevel->{samplesperpixel};
-    $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+    # my $formatimg = $objLevel->{compress_image}; # ie TIFF_INT8 !
+    # $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
+    #
+    # my $channel  = $objLevel->{samplesperpixel};
+    # $strpyrtmplt =~ s/__CHANNEL__/$channel/;
     
     my $tilew    = $objLevel->{size}->[0];
     $strpyrtmplt =~ s/__TILEW__/$tilew/;
@@ -574,7 +587,7 @@ sub writeConfPyramid {
   $pyrfile = $self->getPyrFile() if (! defined $pyrfile);
   
   #
-  my $filepyramid = File::Spec->catfile($self->getPyrPath(), 
+  my $filepyramid = File::Spec->catfile($self->getPyrDescPath(), 
                                         $pyrfile);
   
   if (-f $filepyramid) {
@@ -602,114 +615,131 @@ sub readConfPyramid {
   # if null, by default, take the old pyramid file !
   $pyrfile = $self->getPyrFileOld() if (! defined $pyrfile);
   
-  #
-  my $filepyramid = File::Spec->catfile($self->getPyrPath(), 
-                                        $pyrfile);
+  my $filepyramid = File::Spec->catfile($self->getPyrDescPath(), $pyrfile);
   
   if (! -f $filepyramid) {
     ERROR (sprintf "Can not find the XML file Pyramid : %s !", $filepyramid);
     return FALSE;
   }
-  #
+  
+  # read xml pyramid
   my $xmltms  = new XML::Simple(KeepRoot => 0,
                                 SuppressEmpty => 1,
                                 ContentKey => '-content');
   my $xmltree = eval { $xmltms->XMLin($filepyramid); };
   
-  #
   if ($@) {
     ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
     return FALSE;
   }
   
-  # create a object tileMatrixSet
+  # read tag value of tileMatrixSet, format and channel
   if (! exists ($xmltree->{tileMatrixSet}) || ! defined ($xmltree->{tileMatrixSet})) {
     ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
     return FALSE;
   }
   
-  #
+  if (! exists ($xmltree->{format}) || ! defined ($xmltree->{format})) {
+    ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
+    return FALSE;
+  }
+  
+  if (! exists ($xmltree->{channels}) || ! defined ($xmltree->{channels})) {
+    ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
+    return FALSE;
+  }
+  
+  # create a object tileMatrixSet
   my $tmsname = $self->getTmsName();
   if (! defined $tmsname) {
-    WARN ("Null parameter for the name of TMS, extracted from file pyramid !");
+    WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
     $tmsname = $xmltree->{tileMatrixSet};
   }
 
-  #
   if ($tmsname ne $xmltree->{tileMatrixSet}) {
     WARN ("Selecting the name of TMS in the file of the pyramid !");
     $tmsname = $xmltree->{tileMatrixSet};
   }
   
-  #
-  my $tmsfile = join(".", $tmsname, "tms");
-
-  #
-  my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile(
-                                            $self->getTmsPath(),
-                                            $tmsfile)
-                                       );
+  # FIXME : no extension in xml pyramid file ?
+  my $tmsfile = join(".", $tmsname, "tms"); 
+  
+  my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
+  
   if (! defined $objTMS) {
     ERROR ("Can not create object TileMatrixSet !");
     return FALSE;
   }
   
-  #
-  $self->setTileMatrixSet($objTMS);
+  # save it if doesn't exist !
+  if (! defined ($self->getTileMatrixSet())) {
+    $self->{tms} = $objTMS;
+  }
+    
+  # fill parameters if not... !
+  $self->{pyramid}->{tms_name} = $self->getTileMatrixSet()->getFile();
+  $self->{pyramid}->{tms_path} = $self->getTileMatrixSet()->getPath();
   
+  # create tile and compression objects
+  my $format = $xmltree->{format};
+  # ie TIFF, compression, sampleformat, bitspersample !
+  # return compression = raw, jpg or png !
+  my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Compression->decodeCompression($format);
+  
+  my $samplesperpixel = $xmltree->{channels};
+  
+  # create tile
+  my $tile = {
+        bitspersample    => $bitspersample,
+        sampleformat     => $sampleformat,
+        compressionscheme=> 'none', # FIXME always none !
+        photometric      => $self->getPhotometric(),
+        samplesperpixel  => $samplesperpixel,
+        interpolation    => $self->getInterpolation(),
+  };
+   
+  my $objTile = BE4::Product->new($tile);
+    
+  if (! defined $objTile) {
+    ERROR ("Can not create the Tile format !");
+    return FALSE;
+  }
+
+  # save it if doesn't exist !
+  if (! defined ($self->getTile())) {
+    $self->{tile} = $objTile;
+  }
+  
+  # create compression
+  if (! defined ($self->getCompression())) {
+    
+    my $type = undef;
+    
+    # priority in this choice ...
+    $type = $compression if (defined $compression);
+    $type = $self->{pyramid}->{compression} if (defined $self->{pyramid}->{compression});
+    
+    my $objCompress = BE4::Compression->new($type);
+
+    if (! defined $objCompress) {
+        ERROR ("Can not load compression !");
+        return FALSE;
+    }
+
+    $self->{compression} = $objCompress;
+  }
+  
+  # check compression mode 
+  if ($self->getCompression()->getCode() ne $format) {
+    ERROR (sprintf "The mode compression is differnt between configuration and pyramid file !", $format, $self->getCompression()->getCode());
+    return FALSE;
+  }
+    
   # load pyramid level
   foreach my $v (@{$xmltree->{level}}) {
-    #
-    my @product  = BE4::Compression->decodeCompression($v->{format}); # ie TIFF, compression, sampleformat, bitspersample !
-    
-    # create tile
-    my $tile = {
-        bitspersample    => $product[3],
-        sampleformat     => $product[2],
-        compressionscheme=> $product[1], # ie none,jpg or png !
-        photometric      => "rgb",       # FIXME : how to determined it ?
-        samplesperpixel  => $v->{channels},
-        interpolation    => "bicubique", # FIXME : how to determined it ?
-    };
-    my $objTile = BE4::Product->new($tile);
-    
-    if (! defined $objTile) {
-        WARN(sprintf "Can not load the Tile format for the level : '%s' !", $v->{tileMatrix});
-        next;
-    }
-    #
-    if (! defined $self->getTile()) {
-        $self->setTile($objTile);
-    }
-    # compare tile for all level !
-    if (! $self->getTile()->equal($objTile)) {
-        WARN(sprintf "The File format for the level '%s' has not the same format than other !",
-              $v->{tileMatrix});
-        next;
-    }
-    
-    if (! defined ($self->getCompression())) {
-        
-        my $objCompress = BE4::Compression->new($objTile->getCompressionScheme());
-    
-        if (! defined $objCompress) {
-            ERROR ("Can not load compression !");
-            return FALSE;
-        }
-    
-        $self->{compression} = $objCompress;
-    }
-    
-    # check compression mode 
-    my $compression = $self->getCompression()->getCode();
-    if ($compression ne $v->{format}) {
-        WARN(sprintf "The mode compression for the level '%s' has not the same mode than other (%s != %s)!",
-              $v->{tileMatrix}, $v->{format}, $compression);
-        next;
-    }
     
     #
-    my $baseimage = File::Spec->catdir($self->getDirRoot(),  # all directories structure of pyramid ! 
+    my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
                                   $self->getPyrName(),
                                   $self->getDirImage(),
                                   $v->{tileMatrix}           # FIXME : level = id !
@@ -717,13 +747,13 @@ sub readConfPyramid {
     #
     my $objLevel = BE4::Level->new({
             id                => $v->{tileMatrix},
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrPath()), # FIXME rel with pyr file ?
-            compress_image    => $v->{format}, # ie TIFF_INT8 !
-            dir_metadata      => undef, # TODO !
-            compress_metadata => undef, # TODO !
-            type_metadata     => undef, # TODO !
-            bitspersample     => $objTile->getBitsPerSample(),
-            samplesperpixel   => $objTile->getSamplesPerPixel(),
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with pyr file ?
+            compress_image    => $format, # ie TIFF_INT8 !
+            dir_metadata      => undef,   # TODO !
+            compress_metadata => undef,   # TODO !
+            type_metadata     => undef,   # TODO !
+            bitspersample     => $bitspersample,
+            samplesperpixel   => $samplesperpixel,
             size              => [
                                   $v->{tilesPerWidth},
                                   $v->{tilesPerHeight}
@@ -743,7 +773,12 @@ sub readConfPyramid {
     }
     
     push @{$self->{level}}, $objLevel;
+    
+    # fill parameters if not ... !
+    $self->{pyramid}->{image_width}  = $v->{tilesPerWidth};
+    $self->{pyramid}->{image_height} = $v->{tilesPerHeight};
   }
+  
   #
   if (scalar @{$self->{level}} != scalar @{$xmltree->{level}}) {
     WARN (sprintf "Be careful, the level pyramid in not complete (%s != %s) !",
@@ -774,7 +809,7 @@ sub writeCachePyramid {
   #
   # Params useful to create a cache directory empty or not 
   #
-  # dir_root     : path of all pyramid
+  # pyr_datapath : path of all pyramid
   # pyr_name_new : new pyramid name
   # pyr_name_old :
   # dir_image    : 
@@ -787,7 +822,8 @@ sub writeCachePyramid {
   my $dirmetadata= undef; # TODO ?
   
   # substring function 
-  sub substring {
+  my $substring;
+  $substring = sub {
     my $expr = shift;
     $_       = $expr;
     
@@ -807,7 +843,7 @@ sub writeCachePyramid {
     }
     
     return $_;
-  }
+  };
   # create new cache directory
   my @newdirs;
   my @olddirs = @{$self->{cache_dir}};
@@ -816,7 +852,7 @@ sub writeCachePyramid {
     @newdirs = @{$self->{cache_dir}};
   }
   else {
-    @newdirs = map ({ substring($_) } @{$self->{cache_dir}}); # list cache modified !
+    @newdirs = map ({ &$substring($_) } @{$self->{cache_dir}}); # list cache modified !
   }
   
   if (! scalar @newdirs) {
@@ -826,7 +862,7 @@ sub writeCachePyramid {
   
   foreach my $dir (@newdirs) {
     
-    my $absdir = File::Spec->catdir($self->getDirRoot(), $dir);
+    my $absdir = File::Spec->catdir($self->getPyrDataPath(), $dir);
     
     DEBUG($absdir);
     
@@ -841,23 +877,23 @@ sub writeCachePyramid {
   if (! $self->isNewPyramid()) {
     
     my @oldtiles = @{$self->{cache_tile}};
-    my @newtiles = map ({ substring($_) } @{$self->{cache_tile}}); # list cache modified !
+    my @newtiles = map ({ &$substring($_) } @{$self->{cache_tile}}); # list cache modified !
     my $ntile    = scalar(@oldtiles)-1;
     
     if (! scalar @oldtiles) {
-      ERROR("Listing of old cache tile is empty !");
-      return FALSE;
+      WARN("Listing of old cache tile is empty !");
+      # return FALSE;
     }
     
     if (! scalar @newtiles) {
-      ERROR("Listing of new cache tile is empty !");
-      return FALSE;
+      WARN("Listing of new cache tile is empty !");
+      # return FALSE;
     }
     
     foreach my $i (0..$ntile) {
       
-      my $new_absfile = File::Spec->catfile($self->getDirRoot(), $newtiles[$i]);
-      my $old_absfile = File::Spec->catfile($self->getDirRoot(), $oldtiles[$i]);
+      my $new_absfile = File::Spec->catfile($self->getPyrDataPath(), $newtiles[$i]);
+      my $old_absfile = File::Spec->catfile($self->getPyrDataPath(), $oldtiles[$i]);
       
       if (! -d dirname($new_absfile)) {
         ERROR(sprintf "The directory cache '%s' doesn't exist !", dirname($new_absfile));
@@ -913,26 +949,27 @@ sub readCachePyramid {
   
   my @refcachedir;
   my @refcachetile;
-  my $dir_root = $self->getDirRoot();
+  my $pyr_datapath = $self->getPyrDataPath();
    
   # anonymous fonction
-  sub searchItem {
+  my $searchItem;
+  $searchItem = sub {
       my $fl   = shift;
       
       if ($fl->type eq 'd') {
         TRACE(sprintf "DIR:%s\n",$fl->path);
-        push @refcachedir, File::Spec->abs2rel($fl->path, $dir_root);
+        push @refcachedir, File::Spec->abs2rel($fl->path, $pyr_datapath);
       }
       if ($fl->type eq 'f') {
         TRACE(sprintf "FIL:%s\n",$fl->path);
-        push @refcachetile, File::Spec->abs2rel($fl->path, $dir_root);
+        push @refcachetile, File::Spec->abs2rel($fl->path, $pyr_datapath);
       }
       if ($fl->type eq 'l') {
         TRACE(sprintf "LIK:%s\n",$fl->path);
-        push @refcachetile, File::Spec->abs2rel($fl->path, $dir_root);        
+        push @refcachetile, File::Spec->abs2rel($fl->path, $pyr_datapath);        
       } 
       TRACE(sprintf "[NAME:%s]\n",$fl->name);
-  }
+  };
   
   # Node
   my $searchitem = File::Find::Node->new(File::Spec->rel2abs($cachedir));
@@ -941,15 +978,13 @@ sub readCachePyramid {
   $searchitem->follow(0); 
 
   # search
-  $searchitem->process(\&searchItem);
+  $searchitem->process(\&$searchItem);
   $searchitem->filter(sub{sort @_});
   $searchitem->find;
   
   # Info, cache file of old cache !
   if (! scalar @refcachetile) {
-    ERROR("No tiles found in directory cache ?");
-    return FALSE;
-    
+    WARN("No tiles found in directory cache ?");
   }
   # Info, cache dir of old cache !
   if (! scalar @refcachedir){
@@ -965,7 +1000,7 @@ sub readCachePyramid {
 
 ################################################################################
 # get/set
-# params values
+#  return the params values
 sub getPyrFile {
   my $self = shift;
 
@@ -984,10 +1019,15 @@ sub getPyrNameOld {
   $name =~ s/\.(pyr|PYR)$//;
   return $name;
 }
-sub getPyrPath {
+sub getPyrDescPath {
   my $self = shift;
 
-  return $self->{pyramid}->{pyr_path};
+  return $self->{pyramid}->{pyr_descpath};
+}
+sub getPyrDataPath {
+  my $self = shift;
+  
+  return $self->{pyramid}->{pyr_datapath};
 }
 sub getPyrName {
   my $self = shift;
@@ -997,7 +1037,7 @@ sub getPyrName {
   $name =~ s/\.(pyr|PYR)$//;
   return $name;
 }
-# params values
+# 
 sub getTmsName {
   my $self   = shift;
   
@@ -1017,7 +1057,7 @@ sub getTmsPath {
   
   return $self->{pyramid}->{tms_path};
 }
-# params values
+# 
 sub getDirImage {
   my $self = shift;
   
@@ -1028,27 +1068,36 @@ sub getDirMetadata {
   
   return $self->{pyramid}->{dir_metadata};
 }
-sub getDirRoot {
-  my $self = shift;
-  
-  return $self->{pyramid}->{dir_root};
-}
 sub getDirDepth {
   my $self = shift;
   
   return $self->{pyramid}->{dir_depth};
 }
-# object
+#
+sub getInterpolation {
+  my $self = shift;
+  
+  return $self->{pyramid}->{interpolation};
+}
+sub getPhotometric {
+  my $self = shift;
+  
+  return $self->{pyramid}->{photometric};
+}
+#
+################################################################################
+# get/set
+#  return the objects values
 sub getNoData {
   my $self = shift;
   return $self->{nodata};
 }
-#  object
+#  
 sub getCompression {
   my $self = shift;
   return $self->{compression}; # ie raw, jpg or png !
 }
-# object
+# 
 sub getTile {
    my $self = shift;
    return $self->{tile};
@@ -1059,7 +1108,7 @@ sub setTile {
   
   $self->{tile} = $tile;
 }
-# object
+# 
 sub getTileMatrixSet {
   my $self = shift;
   
@@ -1072,7 +1121,9 @@ sub setTileMatrixSet {
   $self->{tms} = $tms;
 }
 
-# object
+################################################################################
+# get/set
+#  return the list of objects values
 sub getLevels {
   my $self = shift;
   return @{$self->{level}};
@@ -1099,7 +1150,7 @@ sub _getIDXX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getImageWith();
+  my $sx  = $self->getCacheImageWith();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
   
@@ -1119,7 +1170,7 @@ sub _getIDXY {
   
   my $yo  = $tm->getTopLeftCornerY();
   my $ry  = $tm->getResolution();
-  my $sy  = $self->getImageHeight();
+  my $sy  = $self->getCacheImageHeight();
   
   $idx = int(($yo - $y) / ($ry * $sy)) ;
   
@@ -1133,11 +1184,24 @@ sub _encodeIDXtoB36 {
   my $number= shift;
   
   my $padlength = $self->getDirDepth() + 1;
-  my $b36       = encode_base36($number);
+  
+  my $b36 = "";
+  $b36 = "000" if $number == 0;
+  
+  while ( $number ) {
+    my $v = $number % 36;
+    if($v <= 9) {
+        $b36 .= $v;
+    } else {
+        $b36 .= chr(55 + $v); # Assume that 'A' is 65
+    }
+    $number = int $number / 36;
+  }
+  # my $b36       = encode_base36($number);
   
   # fill with 0 !
-  $b36 = "0"x($padlength - length $b36).$b36;
-  
+  $b36 = "0"x($padlength - length $b36).reverse($b36);
+
   TRACE ($b36);
 
   return $b36;
@@ -1148,7 +1212,18 @@ sub _encodeB36toIDX {
   
   my $padlength = $self->getDirDepth() + 1;
   
-  return decode_base36($b36,$padlength);
+  my $number = 0;
+  my $i = 0;
+  foreach(split //, reverse uc $b36) {
+    $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
+    $number += $_ * (36 ** $i++);
+  }
+  
+  TRACE ("0"x($padlength - length $number).$number);
+  
+  # fill with 0 !
+  return "0"x($padlength - length $number).$number;
+  # return decode_base36($b36,$padlength);
 }
 
 ################################################################################
@@ -1164,33 +1239,40 @@ sub _encodeB36toIDX {
 ################################################################################
 # public method
 #  TileImage from Cache (TIC)
-
-#sub createTileImageLink {}
-#sub deleteTileImageLink {}
-#sub searchTileImageLink {}
-#sub isExistTileImageLink {}
-
+#
+# FIXME ?
+#  difference entre le parametre imagesize et TilePerWidth*TileWidth ?
+#
+sub getImageSize {
+  my $self = shift;
+  # size of cache image in pixel !
+  return $self->{pyramid}->{imagesize} ;
+}
+sub getCacheImageSize {
+  my $self = shift;
+  # size of cache image in pixel !
+  return ($self->getCacheImageWith(), $self->getCacheImageHeight());
+}
+sub getCacheImageWith {
+  my $self = shift;
+  # size of cache image in pixel !
+  return $self->getTilePerWidth() * $self->getTileMatrixSet()->getTileWidth();
+}
+sub getCacheImageHeight {
+  my $self = shift;
+  # size of cache image in pixel !
+  return $self->getTilePerHeight() * $self->getTileMatrixSet()->getTileHeight();
+}
 #
 sub getTilePerWidth {
   my $self = shift;
-  
-  # FIXME
-  #  take first TileMatrix ...
-  #  compute ...
-  my @level = $self->getLevels();
-  
-  return $level[0]->{size}[0];
+
+  return $self->{pyramid}->{image_width};
 }
 sub getTilePerHeight {
   my $self = shift;
   
-  # FIXME
-  #  take first TileMatrix ...
-  #  compute ...
-  
-  my @level = $self->getLevels();
-  
-  return $level[0]->{size}[1];
+  return $self->{pyramid}->{image_height};
 }
 
 # retourne le chemin du fichier de la dalle à partir de la racine de l'arbo de
@@ -1237,24 +1319,9 @@ sub getCachePathOfImage {
   
   my $imageName = $self->getCacheNameOfImage($level, $x, $y, $type);
   
-  return File::Spec->catfile($self->getDirRoot(), $self->getPyrName(), $imageName); 
+  return File::Spec->catfile($self->getPyrDataPath(), $self->getPyrName(), $imageName); 
 }
-#
-sub getCacheImageSize {
-  my $self = shift;
-  # size of cache image in pixel !
-  return ($self->getImageWith(), $self->getImageHeight());
-}
-sub getImageWith {
-  my $self = shift;
-  # size of cache image in pixel !
-  return $self->{pyramid}->{image_width};
-}
-sub getImageHeight {
-  my $self = shift;
-  # size of cache image in pixel !
-  return $self->{pyramid}->{image_height};
-}
+
 # ref to getCacheNameOfImage !
 sub getCacheImageName {
   my $self  = shift;
@@ -1293,8 +1360,8 @@ sub isNewPyramid {
 # public method
 #  Manipulate the Level Pyramid
 
-sub getBottomLevel {}
-sub getTopLevel {}
+#sub getBottomLevel {}
+#sub getTopLevel {}
 
 ################################################################################
 # public method
@@ -1316,54 +1383,71 @@ __END__
  # 1. a pyramid configured from an existing another
  
  my $params_options  = {
-    # pyr
+    #
     pyr_name_old => "SCAN_RAW_TESTOLD.pyr",
     pyr_name_new => "SCAN_RAW_TESTNEW.pyr",
-    pyr_path     => "./t/data/pyramid/",
-    # tms
-    tms_name     => "LAMB93_50cm_TEST.tms",
+    pyr_descpath => "./t/data/pyramid/",
+    pyr_datapath => "./t/data/pyramid/ORTHO",
+    #
     tms_path     => "./t/data/tms/",
+    #
+    dir_depth    => "2",  
+    dir_image    => "IMAGE",
+    dir_metadata => "METADATA",
+    #
+    path_nodata   => "./t/data/nodata/",
+    imagesize     => "1024",
+    color         => "FFFFFF,
+    #
+    interpolation => "bicubique",
+    photometric   => "rgb",
  };
 
- my $objP = BE4::Pyramid->new(pyramid => $params_options);
+ my $objP = BE4::Pyramid->new($params_options);
  
  $objP->writeConfPyramid();           # in ./t/data/pyramid/SCAN_RAW_TESTNEW.pyr !
  $objP->writeConfPyramid("TEST.pyr"); # in ./t/data/pyramid/TEST.pyr !
  
- $objP->writeCachePyramid();  # in 'dir_root' determined by pyramid ! 
+ $objP->writeCachePyramid();  # in 'pyr_datapath' determined by pyramid ! 
  $objP->writeCachePyramid("./t/data/pyramid/test/"); # in another path !
  
  # 2. a new pyramid
  
  my $params_options = {
+    #
     pyr_name_new => "SCAN_RAW_TESTNEW.pyr",
-    pyr_path     => "./t/data/pyramid/",
+    pyr_descpath => "./t/data/pyramid/",
+    pyr_datapath => "./t/data/pyramid/",
+    # 
+    tms_name     => "LAMB93_50cm_TEST.tms",
+    tms_path     => "./t/data/tms/",
+    #
     compression  => "raw",
+    #
     dir_depth    => "2",
-    dir_root     => "./t/data/pyramid/",
     dir_image    => "IMAGE",
     dir_metadata => "METADATA",
-    image_width  => "1024", 
-    image_height => "1024",
+    #
+    image_width  => "16", 
+    image_height => "16",
+    # 
+    path_nodata   => "./t/data/nodata/",
+    imagesize     => "1024",
+    color         => "FFFFFF",
+    #
+    bitspersample       => "8", 
+    sampleformat        => "uint", 
+    compressionscheme   => "none", 
+    photometric         => "rgb", 
+    samplesperpixel     => "3",
+    interpolation       => "bicubique",
  };
 
- my $objP = BE4::Pyramid->new(tile    => $objTile, # BE4::Product !
-                              tms     => $objTMS,  # BE4::TileMatrixSet !
-                              pyramid => $params_options);
+ my $objP = BE4::Pyramid->new($params_options);
 
  $objP->writeConfPyramid();  # in ./t/data/pyramid/SCAN_RAW_TESTNEW.pyr !
  $objP->writeCachePyramid(); # in ./t/data/pyramid/
 
- # 3. another way to implement a new pyramid
- 
- my $objP = BE4::Pyramid->new(tile    => $objTile,
-                              tms     => $objTMS,
-                              pyramid => $params);
- 
- ...
- 
- # 4. all methods that you can call
- ...
 
 =head1 DESCRIPTION
 
@@ -1373,17 +1457,32 @@ __END__
 
 To create a new pyramid, you must fill all parameters following :
 
-        $self->{tile}          # it's a Class "BE4::Product" !
-        $self->{tms}           # it's a Class "BE4::TileMatrixSet" !
-        $self->{pyr_name_new}
-        $self->{pyr_path}
-        $self->{compression}
-        $self->{dir_depth}
-        $self->{dir_root} 
-        $self->{dir_image}
-        $self->{dir_metadata} # it's an optional parameter !
-        $self->{image_width}
-        $self->{image_height} 
+    pyr_name_new  =
+    pyr_descpath  =
+    pyr_datapath  =
+    #
+    compression   => by default, it's 'raw' !
+    #
+    image_width   = 
+    image_height  =
+    #
+    dir_depth     =  
+    dir_image     = 
+    dir_metadata  = 
+    # 
+    tms_name      =
+    tms_path      = 
+    # 
+    path_nodata   =
+    imagesize     => by default, it's '4096' !
+    color         => by default, it's 'FFFFFF' !
+    # 
+    bitspersample       = 
+    sampleformat        = 
+    compressionscheme   = 
+    photometric         => by default, it's 'rgb' !
+    samplesperpixel     =
+    interpolation       => by default, it's 'bicubique' !
 
 The pyramid file and the directory structure can be create.
 
@@ -1391,11 +1490,22 @@ The pyramid file and the directory structure can be create.
 
 To create a new pyramid, you must fill all parameters following :
 
-        $self->{pyr_name_old}
-        $self->{pyr_name_new}
-        $self->{pyr_path}
-        $self->{tms_name} # it's an optional parameter because we can determined by old pyramid !
-        $self->{tms_path}
+    pyr_name_old  =
+    pyr_name_new  =
+    pyr_descpath  =
+    pyr_datapath  =
+    #
+    dir_depth    =  
+    dir_image    = 
+    #
+    tms_path      = 
+    # 
+    path_nodata   =
+    imagesize     => by default, it's '4096' !
+    color         => by default, it's 'FFFFFF' !
+    # 
+    interpolation => by default, it's 'rgb' !
+    photometric   => by default, it's 'bicubique' !
 
 All paramaters are filled by loading the old configuration pyramid.
 So, object 'BE4::Product' and 'BE4::TileMatrixSet' are created, and the other

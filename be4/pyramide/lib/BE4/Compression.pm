@@ -32,7 +32,12 @@ my %COMPRESS;
 BEGIN {}
 INIT {
   # TODO :
-  # put in a configuration file !
+  #  put in a configuration file !
+  
+  # FIXME
+  #  i'm prefer to note the code for the type raw :
+  #    raw      => "TIFF_RAW_INT8",
+  #    floatraw => "TIFF_RAW_FLOAT32"
   
   %COMPRESS = (
     # type => code !
@@ -166,7 +171,7 @@ sub decodeCompression {
         my $u = lc $1;
         my $p = lc $2;
         $u = 'uint' if ($u eq 'int');
-        return (lc $value[0], 'none', $u, $p);
+        return (lc $value[0], 'raw', $u, $p);
       }
       elsif (scalar @value == 3) {
         $value[2] =~ m/(\w+)(\d+)/;
@@ -182,8 +187,11 @@ sub decodeCompression {
   }
   ERROR(sprintf "Can not decode the code '%s' !", $code);
   return undef;
+  # ie 'tiff', 'raw', 'uint' , '8'
   # ie 'tiff', 'png', 'uint' , '8'
-  # ie 'tiff',    '', 'float', '32'
+  # ie 'tiff', 'raw', 'float', '32'
+  # ie 'tiff', 'jpg', 'uint' , '8'
+  
 }
 ################################################################################
 # Group: get
@@ -217,7 +225,7 @@ __END__
   my $type = $objC->getType(); # "raw" !
 
   # mode static 
-  my @info = BE4::Compression->decodeCompression("TIFF_INT8");  #  ie 'tiff', 'none', 'uint' , '8' !
+  my @info = BE4::Compression->decodeCompression("TIFF_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
   my $code = BE4::Compression->getCompressionCode("none");      # TIFF_INT8 !
   my $type = BE4::Compression->getCompressionType("TIFF_INT8"); # raw !
 

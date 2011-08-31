@@ -18,8 +18,9 @@
 
 * in pyramid configuration, the path of pyramid data is relative, and Rok4 don't like this !
    
-* can not transform a pyramid raw to jpg or png if exist data source in !
+* can not transform a pyramid raw to jpg or png if not exist data source in !
 
 * can not determined by an existing pyramid, some parameters of tile :
-    sampleformat ans interpolation ?
+    sampleformat and interpolation ?
+    > ok, this parameters are implemented ! 
 
