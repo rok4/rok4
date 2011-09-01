@@ -78,19 +78,14 @@ doc: buildnatural.doc buildhtml.doc
 	@ echo "> Ok, Doc $* !" ;
 
 buildnatural:
-	@( if [ ! -d docs ] ; then \
-		install -d docs ;\
+	@( if [ ! -d docs/Natural/Html ] ; then \
+                install -d docs/Natural/Html ;\
+		install -d docs/Natural/NaturalDocs ;\
 	fi)
-	@( if [ ! -d docs/Natural ] ; then \
-                install -d docs/Natural ;\
-        fi)
-	@( naturaldocs -r -i bin/ -i lib/ -img docs/Natural/UML -o HTML docs/Natural -p docs/Natural/NaturalDocs ) ;
+	@( naturaldocs -r -i bin/ -i lib/ -img docs/Natural/UML -o HTML docs/Natural/Html -p docs/Natural/NaturalDocs ) ;
 	@( echo "> Ok, NaturalDocs !" ) ;
 
 buildhtml:
-	@( if [ ! -d docs ] ; then \
-                install -d docs ;\
-        fi)
 	@( if [ ! -d docs/Html ] ; then \
                 install -d docs/Html ;\
         fi)
@@ -107,10 +102,13 @@ buildhtml:
 	@( echo "> Ok, Man2Html !" ) ;
 
 clean:
-	@(for f in `find docs/Html -name "*.html"` ;\
-            do \
-             rm $$f ;\
-          done)
+	@( if [ -d docs/Html ] ; then \
+                rm -rf docs/Html ;\
+        fi)
+	@( if [ -d docs/Natural/Html ] ; then \
+                rm -rf docs/Natural/Html ;\
+		rm -rf docs/Natural/NaturalDocs ;\
+	fi)
 	@( cd . && make -f Makefile realclean ) ; 
 	@( echo "> Ok, Clean !" ) ;
 
