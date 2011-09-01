@@ -7,6 +7,7 @@
 #include <cppunit/TestRunner.h>
 #include <iostream>
 #include <fstream>
+#include <dlfcn.h>
 #include "TimedTestListener.h"
 #include "XmlTimedTestOutputterHook.h"
 
