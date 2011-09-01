@@ -346,6 +346,9 @@ sub checkParams {
   # logger
   if (defined $logger) {
     
+    my @args;
+    
+    my $layout= '[%C][%M](%L)(%l): %m%n';
     my $level = $logger->{log_level};
     my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
                     if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
@@ -353,18 +356,26 @@ sub checkParams {
     $out   = "STDOUT" if (! defined $out);
     $level = "WARN"   if (! defined $level);
     
-    Log::Log4perl->easy_init(
-                    {
-                        file   => $out,
+    if ($level =~ /(ALL|DEBUG)/) {
+        $layout = '[%C][%M](%L)(%l): %m%n (%T)%n';
+    }
+    
+    # add the param logger by default (user settings !)
+    push @args, {
+                    file   => $out,
+                    level  => $level,
+                    layout => $layout,
+                };
+    
+    if ($out ne "STDOUT") {
+        # add the param logger to the STDOUT
+        push @args, {
+                        file   => "STDOUT",
                         level  => $level,
-                        layout => '[%M](%L): %m%n',
+                        layout => $layout,
                     },
-                    #{
-                    #    file => "STDOUT",
-                    #    level=> $level,
-                    #    layout => '[%M](%L): %m%n',
-                    #}
-    ); 
+    }
+    Log::Log4perl->easy_init(@args); 
   }
   
   # 
@@ -428,7 +439,7 @@ sub doIt {
       return FALSE;
     }
   
-    DEBUG (sprintf "PYRAMID = %s", Dumper($objPyramid));
+    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
     ###################
     # load data source
@@ -456,7 +467,7 @@ sub doIt {
         # TODO : Metadata
         #        not implemented !
         
-        DEBUG (sprintf "DATASOURCE = %s", Dumper($objData));
+        DEBUG (sprintf "DATASOURCE (dump) = %s", Dumper($objData));
     }
   
     #######################
@@ -485,7 +496,7 @@ sub doIt {
       return FALSE;
     }
       
-    DEBUG (sprintf "PROCESS = %s", Dumper($objProcess));
+    DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
     return TRUE;
 }

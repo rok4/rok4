@@ -1004,12 +1004,24 @@ sub readCachePyramid {
 sub getPyrFile {
   my $self = shift;
 
-  return $self->{pyramid}->{pyr_name_new};
+  my $file = $self->{pyramid}->{pyr_name_new};
+  return undef if (! defined $file);
+  if ($file =! m/\.(pyr|PYR)$/) {
+    $file = join('.', $file, "pyr");
+  }
+  return $file;
+
 }
 sub getPyrFileOld {
   my $self = shift;
 
-  return $self->{pyramid}->{pyr_name_old};
+  my $file = $self->{pyramid}->{pyr_name_old};
+  return undef if (! defined $file);
+  if ($file =! m/\.(pyr|PYR)$/) {
+    $file = join('.', $file, "pyr");
+  }
+  return $file;
+
 }
 sub getPyrNameOld {
   my $self = shift;
@@ -1050,7 +1062,13 @@ sub getTmsName {
 sub getTmsFile {
   my $self   = shift;
   
-  return $self->{pyramid}->{tms_name};
+  my $file = $self->{pyramid}->{tms_name};
+  return undef if (! defined $file);
+  if ($file =! m/\.(tms|TMS)$/) {
+    $file = join('.', $file, "tms");
+  }
+  return $file;
+
 }
 sub getTmsPath {
   my $self   = shift;

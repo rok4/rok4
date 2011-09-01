@@ -119,7 +119,7 @@ sub _init {
 
 sub computeImageSource {
   my $self = shift;
-    
+  
   TRACE;
   
   my %Res;
