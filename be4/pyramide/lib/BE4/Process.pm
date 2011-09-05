@@ -192,11 +192,11 @@ sub cache2work {
   
   TRACE;
   
-  # FIXME avec cette histoire de taille de dalle cache ?
   my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
   my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
 
-  my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[0], $cacheName , $workName, RESULT_TEST);
+  # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
+  my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
   return $cmd;
 }
 
@@ -347,7 +347,7 @@ sub computeBottomImage {
 
   my $res  = "\n";
   
-  my $bgImgPath;
+  my $bgImgPath=undef;
   
   if ((
        defined ($self->{datasource}) &&
@@ -367,7 +367,6 @@ sub computeBottomImage {
 
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    $bgImgPath = undef;
     # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
     # correspondant dans la nouvelle pyramide.
     if ( -f $newImgDesc->getFilePath() ){
@@ -703,7 +702,7 @@ sub saveScript {
     return FALSE;
   }
   if (! defined $scriptId) {
-    ERROR("No ScriptId to make of the script ?");
+    ERROR("No ScriptId to save the script ?");
     return FALSE;
   }
   
@@ -768,7 +767,7 @@ sub computeWholeTree {
   
   # initialisation du script final
   my $pyrName = $self->{pyramid}->getPyrName();
-  my $finishScriptId   = sprintf ("%s_FINISHER", $pyrName);
+  my $finishScriptId   = "SCRIPT_FINISHER";
   my $finishScriptCode = $self->prepareScript($finishScriptId);
 
   # creation des scripts calculant le bas de la pyramide
@@ -781,33 +780,32 @@ sub computeWholeTree {
   
   $finishScriptCode .= "#recuperation des images calculees par les scripts precedents\n";
   
+  # repartition des travaux sur les differents scripts
+  my @nodeRack;
+  my $nodeCounter=0;
+  print("liste des noeud: @cutLevelNodeList\n");
   foreach my $node (@cutLevelNodeList){
-    my $scriptId   = sprintf "%s_%s_%s_%s", $pyrName, $node->{level} ,$node->{x}, $node->{y};
-    my $scriptCode = $self->prepareScript($scriptId);
-    $scriptCode   .= $self->computeBranch($node, $scriptId);
-    
-    if (! defined $scriptCode) {
-      ERROR("");
-      return FALSE;
+    push (@{$nodeRack[$nodeCounter % $self->{job_number}]}, $node);
+    $nodeCounter++;
     }
     
-    if (! $self->saveScript($scriptCode, $scriptId)) {
-      ERROR(sprintf "Can not save the script by cut level node '%s' ?", $scriptId);
-      return FALSE;
-    }
-    
+  # creation des scripts
+  for (my $scriptCount=1; $scriptCount<=$self->{job_number}; $scriptCount++){
+    my $scriptId   = sprintf "SCRIPT_%s", $scriptCount;
+    my $scriptCode;
+    if (! defined($nodeRack[$scriptCount-1])){
+      $scriptCode = "echo \"Le script \$0 n'a rien a faire. Tout va bien, c'est normal, on a pas de travail pour lui.\"";
+    }else{
+      $scriptCode = $self->prepareScript($scriptId);
+      foreach my $node (@{$nodeRack[$scriptCount-1]}){
+        $scriptCode .= sprintf "echo \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"\n", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
+        $scriptCode .= $self->computeBranch($node, $scriptId);
     # on récupère l'image de travail finale pour le job de fin.
     $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
   }
-  
-  # creation des scripts vides (utiles pour le Jenkins de l'entrepot)
-  my $nodeNbr = scalar @cutLevelNodeList;
-  for (my $i=$self->{job_number}; $i > $nodeNbr; $i--){
-    my $scriptId   = sprintf "%s_idle_%s", $pyrName,$i;
-    my $scriptCode = "echo \"Le script \$0 n'a rien a faire\"";
-    
+    }
     if (! $self->saveScript($scriptCode,$scriptId)) {
-      ERROR(sprintf "Can not save the script empty '%s' ?", $scriptId);
+      ERROR(sprintf "Can not save the script '%s'!", $scriptId);
       return FALSE;
     }
   }
@@ -826,7 +824,6 @@ sub computeWholeTree {
   }
   
   return TRUE;
-  #FIXME sous quelle forme fournir la liste des scripts pour que Jenkins les retrouve?
 }
 
 1;

@@ -357,7 +357,7 @@ sub checkParams {
     $level = "WARN"   if (! defined $level);
     
     if ($level =~ /(ALL|DEBUG)/) {
-        $layout = '[%C][%M](%L)(%l): %m%n (%T)%n';
+        $layout = '[%C][%M](%L)(%l): %m%n %n';
     }
     
     # add the param logger by default (user settings !)

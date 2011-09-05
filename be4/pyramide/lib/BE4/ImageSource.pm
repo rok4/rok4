@@ -141,62 +141,62 @@ sub computeInfo {
     return FALSE;
   }
   
-  # TODO :
-  # get DataType, ColorInterpretation or Photometric and SamplePerPixel (nb Bands) !
-  #
-  my $i = 1;
-
-  my $DataType       = undef;
-  my $Band           = undef;
-  my @Interpretation;
-
-  foreach my $objBand ($dataset->Bands()) {
-    
-    # FIXME undefined !
-    # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
-    # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
-    
-    # ie Float32,  GrayIndex,          , , .
-    # ie Byte,     (Red|Green|Blue)Band, , .
-    # ie Byte,     GrayIndex,          , , .
-    # ie UInt32,   GrayIndex,          , , .
-    # Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32, or CFloat64
-    # Undefined GrayIndex PaletteIndex RedBand GreenBand BlueBand AlphaBand HueBand SaturationBand LightnessBand CyanBand MagentaBand YellowBand BlackBand
-    
-    $DataType = lc $objBand->DataType();
-    push @Interpretation, lc $objBand->ColorInterpretation();
-    $Band = $i;
-  }
-
-  my $bitspersample  =undef;
-  my $photometric    =undef;
-  my $sampleformat   =undef;
-  my $samplesperpixel=undef;
-
-  if ($DataType eq "byte") {
-    $bitspersample = 8;
-    $sampleformat  = "unit";
-    
-  }
-  else {
-    ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
-  }
-
-  if ($Band == 3) {
-    foreach (@Interpretation) {
-      last if ($_ !~ m/(red|green|blue)band/);
-    }
-    $photometric     = "rgb";
-    $samplesperpixel = 3;
-  }
-
-  if ($Band == 1 && $Interpretation[0] eq "grayindex") {
-    $photometric     = "gray";
-    $samplesperpixel = 1;
-  }
-
-  DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
-        $bitspersample, $photometric, $sampleformat, $samplesperpixel);
+  # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
+  #      besoin et qui semble poser des problèmes (version de gdalinfo?)
+  
+#  my $i = 1;
+#
+#  my $DataType       = undef;
+#  my $Band           = undef;
+#  my @Interpretation;
+#
+#  foreach my $objBand ($dataset->Bands()) {
+#    
+#    # FIXME undefined !
+#    # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
+#    # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
+#    
+#    # ie Float32,  GrayIndex,          , , .
+#    # ie Byte,     (Red|Green|Blue)Band, , .
+#    # ie Byte,     GrayIndex,          , , .
+#    # ie UInt32,   GrayIndex,          , , .
+#    # Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32, or CFloat64
+#    # Undefined GrayIndex PaletteIndex RedBand GreenBand BlueBand AlphaBand HueBand SaturationBand LightnessBand CyanBand MagentaBand YellowBand BlackBand
+#    
+#    $DataType = lc $objBand->DataType();
+#    push @Interpretation, lc $objBand->ColorInterpretation();
+#    $Band = $i;
+#  }
+#
+#  my $bitspersample  =undef;
+#  my $photometric    =undef;
+#  my $sampleformat   =undef;
+#  my $samplesperpixel=undef;
+#
+#  if ($DataType eq "byte") {
+#    $bitspersample = 8;
+#    $sampleformat  = "unit";
+#    
+#  }
+#  else {
+#    ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
+#  }
+#
+#  if ($Band == 3) {
+#    foreach (@Interpretation) {
+#      last if ($_ !~ m/(red|green|blue)band/);
+#    }
+#    $photometric     = "rgb";
+#    $samplesperpixel = 3;
+#  }
+#
+#  if ($Band == 1 && $Interpretation[0] eq "grayindex") {
+#    $photometric     = "gray";
+#    $samplesperpixel = 1;
+#  }
+#
+#  DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
+#        $bitspersample, $photometric, $sampleformat, $samplesperpixel);
   
   my $refgeo = $dataset->GetGeoTransform();
   if (! defined ($refgeo) || scalar (@$refgeo) != 6) {

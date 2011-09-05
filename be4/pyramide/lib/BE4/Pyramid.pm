@@ -1005,19 +1005,22 @@ sub getPyrFile {
   my $self = shift;
 
   my $file = $self->{pyramid}->{pyr_name_new};
+
   return undef if (! defined $file);
-  if ($file =! m/\.(pyr|PYR)$/) {
+  
+  if ($file !~ m/\.(pyr|PYR)$/) {
     $file = join('.', $file, "pyr");
   }
   return $file;
-
 }
+
+
 sub getPyrFileOld {
   my $self = shift;
 
   my $file = $self->{pyramid}->{pyr_name_old};
   return undef if (! defined $file);
-  if ($file =! m/\.(pyr|PYR)$/) {
+  if ($file !~ m/\.(pyr|PYR)$/) {
     $file = join('.', $file, "pyr");
   }
   return $file;
