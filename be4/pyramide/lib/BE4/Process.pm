@@ -287,7 +287,7 @@ sub merge4tiff {
   
   my $pyr = $self->{pyramid};
   
-  my $cmd = sprintf "%s -g %d ", MERGE_4_TIFF, $pyr->getGamma();  
+  my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $pyr->getGamma();  
   
   foreach my $filePath (@childImg){
     $cmd .= sprintf "%s ", $filePath;
