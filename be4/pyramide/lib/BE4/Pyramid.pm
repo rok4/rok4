@@ -76,7 +76,7 @@ END {}
 #    ; eg section [ tile ]
 #    bitspersample       = 
 #    sampleformat        = 
-#    compressionscheme   = 
+#    ; compressionscheme   = 
 #    photometric         = 
 #    samplesperpixel     =
 #    interpolation       = 
@@ -172,7 +172,7 @@ sub new {
                     #
                     bitspersample           => undef,# number
                     sampleformat            => undef,# number
-                    compressionscheme       => undef,# string value
+                    # compressionscheme       => undef,# string value
                     photometric             => undef,# string value ie rgb by default !
                     samplesperpixel         => undef,# number
                     interpolation           => undef,# string value ie bicubique by default !
@@ -247,7 +247,7 @@ sub _init {
         #
         $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
         $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
-        $pyr->{compressionscheme}= $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
+        # $pyr->{compressionscheme}= $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
         $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE ); 
        
     }
@@ -342,7 +342,7 @@ sub _load {
     my $objTile = BE4::Product->new({
         bitspersample    => $self->{pyramid}->{bitspersample},
         sampleformat     => $self->{pyramid}->{sampleformat},
-        compressionscheme=> $self->{pyramid}->{compressionscheme},
+        # compressionscheme=> $self->{pyramid}->{compressionscheme},
         photometric      => $self->{pyramid}->{photometric},
         samplesperpixel  => $self->{pyramid}->{samplesperpixel},
         interpolation    => $self->{pyramid}->{interpolation},
@@ -704,7 +704,7 @@ sub readConfPyramid {
   my $tile = {
         bitspersample    => $bitspersample,
         sampleformat     => $sampleformat,
-        compressionscheme=> 'none', # FIXME always none !
+        # compressionscheme=> 'none', # FIXME always none !
         photometric      => $self->getPhotometric(),
         samplesperpixel  => $samplesperpixel,
         interpolation    => $self->getInterpolation(),
@@ -1475,7 +1475,7 @@ __END__
     #
     bitspersample       => "8", 
     sampleformat        => "uint", 
-    compressionscheme   => "none", 
+    ; compressionscheme   => "none", 
     photometric         => "rgb", 
     samplesperpixel     => "3",
     interpolation       => "bicubique",
@@ -1517,7 +1517,7 @@ To create a new pyramid, you must fill all parameters following :
     # 
     bitspersample       = 
     sampleformat        = 
-    compressionscheme   = 
+    # compressionscheme   = 
     photometric         => by default, it's 'rgb' !
     samplesperpixel     =
     interpolation       => by default, it's 'bicubique' !

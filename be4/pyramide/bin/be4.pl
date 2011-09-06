@@ -348,7 +348,7 @@ sub checkParams {
     
     my @args;
     
-    my $layout= '[%C][%M](%L)(%l): %m%n';
+    my $layout= '[%C][%M](%L): %m%n';
     my $level = $logger->{log_level};
     my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
                     if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
@@ -357,7 +357,7 @@ sub checkParams {
     $level = "WARN"   if (! defined $level);
     
     if ($level =~ /(ALL|DEBUG)/) {
-        $layout = '[%C][%M](%L)(%l): %m%n %n';
+        $layout = '[%C][%M](%L): %m%n';
     }
     
     # add the param logger by default (user settings !)
