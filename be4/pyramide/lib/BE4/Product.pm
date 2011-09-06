@@ -16,7 +16,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 ################################################################################
 # constantes
@@ -37,7 +37,7 @@ my %TILES;
 #
 # function: get/set in init()
 #
-#   get/set with field, BitsPerSample SampleFormat CompressionScheme Photometric SamplesPerPixel Interpolation
+#   get/set with field, BitsPerSample SampleFormat Photometric SamplesPerPixel Interpolation
 #
 
 BEGIN {}
@@ -48,14 +48,14 @@ INIT {
   %TILES = (
     bitspersample     => [8,32],
     sampleformat      => ['uint','float'],
-    compressionscheme => ['none','zip','jpeg','packbits','lzw','deflate'],
+    # compressionscheme => ['none','zip','jpeg','packbits','lzw','deflate'],
     photometric       => ['rgb','gray','mask'], # ie 'min_is_black'
     samplesperpixel   => [1,3],
     interpolation     => ['lanczos','ppv','linear','bicubique'],
   );
   
   # getter/setter except "" because of  !
-  foreach my $i (qw(BitsPerSample SampleFormat CompressionScheme Photometric SamplesPerPixel Interpolation)) {
+  foreach my $i (qw(BitsPerSample SampleFormat Photometric SamplesPerPixel Interpolation)) {
     my $field = $i;
     
     *{"get$field"} = sub {
@@ -83,7 +83,7 @@ END {}
 #  
 #  bitspersample               = 8,32
 #  sampleformat                = uint,float
-#  compressionscheme           = none,jpeg,lzw,deflate,zip,packbits
+#  ; compressionscheme           = none,jpeg,lzw,deflate,zip,packbits
 #  photometric                 = rgb,gray,(mask?)
 #  samplesperpixel             = 1,3
 #  ; rowsstrip                 = 1
@@ -99,12 +99,12 @@ END {}
 #
 #    *    bitspersample           => undef, # ie 8
 #    *    sampleformat            => undef, # ie uint
-#    *    compressionscheme       => undef, # ie none
+#    *    compressionscheme       => undef, # NOT ACTIVED !
 #    *    photometric             => undef, # ie gray
 #    *    samplesperpixel         => undef, # ie 3
-#    *    rowsstrip               => undef,   # NOT IMPLEMENTED !
-#    *    planarconfiguration     => undef,   # NOT IMPLEMENTED !
-#    *    interpolation           => undef,   # ie resample : bicubique
+#    *    rowsstrip               => undef, # NOT IMPLEMENTED !
+#    *    planarconfiguration     => undef, # NOT IMPLEMENTED !
+#    *    interpolation           => undef, # ie resample : bicubique
 #
 
 #
@@ -120,7 +120,7 @@ sub new {
   my $self = {
     bitspersample           => undef,
     sampleformat            => undef,
-    compressionscheme       => undef,
+    # compressionscheme       => undef, # NOT ACTIVED !
     photometric             => undef,
     samplesperpixel         => undef,
     # rowsstrip               => undef, # NOT IMPLEMENTED !
@@ -151,7 +151,7 @@ sub _init {
     
     return undef if (! $self->is_BitsPerSample($params->{bitspersample}));
     return undef if (! $self->is_SampleFormat($params->{sampleformat}));
-    return undef if (! $self->is_CompressionScheme($params->{compressionscheme}));
+    # return undef if (! $self->is_CompressionScheme($params->{compressionscheme}));
     return undef if (! $self->is_Photometric($params->{photometric}));
     return undef if (! $self->is_SamplesPerPixel($params->{samplesperpixel}));
     return undef if (! $self->is_Interpolation($params->{interpolation}));
@@ -159,7 +159,7 @@ sub _init {
     # init. params    
     $self->{bitspersample}      =$params->{bitspersample};
     $self->{sampleformat}       =$params->{sampleformat};
-    $self->{compressionscheme}  =$params->{compressionscheme};
+    # $self->{compressionscheme}  =$params->{compressionscheme};
     $self->{photometric}        =$params->{photometric};
     $self->{samplesperpixel}    =$params->{samplesperpixel};
     $self->{interpolation}      =$params->{interpolation};
@@ -264,7 +264,7 @@ sub equal {
   if(
     $self->{bitspersample} ne $obj->getBitsPerSample() ||
     $self->{sampleformat} ne $obj->getSampleFormat() ||
-    $self->{compressionscheme} ne $obj->getCompressionScheme() ||
+    # $self->{compressionscheme} ne $obj->getCompressionScheme() ||
     $self->{photometric} ne $obj->getPhotometric() ||
     $self->{samplesperpixel} ne $obj->getSamplesPerPixel() ||
     # $self->{rowsstrip} ne $obj->getRowsStrip() ||
@@ -291,7 +291,6 @@ __END__
   my $tile = {
     bitspersample    => 8,
     sampleformat     => "uint",
-    compressionscheme=> "none",
     photometric      => "rgb",
     samplesperpixel  => 3,
     interpolation    => "bicubique",
@@ -309,6 +308,7 @@ __END__
 The parameter 'compressionscheme' is usefull for the following programs :
  - merge4tiff
  - tiff2gray
+ but not actived now !
 
 Notice : with tiffinfo (and gdalinfo)
   

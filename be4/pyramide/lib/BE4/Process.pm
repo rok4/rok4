@@ -282,7 +282,12 @@ sub merge4tiff {
   
   TRACE;
   
-  my $cmd = sprintf "%s ", MERGE_4_TIFF;  
+  # Change :
+  #   getGamma() retourne 1 par defaut, ou une valeur decimale 0->1
+  
+  my $pyr = $self->{pyramid};
+  
+  my $cmd = sprintf "%s -g %d ", MERGE_4_TIFF, $pyr->getGamma();  
   
   foreach my $filePath (@childImg){
     $cmd .= sprintf "%s ", $filePath;

@@ -34,7 +34,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 ################################################################################
 # constantes
@@ -71,6 +71,7 @@ END {}
 #    image_height =
 #
 #    compression  =
+#    gamma        =
 #
 #    ; eg section [ tile ]
 #    bitspersample       = 
@@ -161,6 +162,7 @@ sub new {
                     tms_path     => undef, # path
                     #
                     compression  => undef, # string value ie raw by default !
+                    gamma        => undef, # number ie 1 by default !
                     #
                     dir_depth    => undef, # number
                     dir_image    => undef, # dir name
@@ -208,6 +210,10 @@ sub new {
 
 ################################################################################
 # privates init.
+
+# TODO
+#  - no test for path and type (string, number, ...) !
+
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -307,7 +313,13 @@ sub _init {
         $params->{photometric} = 'rgb';
     }
     $pyr->{photometric} = $params->{photometric};
-
+    #
+    if (! exists($params->{gamma})) {
+        WARN ("key/value optional to 'gamma' (value by default) !");
+        $params->{gamma} = 1;
+    }
+    $pyr->{gamma} = $params->{gamma};
+    
     # TODO path !
     if (! -d $pyr->{path_nodata}) {}
     if (! -d $pyr->{pyr_descpath}) {}
@@ -1104,6 +1116,11 @@ sub getPhotometric {
   my $self = shift;
   
   return $self->{pyramid}->{photometric};
+}
+sub getGamma {
+  my $self = shift;
+  
+  return $self->{pyramid}->{gamma};
 }
 #
 ################################################################################

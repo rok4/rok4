@@ -1,0 +1,7 @@
+- 0.0.2 [lib/BE4/Pyramid.pm] :
+- 0.0.2 [lib/BE4/Process.pm] :
+    > mise en place du parametre 'gamma' (valeur par defaut à 1), il est utilisé
+    avec l'outil merge4tiff.
+
+- 0.0.2 [lib/BE4/Product.pm] :
+    > desactivation du parametre 'compressionscheme'
