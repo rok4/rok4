@@ -11,6 +11,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string.h>
+#include <stdint.h>
 
 void usage() {
 	std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
