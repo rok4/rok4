@@ -114,9 +114,9 @@ sub _init {
        $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
       )
       ||
-      (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-       $self->{pyramid}->getCompression()->getType() eq 'png'
+      (! $self->{pyramid}->isNewPyramid() && (
+         $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+         $self->{pyramid}->getCompression()->getType() eq 'png')
       )) {
   
     $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -190,11 +190,11 @@ sub wms2work {
 sub cache2work {
   my ($self, $node, $workName) = @_;
   
-  TRACE;
-  
   my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
   my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
 
+  TRACE(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
+  
   # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
   my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
   return $cmd;
@@ -210,8 +210,6 @@ sub work2cache {
   my $self = shift;
   my $node = shift;
   
-  TRACE;
-  
   my $workImgName  = $self->workNameOfNode($node);
   my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
   
@@ -226,6 +224,7 @@ sub work2cache {
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le cadrillage des dalles et le numéro du node, 
   # ou celui des tuiles et leur identifiant.
+  TRACE(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);
@@ -359,9 +358,9 @@ sub computeBottomImage {
        $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
       )
       ||
-      (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-       $self->{pyramid}->getCompression()->getType() eq 'png'
+      (! $self->{pyramid}->isNewPyramid() && (
+         $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+         $self->{pyramid}->getCompression()->getType() eq 'png')
       )) {
     $res .= $self->wms2work($node,$self->workNameOfNode($node));
   }
@@ -788,9 +787,10 @@ sub computeWholeTree {
   # repartition des travaux sur les differents scripts
   my @nodeRack;
   my $nodeCounter=0;
-  print("liste des noeud: @cutLevelNodeList\n");
+  INFO ("Node List (cut level):");
   foreach my $node (@cutLevelNodeList){
     push (@{$nodeRack[$nodeCounter % $self->{job_number}]}, $node);
+    INFO (sprintf "Node '%s-%s-%s'.", $node->{level} ,$node->{x}, $node->{y});
     $nodeCounter++;
     }
     
@@ -799,15 +799,16 @@ sub computeWholeTree {
     my $scriptId   = sprintf "SCRIPT_%s", $scriptCount;
     my $scriptCode;
     if (! defined($nodeRack[$scriptCount-1])){
-      $scriptCode = "echo \"Le script \$0 n'a rien a faire. Tout va bien, c'est normal, on a pas de travail pour lui.\"";
+      $scriptCode = "echo \"Le script \$0 n'a rien a faire. Tout va bien, c'est normal, on n'a pas de travail pour lui.\"";
     }else{
       $scriptCode = $self->prepareScript($scriptId);
       foreach my $node (@{$nodeRack[$scriptCount-1]}){
+        INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
         $scriptCode .= sprintf "echo \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"\n", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
         $scriptCode .= $self->computeBranch($node, $scriptId);
-    # on récupère l'image de travail finale pour le job de fin.
-    $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
-  }
+        # on récupère l'image de travail finale pour le job de fin.
+        $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
+      }
     }
     if (! $self->saveScript($scriptCode,$scriptId)) {
       ERROR(sprintf "Can not save the script '%s'!", $scriptId);
