@@ -680,9 +680,9 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 	std::string projDir;
 	
 	char* projDirEnv;
-	pElem=hRoot.FirstChild("projConfigPath").Element();
+	pElem=hRoot.FirstChild("projConfigDir").Element();
 	if (!pElem){
-		std::cerr<<"Pas de projConfigPath => projConfigPath = " << DEFAULT_PROJ_DIR<<std::endl;
+		std::cerr<<"Pas de projConfigDir => projConfigDir = " << DEFAULT_PROJ_DIR<<std::endl;
 		char pwdBuff[PATH_MAX];
 		getcwd(pwdBuff,PATH_MAX);
 		projDir = pwdBuff;

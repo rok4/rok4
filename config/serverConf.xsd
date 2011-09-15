@@ -39,7 +39,7 @@
 			<!-- Répertoire des configs des tileMatrixSet -->
 			<xs:element name="tileMatrixSetDir" type="xs:string"/>
 			</xs:sequence>
-			<xs:element name="projConfigPath" type="xs:string"/>
+			<xs:element name="projConfigDir" type="xs:string"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
