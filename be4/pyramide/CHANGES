@@ -5,3 +5,6 @@
 
 - 0.0.2 [lib/BE4/Product.pm] :
     > desactivation du parametre 'compressionscheme'
+    
+- 0.0.3 [lib/BE4/Pyramid.pm] :
+    > bug sur la creation des chemins du cache lorsque l'indexe en base36 > à 4 car.

@@ -193,7 +193,7 @@ sub cache2work {
   my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
   my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
 
-  TRACE(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
+  INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
   
   # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
   my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
@@ -224,7 +224,7 @@ sub work2cache {
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le cadrillage des dalles et le numéro du node, 
   # ou celui des tuiles et leur identifiant.
-  TRACE(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
+  INFO(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);

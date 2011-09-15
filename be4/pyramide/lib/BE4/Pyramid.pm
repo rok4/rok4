@@ -34,7 +34,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.2';
+our $VERSION = '0.0.3';
 
 ################################################################################
 # constantes
@@ -1170,10 +1170,48 @@ sub getLevels {
 # privates method (low level)
 #  Manipulate the Directory Structure Cache (DSC)
 
-sub _getIDXX {
+sub _IDXtoX {
   my $self  = shift;
   my $level = shift;
-  my $x     = shift;
+  my $idx   = shift; # x index !
+  
+  #Res  : 2 m  (determined by level)
+  #Xmin : 933888.00
+  #Ymax : 6537216.00
+  #Size : 8192 m (imagesize = 4096*4096)
+  #Level: 3
+  #Index X = 933888/8192 = 114
+  #Index Y = (16777216-6537216)/8192 = 1250
+  
+  my $tm  = $self->getTileMatrixSet()->getTileMatrix($level);
+  
+  my $xo  = $tm->getTopLeftCornerX();
+  my $rx  = $tm->getResolution();
+  my $sx  = $self->getCacheImageWith();
+  
+  my $x = ($idx * $rx * $sx) + $xo ;
+
+  return $x;    
+}
+sub _IDXtoY {
+  my $self  = shift;
+  my $level = shift;
+  my $idx   = shift; # y index !
+  
+  my $tm  = $self->getTileMatrixSet()->getTileMatrix($level);
+  
+  my $yo  = $tm->getTopLeftCornerY();
+  my $ry  = $tm->getResolution();
+  my $sy  = $self->getCacheImageHeight();
+  
+  my $y = $yo - ($idx * $ry * $sy);
+  
+  return $y;
+}
+sub _XtoIDX {
+  my $self  = shift;
+  my $level = shift;
+  my $x     = shift; # x meters !
   
   my $idx = undef;
   #Res  : 2 m  (determined by level)
@@ -1191,16 +1229,13 @@ sub _getIDXX {
   my $sx  = $self->getCacheImageWith();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
-  
-  TRACE(sprintf "(%s - %s) / (%s * %s)", $x,$xo,$rx,$sx);
-  TRACE ($idx);
 
   return $idx;
 }
-sub _getIDXY {
+sub _YtoIDX {
   my $self  = shift;
   my $level = shift;
-  my $y     = shift;
+  my $y     = shift; # y meters !
   
   my $idx = undef;
   
@@ -1212,14 +1247,11 @@ sub _getIDXY {
   
   $idx = int(($yo - $y) / ($ry * $sy)) ;
   
-  TRACE(sprintf "(%s - %s) / (%s * %s)", $yo,$y,$ry,$sy);
-  TRACE ($idx);
-  
   return $idx;
 }
 sub _encodeIDXtoB36 {
   my $self  = shift;
-  my $number= shift;
+  my $number= shift; # idx !
   
   my $padlength = $self->getDirDepth() + 1;
   
@@ -1240,13 +1272,13 @@ sub _encodeIDXtoB36 {
   # fill with 0 !
   $b36 = "0"x($padlength - length $b36).reverse($b36);
 
-  TRACE ($b36);
+  INFO ($b36);
 
   return $b36;
 }
 sub _encodeB36toIDX {
   my $self = shift;
-  my $b36  = shift;
+  my $b36  = shift; # idx in base 36 !
   
   my $padlength = $self->getDirDepth() + 1;
   
@@ -1257,7 +1289,7 @@ sub _encodeB36toIDX {
     $number += $_ * (36 ** $i++);
   }
   
-  TRACE ("0"x($padlength - length $number).$number);
+  INFO ("0"x($padlength - length $number).$number);
   
   # fill with 0 !
   return "0"x($padlength - length $number).$number;
@@ -1320,8 +1352,8 @@ sub getTilePerHeight {
 sub getCacheNameOfImage {
   my $self  = shift;
   my $level = shift;
-  my $x     = shift; # X meters !
-  my $y     = shift; # Y meters !
+  my $x     = shift; # X idx !
+  my $y     = shift; # Y idx !
   my $type  = shift;
   
   my $typeDir;
@@ -1340,10 +1372,35 @@ sub getCacheNameOfImage {
   my @xcut = split (//, $xb36);
   my @ycut = split (//, $yb36);
   
-  my $imagePath = File::Spec->catdir($xcut[0].$ycut[0], $xcut[1].$ycut[1]);
-  my $fileName = join('.', $xcut[2].$ycut[2], 'tif');
+  if (scalar(@xcut) != scalar(@ycut)) {
+    ERROR("xb36 and yb36 are not the same size ?");
+    return undef;
+  }
   
-  return File::Spec->catfile($typeDir, $level, $imagePath, $fileName); 
+  my $padlength = $self->getDirDepth() + 1;
+  my $size      = scalar(@xcut);
+  my $pos       = $size;
+  my @l;
+  for(my $i=0; $i<$padlength;$i++) {
+    $pos--;
+    push @l, $ycut[$pos];
+    push @l, $xcut[$pos];
+    push @l, '/';
+  }
+  if ($size>$padlength) {
+    pop @l;
+    while ($pos) {
+        $pos--;
+        push @l, $ycut[$pos];
+        push @l, $xcut[$pos];
+    }
+  }
+  push @l, '/';
+  
+  my $imagePath     = scalar reverse(@l);
+  my $imagePathName = join('.', $imagePath, 'tif');
+  
+  return File::Spec->catfile($typeDir, $level, $imagePathName); 
 }
 
 # retourne le chemin absolu du fichier de la dalle en paramètre.

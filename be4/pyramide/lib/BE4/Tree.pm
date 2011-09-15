@@ -244,6 +244,70 @@ sub _load {
   return TRUE;
 }
 
+# method: exportTree
+#  Export dans un fichier texte de l'arbre complet.
+#  (Orienté maintenance !)
+#------------------------------------------------------------------------------
+sub exportTree {
+  my $self = shift;
+  my $file = shift; # filepath !
+  
+  # sur le bottomlevel, on a :
+  # { level1 => { x1_y2 => [objimage1, objimage2, ...],
+  #               x2_y2 => [objimage2],
+  #               x3_y2 => [objimage3], ...} }
+  
+  # on exporte dans un fichier la liste des indexes par images sources en projection :
+  #  imagesource
+  #  - x1_y2 => /OO/IF/ZX.tif => xmin, ymin, xmax, ymax
+  #  - x2_y2 => /OO/IF/YX.tif => xmin, ymin, xmax, ymax
+  #  ...
+  TRACE;
+
+  my $idLevel = $self->{bottomLevelId};
+  my $lstIdx  = $self->{levels}->{$idLevel};
+  
+  if (! open (FILE, ">", $file)) {
+    ERROR ("Can not create file ('$file') !");
+    return FALSE;
+  }
+  
+  my $refpyr = $self->{pyramid};
+  
+  while( my ($k, $v) = each(%$lstIdx)) {
+    
+    my ($idxXmin, $idxYmax) = split(/_/, $k);
+    my ($idxXmax, $idxYmin) = ($idxXmin+1, $idxYmax-1);
+    my $cachename = $refpyr->getCacheNameOfImage($idLevel, $idxXmin, $idxYmax, "data");
+    
+    # image xmin ymin xmax ymax
+    printf FILE "- idx %s (%s) => [%s,%s,%s,%s] (%s)\n", $k, $cachename,
+      $refpyr->_IDXtoX($idLevel,$idxXmin),
+      $refpyr->_IDXtoY($idLevel,$idxYmin),
+      $refpyr->_IDXtoX($idLevel,$idxXmax),
+      $refpyr->_IDXtoY($idLevel,$idxYmax),
+      $refpyr->getTileMatrixSet()->getSRS();
+    
+    next if (ref $v ne 'ARRAY');
+    
+    foreach my $objImage (@$v) {
+      
+      next if (ref $objImage ne 'BE4::ImageSource');
+      
+      printf FILE "\t%s [%s,%s,%s,%s] (%s)\n",
+              $objImage->{filename},
+              $objImage->{xmin},
+              $objImage->{ymin},
+              $objImage->{xmax},
+              $objImage->{ymax},
+              $self->{datasource}->getSRS();
+    }
+  }
+  
+  close FILE;
+  
+  return TRUE;
+}
 # method: computeBBox
 #  Renvoie la bbox de l'imageSource en parametre dans le SRS de la pyramide.
 #------------------------------------------------------------------------------

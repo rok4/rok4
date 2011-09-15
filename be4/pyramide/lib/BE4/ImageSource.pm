@@ -124,7 +124,7 @@ sub computeInfo {
   
   my $image = $self->{filename};
   
-  TRACE(sprintf "compute '%s'", $image);
+  INFO(sprintf "compute '%s'", $image);
   
   my $dataset;
   eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
