@@ -675,6 +675,33 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 	}else{
 		tmsDir=pElem->GetText();
 	}
+	
+	// Définition de la variable PROJ_LIB à partir de la configuration
+	std::string projDir;
+	
+	char* projDirEnv;
+	pElem=hRoot.FirstChild("projConfigPath").Element();
+	if (!pElem){
+		std::cerr<<"Pas de projConfigPath => projConfigPath = " << DEFAULT_PROJ_DIR<<std::endl;
+		char pwdBuff[PATH_MAX];
+		getcwd(pwdBuff,PATH_MAX);
+		projDir = pwdBuff;
+		projDir.append("/").append(DEFAULT_PROJ_DIR);
+		
+	}else{
+		projDir=pElem->GetText();
+		
+	}
+	
+	projDirEnv = (char*) malloc(8+2+projDir.length());
+	strcat(projDirEnv,"PROJ_LIB=");
+	strcat(projDirEnv,projDir.c_str());
+	
+	if (putenv(projDirEnv)!=0) {
+	  std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
+	  return false;
+	}
+	
 
 	return true;
 }//getTechnicalParam
