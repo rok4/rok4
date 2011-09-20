@@ -1381,21 +1381,28 @@ sub getCacheNameOfImage {
   my $size      = scalar(@xcut);
   my $pos       = $size;
   my @l;
+  
+  if ($padlength>$size) {
+    ERROR("xb36 and yb36 are more greater than the dir depth parameter ?");
+    return undef;
+  }
+  
   for(my $i=0; $i<$padlength;$i++) {
     $pos--;
     push @l, $ycut[$pos];
     push @l, $xcut[$pos];
     push @l, '/';
   }
+  
+  pop @l;
+  
   if ($size>$padlength) {
-    pop @l;
     while ($pos) {
         $pos--;
         push @l, $ycut[$pos];
         push @l, $xcut[$pos];
     }
   }
-  push @l, '/';
   
   my $imagePath     = scalar reverse(@l);
   my $imagePathName = join('.', $imagePath, 'tif');
