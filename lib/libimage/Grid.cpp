@@ -42,14 +42,6 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
   update_bbox();
 }
 
-#include <cstring>
-//TODO : cas d'un fichier de conf charge dynamiquement (option -f)
-char PROJ_LIB2[1024] = "../config/proj/";
-const char *pj_finder2(const char *name) {
-  strcpy(PROJ_LIB2 + 15, name);
-  return PROJ_LIB2;
-}
-
 /**
  * Effectue une reprojection sur les coordonnées de la grille
  * 
@@ -65,9 +57,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
   	pthread_mutex_lock (& mutex_proj);
 
 
-	pj_set_finder( pj_finder2 );
 	projCtx ctx = pj_ctx_alloc();
-	LOGGER_DEBUG(pj_finder2("test"));
 
   	projPJ pj_src, pj_dst;  
   	if(!(pj_src = pj_init_plus_ctx(ctx,  ("+init=" + from_srs +" +wktext" ).c_str()))) {

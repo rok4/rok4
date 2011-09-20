@@ -11,6 +11,7 @@
 #include "Request.h"
 #include "RawImage.h"
 #include "TiffEncoder.h"
+#include <cstdlib>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -32,26 +33,12 @@ HttpResponse* initResponseFromSource(DataSource* source){
 }
 
 /**
-* @fn const char *pj_finder(const char *name)
-* @brief Finder pour utiliser la fonction callback pj_set_finder de la libproj
-*/
-
-char PROJ_LIB[1024] = PROJ_LIB_PATH;
-const char *pj_finder(const char *name) {
-  strcpy(PROJ_LIB + 15, name);
-  return PROJ_LIB;
-}
-
-/**
 * @brief Initialisation du serveur ROK4
 * @param serverConfigFile : nom du fichier de configuration des parametres techniques
 * @return : pointeur sur le serveur ROK4, NULL en cas d'erreur (forcement fatale)
 */
 
 Rok4Server* rok4InitServer(const char* serverConfigFile){
-	// Initialisation de l'acces au parametrage de la libproj
-	pj_set_finder( pj_finder );
-
 	// Initialisation des parametres techniques
 	LogOutput logOutput;
 	int nbThread,logFilePeriod;
