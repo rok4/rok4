@@ -272,8 +272,58 @@ sub exportTree {
     return FALSE;
   }
   
-  my $refpyr = $self->{pyramid};
+  my $refpyr  = $self->{pyramid};
+  my $refdata = $self->{datasource};
   
+  my $srsini   = $refdata->getSRS();
+  my $resini   = $refdata->getResolution();
+  my @bboxini  = $refdata->computeBbox(); # (Upper Left, Lower Right) !
+  
+  my $srsfinal  = $refpyr->getTileMatrixSet()->getSRS();
+  my $resfinal  = $refpyr->getTileMatrixSet()->getTileMatrix($idLevel)->getResolution();
+  my @bboxfinal;
+  
+  my $idxmin = 0;
+  my $idxmax = 0;
+  my $idymin = 0;
+  my $idymax = 0;
+  
+  foreach my $idx (keys %$lstIdx) {
+    
+    my ($idxXmin, $idxYmax) = split(/_/, $idx);
+    my ($idxXmax, $idxYmin) = ($idxXmin+1, $idxYmax-1);
+    
+    if (!$idxmin && !$idxmax && !$idymin && !$idymax) {
+      $idxmin = $idxXmin;
+      $idxmax = $idxXmax;
+      $idymin = $idxYmin;
+      $idymax = $idxYmax;
+    }
+    
+    $idxmin = $idxXmin if ($idxmin > $idxXmin);
+    $idxmax = $idxXmax if ($idxmax < $idxXmax);
+    $idymin = $idxYmin if ($idymin > $idxYmin);
+    $idymax = $idxYmax if ($idymax < $idxYmax);
+  }
+  
+  # (Upper Left, Lower Right) !
+  push @bboxfinal, ($refpyr->_IDXtoX($idLevel,$idxmin),
+                    $refpyr->_IDXtoY($idLevel,$idymax),
+                    $refpyr->_IDXtoX($idLevel,$idxmax),
+                    $refpyr->_IDXtoY($idLevel,$idymin));
+  
+  printf FILE "----------------------------------------------------\n";
+  printf FILE "=> Data Source :\n";
+  printf FILE "   - resolution [%s]\n", $resini;
+  printf FILE "   - srs        [%s]\n", $srsini;
+  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[1], $bboxini[2], $bboxini[3];
+  printf FILE "----------------------------------------------------\n";
+  printf FILE "=> Index (level n° %s):\n", $idLevel;
+  printf FILE "   - resolution [%s]\n", $resfinal;
+  printf FILE "   - srs        [%s]\n", $srsfinal;
+  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxfinal[0], $bboxfinal[1], $bboxfinal[2], $bboxfinal[3];
+  printf FILE "----------------------------------------------------\n";
+ 
   while( my ($k, $v) = each(%$lstIdx)) {
     
     my ($idxXmin, $idxYmax) = split(/_/, $k);
@@ -281,12 +331,11 @@ sub exportTree {
     my $cachename = $refpyr->getCacheNameOfImage($idLevel, $idxXmin, $idxYmax, "data");
     
     # image xmin ymin xmax ymax
-    printf FILE "- idx %s (%s) => [%s,%s,%s,%s] (%s)\n", $k, $cachename,
+    printf FILE "\n- idx %s (%s) => [%s,%s,%s,%s]\n", $k, $cachename,
       $refpyr->_IDXtoX($idLevel,$idxXmin),
-      $refpyr->_IDXtoY($idLevel,$idxYmin),
-      $refpyr->_IDXtoX($idLevel,$idxXmax),
       $refpyr->_IDXtoY($idLevel,$idxYmax),
-      $refpyr->getTileMatrixSet()->getSRS();
+      $refpyr->_IDXtoX($idLevel,$idxXmax),
+      $refpyr->_IDXtoY($idLevel,$idxYmin);
     
     next if (ref $v ne 'ARRAY');
     
@@ -294,13 +343,7 @@ sub exportTree {
       
       next if (ref $objImage ne 'BE4::ImageSource');
       
-      printf FILE "\t%s [%s,%s,%s,%s] (%s)\n",
-              $objImage->{filename},
-              $objImage->{xmin},
-              $objImage->{ymin},
-              $objImage->{xmax},
-              $objImage->{ymax},
-              $self->{datasource}->getSRS();
+      printf FILE "\t%s\n", $objImage->{filename};
     }
   }
   
