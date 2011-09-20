@@ -11,12 +11,20 @@
 #include <iostream>
 #include <algorithm>
 #include <string.h>
+#include <stdint.h>
 
 void usage() {
 	std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
-	std::cerr << "Images spatial distribution :" << std::endl;
-	std::cerr << "   image1 - image2" << std::endl;
-	std::cerr << "   image3 - image4" << std::endl;
+  std::cerr << "-n : this floating point value is used only for DTM."<< std::endl;
+  std::cerr << "     For images (u_int8), the value this always 255 today (to be fix)"<< std::endl;
+  std::cerr << "-b : the background image is mandatory for images" << std::endl;
+  std::cerr << "-g : default gamma is 1.0 (have no effect)" << std::endl;
+  std::cerr << "-c : compression should not be used in be4 context" << std::endl;
+  std::cerr << "-r : should not be used in be4 context" << std::endl;
+  std::cerr << std::endl << "Images spatial distribution :" << std::endl;
+  std::cerr << "   image1 | image2" << std::endl;
+  std::cerr << "   -------+-------" << std::endl;
+  std::cerr << "   image3 | image4" << std::endl;
 }
 
 void error(std::string message) {
@@ -100,8 +108,10 @@ void parseCommandLine(int argc, char* argv[],
   	}
 
 	if (outputImage==0) error ("missing output file");
-	if  ( (inputImages[0]==0||inputImages[1]==0||inputImages[2]==0||inputImages[3]==0) && backgroundImage==0)
+  /* FIXME: NV: je commente ce test tant qu'une gestion correcte du paramètre -n n'est pas implémentée
+  if  ( (inputImages[0]==0||inputImages[1]==0||inputImages[2]==0||inputImages[3]==0) && (backgroundImage==0 && nodata==0.))
 		error("missing input data");
+  */
 }
 
 
@@ -211,6 +221,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
   	float  line2[2*nbsamples];
   	float  line_out[nbsamples];
 	int left,right;
+
+	memset (line_background, nodata, nbsamples); 
+
   	for(int y = 0; y < 2; y++){
 		if (INPUT[y][0]) left=0; else left=nbsamples/2;
                 if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
@@ -252,6 +265,11 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
 	uint8  line2[2*nbsamples];
 	uint8  line_out[nbsamples];
 	int left,right;
+	
+	// FIXME: il faudrait initialiser la ligne de fond avec la couleur nodata 
+	//        du parametre, mais il est en float....
+	memset (line_background, 255, nbsamples); 
+	
   	for(int y = 0; y < 2; y++){
 		if (INPUT[y][0]) left=0; else left=nbsamples/2;
 		if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;

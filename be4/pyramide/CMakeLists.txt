@@ -1,9 +1,9 @@
 #Défini le nom du projet 
 project(pyramide)
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+#définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
+SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -39,26 +39,12 @@ include(ROK4Dependencies)
 
 set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff)
 
-FILE(GLOB pngin-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*_zip.tif" "${CMAKE_CURRENT_SOURCE_DIR}/*_png.tif" )
-foreach(_png ${pngin-${PROJECT_NAME}})
-  string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" _pngout-bin ${_png})
-  string(REPLACE "_zip.tif" ".tif" _pngout1 ${_pngout-bin})
-  string(REPLACE "_png.tif" ".tif" _pngout ${_pngout1})
-  list(APPEND pngout-${PROJECT_NAME} ${_pngout})
-  add_custom_command(OUTPUT ${_pngout}
-    COMMAND ${TIFF_INCLUDE_DIR}/../bin/tiffcp -c none ${_png} ${_pngout}
-   )
-endforeach()
+set(ENV{CFLAGS} "-O3")
+add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
+add_custom_command(OUTPUT install/lib COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
-add_custom_target(tiffuncompress ALL DEPENDS ${pngout-${PROJECT_NAME}} ${DEP_LIBRARY}) 
-
-add_custom_command(OUTPUT log
-    COMMAND mkdir log COMMAND touch log/.empty
-)
-add_custom_target(pyramidelogdir ALL DEPENDS log ) 
+add_custom_target(be4-build ALL DEPENDS install/lib)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -81,7 +67,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -105,6 +91,13 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
     )
   endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+  find_package(NaturalDocs)
+    if(NATURALDOCS_FOUND)
+	add_custom_target(doc ALL make doc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src
+    COMMENT "Generating API documentation with NaturalDocs" VERBATIM
+    )
+    endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
 
 
@@ -116,26 +109,11 @@ endif(BUILD_DOC)
 
 
 #Installe les différents fichers nécessaires
-FILE(GLOB perlscript-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.pl" )
-INSTALL(PROGRAMS 
-  ${perlscript-${PROJECT_NAME}} 
-  gdalinfo 
-  DESTINATION bin)
-FILE(GLOB perlmodule-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.pm" )
-INSTALL(FILES 
-  ${perlmodule-${PROJECT_NAME}} 
-  DESTINATION bin)
-
-FILE(GLOB imgshare-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.tif" )
-INSTALL(FILES 
-  ${imgshare-${PROJECT_NAME}} parametres_cache.xsd ${pngout-${PROJECT_NAME}}
-  DESTINATION share/${PROJECT_NAME})
-#Fichiers générés par tiffcp 
-#INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/share/"
-#  DESTINATION share/${PROJECT_NAME})
+INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
+  DESTINATION .)
 
 #Installe la documentation
-INSTALL(FILES dependances_scripts_perl.txt how_to_fr.txt 
+INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME 
   DESTINATION doc/${PROJECT_NAME})
 if(BUILD_DOC)
   if(DOXYGEN_FOUND)
@@ -144,11 +122,13 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   endif(DOXYGEN_FOUND)
+  if(NATURALDOCS_FOUND)
+    if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/src/docs/Natural/index.html)    
+     INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/"
+             DESTINATION doc/${PROJECT_NAME})
+    endif(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/src/docs/Natural/index.html)    
+  endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
-install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/log/"
-  DESTINATION log)
-
-
 
 ########################################
 # Paramétrage de la gestion de package CPack
