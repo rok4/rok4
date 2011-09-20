@@ -115,7 +115,7 @@ sub _init {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-         $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
          $self->{pyramid}->getCompression()->getType() eq 'png')
       )) {
   
@@ -277,20 +277,21 @@ sub mergeNtiff {
 sub merge4tiff {
   my $self = shift;
   my $resultImg = shift;
-  my @childImg  = @_;
+  my $backGround = shift;
+  my $childImgParam  = shift;
   
   TRACE;
   
   # Change :
   #   getGamma() retourne 1 par defaut, ou une valeur decimale 0->1
-  
+
   my $pyr = $self->{pyramid};
   
-  my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $pyr->getGamma();  
+  my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $pyr->getGamma();
   
-  foreach my $filePath (@childImg){
-    $cmd .= sprintf "%s ", $filePath;
-  }
+  $cmd .= "$backGround ";
+  
+  $cmd .= "$childImgParam ";
   
   $cmd .= sprintf "%s\n%s",$resultImg, RESULT_TEST;
   
@@ -359,7 +360,7 @@ sub computeBottomImage {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-         $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
          $self->{pyramid}->getCompression()->getType() eq 'png')
       )) {
     $res .= $self->wms2work($node,$self->workNameOfNode($node));
@@ -448,7 +449,7 @@ sub computeBottomImage {
 # qui n'est pas envisageable.
 #
 #  Conclusion, on ne fait de wget pour l'image de fond que quand on en a réellement besoin,
-# c'est dire quand on a pas mis à jour les 4 dalles correspondantes au niveau inférieur. Et
+# c'est à dire quand on a pas mis à jour les 4 dalles correspondantes au niveau inférieur. Et
 # même quand on fait le wget, on fait quand même le merge4tiff pour faire remonter les 
 # éventuels défauts.
 #---------------------------------------------------------------------------------------------------
@@ -463,107 +464,47 @@ sub computeAboveImage {
   my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
   my @childList = $self->{tree}->getChilds($node);
 
-  # On utilise mergeNtiff quand on a pas 4 sous dalles ET que la dalle existe dans la pyramide 
-  # de base.
-  if (scalar @childList != 4 && -f $newImgDesc->getFilePath() ){
-    # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-    my $bgImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), "bgImg.tif");
-    if ($self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-        $self->{pyramid}->getCompression()->getType() eq 'png') {
-      # On doit chercher l'image de fond sur le WMS
-      $res .= $self->wms2work($node, "bgImg.tif");
-    }
-    else {
-      # copie avec tiffcp pour passer du format de cache au format de travail.
-      $res.=$self->cache2work($node, "bgImg.tif");
-    }
-    
-    # On cree maintenant le fichier de config pour l'outil mergeNtiff
-    # TODO: revoir le nom de ce fichier de conf
-    my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir($scriptId), "mergeNtiff");
-    
-    if (! -d $confDirPath) {
-      DEBUG (sprintf "create dir to mergeNtiff");
-      eval { mkpath([$confDirPath],0,0751); };
-      if ($@) {
-        ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
-        return undef;
-      }
-    }
-    
-    my $confFilePath = File::Spec->catfile($confDirPath,
-                                           join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
-    
-    DEBUG (sprintf "create mergeNtiff");
-    if (! open CFGF, ">", $confFilePath ){
-      ERROR(sprintf "Impossible de creer le fichier $confFilePath.");
-      return undef;
-    }
-    
-    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    my $workImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), $self->workNameOfNode($node));
-    my $workImgDesc = $newImgDesc->copy($workImgPath);
-    
-    printf CFGF $workImgDesc->to_string();
-    # Maintenant les dalles en entrée:
-    # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
-    my $bgImgDesc = $newImgDesc->copy($bgImgPath);
-    
-    printf CFGF $bgImgDesc->to_string();
-    
-    # ajout des images sources
-    foreach my $n (@childList){
-      my $nodeCacheDesc  = $self->{tree}->getImgDescOfNode($n);
-      my $workSubImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), $self->workNameOfNode($n));
-      my $nodeWorkDesc   = $nodeCacheDesc->copy($workSubImgPath);
+  # A-t-on besoin de quelque chose en fond d'image?
+  my $bg="";
+  if (scalar @childList != 4){
+    if (-f $newImgDesc->getFilePath() ){
+      # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
+      my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
+      $bg="-b $bgImgPath";
       
-      printf CFGF $nodeWorkDesc->to_string();
-    }
-    close CFGF;
-    $res .= $self->mergeNtiff($confFilePath);
-
-    # on a copié une image pour le fond, on en a plus besoin, on la supprime maintenant
-    $res.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
-    
-  }else{
-    # Sinon on peut utiliser merge4tiff (qui est plus efficace mais ne permet pas d'avoir une image 
-    # de fond avec l'implémentation actuelle)
-    DEBUG (sprintf "create merge4tiff");
-    my @childImgPath; 
-    foreach my $childNode ($self->{tree}->getPossibleChilds($node)){
-    
-      # NV: le cas commenté ci dessous ne peut pas arriver (il est systématiquement traité avec mergeNtiff).
-      #     Je le laisse commenté ainsi parce que ce n'est pas trivial et qu'on peut penser à une erreur. 
-      #     FIXME: En plus l'utilisation de mergeNtiff est probablement beaucoup moins performante 
-      #            et on préfèrera peut-être compliquer un peu les tests pour passer par ici.
-      #
-      #if ( ! $self->{tree}->isInTree(%childNode) and -f $self->{pyramid}->getCachePathOfNode(%childNode)){
-      #  # Il nous manque cette image dans le répertoire de travail parce qu'elle n'a pas été mise à 
-      #  # à jour, mais elle existe dans la pyramide. Il faut donc la récupérer au format de travail.        
-      #  if ($self->{pyramid}->getCompressType()=='JPEG' || $self->{pyramid}->getCompressType()=='PNG'){
-      #    $res .= $self->wms2work(%childNode, workNameOfNode(%childNode));
-      #  }else{
-      #    $res .= $self->cache2work(%childNode, workNameOfNode(%childNode));
-      #  }
-      #}
-      
-      if ( ! $self->{tree}->isInTree($childNode)){
-        # Il nous manque cette image dans le répertoire de travail parce qu'elle n'a pas été mise à 
-        # à jour, ET elle n'existe pas dans la pyramide. On va donc utiliser une image nodata.
-        push (@childImgPath, '${NODATA_DIR}/' . $self->{nodata}->getFile());
-      }else{
-        # Dans tous les autres cas l'image est dans l'espace de travail avec son nom de travail.
-        push (@childImgPath, '$TMP_DIR/' . $self->workNameOfNode($childNode));
+      if ($self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+          $self->{pyramid}->getCompression()->getType() eq 'png') {
+        # On doit chercher l'image de fond sur le WMS
+        $res .= $self->wms2work($node, "bgImg.tif");
+      } else {
+        # copie avec tiffcp pour passer du format de cache au format de travail.
+        $res.=$self->cache2work($node, "bgImg.tif");
       }
+    }else{
+      # On a pas d'image alors on donne une couleur de no-data
+      $bg='-n ' . $self->{nodata}->getColor();
     }
-    $res .= $self->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), @childImgPath);
   }
+
+  # Maintenant on constitue la liste des images à passer à merge4tiff.
+  my $childImgParam=''; 
+  my $imgCount=0;
+  foreach my $childNode ($self->{tree}->getPossibleChilds($node)){
+    $imgCount++;
+    if ($self->{tree}->isInTree($childNode)){
+      $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)
+    }
+  }
+  $res .= $self->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), $bg, $childImgParam);
   
   # Suppression des images de travail dont on a plus besoin.
   foreach my $node (@childList){
     my $workName = $self->workNameOfNode($node);
     $res .= "rm -f \${TMP_DIR}/$workName \n";
   }
+
+  # Si on a copié une image pour le fond, on en a plus besoin, on la supprime maintenant
+  $res.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
 
   # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
   $res .= $self->work2cache($node);
@@ -806,9 +747,9 @@ sub computeWholeTree {
         INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
         $scriptCode .= sprintf "echo \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"\n", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
         $scriptCode .= $self->computeBranch($node, $scriptId);
-        # on récupère l'image de travail finale pour le job de fin.
-        $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
-      }
+    # on récupère l'image de travail finale pour le job de fin.
+    $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
+  }
     }
     if (! $self->saveScript($scriptCode,$scriptId)) {
       ERROR(sprintf "Can not save the script '%s'!", $scriptId);
