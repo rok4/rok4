@@ -65,7 +65,8 @@ class Logger {
 extern std::ostream nullstream;
 
 //#define LOGGER(x) (Logger::getAccumulator(x)?Logger::getLogger(x):nullstream)
-#define LOGGER(x) (Logger::getOutput()==ROLLING_FILE?(Logger::getAccumulator(x)?Logger::getLogger(x):nullstream):std::cerr)
+//#define LOGGER(x) (Logger::getOutput()==ROLLING_FILE?(Logger::getAccumulator(x)?Logger::getLogger(x):nullstream):std::cerr)
+#define LOGGER(x) (Logger::getAccumulator(x)?(Logger::getOutput()==ROLLING_FILE?Logger::getLogger(x):std::cerr):nullstream)
 
 #define LOGGER_DEBUG(m) LOGGER(DEBUG)<<"pid="<<getpid()<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
 #define LOGGER_INFO(m) LOGGER(INFO)<<"pid="<<getpid()<<" "<<m<<std::endl
