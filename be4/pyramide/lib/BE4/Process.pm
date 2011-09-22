@@ -593,15 +593,6 @@ sub getScriptTmpDir {
   return File::Spec->catdir($self->{path_temp}, $pyrName, $scriptId);
   # ie ./WORK/PYRNAME_levelID_x_y/
 }
-# method: getScriptDir
-#  Retourne le répertoire des scripts 
-#-------------------------------------------------------------------------------
-sub getScriptDir {
-  my $self = shift;
-  my $pyrName = $self->{pyramid}->getPyrName();
-  return File::Spec->catdir($self->{path_shell}, $pyrName);
-  # ie ./WORK/PYRNAME/
-}
 # method: prepareScript
 #  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
 #  dalles noData.
@@ -652,7 +643,7 @@ sub saveScript {
   }
   
   my $scriptName     = join('.',$scriptId,'sh');
-  my $scriptFilePath = File::Spec->catfile($self->getScriptDir(), $scriptName);
+  my $scriptFilePath = File::Spec->catfile($self->{path_shell}, $scriptName);
   
   if (! -d dirname($scriptFilePath)) {
     my $dir = dirname($scriptFilePath);
