@@ -36,7 +36,6 @@
 #include <string>
 #include <fstream>
 #include "tiffio.h"
-#include "Logger.h"
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
@@ -49,8 +48,8 @@
 */
 
 void usage() {
-	LOGGER_INFO("Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-	LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [image/mtd] -s [1/3] -b [8/32] -p[gray/rgb/mask] ");
+	std::cerr  << "Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] " << std::endl;
+	std::cerr  << " Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [image/mtd] -s [1/3] -b [8/32] -p[gray/rgb/mask] " << std::endl;
 }
 
 /**
@@ -61,7 +60,7 @@ void usage() {
 int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
 	if (argc != 17) {
-		LOGGER_ERROR(" Nombre de parametres incorrect");
+		std::cerr  << " Nombre de parametres incorrect" << std::endl;
 		usage();
 		return -1;
 	}
@@ -70,59 +69,59 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
 		if(argv[i][0] == '-') {
 			switch(argv[i][1]) {
 			case 'f': // fichier de liste des images source
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+				if(i++ >= argc) {std::cerr  << "Erreur sur l'option -f"<< std::endl; return -1;}
 				strcpy(imageListFilename,argv[i]);
 				break;
 			case 'i': // interpolation
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -i"<< std::endl; return -1;}
 				if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Kernel::LANCZOS_3; // =4
 				else if(strncmp(argv[i], "ppv",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
 				else if(strncmp(argv[i], "bicubique",9) == 0) interpolation = Kernel::CUBIC; // =2
 				else if(strncmp(argv[i], "linear",6) == 0) interpolation = Kernel::LINEAR; // =2
-				else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -i " << std::endl; return -1;}
 				break;
 			case 'n': // nodata
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -n" << std::endl; return -1;}
 				strcpy(nodata,argv[i]);
-				if (strlen(nodata)!=6) {LOGGER_ERROR("Couleur nodata invalide "); return -1;}
+				if (strlen(nodata)!=6) {std::cerr << "ERROR Couleur nodata invalide " << std::endl; return -1;}
 				break;
 			case 't': // type
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -t" << std::endl; return -1;}
 				if(strncmp(argv[i], "image",5) == 0) type = 1 ;
 				else if(strncmp(argv[i], "mtd",3) == 0) type = 0 ;
-				else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -t" << std::endl; return -1;}
 				break;
 			case 's': // sampleperpixel
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -s" << std::endl; return -1;}
 				if(strncmp(argv[i], "1",1) == 0) sampleperpixel = 1 ;
 				else if(strncmp(argv[i], "3",1) == 0) sampleperpixel = 3 ;
-				else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -s" << std::endl; return -1;}
 				break;
 			case 'b': // bitspersample
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -b" << std::endl; return -1;}
 				if(strncmp(argv[i], "8",1) == 0) bitspersample = 8 ;
 				else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
-				else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -b" << std::endl; return -1;}
 				break;
 			case 'a': // sampleformat
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -a" << std::endl; return -1;}
 				if(strncmp(argv[i],"uint",4) == 0) sampleformat = SAMPLEFORMAT_UINT ;
 				else if(strncmp(argv[i],"float",5) == 0) sampleformat = SAMPLEFORMAT_IEEEFP ;
-				else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -a" << std::endl; return -1;}
 				break;
 			case 'p': // photometric
-				if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+				if(i++ >= argc) {std::cerr << "ERROR Erreur sur l'option -p" << std::endl; return -1;}
 				if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
 				else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
 				else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
-				else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+				else {std::cerr << "ERROR Erreur sur l'option -p" << std::endl; return -1;}
 				break;
 			default: usage(); return -1;
 			}
 		}
 	}
 
-	LOGGER_DEBUG("mergeNtiff -f " << imageListFilename);
+	//std::cout << "mergeNtiff -f " << imageListFilename << std::endl;
 
 	return 0;
 }
@@ -145,7 +144,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         // Ouverture du fichier
     	TIFF* output=TIFFOpen(pName,"w");
     	if (output==NULL) {
-        	LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
+        	std::cerr << "ERROR Impossible d'ouvrir le fichier " << pName << " en ecriture" << std::endl;
         	return -1;
     	}
 	
@@ -226,20 +225,20 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
 	file.open(imageListFilename);
 	if (!file) {
-		LOGGER_ERROR("Impossible d'ouvrir le fichier " << imageListFilename);
+		std::cerr << "ERROR Impossible d'ouvrir le fichier " << imageListFilename << std::endl;
 		return -1;
 	}
 
 	// Lecture et creation de l image de sortie
 	if (readFileLine(file,filename,&bbox,&width,&height)<0){
-		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0");
+		std::cerr << "ERROR Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0" << std::endl;
 		return -1;
 	}
 
 	*ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
 	if (*ppImageOut==NULL){
-		LOGGER_ERROR("Impossible de creer " << filename);
+		std::cerr << "ERROR Impossible de creer " << filename << std::endl;
 		return -1;
 	}
 
@@ -248,14 +247,14 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 	while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7){
 		LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
 		if (pImage==NULL){
-			LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
+			std::cerr << "ERROR Impossible de creer une image a partir de " << filename << std::endl;
 			return -1;
 		}
 		pImageIn->push_back(pImage);
 		i++;
 	}
 	if (nb>=0 && nb!=7){
-		LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << i);
+		std::cerr << "ERROR Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << i << std::endl;
 		return -1;
 	}
 
@@ -276,20 +275,20 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 {
 	for (unsigned int i=0;i<ImageIn.size();i++) {
 		if (ImageIn.at(i)->getresx()*ImageIn.at(i)->getresy()==0.) {	
-			LOGGER_ERROR("Resolution de l image source " << i+1 << " sur " << ImageIn.size() << " egale a 0");
+			std::cerr << "ERROR Resolution de l image source " << i+1 << " sur " << ImageIn.size() << " egale a 0" << std::endl;
                 	return -1;
 		}
 		if (ImageIn.at(i)->channels!=pImageOut->channels){
-			LOGGER_ERROR("Nombre de canaux de l image source " << i+1 << " sur " << ImageIn.size() << " differente de l image de sortie");
+			std::cerr << "ERROR Nombre de canaux de l image source " << i+1 << " sur " << ImageIn.size() << " differente de l image de sortie" << std::endl;
                         return -1;
 		}
 	}
 	if (pImageOut->getresx()*pImageOut->getresy()==0.){
-		LOGGER_ERROR("Resolution de l image de sortie egale a 0 " << pImageOut->getfilename());
+		std::cerr << "ERROR Resolution de l image de sortie egale a 0 " << pImageOut->getfilename() << std::endl;
 		return -1;
 	}
 	if (pImageOut->getbitspersample()!=8 && pImageOut->getbitspersample()!=32){
-		LOGGER_ERROR("Nombre de bits par sample de l image de sortie " << pImageOut->getfilename() << " non gere");
+		std::cerr << "ERROR Nombre de bits par sample de l image de sortie " << pImageOut->getfilename() << " non gere" << std::endl;
                 return -1;
 	}
 
@@ -444,7 +443,7 @@ int h2i(char s)
 ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,char* nodata, uint16_t sampleformat, uint mirrors)
 {
 	if (TabImageIn.empty()) {
-		LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
+		std::cerr << "ERROR Assemblage d'un tableau d images de taille nulle" << std::endl;
 		return NULL;
 	}
 
@@ -492,7 +491,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 		|| pECI->getimages()->at(i)->height!=h
 		|| modf(pECI->getimages()->at(i)->getxmin()-pECI->getxmin()/(w*resx),&intpart)!=0
 		|| modf(pECI->getimages()->at(i)->getymax()-pECI->getymax()/(h*resy),&intpart)!=0){
-			LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
+			std::cout << "WARN: Image composite irreguliere : impossible d'ajouter des miroirs" << std::endl;
 			return 0;
 		}
 	}
@@ -565,7 +564,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 				}
 			}
 		}
-	LOGGER_DEBUG(mirrors);
+	//std::cout << mirrors << std::endl;
 	return mirrors;
 }
 
@@ -598,9 +597,9 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 	// Exception : l'image d'entree n'intersecte pas l'image finale
         if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
 {
-                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
-		return NULL;	
-        }
+                std::cout << "WARN Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale" << std::endl;
+	return NULL;
+}
 	
 	// Coordonnees de l'image reechantillonnee en pixels
 	xmin_dst/=resx_dst;
@@ -656,7 +655,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 		ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
 	        if (pECI==NULL) {
-        	        LOGGER_ERROR("Impossible d'assembler les images");
+        	        std::cerr << "ERROR Impossible d'assembler les images" << std::endl;
                 	return -1;
 	        }
 		if (areOverlayed(pImageOut,pECI))
@@ -684,7 +683,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
-                		LOGGER_ERROR("Impossible de reechantillonner les images");
+                		std::cerr << "ERROR Impossible de reechantillonner les images" << std::endl;
 	                	return -1;
 			}
 			pOverlayedImage.push_back(pRImage);
@@ -700,7 +699,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 	uint8_t r=h2i(nodata[0])*16 + h2i(nodata[1]);
 	if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
 			pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,r,sampleformat,0))==NULL) {
-		LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
+		std::cerr << "ERROR Erreur lors de la fabrication de l image finale" << std::endl;
 		return -1;
 	}
 
@@ -723,72 +722,54 @@ int main(int argc, char **argv) {
 	std::vector<std::vector<Image*> > TabImageIn;
 	ExtendedCompoundImage* pECImage;
 
-	/* Initialisation des Loggers */
-        Logger::setOutput(ROLLING_FILE);
-
-        Accumulator* acc = new RollingFileAccumulator("/var/tmp/be4",3600,1024);
-        Logger::setAccumulator(DEBUG, acc);
-        Logger::setAccumulator(INFO , acc);
-        Logger::setAccumulator(WARN , acc);
-        Logger::setAccumulator(ERROR, acc);
-        Logger::setAccumulator(FATAL, acc);
-
-	std::ostream &logd = LOGGER(DEBUG);
-      	logd.precision(16);
-	logd.setf(std::ios::fixed,std::ios::floatfield);
-
-	std::ostream &logw = LOGGER(WARN);
-        logw.precision(16);
-        logw.setf(std::ios::fixed,std::ios::floatfield);
-
 	// Lecture des parametres de la ligne de commande
 	if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
-		LOGGER_ERROR("Echec lecture ligne de commande");
+		std::cerr << "ERROR Echec lecture ligne de commande" << std::endl;
 		sleep(1);
 		return -1;
 	}
 
 	// TODO : gérer le type mtd !!
 	if (type==0) {
-		LOGGER_ERROR("Le type mtd n'est pas pris en compte");
+		std::cerr << "ERROR Le type mtd n'est pas pris en compte" << std::endl;
 		sleep(1);
 		return -1;
 	}
 
-	LOGGER_DEBUG("Load");
+	//std::cout << "DEBUG Load" << std::endl;
 	// Chargement des images
 	if (loadImages(imageListFilename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
-		LOGGER_ERROR("Echec chargement des images"); 
+		std::cerr  << "ERROR Echec chargement des images" << std::endl; 
 		sleep(1);
 		return -1;
 	}
 
 
-	LOGGER_DEBUG("Check");
+	//std::cout << "DEBUG Check" << std::endl;
 	// Controle des images
 	if (checkImages(pImageOut,ImageIn)<0){
-		LOGGER_ERROR("Echec controle des images");
+		std::cerr  << "ERROR Echec controle des images" << std::endl;
 		sleep(1);
 		return -1;
 	 }
-	LOGGER_DEBUG("Sort");
+	//std::cout << "DEBUG Sort" << std::endl;
 	// Tri des images
 	if (sortImages(ImageIn, &TabImageIn)<0){
-		LOGGER_ERROR("Echec tri des images");
+		std::cerr  << "ERROR Echec tri des images" << std::endl;
 		sleep(1);
 		return -1;
 	}
-	LOGGER_DEBUG("Merge");
+	//std::cout << "DEBUG Merge" << std::endl;
 	// Fusion des paquets d images
 	if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
-		LOGGER_ERROR("Echec fusion des paquets d images");
+		std::cerr  << "ERROR Echec fusion des paquets d images" << std::endl;
 		sleep(1);
 		return -1;
 	}
-	LOGGER_DEBUG("Save");
+	//std::cout << "DEBUG Save" << std::endl;
 	// Enregistrement de l image fusionnee
 	if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
-		LOGGER_ERROR("Echec enregistrement de l image finale");
+		std::cerr  << "ERROR Echec enregistrement de l image finale" << std::endl;
 		sleep(1);
 		return -1;
 	}
