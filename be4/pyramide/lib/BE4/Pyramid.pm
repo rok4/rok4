@@ -4,11 +4,8 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-# use Math::Base36 ':all';
-use XML::Simple;
 use XML::LibXML;
 
-use File::Find::Node;
 use File::Spec::Link;
 use File::Basename;
 use File::Spec;
@@ -34,7 +31,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.3';
+our $VERSION = '0.0.4';
 
 ################################################################################
 # constantes
@@ -635,48 +632,54 @@ sub readConfPyramid {
   }
   
   # read xml pyramid
-  my $xmltms  = new XML::Simple(KeepRoot => 0,
-                                SuppressEmpty => 1,
-                                ContentKey => '-content');
-  my $xmltree = eval { $xmltms->XMLin($filepyramid); };
+  my $parser  = XML::LibXML->new();
+  my $xmltree =  eval { $parser->parse_file($filepyramid); };
   
-  if ($@) {
+  if (! defined ($xmltree) || $@) {
     ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
     return FALSE;
   }
   
+  my $root   = $xmltree->getDocumentElement;
+  
   # read tag value of tileMatrixSet, format and channel
-  if (! exists ($xmltree->{tileMatrixSet}) || ! defined ($xmltree->{tileMatrixSet})) {
+  
+  my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
+  
+  if (! defined ($tagtmsname)) {
     ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
     return FALSE;
   }
   
-  if (! exists ($xmltree->{format}) || ! defined ($xmltree->{format})) {
+  my $tagformat = $root->findnodes('format')->to_literal;
+
+  if (! defined ($tagformat)) {
     ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
     return FALSE;
   }
   
-  if (! exists ($xmltree->{channels}) || ! defined ($xmltree->{channels})) {
+  my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
+
+  if (! defined ($tagsamplesperpixel)) {
     ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
     return FALSE;
   }
   
   # create a object tileMatrixSet
+  
   my $tmsname = $self->getTmsName();
   if (! defined $tmsname) {
     WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
-    $tmsname = $xmltree->{tileMatrixSet};
+    $tmsname = $tagtmsname;
   }
 
-  if ($tmsname ne $xmltree->{tileMatrixSet}) {
+  if ($tmsname ne $tagtmsname) {
     WARN ("Selecting the name of TMS in the file of the pyramid !");
-    $tmsname = $xmltree->{tileMatrixSet};
+    $tmsname = $tagtmsname;
   }
   
-  # FIXME : no extension in xml pyramid file ?
   my $tmsfile = join(".", $tmsname, "tms"); 
-  
-  my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
+  my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
   
   if (! defined $objTMS) {
     ERROR ("Can not create object TileMatrixSet !");
@@ -693,12 +696,10 @@ sub readConfPyramid {
   $self->{pyramid}->{tms_path} = $self->getTileMatrixSet()->getPath();
   
   # create tile and compression objects
-  my $format = $xmltree->{format};
+
   # ie TIFF, compression, sampleformat, bitspersample !
   # return compression = raw, jpg or png !
-  my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Compression->decodeCompression($format);
-  
-  my $samplesperpixel = $xmltree->{channels};
+  my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Compression->decodeCompression($tagformat);
   
   # create tile
   my $tile = {
@@ -706,7 +707,7 @@ sub readConfPyramid {
         sampleformat     => $sampleformat,
         # compressionscheme=> 'none', # FIXME always none !
         photometric      => $self->getPhotometric(),
-        samplesperpixel  => $samplesperpixel,
+        samplesperpixel  => $tagsamplesperpixel,
         interpolation    => $self->getInterpolation(),
   };
    
@@ -742,60 +743,70 @@ sub readConfPyramid {
   }
   
   # check compression mode 
-  if ($self->getCompression()->getCode() ne $format) {
-    ERROR (sprintf "The mode compression is differnt between configuration and pyramid file !", $format, $self->getCompression()->getCode());
+  if ($self->getCompression()->getCode() ne $tagformat) {
+    ERROR (sprintf "The mode compression is differnt between configuration and pyramid file !",
+           $tagformat,
+           $self->getCompression()->getCode());
     return FALSE;
   }
     
   # load pyramid level
-  foreach my $v (@{$xmltree->{level}}) {
+  
+  my @levels = $root->getElementsByTagName('level');
+  
+  foreach my $v (@levels) {
     
+        my $tagtm       = $v->findvalue('tileMatrix');
+        my @tagsize     =  [
+                             $v->findvalue('tilesPerWidth'),
+                             $v->findvalue('tilesPerHeight')
+                           ];
+        my $tagdirdepth = $v->findvalue('pathDepth');
+        my @taglimit    = [
+                            $v->findvalue('TMSLimits/minTileRow'),
+                            $v->findvalue('TMSLimits/maxTileRow'),
+                            $v->findvalue('TMSLimits/minTileCol'),
+                            $v->findvalue('TMSLimits/maxTileCol')
+                          ];
     #
     my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
-                                  $self->getPyrName(),
-                                  $self->getDirImage(),
-                                  $v->{tileMatrix}           # FIXME : level = id !
+                                       $self->getPyrName(),
+                                       $self->getDirImage(),
+                                       $tagtm
                                   );
     #
-    my $objLevel = BE4::Level->new({
-            id                => $v->{tileMatrix},
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with pyr file ?
-            compress_image    => $format, # ie TIFF_INT8 !
-            dir_metadata      => undef,   # TODO !
-            compress_metadata => undef,   # TODO !
-            type_metadata     => undef,   # TODO !
+    my $objLevel = BE4::Level->new(
+        {
+            id                => $tagtm,
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+            compress_image    => $tagformat, # ie TIFF_INT8 !
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
             bitspersample     => $bitspersample,
-            samplesperpixel   => $samplesperpixel,
-            size              => [
-                                  $v->{tilesPerWidth},
-                                  $v->{tilesPerHeight}
-                                  ],
-            dir_depth         => $v->{pathDepth},
-            limit             => [
-                                  $v->{TMSLimits}->{minTileRow},
-                                  $v->{TMSLimits}->{maxTileRow},
-                                  $v->{TMSLimits}->{minTileCol},
-                                  $v->{TMSLimits}->{maxTileCol}
-                                  ]
-                          });
+            samplesperpixel   => $tagsamplesperpixel,
+            size              => @tagsize,
+            dir_depth         => $tagdirdepth,
+            limit             => @taglimit,
+        });
     
     if (! defined $objLevel) {
-        WARN(sprintf "Can not load the pyramid level : '%s'", $v->{tileMatrix});
+        WARN(sprintf "Can not load the pyramid level : '%s'", $tagtm);
         next;
     }
     
     push @{$self->{level}}, $objLevel;
     
     # fill parameters if not ... !
-    $self->{pyramid}->{image_width}  = $v->{tilesPerWidth};
-    $self->{pyramid}->{image_height} = $v->{tilesPerHeight};
+    $self->{pyramid}->{image_width}  = $tagsize[0];
+    $self->{pyramid}->{image_height} = $tagsize[1];
   }
   
   #
-  if (scalar @{$self->{level}} != scalar @{$xmltree->{level}}) {
+  if (scalar @{$self->{level}} != scalar @levels) {
     WARN (sprintf "Be careful, the level pyramid in not complete (%s != %s) !",
           scalar @{$self->{level}},
-          scalar @{$xmltree->{level}});
+          scalar @levels);
   }
   #
   if (! scalar @{$self->{level}}) {
@@ -803,16 +814,13 @@ sub readConfPyramid {
     return FALSE;
   }
   
-  # clean
-  $xmltree = undef;
-  $xmltms  = undef;
-  
   return TRUE;
 }
 
 #############################################################################
 # public method serialization (on disk)
 #  Manipulate the Directory Structure Cache (DSC) /* in/out */
+
 sub writeCachePyramid {
   my $self = shift;
   
@@ -908,36 +916,51 @@ sub writeCachePyramid {
       my $old_absfile = File::Spec->catfile($self->getPyrDataPath(), $oldtiles[$i]);
       
       if (! -d dirname($new_absfile)) {
-        ERROR(sprintf "The directory cache '%s' doesn't exist !", dirname($new_absfile));
+        ERROR(sprintf "The directory cache '%s' doesn't exist !",
+              dirname($new_absfile));
         return FALSE;
       }
       
       if (! -e $old_absfile) {
-        ERROR(sprintf "The tile '%s' doesn't exist in '%s' !", basename($old_absfile), dirname($old_absfile));
+        ERROR(sprintf "The tile '%s' doesn't exist in '%s' !",
+              basename($old_absfile),
+              dirname($old_absfile));
         return FALSE;  
       }
       
-      my $follow_file = undef;
+      my $follow_relfile = undef;
       
-      if (-f $old_absfile) {
-        $follow_file = File::Spec->abs2rel($old_absfile, dirname($new_absfile));
+      if (-f $old_absfile && ! -l $old_absfile) {
+        $follow_relfile = File::Spec->abs2rel($old_absfile,
+                                              dirname($new_absfile));
       }
-      elsif (-l $old_absfile) {
-        $follow_file = File::Spec->abs2rel(File::Spec::Link->resolve($old_absfile), dirname($new_absfile));
+      
+      elsif (-f $old_absfile && -l $old_absfile) {
+        my $linked   = File::Spec::Link->linked($old_absfile);
+        my $realname = File::Spec::Link->full_resolve($linked);
+        $follow_relfile = File::Spec->abs2rel($realname, dirname($new_absfile));
       }
+
       else {
-        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !", basename($old_absfile), dirname($old_absfile));
+        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",
+              basename($old_absfile),
+              dirname($old_absfile));
         return FALSE;  
       }
       
-      if (! defined $follow_file) {
-        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?", basename($old_absfile), dirname($old_absfile));
+      if (! defined $follow_relfile) {
+        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
+               basename($old_absfile),
+               dirname($old_absfile));
         return FALSE;
       }
       
-      my $result = eval { symlink ($follow_file, $new_absfile); };
+      my $result = eval { symlink ($follow_relfile, $new_absfile); };
       if (! $result) {
-        ERROR (sprintf "The tile '%s' can not be linked in '%s' (%s) ?", basename($follow_file), dirname($new_absfile), $@);
+        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
+               $follow_relfile,
+               $new_absfile,
+               $!);
         return FALSE;
       }
     }
@@ -952,64 +975,85 @@ sub readCachePyramid {
   
   TRACE;
   
-    # fill list following in memory :
-    #
-    #  cache_dir
-    #  cache_tile
-    #
-    # This list serve to create directory cache (with tile linked)
-  
-  my @refcachedir;
-  my @refcachetile;
-  my $pyr_datapath = $self->getPyrDataPath();
-   
-  # anonymous fonction
-  my $searchItem;
-  $searchItem = sub {
-      my $fl   = shift;
-      
-      if ($fl->type eq 'd') {
-        TRACE(sprintf "DIR:%s\n",$fl->path);
-        push @refcachedir, File::Spec->abs2rel($fl->path, $pyr_datapath);
-      }
-      if ($fl->type eq 'f') {
-        TRACE(sprintf "FIL:%s\n",$fl->path);
-        push @refcachetile, File::Spec->abs2rel($fl->path, $pyr_datapath);
-      }
-      if ($fl->type eq 'l') {
-        TRACE(sprintf "LIK:%s\n",$fl->path);
-        push @refcachetile, File::Spec->abs2rel($fl->path, $pyr_datapath);        
-      } 
-      TRACE(sprintf "[NAME:%s]\n",$fl->name);
-  };
-  
   # Node
-  my $searchitem = File::Find::Node->new(File::Spec->rel2abs($cachedir));
-
-  # follow link
-  $searchitem->follow(0); 
-
-  # search
-  $searchitem->process(\&$searchItem);
-  $searchitem->filter(sub{sort @_});
-  $searchitem->find;
+  my $searchitem = $self->FindCacheNode($cachedir);
+  
+  DEBUG(Dumper($searchitem));
   
   # Info, cache file of old cache !
-  if (! scalar @refcachetile) {
+  if (! scalar @{$searchitem->{cachetile}}) {
     WARN("No tiles found in directory cache ?");
   }
   # Info, cache dir of old cache !
-  if (! scalar @refcachedir){
+  if (! scalar @{$searchitem->{cachedir}}){
     ERROR("No directory found in directoty cache ?");
     return FALSE;
   }
   
-  $self->{cache_dir} = \@refcachedir;
-  $self->{cache_tile}= \@refcachetile;
+  my @tiles = sort(@{$searchitem->{cachetile}});
+  my @dirs  = sort(@{$searchitem->{cachedir}});
+  
+  $self->{cache_dir} = \@dirs;
+  $self->{cache_tile}= \@tiles;
   
   return TRUE;
 }
 
+sub FindCacheNode {
+  my $self      = shift;
+  my $directory = shift;
+
+  TRACE();
+  
+  my $search = {
+    cachedir  => [],
+    cachetile => [],
+  };
+  
+  my $pyr_datapath = $self->getPyrDataPath();
+  
+  if (! opendir (DIR, $directory)) {
+    ERROR("Can not open directoty cache ?");
+    return undef;
+  }
+
+  my $newsearch;
+  
+  foreach my $entry (readdir DIR) {
+    
+    next if ($entry =~ m/^\.{1,2}$/);
+    
+    if ( -d File::Spec->catdir($directory, $entry)) {
+      TRACE(sprintf "DIR:%s\n",$entry);
+      push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
+      
+      # recursif
+      $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
+      push @{$search->{cachetile}}, $_  foreach(@{$newsearch->{cachetile}});
+      push @{$search->{cachedir}},  $_  foreach(@{$newsearch->{cachedir}});
+    }
+    
+    elsif( -f File::Spec->catfile($directory, $entry) &&
+         ! -l File::Spec->catfile($directory, $entry)) {
+      TRACE(sprintf "FIL:%s\n",$entry);
+      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+    }
+    
+    elsif (  -f File::Spec->catfile($directory, $entry) &&
+             -l File::Spec->catfile($directory, $entry)) {
+      TRACE(sprintf "LIK:%s\n",$entry);
+      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+    }
+    
+    else {
+        TRACE(sprintf "???:%s\n",$entry);
+    }
+    
+  }
+  
+  return $search;
+  
+}
 ################################################################################
 # get/set
 #  return the params values
@@ -1126,6 +1170,7 @@ sub getGamma {
 ################################################################################
 # get/set
 #  return the objects values
+
 sub getNoData {
   my $self = shift;
   return $self->{nodata};
@@ -1162,6 +1207,7 @@ sub setTileMatrixSet {
 ################################################################################
 # get/set
 #  return the list of objects values
+
 sub getLevels {
   my $self = shift;
   return @{$self->{level}};
@@ -1297,22 +1343,9 @@ sub _encodeB36toIDX {
 }
 
 ################################################################################
-# public method (up level)
-#  Manipulate the Directory Structure Cache (DSC)
-
-#sub createCache {}
-#sub duplicateCache {}
-#sub createCacheByLevel {}
-#sub deleteCacheByLevel {}
-#sub duplicateCacheByLevel {}
-
-################################################################################
 # public method
 #  TileImage from Cache (TIC)
-#
-# FIXME ?
-#  difference entre le parametre imagesize et TilePerWidth*TileWidth ?
-#
+
 sub getImageSize {
   my $self = shift;
   # size of cache image in pixel !
@@ -1373,19 +1406,18 @@ sub getCacheNameOfImage {
   my @ycut = split (//, $yb36);
   
   if (scalar(@xcut) != scalar(@ycut)) {
-    ERROR("xb36 and yb36 are not the same size ?");
-    return undef;
+    DEBUG(sprintf "xb36 ('%s') and yb36 ('%s') are not the same size !", $xb36, $yb36);
+    
+    $yb36 = "0"x(length ($xb36) - length ($yb36)).$yb36 if (length ($xb36) > length ($yb36));
+    $xb36 = "0"x(length ($yb36) - length ($xb36)).$xb36 if (length ($yb36) > length ($xb36));
+    
+    DEBUG(sprintf " > xb36 = '%s' and yb36 = '%s' ", $xb36, $yb36);
   }
   
   my $padlength = $self->getDirDepth() + 1;
   my $size      = scalar(@xcut);
   my $pos       = $size;
   my @l;
-  
-  if ($padlength>$size) {
-    ERROR("xb36 and yb36 are more greater than the dir depth parameter ?");
-    return undef;
-  }
   
   for(my $i=0; $i<$padlength;$i++) {
     $pos--;

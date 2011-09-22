@@ -18,11 +18,10 @@ WriteMakefile(
                 # Require any version
                 "POSIX"           => 0,
                 "Pod::Usage"      => 0,
-                "Term::ANSIColor" => 0,
                 "Getopt::Long"    => 0,
                 #
                 "Log::Log4perl"   => 0,
-		#
+		        #
                 "Geo::GDAL" => 0,
                 "Geo::OSR"  => 0,
                 #
@@ -30,10 +29,7 @@ WriteMakefile(
                 "File::Spec"       => 0,
                 "File::Basename"   => 0,
                 "File::Path"       => 0,
-                "File::Find::Node" => 0,
-                "File::Glob"       => 0,
-		#
-                "XML::Simple"     => 0,
+		        #
                 "XML::LibXML"     => 0,
                 #"Config::IniFiles"=> 0,
                 #
@@ -47,7 +43,6 @@ WriteMakefile(
                 "LWP"           => 0,
                 #
                 "Math::BigFloat" => 0,
-                "Math::Base36"   => 0,
                 }
     );
 # notes :

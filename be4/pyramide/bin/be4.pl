@@ -8,9 +8,6 @@ use POSIX qw(locale_h);
 use Getopt::Long;
 use Pod::Usage;
 
-use Term::ANSIColor;
-
-use Config::Simple;
 use Data::Dumper;
 
 use File::Basename;
@@ -35,7 +32,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # version
-my $VERSION = "0.0.1";
+my $VERSION = "0.0.2";
 
 #
 # Title: be4
@@ -109,13 +106,13 @@ sub main {
   my $message = undef;
 
   $message = "BEGIN";
-  printf STDOUT colored (sprintf("%s\n", $message), 'green');
+  printf STDOUT "%s\n", $message;
   
   # initialization
   ALWAYS("> Initialization");
   if (! main::init()) {
     $message = "ERROR INITIALIZATION !";
-    printf STDERR colored (sprintf("%s\n", $message), 'black on_red');
+    printf STDERR "%s\n", $message;
     exit 1;
   }
   
@@ -123,7 +120,7 @@ sub main {
   ALWAYS("> Configuration");
   if (! main::config()) {
     $message = "ERROR CONFIGURATION !";
-    printf STDERR colored (sprintf("%s\n", $message), 'black on_red');
+    printf STDERR "%s\n", $message;
     exit 2;
   }
   
@@ -131,12 +128,12 @@ sub main {
   ALWAYS("> Execution");
   if (! main::doIt()) {
     $message = "ERROR EXECUTION !";
-    printf STDERR colored (sprintf("%s\n", $message), 'black on_red');
+    printf STDERR "%s\n", $message;
     exit 3;
   }
   
   $message = "END";
-  printf STDOUT colored (sprintf("%s\n", $message), 'green');
+  printf STDOUT "%s\n", $message;
 }
 ################################################################################
 # function: init
@@ -763,8 +760,6 @@ Use of binding gdal (Geo::GDAL)
     use Getopt::Long;
     use Pod::Usage;
     use Log::Log4perl qw(get_logger);
-    use Log::Log4perl::Level;
-    use Config::Simple;
     use Cwd qw(abs_path cwd chdir);
     use File::Spec;
 
