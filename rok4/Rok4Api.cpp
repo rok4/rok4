@@ -52,17 +52,20 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 
 	Logger::setOutput(logOutput);
 	// Initialisation du logger
+	Accumulator *acc=0;
 	if (logOutput==ROLLING_FILE){
-		RollingFileAccumulator* acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
-		// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-		for (int i=0;i<=logLevel;i++)
-			Logger::setAccumulator((LogLevel)i, acc);
-		std::ostream &log = LOGGER(DEBUG);
-        	log.precision(8);
-	        log.setf(std::ios::fixed,std::ios::floatfield);
+		acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
 	}
 	else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
+		acc = new StreamAccumulator();
 	}
+	// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+	for (int i=0;i<=logLevel;i++)
+		Logger::setAccumulator((LogLevel)i, acc);
+	std::ostream &log = LOGGER(DEBUG);
+        log.precision(8);
+	log.setf(std::ios::fixed,std::ios::floatfield);
+
 
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
