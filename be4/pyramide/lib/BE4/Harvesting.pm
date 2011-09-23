@@ -118,10 +118,9 @@ sub _init {
     $self->format(  $params->{wms_format});
     $self->layer(   $params->{wms_layer});
     
-    # FIXME
-    #   it's just an information ! Not an error !
-    #return FALSE if (! $self->_doRequest());
-    $self->_doRequest();
+    if (! $self->_doRequest()) {
+      WARN("No service aviable !");
+    }
     
     return TRUE;
 }
@@ -139,11 +138,9 @@ sub _doRequest {
  my $response = $ua->request($request);
  
  if ($response->is_error()) {
-    ERROR (sprintf "The response is an error :%s (url : '%s')!", $response->status_line(), $url);
+    WARN (sprintf "The response 'GetCapabilities' has a bas status : %s (url : '%s')!", $response->status_line(), $url);
     return FALSE;
  }
- 
- TRACE (sprintf "Response is : %s (-> url : %s) !", $response->status_line(), $url);
  
  return TRUE;
 }
@@ -161,8 +158,6 @@ sub doRequestUrl {
   #  &BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."
   #  &WIDTH=".$image_width."
   #  &HEIGHT=".$image_height.";
-
-  # FIXME : no validity test of url !
   
   my %args = @_;
   
@@ -190,7 +185,7 @@ sub doRequestUrl {
 
 ################################################################################
 # get/set
-# TODO : check parameters...
+#
 sub url {
   my $self = shift;
   if (@_) {
@@ -253,7 +248,7 @@ __END__
 
 =head1 NAME
 
-  BE4::Harvesting - 
+  BE4::Harvesting - Declare service WMS
 
 =head1 SYNOPSIS
 
@@ -268,7 +263,13 @@ __END__
   };
 
   my $objH = BE4::Harvesting->new($params);
+  
+  if (! defined $objH) { ERROR !}
+  
   my $url  = $objH->doRequestUrl(srs=> "WGS84", bbox => [0,0,500,500], imagesize => [100,100]);
+  # ie
+  # "http://".$URL."?LAYERS=".$LAYER."&SERVICE=WMS&VERSION=".$VERSION."&REQUEST=GetMap&FORMAT=image/tiff
+  # &CRS=".$srs."&BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."&WIDTH=".$image_width."&HEIGHT=".$image_height.";
   
 
 =head1 DESCRIPTION
