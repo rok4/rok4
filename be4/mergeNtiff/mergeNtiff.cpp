@@ -43,6 +43,14 @@
 #include "MirrorImage.h"
 #include "math.h"
 
+#ifndef __max
+#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
+
 /**
 * @fn void usage()
 * Usage de la ligne de commande
@@ -296,8 +304,6 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 	return 0;
 }
 
-#define epsilon 0.001
-
 /**
 * @fn double getPhasex(Image* pImage)
 * @brief Calcul de la phase en X d'une image
@@ -306,8 +312,9 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 double getPhasex(Image* pImage) {
         double intpart;
         double phi=modf( pImage->getxmin()/pImage->getresx(), &intpart);
-	if (fabs(1-phi)<epsilon)
-		phi=0.0000001;
+        //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
+	if (fabs(1-phi)<pImage->getresx()/100.)
+		phi=0.0000001; //NV cette valeur devrait etre calculee
 	return phi;
 }
 
@@ -319,26 +326,30 @@ double getPhasex(Image* pImage) {
 double getPhasey(Image* pImage) {
         double intpart;
         double phi=modf( pImage->getymax()/pImage->getresy(), &intpart);
-	if (fabs(1-phi)<epsilon)
-                phi=0.0000001;
+        //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
+	if (fabs(1-phi)<pImage->getresy()/100.)
+                phi=0.0000001;//NV cette valeur devrait etre calculee
         return phi;
 }
 
 /* Teste si 2 images sont superposabbles */
 bool areOverlayed(Image* pImage1, Image* pImage2)
 {
-	if (fabs(pImage1->getresx()-pImage2->getresx())>epsilon) return false;
-        if (fabs(pImage1->getresy()-pImage2->getresy())>epsilon) return false;
-	if (fabs(getPhasex(pImage1)-getPhasex(pImage2))>epsilon) return false;
-        if (fabs(getPhasey(pImage1)-getPhasey(pImage2))>epsilon) return false;
+        double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
+        double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
+
+	if (fabs(pImage1->getresx()-pImage2->getresx())>epsilon_x) return false;
+        if (fabs(pImage1->getresy()-pImage2->getresy())>epsilon_y) return false;
+	if (fabs(getPhasex(pImage1)-getPhasex(pImage2))>epsilon_x) return false;
+        if (fabs(getPhasey(pImage1)-getPhasey(pImage2))>epsilon_y) return false;
 	return true;
 } 
 
 /* Fonctions d'ordre */
-bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx()-epsilon);}
-bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy()-epsilon);}
-bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2)-epsilon);}
-bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2)-epsilon);}
+bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx() - __min(pImage1->getresx(), pImage2->getresx())/100.);}
+bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy() - __min(pImage1->getresy(), pImage2->getresy())/100.);}
+bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2) - __min(pImage1->getresx(), pImage2->getresx())/100.);}
+bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2) - __min(pImage1->getresy(), pImage2->getresy())/100.);}
 
 /**
 * @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
@@ -360,7 +371,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
         {
                 std::stable_sort(it->begin(),it->end(),InfResx); 
                 for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy())>epsilon)
+                        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
                         {
 				vTmp.assign(it2+1,it->end());
                                 it->assign(it->begin(),it2+1);
@@ -482,6 +493,8 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 	int h=pECI->getimages()->at(0)->height;
 	double resx=pECI->getimages()->at(0)->getresx();
 	double resy=pECI->getimages()->at(0)->getresy();
+        double epsilon_x = resx / 100.;
+        double epsilon_y = resx / 100.;
 
 	int i,j;
 	double intpart;
@@ -509,21 +522,23 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 	for (i=-1;i<nx+1;i++)
 		for (j=-1;j<ny+1;j++){
 
-			if ( (i==-1&&j==-1) || (i==-1&&j==ny) || (i==nx&&j==-1) || (i==nx&&j==nx) )
+			if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==nx) )
+                        /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 				continue;
 
 			for (k=0;k<n;k++)
-				if (pECI->getimages()->at(k)->getxmin()==pECI->getxmin()+i*w*resx
-				 && pECI->getimages()->at(k)->getymax()==pECI->getymax()-j*h*resy)
+				if ((fabs(pECI->getimages()->at(k)->getxmin() - pECI->getxmin()+i*w*resx) < epsilon_x)
+				 && (fabs(pECI->getimages()->at(k)->getymax() - pECI->getymax()-j*h*resy) < epsilon_y))
 					break;
 
+                        /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
 			if (k==n){
 				// Image 0
 				pI0=NULL;
 				xmin=pECI->getxmin()+(i-1)*w*resx;
 				ymax=pECI->getymax()-j*h*resy;
 				for (l=0;l<n;l++)
-					if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+					if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
 						break;
 				if (l<n)
 					pI0=pECI->getimages()->at(l);
@@ -532,7 +547,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
                                 xmin=pECI->getxmin()+i*w*resx;
                                 ymax=pECI->getymax()-(j-1)*h*resy;
                                 for (l=0;l<n;l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
 						break;
                                 if (l<n)
                                         pI1=pECI->getimages()->at(l);
@@ -541,7 +556,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
                                 xmin=pECI->getxmin()+(i+1)*w*resx;
                                 ymax=pECI->getymax()-j*h*resy;
                                 for (l=0;l<n;l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
 					break;
                                 if (l<n)
                                         pI2=pECI->getimages()->at(l);
@@ -550,7 +565,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
                                 xmin=pECI->getxmin()+i*w*resx;
                                 ymax=pECI->getymax()-(j+1)*h*resy;
                                 for (l=0;l<n;l++)
-                                        if (pECI->getimages()->at(l)->getxmin()==xmin && pECI->getimages()->at(l)->getymax()==ymax)
+                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
 						break;
                                 if (l<n)
                                         pI3=pECI->getimages()->at(l);
@@ -569,12 +584,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 	return mirrors;
 }
 
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
 
 /**
 * @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
@@ -678,10 +687,10 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			//saveImage(/*pECI_withMirrors*/pECI,"test1.tif",3,8,1,PHOTOMETRIC_RGB);
 			//return -1;
 
-			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
+			mask = new ExtendedCompoundMaskImage(pECI);/*NV*/
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI, interpolation, mask, pResampledMask);/*NV*/
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
