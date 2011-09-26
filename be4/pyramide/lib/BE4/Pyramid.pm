@@ -757,17 +757,17 @@ sub readConfPyramid {
   foreach my $v (@levels) {
     
         my $tagtm       = $v->findvalue('tileMatrix');
-        my @tagsize     =  [
+        my @tagsize     =  (
                              $v->findvalue('tilesPerWidth'),
                              $v->findvalue('tilesPerHeight')
-                           ];
+                           );
         my $tagdirdepth = $v->findvalue('pathDepth');
-        my @taglimit    = [
+        my @taglimit    = (
                             $v->findvalue('TMSLimits/minTileRow'),
                             $v->findvalue('TMSLimits/maxTileRow'),
                             $v->findvalue('TMSLimits/minTileCol'),
                             $v->findvalue('TMSLimits/maxTileCol')
-                          ];
+                          );
     #
     my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
                                        $self->getPyrName(),
@@ -785,9 +785,9 @@ sub readConfPyramid {
             type_metadata     => undef,      # TODO !
             bitspersample     => $bitspersample,
             samplesperpixel   => $tagsamplesperpixel,
-            size              => @tagsize,
+            size              => [$tagsize[0],$tagsize[1]],
             dir_depth         => $tagdirdepth,
-            limit             => @taglimit,
+            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
         });
     
     if (! defined $objLevel) {
