@@ -31,8 +31,6 @@ my %COMPRESS;
 # Preloaded methods go here.
 BEGIN {}
 INIT {
-  # TODO :
-  #  put in a configuration file !
   
   # FIXME
   #  i'm prefer to note the code for the type raw :

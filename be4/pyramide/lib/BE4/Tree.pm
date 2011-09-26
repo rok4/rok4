@@ -306,17 +306,17 @@ sub exportTree {
     $idymax = $idxYmax if ($idymax < $idxYmax);
   }
   
-  # (Upper Left, Lower Right) !
+  # (xmin, ymin, xmax, ymax) !
   push @bboxfinal, ($refpyr->_IDXtoX($idLevel,$idxmin),
-                    $refpyr->_IDXtoY($idLevel,$idymax),
+                    $refpyr->_IDXtoY($idLevel,$idymin),
                     $refpyr->_IDXtoX($idLevel,$idxmax),
-                    $refpyr->_IDXtoY($idLevel,$idymin));
+                    $refpyr->_IDXtoY($idLevel,$idymax));
   
   printf FILE "----------------------------------------------------\n";
   printf FILE "=> Data Source :\n";
   printf FILE "   - resolution [%s]\n", $resini;
   printf FILE "   - srs        [%s]\n", $srsini;
-  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[1], $bboxini[2], $bboxini[3];
+  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[3], $bboxini[2], $bboxini[1];
   printf FILE "----------------------------------------------------\n";
   printf FILE "=> Index (level n° %s):\n", $idLevel;
   printf FILE "   - resolution [%s]\n", $resfinal;

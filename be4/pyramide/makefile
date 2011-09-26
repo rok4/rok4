@@ -19,7 +19,8 @@ buildlib:
 	@( cd . && perl Makefile.PL INSTALL_BASE=$(BE4_ENV) && make -f Makefile ) ;
 
 buildbin: \
-./bin/be4.pl
+./bin/be4.pl \
+./bin/export-tree.pl
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \
                         perl -c -Iblib/lib/  $$p ;\

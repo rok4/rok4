@@ -8,7 +8,7 @@ WriteMakefile(
         NAME        => "Be4-Pyramid",
         DISTNAME    => "Be4-Pyramid",
         # install to INSTALL_BASE/bin
-        EXE_FILES   => [ 'bin/be4.pl', ],
+        EXE_FILES   => [ 'bin/be4.pl', 'bin/export-tree.pl'],
         # install modules to INSTALL_BASE/lib/perl5
         #PM          => { 'lib/ ./ .pm' => '$(INST_LIBDIR)/ ./ .pm',},
         # modules that are needed to run your module
