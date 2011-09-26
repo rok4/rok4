@@ -563,7 +563,7 @@ sub writeConfPyramid {
     $strpyrtmplt =~ s/__DEPTH__/$depth/;
     
     my $minrow   =  $objLevel->{limit}->[0];
-    $strpyrtmplt =~ s/__MINROW__//;
+    $strpyrtmplt =~ s/__MINROW__/$minrow/;
     my $maxrow   =  $objLevel->{limit}->[1];
     $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
     my $mincol   =  $objLevel->{limit}->[2];
@@ -614,6 +614,8 @@ sub writeConfPyramid {
   printf $PYRAMID "%s", $strpyrtmplt;
   #
   close $PYRAMID;
+  
+  return TRUE;
 }
 sub readConfPyramid {
   my $self    = shift;

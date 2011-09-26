@@ -20,7 +20,8 @@ buildlib:
 
 buildbin: \
 ./bin/be4.pl \
-./bin/export-tree.pl
+./bin/export-tree.pl \
+./bin/create-layer.pl
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \
                         perl -c -Iblib/lib/  $$p ;\

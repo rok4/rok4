@@ -162,7 +162,7 @@ if (! defined $objTree) {
 my $myexport = File::Spec->catfile($params_logger->{log_path},
                                    join("-","export-tree",$objPyramid->getPyrName()));
 
-if (! $objTree->exportTree($myexport)) {
+if (! $objTree->exportTree($myexport.".txt")) {
     ERROR("Erreur sur l'export de l'arbre QTree !");
     exit -55;
 }
@@ -199,7 +199,7 @@ END {}
 
 =item B<--properties=path>
 
-=item B<--log-level=>
+=item B<--log-level=(INFO|WARN|...)>
 
 WARN par defaut !
 NON IMPLEMENTÉ !
@@ -220,8 +220,8 @@ NON IMPLEMENTÉ !
     use POSIX qw(locale_h);
     use Getopt::Long;
     use Pod::Usage;
-    use Log::Log4perl qw(get_logger);
-    use File::Spec;
+    use Log::Log4perl;
+    use File::Basename;
 
 =item * MODULES (owner)
 
