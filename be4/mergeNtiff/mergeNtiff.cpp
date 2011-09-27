@@ -515,8 +515,8 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 	    ny=(int)floor((pECI->getymax()-pECI->getymin())/(h*resy) + 0.5), // taille de l'ECI en nombre d'images en y 
 	    n=pECI->getimages()->size();
 
-//        LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
-//        LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
+        LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
+        LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
 
 	unsigned int k,l;
 	Image*pI0,*pI1,*pI2,*pI3;
@@ -525,21 +525,23 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 
 	for (i=-1; i < nx+1; i++)
 		for (j=-1; j < ny+1; j++){
+                        LOGGER_DEBUG("I:"<<i<<" J:"<<j);
 
 			if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) )
                         /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 				continue;
 
 			for (k=0;k<n;k++){
-				if ((fabs(pECI->getimages()->at(k)->getxmin() - pECI->getxmin()+i*w*resx) < epsilon_x)
+				if ((fabs(pECI->getimages()->at(k)->getxmin() - (pECI->getxmin()+i*w*resx)) < epsilon_x)
 				 && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)){
-					//LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymin:"<<pECI->getimages()->at(k)->getymax());
+					LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax());
 					break;
                                 }
                         }
 
                         /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
 			if (k==n){
+                                LOGGER_DEBUG("=> CALCUL DE MIROIR");
 
 				// Image 0
 				pI0=NULL;
