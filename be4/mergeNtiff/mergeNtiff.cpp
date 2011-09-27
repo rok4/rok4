@@ -151,6 +151,7 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
 
 int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric) {
         // Ouverture du fichier
+        LOGGER_DEBUG("Sauvegarde de l'image" << pName);
     	TIFF* output=TIFFOpen(pName,"w");
     	if (output==NULL) {
         	LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
@@ -175,7 +176,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 
 	// Ecriture de l'image
 	if (sampleformat==SAMPLEFORMAT_UINT){
-		buf_u = (unsigned char*)_TIFFmalloc(pImage->width*pImage->channels*bitspersample/8);
+		buf_u = (unsigned char*)_TIFFmalloc(pImage->width * pImage->channels * bitspersample / 8);
 		for( int line = 0; line < pImage->height; line++) {
                         pImage->getline(buf_u,line);
                         TIFFWriteScanline(output, buf_u, line, 0);
@@ -338,10 +339,10 @@ bool areOverlayed(Image* pImage1, Image* pImage2)
         double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
         double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
 
-	if (fabs(pImage1->getresx()-pImage2->getresx())>epsilon_x) return false;
-        if (fabs(pImage1->getresy()-pImage2->getresy())>epsilon_y) return false;
-	if (fabs(getPhasex(pImage1)-getPhasex(pImage2))>epsilon_x) return false;
-        if (fabs(getPhasey(pImage1)-getPhasey(pImage2))>epsilon_y) return false;
+	if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) return false;
+        if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) return false;
+	if (fabs(getPhasex(pImage1)-getPhasex(pImage2)) > epsilon_x) return false;
+        if (fabs(getPhasey(pImage1)-getPhasey(pImage2)) > epsilon_y) return false;
 	return true;
 } 
 
@@ -499,46 +500,53 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 	int i,j;
 	double intpart;
 	for (i=1;i<pECI->getimages()->size();i++){	
-		if (pECI->getimages()->at(i)->getresx()!=resx
-		|| pECI->getimages()->at(i)->getresy()!=resy
-		|| pECI->getimages()->at(i)->width!=w
-		|| pECI->getimages()->at(i)->height!=h
-		|| modf(pECI->getimages()->at(i)->getxmin()-pECI->getxmin()/(w*resx),&intpart)!=0
-		|| modf(pECI->getimages()->at(i)->getymax()-pECI->getymax()/(h*resy),&intpart)!=0){
+		if (abs(pECI->getimages()->at(i)->getresx() - resx) > epsilon_x
+		|| abs(pECI->getimages()->at(i)->getresy() - resy) > epsilon_y
+		|| pECI->getimages()->at(i)->width != w
+		|| pECI->getimages()->at(i)->height != h
+		|| abs(modf(pECI->getimages()->at(i)->getxmin() - pECI->getxmin()/(w*resx),&intpart)) > epsilon_x
+		|| abs(modf(pECI->getimages()->at(i)->getymax() - pECI->getymax()/(h*resy),&intpart)) > epsilon_y){
 			LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
 			return 0;
 		}
 	}
 
-	int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/w + 0.5),
-	    ny=(int)floor((pECI->getymax()-pECI->getymin())/h + 0.5),
+	int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/(w*resx) + 0.5), // taille de l'ECI en nombre d'images en x 
+	    ny=(int)floor((pECI->getymax()-pECI->getymin())/(h*resy) + 0.5), // taille de l'ECI en nombre d'images en y 
 	    n=pECI->getimages()->size();
+
+//        LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
+//        LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
 
 	unsigned int k,l;
 	Image*pI0,*pI1,*pI2,*pI3;
 	double xmin,ymax;
 	mirrorImageFactory MIFactory;
 
-	for (i=-1;i<nx+1;i++)
-		for (j=-1;j<ny+1;j++){
+	for (i=-1; i < nx+1; i++)
+		for (j=-1; j < ny+1; j++){
 
-			if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==nx) )
+			if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) )
                         /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 				continue;
 
-			for (k=0;k<n;k++)
+			for (k=0;k<n;k++){
 				if ((fabs(pECI->getimages()->at(k)->getxmin() - pECI->getxmin()+i*w*resx) < epsilon_x)
-				 && (fabs(pECI->getimages()->at(k)->getymax() - pECI->getymax()-j*h*resy) < epsilon_y))
+				 && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)){
+					//LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymin:"<<pECI->getimages()->at(k)->getymax());
 					break;
+                                }
+                        }
 
                         /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
 			if (k==n){
+
 				// Image 0
 				pI0=NULL;
 				xmin=pECI->getxmin()+(i-1)*w*resx;
 				ymax=pECI->getymax()-j*h*resy;
 				for (l=0;l<n;l++)
-					if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
+					if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax) < epsilon_y)
 						break;
 				if (l<n)
 					pI0=pECI->getimages()->at(l);
@@ -580,7 +588,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 				}
 			}
 		}
-	LOGGER_DEBUG(mirrors);
+	//LOGGER_DEBUG(mirrors);
 	return mirrors;
 }
 
@@ -668,14 +676,17 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
         	        LOGGER_ERROR("Impossible d'assembler les images");
                 	return -1;
 	        }
-		if (areOverlayed(pImageOut,pECI))
-		{
+
+                //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+
+		if (areOverlayed(pImageOut,pECI)){
+                        /* les images sources et finale ont la meme res et la meme phase
+                         * on aura donc pas besoin de reechantillonnage.*/
 			pOverlayedImage.push_back(pECI);
 			//saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 			mask = new ExtendedCompoundMaskImage(pECI);
 			pMask.push_back(mask);
-		}
-		else {
+		}else{
         		// Etape 2 : Reechantillonnage de l'image composite si necessaire
 			
 			uint mirrors=addMirrors(pECI);
@@ -684,13 +695,14 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 			// LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-			//saveImage(/*pECI_withMirrors*/pECI,"test1.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pECI,"test2.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(pECI_withMirrors,"test2bis.tif",3,8,1,PHOTOMETRIC_RGB);
 			//return -1;
 
-			mask = new ExtendedCompoundMaskImage(pECI);/*NV*/
+			mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
 			ResampledImage* pResampledMask;
-	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI, interpolation, mask, pResampledMask);/*NV*/
+	        	ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
         		if (pRImage==NULL) {
                 		LOGGER_ERROR("Impossible de reechantillonner les images");
@@ -699,9 +711,9 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 			pOverlayedImage.push_back(pRImage);
 			//saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);
 			pMask.push_back(pResampledMask);
-			//saveImage(pRImage,"test.tif",1,8,PHOTOMETRIC_MINISBLACK);
-			//saveImage(mask,"test1.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
-			//saveImage(pResampledMask,"test2.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pRImage,"rimage.tif",3,8,1,PHOTOMETRIC_RGB);
+			//saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+			//saveImage(pResampledMask,"rmask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         	}
 	}
 
@@ -736,7 +748,7 @@ int main(int argc, char **argv) {
         Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
 
         Accumulator* acc = new StreamAccumulator();
-       // Logger::setAccumulator(DEBUG, acc);
+        //Logger::setAccumulator(DEBUG, acc);
         Logger::setAccumulator(INFO , acc);
         Logger::setAccumulator(WARN , acc);
         Logger::setAccumulator(ERROR, acc);

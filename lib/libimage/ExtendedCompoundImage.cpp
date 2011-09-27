@@ -130,26 +130,28 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 */
 
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
-	memset(buffer,0,width*channels);
-	// Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
-        for (uint i=0;i<ECI->getimages()->size()-ECI->getmirrors();i++){
-	if (line==0)
-        	// On ecarte les images qui ne se trouvent pas sur la ligne
-        	// On evite de comparer des coordonnees terrain (comparaison de flottants)
-        	// Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
-        	if (y2l(ECI->getimages()->at(i)->getymin())<=line||y2l(ECI->getimages()->at(i)->getymax())>line)
-                	continue;
-                if (ECI->getimages()->at(i)->getxmin()>=getxmax()||ECI->getimages()->at(i)->getxmax()<=getxmin())
-                	continue;
+  memset(buffer,0,width*channels);
+  // Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
+  for (uint i=0; i < ECI->getimages()->size()-ECI->getmirrors(); i++){
 
-                // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-                int c0=__max(0,x2c(ECI->getimages()->at(i)->getxmin()));
-                // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-                int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
+    // On ecarte les images qui ne se trouvent pas sur la ligne
+    // On evite de comparer des coordonnees terrain (comparaison de flottants)
+    // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
+    if (y2l(ECI->getimages()->at(i)->getymin()) <= line || y2l(ECI->getimages()->at(i)->getymax()) > line){
+      continue;
+    }
+    if (ECI->getimages()->at(i)->getxmin() >= getxmax() || ECI->getimages()->at(i)->getxmax() <= getxmin()){
+      continue;
+    }
 
-                memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
-	}
-        return width*channels*sizeof(uint8_t);
+    // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+    int c0=__max(0,x2c(ECI->getimages()->at(i)->getxmin()));
+    // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+    int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
+
+    memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+  }
+  return width*channels*sizeof(uint8_t);
 }
 
 /** Implementation de getline pour les uint8_t */
