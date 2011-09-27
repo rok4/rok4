@@ -33,7 +33,7 @@ my $STRLYRTMPLT   = <<"TLYR";
     <title>__TITLE__</title>
     <abstract>__ABSTRACT__</abstract>
     <keywordList>
-	<!-- __KEYWORDS__ -->
+        <!-- __KEYWORDS__ -->
     </keywordList>
     <style>__STYLE__</style>
     <EX_GeographicBoundingBox>
@@ -43,7 +43,7 @@ my $STRLYRTMPLT   = <<"TLYR";
         <northBoundLatitude>__N__</northBoundLatitude>
     </EX_GeographicBoundingBox>
     <WMSCRSList>
-	<!-- __SRSS__ -->
+        <!-- __SRSS__ -->
     </WMSCRSList>
     <boundingBox CRS="__SRS__" minx="__MINX__" miny="__MINY__" maxx="__MAXX__" maxy="__MAXY__"/>
     <opaque>__OPAQUE__</opaque>
@@ -75,7 +75,7 @@ sub new {
   my $class= ref($this) || $this;
   my $self = {
 	title            => undef,       # manadatory !
-        abstract         => undef,       # by default (optional) !
+        abstract         => "",          # by default (optional) !
         keywordlist      => [],          # by default (optional) !
         style            => "normal",    # by default !
         minres           => 0.5,         # by default !
@@ -147,14 +147,14 @@ sub _init {
     if (! exists($params->{proj}) ||
         ! defined ($params->{proj})) {
         $self->{proj} = $params->{srslist}->[0];
-      WARN ("key/value optional to 'proj' (first value '%s' of listsrs by default)!",
+      WARN (sprintf "key/value optional to 'proj' (first value '%s' of listsrs by default)!",
             $self->{proj});
       $params->{proj} = $self->{proj};
     }
     
     if (! exists($params->{abstract}) ||
         ! defined ($params->{abstract})) {
-      WARN ("key/value optional to 'abstract' ('%s' by default)!",
+      WARN (sprintf "key/value optional to 'abstract' ('%s' by default)!",
             $self->{abstract});
       $params->{abstract} = $self->{abstract};
     }
@@ -168,35 +168,35 @@ sub _init {
     
     if (! exists($params->{minres}) ||
         ! defined ($params->{minres})) {
-      WARN ("key/value optional to 'minres' ('%s' by default)!",
+      WARN (sprintf "key/value optional to 'minres' ('%s' by default)!",
             $self->{minres});
       $params->{minres} = $self->{minres};
     }
     
     if (! exists($params->{maxres}) ||
         ! defined ($params->{maxres})) {
-      WARN ("key/value optional to 'maxres' ('%s' by default)!",
+      WARN (sprintf "key/value optional to 'maxres' ('%s' by default)!",
             $self->{maxres});
       $params->{maxres} = $self->{maxres};
     }
     
     if (! exists($params->{resampling}) ||
         ! defined ($params->{resampling})) {
-      WARN ("key/value optional to '' ('%s' by default)!",
+      WARN (sprintf "key/value optional to '' ('%s' by default)!",
             $self->{resampling});
       $params->{resampling} = $self->{resampling};
     }
     
     if (! exists($params->{authority}) ||
         ! defined ($params->{authority})) {
-      WARN ("key/value optional to 'authority' ('%s' by default)!",
+      WARN (sprintf "key/value optional to 'authority' ('%s' by default)!",
             $self->{authority});
       $params->{authority} = $self->{authority};
     }
     
     if (! exists($params->{opaque}) ||
         ! defined ($params->{opaque})) {
-      WARN ("key/value optional to 'opaque' ('%s' by default)!",
+      WARN (sprintf "key/value optional to 'opaque' ('%s' by default)!",
             $self->{opaque});
         $params->{opaque} = $self->{opaque};
     }
@@ -229,15 +229,16 @@ sub _init {
     $self->{geo_bbox}  = $params->{geo_bbox};
     $self->{proj_bbox} = $params->{proj_bbox};
     $self->{srslist}   = $params->{srslist};
-    $self->{keywordlist}   = $params->{keywordlist};
+    
+    $self->{keywordlist} = $params->{keywordlist};
     $self->{authority}   = $params->{authority};
-    $self->{minres}   = $params->{minres};
-    $self->{maxres}   = $params->{maxres};
-    $self->{style}   = $params->{style};
-    $self->{abstract}   = $params->{abstract};
-    $self->{proj}   = $params->{proj};
-    $self->{resampling}   = $params->{resampling};
-    $self->{opaque}   = $params->{opaque};
+    $self->{minres}      = $params->{minres};
+    $self->{maxres}      = $params->{maxres};
+    $self->{style}       = $params->{style};
+    $self->{abstract}    = $params->{abstract};
+    $self->{proj}        = $params->{proj};
+    $self->{resampling}  = $params->{resampling};
+    $self->{opaque}      = $params->{opaque};
     
     return TRUE;
 }
@@ -245,6 +246,8 @@ sub _init {
 # public function.
 sub to_string {
   my $self = shift;
+  
+  TRACE;
   
   my $string = undef;
   
