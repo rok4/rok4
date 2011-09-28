@@ -1,20 +1,2 @@
 
-* format bbox (Upper Left, Lower Right) ?
-
-* precision ?
-  my $t = sprintf "%.8f", $xmin
-  
-* type of driver ?
-  if ($code !~ /(GTiff|GeoTIFF)/) ...
-  
-* type of data source ?
-  $entry!~/.*\.(tif|TIF|tiff|TIFF)$/
-  
-* type of pyramid or tms file ?
-  $entry!~/.*\.(tms|TMS)$/
-  $entry!~/.*\.(pyr|PYR)$/
-
-* in pyramid configuration, the path of pyramid data is relative, and Rok4 don't like this !
-   
-* can not transform a pyramid raw to jpg or png if not exist data source in !
 

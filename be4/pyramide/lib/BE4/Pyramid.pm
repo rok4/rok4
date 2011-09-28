@@ -31,7 +31,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.4';
+our $VERSION = '0.0.5';
 
 ################################################################################
 # constantes
@@ -61,6 +61,8 @@ END {}
 #    ; eg section [ tilematrixset ]
 #    tms_name     =  
 #    tms_path     =
+#    tms_level_min=
+#    tms_level_max=
 #    ; tms_schema_path = 
 #    ; tms_schema_name =
 #
@@ -157,6 +159,8 @@ sub new {
                     #
                     tms_name     => undef, # string name
                     tms_path     => undef, # path
+                    tms_level_min=> undef, # number
+                    tms_level_max=> undef, # number
                     #
                     compression  => undef, # string value ie raw by default !
                     gamma        => undef, # number ie 1 by default !
@@ -277,13 +281,26 @@ sub _init {
     $pyr->{dir_depth}    = $params->{dir_depth}    || ( ERROR ("key/value required to 'dir_depth' !") && return FALSE );
     $pyr->{dir_image}    = $params->{dir_image}    || ( ERROR ("key/value required to 'dir_image' !") && return FALSE );
     #
+    $pyr->{path_nodata}  = $params->{path_nodata}  || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
+    #
     # this option is optional !
     #
     if (! exists($params->{dir_metadata})) {
         WARN ("key/value optional to 'dir_metadata' !");
         $params->{dir_metadata} = undef;
     }
-    $pyr->{path_nodata}  = $params->{path_nodata} || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
+    
+    if (! exists($params->{tms_level_min})) {
+        WARN ("key/value optional to 'tms_level_min' !");
+        $params->{tms_level_min} = undef;
+    }
+    $pyr->{tms_level_min} = $params->{tms_level_min};
+    
+    if (! exists($params->{tms_level_max})) {
+        WARN ("key/value optional to 'tms_level_max' !");
+        $params->{tms_level_max} = undef;
+    }
+    $pyr->{tms_level_max} = $params->{tms_level_max};
     # 
     # you can choice this option by default !
     #
@@ -366,7 +383,9 @@ sub _load {
     
     # create TileMatrixSet !
     my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
-                                                             $self->{pyramid}->{tms_name}));
+                                                             $self->{pyramid}->{tms_name}),
+                                         $self->{pyramid}->{tms_level_min},
+                                         $self->{pyramid}->{tms_level_max});
     
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
@@ -681,7 +700,9 @@ sub readConfPyramid {
   }
   
   my $tmsfile = join(".", $tmsname, "tms"); 
-  my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
+  my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile),
+                                         $self->{pyramid}->{tms_level_min},
+                                         $self->{pyramid}->{tms_level_max});
   
   if (! defined $objTMS) {
     ERROR ("Can not create object TileMatrixSet !");

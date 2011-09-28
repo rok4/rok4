@@ -157,8 +157,8 @@ sub _load {
   $self->{topLevelId} = $tmList[$#tmList]->getID();
   
   # déterminer le niveau de base du calcul:
-  # le niveau de base du calcul est le premier niveau dont la résolution (réduite de 5%) est
-  # meilleure que celle des données sources.
+  # Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
+  # (réduite de 5%) est meilleure que celle des données sources.
   # S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
   # le plus bas de la pyramide.
   

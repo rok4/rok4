@@ -17,3 +17,12 @@
 
 - [Makefile.PL] :
     > mise à jour des dependances !
+    
+- [bin/create-layer.pl] :
+  [bin/export-tree.pl ] :
+    > ajout d'utilitaires orientés maintenances !
+
+- 0.0.5 [lib/BE4/Pyramid.pm] :
+- 0.0.2 [lib/BE4/TileMatrixSet.pm] :
+    > mise en place des parametre 'tms_level_min', 'tms_level_max'.
+    > gestion du choix du niveau minimum et/ou maximum des levels du tms.

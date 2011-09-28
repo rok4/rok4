@@ -20,7 +20,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 ################################################################################
 # constantes
@@ -64,6 +64,9 @@ sub new {
     filename => undef,
     filepath => undef,
     #
+    levelmin => undef,
+    levelmax => undef,
+    #
     srs        => undef, # ie proj4 !
     tileheight => undef, # determined by TileMatrix(0) !
     tilewidth  => undef, # determined by TileMatrix(0) !
@@ -85,28 +88,44 @@ sub new {
 ################################################################################
 # privates init.
 sub _init {
-    my $self  = shift;
-    my $param = shift;
+    my $self     = shift;
+    my $pathfile = shift;
+    my $levelmin = shift;
+    my $levelmax = shift;
 
     TRACE;
     
-    return FALSE if (! defined $param);
+    return FALSE if (! defined $pathfile);
     
-    if (! -f $param) {
+    if (! -f $pathfile) {
       ERROR ("File TMS doesn't exist !");
       return FALSE;
     }
     
     # init. params    
-    $self->{PATHFILENAME}=$param;
+    $self->{PATHFILENAME}=$pathfile;
     
     #
-    $self->{filepath} = File::Basename::dirname($param);
-    $self->{filename} = File::Basename::basename($param);
-    $self->{name}     = File::Basename::basename($param);
+    $self->{filepath} = File::Basename::dirname($pathfile);
+    $self->{filename} = File::Basename::basename($pathfile);
+    $self->{name}     = File::Basename::basename($pathfile);
     $self->{name}     =~ s/\.(tms|TMS)$//;
     
     TRACE (sprintf "name : %s", $self->{name});
+    
+    #
+    if (defined $levelmin) {
+      $self->{levelmin} = $levelmin;
+    }
+    
+    if (defined $levelmax) {
+      $self->{levelmax} = $levelmax;
+    }
+    
+    if (defined $levelmin && defined $levelmax && $levelmin > $levelmax) {
+      $self->{levelmax} = $levelmin;
+      $self->{levelmin} = $levelmax;
+    }
     
     return TRUE;
 }
@@ -128,6 +147,10 @@ sub _load {
   
   # load tileMatrix
   while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
+    
+    next if (defined $self->{levelmin} && $k < $self->{levelmin});
+    next if (defined $self->{levelmax} && $k > $self->{levelmax});
+    
     my $obj = BE4::TileMatrix->new({
                         id => $k,
                         resolution     => $v->{resolution},
@@ -143,6 +166,11 @@ sub _load {
     
     $self->{tilematrix}->{$k} = $obj;
     undef $obj;
+  }
+  
+  if (! $self->getCountTileMatrix()) {
+    ERROR (sprintf "No tilematrix loading from XML file TMS !");
+    return FALSE;
   }
   
   # srs (== crs)
@@ -276,6 +304,7 @@ sub to_string {
   
   my $i = ($self->getFirstTileMatrix())->getID();
   while(defined (my $tm = $self->getNextTileMatrix($i))) {
+    printf "tilematrix:\n";
     printf "%s\n", $tm->to_string();
     $i++;
   }
@@ -289,6 +318,7 @@ __END__
 =head1 NAME
 
   BE4::TileMatrixSet - load a file tilematrixset.
+  You can fix a min or/an a max level to extract tilematrixset.
 
 =head1 SYNOPSIS
 
@@ -310,6 +340,10 @@ __END__
     $i++;
   }
   ...
+  
+  $objT = BE4::TileMatrixSet->new($filepath, 8, 12);
+  $objT->getFirstTileMatrix()->getID(); # 8
+  $objT->getLastTileMatrix()->getID();  # 12
 
 =head1 DESCRIPTION
 
@@ -364,6 +398,8 @@ None by default.
 
  File name of tms must be with extension : tms or TMS !
  All levels must be continuous and unique !
+ All levels are sorted by id !
+ id level must be a numeric !
 
 =head1 SEE ALSO
 
