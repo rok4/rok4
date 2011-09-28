@@ -680,20 +680,29 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 	std::string projDir;
 	
 	char* projDirEnv;
+	bool absolut=true;
 	pElem=hRoot.FirstChild("projConfigDir").Element();
 	if (!pElem){
 		std::cerr<<"Pas de projConfigDir => projConfigDir = " << DEFAULT_PROJ_DIR<<std::endl;
-		char pwdBuff[PATH_MAX];
+		char* pwdBuff = (char*) malloc(PATH_MAX);
 		getcwd(pwdBuff,PATH_MAX);
-		projDir = pwdBuff;
+		projDir = std::string(pwdBuff);
 		projDir.append("/").append(DEFAULT_PROJ_DIR);
-		
+		free(pwdBuff);
 	}else{
 		projDir=pElem->GetText();
-		
+		//Gestion des chemins relatif
+		if (projDir.compare(0,1,"/") != 0){
+			absolut=false;
+			char* pwdBuff = (char*) malloc(PATH_MAX);
+			getcwd(pwdBuff,PATH_MAX);
+			std::string pwdBuffStr = std::string(pwdBuff);
+			pwdBuffStr.append("/");
+			projDir.insert(0,pwdBuffStr);
+			free(pwdBuff);
+		}
 	}
-	
-	projDirEnv = (char*) malloc(8+2+projDir.length());
+	projDirEnv = (char*) malloc(8+2+PATH_MAX);
 	strcat(projDirEnv,"PROJ_LIB=");
 	strcat(projDirEnv,projDir.c_str());
 	
