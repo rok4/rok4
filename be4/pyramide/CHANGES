@@ -24,5 +24,11 @@
 
 - 0.0.5 [lib/BE4/Pyramid.pm] :
 - 0.0.2 [lib/BE4/TileMatrixSet.pm] :
+- 0.0.2 [lib/BE4/Tree.pm] :
+- 0.0.3 [lib/BE4/Process.pm] :
+- 0.0.3 [bin/be4.pl] :
     > mise en place des parametre 'tms_level_min', 'tms_level_max'.
-    > gestion du choix du niveau minimum et/ou maximum des levels du tms.
+    > mise en place des parametre 'pyr_level_bottom', 'pyr_level_top'.
+    > gestion du choix du niveau minimum et/ou maximum des levels du tms/pyramid.
+    > chmod des scripts shell (0755)
+    > process des scripts shell avec l'option --test (orientés maintenances !)

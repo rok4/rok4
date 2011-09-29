@@ -32,7 +32,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # version
-my $VERSION = "0.0.2";
+my $VERSION = "0.0.3";
 
 #
 # Title: be4
@@ -489,11 +489,21 @@ sub doIt {
     ALWAYS(">>> Compute Process ...");
     
     if (! $objProcess->computeWholeTree()) {
-      ERROR ("Can not execute process !");
+      ERROR ("Can not compute process !");
       return FALSE;
     }
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
+    
+    #######################
+    # execute process script
+    
+    return TRUE if (! $opts{test});
+    
+    if (! $objProcess->processScript()) {
+      ERROR ("Can not execute process !");
+      return FALSE;
+    }
     
     return TRUE;
 }
@@ -664,8 +674,8 @@ But you can combine the following sections for more readibility :
  # 
  pyr_name_old  =
  pyr_name_new  =
- pyr_descpath  =
- pyr_datapath  =
+ pyr_desc_path =
+ pyr_data_path =
  compression   =
  image_width   = 
  image_height  =
@@ -692,8 +702,8 @@ Few sections can be optional, depending on the selected use cases :
 And few parameters must be declared, whatever the use cases selected :
 
  [ pyramid ]
-    pyr_descpath
-    pyr_datapath
+    pyr_desc_path
+    pyr_data_path
     tms_path
     pyr_name_new
     compression

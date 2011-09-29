@@ -25,7 +25,7 @@ our @EXPORT      = qw();
 
 #-------------------------------------------------------------------------------
 # version
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.2';
 
 #-------------------------------------------------------------------------------
 # constantes
@@ -60,7 +60,7 @@ sub new {
     bottomLevelId => undef, # first level under the source images resolution
     topLevelId    => undef, # top level of the pyramid (ie of its tileMatrixSet)
     levelIdx      => undef, # hash associant les id de level à leur indice dans le tableau du TMS
-    tmList        => [], # tableau des tm de la pyramide dans l'ordre croissant de taille de pixel
+    tmList        => [],    # tableau des tm de la pyramide dans l'ordre croissant de taille de pixel
   };
 
   bless($self, $class);
@@ -153,22 +153,31 @@ sub _load {
     $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
   }
 
-  # Intitialisation du topLevel: c'est le plus haut niveau du TMS.
+  # Intitialisation du topLevel:
+  #  Par defaut, c'est le plus haut niveau du TMS, 
   $self->{topLevelId} = $tmList[$#tmList]->getID();
   
-  # déterminer le niveau de base du calcul:
-  # Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
-  # (réduite de 5%) est meilleure que celle des données sources.
-  # S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
-  # le plus bas de la pyramide.
+  #  ou celui fournit en parametre !
+  my $toplevel = $self->{pyramid}->getTopLevel();
+  $self->{topLevelId} = $toplevel if (defined $toplevel);
   
+  # Intitialisation du bottomLevel:
+  #  (déterminer le niveau de base du calcul)
+  #  Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
+  #  (réduite de 5%) est meilleure que celle des données sources.
+  #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
+  #  le plus bas de la pyramide.
   my $srcRes = $self->computeSrcRes($ct);
   $self->{bottomLevelId} = $tmList[0]->getID(); 
   foreach my $tm (@tmList){
     next if ($tm->getResolution() * 0.95  > $srcRes);
     $self->{bottomLevelId} = $tm->getID();
   }
-
+  
+  #  ou celui fournit en parametre !
+  my $bottomlevel = $self->{pyramid}->getBottomLevel();
+  $self->{bottomLevelId} = $bottomlevel if (defined $bottomlevel);
+  
   # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
   my ($ImgGroundWith, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});

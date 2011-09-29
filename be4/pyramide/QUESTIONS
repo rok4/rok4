@@ -75,7 +75,5 @@ De plus, il serait judicieux de pouvoir ecrire en parallele un log de debbogage 
 d'afficher des messages utilisateurs...
 
 * La gestion d'un niveau min/max de generation de la pyramide est gérée par un paramétre
-du tileMatrixSet, et la configuration se fait au niveau de la pyramide.
-L'implementation des 2 parametres sur la classe TMS a l'avantage de ne faire aucune
-modification de code sur Tree.
+de la pyramide, et donc la configuration se fait au niveau de la pyramide.
 

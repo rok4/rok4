@@ -281,7 +281,7 @@ END {}
   
   Pas de conf. d'environement..., donc mettre les parametres suivants dans la
   conf de la pyramide :
-    - pyr_descpath
+    - pyr_desc_path
     - tms_path
     - log_path
     - log_file

@@ -49,8 +49,8 @@ END {}
 #
 #    [ pyramid ]
 #
-#    pyr_descpath      =
-#    pyr_datapath      =
+#    pyr_desc_path      =
+#    pyr_data_path      =
 #    ; pyr_schema_path = 
 #    ; pyr_schema_name =
 #    
@@ -152,10 +152,13 @@ sub new {
     # IN
     #  it's all possible parameters !
     pyramid   => { 
-                    pyr_name_new => undef, # string name
-                    pyr_name_old => undef, # string name
-                    pyr_descpath => undef, # path
-                    pyr_datapath => undef, # path
+                    pyr_name_new      => undef, # string name
+                    pyr_name_old      => undef, # string name
+                    pyr_desc_path     => undef, # path
+                    pyr_desc_path_old => undef, # path
+                    pyr_data_path     => undef, # path
+                    pyr_level_bottom  => undef, # number
+                    pyr_level_top     => undef, # number
                     #
                     tms_name     => undef, # string name
                     tms_path     => undef, # path
@@ -248,14 +251,15 @@ sub _init {
         #
         $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
         $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
+        $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE );
         # $pyr->{compressionscheme}= $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
-        $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE ); 
        
     }
     else {
         # To an existing pyramid, you must have to this parameters !
         #
         $pyr->{pyr_name_old} = $params->{pyr_name_old} || ( ERROR ("key/value required to 'pyr_name_old' !") && return FALSE );
+   
         #
         # this option can be determined !
         #
@@ -272,9 +276,9 @@ sub _init {
     #
     # All parameters are mandatory (or initializate by default) whatever the pyramid !
     # 
-    $pyr->{pyr_name_new} = $params->{pyr_name_new} || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
-    $pyr->{pyr_descpath} = $params->{pyr_descpath} || ( ERROR ("key/value required to 'pyr_descpath' !") && return FALSE );
-    $pyr->{pyr_datapath} = $params->{pyr_datapath} || ( ERROR ("key/value required to 'pyr_datapath' !") && return FALSE );
+    $pyr->{pyr_name_new} = $params->{pyr_name_new}   || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
+    $pyr->{pyr_desc_path} = $params->{pyr_desc_path} || ( ERROR ("key/value required to 'pyr_desc_path' !") && return FALSE );
+    $pyr->{pyr_data_path} = $params->{pyr_data_path} || ( ERROR ("key/value required to 'pyr_data_path' !") && return FALSE );
     #
     $pyr->{tms_path}     = $params->{tms_path}     || ( ERROR ("key/value required to 'tms_path' !") && return FALSE );
     #
@@ -283,26 +287,39 @@ sub _init {
     #
     $pyr->{path_nodata}  = $params->{path_nodata}  || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
     #
-    # this option is optional !
+    # this option are optional !
     #
     if (! exists($params->{dir_metadata})) {
         WARN ("key/value optional to 'dir_metadata' !");
         $params->{dir_metadata} = undef;
     }
-    
+    #
     if (! exists($params->{tms_level_min})) {
         WARN ("key/value optional to 'tms_level_min' !");
         $params->{tms_level_min} = undef;
     }
     $pyr->{tms_level_min} = $params->{tms_level_min};
-    
+    #
     if (! exists($params->{tms_level_max})) {
         WARN ("key/value optional to 'tms_level_max' !");
         $params->{tms_level_max} = undef;
     }
     $pyr->{tms_level_max} = $params->{tms_level_max};
+    #
+    if (! exists($params->{pyr_level_bottom})) {
+        WARN ("key/value optional to 'pyr_level_bottom' !");
+        $params->{pyr_level_bottom} = undef;
+    }
+    $pyr->{pyr_level_bottom} = $params->{pyr_level_bottom};
+    #
+    if (! exists($params->{pyr_level_top})) {
+        WARN ("key/value optional to 'pyr_level_top' !");
+        $params->{pyr_level_top} = undef;
+    }
+    $pyr->{pyr_level_top} = $params->{pyr_level_top};
+    
     # 
-    # you can choice this option by default !
+    # you can choice this option with value by default !
     #
     if (! exists($params->{imagesize})) {
         WARN ("key/value optional to 'imagesize' (value by default) !");
@@ -333,12 +350,18 @@ sub _init {
         $params->{gamma} = 1;
     }
     $pyr->{gamma} = $params->{gamma};
-    
+    #
+    if (! exists($params->{pyr_desc_path_old})) {
+        WARN ("key/value optional to 'pyr_desc_path_old' (by default, it's same the 'pyr_desc_path' )!");
+        $params->{pyr_desc_path_old} = $params->{pyr_desc_path};
+    }
+    $pyr->{pyr_desc_path_old} = $params->{pyr_desc_path_old};
+    #
     # TODO path !
     if (! -d $pyr->{path_nodata}) {}
-    if (! -d $pyr->{pyr_descpath}) {}
+    if (! -d $pyr->{pyr_desc_path}) {}
     if (! -d $pyr->{tms_path}) {}
-    if (! -d $pyr->{pyr_datapath}) {}
+    if (! -d $pyr->{pyr_data_path}) {}
     
     return TRUE;
 }
@@ -508,7 +531,8 @@ sub _fillFromPyramid {
   
   TRACE;
   
-  my $filepyramid = $self->getPyrFileOld();
+  my $filepyramid =  File::Spec->catfile($self->getPyrDescPathOld(),
+                                         $self->getPyrFileOld());
   
   if (! $self->readConfPyramid($filepyramid)) {
     ERROR (sprintf "Can not read the XML file Pyramid : %s !", $filepyramid);
@@ -531,7 +555,7 @@ sub _fillFromPyramid {
 
 sub writeConfPyramid {
   my $self    = shift;
-  my $pyrfile = shift; # Can be null !
+  my $filepyramid = shift; # Can be null !
   
   TRACE;
   
@@ -611,15 +635,13 @@ sub writeConfPyramid {
   
   # TODO check the new template !
   
-  # if null, by default, take the new pyramid file !
-  $pyrfile = $self->getPyrFile() if (! defined $pyrfile);
-  
-  #
-  my $filepyramid = File::Spec->catfile($self->getPyrDescPath(), 
-                                        $pyrfile);
+  if (! defined $filepyramid) {
+    $filepyramid = File::Spec->catfile($self->getPyrDescPath(),
+                                       $self->getPyrFile());
+  }
   
   if (-f $filepyramid) {
-    ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $pyrfile);
+    ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
     return FALSE;
   }
   #
@@ -638,14 +660,14 @@ sub writeConfPyramid {
 }
 sub readConfPyramid {
   my $self    = shift;
-  my $pyrfile = shift; # Can be null !
+  my $filepyramid = shift; # Can be null !
     
   TRACE;
   
-  # if null, by default, take the old pyramid file !
-  $pyrfile = $self->getPyrFileOld() if (! defined $pyrfile);
-  
-  my $filepyramid = File::Spec->catfile($self->getPyrDescPath(), $pyrfile);
+  if (! defined $filepyramid) {
+    $filepyramid = File::Spec->catfile($self->getPyrDescPathOld(),
+                                       $self->getPyrFileOld());
+  }
   
   if (! -f $filepyramid) {
     ERROR (sprintf "Can not find the XML file Pyramid : %s !", $filepyramid);
@@ -852,7 +874,7 @@ sub writeCachePyramid {
   #
   # Params useful to create a cache directory empty or not 
   #
-  # pyr_datapath : path of all pyramid
+  # pyr_data_path : path of all pyramid
   # pyr_name_new : new pyramid name
   # pyr_name_old :
   # dir_image    : 
@@ -1116,12 +1138,17 @@ sub getPyrNameOld {
 sub getPyrDescPath {
   my $self = shift;
 
-  return $self->{pyramid}->{pyr_descpath};
+  return $self->{pyramid}->{pyr_desc_path};
+}
+sub getPyrDescPathOld {
+  my $self = shift;
+
+  return $self->{pyramid}->{pyr_desc_path_old};
 }
 sub getPyrDataPath {
   my $self = shift;
   
-  return $self->{pyramid}->{pyr_datapath};
+  return $self->{pyramid}->{pyr_data_path};
 }
 sub getPyrName {
   my $self = shift;
@@ -1130,6 +1157,16 @@ sub getPyrName {
   return undef if (! defined $name);
   $name =~ s/\.(pyr|PYR)$//;
   return $name;
+}
+sub getPyrLevelBottom {
+  my $self = shift;
+  
+  return $self->{pyramid}->{pyr_level_bottom};
+}
+sub getPyrLevelTop {
+  my $self = shift;
+  
+  return $self->{pyramid}->{pyr_level_top};
 }
 # 
 sub getTmsName {
@@ -1234,6 +1271,36 @@ sub setTileMatrixSet {
 sub getLevels {
   my $self = shift;
   return @{$self->{level}};
+}
+sub getFirstLevel {
+  my $self = shift;
+  
+  my $levelid = 0;
+
+  TRACE;
+  
+  # fixme : variable POSIX to put correctly !
+  foreach my $k (sort {$a->getID() <=> $b->getID()} ($self->getLevels())) {
+    $levelid = $k->getID();
+    last;
+  }
+  
+  return $levelid;
+}
+
+sub getLastLevel {
+  my $self = shift;
+  
+  my $levelid = 0;
+  
+  TRACE;
+  
+  # fixme : variable POSIX to put correctly !
+  foreach my $k (sort {$a->getID() <=> $b->getID()} ($self->getLevels())) {
+    $levelid = $k->getID();
+  }
+  
+  return $levelid;
 }
 ################################################################################
 # privates method (low level)
@@ -1479,7 +1546,7 @@ sub getCachePathOfImage {
   return File::Spec->catfile($self->getPyrDataPath(), $self->getPyrName(), $imageName); 
 }
 
-# ref to getCacheNameOfImage !
+# ref alias to getCacheNameOfImage !
 sub getCacheImageName {
   my $self  = shift;
   my $level = shift;
@@ -1490,7 +1557,7 @@ sub getCacheImageName {
   return $self->getCacheNameOfImage($level, $x, $y, $type);
   
 }
-# ref to getCachePathOfImage !
+# ref alias to getCachePathOfImage !
 sub getCacheImagePath {
   my $self  = shift;
   my $level = shift;
@@ -1517,8 +1584,34 @@ sub isNewPyramid {
 # public method
 #  Manipulate the Level Pyramid
 
-#sub getBottomLevel {}
-#sub getTopLevel {}
+sub getBottomLevel {
+  my $self = shift;
+  
+  my $level = $self->getPyrLevelBottom();
+  
+  return undef if (! defined $level);
+  
+  foreach my $l ($self->getLevels()) {
+    next if ($l->getID() != $level);
+    return $level;
+  }
+  # level not found !
+  return undef;
+}
+sub getTopLevel {
+  my $self = shift;
+  
+  my $level = $self->getPyrLevelTop();
+  
+  return undef if (! defined $level);
+  
+  foreach my $l ($self->getLevels()) {
+    next if ($l->getID() != $level);
+    return $level;
+  }
+  # level not found !
+  return undef;
+}
 
 ################################################################################
 # public method
@@ -1543,8 +1636,8 @@ __END__
     #
     pyr_name_old => "SCAN_RAW_TESTOLD.pyr",
     pyr_name_new => "SCAN_RAW_TESTNEW.pyr",
-    pyr_descpath => "./t/data/pyramid/",
-    pyr_datapath => "./t/data/pyramid/ORTHO",
+    pyr_desc_path => "./t/data/pyramid/",
+    pyr_data_path => "./t/data/pyramid/ORTHO",
     #
     tms_path     => "./t/data/tms/",
     #
@@ -1563,9 +1656,9 @@ __END__
  my $objP = BE4::Pyramid->new($params_options);
  
  $objP->writeConfPyramid();           # in ./t/data/pyramid/SCAN_RAW_TESTNEW.pyr !
- $objP->writeConfPyramid("TEST.pyr"); # in ./t/data/pyramid/TEST.pyr !
+ $objP->writeConfPyramid("./t/data/pyramid/TEST.pyr"); 
  
- $objP->writeCachePyramid();  # in 'pyr_datapath' determined by pyramid ! 
+ $objP->writeCachePyramid();  # in 'pyr_data_path' determined by pyramid ! 
  $objP->writeCachePyramid("./t/data/pyramid/test/"); # in another path !
  
  # 2. a new pyramid
@@ -1573,8 +1666,8 @@ __END__
  my $params_options = {
     #
     pyr_name_new => "SCAN_RAW_TESTNEW.pyr",
-    pyr_descpath => "./t/data/pyramid/",
-    pyr_datapath => "./t/data/pyramid/",
+    pyr_desc_path => "./t/data/pyramid/",
+    pyr_data_path => "./t/data/pyramid/",
     # 
     tms_name     => "LAMB93_50cm_TEST.tms",
     tms_path     => "./t/data/tms/",
@@ -1614,9 +1707,9 @@ __END__
 
 To create a new pyramid, you must fill all parameters following :
 
-    pyr_name_new  =
-    pyr_descpath  =
-    pyr_datapath  =
+    pyr_name_new   =
+    pyr_desc_path  =
+    pyr_data_path  =
     #
     compression   => by default, it's 'raw' !
     #
@@ -1649,8 +1742,8 @@ To create a new pyramid, you must fill all parameters following :
 
     pyr_name_old  =
     pyr_name_new  =
-    pyr_descpath  =
-    pyr_datapath  =
+    pyr_desc_path  =
+    pyr_data_path  =
     #
     dir_depth    =  
     dir_image    = 

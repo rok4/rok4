@@ -10,7 +10,7 @@ use File::Path;
 use Data::Dumper;
 
 # version
-our $VERSION = '0.0.1';
+our $VERSION = '0.0.3';
 
 # My module
 use BE4::Tree;
@@ -44,6 +44,8 @@ sub new {
     tree       => undef, # object Tree !
     nodata     => undef, # object NoData !
     harvesting => undef, # object Harvesting !
+    # out
+    scripts    => [],    # list of script
   };
   bless($self, $class);
   
@@ -729,6 +731,9 @@ sub computeWholeTree {
   # creation des scripts
   for (my $scriptCount=1; $scriptCount<=$self->{job_number}; $scriptCount++){
     my $scriptId   = sprintf "SCRIPT_%s", $scriptCount;
+    # record scripid
+    push @{$self->{scripts}}, $scriptId;
+    #
     my $scriptCode;
     if (! defined($nodeRack[$scriptCount-1])){
       $scriptCode = "echo \"Le script \$0 n'a rien a faire. Tout va bien, c'est normal, on n'a pas de travail pour lui.\"";
@@ -761,8 +766,46 @@ sub computeWholeTree {
     return FALSE;
   }
   
+  # record scripid
+  push @{$self->{scripts}}, $finishScriptId;
+  
   return TRUE;
 }
 
+# method: processScript
+#  Execution des scripts les uns apres les autres.
+#  (Orienté maintenance)
+#
+sub processScript {
+  my $self = shift;
+  
+  TRACE;
+  
+  foreach my $scriptId (@{$self->{scripts}}) {
+    
+    my $scriptName     = join('.',$scriptId,'sh');
+    my $scriptFilePath = File::Spec->catfile($self->{path_shell}, $scriptName);
+    
+    if (! -f $scriptFilePath) {
+      ERROR("Can not find script file path !");
+      return FALSE;
+    }
+    
+    ALWAYS(sprintf ">>> Process script : %s ...", $scriptName);
+    
+    chmod 0755, $scriptFilePath;
+    
+    if (! open OUT, "./$scriptFilePath |") {
+      ERROR(sprintf "impossible de dupliquer le processus : %s !", $!);
+      return FALSE;
+    }
+    
+    while( defined( my $ligne = <OUT> ) ) {
+      ALWAYS($ligne);
+    }
+  }
+  
+  return TRUE;
+}
 1;
 __END__
