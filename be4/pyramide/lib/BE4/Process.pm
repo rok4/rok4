@@ -795,7 +795,7 @@ sub processScript {
     
     chmod 0755, $scriptFilePath;
     
-    if (! open OUT, "./$scriptFilePath |") {
+    if (! open OUT, "$scriptFilePath |") {
       ERROR(sprintf "impossible de dupliquer le processus : %s !", $!);
       return FALSE;
     }
