@@ -1,17 +1,22 @@
-ROK4 Server
-
+ROK4/BE4
+========
+Version ROK4 : 0.2.0
+Version BE4  : 0.2.0
 Compilation
++++++++++++
 
-mkdir build 
-cd build 
-cmake .. [-DOPTION1 -DOPTION2]
-make 
-make [install|package]
+ mkdir build 
+ cd build 
+ cmake .. [-DOPTION1 -DOPTION2]
+ make 
+ make [install|package]
 
 Exemple:
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target -DDEP_PATH=/tmp ..
+--------
+ cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target -DDEP_PATH=/tmp ..
 
-OPTIONS
+Options
+-------
 
 les options sont définie par : 
  -DOPTIONS
