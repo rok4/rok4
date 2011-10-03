@@ -1,4 +1,5 @@
 #include <cppunit/extensions/HelperMacros.h>
+#undef __SSE4__
 #undef __SSE3__
 #undef __SSE2__
 #undef __SSE__

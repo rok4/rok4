@@ -183,7 +183,7 @@
         </tileMatrix>
 	<tileMatrix>
                 <id>18</id>
-                <resolution>1</resolution>
+                <resolution>0.5</resolution>
                 <topLeftCornerX> 0 </topLeftCornerX>
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>

@@ -2,7 +2,7 @@
 project(proj)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
-SET(CPACK_PACKAGE_VERSION_MINOR "7")
+SET(CPACK_PACKAGE_VERSION_MINOR "8")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 cmake_minimum_required(VERSION 2.8.4)
@@ -27,18 +27,18 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-#set(CMAKE_BUILD_TYPE specificbuild)
-#set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-#set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 
 
 ########################################
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.7.0/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.8.0-svn20110802/* src)
 add_custom_command(OUTPUT install/lib/libproj.a 
-  COMMAND ./configure --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install 
+  COMMAND ./configure CFLAGS=-O3 CXXFLAGS=-O3 --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install 
   COMMAND make 
   COMMAND make install 
   DEPENDS src/configure 
@@ -88,6 +88,11 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
   PATTERN "bin/*"
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
                       GROUP_EXECUTE GROUP_READ)
+INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/share/proj"
+  DESTINATION config
+  PATTERN "epsg" EXCLUDE
+  PATTERN "IGNF" EXCLUDE)
+  
 
 
 

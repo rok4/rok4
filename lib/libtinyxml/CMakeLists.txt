@@ -27,9 +27,9 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-#set(CMAKE_BUILD_TYPE specificbuild)
-#set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-#set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-03")
 
 
 ########################################
@@ -73,7 +73,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -90,7 +90,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc
+add_custom_target(doc ALL
 ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 COMMENT "Generating API documentation with Doxygen" VERBATIM

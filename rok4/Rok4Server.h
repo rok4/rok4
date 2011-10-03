@@ -33,6 +33,8 @@ private:
 	ServicesConf servicesConf;
 	std::map<std::string, Layer*> layerList;
 	std::map<std::string, TileMatrixSet*> tmsList;
+        std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+        std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
 
 	static void* thread_loop(void* arg);
 
@@ -40,19 +42,22 @@ private:
 	void buildWMTSCapabilities();
 
 	DataStream* getMap (Request* request);
-	DataSource* getTile(Request* request);
 	DataStream* WMSGetCapabilities (Request* request);
-	DataStream* WMTSGetCapabilities(Request* request);
 	void        processWMS    (Request *request, FCGX_Request&  fcgxRequest);
 	void        processWMTS   (Request *request, FCGX_Request&  fcgxRequest);
 	void        processRequest(Request *request, FCGX_Request&  fcgxRequest);
 
 public:
-	std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
-	std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+	ServicesConf& getServicesConf() {return servicesConf;}
+	std::map<std::string, Layer*>& getLayerList() {return layerList;}
+	std::map<std::string, TileMatrixSet*>& getTmsList() {return tmsList;}
+	std::vector<std::string>& getWmsCapaFrag() {return wmsCapaFrag;}
+	std::vector<std::string>& getWmtsCapaFrag() {return wmtsCapaFrag;}
+	DataSource* getTile(Request* request);
+	DataStream* WMTSGetCapabilities(Request* request);
 
 	void run();
-	Rok4Server(int nbThread, ServicesConf servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
+	Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList);
 
 };
 

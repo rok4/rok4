@@ -5,13 +5,17 @@
 #include <vector>
 #include "Accumulator.h"
 
+typedef enum {
+	ROLLING_FILE = 0,
+	STANDARD_OUTPUT_STREAM_FOR_ERRORS
+} LogOutput;
 
 typedef enum {	
-	DEBUG = 0,
-	INFO,
-	WARN,
+	FATAL = 0,
 	ERROR,
-	FATAL,
+	WARN,
+	INFO,
+	DEBUG,
 	nbLogLevel // ceci n'est pas un logLevel mais juste un hack pour avoir une constante qui compte le nombre de logLevel
 } LogLevel;
 
@@ -21,7 +25,7 @@ class Logger {
 		
 		// TODO: ce serait plus propre d'utiliser des shared_ptr
 		static Accumulator* accumulator[nbLogLevel];
-
+		static LogOutput logOutput;
 	public:
 		/**
 		 * Obtient un pointeur vers la sortie du niveau de log.
@@ -35,7 +39,7 @@ class Logger {
 		/**
 		 * Définit la sortie d'un niveau de log.
 		 *
-		 * Pour désactiver un niveau de log, utliser un pointeur nul
+		 * Pour désactiver un niveau de log, utiliser un pointeur nul
 		 * Le même accumulateur peut être utilisé par plusieurs niveau de log.
 		 *
 		 * La classe Logger se charge de détruire les Accumulateurs non utilisés.
@@ -50,6 +54,8 @@ class Logger {
 		 */
 		static std::ostream& getLogger(LogLevel level);
 
+		inline static void setOutput(LogOutput output) {logOutput=output;}
+		inline static LogOutput& getOutput() {return logOutput;}
 };
 
 /**
@@ -58,13 +64,15 @@ class Logger {
  */
 extern std::ostream nullstream;
 
-#define LOGGER(x) (Logger::getAccumulator(x)?Logger::getLogger(x):nullstream)
+//#define LOGGER(x) (Logger::getAccumulator(x)?Logger::getLogger(x):nullstream)
+//#define LOGGER(x) (Logger::getOutput()==ROLLING_FILE?(Logger::getAccumulator(x)?Logger::getLogger(x):nullstream):std::cerr)
+#define LOGGER(x) (Logger::getAccumulator(x)?(Logger::getOutput()==ROLLING_FILE?Logger::getLogger(x):std::cerr):nullstream)
 
-#define LOGGER_DEBUG(m) LOGGER(DEBUG)<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
-#define LOGGER_INFO(m) LOGGER(INFO)<<m<<std::endl
-#define LOGGER_WARN(m) LOGGER(WARN)<<m<<std::endl
-#define LOGGER_ERROR(m) LOGGER(ERROR)<<m<<std::endl
-#define LOGGER_FATAL(m) LOGGER(FATAL)<<m<<std::endl
+#define LOGGER_DEBUG(m) LOGGER(DEBUG)<<"pid="<<getpid()<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
+#define LOGGER_INFO(m) LOGGER(INFO)<<"pid="<<getpid()<<" "<<m<<std::endl
+#define LOGGER_WARN(m) LOGGER(WARN)<<"pid="<<getpid()<<" "<<m<<std::endl
+#define LOGGER_ERROR(m) LOGGER(ERROR)<<"pid="<<getpid()<<" "<<m<<std::endl
+#define LOGGER_FATAL(m) LOGGER(FATAL)<<"pid="<<getpid()<<" "<<m<<std::endl
 
 
 #endif

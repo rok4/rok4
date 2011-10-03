@@ -421,16 +421,13 @@ void Rok4Server::buildWMTSCapabilities(){
 			}
 		}
 
-		// on pourrait avoir plusieurs formats différents par layer si on utilise plusieurs pyramides par layer.
-		std::vector<std::string> formats = layer->getMimeFormats();
-		for (unsigned int i=0; i < formats.size(); i++){
-			layerEl->LinkEndChild(buildTextNode("Format",formats[i]));
-		}
+		// Contrainte : 1 layer = 1 pyramide = 1 format
+		layerEl->LinkEndChild(buildTextNode("Format",getMimeType(layer->getDataPyramid()->getFormat())));
 
 		/* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
 		 *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
 		TiXmlElement * tmsLinkEl = new TiXmlElement("TileMatrixSetLink");
-		tmsLinkEl->LinkEndChild(buildTextNode("TileMatrixSet",layer->getPyramids()[0]->getTms().getId()));
+		tmsLinkEl->LinkEndChild(buildTextNode("TileMatrixSet",layer->getDataPyramid()->getTms().getId()));
 		layerEl->LinkEndChild(tmsLinkEl);
 
 		contentsEl->LinkEndChild(layerEl);
@@ -452,7 +449,7 @@ void Rok4Server::buildWMTSCapabilities(){
 			TileMatrix tm =itTm->second;
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
 			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
-			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr((long double)tm.getRes()/0.00028)));
+			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr((long double)(tm.getRes()*tms->getCrs().getMetersPerUnit())/0.00028)));
 			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
 			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
 			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));
@@ -492,3 +489,4 @@ void Rok4Server::buildWMTSCapabilities(){
 		*/
 
 }
+

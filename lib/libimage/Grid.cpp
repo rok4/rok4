@@ -42,14 +42,6 @@ void Grid::affine_transform(double Ax, double Bx, double Ay, double By) {
   update_bbox();
 }
 
-#include <cstring>
-//TODO : cas d'un fichier de conf charge dynamiquement (option -f)
-char PROJ_LIB2[1024] = "../config/proj/";
-const char *pj_finder2(const char *name) {
-  strcpy(PROJ_LIB2 + 15, name);
-  return PROJ_LIB2;
-}
-
 /**
  * Effectue une reprojection sur les coordonnées de la grille
  * 
@@ -64,28 +56,30 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
   	pthread_mutex_lock (& mutex_proj);
 
-	pj_set_finder( pj_finder2 );
-	LOGGER_DEBUG(pj_finder2("test"));
+
+	projCtx ctx = pj_ctx_alloc();
 
   	projPJ pj_src, pj_dst;  
-  	if(!(pj_src = pj_init_plus(  ("+init=" + from_srs +" +wktext" ).c_str()))) {
-    		int *err = pj_get_errno_ref();
-    		char *msg = pj_strerrno(*err);     
+  	if(!(pj_src = pj_init_plus_ctx(ctx,  ("+init=" + from_srs +" +wktext" ).c_str()))) {
+    		int err = pj_ctx_get_errno(ctx);
+    		char *msg = pj_strerrno(err);     
     		LOGGER_DEBUG("erreur d initialisation " << from_srs << " " << msg);
-    		pthread_mutex_unlock (& mutex_proj);
+    		pj_ctx_free(ctx);
+		pthread_mutex_unlock (& mutex_proj);
     		return false;
   	}
-  	if(!(pj_dst = pj_init_plus(  ("+init=" + to_srs +" +wktext" ).c_str()))) {
-    		int *err = pj_get_errno_ref();
-    		char *msg = pj_strerrno(*err);     
+  	if(!(pj_dst = pj_init_plus_ctx(ctx,  ("+init=" + to_srs +" +wktext" ).c_str()))) {
+    		int err = pj_ctx_get_errno(ctx);
+    		char *msg = pj_strerrno(err);     
     		LOGGER_DEBUG("erreur d initialisation " << to_srs << " " << msg);
 		pj_free(pj_src);
+    		pj_ctx_free(ctx);
     		pthread_mutex_unlock (& mutex_proj);
     		return false;
 	}
 
-	LOGGER_DEBUG(from_srs<<" "<<to_srs);
-	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
+//	LOGGER_DEBUG(from_srs<<" "<<to_srs);
+//	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
 
 	if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
     		gridX[i] *= DEG_TO_RAD;
@@ -94,7 +88,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
 	int code=pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
 
-	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
+//	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
 
 	pj_free(pj_src);
 	pj_free(pj_dst);

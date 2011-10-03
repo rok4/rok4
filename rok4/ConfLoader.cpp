@@ -147,6 +147,8 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
+	std::string format;	
+	int channels;
 	std::map<std::string, Level *> levels;
 
 	TiXmlDocument doc(fileName.c_str());
@@ -172,7 +174,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 	pElem=hRoot.FirstChild("tileMatrixSet").Element();
 	if (!pElem){
-		LOGGER_ERROR(fileName << "La pyramide n'a pas de TMS. C'est un problème.");
+		LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de TMS. C'est un problème.");
 		return NULL;
 	}
 	std::string tmsName=pElem->GetText();
@@ -184,13 +186,36 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 	}
 	tms=it->second;
 
+	pElem=hRoot.FirstChild("format").Element();
+        if (!pElem){
+                LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de format.");
+                return NULL;
+        }
+	format=pElem->GetText();
+        if (format.compare("TIFF_INT8")!=0
+         && format.compare("TIFF_JPG_INT8")!=0
+         && format.compare("TIFF_PNG_INT8")!=0
+         && format.compare("TIFF_LZW_INT8")!=0
+         && format.compare("TIFF_FLOAT32")!=0){
+                LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
+                return NULL;
+        }
+        format=pElem->GetText();
+
+	pElem=hRoot.FirstChild("channels").Element();
+        if (!pElem){
+		LOGGER_ERROR("La pyramide ["<< fileName <<"] Pas de channels => channels = " << DEFAULT_CHANNELS);
+                channels=DEFAULT_CHANNELS;
+                return NULL;
+        }else if (!sscanf(pElem->GetText(),"%d",&channels)){
+                LOGGER_ERROR("La pyramide ["<< fileName <<"] : channels=[" << pElem->GetText() <<"] n'est pas un entier.");
+                return NULL;
+        }
 
 	for( pElem=hRoot.FirstChild( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement( "level")){
 		TileMatrix *tm;
 		std::string id;
-		std::string format;
 		std::string baseDir;
-		int channels;
 		int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
@@ -206,6 +231,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		id=tmName;
 		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
 		std::map<std::string, TileMatrix>::iterator it = tmList->find(tmName);
+
 		if(it == tmList->end()){
 			LOGGER_ERROR(fileName <<" Le level "<< id <<" ref. Le TM [" << tmName << "] qui n'appartient pas au TMS [" << tmsName << "]");
 			return NULL;
@@ -215,19 +241,6 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
 		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
 		baseDir=pElemLvl->GetText();
-
-		pElemLvl = hLvl.FirstChild("format").Element();
-		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans format!!"); return NULL; }
-		format=pElemLvl->GetText(); // FIXME: controle de la valeur a faire
-
-		pElemLvl = hLvl.FirstChild("channels").Element();
-		if (!pElemLvl){
-			LOGGER_ERROR(fileName <<" Level "<< id << " Pas de channels => channels = " << DEFAULT_CHANNELS);
-			channels=DEFAULT_CHANNELS;
-		}else if (!sscanf(pElemLvl->GetText(),"%d",&channels)){
-			LOGGER_ERROR(fileName <<" Level "<< id <<": channels=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
-			return NULL;
-		}
 
 		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
 		if (!pElemLvl){
@@ -302,9 +315,10 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 				return NULL;
 			}
 		}
-
+		
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format);
+		
 		levels.insert(std::pair<std::string, Level *> (id, TL));
 	}// boucle sur les levels
 
@@ -313,12 +327,12 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		return NULL;
 	}
 
-	Pyramid *pyr = new Pyramid(levels, *tms);
+	Pyramid *pyr = new Pyramid(levels, *tms, format, channels);
 	return pyr;
 
 }// buildPyramid()
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool reprojectionCapability){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
@@ -332,7 +346,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	bool opaque;
 	std::string authority="";
 	std::string resampling;
-	std::vector<Pyramid*> pyramids;
+	Pyramid* pyramid;
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
 
@@ -483,16 +497,17 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
                 }
 	}
 
-	
-	for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
-		std::string str_crs(pElem->GetText());
-		// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-		CRS crs(str_crs);
-		if (!crs.isProj4Compatible())
-			LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
-		else{
-			LOGGER_INFO("		Ajout du crs "<<str_crs);
-			WMSCRSList.push_back(str_crs);
+	if (reprojectionCapability==true){
+		for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
+			std::string str_crs(pElem->GetText());
+			// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+			CRS crs(str_crs);
+			if (!crs.isProj4Compatible())
+				LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
+			else{
+				LOGGER_INFO("		Ajout du crs "<<str_crs);
+				WMSCRSList.push_back(str_crs);
+			}
 		}
 	}
 	if (WMSCRSList.size()==0){
@@ -526,31 +541,29 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		resampling = pElem->GetText();
 	}
 
-
-	for (pElem=hRoot.FirstChild("pyramidList").FirstChild("pyramid").Element(); pElem; pElem=pElem->NextSiblingElement("pyramid")){
-		Pyramid* pyramid = buildPyramid(pElem->GetText(), tmsList);
+	pElem=hRoot.FirstChild("pyramid").Element();
+	if (pElem){
+		pyramid = buildPyramid(pElem->GetText(), tmsList);
 		if (!pyramid){
-			LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
-			//FIXME: que faut-il faire des pyramides déjà créées? Faut-il les detruire? ou vector s'en charge?
-			return NULL;
-		}
-		pyramids.push_back(pyramid);
+                        LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
+                        return NULL;
+                }
 	}
-	if (pyramids.size()==0){
+	else{
 		// FIXME: pas forcément critique si on a un cache d'une autre nature (jpeg2000 par exemple).
-		LOGGER_ERROR("Aucune pyramide associé au layer "<< fileName);
-		return NULL;
+                LOGGER_ERROR("Aucune pyramide associee au layer "<< fileName);
+                return NULL;
 	}
 
 	Layer *layer;
 
-	layer = new Layer(id, title, abstract, keyWords, pyramids, styles, minRes, maxRes,
+	layer = new Layer(id, title, abstract, keyWords, pyramid, styles, minRes, maxRes,
 			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox);
 
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& logFilePrefix, int& logFilePeriod, int &nbThread, std::string &layerDir, std::string &tmsDir){
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir){
 	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
 	TiXmlDocument doc(serverConfigFile);
 	if (!doc.LoadFile()){
@@ -573,6 +586,18 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 	}
 	hRoot=TiXmlHandle(pElem);
 
+	pElem=hRoot.FirstChild("logOutput").Element();
+	std::string strLogOutput=(pElem->GetText());
+        if (!pElem){
+                std::cerr<<"Pas de logOutput => logOutput = " << DEFAULT_LOG_OUTPUT;
+                logOutput = DEFAULT_LOG_OUTPUT;
+        }else if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
+	else if (strLogOutput=="standard_output_stream_for_errors") logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
+	else{
+		std::cerr<<"Le logOutput [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
+                return false;
+	}
+
 	pElem=hRoot.FirstChild("logFilePrefix").Element();
         if (!pElem){
                 std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
@@ -588,6 +613,21 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  n'est pas un entier."<<std::endl;	
                 return false;
         }
+
+	pElem=hRoot.FirstChild("logLevel").Element();
+	std::string strLogLevel(pElem->GetText());
+        if (!pElem){
+                std::cerr<<"Pas de logLevel => logLevel = " << DEFAULT_LOG_LEVEL;
+                logLevel = DEFAULT_LOG_LEVEL;
+        }else if (strLogLevel=="fatal") logLevel=FATAL;
+	else if (strLogLevel=="error") logLevel=ERROR;
+	else if (strLogLevel=="warn") logLevel=WARN; 
+	else if (strLogLevel=="info") logLevel=INFO;
+        else if (strLogLevel=="debug") logLevel=DEBUG;
+	else{
+               	std::cerr<<"Le logLevel [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
+               	return false;
+        }
 		
 	pElem=hRoot.FirstChild("nbThread").Element();
 	if (!pElem){
@@ -597,6 +637,28 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] n'est pas un entier."<<std::endl;
 		return false;
 	}
+	
+	pElem=hRoot.FirstChild("reprojectionCapability").Element();
+        if (!pElem){
+                std::cerr<<"Pas de reprojectionCapability => reprojectionCapability = true"<<std::endl;
+                reprojectionCapability = true;
+        }else{
+		std::string strReprojection(pElem->GetText());
+		if (strReprojection=="true") reprojectionCapability=true;
+		else if (strReprojection=="false") reprojectionCapability=false;
+		else{
+			std::cerr<<"Le reprojectionCapability [" << pElem->GetText() <<"] n'est pas un booleen."<<std::endl;
+                	return false;
+		}
+        }
+
+	pElem=hRoot.FirstChild("servicesConfigFile").Element();
+        if (!pElem){
+                std::cerr<<"Pas de servicesConfigFile => servicesConfigFile = " << DEFAULT_SERVICES_CONF_PATH <<std::endl;
+                servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
+        }else{
+                servicesConfigFile=pElem->GetText();
+        }
 
 	pElem=hRoot.FirstChild("layerDir").Element();
 	if (!pElem){
@@ -613,6 +675,42 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, std::string& lo
 	}else{
 		tmsDir=pElem->GetText();
 	}
+	
+	// Définition de la variable PROJ_LIB à partir de la configuration
+	std::string projDir;
+	
+	char* projDirEnv;
+	bool absolut=true;
+	pElem=hRoot.FirstChild("projConfigDir").Element();
+	if (!pElem){
+		std::cerr<<"Pas de projConfigDir => projConfigDir = " << DEFAULT_PROJ_DIR<<std::endl;
+		char* pwdBuff = (char*) malloc(PATH_MAX);
+		getcwd(pwdBuff,PATH_MAX);
+		projDir = std::string(pwdBuff);
+		projDir.append("/").append(DEFAULT_PROJ_DIR);
+		free(pwdBuff);
+	}else{
+		projDir=pElem->GetText();
+		//Gestion des chemins relatif
+		if (projDir.compare(0,1,"/") != 0){
+			absolut=false;
+			char* pwdBuff = (char*) malloc(PATH_MAX);
+			getcwd(pwdBuff,PATH_MAX);
+			std::string pwdBuffStr = std::string(pwdBuff);
+			pwdBuffStr.append("/");
+			projDir.insert(0,pwdBuffStr);
+			free(pwdBuff);
+		}
+	}
+	projDirEnv = (char*) malloc(8+2+PATH_MAX);
+	strcat(projDirEnv,"PROJ_LIB=");
+	strcat(projDirEnv,projDir.c_str());
+	
+	if (putenv(projDirEnv)!=0) {
+	  std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
+	  return false;
+	}
+	
 
 	return true;
 }//getTechnicalParam
@@ -668,7 +766,7 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 	return true;
 }
 
-bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers){
+bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers, bool reprojectionCapability){
 	LOGGER_INFO("CHARGEMENT DES LAYERS");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
@@ -696,7 +794,7 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	// générer les Layers décrits par les fichiers.
 	for (unsigned int i=0; i<layerFiles.size(); i++){
 		Layer * layer;
-		layer = buildLayer(layerFiles[i], tmsList);
+		layer = buildLayer(layerFiles[i], tmsList, reprojectionCapability);
 		if (layer){
 			layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
 		}else{
@@ -713,11 +811,11 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	return true;
 }
 
-ServicesConf * ConfLoader::buildServicesConf(){
-	LOGGER_INFO("Construction de la configuration des services depuis "<<SERVICES_CONF_PATH);
-	TiXmlDocument doc(SERVICES_CONF_PATH);
+ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
+	LOGGER_INFO("Construction de la configuration des services depuis "<<servicesConfigFile);
+	TiXmlDocument doc(servicesConfigFile);
 	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << SERVICES_CONF_PATH);
+		LOGGER_ERROR("Ne peut pas charger le fichier " << servicesConfigFile);
 		return NULL;
 	}
 
@@ -727,11 +825,11 @@ ServicesConf * ConfLoader::buildServicesConf(){
 
 	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
 	if (!pElem){
-		LOGGER_ERROR(SERVICES_CONF_PATH << " impossible de recuperer la racine.");
+		LOGGER_ERROR(servicesConfigFile << " impossible de recuperer la racine.");
 		return NULL;
 	}
 	if (pElem->ValueStr() != "servicesConf"){
-		LOGGER_ERROR(SERVICES_CONF_PATH << " La racine n'est pas un servicesConf.");
+		LOGGER_ERROR(servicesConfigFile << " La racine n'est pas un servicesConf.");
 		return NULL;
 	}
 	hRoot=TiXmlHandle(pElem);
@@ -778,7 +876,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	if (!pElem){
 		maxWidth=MAX_IMAGE_WIDTH;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
-		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
+		LOGGER_ERROR(servicesConfigFile << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
 		return NULL;
 	}
 
@@ -786,7 +884,7 @@ ServicesConf * ConfLoader::buildServicesConf(){
 	if (!pElem){
 		maxHeight=MAX_IMAGE_HEIGHT;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
-		LOGGER_ERROR(SERVICES_CONF_PATH << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
+		LOGGER_ERROR(servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
 		return false;
 	}
 
@@ -795,10 +893,9 @@ ServicesConf * ConfLoader::buildServicesConf(){
 		if (format != "image/jpeg" &&
 			format != "image/png"  &&
 			format != "image/tiff" &&
-			format != "image/x-bil" &&
 			format != "image/x-bil;bits=32" &&
 			format != "image/gif"){
-			LOGGER_ERROR(SERVICES_CONF_PATH << "le format d'image [" << format << "] n'est pas un type MIME");
+			LOGGER_ERROR(servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME");
 		}else{
 			formatList.push_back(format);
 		}

@@ -22,7 +22,7 @@ inline int CompoundImage::_getline(T* buffer, int line) {
 	for(int x = 0; x < images[y].size(); x++)
 		buffer += images[y][x]->getline(buffer, line);
 	return width*channels;
-	}
+}
 
 /** D */
 int CompoundImage::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }

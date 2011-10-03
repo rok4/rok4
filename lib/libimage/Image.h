@@ -45,7 +45,6 @@ class Image {
 		double resy;
 		/** Calcul des resolutions en x et en y, calculées à partir des dimensions et de la BoudingBox **/
 		void computeResxy() {
-
 			resx=(bbox.xmax - bbox.xmin)/double(width);
 			resy=(bbox.ymax - bbox.ymin)/double(height);
 		}

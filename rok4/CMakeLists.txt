@@ -1,43 +1,52 @@
 #Défini le nom du projet 
 project(Rok4Server)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+#Lecture de la version dans le fichier du projet
+if(NOT DEFINED ROK4_VERSION)
+        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
+        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
+        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
+endif(NOT DEFINED ROK4_VERSION)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+cmake_minimum_required(VERSION 2.6)
+
 
 cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules ${CMAKE_MODULE_PATH})
 
 if(NOT DEFINED DEP_PATH)
-  set(DEP_PATH ${CMAKE_CURRENT_SURCE_DIR}/../target)
+  set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../target)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT DEFINED ROK4LIBSDIR)
-  set(ROK4LIBSDIR ${CMAKE_CURRENT_SURCE_DIR}/../lib)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
 set(CMAKE_BUILD_TYPE specificbuild)
-set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
-set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
 
 
 ########################################
 #définition des fichiers sources
 
-set(rok4core_SRCS CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp FileDataSource.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp )
-set(rok4server_SRCS Rok4Server.cpp )
-
+set(rok4core_SRCS CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+set(rok4server_SRCS main.cpp )
+set(rok4apitest_SRCS test_api.c )
 
 
 add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
+add_executable(test_api ${rok4apitest_SRCS})
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
@@ -51,6 +60,9 @@ set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rok4 rok4core)
+target_link_libraries(test_api rok4core)
+
+set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -68,14 +80,27 @@ if(UNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
+
+    #Transformation des sorties Xml CppUnit en Xml Junit
+    find_package(Xsltproc)
+    if(XSLTPROC_FOUND)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
+    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+		COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
+    endif(XSLTPROC_FOUND)
+    
+
+
 endif(UNITTEST)
 
 ########################################
@@ -85,7 +110,7 @@ if(BUILD_DOC)
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc
+add_custom_target(doc ALL
 ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 COMMENT "Generating API documentation with Doxygen" VERBATIM
@@ -101,7 +126,7 @@ endif(BUILD_DOC)
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester-${PROJECT_NAME})
 # ici uniquement "projet"
-INSTALL(TARGETS rok4 
+INSTALL(TARGETS rok4 rok4core 
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -109,8 +134,8 @@ INSTALL(TARGETS rok4
 
 #Installe les différents headers nécessaires
 #FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
-#INSTALL(FILES ${headers}
-#  DESTINATION include)
+INSTALL(FILES Rok4Api.h
+  DESTINATION include)
 
 #Installe la documentation
 INSTALL(FILES README

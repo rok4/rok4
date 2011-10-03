@@ -76,7 +76,7 @@ size_t TiffEncoder::read(uint8_t *buffer, size_t size_to_read) {
 		offset = header_size;
 		line = 0;
 	}
-
+	
 	for(; line < image->height && offset + linesize <= size_to_read; line++) {
 		// Pour l'instant on ne gere que le type uint8_t
 		image->getline((uint8_t*)(buffer + offset), line);

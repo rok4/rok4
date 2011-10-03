@@ -92,16 +92,10 @@ float* ResampledImage::resample_src_line(int line) {
 int ResampledImage::getline(float* buffer, int line) {
 	float weights[Ky];
 	int nb_weights = Ky;
-
 	int ymin = K.weight(weights, nb_weights, top + line * ratio_y, ratio_y); // On calcule les coefficient d'interpolation
-//getbbox().print();
-//LOGGER_DEBUG("ymin="<<ymin<<" line="<<line<<" top="<<top);
 	mult(buffer, resample_src_line(ymin), weights[0], width*channels);
-	for(int y = 1; y < nb_weights; y++){ 
-//LOGGER_DEBUG("ymin+y"<<ymin + y);
+	for(int y = 1; y < nb_weights; y++) 
 		add_mult(buffer, resample_src_line(ymin + y), weights[y], width*channels);
-}
-//LOGGER_DEBUG("ymin1");
 	return width*channels;
 }
 

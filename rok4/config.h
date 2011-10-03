@@ -17,17 +17,17 @@
 #define MAX_IMAGE_WIDTH  65536
 #define MAX_IMAGE_HEIGHT 65536
 
-// Taille maximum d'une tuile WMTS
-#define MAX_TILE_SIZE 1048576
-
 #define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
-#define SERVICES_CONF_PATH "../config/services.conf"
+#define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
 
+#define DEFAULT_LOG_OUTPUT ROLLING_FILE
 #define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
 #define DEFAULT_LOG_FILE_PERIOD 3600
+#define DEFAULT_LOG_LEVEL  ERROR
 #define DEFAULT_NB_THREAD  1
 #define DEFAULT_LAYER_DIR  "../config/layers/"
 #define DEFAULT_TMS_DIR    "../config/tileMatrixSet"
+#define DEFAULT_PROJ_DIR   "../config/proj"
 #define DEFAULT_STYLE      "normal"   //FIXME: c'est une valeur bidon en attendant d'avoir de vrai style
 #define DEFAULT_OPAQUE     true
 #define DEFAULT_RESAMPLING "moyenne"  //FIXME: c'est une valeur bidon en atteindant d'avoir de vrai algo d'interpolation

@@ -1,0 +1,80 @@
+BE4-PYRAMID version 1.0.0
+=======================
+
+The README is used to introduce the module and provide instructions on
+how to install the module, any machine dependencies it may have (for
+example C compilers and installed libraries) and any other information
+that should be provided before the module is installed.
+
+A README file is required for CPAN modules since CPAN extracts the
+README file from a module distribution so that people browsing the
+archive can use it get an idea of the modules uses. It is usually a
+good idea to provide version information here so that people can
+decide whether fixes for the module are worth downloading.
+
+VARIABLE ENVIRONMENT (optional)
+
+You can fixe variable environment 'BE4_ENV'.
+
+  > export BE4_ENV=/path/to/install/be4/
+
+
+INSTALLATION
+
+To install this module type the following:
+
+   make [ BE4_ENV=/path/to/install ]
+   make test
+   make install
+
+If BE4_ENV is not fixed, you must pass it to make command.
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+  * List of package perl !
+  
+  > find . -iname '*.p[m,l]' -exec scandeps.pl -RV '{}' \; | grep '\[module\]'
+                "POSIX"            => 0,
+                "Pod::Usage"       => 0,
+                "Getopt::Long"     => 0,
+                "Log::Log4perl"    => 0,
+                "Geo::GDAL"        => 0,
+                "Geo::OSR"         => 0,
+                "Cwd"              => 0,
+                "File::Spec"       => 0,
+                "File::Basename"   => 0,
+                "File::Path"       => 0,
+                "XML::LibXML"      => 0,
+                "Config::IniFiles "=> 0,
+                "Data::Dumper"     => 0,
+                "List::Util"       => 0,
+                "URI::URL"         => 0,
+                "URI::http"        => 0,
+                "HTTP::Request"    => 0,
+                "LWP"              => 0,
+                "Math::BigFloat"   => 0,
+  
+  
+  * Binding perl to Gdal !
+  
+  # TODO
+  dpkg --list "*gdal*"
+  
+  * Dependances with Gdal and Proj4 !
+  
+  # TODO
+  dpkg --list "*gdal*"
+  dpkg --list "*proj*"
+
+COPYRIGHT AND LICENCE
+
+Put the correct copyright and licence information here.
+
+Copyright (C) 2011 by Bazonnais Jean Philippe
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.10.1 or,
+at your option, any later version of Perl 5 you may have available.
+

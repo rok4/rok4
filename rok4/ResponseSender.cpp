@@ -47,16 +47,14 @@ void displayFCGIError(int error)
 int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
 	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(source->getHttpStatus()) ;
+	std::string statusHeader= genStatusHeader(source->getHttpStatus());
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(source->gettype().c_str(), strlen(source->gettype().c_str()),request->out);
+	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	size_t buffer_size;
-
 	const uint8_t *buffer = source->getData(buffer_size);
-
 	int wr = 0;
 	// Ecriture iterative de la source de donnees dans le flux de sortie
 	while(wr < buffer_size) {
@@ -66,7 +64,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 			LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
 			displayFCGIError(FCGX_GetError(request->out));
 			delete source;
-			delete[] buffer;
+			//delete[] buffer;
 			return -1;
 		}
 		wr += w;
@@ -87,7 +85,7 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	std::string statusHeader= genStatusHeader(stream->getHttpStatus());
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(stream->gettype().c_str(), strlen(stream->gettype().c_str()),request->out);
+	FCGX_PutStr(stream->getType().c_str(), strlen(stream->getType().c_str()),request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	uint8_t *buffer = new uint8_t[2 << 20];
@@ -97,6 +95,7 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	// Ecriture progressive du flux d'entree dans le flux de sortie
 	while(true) {
 		// Recuperation d'une portion du flux d'entree
+
 		size_t read_size = stream->read(buffer, size_to_read);
 		if (read_size==0)
 			break;

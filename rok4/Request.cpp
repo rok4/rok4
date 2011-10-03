@@ -1,6 +1,7 @@
 #include "Request.h"
 #include "Message.h"
 #include "CRS.h"
+#include "Pyramid.h"
 #include <cstdlib>
 #include <climits>
 #include <vector>
@@ -62,6 +63,7 @@ void toLowerCase(char* str){
 Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
 	LOGGER_DEBUG("QUERY="<<strquery);
 	url_decode(strquery);
+
 	for(int pos = 0; strquery[pos];) {
 		char* key = strquery + pos;
 		for(;strquery[pos] && strquery[pos] != '=' && strquery[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0
@@ -94,10 +96,10 @@ std::string Request::getParam(std::string paramName){
 	return it->second;
 }
 
-/*
- * Verfication et recuperation des parametres d'une requete GetTile
- * @return message d'erreur en cas d'erreur (NULL sinon)
- */
+/**
+* @vrief Verification et recuperation des parametres d'une requete GetTile
+* @return message d'erreur en cas d'erreur (NULL sinon)
+*/
 
 DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
 {
@@ -150,11 +152,7 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
         if(format == "")
                 return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
 	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
-	unsigned int k;
-	for (k=0;k<layer->getMimeFormats().size();k++)
-		if (layer->getMimeFormats().at(k)==format)
-			break;
-	if (k==layer->getMimeFormats().size())
+	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	return NULL;
 }
@@ -172,8 +170,8 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 	}
 }
 
-/*
- * Récuperation et vérification des parametres d'une requete GetMap
+/**
+ * @brife Recuperation et verification des parametres d'une requete GetMap
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 

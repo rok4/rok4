@@ -3,6 +3,11 @@
 
 #include <string>
 
+/**
+* @class CRS
+* @brief Gestion des CRS
+*/
+
 class CRS {
 private:
 	std::string requestCode;	// Code du CRS tel qu'il est ecrit dans la requete WMS
@@ -14,6 +19,7 @@ public:
 	void buildProj4Code();
 	bool isProj4Compatible();
 	bool isLongLat();
+	long double getMetersPerUnit();
 	void setRequestCode(std::string crs);
 	bool cmpRequestCode(std::string crs);
 	std::string getAuthority();	// Renvoie l'autorite du code passe dans la requete WMS (Ex: EPSG,epsg,IGNF,etc.)

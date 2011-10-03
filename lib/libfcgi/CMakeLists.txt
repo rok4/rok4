@@ -38,7 +38,8 @@ set(BUILD_SHARED_LIBS OFF)
 
 set(${PROJECT_NAME}_SRCS fcgiapp.c os_unix.c) 
 
-add_custom_command(OUTPUT fcgi_config.h COMMAND cp -f -l ${CMAKE_CURRENT_SOURCE_DIR}/conf* ${CMAKE_CURRENT_SOURCE_DIR}/*.in ${CMAKE_CURRENT_SOURCE_DIR}/install-sh . COMMAND ./configure)
+set(ENV{CFLAGS} "-O3")
+add_custom_command(OUTPUT fcgi_config.h COMMAND cp -f -l ${CMAKE_CURRENT_SOURCE_DIR}/conf* ${CMAKE_CURRENT_SOURCE_DIR}/*.in ${CMAKE_CURRENT_SOURCE_DIR}/install-sh . COMMAND CFLAGS=-O3 ./configure)
 
 add_custom_target(fcgi-config DEPENDS fcgi_config.h)
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})

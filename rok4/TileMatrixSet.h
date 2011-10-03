@@ -7,6 +7,11 @@
 #include "TileMatrix.h"
 #include "CRS.h"
 
+/**
+* @class TileMatrixSet
+* @brief Implementation des TMS du WMTS
+*/
+
 class TileMatrixSet {
 private:
 	std::string id;

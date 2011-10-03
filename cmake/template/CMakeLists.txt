@@ -1,9 +1,15 @@
 #Défini le nom du projet 
 project(nom_projet)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+#Lecture de la version dans le fichier README 
+if(NOT DEFINED ROK4_VERSION)
+	FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
+	STRING(SUBSTRING ${tmp} 15 -1 subtmp)
+	STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
+endif(NOT DEFINED ROK4_VERSION)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -41,7 +47,7 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 ########################################
 #Définition des dépendances.
-include(ROK4Dependencies)
+#include(ROK4Dependencies)
 
 #set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
@@ -69,15 +75,25 @@ if(UNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp)
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
+  #Transformation des sorties Xml CppUnit en Xml Junit
+    find_package(Xsltproc)
+    if(XSLTPROC_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY) 
+    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+                COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
+    endif(XSLTPROC_FOUND)
+
 endif(UNITTEST)
 
 ########################################
@@ -88,7 +104,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   find_package(Doxygen)
   if(DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc
+    add_custom_target(doc ALL
     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM
@@ -123,10 +139,12 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
     DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
 if(BUILD_DOC)
+  if(DOXYGEN_FOUND)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+  endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
 

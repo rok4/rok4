@@ -1,9 +1,15 @@
 #Défini le nom du projet 
 project(merge4tiff)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+#Lecture de la version dans le fichier README 
+if(NOT DEFINED ROK4_VERSION)
+        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
+        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
+        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
+endif(NOT DEFINED ROK4_VERSION)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -69,7 +75,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -86,7 +92,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   find_package(Doxygen)
   if(DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc
+    add_custom_target(doc ALL
     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM
@@ -122,8 +128,10 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
 if(BUILD_DOC)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+  if(DOXYGEN_FOUND)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
+  endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 endif(BUILD_DOC)
 

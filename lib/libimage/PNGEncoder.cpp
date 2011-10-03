@@ -109,6 +109,7 @@ size_t PNGEncoder::read(uint8_t *buffer, size_t size) {
 	uint8_t colortype=2;
 	// On traite 2 cas : 'Greyscale' et 'Truecolor'
 	// cf: http://www.w3.org/TR/PNG/#11IHDR
+
 	if (image->channels==1)
 		colortype=0;
 	else if (image->channels==3)

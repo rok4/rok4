@@ -13,7 +13,7 @@ class TiffEncoder : public DataStream {
   	~TiffEncoder();
   	size_t read(uint8_t *buffer, size_t size);
 	bool eof();
-	std::string gettype() {return "image/tiff";}
+	std::string getType() {return "image/tiff";}
 	int getHttpStatus() {return 200;}	
 };
 

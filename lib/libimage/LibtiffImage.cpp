@@ -23,7 +23,7 @@ LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBo
                         LOGGER_DEBUG( "Impossible de lire la largeur de " << filename);
 			return NULL;
 		}
-                if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &height)<1)
+                if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height)<1)
 		{
                         LOGGER_DEBUG( "Impossible de lire la hauteur de " << filename);
 			return NULL;
