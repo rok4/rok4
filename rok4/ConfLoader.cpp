@@ -846,6 +846,7 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 	std::vector<std::string> formatList;
 	std::string serviceType;
 	std::string serviceTypeVersion;
+	bool inspire =false;
 	std::vector<std::string> applicationProfileList;
 
 	pElem=hRoot.FirstChild("name").Element();
@@ -865,6 +866,7 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 
 	pElem=hRoot.FirstChild("serviceProvider").Element();
 	if (pElem) serviceProvider = pElem->GetText();
+		
 
 	pElem=hRoot.FirstChild("fee").Element();
 	if (pElem) fee = pElem->GetText();
@@ -905,10 +907,18 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
         if (pElem) serviceType = pElem->GetText();
 	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
         if (pElem) serviceTypeVersion = pElem->GetText();
-
+	
+	pElem=hRoot.FirstChild("inspire").Element();
+	if (pElem) {
+		std::string inspirestr = pElem->GetText();
+		if ( inspirestr.compare("true")==0 || inspirestr.compare("1")==0){
+			LOGGER_INFO("Utilisation du mode Inspire");
+			inspire = true;
+		}
+	}
+	
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion);
-
+			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion, inspire);
 	return servicesConf;
 }
