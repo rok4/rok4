@@ -38,8 +38,8 @@ private:
 
 	static void* thread_loop(void* arg);
 
-	void buildWMSCapabilities();
-	void buildWMTSCapabilities();
+	void buildWMSCapabilities(bool inspire=false);
+	void buildWMTSCapabilities(bool inspire=false);
 
 	DataStream* getMap (Request* request);
 	DataStream* WMSGetCapabilities (Request* request);

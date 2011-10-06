@@ -99,7 +99,7 @@ void* processThread(void* arg){
 //		pthread_mutex_unlock(&mutex_rok4);
 		fprintf(stdout,"\nRequete n°%d : %s\t%s\t%s\n",c,host,script,query);
 		c++;
-		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4");
+		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4", "");
 		
 		if (strcmp(request->service,"wmts")!=0){
 			fprintf(stdout,"\tService %s non gere\n",request->service);
@@ -109,7 +109,7 @@ void* processThread(void* arg){
 		
 		// GetCapabilities	
 		if (strcmp(request->operationType,"getcapabilities")==0){
-			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4",server);
+			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4","",server);
 			fprintf(stdout,"\tStatut=%d\n",capabilities->status);
                         fprintf(stdout,"\ttype=%s\n",capabilities->type);
 			fprintf(stdout,"\tcontentSize=%d\n",capabilities->contentSize);
@@ -123,7 +123,7 @@ void* processThread(void* arg){
 		else if ( strcmp(request->operationType,"gettile")==0  ){
 			// TileReferences
 			TileRef tileRef;
-			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4", server, &tileRef);
+			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4","", server, &tileRef);
 			if (error){
         		        fprintf(stdout,"\tStatut=%d\n",error->status);
                 		fprintf(stdout,"\ttype=%s\n",error->type);
@@ -146,7 +146,7 @@ void* processThread(void* arg){
 			free(error);
 
 			// Tile
-			HttpResponse* tile=rok4GetTile(query, "localhost", "/target/bin/rok4", server);
+			HttpResponse* tile=rok4GetTile(query, "localhost", "/target/bin/rok4","", server);
 			char tileName[20];
 			sprintf(tileName,"test_%d.png",c);
 			FILE* T=fopen(tileName,"w");
@@ -157,7 +157,7 @@ void* processThread(void* arg){
 		}
 		// Operation non prise en charge
 		else{
-			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4",server);
+			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4","",server);
 			fprintf(stdout,"\tStatut=%d\n",response->status);
                 	fprintf(stdout,"\ttype=%s\n",response->type);
 			fprintf(stdout,"\terror content=%s\n",response->content);
