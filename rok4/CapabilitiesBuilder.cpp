@@ -50,13 +50,18 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * capabilitiesEl = new TiXmlElement( "WMS_Capabilities" );
 	capabilitiesEl->SetAttribute("version","1.3.0");
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
-	// Pour Inspire. Cf. remarque plus bas.
-	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
-	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd");
-
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
+	
+	// Pour Inspire. Cf. remarque plus bas.
+	if (servicesConf.isInspire()){
+		capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
+		capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
+		capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd");
+	}
+	
+	
 
 	// Traitement de la partie service
 	//----------------------------------
@@ -136,30 +141,31 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Inspire (extended Capability)
-	// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
-	TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+	if(servicesConf.isInspire()){
+		// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
+		TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 
-	// MetadataURL
-	TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
-	metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
-        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+		// MetadataURL
+		TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+		metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
+		extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
 
-	// Languages
-	TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
-	TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
-	TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
-	TiXmlText * lfre = new TiXmlText("fre");
-        languageEl->LinkEndChild(lfre);
-	defaultLanguageEl->LinkEndChild(languageEl);
-	supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
-	extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
-	// Responselanguage
-	TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
-	responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
-	extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
+		// Languages
+		TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+		TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+		TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
+		TiXmlText * lfre = new TiXmlText("fre");
+		languageEl->LinkEndChild(lfre);
+		defaultLanguageEl->LinkEndChild(languageEl);
+		supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+		extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+		// Responselanguage
+		TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+		responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+		extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
 	
-	capabilityEl->LinkEndChild(extendedCapabilititesEl);
-
+		capabilityEl->LinkEndChild(extendedCapabilititesEl);
+	}
 	// Layer
 	if (layerList.empty()){
 		LOGGER_ERROR("Liste de layers vide");
@@ -213,6 +219,7 @@ void Rok4Server::buildWMSCapabilities(){
 		gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
 		childLayerEl->LinkEndChild(gbbEl);
 
+		//TODO Inspire BoundingBoxes in all CRS
 		// BoundingBox
 		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
 		bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
@@ -236,8 +243,17 @@ void Rok4Server::buildWMSCapabilities(){
 		 *
 		 layer->getAuthority();
 		 layer->getOpaque();
-		 layer->getStyles();
+		
 		 */
+		//TODO  layer->getStyles();
+		if (childLayer->getStyles().size() != 0){
+			for (unsigned int i=0; i < childLayer->getStyles().size(); i++){
+				TiXmlElement * styleEl= new TiXmlElement("Style");
+				styleEl->LinkEndChild(buildTextNode("Name", childLayer->getStyles()[i]));
+				styleEl->LinkEndChild(buildTextNode("Title", childLayer->getStyles()[i]));
+				childLayerEl->LinkEndChild(styleEl);
+			}
+		}
 		parentLayerEl->LinkEndChild(childLayerEl);
 
 	}// for layer
@@ -286,10 +302,14 @@ void Rok4Server::buildWMTSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns:ows","http://www.opengis.net/ows/1.1");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
-	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0");
 	capabilitiesEl->SetAttribute("xmlns:gml","http://www.opengis.net/gml");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0/inspire_vs_ows_11.xsd");
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd");
+	if (servicesConf.isInspire()){
+		capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
+		capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0");
+		capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0/inspire_vs_ows_11.xsd");
+	}
+	
 
 	//----------------------------------------------------------------------
 	// ServiceIdentification
@@ -359,31 +379,33 @@ void Rok4Server::buildWMTSCapabilities(){
 
 	opMtdEl->LinkEndChild(opEl);
 
+	
 	// Inspire (extended Capability)
         // TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
-        TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+        if(servicesConf.isInspire()){
+		TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 
-        // MetadataURL
-        TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
-        metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
-        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+		// MetadataURL
+		TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+		metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
+		extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
 
-        // Languages
-        TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
-        TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
-        TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
-        TiXmlText * lfre = new TiXmlText("fre");
-        languageEl->LinkEndChild(lfre);
-        defaultLanguageEl->LinkEndChild(languageEl);
-        supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
-        extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
-        // Responselanguage
-        TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
-        responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
-        extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
+		// Languages
+		TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+		TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+		TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
+		TiXmlText * lfre = new TiXmlText("fre");
+		languageEl->LinkEndChild(lfre);
+		defaultLanguageEl->LinkEndChild(languageEl);
+		supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+		extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+		// Responselanguage
+		TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+		responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+		extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
 
-        opMtdEl->LinkEndChild(extendedCapabilititesEl);
-
+		opMtdEl->LinkEndChild(extendedCapabilititesEl);
+	}
 	capabilitiesEl->LinkEndChild(opMtdEl);
 
 	//----------------------------------------------------------------------

@@ -332,7 +332,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 }// buildPyramid()
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool reprojectionCapability){
+Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
@@ -395,15 +395,23 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
-
-	pElem=hRoot.FirstChild("style").Element();
-	if (!pElem){
-		LOGGER_ERROR("Pas de style => style = " << DEFAULT_STYLE);
-		style = DEFAULT_STYLE;
-	}else{
-		style = pElem->GetText();
+	
+	for( pElem=hRoot.FirstChild( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement( "style")){
+		if (!pElem){
+			LOGGER_ERROR("Pas de style => style = " << (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE));
+			style = (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
+		}else{
+			style = pElem->GetText();
+		}
+		
+		styles.push_back(style);
+		if (inspire && (style==DEFAULT_STYLE_INSPIRE)){
+			styles.pop_back();
+		} 
 	}
-	styles.push_back(style);
+	if (inspire){
+		styles.insert(styles.begin(),DEFAULT_STYLE_INSPIRE);
+	}
 
 	pElem = hRoot.FirstChild("minRes").Element();
 	if (!pElem){
@@ -766,7 +774,7 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 	return true;
 }
 
-bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers, bool reprojectionCapability){
+bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers, bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("CHARGEMENT DES LAYERS");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
@@ -794,7 +802,7 @@ bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, Tile
 	// générer les Layers décrits par les fichiers.
 	for (unsigned int i=0; i<layerFiles.size(); i++){
 		Layer * layer;
-		layer = buildLayer(layerFiles[i], tmsList, reprojectionCapability);
+		layer = buildLayer(layerFiles[i], tmsList, reprojectionCapability,inspire);
 		if (layer){
 			layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
 		}else{

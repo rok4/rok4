@@ -89,7 +89,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 	
 	// Chargement des layers
 	std::map<std::string, Layer*> layerList;
-	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList,reprojectionCapability)){
+	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList,reprojectionCapability,servicesConf->isInspire())){
 		LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
                 LOGGER_FATAL("Extinction du serveur ROK4");
 		sleep(1);       // Pour laisser le temps au logger pour se vider
@@ -190,11 +190,11 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 
 	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	Layer* layer;
-        std::string tmId,format;
+        std::string tmId,format,style;
         int x,y;
 
 	// Analyse de la requete
-        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format);
+        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style);
 	// Exception
         if (errorResp){
                 LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
