@@ -41,10 +41,10 @@ void* Rok4Server::thread_loop(void* arg)
 		}
 
 // 		 //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
-		char **p;
+	/*	char **p;
 	    for (p = fcgxRequest.envp; *p; ++p) {
 	    	LOGGER_DEBUG((char*)*p);
-	    }
+	    }*/
 
 		/* On espère récupérer le nom du host tel qu'il est exprimé dans la requete avec HTTP_HOST.
 		 * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
