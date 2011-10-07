@@ -5,7 +5,8 @@
 #include <cstdlib>
 #include <climits>
 #include <vector>
-#include <cstdio> 
+#include <cstdio>
+#include "config.h"
 
 /* converts hex char (0-9, A-Z, a-z) to decimal.
  * returns 0xFF on invalid input.
@@ -89,6 +90,23 @@ Request::Request(char* strquery, char* hostName, char* path, char* https) : host
 
 Request::~Request() {}
 
+/**
+ * @vriedf test de la présence de paramName dans la requete
+ * @return true si présent
+ */
+bool Request::hasParam(std::string paramName){
+	std::map<std::string, std::string>::iterator it = params.find(paramName);
+	if(it == params.end()){
+		return false;
+	}
+	return true;
+}
+
+
+/**
+ * @vriedf récupération du parametre paramName dans la requete
+ * @return la valeur du parametre si existant "" sinon
+ */
 std::string Request::getParam(std::string paramName){
 	std::map<std::string, std::string>::iterator it = params.find(paramName);
 	if(it == params.end()){
@@ -102,7 +120,7 @@ std::string Request::getParam(std::string paramName){
 * @return message d'erreur en cas d'erreur (NULL sinon)
 */
 
-DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
+DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, std::string &style)
 {
 	// VERSION
 	std::string version=getParam("version");
@@ -151,11 +169,27 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
 	// FORMAT
 	format=getParam("format");
         if(format == "")
-                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wmts"));
 	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
 	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
+	//Style
+	style=getParam("style");
+	if(style == "")
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLE absent.","wmts"));
+	// TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
+	bool styleFound =false;
+	if (layer->getStyles().size() != 0){
+		for (unsigned int i=0; i < layer->getStyles().size(); i++){
+			if (style == layer->getStyles()[i])
+				styleFound=true;
+		}
+	}
+	if (!(styleFound))
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le style "+style+" n'est pas gere pour la couche "+str_layer,"wmts"));
+	
 	return NULL;
+
 }
 
 void stringSplit(std::string str, std::string delim, std::vector<std::string> &results){
@@ -176,7 +210,7 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format){
+DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format, std::string &styles){
         // VERSION
         std::string version=getParam("version");
         if (version=="")
@@ -301,5 +335,21 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	std::string str_exception=getParam("exception");
 	if (str_exception!=""&&str_exception!="XML")
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Format d'exception "+str_exception+" non pris en charge","wms"));
+	
+	if (!(hasParam("styles")))
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLES absent.","wms"));
+	styles=getParam("styles");
+	if(styles == "") // Gestion du style par défaut
+                styles=(servicesConf.isInspire()?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
+	// TODO : récuperer les styles supporté par la couche
+	bool styleFound =false;
+	if (layer->getStyles().size() != 0){
+		for (unsigned int i=0; i < layer->getStyles().size(); i++){
+			if (styles == layer->getStyles()[i])
+				styleFound=true;
+		}
+	}
+	if (!(styleFound))
+		return new SERDataStream(new ServiceException("",WMS_STYLE_NOT_DEFINED,"Le style "+styles+" n'est pas gere pour la couche "+str_layer,"wms"));
 	return NULL;
 }

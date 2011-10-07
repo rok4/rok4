@@ -29,6 +29,7 @@
 #define DEFAULT_TMS_DIR    "../config/tileMatrixSet"
 #define DEFAULT_PROJ_DIR   "../config/proj"
 #define DEFAULT_STYLE      "normal"   //FIXME: c'est une valeur bidon en attendant d'avoir de vrai style
+#define DEFAULT_STYLE_INSPIRE      "inspire_common:DEFAULT"
 #define DEFAULT_OPAQUE     true
 #define DEFAULT_RESAMPLING "moyenne"  //FIXME: c'est une valeur bidon en atteindant d'avoir de vrai algo d'interpolation
 #define DEFAULT_CHANNELS   3

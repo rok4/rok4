@@ -143,10 +143,10 @@ DataStream* Rok4Server::getMap(Request* request)
 	BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
 	int width, height;
 	CRS crs;
-	std::string format;
+	std::string format, styles;
 
 	// Récupération des paramètres
-	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format);
+	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format,styles);
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
@@ -183,11 +183,11 @@ DataStream* Rok4Server::getMap(Request* request)
 DataSource* Rok4Server::getTile(Request* request)
 {
 	Layer* L;
-	std::string tileMatrix,format;
+	std::string tileMatrix,format,style;
 	int tileCol,tileRow;
 
 	// Récupération des parametres de la requete
-	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format);
+	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style);
 
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
