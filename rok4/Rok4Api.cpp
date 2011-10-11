@@ -66,7 +66,6 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
         log.precision(8);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
-
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 

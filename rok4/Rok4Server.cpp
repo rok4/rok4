@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "TiffEncoder.h"
-#include "PNGEncoder.h"
+#include "ColorizePNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
 #include <sstream>
@@ -160,7 +160,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	}
 
 	if(format=="image/png")
-		return new PNGEncoder(image);
+		return new ColorizePNGEncoder(image,true);
 	else if(format == "image/tiff")
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
