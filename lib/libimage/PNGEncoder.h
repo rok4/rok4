@@ -4,6 +4,7 @@
 #include "Data.h"
 #include "Image.h"
 #include "zlib.h"
+#include <../home/alex/projet/gpp3/rok4/rok4/Style.h>
 
 /** D */
 class PNGEncoder : public DataStream {
@@ -21,10 +22,11 @@ protected:
 	virtual size_t write_IDAT(uint8_t *buffer, size_t size);
 	virtual size_t write_IEND(uint8_t *buffer, size_t size);
 	void addCRC(uint8_t *buffer, uint32_t length);
+	Palette* palette;
 
 public:
 	/** D */
-	PNGEncoder(Image* image);
+	PNGEncoder(Image* image, Palette* palette=NULL);
 	/** D */
 	~PNGEncoder();
 

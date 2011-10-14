@@ -24,22 +24,8 @@ static const uint8_t PNG_HEADER_PAL[33] = {
 
 ColorizePNGEncoder::ColorizePNGEncoder(Image *image, bool transparent, const uint8_t rgb[3]) : PNGEncoder(image), transparent(transparent) {
   
-	PLTE[0] = 0;   PLTE[1] = 0;   PLTE[2] = 3;   PLTE[3] = 0;
-	PLTE[4] = 'P'; PLTE[5] = 'L'; PLTE[6] = 'T'; PLTE[7] = 'E';
-	if(transparent) {
-		for(int i = 0; i < 256; i++) {
-			memcpy(PLTE + 8 + 3*i, rgb, 3);
-		}
-	}
-	else for(int i = 0; i < 256; i++) {
-		PLTE[3*i+8]  = i + ((255 - i)*rgb[0] + 127) / 255;
-		PLTE[3*i+9]  = i + ((255 - i)*rgb[1] + 127) / 255;
-		PLTE[3*i+10] = i + ((255 - i)*rgb[2] + 127) / 255;
-  }
-  uint32_t crc = crc32(0, Z_NULL, 0);
-  crc = crc32(crc, PLTE + 4, 3*256+4);
- *((uint32_t*) (PLTE + 256*3 + 8)) = bswap_32(crc);
-  line = -3;
+	buildPLTE(PLTE,transparent,rgb);
+	line = -3;
 }
 
 ColorizePNGEncoder::~ColorizePNGEncoder() {

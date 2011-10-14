@@ -2,14 +2,15 @@
 #define PALETTEDATASOURCE_H
 
 #include <Data.h>
-#include "PaletteConfig.h"
+#include "Palette.h"
 
 class PaletteDataSource : public DataSource
 {
 private:
 	DataSource* dataSource;
-	bool transparent;
-	uint8_t PLTE[3*256+12];
+	Palette* palette;
+	//bool transparent;
+	//uint8_t PLTE[3*256+12];
 	size_t dataSize;
 	uint8_t* data;
 public:
@@ -19,8 +20,8 @@ public:
 	 * @param transparent 
 	 * @param rgb[3] couleur rouge,vert,bleu
 	 */
-	PaletteDataSource(DataSource* dataSource, bool transparent=false, const uint8_t rgb[3]=BLACK);
-	
+	//PaletteDataSource(DataSource* dataSource, bool transparent=false, const uint8_t rgb[3]=BLACK);
+	PaletteDataSource(DataSource* dataSource, Palette* palette);
 	
 	inline bool releaseData()                   {return dataSource->releaseData();}
 	inline std::string getType()                {return dataSource->getType();}

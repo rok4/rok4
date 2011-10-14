@@ -10,8 +10,8 @@ private:
 	uint8_t PLTE[3*256+12];
 
 public:
-	  ColorizePNGEncoder(Image *image, bool transparent = true, const uint8_t rgb[3] = BLACK);
-	  ~ColorizePNGEncoder();
+	ColorizePNGEncoder(Image *image, bool transparent = true, const uint8_t rgb[3] = BLACK);
+	~ColorizePNGEncoder();
 protected:
 	virtual size_t write_IHDRP(uint8_t *buffer, size_t size, uint8_t colortype/* = pixel_t::png_colortype*/);
 	virtual size_t write_PLTE(uint8_t *buffer, size_t size);

@@ -19,6 +19,7 @@
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include <proj_api.h>
+#include <PaletteDataSource.h>
 
 
 /**
@@ -69,7 +70,9 @@ void* Rok4Server::thread_loop(void* arg)
 Rok4Server::Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
                        sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
 
+	LOGGER_DEBUG("Build WMS Capabilities");
 	buildWMSCapabilities();
+	LOGGER_DEBUG("Build WMTS Capabilities");
 	buildWMTSCapabilities();
 }
 
@@ -140,10 +143,11 @@ DataStream* Rok4Server::getMap(Request* request)
 	BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
 	int width, height;
 	CRS crs;
-	std::string format, styles;
+	std::string format;
+	Style* style=0;
 
 	// Récupération des paramètres
-	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format,styles);
+	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format,style);
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
@@ -151,6 +155,8 @@ DataStream* Rok4Server::getMap(Request* request)
 	
 	int error;
 	Image* image = L->getbbox(bbox, width, height, crs, error);
+	
+	LOGGER_DEBUG("GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
 
 	if (image == 0){
 		if (error==1)
@@ -160,7 +166,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	}
 
 	if(format=="image/png")
-		return new ColorizePNGEncoder(image,true);
+		return new PNGEncoder(image,style->getPalette());
 	else if(format == "image/tiff")
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
@@ -180,8 +186,9 @@ DataStream* Rok4Server::getMap(Request* request)
 DataSource* Rok4Server::getTile(Request* request)
 {
 	Layer* L;
-	std::string tileMatrix,format,style;
+	std::string tileMatrix,format;
 	int tileCol,tileRow;
+	Style* style=0;
 
 	// Récupération des parametres de la requete
 	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style);
@@ -190,8 +197,8 @@ DataSource* Rok4Server::getTile(Request* request)
 		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
 		return errorResp;
 	}
-
-	return L->gettile(tileCol, tileRow, tileMatrix);
+	DataSource* tileSource = new PaletteDataSource(L->gettile(tileCol, tileRow, tileMatrix),style->getPalette());
+	return tileSource;
 }
 
 /** Traite les requêtes de type WMTS */

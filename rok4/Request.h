@@ -25,8 +25,8 @@ public:
 	std::string request;
 	std::map<std::string, std::string> params;
 
-	DataSource* getTileParam(ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, std::string &style);
-	DataStream* getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format, std::string &styles);
+	DataSource* getTileParam(ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style);
+	DataStream* getMapParam(ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style);
 
 	Request(char* strquery, char* hostName, char* path);
 	virtual ~Request();

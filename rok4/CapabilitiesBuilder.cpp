@@ -244,20 +244,51 @@ void Rok4Server::buildWMSCapabilities(){
 		 layer->getAuthority();
 		 layer->getOpaque();
 		
-		 */
-		//TODO  layer->getStyles();
+		*/
+		LOGGER_DEBUG("Nombre de styles : "<<childLayer->getStyles().size());
 		if (childLayer->getStyles().size() != 0){
 			for (unsigned int i=0; i < childLayer->getStyles().size(); i++){
 				TiXmlElement * styleEl= new TiXmlElement("Style");
-				styleEl->LinkEndChild(buildTextNode("Name", childLayer->getStyles()[i]));
-				styleEl->LinkEndChild(buildTextNode("Title", childLayer->getStyles()[i]));
+				Style* style = childLayer->getStyles()[i];
+				styleEl->LinkEndChild(buildTextNode("Name", style->getId().c_str()));
+				int j;
+				for (j=0 ; j < style->getTitle().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Title", style->getTitle()[j].c_str() ));
+				}
+				for (j=0 ; j < style->getAbstract().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstract()[j].c_str()));
+				}
+				for (j=0 ; j < style->getLegendURLs().size(); ++j){
+					LOGGER_DEBUG("LegendURL" << style->getId());
+					LegendURL legendURL = style->getLegendURLs()[j];
+					TiXmlElement* legendURLEl = new TiXmlElement("LegendURL");
+					
+					TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
+					LOGGER_DEBUG("OnlineResource");
+					onlineResourceEl->SetAttribute("xlink:href", legendURL.getHRef());
+					
+					LOGGER_DEBUG("OnlineResource OK");
+					legendURLEl->LinkEndChild(buildTextNode("Format", legendURL.getFormat()));
+					legendURLEl->LinkEndChild(onlineResourceEl);
+					legendURLEl->SetAttribute("format", legendURL.getFormat());
+					
+					if (legendURL.getWidth()!=0)
+						legendURLEl->SetAttribute("width", legendURL.getWidth());
+					if (legendURL.getHeight()!=0)
+						legendURLEl->SetAttribute("height", legendURL.getHeight());
+					styleEl->LinkEndChild(legendURLEl);
+					LOGGER_DEBUG("LegendURL OK"<< style->getId());
+				}
+				
+				LOGGER_DEBUG("Style fini : " << style->getId());
 				childLayerEl->LinkEndChild(styleEl);
 			}
 		}
+		LOGGER_DEBUG("Layer Fini");
 		parentLayerEl->LinkEndChild(childLayerEl);
 
 	}// for layer
-
+	LOGGER_DEBUG("Layers Fini");
 	capabilityEl->LinkEndChild(parentLayerEl);
 
 
@@ -284,7 +315,7 @@ void Rok4Server::buildWMSCapabilities(){
 		endPos=wmsCapaTemplate.find(pathTag,beginPos);
 	}
 	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
-
+	LOGGER_DEBUG("WMSfini");
 }
 
 
@@ -432,13 +463,36 @@ void Rok4Server::buildWMTSCapabilities(){
 		//TODO: ows:WGS84BoundingBox (0,n)
 		layerEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getId()));
 
-		//FIXME: La gestion des styles reste à faire entièrement dans la conf.
-		//       Je me contente d'un minimum pour que le capabilities soit valide.
 		if (layer->getStyles().size() != 0){
 			for (unsigned int i=0; i < layer->getStyles().size(); i++){
 				TiXmlElement * styleEl= new TiXmlElement("Style");
 				if (i==0) styleEl->SetAttribute("isDefault","true");
-				styleEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getStyles()[i]));
+				Style* style = layer->getStyles()[i];
+				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
+				int j;
+				for (j=0 ; j < style->getTitle().size(); ++j){
+					LOGGER_DEBUG("Title : " << style->getTitle()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitle()[j].c_str() ));
+				}
+				for (j=0 ; j < style->getAbstract().size(); ++j){
+					LOGGER_DEBUG("Abstract : " << style->getAbstract()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstract()[j].c_str()));
+				}
+				for (j=0 ; j < style->getLegendURLs().size(); ++j){
+					LegendURL legendURL = style->getLegendURLs()[j];
+					TiXmlElement* legendURLEl = new TiXmlElement("ows:LegendURL");
+					legendURLEl->SetAttribute("format", legendURL.getFormat());
+					legendURLEl->SetAttribute("xlink:href", legendURL.getHRef());
+					if (legendURL.getWidth()!=0)
+						legendURLEl->SetAttribute("width", legendURL.getWidth());
+					if (legendURL.getHeight()!=0)
+						legendURLEl->SetAttribute("height", legendURL.getHeight());
+					if (legendURL.getMinScaleDenominator()!=0.0)
+						legendURLEl->SetAttribute("minScaleDenominator", legendURL.getMinScaleDenominator());
+					if (legendURL.getMaxScaleDenominator()!=0.0)
+						legendURLEl->SetAttribute("maxScaleDenominator", legendURL.getMaxScaleDenominator());
+					styleEl->LinkEndChild(legendURLEl);
+				}
 				layerEl->LinkEndChild(styleEl);
 			}
 		}
