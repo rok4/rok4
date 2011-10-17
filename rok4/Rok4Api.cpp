@@ -44,8 +44,8 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 	int nbThread,logFilePeriod;
 	LogLevel logLevel;
 	bool reprojectionCapability;
-	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir;
-	if (!ConfLoader::getTechnicalParam(strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir)){
+	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir;
+	if (!ConfLoader::getTechnicalParam(strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir)){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
@@ -66,7 +66,6 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
         log.precision(8);
 	log.setf(std::ios::fixed,std::ios::floatfield);
 
-
 	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
@@ -86,10 +85,18 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 		sleep(1);       // Pour laisser le temps au logger pour se vider
 		return NULL;
 	}
+	//Chargement des styles
+	std::map<std::string, Style*> styleList;
+	if(!ConfLoader::buildStylesList(strStyleDir,styleList, servicesConf->isInspire())){
+		LOGGER_FATAL("Impossible de charger la conf des Styles");
+                LOGGER_FATAL("Extinction du serveur ROK4");
+		sleep(1);       // Pour laisser le temps au logger pour se vider
+		return NULL;
+	}
 	
 	// Chargement des layers
 	std::map<std::string, Layer*> layerList;
-	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList,reprojectionCapability,servicesConf->isInspire())){
+	if (!ConfLoader::buildLayersList(strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf->isInspire())){
 		LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
                 LOGGER_FATAL("Extinction du serveur ROK4");
 		sleep(1);       // Pour laisser le temps au logger pour se vider
@@ -190,9 +197,9 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 
 	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
 	Layer* layer;
-        std::string tmId,format,style;
+        std::string tmId,format;
         int x,y;
-
+	Style* style =0;
 	// Analyse de la requete
         DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style);
 	// Exception

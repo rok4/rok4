@@ -119,7 +119,7 @@ std::string Request::getParam(std::string paramName){
 * @return message d'erreur en cas d'erreur (NULL sinon)
 */
 
-DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, std::string &style)
+DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style)
 {
 	// VERSION
 	std::string version=getParam("version");
@@ -173,19 +173,18 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
 	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	//Style
-	style=getParam("style");
-	if(style == "")
+	std::string styleName=getParam("style");
+	if(styleName == "")
                 return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLE absent.","wmts"));
 	// TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
-	bool styleFound =false;
 	if (layer->getStyles().size() != 0){
 		for (unsigned int i=0; i < layer->getStyles().size(); i++){
-			if (style == layer->getStyles()[i])
-				styleFound=true;
+			if (styleName == layer->getStyles()[i]->getId())
+				style=layer->getStyles()[i];
 		}
 	}
-	if (!(styleFound))
-		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le style "+style+" n'est pas gere pour la couche "+str_layer,"wmts"));
+	if (!(style))
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le style "+styleName+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	
 	return NULL;
 
@@ -209,7 +208,7 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format, std::string &styles){
+DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style){
         // VERSION
         std::string version=getParam("version");
         if (version=="")
@@ -337,18 +336,19 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	
 	if (!(hasParam("styles")))
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLES absent.","wms"));
-	styles=getParam("styles");
+	std::string styles=getParam("styles");
 	if(styles == "") // Gestion du style par défaut
                 styles=(servicesConf.isInspire()?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
 	// TODO : récuperer les styles supporté par la couche
-	bool styleFound =false;
+	
 	if (layer->getStyles().size() != 0){
 		for (unsigned int i=0; i < layer->getStyles().size(); i++){
-			if (styles == layer->getStyles()[i])
-				styleFound=true;
+			if (styles == layer->getStyles()[i]->getId()){
+				style = layer->getStyles()[i];
+			}
 		}
 	}
-	if (!(styleFound))
+	if (!(style))
 		return new SERDataStream(new ServiceException("",WMS_STYLE_NOT_DEFINED,"Le style "+styles+" n'est pas gere pour la couche "+str_layer,"wms"));
 	return NULL;
 }

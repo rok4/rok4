@@ -5,6 +5,7 @@
 #include <string>
 #include "Pyramid.h"
 #include "CRS.h"
+#include "Style.h"
 
 struct GeographicBoundingBoxWMS{
 public:
@@ -28,7 +29,7 @@ private:
 	std::vector<std::string> keyWords;
 	Pyramid* dataPyramid;
 	// TODO Rajouter une metadataPyramid
-	std::vector<std::string> styles; //FIXME: la représentation d'un style n'est certainement pas un string.
+	std::vector<Style*> styles; 
 	double minRes;
 	double maxRes;
 	std::vector<std::string> WMSCRSList; //FIXME: revoir le type des CRS (string = bof!)
@@ -52,13 +53,13 @@ public:
 	bool                     getOpaque()     const { return opaque;}
 	Pyramid*&		 getDataPyramid() { return dataPyramid;}
 	std::string              getResampling() const { return resampling;}
-	std::vector<std::string> getStyles()     const { return styles; }
+	std::vector<Style*>      getStyles()     const { return styles; }
 	std::string              getTitle()      const { return title; }
 	std::vector<std::string> getWMSCRSList() const { return WMSCRSList; }
 	GeographicBoundingBoxWMS getGeographicBoundingBox() const { return geographicBoundingBox; }
 	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
 
-	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, Pyramid*& dataPyramid, std::vector<std::string> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
+	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, Pyramid*& dataPyramid, std::vector<Style*> & styles, double minRes, double maxRes, std::vector<std::string> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
 	:id(id), title(title), abstract(abstract), keyWords(keyWords), dataPyramid(dataPyramid), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
 	{
 	}
