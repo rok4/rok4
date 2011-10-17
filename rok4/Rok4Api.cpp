@@ -124,7 +124,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 * operationType="Gettile" (en minuscules)
 */
 
-HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName){
+HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName, const char* https){
 	std::string strQuery=queryString;
        	HttpRequest* request=new HttpRequest;
        	request->queryString=new char[strQuery.length()+1];
@@ -133,7 +133,7 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 	strcpy(request->hostName,hostName);
 	request->scriptName=new char[strlen(scriptName)+1];
         strcpy(request->scriptName,scriptName);
-	Request* rok4Request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+	Request* rok4Request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*)https);
 	request->service=new char[rok4Request->service.length()+1];
         strcpy(request->service,rok4Request->service.c_str());
 	request->operationType=new char[rok4Request->request.length()+1];
@@ -150,9 +150,9 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server){
 	std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*)https);
 	DataStream* stream=server->WMTSGetCapabilities(request);
 	DataSource* source= new BufferedDataSource(*stream);
 	HttpResponse* response=initResponseFromSource(/*new BufferedDataSource(*stream)*/source);
@@ -170,9 +170,9 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
         std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
 	DataSource* source=server->getTile(request);
 	HttpResponse* response=initResponseFromSource(source);
 	delete request;
@@ -191,11 +191,11 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef){
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef){
 	// Initialisation
 	std::string strQuery=queryString;
 
-	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*) https);
 	Layer* layer;
         std::string tmId,format;
         int x,y;
@@ -251,10 +251,10 @@ TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
 * @brief Renvoi d'une exception pour une operation non prise en charge
 */
 
-HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
 
 	std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*) https);
         DataSource* source=new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts"));
         HttpResponse* response=initResponseFromSource(source);
         delete request;

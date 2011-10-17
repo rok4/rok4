@@ -61,8 +61,9 @@ void toLowerCase(char* str){
         if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
 }
 
-Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
+Request::Request(char* strquery, char* hostName, char* path, char* https) : hostName(hostName),path(path),service(""),request(""),scheme("") {
 	LOGGER_DEBUG("QUERY="<<strquery);
+	scheme = (https?"https://":"http://");
 	url_decode(strquery);
 
 	for(int pos = 0; strquery[pos];) {

@@ -41,8 +41,8 @@ void* Rok4Server::thread_loop(void* arg)
 			break;
 		}
 
-		/* DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
-		char **p;
+// 		 //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
+	/*	char **p;
 	    for (p = fcgxRequest.envp; *p; ++p) {
 	    	LOGGER_DEBUG((char*)*p);
 	    }*/
@@ -53,7 +53,10 @@ void* Rok4Server::thread_loop(void* arg)
 		
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
 		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
-		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
+		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp),
+					       FCGX_GetParam("HTTPS", fcgxRequest.envp)
+      					);
+		
 		server->processRequest(request, fcgxRequest);
 		delete request;
 
@@ -110,9 +113,9 @@ void Rok4Server::run() {
 DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	/* concaténation des fragments invariant de capabilities en intercalant les
 	 * parties variables dépendantes de la requête */
-	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
+	std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
 	for (int i=1; i < wmsCapaFrag.size()-1; i++){
-		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path + "?";
+		capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
 	}
 	capa = capa + wmsCapaFrag.back();
 
@@ -124,7 +127,7 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = "";
 	for (int i=0; i < wmtsCapaFrag.size()-1; i++){
-		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path +"?";
+		capa = capa + wmtsCapaFrag[i] + request->scheme + request->hostName + request->path +"?";
 	}
 	capa = capa + wmtsCapaFrag.back();
 
