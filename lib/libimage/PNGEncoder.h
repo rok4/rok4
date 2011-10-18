@@ -4,7 +4,7 @@
 #include "Data.h"
 #include "Image.h"
 #include "zlib.h"
-#include <../home/alex/projet/gpp3/rok4/rok4/Style.h>
+#include "Palette.h"
 
 /** D */
 class PNGEncoder : public DataStream {
