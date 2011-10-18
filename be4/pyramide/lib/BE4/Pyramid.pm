@@ -31,7 +31,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-our $VERSION = '0.0.5';
+my $VERSION = "0.0.1";
 
 ################################################################################
 # constantes
@@ -50,11 +50,14 @@ END {}
 #    [ pyramid ]
 #
 #    pyr_desc_path      =
+#    pyr_desc_path_old  =
 #    pyr_data_path      =
+#    pyr_data_path_old  =
 #    ; pyr_schema_path = 
 #    ; pyr_schema_name =
 #    
-#    
+#    pyr_level_bottom =
+#    pyr_level_top    =
 #    pyr_name_old     =
 #    pyr_name_new     =
 #
@@ -157,6 +160,7 @@ sub new {
                     pyr_desc_path     => undef, # path
                     pyr_desc_path_old => undef, # path
                     pyr_data_path     => undef, # path
+                    pyr_data_path_old => undef, # path
                     pyr_level_bottom  => undef, # number
                     pyr_level_top     => undef, # number
                     #
@@ -276,7 +280,7 @@ sub _init {
     #
     # All parameters are mandatory (or initializate by default) whatever the pyramid !
     # 
-    $pyr->{pyr_name_new} = $params->{pyr_name_new}   || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
+    $pyr->{pyr_name_new}  = $params->{pyr_name_new}  || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
     $pyr->{pyr_desc_path} = $params->{pyr_desc_path} || ( ERROR ("key/value required to 'pyr_desc_path' !") && return FALSE );
     $pyr->{pyr_data_path} = $params->{pyr_data_path} || ( ERROR ("key/value required to 'pyr_data_path' !") && return FALSE );
     #
@@ -357,11 +361,19 @@ sub _init {
     }
     $pyr->{pyr_desc_path_old} = $params->{pyr_desc_path_old};
     #
+    if (! exists($params->{pyr_data_path_old})) {
+        WARN ("key/value optional to 'pyr_data_path_old' (by default, it's same the 'pyr_data_path' )!");
+        $params->{pyr_data_path_old} = $params->{pyr_data_path};
+    }
+    $pyr->{pyr_data_path_old} = $params->{pyr_data_path_old};
+    #
     # TODO path !
     if (! -d $pyr->{path_nodata}) {}
     if (! -d $pyr->{pyr_desc_path}) {}
+    if (! -d $pyr->{pyr_desc_path_old}) {}
     if (! -d $pyr->{tms_path}) {}
     if (! -d $pyr->{pyr_data_path}) {}
+    if (! -d $pyr->{pyr_data_path_old}) {}
     
     return TRUE;
 }
@@ -539,7 +551,7 @@ sub _fillFromPyramid {
     return FALSE;
   }
   
-  my $cachepyramid = File::Spec->catdir($self->getPyrDataPath(),
+  my $cachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
                                         $self->getPyrNameOld());
   
   if (! $self->readCachePyramid($cachepyramid)) {
@@ -1149,6 +1161,11 @@ sub getPyrDataPath {
   my $self = shift;
   
   return $self->{pyramid}->{pyr_data_path};
+}
+sub getPyrDataPathOld {
+  my $self = shift;
+  
+  return $self->{pyramid}->{pyr_data_path_old};
 }
 sub getPyrName {
   my $self = shift;

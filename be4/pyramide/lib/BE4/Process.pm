@@ -10,7 +10,7 @@ use File::Path;
 use Data::Dumper;
 
 # version
-our $VERSION = '0.0.3';
+my $VERSION = "0.0.1";
 
 # My module
 use BE4::Tree;
