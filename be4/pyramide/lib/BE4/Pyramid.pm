@@ -886,15 +886,21 @@ sub writeCachePyramid {
   #
   # Params useful to create a cache directory empty or not 
   #
-  # pyr_data_path : path of all pyramid
-  # pyr_name_new : new pyramid name
-  # pyr_name_old :
-  # dir_image    : 
-  # cache_dir    : old or new
-  # cache_tile   : old
+  # pyr_data_path     : path of new pyramid (abs)
+  # pyr_data_path_old : path of old pyramid (abs)
+  # pyr_name_new      : new pyramid name
+  # pyr_name_old      : old pyramid name
+  # dir_image     : IMAGE
+  # cache_dir     : old or new directories (rel from new pyramid)
+  # cache_tile    : old tiles (rel from new pyramid)
   
-  my $newpyrname = $self->getPyrName();
-  my $oldpyrname = $self->getPyrNameOld();
+  my $oldcachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
+                                              $self->getPyrNameOld());
+  my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),
+                                              $self->getPyrName());
+  $newcachepyramid =~ s/\//\\\//g;
+  $oldcachepyramid =~ s/\//\\\//g;
+  DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
   my $dirimage   = $self->getDirImage();
   my $dirmetadata= undef; # TODO ?
   
@@ -907,10 +913,12 @@ sub writeCachePyramid {
     my $regex = undef;
     
     if ($expr !~ /$dirimage/) {
-        $regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
+        #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
+        $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirimage."/";
     }
     else {
-        $regex = "s/".$oldpyrname."/".$newpyrname."/";
+        #$regex = "s/".$oldpyrname."/".$newpyrname."/";
+        $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
     }
 
     eval ($regex);
@@ -937,15 +945,13 @@ sub writeCachePyramid {
     return FALSE;
   }
   
-  foreach my $dir (@newdirs) {
-    
-    my $absdir = File::Spec->catdir($self->getPyrDataPath(), $dir);
+  foreach my $absdir (@newdirs) {
     
     DEBUG($absdir);
     
     eval { mkpath([$absdir],0,0751); };
     if ($@) {
-      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $dir , $@);
+      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
       return FALSE;
     }
     
@@ -969,8 +975,8 @@ sub writeCachePyramid {
     
     foreach my $i (0..$ntile) {
       
-      my $new_absfile = File::Spec->catfile($self->getPyrDataPath(), $newtiles[$i]);
-      my $old_absfile = File::Spec->catfile($self->getPyrDataPath(), $oldtiles[$i]);
+      my $new_absfile = $newtiles[$i];
+      my $old_absfile = $oldtiles[$i];
       
       if (! -d dirname($new_absfile)) {
         ERROR(sprintf "The directory cache '%s' doesn't exist !",
@@ -1028,7 +1034,7 @@ sub writeCachePyramid {
 }
 sub readCachePyramid {
   my $self     = shift;
-  my $cachedir = shift;
+  my $cachedir = shift; # old cache directory by default !
   
   TRACE;
   
@@ -1082,7 +1088,8 @@ sub FindCacheNode {
     
     if ( -d File::Spec->catdir($directory, $entry)) {
       TRACE(sprintf "DIR:%s\n",$entry);
-      push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
+      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
+      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
       
       # recursif
       $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
@@ -1093,13 +1100,15 @@ sub FindCacheNode {
     elsif( -f File::Spec->catfile($directory, $entry) &&
          ! -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "FIL:%s\n",$entry);
-      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
     }
     
     elsif (  -f File::Spec->catfile($directory, $entry) &&
              -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "LIK:%s\n",$entry);
-      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
+      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
     }
     
     else {
