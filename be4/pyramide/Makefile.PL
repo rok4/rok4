@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+use ExtUtils::MakeMaker;
+
+WriteMakefile(
+        # version du package complet
+        VERSION     => '@VERSION_TEXT@',
+        NAME        => "Be4-Pyramid",
+        DISTNAME    => "Be4-Pyramid",
+        # install to INSTALL_BASE/bin
+        EXE_FILES   => ['bin/be4.pl',
+                        'bin/export-tree.pl',
+                        'bin/create-layer.pl'],
+        # install modules to INSTALL_BASE/lib/perl5
+        #PM          => { 'lib/ ./ .pm' => '$(INST_LIBDIR)/ ./ .pm',},
+        # modules that are needed to run your module
+        PREREQ_PM   => {
+                # Require least x.xx
+                "Config::IniFiles" => 2.68,
+                # Require any version
+                "POSIX"            => 0,
+                "Pod::Usage"       => 0,
+                "Getopt::Long"     => 0,
+                #
+                "Log::Log4perl"    => 0,
+		#
+                "Geo::GDAL"        => 0,
+                "Geo::OSR"         => 0,
+                #
+                "Cwd"              => 0,
+                "File::Spec"       => 0,
+                "File::Basename"   => 0,
+                "File::Path"       => 0,
+		#
+                "XML::LibXML"      => 0,
+                #
+                "Data::Dumper"     => 0,
+                #
+                "List::Util"       => 0,
+                #
+                "URI::URL"         => 0,
+                "URI::http"        => 0,
+                "HTTP::Request"    => 0,
+                "LWP"              => 0,
+                #
+                "Math::BigFloat"   => 0,
+                }
+    );
+# notes :
+# perl Makefile.PL INSTALL_BASE=~/path/to/install
+#INSTALLARCHLIB     INSTALL_BASE/lib/perl5/$Config{archname}
+#INSTALLPRIVLIB     INSTALL_BASE/lib/perl5
+#INSTALLBIN         INSTALL_BASE/bin
+#INSTALLSCRIPT      INSTALL_BASE/bin
+#INSTALLMAN1DIR     INSTALL_BASE/man/man1
+#INSTALLMAN3DIR     INSTALL_BASE/man/man3
