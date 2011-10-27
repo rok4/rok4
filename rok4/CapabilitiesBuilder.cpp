@@ -201,7 +201,7 @@ void Rok4Server::buildWMSCapabilities(){
 		}
 		// CRS
 		for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
-			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
+			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]->getRequestCode()));
 		}
 		// GeographicBoundingBox
 		TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");

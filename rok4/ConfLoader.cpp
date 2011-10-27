@@ -509,7 +509,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	std::vector<Style*> styles;
 	double minRes;
 	double maxRes;
-	std::vector<std::string> WMSCRSList;
+	std::vector<CRS*> WMSCRSList;
 	bool opaque;
 	std::string authority="";
 	std::string resampling;
@@ -690,12 +690,12 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
 			std::string str_crs(pElem->GetText());
 			// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-			CRS crs(str_crs);
-			if (!crs.isProj4Compatible())
+			CRS* crs = new CRS(str_crs);
+			if (!crs->isProj4Compatible())
 				LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
 			else{
 				LOGGER_INFO("		Ajout du crs "<<str_crs);
-				WMSCRSList.push_back(str_crs);
+				WMSCRSList.push_back(crs);
 			}
 		}
 	}
