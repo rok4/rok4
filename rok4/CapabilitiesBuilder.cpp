@@ -2,9 +2,11 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include <iostream>
+#include <algorithm>
+#include <iomanip>
 #include <vector>
 #include <map>
-
+#include <cmath>
 
 /**
  * Conversion de int en std::string.
@@ -201,7 +203,7 @@ void Rok4Server::buildWMSCapabilities(){
 		}
 		// CRS
 		for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
-			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
+			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]->getRequestCode()));
 		}
 		// GeographicBoundingBox
 		TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
@@ -217,18 +219,48 @@ void Rok4Server::buildWMSCapabilities(){
 		os.str("");
 		os<<childLayer->getGeographicBoundingBox().maxy;
 		gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+		os.str("");
 		childLayerEl->LinkEndChild(gbbEl);
 
-		//TODO Inspire BoundingBoxes in all CRS
+		
 		// BoundingBox
-		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
-		bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
-		bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
-		bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
-		bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
-		bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
-		childLayerEl->LinkEndChild(bbEl);
-	
+		if (servicesConf.isInspire()){
+			for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
+				BoundingBox<double> bbox = childLayer->getWMSCRSList()[i]->boundingBoxFromGeographic(childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy);
+				TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+				bbEl->SetAttribute("CRS",childLayer->getWMSCRSList()[i]->getRequestCode());
+				int floatprecision = GetDecimalPlaces(bbox.xmin);
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.xmax));
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.ymin));
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.ymax));
+				floatprecision = std::min(floatprecision,9); //FIXME gestion du nombre maximal de décimal.
+				
+				os<< std::fixed << std::setprecision(floatprecision);
+				os<<bbox.xmin;
+				bbEl->SetAttribute("minx",os.str());
+				os.str("");
+				os<<bbox.ymin;
+				bbEl->SetAttribute("miny",os.str());
+				os.str("");
+				os<<bbox.xmax;
+				bbEl->SetAttribute("maxx",os.str());
+				os.str("");
+				os<<bbox.ymax;
+				bbEl->SetAttribute("maxy",os.str());
+				os.str("");
+				childLayerEl->LinkEndChild(bbEl);
+			}
+		}
+		else {
+			TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+			bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
+			bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
+			bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
+			bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
+			bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
+			childLayerEl->LinkEndChild(bbEl);
+		}
+
 		// Scale denominators
 		os.str("");
 		os<<childLayer->getMinRes()*1000/0.28;
@@ -566,3 +598,19 @@ void Rok4Server::buildWMTSCapabilities(){
 
 }
 
+
+// get the number of decimal places
+int Rok4Server::GetDecimalPlaces(double dbVal)
+{
+    static const int MAX_DP = 10;
+    static const double THRES = pow(0.1, MAX_DP);
+    if (dbVal == 0.0)
+        return 0;
+    int nDecimal = 0;
+    while (dbVal - floor(dbVal) > THRES && nDecimal < MAX_DP)
+    {
+        dbVal *= 10.0;
+        nDecimal++;
+    }
+    return nDecimal;
+}

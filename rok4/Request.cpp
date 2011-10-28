@@ -205,7 +205,7 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 }
 
 /**
- * @brife Recuperation et verification des parametres d'une requete GetMap
+ * @brief Recuperation et verification des parametres d'une requete GetMap
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
@@ -254,7 +254,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map< std::stri
         crs.setRequestCode(str_crs);
         unsigned int k;
         for (k=0;k<layer->getWMSCRSList().size();k++)
-                if (crs.cmpRequestCode(layer->getWMSCRSList().at(k)))
+                if (crs.cmpRequestCode(layer->getWMSCRSList().at(k)->getRequestCode()))
                         break;
         // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
         if (k==layer->getWMSCRSList().size())
