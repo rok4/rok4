@@ -200,7 +200,15 @@ DataSource* Rok4Server::getTile(Request* request)
 		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
 		return errorResp;
 	}
-	DataSource* tileSource = new PaletteDataSource(L->gettile(tileCol, tileRow, tileMatrix),style->getPalette());
+	DataSource* tileSource;
+	// Avoid using unnecessary palette
+	if ( format == "image/png") {
+		 tileSource= new PaletteDataSource(L->gettile(tileCol, tileRow, tileMatrix),style->getPalette());
+	}else {
+		 tileSource= L->gettile(tileCol, tileRow, tileMatrix);
+	}
+		
+		
 	return tileSource;
 }
 
