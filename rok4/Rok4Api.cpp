@@ -11,7 +11,9 @@
 #include "Request.h"
 #include "RawImage.h"
 #include "TiffEncoder.h"
+#include "Palette.h"
 #include <cstdlib>
+#include <PNGEncoder.h>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -188,10 +190,11 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 * @param[in] scriptName
 * @param[in] server : serveur
 * @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* @param[out] palette : palette à ajouter, NULL sinon. 
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef){
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette){
 	// Initialisation
 	std::string strQuery=queryString;
 
@@ -220,17 +223,26 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	tileRef->posoff=2048+4*n;
 	tileRef->possize=2048+4*n +level->getTilesPerWidth()*level->getTilesPerHeight()*4;
 
-        std::string imageFilePath=level->getFilePath(x, y);
+	std::string imageFilePath=level->getFilePath(x, y);
 	tileRef->filename=new char[imageFilePath.length()+1];
 	strcpy(tileRef->filename,imageFilePath.c_str());
 
 	tileRef->type=new char[format.length()+1];
-        strcpy(tileRef->type,format.c_str());
+	strcpy(tileRef->type,format.c_str());
 
 	tileRef->width=level->getTm().getTileW();
 	tileRef->height=level->getTm().getTileH();
 	tileRef->channels=level->getChannels();
-
+	
+	//Palette uniquement PNG pour le moment
+	if (format == "image/png"){
+		palette->size = style->getPalette()->getPalettePNGSize();
+		palette->data = style->getPalette()->getPalettePNG();
+	}else {
+		palette->size = 0;
+		palette->data = NULL;
+	}
+	
 	delete request;
 	return 0;
 }
@@ -246,6 +258,22 @@ TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
 	tiffStream.read(header->data,128);
 	return header;
 }
+
+/**
+* @brief Construction d'un en-tete PNG avec Palette
+*/
+
+PngPaletteHeader* rok4GetPngPaletteHeader(int width, int height, TilePalette* palette)
+{
+	PngPaletteHeader* header = new PngPaletteHeader;
+	RawImage* rawImage=new RawImage(width,height,1,0);
+	Palette* rok4Palette = new Palette(palette->size,palette->data);
+	PNGEncoder pngStream(rawImage,rok4Palette);
+	header->size = 33 + palette->size;
+	pngStream.read(header->data,header->size);
+	return header;
+}
+
 
 /**
 * @brief Renvoi d'une exception pour une operation non prise en charge
@@ -302,6 +330,25 @@ void rok4FlushTileRef(TileRef* tileRef){
 void rok4DeleteTiffHeader(TiffHeader* header){
 	delete header;
 }
+
+/**
+* @brief Suppression d'un en-tete Png avec Palette
+*/
+
+void rok4DeletePngPaletteHeader(PngPaletteHeader* header)
+{
+	delete header;
+}
+
+/**
+* @brief Suppression d'une Palette
+*/
+
+void rok4DeleteTilePalette(TilePalette* palette)
+{
+	delete palette;
+}
+
 
 /**
 * @brief Extinction du serveur
