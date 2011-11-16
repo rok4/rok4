@@ -152,6 +152,8 @@ sub _init {
 #  le nom 'fileName'.
 #
 #  FIXME: appeler la méthode de l'objet src
+#  HOTFIX: NV l'option --no-proxy est suppimée car la prod utilise un proxy.
+#          il faudra cependant gérer ça avec un paramètre de configuration
 #---------------------------------------------------------------------------------------------------
 sub wms2work {
   my ($self, $node, $fileName) = @_;
@@ -170,7 +172,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd = sprintf ( "wget --no-proxy -O \${TMP_DIR}/%s ",$fileName );
+  my $cmd = sprintf ( "wget -O \${TMP_DIR}/%s ",$fileName );
     $cmd .= sprintf ( " \"%s\" \n", $url);
     $cmd .= sprintf ( "%s", RESULT_TEST);
   
