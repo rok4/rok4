@@ -117,7 +117,27 @@ sub _init {
     $self->{samplesperpixel}=$args->{samplesperpixel};
     $self->{sampleformat}   =$args->{sampleformat};
     $self->{photometric}    =$args->{photometric};
-    $self->{color}          =$args->{color} if (exists  ($args->{color}) && defined ($args->{color}));
+#   for nodata value, it has to be coherent with bitspersample/samplesperpixel/sampleformat :
+#       - 32/1/float -> an integer in decimal format (-99999 for example) : DTM
+#       - 8/3/uint -> a uint in hexadecimal format (FF for example. Just first two are used) : images
+    if (exists  ($args->{color}) && defined ($args->{color})) {
+        if ($args->{bitspersample} == 32 && $args->{samplesperpixel} == 1 && $args->{sampleformat} == 'float') {
+            if ($args->{color}!=~m/^\-?[0-9]*$/) {
+                ERROR ("Incorrect parameter nodata for a DTM !");
+                return FALSE;
+            }
+        } else if ($args->{bitspersample} == 8 && $args->{samplesperpixel} == 3 && $args->{sampleformat} == 'uint') {
+            if ($args->{color}!=~m/^[A-Fa-f0-9]{2,}$/) {
+                ERROR ("Incorrect parameter nodata for an image !");
+                return FALSE;
+            }
+        } else {
+            ERROR ("sampleformat/bitspersample not supported !");
+            return FALSE;
+        }
+    
+        $self->{color} =$args->{color};
+    }
     
     return TRUE;
 }

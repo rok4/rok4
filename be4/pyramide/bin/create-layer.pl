@@ -35,7 +35,7 @@ my $VERSION = "0.0.1";
 my $MYCONF   = undef;
 my $MYSAMPLE = "lanczos_4";
 my $MYSTYLE  = "normal";
-my $MYOPAQUE = 1;
+my $MYOPAQUE = "true";
 
 #
 sub init {
