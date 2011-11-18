@@ -248,10 +248,10 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
                 if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
-                   
+            
             for (int i = 0; i<nbsamples; i++) {
-                line_out[i] = nodata;
-            }            
+                line_out[i] = line_background[i];
+            }
             
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) {
 
@@ -292,7 +292,9 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     
     // FIXME: il faudrait initialiser la ligne de fond avec la couleur nodata 
     //        du parametre, mais il est en float....
-    memset (line_background, nodata, nbsamples); 
+    for (int i = 0; i<nbsamples; i++) {
+        line_background[i] = nodata;
+    } 
     
       for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -300,6 +302,12 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
             for(uint32 h = 0; h < height/2; h++) {
             if (BACKGROUND)
                 if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+                
+            for (int i = 0; i<2*nbsamples; i++) {
+                line1[i] = nodata;
+                line2[i] = nodata;
+            }
+            
             if (INPUT[y][0])
                 if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
             if (INPUT[y][1])
@@ -308,19 +316,22 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
                 if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
-            memcpy(line_out,line_background,nbsamples);
-
-                  for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
-                    for(int j = sampleperpixel; j--; pos_in++) 
-                          line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + sampleperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + sampleperpixel])];
-
-                  if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
+            
+            for (int i = 0; i<nbsamples; i++) {
+                line_out[i] = line_background[i];
             }
+
+            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
+                for(int j = sampleperpixel; j--; pos_in++) 
+                    line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + sampleperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + sampleperpixel])];
+
+            if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
+        }
     }
-      if (BACKGROUND) TIFFClose(BACKGROUND);
+    if (BACKGROUND) TIFFClose(BACKGROUND);
     for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
-      TIFFClose(OUTPUT);
-      return 0;
+    TIFFClose(OUTPUT);
+    return 0;
 }
 
 int interpretNodata(char* strnodata,uint16_t sampleformat,uint16_t bitspersample) {
