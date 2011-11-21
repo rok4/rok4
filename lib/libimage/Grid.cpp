@@ -78,9 +78,12 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		return false;
 	}
 
-//	LOGGER_DEBUG(from_srs<<" "<<to_srs);
-//	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
+	LOGGER_DEBUG(from_srs<<" "<<to_srs);
+	LOGGER_DEBUG("Avant "<<gridX[0]<<" "<<gridY[0]);
 
+	// Note that geographic locations need to be passed in radians, not decimal degrees,
+	// and will be returned similarly
+	
 	if(pj_is_latlong(pj_src)) for(int i = 0; i < nbx*nby; i++) {
     		gridX[i] *= DEG_TO_RAD;
     		gridY[i] *= DEG_TO_RAD;
@@ -93,7 +96,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
     		gridY[i] *= RAD_TO_DEG;
 	}
 
-//	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
+	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
 
 	pj_free(pj_src);
 	pj_free(pj_dst);
