@@ -88,6 +88,11 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
 	int code=pj_transform(pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0);
 
+	if(pj_is_latlong(pj_dst)) for(int i = 0; i < nbx*nby; i++) {
+    		gridX[i] *= RAD_TO_DEG;
+    		gridY[i] *= RAD_TO_DEG;
+	}
+
 //	LOGGER_DEBUG("Apres "<<gridX[0]<<" "<<gridY[0]);
 
 	pj_free(pj_src);
