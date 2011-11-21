@@ -217,7 +217,7 @@ void checkImages(
 
 int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
     int nbsamples = width * sampleperpixel;
-    uint8  line_background[nbsamples];
+    float  line_background[nbsamples];
     float  line1[2*nbsamples];
     float  line2[2*nbsamples];
     float  line_out[nbsamples];
@@ -256,11 +256,20 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) {
 
                 for(int j = sampleperpixel; j > 0 ; j--, pos_in++) {
+                    float data[4];
+                    int nbData = 0;
+                    if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in];
+                    if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
+                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in];
+                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in + sampleperpixel];
 
-                    if (line1[pos_in] != nodata && line1[pos_in + sampleperpixel] != nodata && line2[pos_in] != nodata && line2[pos_in + sampleperpixel] != nodata) {
-
-                        line_out[pos_out] = (line1[pos_in] + line1[pos_in + sampleperpixel] + line2[pos_in] + line2[pos_in + sampleperpixel])/(float)4;
-                        pos_out ++;
+                    if (nbData>1) {
+                        float value = 0.;
+                        for (int i=0; i<nbData; i++)
+                            value += data[i];
+                            
+                        line_out[pos_out] = value/(float)nbData;
+                        pos_out++;
 
                     }else {
                         line_out[pos_out] = nodata;
@@ -290,8 +299,6 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     uint8  line_out[nbsamples];
     int left,right;
     
-    // FIXME: il faudrait initialiser la ligne de fond avec la couleur nodata 
-    //        du parametre, mais il est en float....
     for (int i = 0; i<nbsamples; i++) {
         line_background[i] = nodata;
     } 

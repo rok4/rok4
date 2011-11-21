@@ -635,11 +635,11 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
            ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
-        if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
-{
-                LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
+    if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
+    {
+        LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
         return NULL;    
-        }
+    }
     
     // Coordonnees de l'image reechantillonnee en pixels
     xmin_dst/=resx_dst;
@@ -652,11 +652,11 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         ymax_dst=ceil(ymax_dst-0.1);
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
-        int height_dst = int(ymax_dst-ymin_dst+0.1);
+    int height_dst = int(ymax_dst-ymin_dst+0.1);
     xmin_dst*=resx_dst;
     xmax_dst*=resx_dst;
     ymin_dst*=resy_dst;
-        ymax_dst*=resy_dst;
+    ymax_dst*=resy_dst;
 
     double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
@@ -724,11 +724,11 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
             ResampledImage* pResampledMask;
-                ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
-                if (pRImage==NULL) {
-                        LOGGER_ERROR("Impossible de reechantillonner les images");
-                        return -1;
+            if (pRImage==NULL) {
+                LOGGER_ERROR("Impossible de reechantillonner les images");
+                return -1;
             }
             pOverlayedImage.push_back(pRImage);
             //saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);

@@ -406,7 +406,7 @@ sub _load {
     DEBUG (sprintf "TILE = %s", Dumper($objTile));
     
     # create Compress !
-    my $objCompress = BE4::Compression->new($self->{pyramid}->{compression});
+    my $objCompress = BE4::Compression->new($self->{pyramid}->{compression},$self->{pyramid}->{sampleformat},$self->{pyramid}->{bitspersample});
     
     if (! defined $objCompress) {
       ERROR ("Can not load compression !");

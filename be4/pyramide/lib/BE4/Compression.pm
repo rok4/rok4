@@ -26,23 +26,25 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my %COMPRESS;
+my %FORMAT;
 
 ################################################################################
 # Preloaded methods go here.
 BEGIN {}
 INIT {
-  
-  # FIXME
-  #  i'm prefer to note the code for the type raw :
-  #    raw      => "TIFF_RAW_INT8",
-  #    floatraw => "TIFF_RAW_FLOAT32"
+
   
   %COMPRESS = (
-    # type => code !
-    raw      => "TIFF_INT8",    # or none !
-    jpg      => "TIFF_JPG_INT8",
-    png      => "TIFF_PNG_INT8",
-    floatraw => "TIFF_FLOAT32",
+    raw      => "RAW",
+    floatraw => "RAW", # use raw instead
+    jpg      => "JPG",
+    png      => "PNG",
+    lzw      => "LZW"
+  );
+  
+  %FORMAT = (
+    uint      => "INT",
+    float     => "FLOAT"
   );
   
 }
@@ -65,6 +67,8 @@ END {}
 sub new {
   my $this = shift;
   my $type = shift;
+  my $format = shift;
+  my $bitspersample = shift;
 
   my $class= ref($this) || $this;
   my $self = {
@@ -78,11 +82,26 @@ sub new {
   
   # exception :
   $type = 'raw' if (!defined ($type) || $type eq 'none');
+  $format = 'uint' if (!defined ($format));
+  $bitspersample = 8 if (!defined ($bitspersample));
   
   return undef if (! $self->isTypeExist($type));
   
   $self->{type} = $type;
-  $self->{code} = $COMPRESS{$type};
+  
+  # codes handled by rok4 are :
+  #     - TIFF_INT8 (deprecated, use TIFF_RAW_INT8 instead)
+  #     - TIFF_RAW_INT8
+  #     - TIFF_JPG_INT8
+  #     - TIFF_LZW_INT8
+  #     - TIFF_PNG_INT8
+  
+  #     - TIFF_FLOAT32 (deprecated, use TIFF_RAW_FLOAT32 instead)
+  #     - TIFF_RAW_FLOAT32
+  #     - TIFF_LZW_FLOAT32
+  
+  # code : TIFF_[COMPRESS]_[FORMAT][BITSPERSAMPLE]
+  $self->{code} = 'TIFF_'.$COMPRESS{$type}.'_'.$FORMAT{$format}.$bitspersample;
   
   return $self;
 }
