@@ -260,7 +260,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	bbox.ymax=bb[3];
 	// L'ordre des coordonnees (X,Y) de chque coin de la bbox doit suivre l'ordre des axes du CS associe au SRS
 	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris entre 4000 et 5000
-	if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
+	/*if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
 		int code=atoi(crs.getIdentifier().c_str());
 		if (code>=4000 && code<5000){	
 			bbox.xmin=bb[1];
@@ -268,6 +268,14 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
         		bbox.xmax=bb[3];
         		bbox.ymax=bb[2];	
 		}
+	}*/
+
+	// Data are stored in Long/Lat, Geographical system need to be inverted except CRS:84
+	if (crs.isLongLat() && !(crs.getAuthority()=="CRS")) {
+			bbox.xmin=bb[1];
+			bbox.ymin=bb[0];
+			bbox.xmax=bb[3];
+			bbox.ymax=bb[2];	
 	}
 
 	// SCALE DENOMINATORS
