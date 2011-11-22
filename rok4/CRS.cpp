@@ -80,7 +80,7 @@ void CRS::buildProj4Code(){
         // Commencer par ces tests (Ex : tout exprimer par defaut en EPSG)
 	// ISO 19128 6.7.3.2
 	else if (requestCode=="CRS:84")
-		proj4Code="EPSG:4326";
+		proj4Code="epsg:4326";
         else
                 proj4Code=NO_PROJ4_CODE;
 }

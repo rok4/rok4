@@ -870,7 +870,7 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 		std::cerr<<"Pas de styleDir => styleDir = " << DEFAULT_STYLE_DIR<<std::endl;
 		styleDir = DEFAULT_STYLE_DIR;
 	}else{
-		styleDir=pElem->GetText();
+		styleDir = pElem->GetText();
 	}
 	// Définition de la variable PROJ_LIB à partir de la configuration
 	std::string projDir;
@@ -899,8 +899,10 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 		}
 	}
 	projDirEnv = (char*) malloc(8+2+PATH_MAX);
+	memset(projDirEnv,'\0',8+2+PATH_MAX);
 	strcat(projDirEnv,"PROJ_LIB=");
 	strcat(projDirEnv,projDir.c_str());
+	std::cerr << projDirEnv << std::endl;
 	
 	if (putenv(projDirEnv)!=0) {
 	  std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
