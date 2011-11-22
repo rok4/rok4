@@ -25,8 +25,8 @@ use constant FALSE => 0;
 
 ################################################################################
 # Global
-my %COMPRESS;
-my %FORMAT;
+my %COMPRESSION;
+my %SAMPLEFORMAT;
 
 ################################################################################
 # Preloaded methods go here.
@@ -34,7 +34,7 @@ BEGIN {}
 INIT {
 
   
-  %COMPRESS = (
+  %COMPRESSION = (
     raw      => "RAW",
     floatraw => "RAW", # use raw instead
     jpg      => "JPG",
@@ -42,7 +42,7 @@ INIT {
     lzw      => "LZW"
   );
   
-  %FORMAT = (
+  %SAMPLEFORMAT = (
     uint      => "INT",
     float     => "FLOAT"
   );
@@ -100,8 +100,8 @@ sub new {
   #     - TIFF_RAW_FLOAT32
   #     - TIFF_LZW_FLOAT32
   
-  # code : TIFF_[COMPRESS]_[FORMAT][BITSPERSAMPLE]
-  $self->{code} = 'TIFF_'.$COMPRESS{$type}.'_'.$FORMAT{$format}.$bitspersample;
+  # code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
+  $self->{code} = 'TIFF_'.$COMPRESSION{$type}.'_'.$SAMPLEFORMAT{$format}.$bitspersample;
   
   return $self;
 }
@@ -115,7 +115,7 @@ sub isTypeExist {
   
   TRACE;
   
-  foreach (keys %COMPRESS) {
+  foreach (keys %COMPRESSION) {
     return TRUE if $type eq $_;
   }
   ERROR(sprintf "the type of compression '%s' doesn't exist ?", $type);
@@ -124,42 +124,47 @@ sub isTypeExist {
 ################################################################################
 # Group: static method
 #
+
 sub listCompressionType {
   my $clazz= shift;
   return undef if (!$clazz->isa(__PACKAGE__));
   
-  foreach (keys %COMPRESS) {
+  foreach (keys %COMPRESSION) {
     print "$_\n";
   }
 }
+
 sub listCompressionCode {
   my $clazz= shift;
   return undef if (!$clazz->isa(__PACKAGE__));
   
-  foreach (values %COMPRESS) {
+  foreach (values %COMPRESSION) {
     print "$_\n";
   }
 }
+
 sub listCompression {
   my $clazz= shift;
   return undef if (!$clazz->isa(__PACKAGE__));
   
-  while (my ($k,$v) = each (%COMPRESS)) {
+  while (my ($k,$v) = each (%COMPRESSION)) {
     print "$k => $v\n";
   }
 }
+
 sub getCompressionType {
-  my $clazz= shift;
+  my $clazz = shift;
   return undef if (!$clazz->isa(__PACKAGE__));
   
   my $code = shift;
   
-  foreach (keys %COMPRESS) {
-    return $_ if ($COMPRESS{$_} eq $code);
+  foreach (keys %COMPRESSION) {
+    return $_ if ($COMPRESSION{$_} eq $code);
   }
   ERROR(sprintf "No find type for the code '%s' !", $code);
   return undef;
 }
+
 sub getCompressionCode {
   my $clazz= shift;
   return undef if (!$clazz->isa(__PACKAGE__));
@@ -168,47 +173,57 @@ sub getCompressionCode {
   
   $type = 'raw' if ($type eq 'none');
   
-  foreach (keys %COMPRESS) {
-    return $COMPRESS{$_} if ($_ eq $type);
+  foreach (keys %COMPRESSION) {
+    return $COMPRESSION{$_} if ($_ eq $type);
   }
   ERROR(sprintf "No find code for the type '%s' !", $type);
   return undef;
 }
+
 sub decodeCompression {
-  my $clazz= shift;
-  return undef if (!$clazz->isa(__PACKAGE__));
+    my $class = shift;
+    return undef if (!$class->isa(__PACKAGE__));
   
-  my $code = shift;
-  
-  foreach (keys %COMPRESS) {
-    if ($code eq $COMPRESS{$_}) {
-      my @value = split(/_/, $code);
-      if (scalar @value == 2) {
-        $value[1] =~ m/(\w+)(\d+)/;
-        my $u = lc $1;
-        my $p = lc $2;
-        $u = 'uint' if ($u eq 'int');
-        return (lc $value[0], 'raw', $u, $p);
-      }
-      elsif (scalar @value == 3) {
-        $value[2] =~ m/(\w+)(\d+)/;
-        my $u = lc $1;
-        my $p = lc $2;
-        $u = 'uint' if ($u eq 'int');
-        return (lc $value[0], lc $value[1], $u, $p);
-      }
-      else {
+    my $format = shift;
+    my @value = split(/_/, $format);
+    if (scalar @value != 3) {
+        ERROR(sprintf "Compression code is not valid '%s' !", $format);
         return undef;
-      }
     }
-  }
-  ERROR(sprintf "Can not decode the code '%s' !", $code);
-  return undef;
-  # ie 'tiff', 'raw', 'uint' , '8'
-  # ie 'tiff', 'png', 'uint' , '8'
-  # ie 'tiff', 'raw', 'float', '32'
-  # ie 'tiff', 'jpg', 'uint' , '8'
   
+    $value[2] =~ m/(\w+)(\d+)/;
+    
+    my $compression = '';
+    my $sampleformat = '';
+    my $bitspersample = $2;
+    
+    foreach (keys %SAMPLEFORMAT) {
+        if ($1 eq $SAMPLEFORMAT{$_}) {
+            $sampleformat = $_;
+        }
+    }
+    if ($sampleformat eq '') {
+        ERROR(sprintf "Can not decode the sample's format '%s' !", $1);
+        return undef;
+    }
+    
+    foreach (keys %COMPRESSION) {
+        if ($value[1] eq $COMPRESSION{$_}) {
+            $compression = $_;
+        }
+    }
+    if ($compression eq '') {
+        ERROR(sprintf "Can not decode the compression '%s' !", $value[1]);
+        return undef;
+    }
+    
+    return (lc $value[0], $compression, $sampleformat, $bitspersample);
+  
+    # ie 'tiff', 'raw', 'uint' , '8'
+    # ie 'tiff', 'png', 'uint' , '8'
+    # ie 'tiff', 'raw', 'float', '32'
+    # ie 'tiff', 'jpg', 'uint' , '8'
+    
 }
 ################################################################################
 # Group: get

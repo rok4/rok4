@@ -445,8 +445,18 @@ sub _load {
     return FALSE if (! $self->_fillFromPyramid());
   }
 
-  # create NoData !
-  my $objNodata = BE4::NoData->new({
+    ALWAYS(sprintf "\n - path_nodata : %s\n - bitspersample : %s\n - sampleformat : %s\n - photometric : %s\n - samplesperpixel : %s\n - imagesize : %s\n - color : %s\n",
+            $self->{pyramid}->{path_nodata},
+            $self->getTile()->getBitsPerSample(),
+            $self->getTile()->getSampleFormat(),
+            $self->getTile()->getPhotometric(),
+            $self->getTile()->getSamplesPerPixel(),
+            $self->{pyramid}->{imagesize}, 
+            $self->{pyramid}->{color}
+    );
+
+    # create NoData !
+    my $objNodata = BE4::NoData->new({
             path_nodata      => $self->{pyramid}->{path_nodata},
             bitspersample    => $self->getTile()->getBitsPerSample(),
             sampleformat     => $self->getTile()->getSampleFormat(),
@@ -454,17 +464,17 @@ sub _load {
             samplesperpixel  => $self->getTile()->getSamplesPerPixel(),
             imagesize        => $self->{pyramid}->{imagesize}, 
             color            => $self->{pyramid}->{color}
-  });
-  
-  if (! defined $objNodata) {
+    });
+
+    if (! defined $objNodata) {
     ERROR ("Can not load NoData !");
     return FALSE;
-  }
-    
-  $self->{nodata} = $objNodata;
-  DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
-   
-  return TRUE;
+    }
+
+    $self->{nodata} = $objNodata;
+    DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
+
+    return TRUE;
   
 }
 sub _fillToPyramid { 
@@ -550,6 +560,7 @@ sub _fillFromPyramid {
     ERROR (sprintf "Can not read the XML file Pyramid : %s !", $filepyramid);
     return FALSE;
   }
+  
   
   my $cachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
                                         $self->getPyrNameOld());
@@ -836,7 +847,7 @@ sub readConfPyramid {
         {
             id                => $tagtm,
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-            compress_image    => $tagformat, # ie TIFF_INT8 !
+            compress_image    => $tagformat, 
             dir_metadata      => undef,      # TODO !
             compress_metadata => undef,      # TODO !
             type_metadata     => undef,      # TODO !

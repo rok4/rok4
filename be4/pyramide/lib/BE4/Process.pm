@@ -170,7 +170,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd = sprintf ( "wget --no-proxy -O \${TMP_DIR}/%s ",$fileName );
+  my $cmd = sprintf ( "wget --no-proxy --no-verbose -O \${TMP_DIR}/%s ",$fileName );
     $cmd .= sprintf ( " \"%s\" \n", $url);
     $cmd .= sprintf ( "%s", RESULT_TEST);
   
