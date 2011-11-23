@@ -117,8 +117,8 @@ sub _init {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-         $self->{pyramid}->getCompression()->getType() eq 'png')
+       $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+         $self->{pyramid}->getFormat()->getCompression() eq 'png')
       )) {
   
     $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -217,7 +217,7 @@ sub work2cache {
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tile= $self->{pyramid}->getTile();
-  my $compression = $self->{pyramid}->getCompression()->getType();
+  my $compression = $self->{pyramid}->getFormat()->getCompression();
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
@@ -362,8 +362,8 @@ sub computeBottomImage {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-         $self->{pyramid}->getCompression()->getType() eq 'png')
+       $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+         $self->{pyramid}->getFormat()->getCompression() eq 'png')
       )) {
     $res .= $self->wms2work($node,$self->workNameOfNode($node));
   }
@@ -474,8 +474,8 @@ sub computeAboveImage {
       my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
       $bg="-b $bgImgPath";
       
-      if ($self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-          $self->{pyramid}->getCompression()->getType() eq 'png') {
+      if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+          $self->{pyramid}->getFormat()->getCompression() eq 'png') {
         # On doit chercher l'image de fond sur le WMS
         $res .= $self->wms2work($node, "bgImg.tif");
       } else {

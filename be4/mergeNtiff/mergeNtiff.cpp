@@ -58,7 +58,7 @@
 
 void usage() {
     LOGGER_INFO("Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n CC00CC -t [image/mtd] -s [1/3] -b [8/32] -p[gray/rgb/mask] ");
+    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n (-99999 for DTM or CC00CC for image) -t [image/mtd] -s [1/3] -b [8/32] -p[gray/rgb/mask] ");
 }
 
 /**

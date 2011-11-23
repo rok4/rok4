@@ -176,7 +176,7 @@ my $maxres=$objPyramid->getTileMatrixSet()->getLastTileMatrix()->getResolution()
 
 # TODO informatif...
 my @keyword;
-push @keyword, $objPyramid->getCompression()->getType();
+push @keyword, $objPyramid->getFormat()->getCompression();
 push @keyword, $objPyramid->getPyrName();
 push @keyword, $objPyramid->getTmsName();
 push @keyword, $srs;

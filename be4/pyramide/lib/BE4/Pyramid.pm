@@ -16,7 +16,7 @@ use Data::Dumper;
 # My module
 use BE4::Product;
 use BE4::TileMatrixSet;
-use BE4::Compression;
+use BE4::Format;
 use BE4::Level;
 use BE4::NoData;
 
@@ -78,7 +78,6 @@ END {}
 #    ; eg section [ tile ]
 #    bitspersample       = 
 #    sampleformat        = 
-#    ; compressionscheme   = 
 #    photometric         = 
 #    samplesperpixel     =
 #    interpolation       = 
@@ -180,7 +179,6 @@ sub new {
                     #
                     bitspersample           => undef,# number
                     sampleformat            => undef,# number
-                    # compressionscheme       => undef,# string value
                     photometric             => undef,# string value ie rgb by default !
                     samplesperpixel         => undef,# number
                     interpolation           => undef,# string value ie bicubique by default !
@@ -193,7 +191,7 @@ sub new {
     tile       => undef,   # it's an object !
     tms        => undef,   # it's an object !
     nodata     => undef,   # it's an object !
-    compression=> undef,   # it's an object !
+    format     => undef,   # it's an object !
     level      => [],      # it's a table of object level !
     cache_tile => [],      # ie tile to link  !
     cache_dir  => [],      # ie dir to search !
@@ -256,7 +254,6 @@ sub _init {
         $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
         $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
         $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE );
-        # $pyr->{compressionscheme}= $params->{compressionscheme} || ( ERROR ("key/value required to 'compressionscheme' !") && return FALSE );
        
     }
     else {
@@ -391,7 +388,6 @@ sub _load {
     my $objTile = BE4::Product->new({
         bitspersample    => $self->{pyramid}->{bitspersample},
         sampleformat     => $self->{pyramid}->{sampleformat},
-        # compressionscheme=> $self->{pyramid}->{compressionscheme},
         photometric      => $self->{pyramid}->{photometric},
         samplesperpixel  => $self->{pyramid}->{samplesperpixel},
         interpolation    => $self->{pyramid}->{interpolation},
@@ -405,16 +401,16 @@ sub _load {
     $self->{tile} = $objTile;
     DEBUG (sprintf "TILE = %s", Dumper($objTile));
     
-    # create Compress !
-    my $objCompress = BE4::Compression->new($self->{pyramid}->{compression},$self->{pyramid}->{sampleformat},$self->{pyramid}->{bitspersample});
+    # create Format !
+    my $objFormat = BE4::Format->new($self->{pyramid}->{compression},$self->{pyramid}->{sampleformat},$self->{pyramid}->{bitspersample});
     
-    if (! defined $objCompress) {
+    if (! defined $objFormat) {
       ERROR ("Can not load compression !");
       return FALSE;
     }
     
-    $self->{compression} = $objCompress;
-    DEBUG (sprintf "COMPRESSION = %s", Dumper($objCompress));
+    $self->{format} = $objFormat;
+    DEBUG (sprintf "FORMAT = %s", Dumper($objFormat));
     
     # create TileMatrixSet !
     my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
@@ -519,7 +515,7 @@ sub _fillToPyramid {
     my $params = {
             id                => $objTm->getID(),
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
-            compress_image    => $self->getCompression()->getCode(), # ie raw => TIFF_INT8 !
+            compress_image    => $self->getFormat()->getCode(), # ie TIFF_RAW_INT8 !
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_INT8,
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
@@ -596,7 +592,7 @@ sub writeConfPyramid {
   my $tmsname  = $self->getTmsName();
   $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
   #
-  my $formatimg = $self->getCompression()->getCode(); # ie TIFF_INT8 !
+  my $formatimg = $self->getFormat()->getCode(); # ie TIFF_RAW_INT8 !
   $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
   #  
   my $channel  = $self->getTile()->getSamplesPerPixel();
@@ -683,148 +679,157 @@ sub writeConfPyramid {
   return TRUE;
 }
 sub readConfPyramid {
-  my $self    = shift;
-  my $filepyramid = shift; # Can be null !
-    
-  TRACE;
-  
-  if (! defined $filepyramid) {
-    $filepyramid = File::Spec->catfile($self->getPyrDescPathOld(),
+    my $self    = shift;
+    my $filepyramid = shift; # Can be null !
+
+    TRACE;
+
+    if (! defined $filepyramid) {
+        $filepyramid = File::Spec->catfile($self->getPyrDescPathOld(),
                                        $self->getPyrFileOld());
-  }
-  
-  if (! -f $filepyramid) {
-    ERROR (sprintf "Can not find the XML file Pyramid : %s !", $filepyramid);
-    return FALSE;
-  }
-  
-  # read xml pyramid
-  my $parser  = XML::LibXML->new();
-  my $xmltree =  eval { $parser->parse_file($filepyramid); };
-  
-  if (! defined ($xmltree) || $@) {
-    ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
-    return FALSE;
-  }
-  
-  my $root   = $xmltree->getDocumentElement;
-  
-  # read tag value of tileMatrixSet, format and channel
-  
-  my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
-  
-  if (! defined ($tagtmsname)) {
-    ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
-    return FALSE;
-  }
-  
-  my $tagformat = $root->findnodes('format')->to_literal;
+    }
 
-  if (! defined ($tagformat)) {
-    ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
-    return FALSE;
-  }
-  
-  my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
-
-  if (! defined ($tagsamplesperpixel)) {
-    ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
-    return FALSE;
-  }
-  
-  # create a object tileMatrixSet
-  
-  my $tmsname = $self->getTmsName();
-  if (! defined $tmsname) {
-    WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
-    $tmsname = $tagtmsname;
-  }
-
-  if ($tmsname ne $tagtmsname) {
-    WARN ("Selecting the name of TMS in the file of the pyramid !");
-    $tmsname = $tagtmsname;
-  }
-  
-  my $tmsfile = join(".", $tmsname, "tms"); 
-  my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile),
-                                         $self->{pyramid}->{tms_level_min},
-                                         $self->{pyramid}->{tms_level_max});
-  
-  if (! defined $objTMS) {
-    ERROR ("Can not create object TileMatrixSet !");
-    return FALSE;
-  }
-  
-  # save it if doesn't exist !
-  if (! defined ($self->getTileMatrixSet())) {
-    $self->{tms} = $objTMS;
-  }
-    
-  # fill parameters if not... !
-  $self->{pyramid}->{tms_name} = $self->getTileMatrixSet()->getFile();
-  $self->{pyramid}->{tms_path} = $self->getTileMatrixSet()->getPath();
-  
-  # create tile and compression objects
-
-  # ie TIFF, compression, sampleformat, bitspersample !
-  # return compression = raw, jpg or png !
-  my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Compression->decodeCompression($tagformat);
-  
-  # create tile
-  my $tile = {
-        bitspersample    => $bitspersample,
-        sampleformat     => $sampleformat,
-        # compressionscheme=> 'none', # FIXME always none !
-        photometric      => $self->getPhotometric(),
-        samplesperpixel  => $tagsamplesperpixel,
-        interpolation    => $self->getInterpolation(),
-  };
-   
-  my $objTile = BE4::Product->new($tile);
-    
-  if (! defined $objTile) {
-    ERROR ("Can not create the Tile format !");
-    return FALSE;
-  }
-
-  # save it if doesn't exist !
-  if (! defined ($self->getTile())) {
-    $self->{tile} = $objTile;
-  }
-  
-  # create compression
-  if (! defined ($self->getCompression())) {
-    
-    my $type = undef;
-    
-    # priority in this choice ...
-    $type = $compression if (defined $compression);
-    $type = $self->{pyramid}->{compression} if (defined $self->{pyramid}->{compression});
-    
-    my $objCompress = BE4::Compression->new($type);
-
-    if (! defined $objCompress) {
-        ERROR ("Can not load compression !");
+    if (! -f $filepyramid) {
+        ERROR (sprintf "Can not find the XML file Pyramid : %s !", $filepyramid);
         return FALSE;
     }
 
-    $self->{compression} = $objCompress;
-  }
+    # read xml pyramid
+    my $parser  = XML::LibXML->new();
+    my $xmltree =  eval { $parser->parse_file($filepyramid); };
+
+    if (! defined ($xmltree) || $@) {
+        ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
+        return FALSE;
+    }
+
+    my $root   = $xmltree->getDocumentElement;
+
+    # read tag value of tileMatrixSet, format and channel
+
+    my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
+
+    if (! defined ($tagtmsname)) {
+        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+        return FALSE;
+    }
+
+    my $tagformat = $root->findnodes('format')->to_literal;
+
+    if (! defined ($tagformat)) {
+        ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
+        return FALSE;
+    }
+
+#   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
+    if ($tagformat eq 'TIFF_INT8') {
+        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
+        $tagformat = 'TIFF_RAW_INT8';
+    }
+    if ($tagformat eq 'TIFF_FLOAT32') {
+        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
+        $tagformat = 'TIFF_RAW_FLOAT32';
+    }
   
-  # check compression mode 
-  if ($self->getCompression()->getCode() ne $tagformat) {
-    ERROR (sprintf "The mode compression is differnt between configuration and pyramid file !",
-           $tagformat,
-           $self->getCompression()->getCode());
+    my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
+
+    if (! defined ($tagsamplesperpixel)) {
+    ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
     return FALSE;
-  }
-    
-  # load pyramid level
-  
-  my @levels = $root->getElementsByTagName('level');
-  
-  foreach my $v (@levels) {
-    
+    }
+
+    # create a object tileMatrixSet
+
+    my $tmsname = $self->getTmsName();
+    if (! defined $tmsname) {
+    WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
+    $tmsname = $tagtmsname;
+    }
+
+    if ($tmsname ne $tagtmsname) {
+    WARN ("Selecting the name of TMS in the file of the pyramid !");
+    $tmsname = $tagtmsname;
+    }
+
+    my $tmsfile = join(".", $tmsname, "tms"); 
+    my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile),
+                                         $self->{pyramid}->{tms_level_min},
+                                         $self->{pyramid}->{tms_level_max});
+
+    if (! defined $objTMS) {
+    ERROR ("Can not create object TileMatrixSet !");
+    return FALSE;
+    }
+
+    # save it if doesn't exist !
+    if (! defined ($self->getTileMatrixSet())) {
+    $self->{tms} = $objTMS;
+    }
+
+    # fill parameters if not... !
+    $self->{pyramid}->{tms_name} = $self->getTileMatrixSet()->getFile();
+    $self->{pyramid}->{tms_path} = $self->getTileMatrixSet()->getPath();
+
+    # create tile and format objects
+
+    # ie TIFF, compression, sampleformat, bitspersample !
+    # return compression = raw, jpg or png !
+    my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Format->decodeFormat($tagformat);
+
+    # create tile
+    my $tile = {
+        bitspersample    => $bitspersample,
+        sampleformat     => $sampleformat,
+        photometric      => $self->getPhotometric(),
+        samplesperpixel  => $tagsamplesperpixel,
+        interpolation    => $self->getInterpolation(),
+    };
+
+    my $objTile = BE4::Product->new($tile);
+
+    if (! defined $objTile) {
+    ERROR ("Can not create the Tile format !");
+    return FALSE;
+    }
+
+    # save it if doesn't exist !
+    if (! defined ($self->getTile())) {
+    $self->{tile} = $objTile;
+    }
+
+    # create Format
+    if (! defined ($self->getFormat())) {
+
+    my $type = undef;
+
+    # priority in this choice ...
+    $type = $compression if (defined $compression);
+    $type = $self->{pyramid}->{compression} if (defined $self->{pyramid}->{compression});
+
+    my $objFormat = BE4::Format->new($type,$sampleformat,$bitspersample);
+
+    if (! defined $objFormat) {
+        ERROR ("Can not load format !");
+        return FALSE;
+    }
+
+    $self->{format} = $objFormat;
+    }
+
+    # check compression mode 
+    if ($self->getFormat()->getCode() ne $tagformat) {
+        ERROR (sprintf "The mode compression is diffrent between configuration ('%s') and pyramid file ('%s') !",
+                    $self->getFormat()->getCode(),
+                    $tagformat);
+        return FALSE;
+    }
+
+    # load pyramid level
+
+    my @levels = $root->getElementsByTagName('level');
+
+    foreach my $v (@levels) {
+
         my $tagtm       = $v->findvalue('tileMatrix');
         my @tagsize     =  (
                              $v->findvalue('tilesPerWidth'),
@@ -837,53 +842,53 @@ sub readConfPyramid {
                             $v->findvalue('TMSLimits/minTileCol'),
                             $v->findvalue('TMSLimits/maxTileCol')
                           );
-    #
-    my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
-                                       $self->getPyrName(),
-                                       $self->getDirImage(),
-                                       $tagtm
-                                  );
-    #
-    my $objLevel = BE4::Level->new(
-        {
-            id                => $tagtm,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-            compress_image    => $tagformat, 
-            dir_metadata      => undef,      # TODO !
-            compress_metadata => undef,      # TODO !
-            type_metadata     => undef,      # TODO !
-            bitspersample     => $bitspersample,
-            samplesperpixel   => $tagsamplesperpixel,
-            size              => [$tagsize[0],$tagsize[1]],
-            dir_depth         => $tagdirdepth,
-            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
-        });
-    
-    if (! defined $objLevel) {
-        WARN(sprintf "Can not load the pyramid level : '%s'", $tagtm);
-        next;
+        #
+        my $baseimage = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
+                                           $self->getPyrName(),
+                                           $self->getDirImage(),
+                                           $tagtm
+                                           );
+        #
+        my $objLevel = BE4::Level->new(
+            {
+                id                => $tagtm,
+                dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+                compress_image    => $tagformat, 
+                dir_metadata      => undef,      # TODO !
+                compress_metadata => undef,      # TODO !
+                type_metadata     => undef,      # TODO !
+                bitspersample     => $bitspersample,
+                samplesperpixel   => $tagsamplesperpixel,
+                size              => [$tagsize[0],$tagsize[1]],
+                dir_depth         => $tagdirdepth,
+                limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+            });
+
+        if (! defined $objLevel) {
+            WARN(sprintf "Can not load the pyramid level : '%s'", $tagtm);
+            next;
+        }
+
+        push @{$self->{level}}, $objLevel;
+
+        # fill parameters if not ... !
+        $self->{pyramid}->{image_width}  = $tagsize[0];
+        $self->{pyramid}->{image_height} = $tagsize[1];
     }
-    
-    push @{$self->{level}}, $objLevel;
-    
-    # fill parameters if not ... !
-    $self->{pyramid}->{image_width}  = $tagsize[0];
-    $self->{pyramid}->{image_height} = $tagsize[1];
-  }
-  
-  #
-  if (scalar @{$self->{level}} != scalar @levels) {
-    WARN (sprintf "Be careful, the level pyramid in not complete (%s != %s) !",
-          scalar @{$self->{level}},
-          scalar @levels);
-  }
-  #
-  if (! scalar @{$self->{level}}) {
-    ERROR ("List of Level Pyramid is empty !");
-    return FALSE;
-  }
-  
-  return TRUE;
+
+    #
+    if (scalar @{$self->{level}} != scalar @levels) {
+        WARN (sprintf "Be careful, the level pyramid in not complete (%s != %s) !",
+            scalar @{$self->{level}},
+            scalar @levels);
+    }
+    #
+    if (! scalar @{$self->{level}}) {
+        ERROR ("List of Level Pyramid is empty !");
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 #############################################################################
@@ -1274,9 +1279,9 @@ sub getNoData {
   return $self->{nodata};
 }
 #  
-sub getCompression {
+sub getFormat {
   my $self = shift;
-  return $self->{compression}; # ie raw, jpg or png !
+  return $self->{format}; # ie objet Format
 }
 # 
 sub getTile {
@@ -1725,7 +1730,6 @@ __END__
     #
     bitspersample       => "8", 
     sampleformat        => "uint", 
-    ; compressionscheme   => "none", 
     photometric         => "rgb", 
     samplesperpixel     => "3",
     interpolation       => "bicubique",
@@ -1767,7 +1771,6 @@ To create a new pyramid, you must fill all parameters following :
     # 
     bitspersample       = 
     sampleformat        = 
-    # compressionscheme   = 
     photometric         => by default, it's 'rgb' !
     samplesperpixel     =
     interpolation       => by default, it's 'bicubique' !
@@ -1906,45 +1909,45 @@ None by default.
   
   <?xml version='1.0' encoding='US-ASCII'?>
   <Pyramid>
-	<tileMatrixSet>LAMB93_50cm_TEST</tileMatrixSet>
-	<level>
-		<tileMatrix>18</tileMatrix>
-		<baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
-		<format>TIFF_INT8</format>
-		<metadata type='INT32_DB_LZW'>
-			<baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
-			<format>TIFF_INT8</format>
-		</metadata>
-		<channels>3</channels>
-		<tilesPerWidth>4</tilesPerWidth>
-		<tilesPerHeight>4</tilesPerHeight>
-		<pathDepth>2</pathDepth>
-		<TMSLimits>
-			<minTileRow>1</minTileRow>
-			<maxTileRow>1000000</maxTileRow>
-			<minTileCol>1</minTileCol>
-			<maxTileCol>1000000</maxTileCol>
-		</TMSLimits>
-	</level>
-	<level>
-		<tileMatrix>17</tileMatrix>
-		<baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
-		<format>TIFF_INT8</format>
-		<metadata type='INT32_DB_LZW'>
-			<baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
-			<format>TIFF_INT8</format>
-		</metadata>
-		<channels>3</channels>
-		<tilesPerWidth>4</tilesPerWidth>
-		<tilesPerHeight>4</tilesPerHeight>
-		<pathDepth>2</pathDepth>
-		<TMSLimits>
-			<minTileRow>1</minTileRow>
-			<maxTileRow>1000000</maxTileRow>
-			<minTileCol>1</minTileCol>
-			<maxTileCol>1000000</maxTileCol>
-		</TMSLimits>
-	</level>
+    <tileMatrixSet>LAMB93_50cm_TEST</tileMatrixSet>
+    <level>
+        <tileMatrix>18</tileMatrix>
+        <baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
+        <format>TIFF_RAW_INT8</format>
+        <metadata type='INT32_DB_LZW'>
+            <baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
+            <format>TIFF_INT8</format>
+        </metadata>
+        <channels>3</channels>
+        <tilesPerWidth>4</tilesPerWidth>
+        <tilesPerHeight>4</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <TMSLimits>
+            <minTileRow>1</minTileRow>
+            <maxTileRow>1000000</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1000000</maxTileCol>
+        </TMSLimits>
+    </level>
+    <level>
+        <tileMatrix>17</tileMatrix>
+        <baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
+        <format>TIFF_RAW_INT8</format>
+        <metadata type='INT32_DB_LZW'>
+            <baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
+            <format>TIFF_INT8</format>
+        </metadata>
+        <channels>3</channels>
+        <tilesPerWidth>4</tilesPerWidth>
+        <tilesPerHeight>4</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <TMSLimits>
+            <minTileRow>1</minTileRow>
+            <maxTileRow>1000000</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1000000</maxTileCol>
+        </TMSLimits>
+    </level>
   </Pyramid>
 
 =item * Sample TMS file (.tms) :

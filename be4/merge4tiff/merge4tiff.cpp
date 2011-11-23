@@ -16,7 +16,7 @@
 void usage() {
   std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
   std::cerr << "-n : this integer point value in decimal is used only for DTM. (-99999 for example)"<< std::endl;
-  std::cerr << "     For images (u_int8), the value is between 0 and 255 in hexadecimal (just first two characters are used)"<< std::endl;
+  std::cerr << "     For images (u_int8), the value is between 0 and 255 in hexadecimal (C9... for example, just first two characters are used)"<< std::endl;
   std::cerr << "-b : the background image is mandatory for images" << std::endl;
   std::cerr << "-g : default gamma is 1.0 (have no effect)" << std::endl;
   std::cerr << "-c : compression should not be used in be4 context" << std::endl;
