@@ -612,6 +612,7 @@ sub writeConfPyramid {
     $strpyrtmplt =~ s/__ID__/$id/;
     
     my $dirimg   = $objLevel->{dir_image};
+    $dirimg = '/home/theo/WORK/TEST/PYRAMIDS/'.$dirimg;
     $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
     
     # my $formatimg = $objLevel->{compress_image}; # ie TIFF_INT8 !

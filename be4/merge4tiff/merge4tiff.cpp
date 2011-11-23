@@ -387,7 +387,7 @@ int main(int argc, char* argv[]) {
             nodata = atoi(strnodata);
             if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a DTM");
         } else {
-            nodata = 0;
+            nodata = -99999;
         }
         return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
     }
@@ -399,7 +399,7 @@ int main(int argc, char* argv[]) {
             if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for image");
             nodata = 16*a1+a0;
         } else {
-            nodata = 0;
+            nodata = 255;
         }
         return merge4uint8(width,height,sampleperpixel,gamma,nodata,BACKGROUND,INPUT,OUTPUT);
     }
