@@ -450,7 +450,11 @@ void Rok4Server::buildWMTSCapabilities(){
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
 			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
 			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr((long double)(tm.getRes()*tms->getCrs().getMetersPerUnit())/0.00028)));
-			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
+			if (tms->getCrs().isLongLat()){
+				tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getY0()) + " " + numToStr(tm.getX0())));
+			}else{
+				tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
+			}			
 			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
 			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));
 			tmEl->LinkEndChild(buildTextNode("MatrixWidth",numToStr(tm.getMatrixW())));
