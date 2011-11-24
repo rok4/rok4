@@ -5,7 +5,8 @@
 #include <cstdlib>
 #include <climits>
 #include <vector>
-#include <cstdio> 
+#include <cstdio>
+#include "config.h"
 
 /* converts hex char (0-9, A-Z, a-z) to decimal.
  * returns 0xFF on invalid input.
@@ -60,8 +61,9 @@ void toLowerCase(char* str){
         if(str) for(int i = 0; str[i]; i++) str[i] = tolower(str[i]);
 }
 
-Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName),path(path),service(""),request("") {
+Request::Request(char* strquery, char* hostName, char* path, char* https) : hostName(hostName),path(path),service(""),request(""),scheme("") {
 	LOGGER_DEBUG("QUERY="<<strquery);
+	scheme = (https?"https://":"http://");
 	url_decode(strquery);
 
 	for(int pos = 0; strquery[pos];) {
@@ -88,6 +90,23 @@ Request::Request(char* strquery,char* hostName, char* path) : hostName(hostName)
 
 Request::~Request() {}
 
+/**
+ * @vriedf test de la présence de paramName dans la requete
+ * @return true si présent
+ */
+bool Request::hasParam(std::string paramName){
+	std::map<std::string, std::string>::iterator it = params.find(paramName);
+	if(it == params.end()){
+		return false;
+	}
+	return true;
+}
+
+
+/**
+ * @vriedf récupération du parametre paramName dans la requete
+ * @return la valeur du parametre si existant "" sinon
+ */
 std::string Request::getParam(std::string paramName){
 	std::map<std::string, std::string>::iterator it = params.find(paramName);
 	if(it == params.end()){
@@ -101,7 +120,7 @@ std::string Request::getParam(std::string paramName){
 * @return message d'erreur en cas d'erreur (NULL sinon)
 */
 
-DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer,  std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format)
+DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style)
 {
 	// VERSION
 	std::string version=getParam("version");
@@ -150,11 +169,26 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map<std::stri
 	// FORMAT
 	format=getParam("format");
         if(format == "")
-                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wms"));
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wmts"));
 	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
 	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
+	//Style
+	std::string styleName=getParam("style");
+	if(styleName == "")
+                return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLE absent.","wmts"));
+	// TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
+	if (layer->getStyles().size() != 0){
+		for (unsigned int i=0; i < layer->getStyles().size(); i++){
+			if (styleName == layer->getStyles()[i]->getId())
+				style=layer->getStyles()[i];
+		}
+	}
+	if (!(style))
+		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le style "+styleName+" n'est pas gere pour la couche "+str_layer,"wmts"));
+	
 	return NULL;
+
 }
 
 void stringSplit(std::string str, std::string delim, std::vector<std::string> &results){
@@ -171,11 +205,11 @@ void stringSplit(std::string str, std::string delim, std::vector<std::string> &r
 }
 
 /**
- * @brife Recuperation et verification des parametres d'une requete GetMap
+ * @brief Recuperation et verification des parametres d'une requete GetMap
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::string, Layer*>& layerList, Layer*& layer, BoundingBox<double> &bbox, int &width, int &height, CRS& crs, std::string &format){
+DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style){
         // VERSION
         std::string version=getParam("version");
         if (version=="")
@@ -220,7 +254,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
         crs.setRequestCode(str_crs);
         unsigned int k;
         for (k=0;k<layer->getWMSCRSList().size();k++)
-                if (crs.cmpRequestCode(layer->getWMSCRSList().at(k)))
+                if (crs.cmpRequestCode(layer->getWMSCRSList().at(k)->getRequestCode()))
                         break;
         // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
         if (k==layer->getWMSCRSList().size())
@@ -260,7 +294,7 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	bbox.ymax=bb[3];
 	// L'ordre des coordonnees (X,Y) de chque coin de la bbox doit suivre l'ordre des axes du CS associe au SRS
 	// Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris entre 4000 et 5000
-	if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
+	/*if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
 		int code=atoi(crs.getIdentifier().c_str());
 		if (code>=4000 && code<5000){	
 			bbox.xmin=bb[1];
@@ -268,7 +302,16 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
         		bbox.xmax=bb[3];
         		bbox.ymax=bb[2];	
 		}
+	}*/
+	
+	// Data are stored in Long/Lat, Geographical system need to be inverted except CRS:84
+	if (crs.isLongLat() && !(crs.getAuthority()=="CRS")) {
+			bbox.xmin=bb[1];
+			bbox.ymin=bb[0];
+			bbox.xmax=bb[3];
+			bbox.ymax=bb[2];	
 	}
+	
 
 	// SCALE DENOMINATORS
 	
@@ -300,5 +343,22 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map<std::strin
 	std::string str_exception=getParam("exception");
 	if (str_exception!=""&&str_exception!="XML")
 		return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Format d'exception "+str_exception+" non pris en charge","wms"));
+	
+	if (!(hasParam("styles")))
+		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLES absent.","wms"));
+	std::string styles=getParam("styles");
+	if(styles == "") // Gestion du style par défaut
+                styles=(servicesConf.isInspire()?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
+	// TODO : récuperer les styles supporté par la couche
+	
+	if (layer->getStyles().size() != 0){
+		for (unsigned int i=0; i < layer->getStyles().size(); i++){
+			if (styles == layer->getStyles()[i]->getId()){
+				style = layer->getStyles()[i];
+			}
+		}
+	}
+	if (!(style))
+		return new SERDataStream(new ServiceException("",WMS_STYLE_NOT_DEFINED,"Le style "+styles+" n'est pas gere pour la couche "+str_layer,"wms"));
 	return NULL;
 }

@@ -27,9 +27,10 @@ std::string getMimeType(std::string format){
 }
 
 Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::string format, int channels) : levels(levels), tms(tms), format(format), channels(channels){
-
-	std::map<std::string, TileMatrix>::iterator itTm;
-	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){
+	//TODO Utiliser une image de noData présente dans le cache -> modification BE4
+	/*std::map<std::string, TileMatrix>::iterator itTm;
+	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){	
+		//Source des données vide initialisé avec la noDataImage
 		DataSource* noDataSource;
 		if (format.compare("TIFF_INT8")==0) {
 	                TiffEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
@@ -40,7 +41,9 @@ Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
         	else if (format.compare("TIFF_PNG_INT8")==0) {
-                	PNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	PNGEncoder dataStream(new ImageDecoder(new DataSourceDecoder<PngDecoder>(new FileDataSource(noDataFile.c_str(),2048,2048+16*16*4,getMimeType(format))),
+						       itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	//PNGEncoder dataStream(new DataSourceDecoder<PngDecoder>(noFileDataSource));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
         	else if (format.compare("TIFF_FLOAT32")==0) {
@@ -54,8 +57,8 @@ Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::
 
 		std::map<std::string, Level*>::const_iterator itLevel=levels.find(itTm->second.getId());
 		if (itLevel!=levels.end())
-			itLevel->second->setNoDataSource(noDataSource);
-	}
+			itLevel->second->setNoData(noDataSource,noDataFile);
+	}*/
 }
 
 DataSource* Pyramid::getTile(int x, int y, std::string tmId) {

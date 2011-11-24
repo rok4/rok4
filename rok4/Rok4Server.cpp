@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "TiffEncoder.h"
-#include "PNGEncoder.h"
+#include "ColorizePNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
 #include <sstream>
@@ -19,6 +19,7 @@
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include <proj_api.h>
+#include <PaletteDataSource.h>
 
 
 /**
@@ -40,8 +41,8 @@ void* Rok4Server::thread_loop(void* arg)
 			break;
 		}
 
-		/* DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
-		char **p;
+// 		 //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
+	/*	char **p;
 	    for (p = fcgxRequest.envp; *p; ++p) {
 	    	LOGGER_DEBUG((char*)*p);
 	    }*/
@@ -52,7 +53,10 @@ void* Rok4Server::thread_loop(void* arg)
 		
 		Request* request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
 		                               FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
-		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp));
+		                               FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp),
+					       FCGX_GetParam("HTTPS", fcgxRequest.envp)
+      					);
+		
 		server->processRequest(request, fcgxRequest);
 		delete request;
 
@@ -69,7 +73,9 @@ void* Rok4Server::thread_loop(void* arg)
 Rok4Server::Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
                        sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
 
+	LOGGER_DEBUG("Build WMS Capabilities");
 	buildWMSCapabilities();
+	LOGGER_DEBUG("Build WMTS Capabilities");
 	buildWMTSCapabilities();
 }
 
@@ -107,9 +113,9 @@ void Rok4Server::run() {
 DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
 	/* concaténation des fragments invariant de capabilities en intercalant les
 	 * parties variables dépendantes de la requête */
-	std::string capa = wmsCapaFrag[0] + "http://" + request->hostName;
+	std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
 	for (int i=1; i < wmsCapaFrag.size()-1; i++){
-		capa = capa + wmsCapaFrag[i] + "http://" + request->hostName + request->path + "?";
+		capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
 	}
 	capa = capa + wmsCapaFrag.back();
 
@@ -121,7 +127,7 @@ DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
 	 * parties variables dépendantes de la requête */
 	std::string capa = "";
 	for (int i=0; i < wmtsCapaFrag.size()-1; i++){
-		capa = capa + wmtsCapaFrag[i] + "http://" + request->hostName + request->path +"?";
+		capa = capa + wmtsCapaFrag[i] + request->scheme + request->hostName + request->path +"?";
 	}
 	capa = capa + wmtsCapaFrag.back();
 
@@ -141,9 +147,10 @@ DataStream* Rok4Server::getMap(Request* request)
 	int width, height;
 	CRS crs;
 	std::string format;
+	Style* style=0;
 
 	// Récupération des paramètres
-	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format);
+	DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format,style);
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
 		return errorResp;
@@ -151,6 +158,8 @@ DataStream* Rok4Server::getMap(Request* request)
 	
 	int error;
 	Image* image = L->getbbox(bbox, width, height, crs, error);
+	
+	LOGGER_DEBUG("GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
 
 	if (image == 0){
 		if (error==1)
@@ -160,7 +169,7 @@ DataStream* Rok4Server::getMap(Request* request)
 	}
 
 	if(format=="image/png")
-		return new PNGEncoder(image);
+		return new PNGEncoder(image,style->getPalette());
 	else if(format == "image/tiff")
 		return new TiffEncoder(image);
 	else if(format == "image/jpeg")
@@ -182,16 +191,25 @@ DataSource* Rok4Server::getTile(Request* request)
 	Layer* L;
 	std::string tileMatrix,format;
 	int tileCol,tileRow;
+	Style* style=0;
 
 	// Récupération des parametres de la requete
-	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format);
+	DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style);
 
 	if (errorResp){
 		LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
 		return errorResp;
 	}
-
-	return L->gettile(tileCol, tileRow, tileMatrix);
+	DataSource* tileSource;
+	// Avoid using unnecessary palette
+	if ( format == "image/png") {
+		 tileSource= new PaletteDataSource(L->gettile(tileCol, tileRow, tileMatrix),style->getPalette());
+	}else {
+		 tileSource= L->gettile(tileCol, tileRow, tileMatrix);
+	}
+		
+		
+	return tileSource;
 }
 
 /** Traite les requêtes de type WMTS */

@@ -2,9 +2,11 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include <iostream>
+#include <algorithm>
+#include <iomanip>
 #include <vector>
 #include <map>
-
+#include <cmath>
 
 /**
  * Conversion de int en std::string.
@@ -50,13 +52,18 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * capabilitiesEl = new TiXmlElement( "WMS_Capabilities" );
 	capabilitiesEl->SetAttribute("version","1.3.0");
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
-	// Pour Inspire. Cf. remarque plus bas.
-	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
-	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd");
-
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
+	
+	// Pour Inspire. Cf. remarque plus bas.
+	if (servicesConf.isInspire()){
+		capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0");
+		capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
+		capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd");
+	}
+	
+	
 
 	// Traitement de la partie service
 	//----------------------------------
@@ -136,30 +143,31 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilityEl->LinkEndChild(exceptionEl);
 
 	// Inspire (extended Capability)
-	// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
-	TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+	if(servicesConf.isInspire()){
+		// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
+		TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 
-	// MetadataURL
-	TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
-	metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
-        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+		// MetadataURL
+		TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+		metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
+		extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
 
-	// Languages
-	TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
-	TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
-	TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
-	TiXmlText * lfre = new TiXmlText("fre");
-        languageEl->LinkEndChild(lfre);
-	defaultLanguageEl->LinkEndChild(languageEl);
-	supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
-	extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
-	// Responselanguage
-	TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
-	responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
-	extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
+		// Languages
+		TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+		TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+		TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
+		TiXmlText * lfre = new TiXmlText("fre");
+		languageEl->LinkEndChild(lfre);
+		defaultLanguageEl->LinkEndChild(languageEl);
+		supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+		extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+		// Responselanguage
+		TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+		responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+		extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
 	
-	capabilityEl->LinkEndChild(extendedCapabilititesEl);
-
+		capabilityEl->LinkEndChild(extendedCapabilititesEl);
+	}
 	// Layer
 	if (layerList.empty()){
 		LOGGER_ERROR("Liste de layers vide");
@@ -195,7 +203,7 @@ void Rok4Server::buildWMSCapabilities(){
 		}
 		// CRS
 		for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
-			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]));
+			childLayerEl->LinkEndChild(buildTextNode("CRS", childLayer->getWMSCRSList()[i]->getRequestCode()));
 		}
 		// GeographicBoundingBox
 		TiXmlElement * gbbEl = new TiXmlElement( "EX_GeographicBoundingBox");
@@ -211,17 +219,48 @@ void Rok4Server::buildWMSCapabilities(){
 		os.str("");
 		os<<childLayer->getGeographicBoundingBox().maxy;
 		gbbEl->LinkEndChild(buildTextNode("northBoundLatitude", os.str()));
+		os.str("");
 		childLayerEl->LinkEndChild(gbbEl);
 
+		
 		// BoundingBox
-		TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
-		bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
-		bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
-		bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
-		bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
-		bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
-		childLayerEl->LinkEndChild(bbEl);
-	
+		if (servicesConf.isInspire()){
+			for (unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++){
+				BoundingBox<double> bbox = childLayer->getWMSCRSList()[i]->boundingBoxFromGeographic(childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy);
+				TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+				bbEl->SetAttribute("CRS",childLayer->getWMSCRSList()[i]->getRequestCode());
+				int floatprecision = GetDecimalPlaces(bbox.xmin);
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.xmax));
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.ymin));
+				floatprecision = std::max(floatprecision,GetDecimalPlaces(bbox.ymax));
+				floatprecision = std::min(floatprecision,9); //FIXME gestion du nombre maximal de décimal.
+				
+				os<< std::fixed << std::setprecision(floatprecision);
+				os<<bbox.xmin;
+				bbEl->SetAttribute("minx",os.str());
+				os.str("");
+				os<<bbox.ymin;
+				bbEl->SetAttribute("miny",os.str());
+				os.str("");
+				os<<bbox.xmax;
+				bbEl->SetAttribute("maxx",os.str());
+				os.str("");
+				os<<bbox.ymax;
+				bbEl->SetAttribute("maxy",os.str());
+				os.str("");
+				childLayerEl->LinkEndChild(bbEl);
+			}
+		}
+		else {
+			TiXmlElement * bbEl = new TiXmlElement( "BoundingBox");
+			bbEl->SetAttribute("CRS",childLayer->getBoundingBox().srs);
+			bbEl->SetAttribute("minx",childLayer->getBoundingBox().minx);
+			bbEl->SetAttribute("miny",childLayer->getBoundingBox().miny);
+			bbEl->SetAttribute("maxx",childLayer->getBoundingBox().maxx);
+			bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
+			childLayerEl->LinkEndChild(bbEl);
+		}
+
 		// Scale denominators
 		os.str("");
 		os<<childLayer->getMinRes()*1000/0.28;
@@ -236,12 +275,52 @@ void Rok4Server::buildWMSCapabilities(){
 		 *
 		 layer->getAuthority();
 		 layer->getOpaque();
-		 layer->getStyles();
-		 */
+		
+		*/
+		LOGGER_DEBUG("Nombre de styles : "<<childLayer->getStyles().size());
+		if (childLayer->getStyles().size() != 0){
+			for (unsigned int i=0; i < childLayer->getStyles().size(); i++){
+				TiXmlElement * styleEl= new TiXmlElement("Style");
+				Style* style = childLayer->getStyles()[i];
+				styleEl->LinkEndChild(buildTextNode("Name", style->getId().c_str()));
+				int j;
+				for (j=0 ; j < style->getTitle().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Title", style->getTitle()[j].c_str() ));
+				}
+				for (j=0 ; j < style->getAbstract().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstract()[j].c_str()));
+				}
+				for (j=0 ; j < style->getLegendURLs().size(); ++j){
+					LOGGER_DEBUG("LegendURL" << style->getId());
+					LegendURL legendURL = style->getLegendURLs()[j];
+					TiXmlElement* legendURLEl = new TiXmlElement("LegendURL");
+					
+					TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
+					LOGGER_DEBUG("OnlineResource");
+					onlineResourceEl->SetAttribute("xlink:href", legendURL.getHRef());
+					
+					LOGGER_DEBUG("OnlineResource OK");
+					legendURLEl->LinkEndChild(buildTextNode("Format", legendURL.getFormat()));
+					legendURLEl->LinkEndChild(onlineResourceEl);
+					legendURLEl->SetAttribute("format", legendURL.getFormat());
+					
+					if (legendURL.getWidth()!=0)
+						legendURLEl->SetAttribute("width", legendURL.getWidth());
+					if (legendURL.getHeight()!=0)
+						legendURLEl->SetAttribute("height", legendURL.getHeight());
+					styleEl->LinkEndChild(legendURLEl);
+					LOGGER_DEBUG("LegendURL OK"<< style->getId());
+				}
+				
+				LOGGER_DEBUG("Style fini : " << style->getId());
+				childLayerEl->LinkEndChild(styleEl);
+			}
+		}
+		LOGGER_DEBUG("Layer Fini");
 		parentLayerEl->LinkEndChild(childLayerEl);
 
 	}// for layer
-
+	LOGGER_DEBUG("Layers Fini");
 	capabilityEl->LinkEndChild(parentLayerEl);
 
 
@@ -268,7 +347,7 @@ void Rok4Server::buildWMSCapabilities(){
 		endPos=wmsCapaTemplate.find(pathTag,beginPos);
 	}
 	wmsCapaFrag.push_back(wmsCapaTemplate.substr(beginPos));
-
+	LOGGER_DEBUG("WMSfini");
 }
 
 
@@ -286,10 +365,14 @@ void Rok4Server::buildWMTSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns:ows","http://www.opengis.net/ows/1.1");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
-	capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0");
 	capabilitiesEl->SetAttribute("xmlns:gml","http://www.opengis.net/gml");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0/inspire_vs_ows_11.xsd");
+	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd");
+	if (servicesConf.isInspire()){
+		capabilitiesEl->SetAttribute("xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0");
+		capabilitiesEl->SetAttribute("xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0");
+		capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs_ows11/1.0/inspire_vs_ows_11.xsd");
+	}
+	
 
 	//----------------------------------------------------------------------
 	// ServiceIdentification
@@ -359,31 +442,33 @@ void Rok4Server::buildWMTSCapabilities(){
 
 	opMtdEl->LinkEndChild(opEl);
 
+	
 	// Inspire (extended Capability)
         // TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
-        TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
+        if(servicesConf.isInspire()){
+		TiXmlElement * extendedCapabilititesEl = new TiXmlElement("inspire_vs:ExtendedCapabilities");
 
-        // MetadataURL
-        TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
-        metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
-        extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
+		// MetadataURL
+		TiXmlElement * metadataUrlEl = new TiXmlElement("inspire_common:MetadataUrl");
+		metadataUrlEl->LinkEndChild(buildTextNode("inspire_common:URL", "A specifier"));
+		extendedCapabilititesEl->LinkEndChild(metadataUrlEl);
 
-        // Languages
-        TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
-        TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
-        TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
-        TiXmlText * lfre = new TiXmlText("fre");
-        languageEl->LinkEndChild(lfre);
-        defaultLanguageEl->LinkEndChild(languageEl);
-        supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
-        extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
-        // Responselanguage
-        TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
-        responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
-        extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
+		// Languages
+		TiXmlElement * supportedLanguagesEl = new TiXmlElement("inspire_common:SupportedLanguages");
+		TiXmlElement * defaultLanguageEl = new TiXmlElement("inspire_common:DefaultLanguage");
+		TiXmlElement * languageEl = new TiXmlElement("inspire_common:Language");
+		TiXmlText * lfre = new TiXmlText("fre");
+		languageEl->LinkEndChild(lfre);
+		defaultLanguageEl->LinkEndChild(languageEl);
+		supportedLanguagesEl->LinkEndChild(defaultLanguageEl);
+		extendedCapabilititesEl->LinkEndChild(supportedLanguagesEl);
+		// Responselanguage
+		TiXmlElement * responseLanguageEl = new TiXmlElement("inspire_common:ResponseLanguage");
+		responseLanguageEl->LinkEndChild(buildTextNode("inspire_common:Language","fre"));
+		extendedCapabilititesEl->LinkEndChild(responseLanguageEl);
 
-        opMtdEl->LinkEndChild(extendedCapabilititesEl);
-
+		opMtdEl->LinkEndChild(extendedCapabilititesEl);
+	}
 	capabilitiesEl->LinkEndChild(opMtdEl);
 
 	//----------------------------------------------------------------------
@@ -410,13 +495,36 @@ void Rok4Server::buildWMTSCapabilities(){
 		//TODO: ows:WGS84BoundingBox (0,n)
 		layerEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getId()));
 
-		//FIXME: La gestion des styles reste à faire entièrement dans la conf.
-		//       Je me contente d'un minimum pour que le capabilities soit valide.
 		if (layer->getStyles().size() != 0){
 			for (unsigned int i=0; i < layer->getStyles().size(); i++){
 				TiXmlElement * styleEl= new TiXmlElement("Style");
 				if (i==0) styleEl->SetAttribute("isDefault","true");
-				styleEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getStyles()[i]));
+				Style* style = layer->getStyles()[i];
+				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
+				int j;
+				for (j=0 ; j < style->getTitle().size(); ++j){
+					LOGGER_DEBUG("Title : " << style->getTitle()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitle()[j].c_str() ));
+				}
+				for (j=0 ; j < style->getAbstract().size(); ++j){
+					LOGGER_DEBUG("Abstract : " << style->getAbstract()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstract()[j].c_str()));
+				}
+				for (j=0 ; j < style->getLegendURLs().size(); ++j){
+					LegendURL legendURL = style->getLegendURLs()[j];
+					TiXmlElement* legendURLEl = new TiXmlElement("ows:LegendURL");
+					legendURLEl->SetAttribute("format", legendURL.getFormat());
+					legendURLEl->SetAttribute("xlink:href", legendURL.getHRef());
+					if (legendURL.getWidth()!=0)
+						legendURLEl->SetAttribute("width", legendURL.getWidth());
+					if (legendURL.getHeight()!=0)
+						legendURLEl->SetAttribute("height", legendURL.getHeight());
+					if (legendURL.getMinScaleDenominator()!=0.0)
+						legendURLEl->SetAttribute("minScaleDenominator", legendURL.getMinScaleDenominator());
+					if (legendURL.getMaxScaleDenominator()!=0.0)
+						legendURLEl->SetAttribute("maxScaleDenominator", legendURL.getMaxScaleDenominator());
+					styleEl->LinkEndChild(legendURLEl);
+				}
 				layerEl->LinkEndChild(styleEl);
 			}
 		}
@@ -450,7 +558,11 @@ void Rok4Server::buildWMTSCapabilities(){
 			TiXmlElement * tmEl=new TiXmlElement("TileMatrix");
 			tmEl->LinkEndChild(buildTextNode("ows:Identifier",tm.getId()));
 			tmEl->LinkEndChild(buildTextNode("ScaleDenominator",doubleToStr((long double)(tm.getRes()*tms->getCrs().getMetersPerUnit())/0.00028)));
-			tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
+			if (tms->getCrs().isLongLat()){
+				tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getY0()) + " " + numToStr(tm.getX0())));
+			}else{
+				tmEl->LinkEndChild(buildTextNode("TopLeftCorner",numToStr(tm.getX0()) + " " + numToStr(tm.getY0())));
+			}
 			tmEl->LinkEndChild(buildTextNode("TileWidth",numToStr(tm.getTileW())));
 			tmEl->LinkEndChild(buildTextNode("TileHeight",numToStr(tm.getTileH())));
 			tmEl->LinkEndChild(buildTextNode("MatrixWidth",numToStr(tm.getMatrixW())));
@@ -490,3 +602,19 @@ void Rok4Server::buildWMTSCapabilities(){
 
 }
 
+
+// get the number of decimal places
+int Rok4Server::GetDecimalPlaces(double dbVal)
+{
+    static const int MAX_DP = 10;
+    static const double THRES = pow(0.1, MAX_DP);
+    if (dbVal == 0.0)
+        return 0;
+    int nDecimal = 0;
+    while (dbVal - floor(dbVal) > THRES && nDecimal < MAX_DP)
+    {
+        dbVal *= 10.0;
+        nDecimal++;
+    }
+    return nDecimal;
+}

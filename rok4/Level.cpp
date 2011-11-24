@@ -11,6 +11,7 @@
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
+#include "PaletteDataSource.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -183,7 +184,7 @@ DataSource* Level::getEncodedTile(int x, int y) {
 }
 
 DataSource* Level::getDecodedTile(int x, int y) {
-	DataSource* encData = getEncodedTile(x, y);
+	DataSource* encData = new DataSourceProxy(getEncodedTile(x, y),*getEncodedNoDataTile());
 	if (format.compare("TIFF_INT8")==0 || format.compare("TIFF_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)
@@ -195,23 +196,31 @@ DataSource* Level::getDecodedTile(int x, int y) {
 	return 0;
 }
 
+DataSource* Level::getEncodedNoDataTile()
+{
+	return new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)); // One tile per file
+}
+
+
 
 DataSource* Level::getTile(int x, int y) {
-	DataSource* source=getEncodedTile(x, y);
+	DataSource* source=new DataSourceProxy(getEncodedTile(x, y), getEncodedNoDataTile()) ;
 	size_t size;
 	if (format.compare("TIFF_INT8")==0 && source!=0 && source->getData(size)!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
-                return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
-        }
-	return new DataSourceProxy(source, *noDataSource);
+                return new BufferedDataSource(TiffStream);
+        } 
+	return source;
 }
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	int pixel_size=1;
+	LOGGER_DEBUG("GetTile");
 	if (format.compare("TIFF_FLOAT32")==0)
 		pixel_size=4;
-	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
+	return new ImageDecoder(getDecodedTile(x,y),
+				tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),
 				tm.getY0() + y * tm.getTileH() * tm.getRes(), 
 				tm.getX0() + (x+1) * tm.getTileW() * tm.getRes(),

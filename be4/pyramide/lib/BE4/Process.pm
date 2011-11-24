@@ -10,7 +10,7 @@ use File::Path;
 use Data::Dumper;
 
 # version
-our $VERSION = '0.0.3';
+my $VERSION = "0.0.1";
 
 # My module
 use BE4::Tree;
@@ -151,7 +151,8 @@ sub _init {
 #  Récupère par wget l'image correspondant à 'node', et l'enregistre dans le répertoire de travail sous
 #  le nom 'fileName'.
 #
-#  FIXME: appeler la méthode de l'objet src
+#  FIXME: - appeler la méthode de l'objet src
+#         - parametrer le proxy (placer une option dans le fichier de configuration [harvesting] !)
 #---------------------------------------------------------------------------------------------------
 sub wms2work {
   my ($self, $node, $fileName) = @_;
@@ -170,7 +171,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd = sprintf ( "wget --no-proxy -O \${TMP_DIR}/%s ",$fileName );
+  my $cmd = sprintf ( "wget -O \${TMP_DIR}/%s ",$fileName );
     $cmd .= sprintf ( " \"%s\" \n", $url);
     $cmd .= sprintf ( "%s", RESULT_TEST);
   
