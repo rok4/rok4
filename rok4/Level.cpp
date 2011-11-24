@@ -185,7 +185,7 @@ DataSource* Level::getEncodedTile(int x, int y) {
 
 DataSource* Level::getDecodedTile(int x, int y) {
 	DataSource* encData = getEncodedTile(x, y);
-	if (format.compare("TIFF_INT8")==0 || format.compare("TIFF_FLOAT32")==0)
+	if (format.compare("TIFF_RAW_INT8")==0 || format.compare("TIFF_RAW_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)
 		return new DataSourceDecoder<JpegDecoder>(encData);
@@ -200,7 +200,7 @@ DataSource* Level::getDecodedTile(int x, int y) {
 DataSource* Level::getTile(int x, int y) {
 	DataSource* source=getEncodedTile(x, y);
 	size_t size;
-	if (format.compare("TIFF_INT8")==0 && source!=0 && source->getData(size)!=0){
+	if (format.compare("TIFF_RAW_INT8")==0 && source!=0 && source->getData(size)!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
@@ -211,7 +211,7 @@ DataSource* Level::getTile(int x, int y) {
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	int pixel_size=1;
-	if (format.compare("TIFF_FLOAT32")==0)
+	if (format.compare("TIFF_RAW_FLOAT32")==0)
 		pixel_size=4;
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),
