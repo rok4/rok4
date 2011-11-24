@@ -123,7 +123,8 @@ void* processThread(void* arg){
 		else if ( strcmp(request->operationType,"gettile")==0  ){
 			// TileReferences
 			TileRef tileRef;
-			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4","", server, &tileRef);
+			TilePalette tilePalette;
+			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4","", server, &tileRef, &tilePalette);
 			if (error){
         		        fprintf(stdout,"\tStatut=%d\n",error->status);
                 		fprintf(stdout,"\ttype=%s\n",error->type);
@@ -141,6 +142,16 @@ void* processThread(void* arg){
 					fprintf(stdout,"\n");
 					rok4DeleteTiffHeader(header);
 				}
+				if (strcmp(tileRef.type,"image/png")==0 && tileRef.channels==1 && tilePalette.size!=0){
+					PngPaletteHeader* header = rok4GetPngPaletteHeader(tileRef.width,tileRef.height,&tilePalette);
+					fprintf(stdout,"\tw=%d h=%d ps=%d\n\theader=",tileRef.width,tileRef.height,tilePalette.size);
+					int i;
+					for (i=0;i<header->size;i++)
+						fprintf(stdout,"%c",header->data[i]);
+					fprintf(stdout,"\n");
+					rok4DeletePngPaletteHeader(header);
+				}
+				
 				rok4FlushTileRef(&tileRef);
 			}
 			free(error);

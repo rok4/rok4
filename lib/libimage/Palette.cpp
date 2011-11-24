@@ -18,19 +18,19 @@ Colour::~Colour()
 
 Palette::Palette()
 {
-	pngPalette_size = 0;
+	pngPaletteSize = 0;
 	pngPalette = NULL;
 }
 
 
-Palette::Palette(const Palette& pal) : pngPalette_size(0)
+Palette::Palette(const Palette& pal) : pngPaletteSize(0)
 {
 
-	pngPalette_size = pal.pngPalette_size;
+	pngPaletteSize = pal.pngPaletteSize;
 
-	if (pngPalette_size !=0) {
-		pngPalette = new uint8_t[pngPalette_size];
-		memcpy(pngPalette,pal.pngPalette,pngPalette_size);
+	if (pngPaletteSize !=0) {
+		pngPalette = new uint8_t[pngPaletteSize];
+		memcpy(pngPalette,pal.pngPalette,pngPaletteSize);
 	}else {
 		pngPalette = NULL;
 	}
@@ -48,9 +48,9 @@ Palette::Palette(const std::vector<Colour>& mcolours)
 	int numberColor = colours.size();
 	if (numberColor != 0) {
 		LOGGER_DEBUG("Palette PNG OK");
-		pngPalette_size = numberColor* 3 + 12 +numberColor +12; // Palette(Nombre de couleur* nombre de canaux + header) + Transparence(Nombre de couleur + header)
-		pngPalette = new uint8_t[pngPalette_size];
-		memset(pngPalette,0,pngPalette_size);
+		pngPaletteSize = numberColor* 3 + 12 +numberColor +12; // Palette(Nombre de couleur* nombre de canaux + header) + Transparence(Nombre de couleur + header)
+		pngPalette = new uint8_t[pngPaletteSize];
+		memset(pngPalette,0,pngPaletteSize);
 		// Définition de la taille de la palette
 		uint32_t paletteLenght = 3 * numberColor; 
 		*((uint32_t*) (pngPalette)) = bswap_32(paletteLenght);
@@ -89,7 +89,7 @@ Palette::Palette(const std::vector<Colour>& mcolours)
 		uint32_t trnsLenght = numberColor; 
 		*((uint32_t*) (pngPalette+paletteLenght+12)) = bswap_32(trnsLenght);
 	}else {
-		pngPalette_size=0;
+		pngPaletteSize=0;
 		pngPalette=NULL;
 		LOGGER_INFO("Palette incompatible avec le PNG");
 	}
