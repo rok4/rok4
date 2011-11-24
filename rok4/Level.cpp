@@ -204,7 +204,7 @@ DataSource* Level::getEncodedNoDataTile()
 
 
 DataSource* Level::getTile(int x, int y) {
-	DataSource* source=new DataSourceProxy(getEncodedTile(x, y), getEncodedNoDataTile()) ;
+	DataSource* source=new DataSourceProxy(getEncodedTile(x, y), *getEncodedNoDataTile()) ;
 	size_t size;
 	if (format.compare("TIFF_INT8")==0 && source!=0 && source->getData(size)!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
