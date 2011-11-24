@@ -197,8 +197,8 @@ DataSource* Level::getDecodedTile(int x, int y) {
 }
 
 DataSource* Level::getEncodedNoDataTile()
-{
-	return new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)); // One tile per file
+{	
+	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)), *noDataSource);
 }
 
 

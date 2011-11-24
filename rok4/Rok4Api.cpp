@@ -247,6 +247,17 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	return 0;
 }
 
+/**
+* @brief Implementation de l'operation GetNoDataTile
+* @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* @param[in] queryString
+* @param[in] hostName
+* @param[in] scriptName
+* @param[in] server : serveur
+* @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* @param[out] palette : palette à ajouter, NULL sinon. 
+* @return Reponse en cas d'exception, NULL sinon
+*/
 HttpResponse* rok4GetNoDataTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette)
 {
 // Initialisation

@@ -26,6 +26,7 @@ private:
 	uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
 	uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
 	std::string noDataFile;
+	DataSource* noDataSource;
 	
 	DataSource* getEncodedTile(int x, int y);
 	DataSource* getDecodedTile(int x, int y);
@@ -77,6 +78,7 @@ public:
 	Image* getTile(int x, int y, int left, int top, int right, int bottom);
 
 	void setNoData(const std::string& file) {noDataFile=file;}
+	void setNoDataSource(DataSource* source) {noDataSource=source;}
 	
 	/** D */
 	Level(TileMatrix tm, int channels, std::string baseDir,

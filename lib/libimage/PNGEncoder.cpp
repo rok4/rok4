@@ -64,7 +64,7 @@ size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	if (colortype==0){
 		if(sizeof(PNG_HEADER_GRAY) > size) return 0;
 			memcpy(buffer, PNG_HEADER_GRAY, sizeof(PNG_HEADER_GRAY));       // cf: http://www.w3.org/TR/PNG/#11IHDR
-		if(palette->getPalettePNGSize()!=0) {
+		if(palette && palette->getPalettePNGSize()!=0) {
 			colortype=3;
 		} 
 	}

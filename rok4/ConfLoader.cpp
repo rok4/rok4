@@ -390,7 +390,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		int tilesPerWidth;
 		int tilesPerHeight;
 		int pathDepth;
-		std::string noDataFilePath;
+		std::string noDataFilePath ="null";
 
 		TiXmlHandle hLvl(pElem);
 		TiXmlElement* pElemLvl = hLvl.FirstChild("tileMatrix").Element();
@@ -488,9 +488,13 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 		TiXmlElement* pElemNoData=hRoot.FirstChild( "nodata" ).Element();
 		
 		if (pElemNoData) {	// FilePath must be specified if nodata tag exist
-			pElemNoData = hRoot.FirstChild("nodata").FirstChild("filePath").Element();
-			if (!pElemNoData){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
-			noDataFilePath=pElemNoData->GetText();
+			TiXmlElement* pElemNoDataPath;
+			pElemNoDataPath = hRoot.FirstChild("nodata").FirstChild("filePath").Element();
+			if (!pElemNoDataPath){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
+			noDataFilePath=pElemNoDataPath->GetText();
+			if (noDataFilePath.empty()){
+				if (!pElemNoDataPath){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
+			}
 		}
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath);
