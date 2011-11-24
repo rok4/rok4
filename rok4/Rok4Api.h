@@ -65,8 +65,10 @@ typedef struct{
 Rok4Server* rok4InitServer(const char* serverConfigFile);
 HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName, const char* https);
 HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server);
+
 HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server);
 HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette);
+HttpResponse* rok4GetNoDataTileReferences(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette);
 
 TiffHeader* rok4GetTiffHeader(int width, int height, int channels);
 PngPaletteHeader* rok4GetPngPaletteHeader(int width, int height, TilePalette* palette);

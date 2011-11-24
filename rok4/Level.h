@@ -56,6 +56,7 @@ public:
 	uint32_t      getTilesPerHeight(){return tilesPerHeight;}
 
 	std::string getFilePath(int tilex, int tiley);
+	std::string getNoDataFilePath(){return noDataFile;}
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);
 

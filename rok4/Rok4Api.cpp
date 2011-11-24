@@ -247,6 +247,60 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	return 0;
 }
 
+HttpResponse* rok4GetNoDataTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette)
+{
+// Initialisation
+	std::string strQuery=queryString;
+
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*) https);
+	Layer* layer;
+        std::string tmId,format;
+        int x,y;
+	Style* style =0;
+	// Analyse de la requete
+        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style);
+	// Exception
+        if (errorResp){
+                LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
+		HttpResponse* error=initResponseFromSource(errorResp);
+		delete errorResp;
+		return error;
+        }
+
+	// References de la tuile
+	std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find(tmId);
+	if (itLevel==layer->getDataPyramid()->getLevels().end())
+                return 0;
+	Level* level=layer->getDataPyramid()->getLevels().find(tmId)->second;
+	
+	tileRef->posoff=2048;
+	tileRef->possize=2048+4;
+
+	std::string imageFilePath=level->getNoDataFilePath();
+	tileRef->filename=new char[imageFilePath.length()+1];
+	strcpy(tileRef->filename,imageFilePath.c_str());
+
+	tileRef->type=new char[format.length()+1];
+	strcpy(tileRef->type,format.c_str());
+
+	tileRef->width=level->getTm().getTileW();
+	tileRef->height=level->getTm().getTileH();
+	tileRef->channels=level->getChannels();
+	
+	//Palette uniquement PNG pour le moment
+	if (format == "image/png"){
+		palette->size = style->getPalette()->getPalettePNGSize();
+		palette->data = style->getPalette()->getPalettePNG();
+	}else {
+		palette->size = 0;
+		palette->data = NULL;
+	}
+	
+	delete request;
+	return 0;
+}
+
+
 /**
 * @brief Construction d'un en-tete TIFF
 */
