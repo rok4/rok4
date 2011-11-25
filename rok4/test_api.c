@@ -93,13 +93,16 @@ void* processThread(void* arg){
 	// Traitement des requetes
 	while (!feof(requestFile)){
 		char query[400],host[400],script[400];
+		memset(query,'\0',400);
+		memset(host,'\0',400);
+		memset(script,'\0',400);
 //		pthread_mutex_lock(&mutex_rok4);
 		if (fscanf(requestFile,"%s\t%s\t%s\n",host,script,query)!=3)
 			continue;
 //		pthread_mutex_unlock(&mutex_rok4);
 		fprintf(stdout,"\nRequete n°%d : %s\t%s\t%s\n",c,host,script,query);
 		c++;
-		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4", "");
+		HttpRequest* request=rok4InitRequest(query,host, script, "");
 		
 		if (strcmp(request->service,"wmts")!=0){
 			fprintf(stdout,"\tService %s non gere\n",request->service);

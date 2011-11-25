@@ -83,7 +83,7 @@ size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	line++;
 	if (colortype==3) {
 			if(sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize() > size) return 0;
-			LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
+//			LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
 			memcpy(buffer+ sizeof(PNG_HEADER_PALETTE), palette->getPalettePNG(), palette->getPalettePNGSize());
 			return (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize());
 	}
