@@ -5,8 +5,7 @@
 #include "tinystr.h"
 #include "config.h"
 
-//TODO
-Style* buildStyle(std::string fileName,bool inspire){
+Style* parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
 	std::string id ="";
 	std::vector<std::string> title;
@@ -15,13 +14,12 @@ Style* buildStyle(std::string fileName,bool inspire){
 	std::vector<LegendURL> legendURLs;
 	std::vector<Colour> colours;
 	
-	TiXmlDocument doc(fileName.c_str());
+	/*TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
 		return NULL;
-	}
-
-	TiXmlHandle hDoc(&doc);
+	}*/
+	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
 
@@ -170,9 +168,18 @@ Style* buildStyle(std::string fileName,bool inspire){
 	LOGGER_DEBUG("Style Créé");
 	return style;
 
-}//buildStyle(std::string)
+}//parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire)
 
-TileMatrixSet* buildTileMatrixSet(std::string fileName){
+Style* buildStyle(std::string fileName,bool inspire){
+	TiXmlDocument doc(fileName.c_str());
+	if (!doc.LoadFile()){
+		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
+		return NULL;
+	}
+	return parseStyle(&doc,fileName,inspire);
+}//buildStyle(std::string fileName,bool inspire)
+
+TileMatrixSet* parseTileMatrixSet(TiXmlDocument* doc,std::string fileName){
 	LOGGER_INFO("	Ajout du TMS " << fileName);
 	std::string id;
 	std::string title="";
@@ -180,13 +187,9 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	std::vector<std::string> keyWords;
 	std::map<std::string, TileMatrix> listTM;
 
-	TiXmlDocument doc(fileName.c_str());
-	if (!doc.LoadFile()){
-		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
-		return NULL;
-	}
 
-	TiXmlHandle hDoc(&doc);
+
+	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
 
@@ -311,20 +314,23 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 
 }//buildTileMatrixSet(std::string)
 
-Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+TileMatrixSet* buildTileMatrixSet(std::string fileName){
+	TiXmlDocument doc(fileName.c_str());
+	if (!doc.LoadFile()){
+		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
+		return NULL;
+	}
+	return parseTileMatrixSet(&doc,fileName);
+}//buildTileMatrixSet(std::string fileName)
+
+Pyramid* parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
 	std::string format;	
 	int channels;
 	std::map<std::string, Level *> levels;
-
-	TiXmlDocument doc(fileName.c_str());
-	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
-		return NULL;
-	}
-
-	TiXmlHandle hDoc(&doc);
+	
+	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
 
@@ -512,7 +518,17 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 }// buildPyramid()
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
+Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+	TiXmlDocument doc(fileName.c_str());
+	if (!doc.LoadFile()){
+		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
+		return NULL;
+	}
+	return parsePyramid(&doc,fileName,tmsList);
+}
+
+//TODO avoid opening a pyramid file directly
+Layer * parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
@@ -529,14 +545,8 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	Pyramid* pyramid;
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
-
-	TiXmlDocument doc(fileName.c_str());
-	if (!doc.LoadFile()){
-		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
-		return NULL;
-	}
-
-	TiXmlHandle hDoc(&doc);
+	
+	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
 
@@ -765,15 +775,17 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
-	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
-	TiXmlDocument doc(serverConfigFile);
+Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
+	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
-		std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
-		return false;
+		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
+		return NULL;
 	}
+	return parseLayer(&doc,fileName,tmsList,stylesList,reprojectionCapability,inspire);
+}
 
-	TiXmlHandle hDoc(&doc);
+bool parseTechnicalParam(TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
+	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
 
@@ -790,46 +802,46 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 
 	pElem=hRoot.FirstChild("logOutput").Element();
 	std::string strLogOutput=(pElem->GetText());
-        if (!pElem){
-                std::cerr<<"Pas de logOutput => logOutput = " << DEFAULT_LOG_OUTPUT;
-                logOutput = DEFAULT_LOG_OUTPUT;
-        }else if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
+	if (!pElem){
+		std::cerr<<"Pas de logOutput => logOutput = " << DEFAULT_LOG_OUTPUT;
+		logOutput = DEFAULT_LOG_OUTPUT;
+	}else if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
 	else if (strLogOutput=="standard_output_stream_for_errors") logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
 	else{
 		std::cerr<<"Le logOutput [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
-                return false;
+		return false;
 	}
 
 	pElem=hRoot.FirstChild("logFilePrefix").Element();
-        if (!pElem){
-                std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
-                logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
-        }else{
-                logFilePrefix=pElem->GetText();
-        }
+	if (!pElem){
+		std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
+		logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
+	}else{
+		logFilePrefix=pElem->GetText();
+	}
 	pElem=hRoot.FirstChild("logFilePeriod").Element();
-        if (!pElem){
-                std::cerr<<"Pas de logFilePeriod => logFilePeriod = " << DEFAULT_LOG_FILE_PERIOD;
-                logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
-        }else if (!sscanf(pElem->GetText(),"%d",&logFilePeriod))  {
+	if (!pElem){
+		std::cerr<<"Pas de logFilePeriod => logFilePeriod = " << DEFAULT_LOG_FILE_PERIOD;
+		logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
+	}else if (!sscanf(pElem->GetText(),"%d",&logFilePeriod))  {
 		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  n'est pas un entier."<<std::endl;	
-                return false;
-        }
+		return false;
+	}
 
 	pElem=hRoot.FirstChild("logLevel").Element();
 	std::string strLogLevel(pElem->GetText());
-        if (!pElem){
-                std::cerr<<"Pas de logLevel => logLevel = " << DEFAULT_LOG_LEVEL;
-                logLevel = DEFAULT_LOG_LEVEL;
-        }else if (strLogLevel=="fatal") logLevel=FATAL;
+	if (!pElem){
+		std::cerr<<"Pas de logLevel => logLevel = " << DEFAULT_LOG_LEVEL;
+		logLevel = DEFAULT_LOG_LEVEL;
+	}else if (strLogLevel=="fatal") logLevel=FATAL;
 	else if (strLogLevel=="error") logLevel=ERROR;
 	else if (strLogLevel=="warn") logLevel=WARN; 
 	else if (strLogLevel=="info") logLevel=INFO;
-        else if (strLogLevel=="debug") logLevel=DEBUG;
+	else if (strLogLevel=="debug") logLevel=DEBUG;
 	else{
-               	std::cerr<<"Le logLevel [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
-               	return false;
-        }
+		std::cerr<<"Le logLevel [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
+		return false;
+	}
 		
 	pElem=hRoot.FirstChild("nbThread").Element();
 	if (!pElem){
@@ -841,26 +853,26 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 	}
 	
 	pElem=hRoot.FirstChild("reprojectionCapability").Element();
-        if (!pElem){
-                std::cerr<<"Pas de reprojectionCapability => reprojectionCapability = true"<<std::endl;
-                reprojectionCapability = true;
-        }else{
+	if (!pElem){
+		std::cerr<<"Pas de reprojectionCapability => reprojectionCapability = true"<<std::endl;
+		reprojectionCapability = true;
+	}else{
 		std::string strReprojection(pElem->GetText());
 		if (strReprojection=="true") reprojectionCapability=true;
 		else if (strReprojection=="false") reprojectionCapability=false;
 		else{
 			std::cerr<<"Le reprojectionCapability [" << pElem->GetText() <<"] n'est pas un booleen."<<std::endl;
-                	return false;
+			return false;
 		}
-        }
+	}
 
 	pElem=hRoot.FirstChild("servicesConfigFile").Element();
-        if (!pElem){
-                std::cerr<<"Pas de servicesConfigFile => servicesConfigFile = " << DEFAULT_SERVICES_CONF_PATH <<std::endl;
-                servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
-        }else{
-                servicesConfigFile=pElem->GetText();
-        }
+	if (!pElem){
+		std::cerr<<"Pas de servicesConfigFile => servicesConfigFile = " << DEFAULT_SERVICES_CONF_PATH <<std::endl;
+		servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
+	}else{
+		servicesConfigFile=pElem->GetText();
+	}
 
 	pElem=hRoot.FirstChild("layerDir").Element();
 	if (!pElem){
@@ -918,17 +930,130 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 	std::cerr << projDirEnv << std::endl;
 	
 	if (putenv(projDirEnv)!=0) {
-	  std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
-	  return false;
+	std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
+	return false;
 	}
 	
 
 	return true;
-}//getTechnicalParam
+}//parseTechnicalParam
+
+ServicesConf * parseServicesConf(TiXmlDocument* doc,std::string servicesConfigFile){
+	TiXmlHandle hDoc(doc);
+	TiXmlElement* pElem;
+	TiXmlHandle hRoot(0);
+
+	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
+	if (!pElem){
+		LOGGER_ERROR(servicesConfigFile << " impossible de recuperer la racine.");
+		return NULL;
+	}
+	if (pElem->ValueStr() != "servicesConf"){
+		LOGGER_ERROR(servicesConfigFile << " La racine n'est pas un servicesConf.");
+		return NULL;
+	}
+	hRoot=TiXmlHandle(pElem);
+
+	std::string name="";
+	std::string title="";
+	std::string abstract="";
+	std::vector<std::string> keyWords;
+	std::string serviceProvider;
+	std::string fee;
+	std::string accessConstraint;
+	unsigned int maxWidth;
+	unsigned int maxHeight;
+	std::vector<std::string> formatList;
+	std::string serviceType;
+	std::string serviceTypeVersion;
+	bool inspire =false;
+	std::vector<std::string> applicationProfileList;
+
+	pElem=hRoot.FirstChild("name").Element();
+	if (pElem) name = pElem->GetText();
+
+	pElem=hRoot.FirstChild("title").Element();
+	if (pElem) title = pElem->GetText();
+
+	pElem=hRoot.FirstChild("abstract").Element();
+	if (pElem) abstract = pElem->GetText();
 
 
-bool ConfLoader::buildStylesList(std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire)
-{
+	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
+		std::string keyword(pElem->GetText());
+		keyWords.push_back(keyword);
+	}
+
+	pElem=hRoot.FirstChild("serviceProvider").Element();
+	if (pElem) serviceProvider = pElem->GetText();
+		
+
+	pElem=hRoot.FirstChild("fee").Element();
+	if (pElem) fee = pElem->GetText();
+
+	pElem=hRoot.FirstChild("accessConstraint").Element();
+	if (pElem) accessConstraint = pElem->GetText();
+
+	pElem = hRoot.FirstChild("maxWidth").Element();
+	if (!pElem){
+		maxWidth=MAX_IMAGE_WIDTH;
+	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
+		LOGGER_ERROR(servicesConfigFile << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
+		return NULL;
+	}
+
+	pElem = hRoot.FirstChild("maxHeight").Element();
+	if (!pElem){
+		maxHeight=MAX_IMAGE_HEIGHT;
+	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
+		LOGGER_ERROR(servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
+		return false;
+	}
+
+	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
+		std::string format(pElem->GetText());
+		if (format != "image/jpeg" &&
+			format != "image/png"  &&
+			format != "image/tiff" &&
+			format != "image/x-bil;bits=32" &&
+			format != "image/gif"){
+			LOGGER_ERROR(servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME");
+		}else{
+			formatList.push_back(format);
+		}
+	}
+
+	pElem=hRoot.FirstChild("serviceType").Element();
+        if (pElem) serviceType = pElem->GetText();
+	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
+        if (pElem) serviceTypeVersion = pElem->GetText();
+	
+	pElem=hRoot.FirstChild("inspire").Element();
+	if (pElem) {
+		std::string inspirestr = pElem->GetText();
+		if ( inspirestr.compare("true")==0 || inspirestr.compare("1")==0){
+			LOGGER_INFO("Utilisation du mode Inspire");
+			inspire = true;
+		}
+	}
+	
+	ServicesConf * servicesConf;
+	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
+			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion, inspire);
+	return servicesConf;
+}
+
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
+	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
+	TiXmlDocument doc(serverConfigFile);
+	if (!doc.LoadFile()){
+		std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
+		return false;
+	}
+	return parseTechnicalParam(&doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir);
+}
+
+bool ConfLoader::buildStylesList(std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire){
 LOGGER_INFO("CHARGEMENT DES STYLES");
 
 	// lister les fichier du répertoire styleDir
@@ -977,7 +1102,6 @@ LOGGER_INFO("CHARGEMENT DES STYLES");
 
 	return true;
 }
-
 
 bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("CHARGEMENT DES TMS");
@@ -1081,107 +1205,5 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << servicesConfigFile);
 		return NULL;
 	}
-
-	TiXmlHandle hDoc(&doc);
-	TiXmlElement* pElem;
-	TiXmlHandle hRoot(0);
-
-	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
-	if (!pElem){
-		LOGGER_ERROR(servicesConfigFile << " impossible de recuperer la racine.");
-		return NULL;
-	}
-	if (pElem->ValueStr() != "servicesConf"){
-		LOGGER_ERROR(servicesConfigFile << " La racine n'est pas un servicesConf.");
-		return NULL;
-	}
-	hRoot=TiXmlHandle(pElem);
-
-	std::string name="";
-	std::string title="";
-	std::string abstract="";
-	std::vector<std::string> keyWords;
-	std::string serviceProvider;
-	std::string fee;
-	std::string accessConstraint;
-	unsigned int maxWidth;
-	unsigned int maxHeight;
-	std::vector<std::string> formatList;
-	std::string serviceType;
-	std::string serviceTypeVersion;
-	bool inspire =false;
-	std::vector<std::string> applicationProfileList;
-
-	pElem=hRoot.FirstChild("name").Element();
-	if (pElem) name = pElem->GetText();
-
-	pElem=hRoot.FirstChild("title").Element();
-	if (pElem) title = pElem->GetText();
-
-	pElem=hRoot.FirstChild("abstract").Element();
-	if (pElem) abstract = pElem->GetText();
-
-
-	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
-		std::string keyword(pElem->GetText());
-		keyWords.push_back(keyword);
-	}
-
-	pElem=hRoot.FirstChild("serviceProvider").Element();
-	if (pElem) serviceProvider = pElem->GetText();
-		
-
-	pElem=hRoot.FirstChild("fee").Element();
-	if (pElem) fee = pElem->GetText();
-
-	pElem=hRoot.FirstChild("accessConstraint").Element();
-	if (pElem) accessConstraint = pElem->GetText();
-
-	pElem = hRoot.FirstChild("maxWidth").Element();
-	if (!pElem){
-		maxWidth=MAX_IMAGE_WIDTH;
-	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
-		LOGGER_ERROR(servicesConfigFile << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
-		return NULL;
-	}
-
-	pElem = hRoot.FirstChild("maxHeight").Element();
-	if (!pElem){
-		maxHeight=MAX_IMAGE_HEIGHT;
-	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
-		LOGGER_ERROR(servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
-		return false;
-	}
-
-	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
-		std::string format(pElem->GetText());
-		if (format != "image/jpeg" &&
-			format != "image/png"  &&
-			format != "image/tiff" &&
-			format != "image/x-bil;bits=32" &&
-			format != "image/gif"){
-			LOGGER_ERROR(servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME");
-		}else{
-			formatList.push_back(format);
-		}
-	}
-
-	pElem=hRoot.FirstChild("serviceType").Element();
-        if (pElem) serviceType = pElem->GetText();
-	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
-        if (pElem) serviceTypeVersion = pElem->GetText();
-	
-	pElem=hRoot.FirstChild("inspire").Element();
-	if (pElem) {
-		std::string inspirestr = pElem->GetText();
-		if ( inspirestr.compare("true")==0 || inspirestr.compare("1")==0){
-			LOGGER_INFO("Utilisation du mode Inspire");
-			inspire = true;
-		}
-	}
-	
-	ServicesConf * servicesConf;
-	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion, inspire);
-	return servicesConf;
+	return parseServicesConf(&doc,servicesConfigFile);
 }
