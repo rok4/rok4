@@ -5,7 +5,7 @@
 #include "tinystr.h"
 #include "config.h"
 
-Style* parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
+Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
 	std::string id ="";
 	std::vector<std::string> title;
@@ -170,7 +170,7 @@ Style* parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 
 }//parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire)
 
-Style* buildStyle(std::string fileName,bool inspire){
+Style* ConfLoader::buildStyle(std::string fileName,bool inspire){
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
@@ -179,7 +179,7 @@ Style* buildStyle(std::string fileName,bool inspire){
 	return parseStyle(&doc,fileName,inspire);
 }//buildStyle(std::string fileName,bool inspire)
 
-TileMatrixSet* parseTileMatrixSet(TiXmlDocument* doc,std::string fileName){
+TileMatrixSet* ConfLoader::parseTileMatrixSet(TiXmlDocument* doc,std::string fileName){
 	LOGGER_INFO("	Ajout du TMS " << fileName);
 	std::string id;
 	std::string title="";
@@ -314,7 +314,7 @@ TileMatrixSet* parseTileMatrixSet(TiXmlDocument* doc,std::string fileName){
 
 }//buildTileMatrixSet(std::string)
 
-TileMatrixSet* buildTileMatrixSet(std::string fileName){
+TileMatrixSet* ConfLoader::buildTileMatrixSet(std::string fileName){
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
@@ -323,7 +323,7 @@ TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	return parseTileMatrixSet(&doc,fileName);
 }//buildTileMatrixSet(std::string fileName)
 
-Pyramid* parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
 	std::string format;	
@@ -518,7 +518,7 @@ Pyramid* parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::str
 
 }// buildPyramid()
 
-Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
+Pyramid* ConfLoader::buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
@@ -528,7 +528,7 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 }
 
 //TODO avoid opening a pyramid file directly
-Layer * parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
+Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
@@ -775,7 +775,7 @@ Layer * parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string
 	return layer;
 }//buildLayer
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
+Layer * ConfLoader::buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
 	TiXmlDocument doc(fileName.c_str());
 	if (!doc.LoadFile()){
 		LOGGER_ERROR("Ne peut pas charger le fichier " << fileName);
@@ -784,7 +784,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return parseLayer(&doc,fileName,tmsList,stylesList,reprojectionCapability,inspire);
 }
 
-bool parseTechnicalParam(TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
+bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
 	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
@@ -938,7 +938,7 @@ bool parseTechnicalParam(TiXmlDocument* doc,std::string serverConfigFile, LogOut
 	return true;
 }//parseTechnicalParam
 
-ServicesConf * parseServicesConf(TiXmlDocument* doc,std::string servicesConfigFile){
+ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string servicesConfigFile){
 	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
 	TiXmlHandle hRoot(0);
