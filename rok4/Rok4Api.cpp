@@ -14,6 +14,7 @@
 #include "Palette.h"
 #include <cstdlib>
 #include <PNGEncoder.h>
+#include <Decoder.h>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -173,8 +174,8 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 */
 
 HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
-        std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
+	std::string strQuery=queryString;
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
 	DataSource* source=server->getTile(request);
 	HttpResponse* response=initResponseFromSource(source);
 	delete request;
@@ -266,10 +267,11 @@ TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
 PngPaletteHeader* rok4GetPngPaletteHeader(int width, int height, TilePalette* palette)
 {
 	PngPaletteHeader* header = new PngPaletteHeader;
-	RawImage* rawImage=new RawImage(width,height,1,0);
-	Palette* rok4Palette = new Palette(palette->size,palette->data);
-	PNGEncoder pngStream(rawImage,rok4Palette);
+	//RawImage* rawImage=new RawImage(width,height,1,0);
+	Palette rok4Palette = Palette(palette->size,palette->data);
+	PNGEncoder pngStream(new ImageDecoder(0,width,height,1),&rok4Palette);
 	header->size = 33 + palette->size;
+	header->data = (uint8_t*) malloc(header->size+1);
 	pngStream.read(header->data,header->size);
 	return header;
 }
@@ -328,6 +330,7 @@ void rok4FlushTileRef(TileRef* tileRef){
 */
 
 void rok4DeleteTiffHeader(TiffHeader* header){
+	delete header->data;
 	delete header;
 }
 
