@@ -5,6 +5,8 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 
+use Data::Dumper;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -58,25 +60,25 @@ END {}
 ################################################################################
 # constructor
 sub new {
-  my $this = shift;
+    my $this = shift;
 
-  my $class= ref($this) || $this;
-  my $self = {
-    URL      => undef, # ie url of rok4 !
-    VERSION  => undef, # ie 1.3.0
-    REQUEST  => undef, # ie getMap
-    FORMAT   => undef, # ie image/png
-    LAYER    => undef, # ie ORTHOPHOTO
-  };
+    my $class= ref($this) || $this;
+    my $self = {
+        URL      => undef, # ie url of rok4 !
+        VERSION  => undef, # ie 1.3.0
+        REQUEST  => undef, # ie getMap
+        FORMAT   => undef, # ie image/png
+        LAYER    => undef, # ie ORTHOPHOTO
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  return $self;
+    bless($self, $class);
+
+    TRACE;
+
+    # init. class
+    return undef if (! $self->_init(@_));
+
+    return $self;
 }
 
 ################################################################################
@@ -91,24 +93,24 @@ sub _init {
     
     # parameters mandatoy !
     if (! exists($params->{wms_url})     || ! defined ($params->{wms_url})) {
-      ERROR("key/value required to 'wms_url' !");
-      return FALSE ;
+        ERROR("key/value required to 'wms_url' !");
+        return FALSE ;
     }
     if (! exists($params->{wms_version}) || ! defined ($params->{wms_version})) {
-      ERROR("key/value required to 'wms_version' !");
-      return FALSE ;
+        ERROR("key/value required to 'wms_version' !");
+        return FALSE ;
     }
     if (! exists($params->{wms_request}) || ! defined ($params->{wms_request})) {
-      ERROR("key/value required to 'wms_request' !");
-      return FALSE ;
+        ERROR("key/value required to 'wms_request' !");
+        return FALSE ;
     }
     if (! exists($params->{wms_format})  || ! defined ($params->{wms_format})) {
-      ERROR("key/value required to 'wms_format' !");
-      return FALSE ;
+        ERROR("key/value required to 'wms_format' !");
+        return FALSE ;
     }
     if (! exists($params->{wms_layer})   || ! defined ($params->{wms_layer})) {
-      ERROR("key/value required to 'wms_layer' !");
-      return FALSE ;
+        ERROR("key/value required to 'wms_layer' !");
+        return FALSE ;
     }
     
     # init. params    
@@ -117,90 +119,91 @@ sub _init {
     $self->request( $params->{wms_request});
     $self->format(  $params->{wms_format});
     $self->layer(   $params->{wms_layer});
-    
-    if (! $self->_doRequest()) {
-      WARN("No service aviable !");
-    }
+
+#    if (! $self->_doRequest()) {
+#        WARN("No service aviable !");
+#    }
     
     return TRUE;
 }
 ################################################################################
 # private method
 sub _doRequest {
- my $self = shift;
- 
- use HTTP::Request;
- use LWP::UserAgent;
- 
- my $url = sprintf ("http://%s?VERSION=%s&SERVICE=WMS&REQUEST=GetCapabilities", $self->url(), $self->version());
- my $request = HTTP::Request->new(GET => $url);
- my $ua = LWP::UserAgent->new;
- my $response = $ua->request($request);
- 
- if ($response->is_error()) {
-    WARN (sprintf "The response 'GetCapabilities' has a bas status : %s (url : '%s')!", $response->status_line(), $url);
-    return FALSE;
- }
- 
- return TRUE;
+    my $self = shift;
+
+    use HTTP::Request;
+    use LWP::UserAgent;
+
+    my $url = sprintf ("http://%s?VERSION=%s&SERVICE=WMS&REQUEST=GetCapabilities", $self->url(), $self->version());
+    my $request = HTTP::Request->new(GET => $url);
+    my $ua = LWP::UserAgent->new;
+ALWAYS(sprintf "Harvesting : UserAgent : request\n - url : %s\n - requete : %s\n - useragent : %s",$url, Dumper($request), Dumper($ua));
+    my $response = $ua->request($request);
+ALWAYS(sprintf "Harvesting : UserAgent : requete faite et la réponse est ",$response);
+    if ($response->is_error()) {
+        WARN (sprintf "The response 'GetCapabilities' has a bas status : %s (url : '%s')!", $response->status_line(), $url);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 ################################################################################
 # public method
 sub doRequestUrl {
-  my $self = shift;
-  
-  # ie "http://".$URL."?LAYERS=".$LAYER."
-  #  &SERVICE=WMS
-  #  &VERSION=".$VERSION."
-  #  &REQUEST=GetMap
-  #  &FORMAT=image/tiff
-  #  &CRS=".$srs."
-  #  &BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."
-  #  &WIDTH=".$image_width."
-  #  &HEIGHT=".$image_height.";
-  
-  my %args = @_;
-  
-  TRACE;
+    my $self = shift;
 
-  my $srs       = $args{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
-  my $bbox      = $args{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
-  my $imagesize = $args{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
-  
-  my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
-  my ($image_width, $image_height) = @{$imagesize};
-  
-  my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s",
-                     $self->url(),
-                     $self->layer(),
-                     $self->version(),
-                     $self->request(),
-                     $self->format(),
-                     $srs,
-                     $xmin, $ymin, $xmax, $ymax,
-                     $image_width, $image_height);
-  
-  return $url;
+    # ie "http://".$URL."?LAYERS=".$LAYER."
+    #  &SERVICE=WMS
+    #  &VERSION=".$VERSION."
+    #  &REQUEST=GetMap
+    #  &FORMAT=image/tiff
+    #  &CRS=".$srs."
+    #  &BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."
+    #  &WIDTH=".$image_width."
+    #  &HEIGHT=".$image_height.";
+
+    my %args = @_;
+
+    TRACE;
+
+    my $srs       = $args{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
+    my $bbox      = $args{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
+    my $imagesize = $args{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
+
+    my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
+    my ($image_width, $image_height) = @{$imagesize};
+
+    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s",
+                        $self->url(),
+                        $self->layer(),
+                        $self->version(),
+                        $self->request(),
+                        $self->format(),
+                        $srs,
+                        $xmin, $ymin, $xmax, $ymax,
+                        $image_width, $image_height);
+
+    return $url;
 }
 
 ################################################################################
 # get/set
 #
 sub url {
-  my $self = shift;
-  if (@_) {
-    my $string = shift;
-    $string =~ s/^http:\/\///; # ...
-    $string =~ s/\?$//;        # ...
-    $self->{URL} = $string;
-  }
-  return $self->{URL};
+    my $self = shift;
+    if (@_) {
+        my $string = shift;
+        $string =~ s/^http:\/\///; # ...
+        $string =~ s/\?$//;        # ...
+        $self->{URL} = $string;
+    }
+    return $self->{URL};
 }
 
 sub version {
-  my $self = shift;
-  if (@_) { $self->{VERSION} = shift }
-  return $self->{VERSION};
+    my $self = shift;
+    if (@_) { $self->{VERSION} = shift }
+    return $self->{VERSION};
 }
 
 sub request {
@@ -209,37 +212,37 @@ sub request {
   return $self->{REQUEST};
 }
 sub format {
-  my $self = shift;
-  if (@_) { $self->{FORMAT} = shift }
-  return $self->{FORMAT};
+    my $self = shift;
+    if (@_) { $self->{FORMAT} = shift }
+    return $self->{FORMAT};
 }
 sub layer {
-  my $self = shift;
-  if (@_) { $self->{LAYER} = shift }
-  return $self->{LAYER};
+    my $self = shift;
+    if (@_) { $self->{LAYER} = shift }
+    return $self->{LAYER};
 }
 
 ################################################################################
 # mapping
 sub getWMSVersion {
-  my $self = shift;
-  return $self->{VERSION};
+    my $self = shift;
+    return $self->{VERSION};
 }
 sub getWMSRequest {
-  my $self = shift;
-  return $self->{REQUEST};
+    my $self = shift;
+    return $self->{REQUEST};
 }
 sub getWMSFormat {
-  my $self = shift;
-  return $self->{FORMAT};
+    my $self = shift;
+    return $self->{FORMAT};
 }
 sub getWMSLayer {
-  my $self = shift;
-  return $self->{LAYER};
+    my $self = shift;
+    return $self->{LAYER};
 }
 sub getWMSServer {
-  my $self = shift;
-  return $self->{URL};
+    my $self = shift;
+    return $self->{URL};
 }
 1;
 __END__

@@ -71,6 +71,7 @@ sub new {
   return undef if (! $self->_init(@_));
   # load 
   return undef if (! $self->_load());
+ALWAYS("Tree::_load fait");
   
   # DEBUG(Dumper($self));
   
@@ -168,6 +169,7 @@ sub _load {
   #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
   #  le plus bas de la pyramide.
   my $srcRes = $self->computeSrcRes($ct);
+ALWAYS("srcRes : ".$srcRes);
   $self->{bottomLevelId} = $tmList[0]->getID(); 
   foreach my $tm (@tmList){
     next if ($tm->getResolution() * 0.95  > $srcRes);
@@ -178,21 +180,26 @@ sub _load {
   my $bottomlevel = $self->{pyramid}->getBottomLevel();
   $self->{bottomLevelId} = $bottomlevel if (defined $bottomlevel);
   
+  ALWAYS("bottomlevel : ".$self->{bottomLevelId});
+  
   # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
   my ($ImgGroundWith, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
   
   my $tm = $tms->getTileMatrix($self->{bottomLevelId});
-  
+
   my @images = $src->getImages();
   foreach my $objImg (@images){
     # On reprojette l'emprise si nécessaire 
     my %bbox = $self->computeBBox($objImg, $ct);
     # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
+ALWAYS(sprintf "topleftcorenerX : %d , topleftcorenerY : %d",$tm->getTopLeftCornerX(),$tm->getTopLeftCornerY());
+ALWAYS(sprintf "ImgGroundWith : %f , ImgGroundHeight : %f",$ImgGroundWith,$ImgGroundHeight);
     my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
     my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
     my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
     my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
+ALWAYS (sprintf "i/j Min/Max : %d - %d - %d - %d", $iMin, $iMax, $jMin, $jMax);
     
     my $level  = $self->{bottomLevelId};
     
@@ -208,13 +215,14 @@ sub _load {
     }
   }
   
+ALWAYS("Tree::_load foreach image fini");
+
   DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
   
   
   # Si au bottomLevelId il y a moins de noeud que le nombre de processus demande,
   # on le definit tout de meme comme cutLevel. Tant pis, on aura des scripts vides.
   $self->{cutLevelId}=$self->{bottomLevelId};
-  
   # Calcul des branches à partir des feuilles et de leur poids:
   for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i < scalar(@tmList)-1; $i++){
     my $levelId = $tmList[$i]->getID();
@@ -416,7 +424,14 @@ sub computeBBox(){
   for my $i (@{[0..$#polygon]}) {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
+    #        faire attention à la valeur -180 : GDAL considère que c'est égal à +180 et cela pose des problèmes d'extrema
+    if ($polygon[$i][0] == -180) {
+#       La valeur -180° est délicate, le signe est modifié pour assurer la cohérence");
+        $polygon[$i][0] = $polygon[$i][0] + 10e-9;
+    }
     my $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]);
+
+
     if ($i==0) {
       $xmin_reproj= $xmax_reproj= @{$p}[0];
       $ymin_reproj= $ymax_reproj= @{$p}[1];
@@ -436,7 +451,7 @@ sub computeBBox(){
   $BBox{xMax} = Math::BigFloat->new($xmax_reproj - $margeX);
   $BBox{yMax} = Math::BigFloat->new($ymax_reproj - $margeY);
   
-  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+  ALWAYS (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
   
   return %BBox;
 }
@@ -484,11 +499,20 @@ sub computeSrcRes(){
   foreach my $img (@imgs){
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà  de 85.05°.
-    my $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin());
+    
+    my $XMIN = $img->getXmin();
+    
+    if ($XMIN == -180) {
+#       La valeur -180° est délicate, le signe est modifié pour assurer la cohérence");
+        $XMIN = $XMIN + 10e-9;
+    }
+    
+    my $p1 = $ct->TransformPoint($XMIN,$img->getYmin());
+
     my $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax());
 
     # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0])/($img->getXmax()-$img->getXmin());
+    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0])/($img->getXmax()-$XMIN);
     my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1])/($img->getYmax()-$img->getYmin());
     
     $res=$xRes if $xRes < $res;

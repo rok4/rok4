@@ -441,16 +441,6 @@ sub _load {
     return FALSE if (! $self->_fillFromPyramid());
   }
 
-    ALWAYS(sprintf "\n - path_nodata : %s\n - bitspersample : %s\n - sampleformat : %s\n - photometric : %s\n - samplesperpixel : %s\n - imagesize : %s\n - color : %s\n",
-            $self->{pyramid}->{path_nodata},
-            $self->getTile()->getBitsPerSample(),
-            $self->getTile()->getSampleFormat(),
-            $self->getTile()->getPhotometric(),
-            $self->getTile()->getSamplesPerPixel(),
-            $self->{pyramid}->{imagesize}, 
-            $self->{pyramid}->{color}
-    );
-
     # create NoData !
     my $objNodata = BE4::NoData->new({
             path_nodata      => $self->{pyramid}->{path_nodata},
