@@ -71,7 +71,6 @@ sub new {
   return undef if (! $self->_init(@_));
   # load 
   return undef if (! $self->_load());
-ALWAYS("Tree::_load fait");
   
   # DEBUG(Dumper($self));
   
@@ -169,7 +168,6 @@ sub _load {
   #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
   #  le plus bas de la pyramide.
   my $srcRes = $self->computeSrcRes($ct);
-ALWAYS("srcRes : ".$srcRes);
   $self->{bottomLevelId} = $tmList[0]->getID(); 
   foreach my $tm (@tmList){
     next if ($tm->getResolution() * 0.95  > $srcRes);
@@ -179,8 +177,6 @@ ALWAYS("srcRes : ".$srcRes);
   #  ou celui fournit en parametre !
   my $bottomlevel = $self->{pyramid}->getBottomLevel();
   $self->{bottomLevelId} = $bottomlevel if (defined $bottomlevel);
-  
-  ALWAYS("bottomlevel : ".$self->{bottomLevelId});
   
   # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
@@ -193,13 +189,10 @@ ALWAYS("srcRes : ".$srcRes);
     # On reprojette l'emprise si nécessaire 
     my %bbox = $self->computeBBox($objImg, $ct);
     # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-ALWAYS(sprintf "topleftcorenerX : %d , topleftcorenerY : %d",$tm->getTopLeftCornerX(),$tm->getTopLeftCornerY());
-ALWAYS(sprintf "ImgGroundWith : %f , ImgGroundHeight : %f",$ImgGroundWith,$ImgGroundHeight);
     my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
     my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
     my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
     my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
-ALWAYS (sprintf "i/j Min/Max : %d - %d - %d - %d", $iMin, $iMax, $jMin, $jMax);
     
     my $level  = $self->{bottomLevelId};
     
@@ -215,7 +208,6 @@ ALWAYS (sprintf "i/j Min/Max : %d - %d - %d - %d", $iMin, $iMax, $jMin, $jMax);
     }
   }
   
-ALWAYS("Tree::_load foreach image fini");
 
   DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
   
@@ -451,7 +443,7 @@ sub computeBBox(){
   $BBox{xMax} = Math::BigFloat->new($xmax_reproj - $margeX);
   $BBox{yMax} = Math::BigFloat->new($ymax_reproj - $margeY);
   
-  ALWAYS (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
   
   return %BBox;
 }

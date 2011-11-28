@@ -120,33 +120,10 @@ sub _init {
     $self->format(  $params->{wms_format});
     $self->layer(   $params->{wms_layer});
 
-#    if (! $self->_doRequest()) {
-#        WARN("No service aviable !");
-#    }
-    
     return TRUE;
 }
-################################################################################
-# private method
-sub _doRequest {
-    my $self = shift;
 
-    use HTTP::Request;
-    use LWP::UserAgent;
 
-    my $url = sprintf ("http://%s?VERSION=%s&SERVICE=WMS&REQUEST=GetCapabilities", $self->url(), $self->version());
-    my $request = HTTP::Request->new(GET => $url);
-    my $ua = LWP::UserAgent->new;
-ALWAYS(sprintf "Harvesting : UserAgent : request\n - url : %s\n - requete : %s\n - useragent : %s",$url, Dumper($request), Dumper($ua));
-    my $response = $ua->request($request);
-ALWAYS(sprintf "Harvesting : UserAgent : requete faite et la réponse est ",$response);
-    if ($response->is_error()) {
-        WARN (sprintf "The response 'GetCapabilities' has a bas status : %s (url : '%s')!", $response->status_line(), $url);
-        return FALSE;
-    }
-
-    return TRUE;
-}
 ################################################################################
 # public method
 sub doRequestUrl {

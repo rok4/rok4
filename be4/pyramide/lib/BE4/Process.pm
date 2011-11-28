@@ -135,11 +135,9 @@ sub _init {
 
     #  it's an object !
   
-ALWAYS("On va charger l'arbre");
     
   $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
   
-ALWAYS("L'arbre est chargé");
 
     if (! defined $self->{tree}) {
         ERROR("Can not load Tree object !");
