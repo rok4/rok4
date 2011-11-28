@@ -167,10 +167,15 @@ sub _load {
   #  (réduite de 5%) est meilleure que celle des données sources.
   #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
   #  le plus bas de la pyramide.
-  my $srcRes = $self->computeSrcRes($ct);
+  my $projSrcRes = $self->computeSrcRes($ct);
+  if ($projSrcRes < 0) {
+    ERROR("La resolution reprojetee est negative");
+    return FALSE;
+  }
+  
   $self->{bottomLevelId} = $tmList[0]->getID(); 
   foreach my $tm (@tmList){
-    next if ($tm->getResolution() * 0.95  > $srcRes);
+    next if ($tm->getResolution() * 0.95  > $projSrcRes);
     $self->{bottomLevelId} = $tm->getID();
   }
   
@@ -416,13 +421,7 @@ sub computeBBox(){
   for my $i (@{[0..$#polygon]}) {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
-    #        faire attention à la valeur -180 : GDAL considère que c'est égal à +180 et cela pose des problèmes d'extrema
-    if ($polygon[$i][0] == -180) {
-#       La valeur -180° est délicate, le signe est modifié pour assurer la cohérence");
-        $polygon[$i][0] = $polygon[$i][0] + 10e-9;
-    }
     my $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]);
-
 
     if ($i==0) {
       $xmin_reproj= $xmax_reproj= @{$p}[0];
@@ -487,30 +486,23 @@ sub computeSrcRes(){
     return $srcRes;
   }
   my @imgs = $self->{datasource}->getImages();
-  my $res = 50000000.0;  # un pixel plus gros que la Terre
+  my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
   foreach my $img (@imgs){
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà  de 85.05°.
     
-    my $XMIN = $img->getXmin();
-    
-    if ($XMIN == -180) {
-#       La valeur -180° est délicate, le signe est modifié pour assurer la cohérence");
-        $XMIN = $XMIN + 10e-9;
-    }
-    
-    my $p1 = $ct->TransformPoint($XMIN,$img->getYmin());
+    my $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin());
 
     my $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax());
 
     # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0])/($img->getXmax()-$XMIN);
-    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1])/($img->getYmax()-$img->getYmin());
+    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());
+    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1]) / ($img->getYmax()-$img->getYmin());
     
     $res=$xRes if $xRes < $res;
     $res=$yRes if $yRes < $res;
   }
-  
+ 
   return $res;
 }
 

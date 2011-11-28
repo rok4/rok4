@@ -1441,7 +1441,7 @@ sub _encodeIDXtoB36 {
   # fill with 0 !
   $b36 = "0"x($padlength - length $b36).reverse($b36);
 
-  INFO ($b36);
+  DEBUG ($b36);
 
   return $b36;
 }

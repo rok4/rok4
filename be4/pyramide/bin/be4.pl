@@ -160,8 +160,8 @@ sub init {
             "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
             "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
             #
-            "properties=s"  => \$opts{properties},
-            "environment=s" => \$opts{environment},
+            "properties|conf=s"  => \$opts{properties},
+            "environment|env=s" => \$opts{environment},
             #
             "test"          => \$opts{test},
             
@@ -554,7 +554,8 @@ END {}
 
 =head1 SYNOPSIS
 
-  perl be4.pl --properties=path [ --environment=path ]
+  perl be4.pl --conf=path [ --env=path ]
+  All parameters of the --env config file can be overided by --conf config file parameter
 
 =head1 DESCRIPTION
 
@@ -740,12 +741,12 @@ These parameters can be null because of parameters by default :
 
 =item B<--version>
 
-=item B<--properties=path>
+=item B<--conf=path>
 
 Path to file configuration of the pyramid.
 This option is manadatory !
 
-=item B<--environment=path>
+=item B<--env=path>
 
 Path to file environment of all pyramid, it's the common configuration.
 This option is optional !
