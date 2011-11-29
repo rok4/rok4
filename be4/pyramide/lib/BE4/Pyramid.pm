@@ -406,8 +406,8 @@ sub _load {
     # create TileMatrixSet !
     my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
                                                              $self->{pyramid}->{tms_name}),
-                                         $self->{pyramid}->{tms_level_min},
-                                         $self->{pyramid}->{tms_level_max});
+                                                             $self->{pyramid}->{tms_level_min},
+                                                             $self->{pyramid}->{tms_level_max});
     
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
