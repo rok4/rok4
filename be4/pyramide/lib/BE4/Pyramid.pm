@@ -241,80 +241,67 @@ sub _init {
         #
         # you can choice this option by default !
         if (! exists($params->{compression})) {
-            WARN ("key/value optional to 'compression' (value by default) !");
+            WARN ("Optional parameter 'compression' is not set. The default value is raw");
             $params->{compression} = 'raw';
         }
         $pyr->{compression}  = $params->{compression};
         #
-        $pyr->{image_width}  = $params->{image_width}  || ( ERROR ("key/value required to 'image_width' !") && return FALSE );
-        $pyr->{image_height} = $params->{image_height} || ( ERROR ("key/value required to 'image_height' !") && return FALSE );
+        $pyr->{image_width}  = $params->{image_width}  || ( ERROR ("The parameter 'image_width' is required!") && return FALSE );
+        $pyr->{image_height} = $params->{image_height} || ( ERROR ("The parameter 'image_height' is required!") && return FALSE );
         #
-        $pyr->{tms_name}     = $params->{tms_name} || ( ERROR ("key/value required to 'tms_name' !") && return FALSE );
+        $pyr->{tms_name}     = $params->{tms_name} || ( ERROR ("The parameter 'tms_name' is required!") && return FALSE );
         #
-        $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("key/value required to 'bitspersample' !") && return FALSE );
-        $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("key/value required to 'sampleformat' !") && return FALSE );
-        $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("key/value required to 'samplesperpixel' !") && return FALSE );
+        $pyr->{bitspersample}    = $params->{bitspersample}     || ( ERROR ("The parameter 'bitspersample' is required!") && return FALSE );
+        $pyr->{sampleformat}     = $params->{sampleformat}      || ( ERROR ("The parameter 'sampleformat' is required!") && return FALSE );
+        $pyr->{samplesperpixel}  = $params->{samplesperpixel}   || ( ERROR ("The parameter 'samplesperpixel' is required!") && return FALSE );
        
     }
     else {
         # To an existing pyramid, you must have to this parameters !
         #
-        $pyr->{pyr_name_old} = $params->{pyr_name_old} || ( ERROR ("key/value required to 'pyr_name_old' !") && return FALSE );
+        $pyr->{pyr_name_old} = $params->{pyr_name_old} || ( ERROR ("The parameter 'pyr_name_old' is required!") && return FALSE );
    
         #
         # this option can be determined !
-        #
-        if (! exists($params->{tms_name})) {
-            WARN ("key/value optional to 'tms_name' (can be determined) !");
-            $params->{tms_name} = undef;
+        if (exists($params->{tms_name})) {
+          WARN ("The parameter 'tms_name' must not be set if pyr_name_old is set too ! Il will be ignore.");
         }
+        $params->{tms_name} = undef;
         #
-        if (! exists($params->{compression})) {
-            WARN ("key/value optional to 'compression' (can be determined) !");
-            $params->{compression} = undef;
+        if (exists($params->{compression})) {
+          WARN ("Parameter 'compression' must not be set if pyr_name_old is set too ! Il will be ignore.");
         }
+        $params->{compression} = undef;
     }
     #
     # All parameters are mandatory (or initializate by default) whatever the pyramid !
     # 
-    $pyr->{pyr_name_new}  = $params->{pyr_name_new}  || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
-    $pyr->{pyr_desc_path} = $params->{pyr_desc_path} || ( ERROR ("key/value required to 'pyr_desc_path' !") && return FALSE );
-    $pyr->{pyr_data_path} = $params->{pyr_data_path} || ( ERROR ("key/value required to 'pyr_data_path' !") && return FALSE );
+    $pyr->{pyr_name_new}  = $params->{pyr_name_new}  || ( ERROR ("Parameter 'pyr_name_new' is required!") && return FALSE );
+    $pyr->{pyr_desc_path} = $params->{pyr_desc_path} || ( ERROR ("Parameter 'pyr_desc_path' is required!") && return FALSE );
+    $pyr->{pyr_data_path} = $params->{pyr_data_path} || ( ERROR ("Parameter 'pyr_data_path' is required!") && return FALSE );
     #
-    $pyr->{tms_path}     = $params->{tms_path}     || ( ERROR ("key/value required to 'tms_path' !") && return FALSE );
+    $pyr->{tms_path}     = $params->{tms_path}     || ( ERROR ("Parameter 'tms_path' is required!") && return FALSE );
     #
-    $pyr->{dir_depth}    = $params->{dir_depth}    || ( ERROR ("key/value required to 'dir_depth' !") && return FALSE );
-    $pyr->{dir_image}    = $params->{dir_image}    || ( ERROR ("key/value required to 'dir_image' !") && return FALSE );
+    $pyr->{dir_depth}    = $params->{dir_depth}    || ( ERROR ("Parameter 'dir_depth' is required!") && return FALSE );
+    $pyr->{dir_image}    = $params->{dir_image}    || ( ERROR ("Parameter 'dir_image' is required!") && return FALSE );
     #
-    $pyr->{path_nodata}  = $params->{path_nodata}  || ( ERROR ("key/value required to 'path_nodata' !") && return FALSE );
+    $pyr->{path_nodata}  = $params->{path_nodata}  || ( ERROR ("Parameter to 'path_nodata' is required!") && return FALSE );
     #
     # this option are optional !
     #
-    if (! exists($params->{dir_metadata})) {
-        WARN ("key/value optional to 'dir_metadata' !");
+    if (exists($params->{dir_metadata})) {
+        WARN ("Parameter 'dir_metadata' is not implemented yet! It will be ignore");
+    }
         $params->{dir_metadata} = undef;
-    }
-    #
-    if (! exists($params->{tms_level_min})) {
-        WARN ("key/value optional to 'tms_level_min' !");
-        $params->{tms_level_min} = undef;
-    }
-    $pyr->{tms_level_min} = $params->{tms_level_min};
-    #
-    if (! exists($params->{tms_level_max})) {
-        WARN ("key/value optional to 'tms_level_max' !");
-        $params->{tms_level_max} = undef;
-    }
-    $pyr->{tms_level_max} = $params->{tms_level_max};
     #
     if (! exists($params->{pyr_level_bottom})) {
-        WARN ("key/value optional to 'pyr_level_bottom' !");
+        WARN ("Parameter 'pyr_level_bottom' has not been set. The default value is undef, then the min level will be calculated with source images resolution");
         $params->{pyr_level_bottom} = undef;
     }
     $pyr->{pyr_level_bottom} = $params->{pyr_level_bottom};
     #
     if (! exists($params->{pyr_level_top})) {
-        WARN ("key/value optional to 'pyr_level_top' !");
+        WARN ("Parameter 'pyr_level_top' has not been set. The defaut value is the top of the TMS' !");
         $params->{pyr_level_top} = undef;
     }
     $pyr->{pyr_level_top} = $params->{pyr_level_top};
@@ -322,20 +309,24 @@ sub _init {
     # 
     # you can choice this option with value by default !
     #
+    # NV: FIXME: il ne doit pas etre possible de definir une taille differente de celle des dalles du cache.
+    #            il ne faut donc pas que ce soit un parametre.
     if (! exists($params->{imagesize})) {
-        WARN ("key/value optional to 'imagesize' (value by default) !");
+        WARN ("Parameter 'nodata.imagesize' has not been set. The default value is 4096 px");
         $params->{imagesize} = '4096';
     }
     $pyr->{imagesize} = $params->{imagesize};
     # 
+    # NV: FIXME: the default value should depend on the sample type.
+    # NV: FIXME: color should be named nodata_color.
     if (! exists($params->{color})) {
-        WARN ("key/value optional to 'color' (value by default) !");
+        WARN ("Parameter 'nodata.color' has not been set. The default value is 'FFFFFF'");
         $params->{color} = 'FFFFFF';
     }
     $pyr->{color} = $params->{color};
     #
     if (! exists($params->{interpolation})) {
-        WARN ("key/value optional to 'interpolation' (value by default) !");
+        WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubique'");
         $params->{interpolation} = 'bicubique';
     }
     $pyr->{interpolation} = $params->{interpolation};
@@ -347,19 +338,19 @@ sub _init {
     $pyr->{photometric} = $params->{photometric};
     #
     if (! exists($params->{gamma})) {
-        WARN ("key/value optional to 'gamma' (value by default) !");
+        WARN ("Parameter 'gamma' has not been set. The default value is 1 (no effect)");
         $params->{gamma} = 1;
     }
     $pyr->{gamma} = $params->{gamma};
     #
     if (! exists($params->{pyr_desc_path_old})) {
-        WARN ("key/value optional to 'pyr_desc_path_old' (by default, it's same the 'pyr_desc_path' )!");
+        WARN ("Parameter 'pyr_desc_path_old' has not been set. The default value is the same as 'pyr_desc_path'");
         $params->{pyr_desc_path_old} = $params->{pyr_desc_path};
     }
     $pyr->{pyr_desc_path_old} = $params->{pyr_desc_path_old};
     #
     if (! exists($params->{pyr_data_path_old})) {
-        WARN ("key/value optional to 'pyr_data_path_old' (by default, it's same the 'pyr_data_path' )!");
+        WARN ("Parameter 'pyr_data_path_old' has not been set. The default value is the same as 'pyr_data_path'.");
         $params->{pyr_data_path_old} = $params->{pyr_data_path};
     }
     $pyr->{pyr_data_path_old} = $params->{pyr_data_path_old};
