@@ -135,11 +135,9 @@ sub _init {
 
     #  it's an object !
   
-ALWAYS("On va charger l'arbre");
     
   $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
   
-ALWAYS("L'arbre est chargé");
 
     if (! defined $self->{tree}) {
         ERROR("Can not load Tree object !");
@@ -231,7 +229,7 @@ sub work2cache {
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le cadrillage des dalles et le numéro du node, 
   # ou celui des tuiles et leur identifiant.
-  INFO(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
+  DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);
