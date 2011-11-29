@@ -211,6 +211,11 @@ size_t TiledTiffWriter::computeRawTile(uint8_t *buffer, uint8_t *data) {
   return rawtilesize; 
 }
 
+size_t TiledTiffWriter::computeLzwTile(uint8_t *buffer, uint8_t *data) {
+  return lzw_encode(data, rawtilesize, buffer);
+}
+
+
 size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
   uint8_t *B = PNG_buffer; 
   for(unsigned int h = 0; h < tilelength; h++) {
@@ -272,6 +277,7 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
   
   switch(compression) {
     case COMPRESSION_NONE: size = computeRawTile(Buffer, data); break;
+    case COMPRESSION_LZW : size = computeLzwTile(Buffer, data); break;
     case COMPRESSION_JPEG: size = computeJpegTile(Buffer, data); break;
     case COMPRESSION_PNG : size = computePngTile(Buffer, data); break;
   }
