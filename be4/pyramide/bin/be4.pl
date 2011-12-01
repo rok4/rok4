@@ -32,7 +32,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # version
-my $VERSION = "develop 0.2.5 : correction du registre IGNF";
+my $VERSION = "develop 0.2.5 : Correction du registre IGNF";
 
 #
 # Title: be4
@@ -101,9 +101,7 @@ my %this =
 #   main program
 #
 sub main {
-
-  printf STDOUT "BE4 version [%s]\n", $VERSION;
-
+  printf("BE4: version [%s]\n",$VERSION);
   # message
   my $message = undef;
 
