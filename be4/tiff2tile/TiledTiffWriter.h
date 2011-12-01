@@ -5,6 +5,7 @@
 #include <fstream>
 #include "zlib.h"
 #include <jpeglib.h>
+#include "lzw_encoder.h"
 
 #define TIFF_SHORT              3       /* 16-bit unsigned integer */
 #define	TIFF_LONG               4       /* 32-bit unsigned integer */
@@ -36,6 +37,7 @@
 #define	COMPRESSION_NONE	1	/* dump mode */
 #define COMPRESSION_JPEG        7       /* %JPEG DCT compression */
 #define	COMPRESSION_PNG         8   	/* Zlib compression PNG spec */
+#define	COMPRESSION_LZW         5   	/* liblzw */
 
 #define	PHOTOMETRIC_MINISBLACK	1	/* min value is black */
 #define	PHOTOMETRIC_RGB		2	/* RGB color model */
@@ -101,6 +103,7 @@ class TiledTiffWriter {
 
     size_t computeRawTile (uint8_t *buffer, uint8_t *data);
     size_t computeJpegTile(uint8_t *buffer, uint8_t *data);
+    size_t computeLzwTile(uint8_t *buffer, uint8_t *data);
     size_t computePngTile (uint8_t *buffer, uint8_t *data);
   public: 
 
