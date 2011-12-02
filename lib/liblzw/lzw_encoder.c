@@ -61,9 +61,9 @@ typedef struct {
  
 byte* _lzw_encode(byte *in, size_t len, int max_bits)
 {
-    int bits = 10, next_shift = 1024;
+    int bits = 9, next_shift = 512;
     ushort code, c, nc, next_code = M_NEW;
-    lzw_enc_t *d = (lzw_enc_t*) _new(lzw_enc_t, 1024);
+    lzw_enc_t *d = (lzw_enc_t*) _new(lzw_enc_t, 512);
  
     if (max_bits > 16) max_bits = 16;
     if (max_bits < 9 ) max_bits = 12;
@@ -71,7 +71,7 @@ byte* _lzw_encode(byte *in, size_t len, int max_bits)
     byte *out = (byte *) _new(ushort, 4);
     int out_len = 0, o_bits = 0;
     uint32_t tmp = 0;
- 
+    
     inline void write_bits(ushort x) {
         tmp = (tmp << bits) | x;
         o_bits += bits;
@@ -82,38 +82,48 @@ byte* _lzw_encode(byte *in, size_t len, int max_bits)
             tmp &= (1 << o_bits) - 1;
         }
     }
- 
-    //write_bits(M_CLR);
+    
+    write_bits(M_CLR);
     for (code = *(in++); --len; ) {
         c = *(in++);
-        if ((nc = d[code].next[c]))
+        if ((nc = d[code].next[c])) {
             code = nc;
-        else {
+        }
+        else {         
             write_bits(code);
             nc = d[code].next[c] = next_code++;
             code = c;
         }
- 
-        /* next new code would be too long for current table */
+        
+
+        // next new code would be too long for current table
         if (next_code == next_shift) {
-            /* either reset table back to 9 bits */
-            if (++bits > max_bits) {
-                /* table clear marker must occur before bit reset */
+            // either reset table back to 9 bits 
+            if (bits+1 > max_bits) {
+                // table clear marker must occur before bit reset 
                 write_bits(M_CLR);
  
-                bits = 10;
-                next_shift = 1024;
+                bits = 9;
+                next_shift = 512;
                 next_code = M_NEW;
                 _clear(d);
-            } else    /* or extend table */
+                
+            } else {   // or extend table
+                bits++;
+                next_code = next_shift;
                 _setsize(d, next_shift *= 2);
+            }
         }
+        
     }
     
     write_bits(code);
     
     write_bits(M_EOD);
-    if (tmp) write_bits(tmp);
+    
+    if (tmp) {
+        write_bits(tmp);
+    }
     
     _del(d);
     
@@ -127,15 +137,13 @@ size_t lzw_encode(byte * in, size_t in_len, byte * buffer){
     
     byte * out;
     out = _lzw_encode(in, in_len, 12);
-    
-    printf("out : %ld \n",(long) out);
-    
-    printf("--- Avant sortie du lzw_encode ---\n");
+
+//  On copie le contenu de out dans buffer. Cette méthode doit être changée à terme.
     for (int i = 0; i<_len(out); i++){
-        printf("%i ",out[i]);
         buffer[i]=out[i];
     }
-    printf("\n");
+    
+    _del(out);
     
     return _len(out);
 }
