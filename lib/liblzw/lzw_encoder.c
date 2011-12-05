@@ -96,11 +96,12 @@ byte* _lzw_encode(byte *in, size_t len, int max_bits)
         }
         
 
-        // next new code would be too long for current table
+        /* next new code would be too long for current table */
         if (next_code == next_shift) {
-            // either reset table back to 9 bits 
+            /* either reset table back to 9 bits */
             if (bits+1 > max_bits) {
-                // table clear marker must occur before bit reset 
+                /* table clear marker must occur before bit reset */
+                /* 256 on 12 bits */
                 write_bits(M_CLR);
  
                 bits = 9;
@@ -108,9 +109,8 @@ byte* _lzw_encode(byte *in, size_t len, int max_bits)
                 next_code = M_NEW;
                 _clear(d);
                 
-            } else {   // or extend table
+            } else {   /* or extend table */
                 bits++;
-                next_code = next_shift;
                 _setsize(d, next_shift *= 2);
             }
         }
@@ -143,8 +143,9 @@ size_t lzw_encode(byte * in, size_t in_len, byte * buffer){
         buffer[i]=out[i];
     }
     
+    size_t length = _len(out);
     _del(out);
     
-    return _len(out);
+    return length;
 }
 
