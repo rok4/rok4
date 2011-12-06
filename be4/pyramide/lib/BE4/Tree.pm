@@ -167,10 +167,15 @@ sub _load {
   #  (réduite de 5%) est meilleure que celle des données sources.
   #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
   #  le plus bas de la pyramide.
-  my $srcRes = $self->computeSrcRes($ct);
+  my $projSrcRes = $self->computeSrcRes($ct);
+  if ($projSrcRes < 0) {
+    ERROR("La resolution reprojetee est negative");
+    return FALSE;
+  }
+  
   $self->{bottomLevelId} = $tmList[0]->getID(); 
   foreach my $tm (@tmList){
-    next if ($tm->getResolution() * 0.95  > $srcRes);
+    next if ($tm->getResolution() * 0.95  > $projSrcRes);
     $self->{bottomLevelId} = $tm->getID();
   }
   
@@ -183,7 +188,7 @@ sub _load {
   my ($ImgGroundWith, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
   
   my $tm = $tms->getTileMatrix($self->{bottomLevelId});
-  
+
   my @images = $src->getImages();
   foreach my $objImg (@images){
     # On reprojette l'emprise si nécessaire 
@@ -208,13 +213,13 @@ sub _load {
     }
   }
   
+
   DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
   
   
   # Si au bottomLevelId il y a moins de noeud que le nombre de processus demande,
   # on le definit tout de meme comme cutLevel. Tant pis, on aura des scripts vides.
   $self->{cutLevelId}=$self->{bottomLevelId};
-  
   # Calcul des branches à partir des feuilles et de leur poids:
   for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i < scalar(@tmList)-1; $i++){
     my $levelId = $tmList[$i]->getID();
@@ -417,6 +422,7 @@ sub computeBBox(){
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
     my $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]);
+
     if ($i==0) {
       $xmin_reproj= $xmax_reproj= @{$p}[0];
       $ymin_reproj= $ymax_reproj= @{$p}[1];
@@ -480,21 +486,23 @@ sub computeSrcRes(){
     return $srcRes;
   }
   my @imgs = $self->{datasource}->getImages();
-  my $res = 50000000.0;  # un pixel plus gros que la Terre
+  my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
   foreach my $img (@imgs){
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà  de 85.05°.
+    
     my $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin());
+
     my $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax());
 
     # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0])/($img->getXmax()-$img->getXmin());
-    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1])/($img->getYmax()-$img->getYmin());
+    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());
+    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1]) / ($img->getYmax()-$img->getYmin());
     
     $res=$xRes if $xRes < $res;
     $res=$yRes if $yRes < $res;
   }
-  
+ 
   return $res;
 }
 

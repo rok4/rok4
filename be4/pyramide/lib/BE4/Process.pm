@@ -29,122 +29,124 @@ use constant MERGE_4_TIFF     => "merge4tiff";
 # constructor: new
 #---------------------------------------------------------------------------------------------------
 sub new {
-  my $this = shift;
+    my $this = shift;
+    
+    my $class= ref($this) || $this;
+    my $self = {
+        # in
+        pyramid    => undef, # object Pyramid !
+        datasource => undef, # object DataSource !
+        #
+        job_number => undef, # param value !
+        path_temp  => undef, # param value !
+        path_shell => undef, # param value !
+        # 
+        tree       => undef, # object Tree !
+        nodata     => undef, # object NoData !
+        harvesting => undef, # object Harvesting !
+        # out
+        scripts    => [],    # list of script
+    };
+    bless($self, $class);
 
-  my $class= ref($this) || $this;
-  my $self = {
-    # in
-    pyramid    => undef, # object Pyramid !
-    datasource => undef, # object DataSource !
-    #
-    job_number => undef, # param value !
-    path_temp  => undef, # param value !
-    path_shell => undef, # param value !
-    # 
-    tree       => undef, # object Tree !
-    nodata     => undef, # object NoData !
-    harvesting => undef, # object Harvesting !
-    # out
-    scripts    => [],    # list of script
-  };
-  bless($self, $class);
-  
-  TRACE;
-  
-  return undef if (! $self->_init(@_));
+    TRACE;
+    
+    return undef if (! $self->_init(@_));
 
-  return $self;
+    return $self;
 }
 
 # privates init.
 sub _init {
-  my ($self, $params_process, $params_harvest, $pyr, $src) = @_;
+    my ($self, $params_process, $params_harvest, $pyr, $src) = @_;
 
-  TRACE;
+    TRACE;
 
-  # it's an object and it's mandatory !
-  $self->{pyramid} = $pyr;
-  
-  if (! defined $self->{pyramid}  || ref ($self->{pyramid}) ne "BE4::Pyramid") {
-    ERROR("Can not load Pyramid!");
-    return FALSE;
-  }
-  
-  # manadatory !
-  $self->{job_number} = $params_process->{job_number}; 
-  $self->{path_temp}  = $params_process->{path_temp};
-  $self->{path_shell} = $params_process->{path_shell};
-  
-  if (! defined $self->{job_number}) {
-    ERROR("Parameter required to 'job_number' !");
-    return FALSE;
-  }
-  
-  if (! defined $self->{path_temp}) {
-    ERROR("Parameter required to 'path_temp' !");
-    return FALSE;
-  }
-  
-  if (! defined $self->{path_shell}) {
-    ERROR("Parameter required to 'path_shell' !");
-    return FALSE;
-  }
-  
-  
-  # it's an object and it's optional !
-  $self->{datasource} = $src;
-  
-  if (! defined $self->{datasource} || ref ($self->{datasource}) ne "BE4::DataSource") {
-    WARN("Can not load Data (May be, there are not really data source ?) !");
-    return FALSE;
-  }
-  
-  # it's an object !
-  $self->{nodata} = $self->{pyramid}->getNoData();
-  
-  if (! defined $self->{nodata} || ref ($self->{nodata}) ne "BE4::NoData") {
-    ERROR("Can not load NoData Tile !");
-    return FALSE;
-  }
-  
-  # FIXME :
-  #    use case with only a transformation proj or compression without data ?
-  
-  # it's an object !
-  if ((
-       defined ($self->{datasource}) &&
-       $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
-      )
-      ||
-      (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-         $self->{pyramid}->getCompression()->getType() eq 'png')
-      )) {
-  
-    $self->{harvesting} = BE4::Harvesting->new($params_harvest);
-  
-    if (! defined $self->{harvesting}) {
-      ERROR ("Can not load Harvest service !");
-      return FALSE;
+    # it's an object and it's mandatory !
+    $self->{pyramid} = $pyr;
+
+    if (! defined $self->{pyramid}  || ref ($self->{pyramid}) ne "BE4::Pyramid") {
+        ERROR("Can not load Pyramid!");
+        return FALSE;
     }
 
-    DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
-  }
+    # manadatory !
+    $self->{job_number} = $params_process->{job_number}; 
+    $self->{path_temp}  = $params_process->{path_temp};
+    $self->{path_shell} = $params_process->{path_shell};
+
+    if (! defined $self->{job_number}) {
+        ERROR("Parameter required to 'job_number' !");
+        return FALSE;
+    }
+
+    if (! defined $self->{path_temp}) {
+        ERROR("Parameter required to 'path_temp' !");
+        return FALSE;
+    }
+
+    if (! defined $self->{path_shell}) {
+        ERROR("Parameter required to 'path_shell' !");
+        return FALSE;
+    }
+
+    # it's an object and it's optional !
+    $self->{datasource} = $src;
+
+    if (! defined $self->{datasource} || ref ($self->{datasource}) ne "BE4::DataSource") {
+        WARN("Can not load Data (May be, there are not really data source ?) !");
+        return FALSE;
+    }
+
+    # it's an object !
+    $self->{nodata} = $self->{pyramid}->getNoData();
+
+    if (! defined $self->{nodata} || ref ($self->{nodata}) ne "BE4::NoData") {
+        ERROR("Can not load NoData Tile !");
+        return FALSE;
+    }
+
+    # FIXME :
+    #    use case with only a transformation proj or compression without data ?
+
+    # it's an object !
+    if ((
+        defined ($self->{datasource}) &&
+        $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
+        )
+        ||
+        (! $self->{pyramid}->isNewPyramid() && (
+        $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
+        $self->{pyramid}->getCompression()->getType() eq 'png')
+    )) {
+
+        $self->{harvesting} = BE4::Harvesting->new($params_harvest);
+
+        if (! defined $self->{harvesting}) {
+            ERROR ("Can not load Harvest service !");
+            return FALSE;
+        }
+
+        DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
+    }
+
+    # FIXME :
+    #    use case with only a transformation proj or compression without data ?
+
+    #  it's an object !
   
-  # FIXME :
-  #    use case with only a transformation proj or compression without data ?
-  
-  #  it's an object !
+    
   $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
   
-  if (! defined $self->{tree}) {
-    ERROR("Can not load Tree object !");
-    return FALSE;
-  }
-  
-  DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
-  
-  return TRUE;
+
+    if (! defined $self->{tree}) {
+        ERROR("Can not load Tree object !");
+        return FALSE;
+    }
+
+    DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
+
+    return TRUE;
 }
 
 # method: wms2work
@@ -218,7 +220,7 @@ sub work2cache {
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tile= $self->{pyramid}->getTile();
-  my $compression = $self->{pyramid}->getCompression()->getType();
+  my $compression = $self->{pyramid}->getFormat()->getCompression();
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
@@ -227,7 +229,7 @@ sub work2cache {
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le cadrillage des dalles et le numéro du node, 
   # ou celui des tuiles et leur identifiant.
-  INFO(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
+  DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);

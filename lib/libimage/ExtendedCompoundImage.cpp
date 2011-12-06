@@ -84,7 +84,14 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
 
 #define epsilon 0.001
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, uint8_t nodata, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, 
+                                                                                 int height, 
+                                                                                 int channels, 
+                                                                                 BoundingBox<double> bbox, 
+                                                                                 std::vector<Image*>& images, 
+                                                                                 int nodata, 
+                                                                                 uint16_t sampleformat, 
+                                                                                 uint mirrors)
 {
 	uint i;
         double intpart, phasex0, phasey0, phasex1, phasey1;
@@ -116,7 +123,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
         return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, uint8_t nodata, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors)
 {
 	// TODO : controler que les images et les masques sont superposables a l'image
         return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors);

@@ -371,21 +371,21 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                 return NULL;
         }
 	format=pElem->GetText();
-	
-	//  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
-	if (format.compare("TIFF_INT8")==0) format = "TIFF_RAW_INT8";
-	if (format.compare("TIFF_FLOAT32")==0) format = "TIFF_RAW_FLOAT32";
-	
-        if (format.compare("TIFF_RAW_INT8")!=0
+    
+//  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
+    if (format.compare("TIFF_INT8")==0) format = "TIFF_RAW_INT8";
+    if (format.compare("TIFF_FLOAT32")==0) format = "TIFF_RAW_FLOAT32";
+    
+    if (format.compare("TIFF_RAW_INT8")!=0
          && format.compare("TIFF_JPG_INT8")!=0
          && format.compare("TIFF_PNG_INT8")!=0
          && format.compare("TIFF_LZW_INT8")!=0
          && format.compare("TIFF_RAW_FLOAT32")!=0
-	 && format.compare("TIFF_LZW_FLOAT32")!=0
-	){
+         && format.compare("TIFF_LZW_FLOAT32")!=0){
                 LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
                 return NULL;
-        }
+    }
+
 
 	pElem=hRoot.FirstChild("channels").Element();
         if (!pElem){

@@ -50,7 +50,7 @@ class NearestNeighbour : public Kernel {
      if(d > 0.5) return 0.;
      else return 1.;
   }
-  NearestNeighbour() : Kernel(0.5, true) {init();}
+  NearestNeighbour() : Kernel(0.6, true) {init();}
 };
 
 

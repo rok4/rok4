@@ -111,13 +111,33 @@ sub _init {
       return FALSE;
     }
     #
-    $self->{path_nodata}    =$args->{path_nodata};
-    $self->{imagesize}      =$args->{imagesize} if (exists  ($args->{imagesize}) && defined ($args->{imagesize}));
-    $self->{bitspersample}  =$args->{bitspersample};
-    $self->{samplesperpixel}=$args->{samplesperpixel};
-    $self->{sampleformat}   =$args->{sampleformat};
-    $self->{photometric}    =$args->{photometric};
-    $self->{color}          =$args->{color} if (exists  ($args->{color}) && defined ($args->{color}));
+    $self->{path_nodata}    = $args->{path_nodata};
+    $self->{imagesize}      = $args->{imagesize} if (exists  ($args->{imagesize}) && defined ($args->{imagesize}));
+    $self->{bitspersample}  = $args->{bitspersample};
+    $self->{samplesperpixel}= $args->{samplesperpixel};
+    $self->{sampleformat}   = $args->{sampleformat};
+    $self->{photometric}    = $args->{photometric};
+#   for nodata value, it has to be coherent with bitspersample/samplesperpixel/sampleformat :
+#       - 32/1/float -> an integer in decimal format (-99999 for example) : DTM
+#       - 8/3/uint -> a uint in hexadecimal format (FF for example. Just first two are used) : image
+    if (exists  ($args->{color}) && defined ($args->{color})) {
+        if (int($args->{bitspersample}) == 32 && int($args->{samplesperpixel}) == 1 && $args->{sampleformat} eq 'float') {
+            if (!($args->{color} =~ m/^[-+]?(\d)+$/)) {
+                ERROR ("Incorrect parameter nodata for a DTM !");
+                return FALSE;
+            }
+        } elsif (int($args->{bitspersample}) == 8 && int($args->{samplesperpixel}) == 3 && $args->{sampleformat} eq 'uint') {
+            if (!($args->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
+                ERROR ("Incorrect parameter nodata for an image !");
+                return FALSE;
+            }
+        } else {
+            ERROR ("sampleformat/bitspersample not supported !");
+            return FALSE;
+        }
+    
+        $self->{color} =$args->{color};
+    }
     
     return TRUE;
 }
