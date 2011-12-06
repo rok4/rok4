@@ -35,13 +35,15 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 	hRoot=TiXmlHandle(pElem);
 	
 	pElem=hRoot.FirstChild("Identifier").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("Style " << fileName <<" pas de d'identifiant!!");
 		return NULL;
 	}
 	id = pElem->GetText();
 
 	for (pElem=hRoot.FirstChild("Title").Element(); pElem; pElem=pElem->NextSiblingElement("Title")){
+		if (!(pElem->GetText())) 
+			continue;
 		std::string curtitle = std::string(pElem->GetText());
 		title.push_back(curtitle);
 	}
@@ -51,6 +53,8 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 	}
 
 	for (pElem=hRoot.FirstChild("Abstract").Element(); pElem; pElem=pElem->NextSiblingElement("Abstract")){
+		if (!(pElem->GetText())) 
+			continue;
 		std::string curAbstract = std::string(pElem->GetText());
 		abstract.push_back(curAbstract);
 	}
@@ -60,6 +64,8 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 	}
 
 	for (pElem=hRoot.FirstChild("Keywords").FirstChild("Keyword").Element(); pElem; pElem=pElem->NextSiblingElement("Keyword")){
+		if (!(pElem->GetText())) 
+			continue;
 		std::string keyword = std::string(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
@@ -365,15 +371,21 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                 return NULL;
         }
 	format=pElem->GetText();
-        if (format.compare("TIFF_INT8")!=0
+	
+	//  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
+	if (format.compare("TIFF_INT8")==0) format = "TIFF_RAW_INT8";
+	if (format.compare("TIFF_FLOAT32")==0) format = "TIFF_RAW_FLOAT32";
+	
+        if (format.compare("TIFF_RAW_INT8")!=0
          && format.compare("TIFF_JPG_INT8")!=0
          && format.compare("TIFF_PNG_INT8")!=0
          && format.compare("TIFF_LZW_INT8")!=0
-         && format.compare("TIFF_FLOAT32")!=0){
+         && format.compare("TIFF_RAW_FLOAT32")!=0
+	 && format.compare("TIFF_LZW_FLOAT32")!=0
+	){
                 LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
                 return NULL;
         }
-        format=pElem->GetText();
 
 	pElem=hRoot.FirstChild("channels").Element();
         if (!pElem){
@@ -1089,7 +1101,7 @@ LOGGER_INFO("CHARGEMENT DES STYLES");
 		if (style){
 			stylesList.insert( std::pair<std::string, Style *> (styleName[i], style));
 		}else{
-			LOGGER_ERROR("Ne peut charger le tms: " << styleFiles[i]);
+			LOGGER_ERROR("Ne peut charger le style: " << styleFiles[i]);
 		}
 	}
 

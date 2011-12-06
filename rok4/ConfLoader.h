@@ -12,7 +12,11 @@
 class  ConfLoader {
 public:
 	#ifdef UNITTEST
-	friend class CppUnitConfLoader;
+	friend class CppUnitConfLoaderStyle;
+	friend class CppUnitConfLoaderTMS;
+	friend class CppUnitConfLoaderPyramid;
+	friend class CppUnitConfLoaderServicesConf;
+	friend class CppUnitConfLoaderTechnicalParam;
 	#endif //UNITTEST
 	static bool getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir);
 	static bool buildStylesList(std::string styleDir, std::map<std::string,Style*> &stylesList,bool inspire);

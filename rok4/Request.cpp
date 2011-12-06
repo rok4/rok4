@@ -347,10 +347,8 @@ DataStream* Request::getMapParam(ServicesConf& servicesConf, std::map< std::stri
 	if (!(hasParam("styles")))
 		return new SERDataStream(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre STYLES absent.","wms"));
 	std::string styles=getParam("styles");
-	if(styles == "") // Gestion du style par défaut
+	if(styles == "") //TODO Gestion du style par défaut 
                 styles=(servicesConf.isInspire()?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
-	// TODO : récuperer les styles supporté par la couche
-	
 	if (layer->getStyles().size() != 0){
 		for (unsigned int i=0; i < layer->getStyles().size(); i++){
 			if (styles == layer->getStyles()[i]->getId()){
