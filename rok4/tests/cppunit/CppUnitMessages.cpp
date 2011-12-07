@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+
+#include <fstream>
 #include <vector>
 #include "Message.h"
 #include "ServiceException.h"
@@ -41,20 +43,28 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitMessages );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitMessages, "CppUnitMessages" );
 
 void CppUnitMessages::setUp()
 {
+	std::cout <<  __PRETTY_FUNCTION__ << std::endl;
 	locator= "noLocator" ;
 	code= OWS_INVALID_UPDATESEQUENCE ;
 	message= "Message d'erreur !!!" ;
 	wmsSE= NULL ;
 	wmtsSE= NULL ;
+	LogOutput logOutput;
+	logOutput = STANDARD_OUTPUT_STREAM_FOR_ERRORS;
 	
 }
 
 void CppUnitMessages::test1WMSException()
 {
-
+	std::ofstream temp ("/tmp/outtest.txt", std::ios::out | std::ios::app);
+	if (temp.is_open()) {
+		temp << __PRETTY_FUNCTION__ << std::endl;
+		temp.close();
+	}
 	// creation d'un objet ServiceException
 	ServiceException *se= new ServiceException(locator,code,message,"wms") ;
 	if (se==NULL) CPPUNIT_FAIL("Impossible de créer l'objet ServiceException !") ;

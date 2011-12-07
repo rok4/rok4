@@ -20,8 +20,8 @@ public:
 	      const std::vector<std::string>& abstracts,const  std::vector<std::string>& keywords,
 	      const std::vector<LegendURL>& legendURLs, Palette& palette); 
 	inline std::string getId(){return id;}
-	inline std::vector<std::string> getTitle() { return titles;}
-	inline std::vector<std::string> getAbstract() { return abstracts;}
+	inline std::vector<std::string> getTitles() { return titles;}
+	inline std::vector<std::string> getAbstracts() { return abstracts;}
 	inline std::vector<std::string> getKeywords() { return keywords;}
 	inline std::vector<LegendURL> getLegendURLs(){return legendURLs;}
 	inline Palette* getPalette(){return &palette;}

@@ -284,11 +284,11 @@ void Rok4Server::buildWMSCapabilities(){
 				Style* style = childLayer->getStyles()[i];
 				styleEl->LinkEndChild(buildTextNode("Name", style->getId().c_str()));
 				int j;
-				for (j=0 ; j < style->getTitle().size(); ++j){
-					styleEl->LinkEndChild(buildTextNode("Title", style->getTitle()[j].c_str() ));
+				for (j=0 ; j < style->getTitles().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Title", style->getTitles()[j].c_str() ));
 				}
-				for (j=0 ; j < style->getAbstract().size(); ++j){
-					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstract()[j].c_str()));
+				for (j=0 ; j < style->getAbstracts().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstracts()[j].c_str()));
 				}
 				for (j=0 ; j < style->getLegendURLs().size(); ++j){
 					LOGGER_DEBUG("LegendURL" << style->getId());
@@ -502,13 +502,13 @@ void Rok4Server::buildWMTSCapabilities(){
 				Style* style = layer->getStyles()[i];
 				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
 				int j;
-				for (j=0 ; j < style->getTitle().size(); ++j){
-					LOGGER_DEBUG("Title : " << style->getTitle()[j].c_str());
-					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitle()[j].c_str() ));
+				for (j=0 ; j < style->getTitles().size(); ++j){
+					LOGGER_DEBUG("Title : " << style->getTitles()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitles()[j].c_str() ));
 				}
-				for (j=0 ; j < style->getAbstract().size(); ++j){
-					LOGGER_DEBUG("Abstract : " << style->getAbstract()[j].c_str());
-					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstract()[j].c_str()));
+				for (j=0 ; j < style->getAbstracts().size(); ++j){
+					LOGGER_DEBUG("Abstract : " << style->getAbstracts()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstracts()[j].c_str()));
 				}
 				for (j=0 ; j < style->getLegendURLs().size(); ++j){
 					LegendURL legendURL = style->getLegendURLs()[j];

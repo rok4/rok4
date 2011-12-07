@@ -30,11 +30,19 @@ main( int argc, char* argv[] )
   
   // Add the top suite to the test runner
   CPPUNIT_NS::TestRunner runner;
-  runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+  
+  if ( argc == 1 ) {
+	runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+  }
+  if ( argc == 2 ) {
+	  runner.addTest(CPPUNIT_NS::TestFactoryRegistry::getRegistry(argv[1]).makeTest());
+  }
+  
+  
   runner.run( controller );
 
   // Print test in a compiler compatible format.
-  CPPUNIT_NS::CompilerOutputter outputter( &result, std::cerr );
+  CPPUNIT_NS::CompilerOutputter outputter( &ttlistener, std::cerr );
   outputter.write();   
 
   //XML Output
@@ -43,6 +51,7 @@ main( int argc, char* argv[] )
   XmlTimedTestOutputterHook *xmlTimeHook = new XmlTimedTestOutputterHook(&ttlistener);
   xmlOut.addHook(xmlTimeHook);
   xmlOut.write();
+ 
   
   return result.wasSuccessful() ? 0 : 1;
 }

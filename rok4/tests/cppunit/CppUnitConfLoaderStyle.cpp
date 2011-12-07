@@ -41,6 +41,7 @@ public:
 
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitConfLoaderStyle );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitConfLoaderStyle, "CppUnitConfLoaderStyle" );
 
 void CppUnitConfLoaderStyle::setUp()
 {
@@ -93,9 +94,24 @@ void CppUnitConfLoaderStyle::emptyElement()
 	Style *style = ConfLoader::parseStyle(styleDoc,std::string(),false);
 	CPPUNIT_ASSERT_MESSAGE("Tag Style",style == NULL);
 	
+	styleElem->LinkEndChild(identifierElem);
 	styleElem->LinkEndChild(titleElem);
+	styleElem->LinkEndChild(abstractElem);
+	styleElem->LinkEndChild(keywordsElem);
+	styleElem->LinkEndChild(LegendURLElem);
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
-	CPPUNIT_ASSERT_MESSAGE("Tag Title",style == NULL);
+	CPPUNIT_ASSERT_MESSAGE("All Tags No Data",style == NULL);
+	
+	identifierElem->LinkEndChild(new TiXmlText("normal"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Identifier set",style != NULL);
+	
+	titleElem->LinkEndChild(new TiXmlText("normal"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Title set",style != NULL);
+	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getId().compare("normal")==0);
+	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getTitles().at(0).compare("normal")==0);
+	
 }
 
 
