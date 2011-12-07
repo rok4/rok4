@@ -19,6 +19,9 @@ class CppUnitConfLoaderStyle : public CPPUNIT_NS::TestFixture
 	CPPUNIT_TEST(emptyDocInspire);
 	CPPUNIT_TEST(emptyElementInspire);
 	CPPUNIT_TEST(validStyleInspire);
+	
+	CPPUNIT_TEST(paletteStyle);
+	
 	CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -46,6 +49,8 @@ public:
 	
 	void validStyle();
 	void validStyleInspire();
+	
+	void paletteStyle();
 	
 	void teardDown();
 	
@@ -192,20 +197,87 @@ void CppUnitConfLoaderStyle::validStyleInspire()
 	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
 	CPPUNIT_ASSERT_MESSAGE("LegendURL xlink",style != NULL);
 	
+	LegendURLElem->SetAttribute("height", "cent");
+	LegendURLElem->SetAttribute("width", "cent");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL size non numeric",style == NULL);
+	
+	
 	LegendURLElem->SetAttribute("height", "100");
 	LegendURLElem->SetAttribute("width", "100");
 	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
 	CPPUNIT_ASSERT_MESSAGE("LegendURL size",style != NULL);
+	
+	LegendURLElem->SetAttribute("minScaleDenominator", "largeScale");
+	LegendURLElem->SetAttribute("maxScaleDenominator", "largeScale");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL scale non numeric",style == NULL);
+	
+	
 	
 	LegendURLElem->SetAttribute("minScaleDenominator", "100");
 	LegendURLElem->SetAttribute("maxScaleDenominator", "200");
 	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
 	CPPUNIT_ASSERT_MESSAGE("LegendURL scale",style != NULL);
 	
-	
 	CPPUNIT_ASSERT_MESSAGE("Identifier Content",style->getId().compare("normal")==0);
 	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getTitles().at(0).compare("normal")==0);
 	CPPUNIT_ASSERT_MESSAGE("Abstract Content",style->getAbstracts().at(0).compare("abstract")==0);
+}
+
+void CppUnitConfLoaderStyle::paletteStyle()
+{
+	styleElem->LinkEndChild(identifierElem);
+	styleElem->LinkEndChild(titleElem);
+	styleElem->LinkEndChild(abstractElem);
+	styleElem->LinkEndChild(keywordsElem);
+	styleElem->LinkEndChild(LegendURLElem);	
+	
+	identifierElem->LinkEndChild(new TiXmlText("normal"));	
+	titleElem->LinkEndChild(new TiXmlText("normal"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("No palette",style != NULL);
+	
+	
+	TiXmlElement *paletteElem = new TiXmlElement("palette");
+	styleElem->LinkEndChild(paletteElem);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Empty palette",style == NULL);
+	
+	paletteElem->SetAttribute("maxValue","255");
+	
+	TiXmlElement *colourElem = new TiXmlElement("colour");
+	paletteElem->LinkEndChild(colourElem);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Empty colour",style == NULL);
+	
+	TiXmlElement *redElem = new TiXmlElement("red");
+	colourElem->LinkEndChild(redElem);
+	TiXmlElement *greenElem = new TiXmlElement("green");
+	colourElem->LinkEndChild(greenElem);
+	TiXmlElement *blueElem = new TiXmlElement("blue");
+	colourElem->LinkEndChild(blueElem);
+	TiXmlElement *alphaElem = new TiXmlElement("alpha");
+	
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Empty colour component",style == NULL);
+	
+	redElem->LinkEndChild(new TiXmlText("255"));
+	greenElem->LinkEndChild(new TiXmlText("0"));
+	blueElem->LinkEndChild(new TiXmlText("12"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Wrong colour component",style != NULL);
+	
+	
+	paletteElem->SetAttribute("maxValue","-3");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Negative maxValue",style == NULL);
+	
+	paletteElem->SetAttribute("maxValue","255");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("maxValue",style != NULL);
+	
+	
 }
 
 

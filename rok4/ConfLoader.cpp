@@ -131,8 +131,13 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 		int errorCode = pElem->QueryIntAttribute("maxValue",&maxValue);
 		if (errorCode != TIXML_SUCCESS){
 			LOGGER_ERROR("L'attribut maxValue n'a pas été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+			return NULL;
 		}else {
 			LOGGER_DEBUG("MaxValue " << maxValue);
+			if (maxValue <= 0) {
+				LOGGER_ERROR("L'attribut maxValue est négatif ou nul " << id <<" : il est invalide!!");
+				return NULL;
+			}
 			Colour colourTab[maxValue];
 			colours.reserve(maxValue+1);
 			std::vector<int> setValue;
@@ -151,10 +156,52 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 				}
 				LOGGER_DEBUG("Couleur de la valeur " << value);
 				TiXmlHandle cHdl(pElem);
-				r = atoi(cHdl.FirstChild("red").Element()->GetText());
-				g = atoi(cHdl.FirstChild("green").Element()->GetText());
-				b = atoi(cHdl.FirstChild("blue").Element()->GetText());
-				a = atoi(cHdl.FirstChild("alpha").Element()->GetText());
+				TiXmlElement* colourElem;
+				
+				//Red
+				colourElem = cHdl.FirstChild("red").Element();
+				if ( !(colourElem) || !(colourElem->GetText())) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				r = atoi(colourElem->GetText());
+				if (r < 0 || r > 255) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				
+				//Green
+				colourElem = cHdl.FirstChild("green").Element();
+				if ( !(colourElem) || !(colourElem->GetText())) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				
+				g = atoi(colourElem->GetText());
+				if (g < 0 || g > 255) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				
+				//Blue
+				colourElem = cHdl.FirstChild("blue").Element();
+				if ( !(colourElem) || !(colourElem->GetText())) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				b = atoi(colourElem->GetText());
+				if (b < 0 || b > 255) {
+					LOGGER_ERROR("Un attribut colour invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
+					continue;	
+				}
+				
+				//Alpha
+				colourElem = cHdl.FirstChild("alpha").Element();
+				if ( !(colourElem) || !(colourElem->GetText())) {
+					a = 0 ;
+				} else {
+					a = atoi(colourElem->GetText());
+				}
 				LOGGER_DEBUG("Style : " << id <<" Couleur XML de "<<value<<" = " <<r<<","<<g<<","<<b<<","<<a);
 				colourTab[value]=Colour(r,g,b,a);
 				setValue.push_back(value);
@@ -167,6 +214,12 @@ Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspi
 					colours.push_back(Colour(tmp.r,tmp.g,tmp.b,(tmp.a==-1?j:tmp.a)));
 				}
 			}
+			
+			if (colours.size() == 0) {
+				LOGGER_ERROR("Palette sans Couleur " << id <<" : il est invalide!!");
+				return NULL;
+			}
+			
 		}	
 	}
 	Palette pal(colours);
