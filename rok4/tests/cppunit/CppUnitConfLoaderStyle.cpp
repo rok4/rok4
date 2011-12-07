@@ -14,6 +14,11 @@ class CppUnitConfLoaderStyle : public CPPUNIT_NS::TestFixture
 	// enregistrement des methodes de tests à jouer :
 	CPPUNIT_TEST(emptyDoc);
 	CPPUNIT_TEST(emptyElement);
+	CPPUNIT_TEST(validStyle);
+	
+	CPPUNIT_TEST(emptyDocInspire);
+	CPPUNIT_TEST(emptyElementInspire);
+	CPPUNIT_TEST(validStyleInspire);
 	CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -26,6 +31,8 @@ protected:
 	TiXmlElement* keyword1Elem ;
 	TiXmlElement* keyword2Elem ;
 	TiXmlElement* LegendURLElem ;
+	
+	Style *style;
 
 	
 public:
@@ -33,7 +40,13 @@ public:
 	
 	void emptyDoc();
 	void emptyDocInspire();
+	
 	void emptyElement();
+	void emptyElementInspire();
+	
+	void validStyle();
+	void validStyleInspire();
+	
 	void teardDown();
 	
 
@@ -77,13 +90,13 @@ void CppUnitConfLoaderStyle::teardDown()
 
 void CppUnitConfLoaderStyle::emptyDoc()
 {
-	Style *style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
 	CPPUNIT_ASSERT_MESSAGE("Style Normal",style == NULL);
 }
 
 void CppUnitConfLoaderStyle::emptyDocInspire()
 {
-	Style *style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
 	CPPUNIT_ASSERT_MESSAGE("Style Inspire",style == NULL);
 }
 
@@ -91,7 +104,7 @@ void CppUnitConfLoaderStyle::emptyDocInspire()
 void CppUnitConfLoaderStyle::emptyElement()
 {
 	styleDoc->LinkEndChild(styleElem);
-	Style *style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
 	CPPUNIT_ASSERT_MESSAGE("Tag Style",style == NULL);
 	
 	styleElem->LinkEndChild(identifierElem);
@@ -102,16 +115,97 @@ void CppUnitConfLoaderStyle::emptyElement()
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
 	CPPUNIT_ASSERT_MESSAGE("All Tags No Data",style == NULL);
 	
+}
+
+void CppUnitConfLoaderStyle::emptyElementInspire()
+{
+	styleDoc->LinkEndChild(styleElem);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("Tag Style",style == NULL);
+	
+	styleElem->LinkEndChild(identifierElem);
+	styleElem->LinkEndChild(titleElem);
+	styleElem->LinkEndChild(abstractElem);
+	styleElem->LinkEndChild(keywordsElem);
+	styleElem->LinkEndChild(LegendURLElem);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("All Tags No Data",style == NULL);
+}
+
+
+void CppUnitConfLoaderStyle::validStyle()
+{
+	styleElem->LinkEndChild(identifierElem);
+	styleElem->LinkEndChild(titleElem);
+	styleElem->LinkEndChild(abstractElem);
+	styleElem->LinkEndChild(keywordsElem);
+	styleElem->LinkEndChild(LegendURLElem);	
+
 	identifierElem->LinkEndChild(new TiXmlText("normal"));
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
 	CPPUNIT_ASSERT_MESSAGE("Identifier set",style == NULL);
 	
 	titleElem->LinkEndChild(new TiXmlText("normal"));
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
-	CPPUNIT_ASSERT_MESSAGE("Title set",style != NULL);
-	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getId().compare("normal")==0);
-	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getTitles().at(0).compare("normal")==0);
 	
+	CPPUNIT_ASSERT_MESSAGE("Title set",style != NULL);
+	CPPUNIT_ASSERT_MESSAGE("Identifier Content",style->getId().compare("normal")==0);
+	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getTitles().at(0).compare("normal")==0);
+	TiXmlElement *title1 = new TiXmlElement ( "Title" );
+	title1->LinkEndChild(new TiXmlText("Title2"));
+	TiXmlElement *title2 = new TiXmlElement ( "Title" );
+	title2->LinkEndChild(new TiXmlText("Title3"));
+	styleElem->LinkEndChild(title1);
+	styleElem->LinkEndChild(title2);
+	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
+	CPPUNIT_ASSERT_MESSAGE("Multiple Title set",style != NULL);
+	CPPUNIT_ASSERT_MESSAGE("Multiple Title handle", style->getTitles().size() == 3);
+}
+
+void CppUnitConfLoaderStyle::validStyleInspire()
+{
+	styleElem->LinkEndChild(identifierElem);
+	styleElem->LinkEndChild(titleElem);
+	styleElem->LinkEndChild(abstractElem);
+	styleElem->LinkEndChild(keywordsElem);
+	styleElem->LinkEndChild(LegendURLElem);	
+
+	identifierElem->LinkEndChild(new TiXmlText("normal"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("Identifier set",style == NULL);
+	
+	titleElem->LinkEndChild(new TiXmlText("normal"));
+	
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("Title set",style == NULL);
+	
+	abstractElem->LinkEndChild(new TiXmlText("abstract"));
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("Abstract set",style == NULL);
+	
+	LegendURLElem->SetAttribute("format","image/jpg");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL type",style == NULL);
+	
+	LegendURLElem->SetAttribute("xlink:simpleLink","simple");
+	LegendURLElem->SetAttribute("xlink:href","http://inspire");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL xlink",style != NULL);
+	
+	LegendURLElem->SetAttribute("height", "100");
+	LegendURLElem->SetAttribute("width", "100");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL size",style != NULL);
+	
+	LegendURLElem->SetAttribute("minScaleDenominator", "100");
+	LegendURLElem->SetAttribute("maxScaleDenominator", "200");
+	style = ConfLoader::parseStyle(styleDoc,std::string(),true);
+	CPPUNIT_ASSERT_MESSAGE("LegendURL scale",style != NULL);
+	
+	
+	CPPUNIT_ASSERT_MESSAGE("Identifier Content",style->getId().compare("normal")==0);
+	CPPUNIT_ASSERT_MESSAGE("Title Content",style->getTitles().at(0).compare("normal")==0);
+	CPPUNIT_ASSERT_MESSAGE("Abstract Content",style->getAbstracts().at(0).compare("abstract")==0);
 }
 
 
