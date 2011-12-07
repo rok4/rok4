@@ -105,4 +105,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitConvertnoSSE );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitConvertnoSSE, "CppUnitConvertnoSSE" );

@@ -27,6 +27,7 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitTest1 );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitTest1, "CppUnitTest1" );
 
 void CppUnitTest1::setUp()
 {

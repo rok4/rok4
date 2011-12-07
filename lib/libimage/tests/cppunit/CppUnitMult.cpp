@@ -111,4 +111,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitMult );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitMult, "CppUnitMult" );
