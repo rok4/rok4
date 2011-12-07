@@ -47,7 +47,6 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitMessages, "CppUnitMessages" );
 
 void CppUnitMessages::setUp()
 {
-	std::cout <<  __PRETTY_FUNCTION__ << std::endl;
 	locator= "noLocator" ;
 	code= OWS_INVALID_UPDATESEQUENCE ;
 	message= "Message d'erreur !!!" ;
@@ -60,11 +59,6 @@ void CppUnitMessages::setUp()
 
 void CppUnitMessages::test1WMSException()
 {
-	std::ofstream temp ("/tmp/outtest.txt", std::ios::out | std::ios::app);
-	if (temp.is_open()) {
-		temp << __PRETTY_FUNCTION__ << std::endl;
-		temp.close();
-	}
 	// creation d'un objet ServiceException
 	ServiceException *se= new ServiceException(locator,code,message,"wms") ;
 	if (se==NULL) CPPUNIT_FAIL("Impossible de créer l'objet ServiceException !") ;
