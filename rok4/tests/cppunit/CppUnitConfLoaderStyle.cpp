@@ -104,7 +104,7 @@ void CppUnitConfLoaderStyle::emptyElement()
 	
 	identifierElem->LinkEndChild(new TiXmlText("normal"));
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);
-	CPPUNIT_ASSERT_MESSAGE("Identifier set",style != NULL);
+	CPPUNIT_ASSERT_MESSAGE("Identifier set",style == NULL);
 	
 	titleElem->LinkEndChild(new TiXmlText("normal"));
 	style = ConfLoader::parseStyle(styleDoc,std::string(),false);

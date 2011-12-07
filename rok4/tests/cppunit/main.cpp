@@ -39,7 +39,7 @@ main( int argc, char* argv[] )
   }
   
   runner.run( controller );
-
+  
   // Print test in a compiler compatible format.
   CPPUNIT_NS::CompilerOutputter outputter( &result, std::cerr );
   outputter.write();   
