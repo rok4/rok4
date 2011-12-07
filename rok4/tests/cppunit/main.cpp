@@ -38,11 +38,10 @@ main( int argc, char* argv[] )
 	  runner.addTest(CPPUNIT_NS::TestFactoryRegistry::getRegistry(argv[1]).makeTest());
   }
   
-  
   runner.run( controller );
 
   // Print test in a compiler compatible format.
-  CPPUNIT_NS::CompilerOutputter outputter( &ttlistener, std::cerr );
+  CPPUNIT_NS::CompilerOutputter outputter( &result, std::cerr );
   outputter.write();   
 
   //XML Output
