@@ -21,6 +21,8 @@
 * @brief Les donnees source sont copiees dans la reponse
 */
 
+static bool loggerInitialised = false;
+
 HttpResponse* initResponseFromSource(DataSource* source){
         HttpResponse* response=new HttpResponse;
         response->status=source->getHttpStatus();
@@ -52,25 +54,29 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
+	if (!loggerInitialised) {
+		Logger::setOutput(logOutput);
+		// Initialisation du logger
+		Accumulator *acc=0;
+		if (logOutput==ROLLING_FILE){
+			acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		}
+		else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
+			acc = new StreamAccumulator();
+		}
+		// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+		for (int i=0;i<=logLevel;i++)
+			Logger::setAccumulator((LogLevel)i, acc);
+		std::ostream &log = LOGGER(DEBUG);
+		log.precision(8);
+		log.setf(std::ios::fixed,std::ios::floatfield);
 
-	Logger::setOutput(logOutput);
-	// Initialisation du logger
-	Accumulator *acc=0;
-	if (logOutput==ROLLING_FILE){
-		acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
+		LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
+		loggerInitialised=true;
+	} else {
+		LOGGER_INFO("*** NOUVEAU CLIENT DU LOGGER ***");
 	}
-	else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
-		acc = new StreamAccumulator();
-	}
-	// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-	for (int i=0;i<=logLevel;i++)
-		Logger::setAccumulator((LogLevel)i, acc);
-	std::ostream &log = LOGGER(DEBUG);
-        log.precision(8);
-	log.setf(std::ios::fixed,std::ios::floatfield);
-
-	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
-        LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
 	// Construction des parametres de service
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf(strServicesConfigFile);
@@ -330,7 +336,6 @@ void rok4FlushTileRef(TileRef* tileRef){
 */
 
 void rok4DeleteTiffHeader(TiffHeader* header){
-	delete header->data;
 	delete header;
 }
 
