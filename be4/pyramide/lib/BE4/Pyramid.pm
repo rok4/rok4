@@ -403,7 +403,7 @@ sub _load {
     my $objFormat = BE4::Format->new($self->{pyramid}->{compression},$self->{pyramid}->{sampleformat},$self->{pyramid}->{bitspersample});
     
     if (! defined $objFormat) {
-      ERROR ("Can not load compression !");
+      ERROR ("Can not load format !");
       return FALSE;
     }
     
@@ -529,7 +529,8 @@ sub _fillToPyramid {
     }
     push @{$self->{level}}, $objLevel;
     # push dir to create
-    push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
+    push @{$self->{cache_dir}}, $baseimage;
+    #push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
   
@@ -842,7 +843,7 @@ sub readConfPyramid {
                                            $tagtm
                                            );
         #
-        my $basenodata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
+        my $basenodata = File::Spec->catdir($self->getPyrDataPath(),
                                            $self->getPyrName(),
                                            $self->getDirNodata(),
                                            $tagtm
@@ -916,15 +917,15 @@ sub writeCachePyramid {
                                               $self->getPyrNameOld());
   my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),
                                               $self->getPyrName());
+                                              
+
   $newcachepyramid =~ s/\//\\\//g;
   $oldcachepyramid =~ s/\//\\\//g;
   DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
   my $dirimage   = $self->getDirImage();
   my $dirnodata   = $self->getDirNodata();
   my $dirmetadata= undef; # TODO ?
-ERROR(sprintf "dir nodata : %s",$self->getDirNodata());
-ERROR(sprintf "cache_dir : %s",Dumper($self->{cache_dir}));
-ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
+
   # substring function 
   my $substring;
   $substring = sub {
@@ -950,6 +951,7 @@ ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
     
     return $_;
   };
+
   # create new cache directory
   my @newdirs;
   my @olddirs = @{$self->{cache_dir}};
@@ -969,7 +971,8 @@ ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
   foreach my $absdir (@newdirs) {
     
     DEBUG($absdir);
-    
+ALWAYS (sprintf "absdir : %s",$absdir); #TEST#
+
     eval { mkpath([$absdir],0,0751); };
     if ($@) {
       ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
@@ -988,7 +991,7 @@ ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
       WARN("Listing of old cache tile is empty !");
       # return FALSE;
     }
-    
+
     if (! scalar @newtiles) {
       WARN("Listing of new cache tile is empty !");
       # return FALSE;
@@ -1038,7 +1041,7 @@ ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
                dirname($old_absfile));
         return FALSE;
       }
-ERROR(sprintf "follow_relfile : %s ; new_absfile : %s",$follow_relfile, $new_absfile); /****/
+
       my $result = eval { symlink ($follow_relfile, $new_absfile); };
       if (! $result) {
         ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
@@ -1063,6 +1066,8 @@ sub readCachePyramid {
   my $searchitem = $self->FindCacheNode($cachedir);
   
   DEBUG(Dumper($searchitem));
+  
+ALWAYS(Dumper($searchitem)); #TEST#
   
   # Info, cache file of old cache !
   if (! scalar @{$searchitem->{cachetile}}) {
@@ -1095,7 +1100,7 @@ sub FindCacheNode {
   };
   
   my $pyr_datapath = $self->getPyrDataPath();
-  
+
   if (! opendir (DIR, $directory)) {
     ERROR("Can not open directory cache ?");
     return undef;

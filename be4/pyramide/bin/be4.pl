@@ -437,7 +437,7 @@ sub doIt {
     }
   
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-  
+
     ###################
     # load data source
     
