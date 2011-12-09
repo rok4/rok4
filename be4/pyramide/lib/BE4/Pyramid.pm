@@ -84,6 +84,7 @@ END {}
 #    
 #    dir_depth    =
 #    dir_image    = IMAGE
+#    dir_nodata    = NODATA
 #    dir_metadata = METADATA
 #
 #    ; eg section [ nodata ]
@@ -112,6 +113,9 @@ my $STRLEVELTMPLT = <<"TLEVEL";
         <tilesPerWidth>__TILEW__</tilesPerWidth>
         <tilesPerHeight>__TILEH__</tilesPerHeight>
         <pathDepth>__DEPTH__</pathDepth>
+        <nodata>
+            <filePath>__NODATAPATH__</filePath>
+        </nodata>
         <TMSLimits>
             <minTileRow>__MINROW__</minTileRow>
             <maxTileRow>__MAXROW__</maxTileRow>
@@ -173,6 +177,7 @@ sub new {
                     #
                     dir_depth    => undef, # number
                     dir_image    => undef, # dir name
+                    dir_nodata    => undef, # dir name
                     dir_metadata => undef, # dir name
                     image_width  => undef, # number
                     image_height => undef, # number
@@ -284,6 +289,8 @@ sub _init {
     #
     $pyr->{dir_depth}    = $params->{dir_depth}    || ( ERROR ("Parameter 'dir_depth' is required!") && return FALSE );
     $pyr->{dir_image}    = $params->{dir_image}    || ( ERROR ("Parameter 'dir_image' is required!") && return FALSE );
+    #
+    $pyr->{dir_nodata}    = $params->{dir_nodata}    || ( ERROR ("Parameter 'dir_nodata' is required!") && return FALSE );
     #
     $pyr->{path_nodata}  = $params->{path_nodata}  || ( ERROR ("Parameter to 'path_nodata' is required!") && return FALSE );
     #
@@ -480,7 +487,14 @@ sub _fillToPyramid {
                                   $self->getDirImage(),
                                   $objTm->getID()               # FIXME : level = id !
                                   );
-    
+                                  
+    # base dir nodata
+    my $basenodata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
+                                  $self->getPyrName(),
+                                  $self->getDirNodata(),
+                                  $objTm->getID()               # FIXME : level = id !
+                                  );
+                                  
     # TODO : metadata
     #   compression, type ...
     my $basemetadata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
@@ -497,8 +511,9 @@ sub _fillToPyramid {
             id                => $objTm->getID(),
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             compress_image    => $self->getFormat()->getCode(), # ie TIFF_RAW_INT8 !
+            dir_nodata         => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             dir_metadata      => undef,           # TODO,
-            compress_metadata => undef,           # TODO  : raw  => TIFF_INT8,
+            compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
             bitspersample     => $self->getTile()->getBitsPerSample(),
             samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
@@ -591,11 +606,9 @@ sub writeConfPyramid {
     my $dirimg   = $objLevel->{dir_image};
     $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
     
-    # my $formatimg = $objLevel->{compress_image}; # ie TIFF_INT8 !
-    # $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
-    #
-    # my $channel  = $objLevel->{samplesperpixel};
-    # $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+    my $dirnd   = $objLevel->{dir_nodata};
+    my $pathnd = $dirnd."/nd.tiff";
+    $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
     
     my $tilew    = $objLevel->{size}->[0];
     $strpyrtmplt =~ s/__TILEW__/$tilew/;
@@ -829,11 +842,18 @@ sub readConfPyramid {
                                            $tagtm
                                            );
         #
+        my $basenodata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
+                                           $self->getPyrName(),
+                                           $self->getDirNodata(),
+                                           $tagtm
+                                           );
+        #
         my $objLevel = BE4::Level->new(
             {
                 id                => $tagtm,
                 dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
                 compress_image    => $tagformat, 
+                dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
                 dir_metadata      => undef,      # TODO !
                 compress_metadata => undef,      # TODO !
                 type_metadata     => undef,      # TODO !
@@ -888,6 +908,7 @@ sub writeCachePyramid {
   # pyr_name_new      : new pyramid name
   # pyr_name_old      : old pyramid name
   # dir_image     : IMAGE
+  # dir_nodata     : NODATA
   # cache_dir     : old or new directories (rel from new pyramid)
   # cache_tile    : old tiles (rel from new pyramid)
   
@@ -899,8 +920,11 @@ sub writeCachePyramid {
   $oldcachepyramid =~ s/\//\\\//g;
   DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
   my $dirimage   = $self->getDirImage();
+  my $dirnodata   = $self->getDirNodata();
   my $dirmetadata= undef; # TODO ?
-  
+ERROR(sprintf "dir nodata : %s",$self->getDirNodata());
+ERROR(sprintf "cache_dir : %s",Dumper($self->{cache_dir}));
+ERROR(sprintf "cache_tile : %s",Dumper($self->{cache_tile}));
   # substring function 
   my $substring;
   $substring = sub {
@@ -1014,7 +1038,7 @@ sub writeCachePyramid {
                dirname($old_absfile));
         return FALSE;
       }
-      
+ERROR(sprintf "follow_relfile : %s ; new_absfile : %s",$follow_relfile, $new_absfile); /****/
       my $result = eval { symlink ($follow_relfile, $new_absfile); };
       if (! $result) {
         ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
@@ -1073,7 +1097,7 @@ sub FindCacheNode {
   my $pyr_datapath = $self->getPyrDataPath();
   
   if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directoty cache ?");
+    ERROR("Can not open directory cache ?");
     return undef;
   }
 
@@ -1222,6 +1246,11 @@ sub getDirImage {
   my $self = shift;
   
   return $self->{pyramid}->{dir_image};
+}
+sub getDirNodata {
+  my $self = shift;
+  
+  return $self->{pyramid}->{dir_nodata};
 }
 sub getDirMetadata {
   my $self = shift;
@@ -1666,6 +1695,7 @@ __END__
     #
     dir_depth    => "2",  
     dir_image    => "IMAGE",
+    dir_nodata    => "NODATA",
     dir_metadata => "METADATA",
     #
     path_nodata   => "./t/data/nodata/",
@@ -1699,6 +1729,7 @@ __END__
     #
     dir_depth    => "2",
     dir_image    => "IMAGE",
+    dir_nodata    => "NODATA",
     dir_metadata => "METADATA",
     #
     image_width  => "16", 
@@ -1849,6 +1880,9 @@ None by default.
                                             |__ ...
                             |__ ${ID_LEVEL1}/
                             |__ ${ID_LEVELN}/
+                |_____ ${NODATA}/
+                            |__ ${ID_LEVEL0}/
+                            |__ ${ID_LEVELN}/
                 |_____ ${METADATA}/
                 |_____ ${PYRAMID_FILE}
                         (ie ortho_raw_dept75.xml)
@@ -1858,6 +1892,7 @@ None by default.
     PYRAMID_NAME
     ID_LEVEL(0)  
     IMAGE
+    NODATA
     METADATA
     PYRAMID_FILE
 

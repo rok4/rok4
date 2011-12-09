@@ -578,7 +578,7 @@ Use case possible :
   pyramid       =>  compression
                     image_width, image_height,
                     tms_name, tms_path
-                    dir_depth, dir_root, dir_image, dir_metadata,
+                    dir_depth, dir_root, dir_image, dir_nodata, dir_metadata,
                     pyr_name_old, pyr_name_new, pyr_path
                     bitspersample,sampleformat,compressionscheme,photometric,samplesperpixel,interpolation
                     path_nodata, imagesize, color
@@ -623,6 +623,7 @@ A file configuration can be composed of sections and parameters following :
  dir_depth    = 
  dir_root     = 
  dir_image    = 
+ dir_nodata    = 
  dir_metadata = 
 
  [ tilematrixset ]
@@ -683,6 +684,7 @@ But you can combine the following sections for more readibility :
  dir_depth     =  
  dir_image     = 
  dir_metadata  =
+ dir_nodata  =
  
  [ process ]
  ...
@@ -711,6 +713,7 @@ And few parameters must be declared, whatever the use cases selected :
     dir_depth
     dir_image
     dir_metadata
+    dir_nodata
     path_nodata
 
 These parameters can be null because of parameters by default :

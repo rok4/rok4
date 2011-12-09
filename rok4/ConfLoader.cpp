@@ -359,15 +359,25 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
                 return NULL;
         }
 	format=pElem->GetText();
-        if (format.compare("TIFF_INT8")!=0
-         && format.compare("TIFF_JPG_INT8")!=0
-         && format.compare("TIFF_PNG_INT8")!=0
-         && format.compare("TIFF_LZW_INT8")!=0
-         && format.compare("TIFF_FLOAT32")!=0){
-                LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
-                return NULL;
-        }
-        format=pElem->GetText();
+    
+    if (format.compare("TIFF_INT8")==0) {
+        format == "TIFF_RAW_INT8";
+        LOGGER_WARN("format TIFF_INT8 is deprecated, use instead TIFF_RAW_INT8");
+    }
+    if (format.compare("TIFF_FLOAT32")==0) {
+        format == "TIFF_RAW_FLOAT32";
+        LOGGER_WARN("format TIFF_FLOAT32 is deprecated, use instead TIFF_RAW_FLOAT32");
+    }
+    
+    if (format.compare("TIFF_RAW_INT8")!=0
+     && format.compare("TIFF_JPG_INT8")!=0
+     && format.compare("TIFF_PNG_INT8")!=0
+     && format.compare("TIFF_LZW_INT8")!=0
+     && format.compare("TIFF_RAW_FLOAT32")!=0
+     && format.compare("TIFF_LZW_FLOAT32")!=0){
+            LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
+            return NULL;
+    }
 
 	pElem=hRoot.FirstChild("channels").Element();
         if (!pElem){
