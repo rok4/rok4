@@ -421,14 +421,7 @@ sub doIt {
       ERROR ("Can not load Pyramid !");
       return FALSE;
     }
-  
-    ALWAYS(">>> Write Configuration Pyramid ...");
-
-    if (! $objPyramid->writeConfPyramid()) {
-      ERROR ("Can not write Pyramid File !");
-      return FALSE;
-    }
-
+    
     ALWAYS(">>> Write Cache Pyramid ...");
 
     if (! $objPyramid->writeCachePyramid()) {
@@ -436,7 +429,16 @@ sub doIt {
       return FALSE;
     }
   
-    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
+    # we cannot write the pyramid descriptor now. We need data's limits which are calculated in the Process creation
+  
+#    ALWAYS(">>> Write Configuration Pyramid ...");
+
+#    if (! $objPyramid->writeConfPyramid()) {
+#      ERROR ("Can not write Pyramid File !");
+#      return FALSE;
+#    }
+  
+#    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
 
     ###################
     # load data source
@@ -479,7 +481,7 @@ sub doIt {
                       $params->{harvesting},
                       $objPyramid,
                       $objData
-                      );
+                    );
   
     if (! defined $objProcess) {
       ERROR ("Can not prepare process !");
@@ -494,6 +496,18 @@ sub doIt {
     }
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
+    
+    ##################
+    # write the pyramid descriptor
+
+    ALWAYS(">>> Write Configuration Pyramid ...");
+
+    if (! $objPyramid->writeConfPyramid()) {
+      ERROR ("Can not write Pyramid File !");
+      return FALSE;
+    }
+  
+    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
     
     #######################
     # execute process script

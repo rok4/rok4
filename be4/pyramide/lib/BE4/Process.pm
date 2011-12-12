@@ -70,6 +70,7 @@ sub _init {
         return FALSE;
     }
 
+
     # manadatory !
     $self->{job_number} = $params_process->{job_number}; 
     $self->{path_temp}  = $params_process->{path_temp};
@@ -136,8 +137,8 @@ sub _init {
     #  it's an object !
   
     
-  $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
-  
+    $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
+
 
     if (! defined $self->{tree}) {
         ERROR("Can not load Tree object !");

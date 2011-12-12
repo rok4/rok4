@@ -60,7 +60,7 @@ sub new {
     bottomLevelId => undef, # first level under the source images resolution
     topLevelId    => undef, # top level of the pyramid (ie of its tileMatrixSet)
     levelIdx      => undef, # hash associant les id de level à leur indice dans le tableau du TMS
-    tmList        => [],    # tableau des tm de la pyramide dans l'ordre croissant de taille de pixel
+    tmList        => [],    # tableau des tm de la pyramide dans l'ordre croissant de taille de pixel   
   };
 
   bless($self, $class);
@@ -185,17 +185,22 @@ sub _load {
   
   # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
-  my ($ImgGroundWith, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
+  my ($ImgGroundWidth, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
   
   my $tm = $tms->getTileMatrix($self->{bottomLevelId});
-
+  
   my @images = $src->getImages();
+
   foreach my $objImg (@images){
     # On reprojette l'emprise si nécessaire 
     my %bbox = $self->computeBBox($objImg, $ct);
+    
+    # pyramid's limits update : we store data's limits in the object Pyramid
+    $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
+
     # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-    my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
-    my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWith);   
+    my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
+    my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
     my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
     my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
     
@@ -211,6 +216,8 @@ sub _load {
         #               x3_y2 => [list objimage3], ...} }
       }
     }
+    
+    
   }
   
 
@@ -226,7 +233,7 @@ sub _load {
     
     # On compare au passage le nombre de noeuds du niveau courrant avec le nombre de processus demandé 
     # pour déterminer le cutLevel. A noter que tel que c'est fait ici, le cutLevel ne peut pas etre 
-    # le topLevel. On s'evite ainsi des complications avec un script finisher vide et de toute facon
+    # le topLevel. On s'evite ainsi des complications avec un script finisher vide et de toute façon
     # le cas n'arrive jamais avec les TMS GPP3.
     if (keys(%{$self->{levels}->{$levelId}}) >= $self->{job_number}){
       $self->{cutLevelId}=$levelId;
