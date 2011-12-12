@@ -415,6 +415,7 @@ sub _load {
                                                              $self->{pyramid}->{tms_name}),
                                                              $self->{pyramid}->{tms_level_min},
                                                              $self->{pyramid}->{tms_level_max});
+
     
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
@@ -529,7 +530,7 @@ sub _fillToPyramid {
     }
     push @{$self->{level}}, $objLevel;
     # push dir to create
-    push @{$self->{cache_dir}}, $baseimage;
+    push @{$self->{cache_dir}}, $baseimage; #absolute path
     #push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
@@ -812,7 +813,7 @@ sub readConfPyramid {
 
     # check compression mode 
     if ($self->getFormat()->getCode() ne $tagformat) {
-        ERROR (sprintf "The mode compression is diffrent between configuration ('%s') and pyramid file ('%s') !",
+        ERROR (sprintf "The mode compression is different between configuration ('%s') and pyramid file ('%s') !",
                     $self->getFormat()->getCode(),
                     $tagformat);
         return FALSE;
@@ -864,6 +865,7 @@ sub readConfPyramid {
                 dir_depth         => $tagdirdepth,
                 limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
             });
+            
 
         if (! defined $objLevel) {
             WARN(sprintf "Can not load the pyramid level : '%s'", $tagtm);
@@ -963,6 +965,7 @@ sub writeCachePyramid {
     @newdirs = map ({ &$substring($_) } @{$self->{cache_dir}}); # list cache modified !
   }
   
+  
   if (! scalar @newdirs) {
     ERROR("Listing of new cache directory is empty !");
     return FALSE;
@@ -971,8 +974,8 @@ sub writeCachePyramid {
   foreach my $absdir (@newdirs) {
     
     DEBUG($absdir);
-ALWAYS (sprintf "absdir : %s",$absdir); #TEST#
 
+    #create folders for images
     eval { mkpath([$absdir],0,0751); };
     if ($@) {
       ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
@@ -980,6 +983,17 @@ ALWAYS (sprintf "absdir : %s",$absdir); #TEST#
     }
     
   }
+      
+  #create folders for nodata
+  foreach my $i ($self->{tms}->{levelmin}..$self->{tms}->{levelmax}) {
+      my $basenodata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
+                                           $self->getPyrName(),
+                                           $self->getDirNodata(),
+                                           $i);
+      eval { mkpath([$basenodata],0,0751); };
+  }
+  
+  
   # search and create link for only new cache tile
   if (! $self->isNewPyramid()) {
     
