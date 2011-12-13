@@ -474,7 +474,9 @@ sub _fillToPyramid {
   my $self  = shift;
 
   TRACE;
-  
+
+ALWAYS("fill TO pyramid : new pyramid"); #TEST#
+
   # get tms object
   my $objTMS = $self->getTileMatrixSet();
   
@@ -528,7 +530,7 @@ sub _fillToPyramid {
             samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
             size              => [ $tileperwidth, $tileperheight],
             dir_depth         => $self->getDirDepth(),
-            limit             => [1, 1000000, 1, 1000000] # FIXME : can be computed or fix ?
+            limit             => [undef, undef, undef, undef] # FIXME : can be computed or fix ?
     };
     my $objLevel = BE4::Level->new($params);
     
@@ -555,7 +557,9 @@ sub _fillFromPyramid {
   my $self  = shift;
   
   TRACE;
-  
+
+ALWAYS("fill FROM pyramid : update with old pyramid"); #TEST#
+
   my $filepyramid =  File::Spec->catfile($self->getPyrDescPathOld(),
                                          $self->getPyrFileOld());
   
@@ -580,109 +584,114 @@ sub _fillFromPyramid {
 #  Manipulate the Configuration File Pyramid /* in/out */
 
 sub writeConfPyramid {
-  my $self    = shift;
-  my $filepyramid = shift; # Can be null !
-  
-  TRACE;
+    my $self    = shift;
+    my $filepyramid = shift; # Can be null !
 
-  # parsing template
-  my $parser = XML::LibXML->new();
-  
-  my $doctpl = eval { $parser->parse_string($STRPYRTMPLT); };
-  if (!defined($doctpl) || $@) {
-    ERROR(sprintf "Can not parse template file of pyramid : %s !", $@);
-    return FALSE;
-  }
-  my $strpyrtmplt = $doctpl->toString(0);
-  
-  #
-  my $tmsname  = $self->getTmsName();
-  $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
-  #
-  my $formatimg = $self->getFormat()->getCode(); # ie TIFF_RAW_INT8 !
-  $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
-  #  
-  my $channel  = $self->getTile()->getSamplesPerPixel();
-  $strpyrtmplt =~ s/__CHANNEL__/$channel/;
-  
-  my @levels = $self->getLevels();
-  foreach my $objLevel (@levels){
-    
-    # image
-    $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
-    
-    my $id       = $objLevel->{id};
-    $strpyrtmplt =~ s/__ID__/$id/;
-    
-    my $dirimg   = $objLevel->{dir_image};
-    $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
-    
-    my $dirnd   = $objLevel->{dir_nodata};
-    my $pathnd = $dirnd."/nd.tiff";
-    $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
-    
-    my $tilew    = $objLevel->{size}->[0];
-    $strpyrtmplt =~ s/__TILEW__/$tilew/;
-    my $tileh    = $objLevel->{size}->[1];
-    $strpyrtmplt =~ s/__TILEH__/$tileh/;
-    ALWAYS(sprintf "PYRAMID : \n - tilew : %s\n - tileh : %s",$tilew,$tileh); #TEST#
-    
-    my $depth    =  $objLevel->{dir_depth};
-    $strpyrtmplt =~ s/__DEPTH__/$depth/;
-    
-    my $minrow   =  $objLevel->{limit}->[0];
-    $strpyrtmplt =~ s/__MINROW__/$minrow/;
-    my $maxrow   =  $objLevel->{limit}->[1];
-    $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
-    my $mincol   =  $objLevel->{limit}->[2];
-    $strpyrtmplt =~ s/__MINCOL__/$mincol/;
-    my $maxcol   =  $objLevel->{limit}->[3];
-    $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
-    
-    # metadata
-    if (defined $objLevel->{dir_metadata}) {
-        
-        $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
-        
-        my $dirmtd   = $objLevel->{dir_metadata};
-        $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
-        
-        my $formatmtd = $objLevel->{compress_metadata};
-        $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
+    TRACE;
+
+    # to write TM limits in the pyramid descriptor
+    if (! $self->calculateTMLimits) {
+      ERROR ("Can not calculate TM limits !");
+      return FALSE;
     }
-    $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
-  }
-  #
-  $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
-  $strpyrtmplt =~ s/^$//g;
-  $strpyrtmplt =~ s/^\n$//g;
-  #
+    
+    # parsing template
+    my $parser = XML::LibXML->new();
+
+    my $doctpl = eval { $parser->parse_string($STRPYRTMPLT); };
+    if (!defined($doctpl) || $@) {
+        ERROR(sprintf "Can not parse template file of pyramid : %s !", $@);
+        return FALSE;
+    }
+    my $strpyrtmplt = $doctpl->toString(0);
   
-  # TODO check the new template !
+    #
+    my $tmsname  = $self->getTmsName();
+    $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
+    #
+    my $formatimg = $self->getFormat()->getCode(); # ie TIFF_RAW_INT8 !
+    $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
+    #  
+    my $channel  = $self->getTile()->getSamplesPerPixel();
+    $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+
+    my @levels = $self->getLevels();
+    foreach my $objLevel (@levels){
+    
+        # image
+        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
+        
+        my $id       = $objLevel->{id};
+        $strpyrtmplt =~ s/__ID__/$id/;
+    
+        my $dirimg   = $objLevel->{dir_image};
+        $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
+        
+        my $dirnd   = $objLevel->{dir_nodata};
+        my $pathnd = $dirnd."/nd.tiff";
+        $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
+        
+        my $tilew    = $objLevel->{size}->[0];
+        $strpyrtmplt =~ s/__TILEW__/$tilew/;
+        my $tileh    = $objLevel->{size}->[1];
+        $strpyrtmplt =~ s/__TILEH__/$tileh/;
+        
+        my $depth    =  $objLevel->{dir_depth};
+        $strpyrtmplt =~ s/__DEPTH__/$depth/;
+        
+        my $minrow   =  $objLevel->{limit}->[0];
+        $strpyrtmplt =~ s/__MINROW__/$minrow/;
+        my $maxrow   =  $objLevel->{limit}->[1];
+        $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
+        my $mincol   =  $objLevel->{limit}->[2];
+        $strpyrtmplt =~ s/__MINCOL__/$mincol/;
+        my $maxcol   =  $objLevel->{limit}->[3];
+        $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
+    
+        # metadata
+        if (defined $objLevel->{dir_metadata}) {
+
+            $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
+
+            my $dirmtd   = $objLevel->{dir_metadata};
+            $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
+
+            my $formatmtd = $objLevel->{compress_metadata};
+            $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
+        }
+        $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
+    }
+    #
+    $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
+    $strpyrtmplt =~ s/^$//g;
+    $strpyrtmplt =~ s/^\n$//g;
+    #
+
+    # TODO check the new template !
   
-  if (! defined $filepyramid) {
-    $filepyramid = File::Spec->catfile($self->getPyrDescPath(),
-                                       $self->getPyrFile());
-  }
-  
-  if (-f $filepyramid) {
-    ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
-    return FALSE;
-  }
-  #
-  my $PYRAMID;
-  
-  if (! open $PYRAMID, ">", $filepyramid) {
-    ERROR("");
-    return FALSE;
-  }
-  #
-  printf $PYRAMID "%s", $strpyrtmplt;
-  #
-  close $PYRAMID;
-  
-  return TRUE;
+    if (! defined $filepyramid) {
+        $filepyramid = File::Spec->catfile($self->getPyrDescPath(),$self->getPyrFile());
+    }
+
+    if (-f $filepyramid) {
+        ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
+        return FALSE;
+    }
+    #
+    my $PYRAMID;
+
+    if (! open $PYRAMID, ">", $filepyramid) {
+        ERROR("");
+        return FALSE;
+    }
+    #
+    printf $PYRAMID "%s", $strpyrtmplt;
+    #
+    close $PYRAMID;
+
+    return TRUE;
 }
+
 sub readConfPyramid {
     my $self    = shift;
     my $filepyramid = shift; # Can be null !
@@ -1118,7 +1127,7 @@ sub readCachePyramid {
   }
   # Info, cache dir of old cache  for image!
   if (! scalar @{$searchitem->{cachedir}}){
-    ERROR("No directory (images) found in directoty cache ?");
+    ERROR("No directory (images) found in directory cache ?");
     return FALSE;
   }
   
@@ -1140,7 +1149,7 @@ sub readCachePyramid {
   }
   # Info, cache dir of old cache for nodata!
   if (! scalar @{$searchitem->{cachedir}}){
-    ERROR("No directory (nodata) found in directoty cache ?");
+    ERROR("No directory (nodata) found in directory cache ?");
     return FALSE;
   }
   
@@ -1394,6 +1403,46 @@ sub updateLimits {
     if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
     if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
     if (! defined $self->{dataLimits}->{ymax} || $yMax > $self->{dataLimits}->{ymax}) {$self->{dataLimits}->{ymax} = $yMax;}
+}
+
+sub calculateTMLimits {
+    my $self = shift;
+    
+    ALWAYS("calculateTMLimits runs"); #TEST#
+    if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
+        ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
+    {
+        ERROR("Can not calculate TM limits, limit coordinates are undefined !");
+        return FALSE;
+    }
+    
+    my @levels = $self->getLevels();
+    foreach my $objLevel (@levels){
+        # we need resolution for this level
+        my $TM = $self->{tms}->getTileMatrix($objLevel->getID());
+        
+        my $resolution = Math::BigFloat->new($TM->getResolution());
+        my $width = $resolution*$TM->getTileWidth();
+        my $height = $resolution*$TM->getTileHeight();
+        
+        my $iMin=int(($self->{dataLimits}->{xmin} - $TM->getTopLeftCornerX()) / $width);   
+        my $iMax=int(($self->{dataLimits}->{xmax} - $TM->getTopLeftCornerX()) / $width);   
+        my $jMin=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymax}) / $height); 
+        my $jMax=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymin}) / $height);
+        
+        ALWAYS(sprintf "old values : \n - imin : %s \n - imax : %s\n - jmin : %s \n - jmax : %s",$objLevel->{limit}->[2],$objLevel->{limit}->[3],$objLevel->{limit}->[0],$objLevel->{limit}->[1]); #TEST#
+        
+        # we store this values
+        
+        if (! defined $objLevel->{limit}->[0] || $jMin < $objLevel->{limit}->[0]) {$objLevel->{limit}->[0] = $jMin;}
+        if (! defined $objLevel->{limit}->[1] || $jMax > $objLevel->{limit}->[1]) {$objLevel->{limit}->[1] = $jMax;}
+        if (! defined $objLevel->{limit}->[2] || $iMin < $objLevel->{limit}->[2]) {$objLevel->{limit}->[2] = $iMin;}
+        if (! defined $objLevel->{limit}->[3] || $iMax > $objLevel->{limit}->[3]) {$objLevel->{limit}->[3] = $iMax;}
+        
+        ALWAYS(sprintf "new values : \n - imin : %s \n - imax : %s\n - jmin : %s \n - jmax : %s",$objLevel->{limit}->[2],$objLevel->{limit}->[3],$objLevel->{limit}->[0],$objLevel->{limit}->[1]); #TEST#
+    }
+    
+    return TRUE;
 }
 
 ################################################################################
