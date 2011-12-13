@@ -40,7 +40,7 @@ size_t JPEGEncoder::read(uint8_t *buffer, size_t size) {
 	        jpeg_start_compress(&cinfo, true);
                 status = 0;
         }
-        while(cinfo.next_scanline < cinfo.image_height && cinfo.dest->free_in_buffer >= 1024) {
+        while(cinfo.next_scanline < cinfo.image_height && cinfo.dest->free_in_buffer >= image->height / 2) {
 		image->getline(linebuffer, cinfo.next_scanline);
                 if(jpeg_write_scanlines(&cinfo, &linebuffer, 1) < 1) break;
         }
