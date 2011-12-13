@@ -492,7 +492,24 @@ void Rok4Server::buildWMTSCapabilities(){
 			}
 			layerEl->LinkEndChild(kwlEl);
 		}
-		//TODO: ows:WGS84BoundingBox (0,n)
+		//ows:WGS84BoundingBox (0,n)
+		
+		
+		TiXmlElement * wgsBBEl = new TiXmlElement( "ows:WGS84BoundingBox");
+		std::ostringstream os;
+		os<<layer->getGeographicBoundingBox().minx;
+		os<<" ";
+		os<<layer->getGeographicBoundingBox().miny;
+		wgsBBEl->LinkEndChild(buildTextNode("ows:LowerCorner", os.str()));
+		os.str("");
+		os<<layer->getGeographicBoundingBox().maxx;
+		os<<" ";
+		os<<layer->getGeographicBoundingBox().maxy;
+		wgsBBEl->LinkEndChild(buildTextNode("ows:UpperCorner", os.str()));
+		os.str("");
+		layerEl->LinkEndChild(wgsBBEl);
+		
+		
 		layerEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getId()));
 
 		if (layer->getStyles().size() != 0){
