@@ -2,11 +2,12 @@
 #define CRS_H
 
 #include <string>
-
+#include "BoundingBox.h"
 /**
 * @class CRS
 * @brief Gestion des CRS
 */
+
 
 class CRS {
 private:
@@ -28,6 +29,9 @@ public:
 	~CRS() {};
 	std::string inline getRequestCode() {return requestCode;}
 	std::string inline getProj4Code() {return proj4Code;}
+	BoundingBox<double> boundingBoxFromGeographic(BoundingBox<double> geographicBBox);
+	BoundingBox<double> boundingBoxFromGeographic(double minx, double miny, double maxx, double maxy);
+	
 };
 
 #endif

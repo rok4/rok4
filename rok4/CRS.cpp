@@ -1,5 +1,6 @@
 #include "CRS.h"
 #include "Logger.h"
+#include "Grid.h"
 #include <proj_api.h>
 
 #define NO_PROJ4_CODE "noProj4Code"
@@ -135,4 +136,28 @@ std::string CRS::getIdentifier(){
 
 bool CRS::operator==(const CRS crs) const {
 	return (proj4Code==crs.proj4Code);
+}
+
+/**
+ * Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
+ * @return La BoundingBox en projection
+ */
+BoundingBox<double> CRS::boundingBoxFromGeographic(BoundingBox< double > geographicBBox)
+{
+	Grid* grid = new Grid(256,256,geographicBBox);
+	grid->reproject("epsg:4326",proj4Code);
+	BoundingBox<double> bbox = grid->bbox;
+	delete grid;
+	grid=0;
+	return bbox;
+}
+
+
+/**
+ * Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
+ * @return La BoundingBox en projection
+ */
+BoundingBox< double > CRS::boundingBoxFromGeographic(double minx, double miny, double maxx, double maxy)
+{
+	return boundingBoxFromGeographic(BoundingBox<double>(minx,miny,maxx,maxy));
 }

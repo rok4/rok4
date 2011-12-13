@@ -30,15 +30,21 @@ endif(NOT DEFINED ROK4LIBSDIR)
 set(BUILD_SHARED_LIBS OFF)
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-set(CMAKE_BUILD_TYPE specificbuild)
-set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
-set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+if(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE debugbuild)
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+else(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE specificbuild)
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+endif(DEBUG_BUILD)
 
 
 ########################################
 #définition des fichiers sources
 
-set(rok4core_SRCS CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+set(rok4core_SRCS LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -131,6 +137,14 @@ INSTALL(TARGETS rok4 rok4core
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
+
+if(UNITTEST)
+INSTALL(TARGETS test_api
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+endif(UNITTEST)
 
 #Installe les différents headers nécessaires
 #FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")

@@ -38,8 +38,16 @@
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
-
+				<!-- Paramètres spécifiques WMTS -->
+				<!-- Type de service -->
+				<xs:element name="serviceType" type="xs:string"/>
+				<!-- Version du Service -->
+				<xs:element name="serviceTypeVersion" type="xs:string"/>
+				 <!-- Paramètre INSPIRE -->
+				 <!-- Activation du mode Inspire -->
+				 <xs:element name="inspire" type="xs:boolean">
 			</xs:sequence>
+
 		</xs:complexType>
 	</xs:element>
 

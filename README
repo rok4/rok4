@@ -1,7 +1,25 @@
 ROK4/BE4
 ========
-Version ROK4 : 0.2.1
-Version BE4  : 0.2.1
+Version ROK4 : 0.3.0
+Version BE4  : 0.2.4
+
+Configuration Serveur Web
++++++++++++++++++++++++++
+
+utilisation en serveur FastCGI
+
+NGinX
+------
+//TODO
+
+Support du SSL pour FastCGI: 
+ajout dans la configuration du site SSL
+   fastcgi_param HTTPS on;
+
+Apache
+------
+//TODO
+
 
 Compilation
 +++++++++++

@@ -11,12 +11,17 @@
 #include "Request.h"
 #include "RawImage.h"
 #include "TiffEncoder.h"
+#include "Palette.h"
 #include <cstdlib>
+#include <PNGEncoder.h>
+#include <Decoder.h>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
 * @brief Les donnees source sont copiees dans la reponse
 */
+
+static bool loggerInitialised = false;
 
 HttpResponse* initResponseFromSource(DataSource* source){
         HttpResponse* response=new HttpResponse;
@@ -44,31 +49,34 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 	int nbThread,logFilePeriod;
 	LogLevel logLevel;
 	bool reprojectionCapability;
-	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir;
-	if (!ConfLoader::getTechnicalParam(strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir)){
+	std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir;
+	if (!ConfLoader::getTechnicalParam(strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir)){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
+	if (!loggerInitialised) {
+		Logger::setOutput(logOutput);
+		// Initialisation du logger
+		Accumulator *acc=0;
+		if (logOutput==ROLLING_FILE){
+			acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		}
+		else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
+			acc = new StreamAccumulator();
+		}
+		// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+		for (int i=0;i<=logLevel;i++)
+			Logger::setAccumulator((LogLevel)i, acc);
+		std::ostream &log = LOGGER(DEBUG);
+		log.precision(8);
+		log.setf(std::ios::fixed,std::ios::floatfield);
 
-	Logger::setOutput(logOutput);
-	// Initialisation du logger
-	Accumulator *acc=0;
-	if (logOutput==ROLLING_FILE){
-		acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
+		LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
+		loggerInitialised=true;
+	} else {
+		LOGGER_INFO("*** NOUVEAU CLIENT DU LOGGER ***");
 	}
-	else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
-		acc = new StreamAccumulator();
-	}
-	// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-	for (int i=0;i<=logLevel;i++)
-		Logger::setAccumulator((LogLevel)i, acc);
-	std::ostream &log = LOGGER(DEBUG);
-        log.precision(8);
-	log.setf(std::ios::fixed,std::ios::floatfield);
-
-
-	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
-        LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
 	// Construction des parametres de service
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf(strServicesConfigFile);
@@ -86,10 +94,18 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 		sleep(1);       // Pour laisser le temps au logger pour se vider
 		return NULL;
 	}
+	//Chargement des styles
+	std::map<std::string, Style*> styleList;
+	if(!ConfLoader::buildStylesList(strStyleDir,styleList, servicesConf->isInspire())){
+		LOGGER_FATAL("Impossible de charger la conf des Styles");
+                LOGGER_FATAL("Extinction du serveur ROK4");
+		sleep(1);       // Pour laisser le temps au logger pour se vider
+		return NULL;
+	}
 	
 	// Chargement des layers
 	std::map<std::string, Layer*> layerList;
-	if (!ConfLoader::buildLayersList(strLayerDir,tmsList,layerList,reprojectionCapability)){
+	if (!ConfLoader::buildLayersList(strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf->isInspire())){
 		LOGGER_FATAL("Impossible de charger la conf des Layers/pyramides");
                 LOGGER_FATAL("Extinction du serveur ROK4");
 		sleep(1);       // Pour laisser le temps au logger pour se vider
@@ -117,7 +133,7 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 * operationType="Gettile" (en minuscules)
 */
 
-HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName){
+HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName, const char* https){
 	std::string strQuery=queryString;
        	HttpRequest* request=new HttpRequest;
        	request->queryString=new char[strQuery.length()+1];
@@ -126,7 +142,7 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 	strcpy(request->hostName,hostName);
 	request->scriptName=new char[strlen(scriptName)+1];
         strcpy(request->scriptName,scriptName);
-	Request* rok4Request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+	Request* rok4Request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*)https);
 	request->service=new char[rok4Request->service.length()+1];
         strcpy(request->service,rok4Request->service.c_str());
 	request->operationType=new char[rok4Request->request.length()+1];
@@ -143,9 +159,9 @@ HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, cons
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server){
 	std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*)https);
 	DataStream* stream=server->WMTSGetCapabilities(request);
 	DataSource* source= new BufferedDataSource(*stream);
 	HttpResponse* response=initResponseFromSource(/*new BufferedDataSource(*stream)*/source);
@@ -163,9 +179,9 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 * @return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
-HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
-        std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
+	std::string strQuery=queryString;
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
 	DataSource* source=server->getTile(request);
 	HttpResponse* response=initResponseFromSource(source);
 	delete request;
@@ -181,20 +197,21 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 * @param[in] scriptName
 * @param[in] server : serveur
 * @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* @param[out] palette : palette à ajouter, NULL sinon. 
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server, TileRef* tileRef){
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette){
 	// Initialisation
 	std::string strQuery=queryString;
 
-	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*) https);
 	Layer* layer;
         std::string tmId,format;
         int x,y;
-
+	Style* style =0;
 	// Analyse de la requete
-        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format);
+        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style);
 	// Exception
         if (errorResp){
                 LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
@@ -213,17 +230,26 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	tileRef->posoff=2048+4*n;
 	tileRef->possize=2048+4*n +level->getTilesPerWidth()*level->getTilesPerHeight()*4;
 
-        std::string imageFilePath=level->getFilePath(x, y);
+	std::string imageFilePath=level->getFilePath(x, y);
 	tileRef->filename=new char[imageFilePath.length()+1];
 	strcpy(tileRef->filename,imageFilePath.c_str());
 
 	tileRef->type=new char[format.length()+1];
-        strcpy(tileRef->type,format.c_str());
+	strcpy(tileRef->type,format.c_str());
 
 	tileRef->width=level->getTm().getTileW();
 	tileRef->height=level->getTm().getTileH();
 	tileRef->channels=level->getChannels();
-
+	
+	//Palette uniquement PNG pour le moment
+	if (format == "image/png"){
+		palette->size = style->getPalette()->getPalettePNGSize();
+		palette->data = style->getPalette()->getPalettePNG();
+	}else {
+		palette->size = 0;
+		palette->data = NULL;
+	}
+	
 	delete request;
 	return 0;
 }
@@ -241,13 +267,30 @@ TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
 }
 
 /**
+* @brief Construction d'un en-tete PNG avec Palette
+*/
+
+PngPaletteHeader* rok4GetPngPaletteHeader(int width, int height, TilePalette* palette)
+{
+	PngPaletteHeader* header = new PngPaletteHeader;
+	//RawImage* rawImage=new RawImage(width,height,1,0);
+	Palette rok4Palette = Palette(palette->size,palette->data);
+	PNGEncoder pngStream(new ImageDecoder(0,width,height,1),&rok4Palette);
+	header->size = 33 + palette->size;
+	header->data = (uint8_t*) malloc(header->size+1);
+	pngStream.read(header->data,header->size);
+	return header;
+}
+
+
+/**
 * @brief Renvoi d'une exception pour une operation non prise en charge
 */
 
-HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName, Rok4Server* server){
+HttpResponse* rok4GetOperationNotSupportedException(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
 
 	std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName);
+        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName, (char*) https);
         DataSource* source=new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts"));
         HttpResponse* response=initResponseFromSource(source);
         delete request;
@@ -295,6 +338,25 @@ void rok4FlushTileRef(TileRef* tileRef){
 void rok4DeleteTiffHeader(TiffHeader* header){
 	delete header;
 }
+
+/**
+* @brief Suppression d'un en-tete Png avec Palette
+*/
+
+void rok4DeletePngPaletteHeader(PngPaletteHeader* header)
+{
+	delete header;
+}
+
+/**
+* @brief Suppression d'une Palette
+*/
+
+void rok4DeleteTilePalette(TilePalette* palette)
+{
+	delete palette;
+}
+
 
 /**
 * @brief Extinction du serveur
