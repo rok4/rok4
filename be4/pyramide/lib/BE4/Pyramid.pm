@@ -480,7 +480,8 @@ sub _fillToPyramid {
                                   $self->getDirImage(),
                                   $objTm->getID()               # FIXME : level = id !
                                   );
-    
+                                  
+                                  
     # TODO : metadata
     #   compression, type ...
     my $basemetadata = File::Spec->catdir($self->getPyrDataPath(),  # all directories structure of pyramid ! 
@@ -498,7 +499,7 @@ sub _fillToPyramid {
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             compress_image    => $self->getFormat()->getCode(), # ie TIFF_RAW_INT8 !
             dir_metadata      => undef,           # TODO,
-            compress_metadata => undef,           # TODO  : raw  => TIFF_INT8,
+            compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
             bitspersample     => $self->getTile()->getBitsPerSample(),
             samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
@@ -590,12 +591,6 @@ sub writeConfPyramid {
     
     my $dirimg   = $objLevel->{dir_image};
     $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
-    
-    # my $formatimg = $objLevel->{compress_image}; # ie TIFF_INT8 !
-    # $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
-    #
-    # my $channel  = $objLevel->{samplesperpixel};
-    # $strpyrtmplt =~ s/__CHANNEL__/$channel/;
     
     my $tilew    = $objLevel->{size}->[0];
     $strpyrtmplt =~ s/__TILEW__/$tilew/;
@@ -829,6 +824,7 @@ sub readConfPyramid {
                                            $tagtm
                                            );
         #
+
         my $objLevel = BE4::Level->new(
             {
                 id                => $tagtm,
@@ -1073,7 +1069,7 @@ sub FindCacheNode {
   my $pyr_datapath = $self->getPyrDataPath();
   
   if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directoty cache ?");
+    ERROR("Can not open directory cache ?");
     return undef;
   }
 
@@ -1223,6 +1219,7 @@ sub getDirImage {
   
   return $self->{pyramid}->{dir_image};
 }
+
 sub getDirMetadata {
   my $self = shift;
   
@@ -1849,6 +1846,7 @@ None by default.
                                             |__ ...
                             |__ ${ID_LEVEL1}/
                             |__ ${ID_LEVELN}/
+                            
                 |_____ ${METADATA}/
                 |_____ ${PYRAMID_FILE}
                         (ie ortho_raw_dept75.xml)

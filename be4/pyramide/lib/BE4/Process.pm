@@ -116,8 +116,8 @@ sub _init {
         )
         ||
         (! $self->{pyramid}->isNewPyramid() && (
-        $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-        $self->{pyramid}->getCompression()->getType() eq 'png')
+        $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+        $self->{pyramid}->getFormat()->getCompression() eq 'png')
     )) {
 
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -367,8 +367,8 @@ sub computeBottomImage {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-         $self->{pyramid}->getCompression()->getType() eq 'png')
+       $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+         $self->{pyramid}->getFormat()->getCompression() eq 'png')
       )) {
     $res .= $self->wms2work($node,$self->workNameOfNode($node));
   }
@@ -479,8 +479,8 @@ sub computeAboveImage {
       my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
       $bg="-b $bgImgPath";
       
-      if ($self->{pyramid}->getCompression()->getType() eq 'jpg' ||
-          $self->{pyramid}->getCompression()->getType() eq 'png') {
+      if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
+          $self->{pyramid}->getFormat()->getCompression() eq 'png') {
         # On doit chercher l'image de fond sur le WMS
         $res .= $self->wms2work($node, "bgImg.tif");
       } else {
