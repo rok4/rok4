@@ -119,7 +119,7 @@ endif(BUILD_DOC)
 
 #Installe les différents fichers nécessaires
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
-  DESTINATION .)
+  DESTINATION . USE_SOURCE_PERMISSIONS)
 
 #Installe la documentation
 INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME 
