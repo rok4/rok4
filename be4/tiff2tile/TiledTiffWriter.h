@@ -5,6 +5,7 @@
 #include <fstream>
 #include "zlib.h"
 #include <jpeglib.h>
+#include "lzw_encoder.h"
 
 #define TIFF_SHORT              3       /* 16-bit unsigned integer */
 #define	TIFF_LONG               4       /* 32-bit unsigned integer */
