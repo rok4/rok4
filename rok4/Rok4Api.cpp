@@ -11,12 +11,17 @@
 #include "Request.h"
 #include "RawImage.h"
 #include "TiffEncoder.h"
+#include "Palette.h"
 #include <cstdlib>
+#include <PNGEncoder.h>
+#include <Decoder.h>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
 * @brief Les donnees source sont copiees dans la reponse
 */
+
+static bool loggerInitialised = false;
 
 HttpResponse* initResponseFromSource(DataSource* source){
         HttpResponse* response=new HttpResponse;
@@ -49,25 +54,29 @@ Rok4Server* rok4InitServer(const char* serverConfigFile){
 		std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
 		return false;
 	}
+	if (!loggerInitialised) {
+		Logger::setOutput(logOutput);
+		// Initialisation du logger
+		Accumulator *acc=0;
+		if (logOutput==ROLLING_FILE){
+			acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		}
+		else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
+			acc = new StreamAccumulator();
+		}
+		// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+		for (int i=0;i<=logLevel;i++)
+			Logger::setAccumulator((LogLevel)i, acc);
+		std::ostream &log = LOGGER(DEBUG);
+		log.precision(8);
+		log.setf(std::ios::fixed,std::ios::floatfield);
 
-	Logger::setOutput(logOutput);
-	// Initialisation du logger
-	Accumulator *acc=0;
-	if (logOutput==ROLLING_FILE){
-		acc = new RollingFileAccumulator(strLogFileprefix,logFilePeriod);
+		std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
+		LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
+		loggerInitialised=true;
+	} else {
+		LOGGER_INFO("*** NOUVEAU CLIENT DU LOGGER ***");
 	}
-	else if (logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS){
-		acc = new StreamAccumulator();
-	}
-	// Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-	for (int i=0;i<=logLevel;i++)
-		Logger::setAccumulator((LogLevel)i, acc);
-	std::ostream &log = LOGGER(DEBUG);
-        log.precision(8);
-	log.setf(std::ios::fixed,std::ios::floatfield);
-
-	std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
-        LOGGER_INFO("*** DEBUT DU FONCTIONNEMENT DU LOGGER ***");
 
 	// Construction des parametres de service
 	ServicesConf* servicesConf=ConfLoader::buildServicesConf(strServicesConfigFile);
@@ -171,8 +180,8 @@ HttpResponse* rok4GetWMTSCapabilities(const char* queryString, const char* hostN
 */
 
 HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server){
-        std::string strQuery=queryString;
-        Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
+	std::string strQuery=queryString;
+	Request* request=new Request((char*)strQuery.c_str(),(char*)hostName,(char*)scriptName,(char*) https);
 	DataSource* source=server->getTile(request);
 	HttpResponse* response=initResponseFromSource(source);
 	delete request;
@@ -188,10 +197,11 @@ HttpResponse* rok4GetTile(const char* queryString, const char* hostName, const c
 * @param[in] scriptName
 * @param[in] server : serveur
 * @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* @param[out] palette : palette à ajouter, NULL sinon. 
 * @return Reponse en cas d'exception, NULL sinon
 */
 
-HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef){
+HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette){
 	// Initialisation
 	std::string strQuery=queryString;
 
@@ -220,17 +230,26 @@ HttpResponse* rok4GetTileReferences(const char* queryString, const char* hostNam
 	tileRef->posoff=2048+4*n;
 	tileRef->possize=2048+4*n +level->getTilesPerWidth()*level->getTilesPerHeight()*4;
 
-        std::string imageFilePath=level->getFilePath(x, y);
+	std::string imageFilePath=level->getFilePath(x, y);
 	tileRef->filename=new char[imageFilePath.length()+1];
 	strcpy(tileRef->filename,imageFilePath.c_str());
 
 	tileRef->type=new char[format.length()+1];
-        strcpy(tileRef->type,format.c_str());
+	strcpy(tileRef->type,format.c_str());
 
 	tileRef->width=level->getTm().getTileW();
 	tileRef->height=level->getTm().getTileH();
 	tileRef->channels=level->getChannels();
-
+	
+	//Palette uniquement PNG pour le moment
+	if (format == "image/png"){
+		palette->size = style->getPalette()->getPalettePNGSize();
+		palette->data = style->getPalette()->getPalettePNG();
+	}else {
+		palette->size = 0;
+		palette->data = NULL;
+	}
+	
 	delete request;
 	return 0;
 }
@@ -246,6 +265,23 @@ TiffHeader* rok4GetTiffHeader(int width, int height, int channels){
 	tiffStream.read(header->data,128);
 	return header;
 }
+
+/**
+* @brief Construction d'un en-tete PNG avec Palette
+*/
+
+PngPaletteHeader* rok4GetPngPaletteHeader(int width, int height, TilePalette* palette)
+{
+	PngPaletteHeader* header = new PngPaletteHeader;
+	//RawImage* rawImage=new RawImage(width,height,1,0);
+	Palette rok4Palette = Palette(palette->size,palette->data);
+	PNGEncoder pngStream(new ImageDecoder(0,width,height,1),&rok4Palette);
+	header->size = 33 + palette->size;
+	header->data = (uint8_t*) malloc(header->size+1);
+	pngStream.read(header->data,header->size);
+	return header;
+}
+
 
 /**
 * @brief Renvoi d'une exception pour une operation non prise en charge
@@ -302,6 +338,25 @@ void rok4FlushTileRef(TileRef* tileRef){
 void rok4DeleteTiffHeader(TiffHeader* header){
 	delete header;
 }
+
+/**
+* @brief Suppression d'un en-tete Png avec Palette
+*/
+
+void rok4DeletePngPaletteHeader(PngPaletteHeader* header)
+{
+	delete header;
+}
+
+/**
+* @brief Suppression d'une Palette
+*/
+
+void rok4DeleteTilePalette(TilePalette* palette)
+{
+	delete palette;
+}
+
 
 /**
 * @brief Extinction du serveur
