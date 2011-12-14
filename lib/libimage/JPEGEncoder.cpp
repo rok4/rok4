@@ -1,5 +1,6 @@
 #include "JPEGEncoder.h"
 #include <assert.h>
+#include <cmath>
 
 /** Constructeur */
 JPEGEncoder::JPEGEncoder(Image* image) : image(image), status(-1) {
@@ -21,7 +22,9 @@ JPEGEncoder::JPEGEncoder(Image* image) : image(image), status(-1) {
         //  else ERROR !!!!!
 
         jpeg_set_defaults(&cinfo);
-
+	
+	bufferLimit = std::max(1024,((image->width * image->channels) / 2));
+	
         linebuffer = new uint8_t[image->width*image->channels];
 }
 
@@ -36,15 +39,15 @@ size_t JPEGEncoder::read(uint8_t *buffer, size_t size) {
         cinfo.dest->next_output_byte = buffer;
         cinfo.dest->free_in_buffer = size;
         // Première passe : on initialise la compression (écrit déjà quelques données)
-        if(status < 0 && cinfo.dest->free_in_buffer >= 1024) {
+        if(status < 0 && cinfo.dest->free_in_buffer >= bufferLimit) {
 	        jpeg_start_compress(&cinfo, true);
                 status = 0;
         }
-        while(cinfo.next_scanline < cinfo.image_height && cinfo.dest->free_in_buffer >= image->height / 2) {
+        while(cinfo.next_scanline < cinfo.image_height && cinfo.dest->free_in_buffer >= bufferLimit) {
 		image->getline(linebuffer, cinfo.next_scanline);
                 if(jpeg_write_scanlines(&cinfo, &linebuffer, 1) < 1) break;
         }
-        if(status == 0 && cinfo.next_scanline >= cinfo.image_height && cinfo.dest->free_in_buffer >= 100) {
+        if(status == 0 && cinfo.next_scanline >= cinfo.image_height && cinfo.dest->free_in_buffer >= bufferLimit/10) {
         	jpeg_finish_compress(&cinfo);
                 status = 1;
        	}
