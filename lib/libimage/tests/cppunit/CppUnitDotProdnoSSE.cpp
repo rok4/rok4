@@ -88,4 +88,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitDotProdnoSSE );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitDotProdnoSSE, "CppUnitDotProdnoSSE");

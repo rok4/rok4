@@ -2,12 +2,13 @@
 #define TIMEDTESTRESULTCOLLECTOR_H
 
 #include <cppunit/TestListener.h>
+#include <cppunit/TestResultCollector.h>
 #include <cppunit/Test.h>
 #include <sys/time.h>
 #include <string>
 #include <map>
 
-class TimedTestListener : public CppUnit::TestListener
+class TimedTestListener : public CppUnit::TestResultCollector
 
 {
 public:

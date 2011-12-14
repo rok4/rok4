@@ -7,6 +7,7 @@
 #include <cppunit/TestRunner.h>
 #include <iostream>
 #include <fstream>
+#include <dlfcn.h>
 #include "TimedTestListener.h"
 #include "XmlTimedTestOutputterHook.h"
 
@@ -29,9 +30,16 @@ main( int argc, char* argv[] )
   
   // Add the top suite to the test runner
   CPPUNIT_NS::TestRunner runner;
-  runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+  
+  if ( argc == 1 ) {
+	runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+  }
+  if ( argc == 2 ) {
+	  runner.addTest(CPPUNIT_NS::TestFactoryRegistry::getRegistry(argv[1]).makeTest());
+  }
+  
   runner.run( controller );
-
+  
   // Print test in a compiler compatible format.
   CPPUNIT_NS::CompilerOutputter outputter( &result, std::cerr );
   outputter.write();   

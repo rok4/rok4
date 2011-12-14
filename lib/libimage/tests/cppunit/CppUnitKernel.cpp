@@ -55,4 +55,5 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitKernel );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitKernel, "CppUnitKernel" );
 

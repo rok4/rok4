@@ -33,6 +33,16 @@ set(BUILD_SHARED_LIBS OFF)
 #set(CMAKE_BUILD_TYPE specificbuild)
 #set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
 #set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+if(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE debugbuild)
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+else(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE specificbuild)
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+endif(DEBUG_BUILD)
+
 
 
 ########################################
@@ -51,7 +61,7 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
 set(DEP_LIBRARY tiff zlib jpeg)

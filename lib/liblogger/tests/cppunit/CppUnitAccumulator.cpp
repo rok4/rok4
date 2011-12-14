@@ -85,4 +85,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitAccumulator );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitAccumulator, "CppUnitAccumulator" );

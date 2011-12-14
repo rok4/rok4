@@ -35,15 +35,22 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-set(CMAKE_BUILD_TYPE specificbuild)
-set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -p -msse -msse2 -msse3")
-set(CMAKE_C_FLAGS_SPECIFICBUILD "")
+if(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE debugbuild)
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+else(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE specificbuild)
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+endif(DEBUG_BUILD)
+
 
 
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp)
+set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp ColorizePNGEncoder.cpp PaletteDataSource.cpp )
 
 
 
@@ -91,7 +98,7 @@ if(UNITTEST)
     if(XSLTPROC_FOUND)
      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
 
-     add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+     add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
                 COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
 
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)

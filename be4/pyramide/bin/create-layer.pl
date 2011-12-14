@@ -35,7 +35,7 @@ my $VERSION = "0.0.1";
 my $MYCONF   = undef;
 my $MYSAMPLE = "lanczos_4";
 my $MYSTYLE  = "normal";
-my $MYOPAQUE = 1;
+my $MYOPAQUE = "true";
 
 #
 sub init {
@@ -176,7 +176,7 @@ my $maxres=$objPyramid->getTileMatrixSet()->getLastTileMatrix()->getResolution()
 
 # TODO informatif...
 my @keyword;
-push @keyword, $objPyramid->getCompression()->getType();
+push @keyword, $objPyramid->getFormat()->getCompression();
 push @keyword, $objPyramid->getPyrName();
 push @keyword, $objPyramid->getTmsName();
 push @keyword, $srs;

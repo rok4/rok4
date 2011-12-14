@@ -37,6 +37,19 @@ static const uint8_t PNG_HEADER_RGB[33] = {
 		0xd3, 0x10, 0x3f, 0x31};                       // 29 | crc32
 // 33
 
+static const uint8_t PNG_HEADER_PALETTE[33] = {
+		137, 80, 78, 71, 13, 10, 26, 10,               // 0  | 8 octets d'entête
+		0, 0, 0, 13, 'I', 'H', 'D', 'R',               // 8  | taille et type du chunck IHDR
+		0, 0, 1, 0,                                    // 16 | width
+		0, 0, 1, 0,                                    // 20 | height
+		8,                                             // 24 | bit depth
+		3,                                             // 25 | Colour type
+		0,                                             // 26 | Compression method
+		0,                                             // 27 | Filter method
+		0,                                             // 28 | Interlace method
+		0xd3, 0x10, 0x3f, 0x31};
+	
+
 //For PNG compression method 0, the zlib compression method/flags code shall specify method code 8 (deflate compression) and an LZ77 window size of not more than 32768 bytes. The zlib compression method number is not the same as the PNG compression method number in the IHDR chunk (see 11.2.2 IHDR Image header). The additional flags shall not specify a preset dictionary.
 //
 
@@ -50,7 +63,10 @@ void PNGEncoder::addCRC(uint8_t *buffer, uint32_t length) {
 size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	if (colortype==0){
 		if(sizeof(PNG_HEADER_GRAY) > size) return 0;
-		memcpy(buffer, PNG_HEADER_GRAY, sizeof(PNG_HEADER_GRAY));       // cf: http://www.w3.org/TR/PNG/#11IHDR
+			memcpy(buffer, PNG_HEADER_GRAY, sizeof(PNG_HEADER_GRAY));       // cf: http://www.w3.org/TR/PNG/#11IHDR
+		if(palette && palette->getPalettePNGSize()!=0) {
+			colortype=3;
+		} 
 	}
 	else if (colortype==2){
 		if(sizeof(PNG_HEADER_RGB) > size) return 0;
@@ -65,7 +81,13 @@ size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	buffer[25] = colortype;                               // ajoute le champs colortype
 	addCRC(buffer+8, 13);                                 // signe le chunck avca un CRC32
 	line++;
-	if (colortype==0)
+	if (colortype==3) {
+			if(sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize() > size) return 0;
+//			LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
+			memcpy(buffer+ sizeof(PNG_HEADER_PALETTE), palette->getPalettePNG(), palette->getPalettePNGSize());
+			return (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize());
+	}
+	if (colortype==0) 
 		return sizeof(PNG_HEADER_GRAY);
 	return sizeof(PNG_HEADER_RGB);
 }
@@ -125,7 +147,7 @@ bool PNGEncoder::eof()
 	return (line > image->height+1);
 }
 
-PNGEncoder::PNGEncoder(Image* image) : image(image), line(-1) {
+PNGEncoder::PNGEncoder(Image* image,Palette* palette) : image(image), line(-1), palette(palette) {
 	zstream.zalloc = Z_NULL;
 	zstream.zfree = Z_NULL;
 	zstream.opaque = Z_NULL;
@@ -134,6 +156,9 @@ PNGEncoder::PNGEncoder(Image* image) : image(image), line(-1) {
 	zstream.avail_in = 0;
 	linebuffer = new uint8_t[image->width * image->channels + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
 	linebuffer[0] = 0;
+	if (! palette) {
+		palette = new Palette();
+	}
 }
 
 PNGEncoder::~PNGEncoder() {
@@ -143,7 +168,7 @@ PNGEncoder::~PNGEncoder() {
 }
 
 
-
+/*
 static const uint8_t tRNS[256+12] = {
 		0,  0,  1,  0,                  // 256
 		't','R','N','S',                  // tag
@@ -157,7 +182,7 @@ static const uint8_t tRNS[256+12] = {
 		31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
 		0x5a, 0x66, 0xe1, 0x83};                     //crc
 
-
+*/
 /*
 ColorizePNGEncoder::ColorizePNGEncoder(Image<pixel_gray> *image, bool transparent, const uint8_t rgb[3]) : PNGEncoder<pixel_gray>(image), transparent(transparent) {
   PLTE[0] = 0;   PLTE[1] = 0;   PLTE[2] = 3;   PLTE[3] = 0;

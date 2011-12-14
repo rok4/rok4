@@ -23,12 +23,12 @@ class Kernel {
   const double kernel_size;
 
   /**
-   * Détermnie si le ratio de rééchantillonnage influe sur la taille du noyau.
+   * Détermine si le ratio de rééchantillonnage influe sur la taille du noyau.
    *
    * Si const_ratio = true, la taille du noyau est kernel_size
    * Si const_ratio = false la taille du noyeau est 
    *    - kernel_size pour ratio <= 1
-   *    - kenel_size * ratio pour ratio > 1
+   *    - kernel_size * ratio pour ratio > 1
    */
   const bool const_ratio;
 

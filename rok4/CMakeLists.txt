@@ -30,15 +30,21 @@ endif(NOT DEFINED ROK4LIBSDIR)
 set(BUILD_SHARED_LIBS OFF)
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-set(CMAKE_BUILD_TYPE specificbuild)
-set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
-set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+if(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE debugbuild)
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+else(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE specificbuild)
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+endif(DEBUG_BUILD)
 
 
 ########################################
 #définition des fichiers sources
 
-set(rok4core_SRCS CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+set(rok4core_SRCS LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -76,7 +82,7 @@ set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 if(UNITTEST)
     include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
     ENABLE_TESTING()
-
+    add_definitions(-DUNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
@@ -93,7 +99,7 @@ if(UNITTEST)
     find_package(Xsltproc)
     if(XSLTPROC_FOUND)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
-    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
 		COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
 
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)

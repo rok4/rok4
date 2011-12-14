@@ -11,6 +11,7 @@
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
+#include "PaletteDataSource.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -183,8 +184,8 @@ DataSource* Level::getEncodedTile(int x, int y) {
 }
 
 DataSource* Level::getDecodedTile(int x, int y) {
-	DataSource* encData = getEncodedTile(x, y);
-	if (format.compare("TIFF_INT8")==0 || format.compare("TIFF_FLOAT32")==0)
+	DataSource* encData = new DataSourceProxy(getEncodedTile(x, y),*getEncodedNoDataTile());
+	if (format.compare("TIFF_RAW_INT8")==0 || format.compare("TIFF_RAW_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)
 		return new DataSourceDecoder<JpegDecoder>(encData);
@@ -195,21 +196,29 @@ DataSource* Level::getDecodedTile(int x, int y) {
 	return 0;
 }
 
+DataSource* Level::getEncodedNoDataTile()
+{	
+	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)), *noDataSource);
+}
+
+
 
 DataSource* Level::getTile(int x, int y) {
 	DataSource* source=getEncodedTile(x, y);
 	size_t size;
-	if (format.compare("TIFF_INT8")==0 && source!=0 && source->getData(size)!=0){
+	if (format.compare("TIFF_RAW_INT8")==0 && source!=0 && source->getData(size)!=0){
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
-        }
+        } 
+        
 	return new DataSourceProxy(source, *noDataSource);
 }
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	int pixel_size=1;
-	if (format.compare("TIFF_FLOAT32")==0)
+	LOGGER_DEBUG("GetTile");
+	if (format.compare("TIFF_RAW_FLOAT32")==0)
 		pixel_size=4;
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),

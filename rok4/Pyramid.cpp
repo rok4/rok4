@@ -5,7 +5,7 @@
 #include "Grid.h"
 #include "Decoder.h"
 #include "JPEGEncoder.h"
-#include "PNGEncoder.h"
+#include "ColorizePNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 
@@ -15,23 +15,24 @@
 */
 
 std::string getMimeType(std::string format){
-        if (format.compare("TIFF_INT8")==0)
+        if (format.compare("TIFF_RAW_INT8")==0)
                 return "image/tiff";
         else if (format.compare("TIFF_JPG_INT8")==0)
                 return "image/jpeg";
         else if (format.compare("TIFF_PNG_INT8")==0)
                 return "image/png";
-        else if (format.compare("TIFF_FLOAT32")==0)
+        else if (format.compare("TIFF_RAW_FLOAT32")==0)
                 return "image/x-bil;bits=32";
         return "text/plain";
 }
 
 Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::string format, int channels) : levels(levels), tms(tms), format(format), channels(channels){
-
+	
 	std::map<std::string, TileMatrix>::iterator itTm;
-	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){
+	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){	
+		//Empty Source as fallback
 		DataSource* noDataSource;
-		if (format.compare("TIFF_INT8")==0) {
+		if (format.compare("TIFF_RAW_INT8")==0) {
 	                TiffEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
         	        noDataSource = new BufferedDataSource(dataStream);
         	}
@@ -43,7 +44,7 @@ Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::
                 	PNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
-        	else if (format.compare("TIFF_FLOAT32")==0) {
+        	else if (format.compare("TIFF_RAW_FLOAT32")==0) {
                 	BilEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
