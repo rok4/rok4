@@ -32,7 +32,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # version
-my $VERSION = "develop 0.2.5 : Correction du registre IGNF";
+my $VERSION = "develop 0.2.6 : Renforcement du wget";
 
 #
 # Title: be4

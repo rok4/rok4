@@ -173,18 +173,20 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd = sprintf ( "wget -O \${TMP_DIR}/%s ",$fileName );
-    $cmd .= sprintf ( " \"%s\" \n", $url);
-    $cmd .= sprintf ( "%s", RESULT_TEST);
-  
-  #my $cmd = sprintf ( "wget --no-proxy -O \${TMP_DIR}/%s ",$fileName );
-  #  $cmd .= sprintf ( " \"http://%s?LAYERS=%s",  $self->{harvesting}->getWMSServer(), $self->{harvesting}->getWMSLayer());
-  #  $cmd .= sprintf ( "&SERVICE=WMS&VERSION=%s", $self->{harvesting}->getWMSVersion());
-  #  $cmd .= sprintf ( "&REQUEST=%s&FORMAT=%s",   $self->{harvesting}->getWMSRequest(), $self->{harvesting}->getWMSFormat());
-  #  $cmd .= sprintf ( "&CRS=%s", $tms->getSRS());
-  #  $cmd .= sprintf ( "&BBOX=%s,%s,%s,%s", $imgDesc->getXMin(), $imgDesc->getYMin(), $imgDesc->getXMax(), $imgDesc->getYMax());
-  #  $cmd .= sprintf ( "&WIDTH=%s&HEIGHT=%s\"\n", $imgSize[0], $imgSize[1]);
-  #  $cmd .= sprintf ( "%s", RESULT_TEST);
+  my $cmd="";
+
+  $cmd .= "count=0\n";
+  $cmd .= "while [[ \$count -lt 5 ]] ; do\n";
+  $cmd .= "  let count=count+1\n";
+  $cmd .= sprintf ( "  wget --no-verbose -O \${TMP_DIR}/%s ",$fileName );
+  $cmd .= sprintf ( " \"%s\" \n", $url);
+  $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
+  $cmd .= "done\n";
+  $cmd .= "if [ \$count -eq 5 ] ; then \n";
+  $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
+  $cmd .= "  echo \"url: $url\"\n";
+  $cmd .= "  exit 1\n"; 
+  $cmd .= "fi\n";
   
   return $cmd;
 }
