@@ -35,22 +35,15 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-if(DEBUG_BUILD)
-  set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
-  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
-else(DEBUG_BUILD)
-  set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
-  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
-endif(DEBUG_BUILD)
-
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -p -msse -msse2 -msse3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "")
 
 
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp ColorizePNGEncoder.cpp PaletteDataSource.cpp )
+set(libimage_SRCS CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp)
 
 
 

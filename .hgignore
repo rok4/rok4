@@ -2,7 +2,3 @@
 syntax: glob
 .project
 build
-syntax: regexp
-~
-kdev4
-.orig

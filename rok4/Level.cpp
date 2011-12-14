@@ -11,7 +11,6 @@
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
-#include "PaletteDataSource.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -204,8 +203,7 @@ DataSource* Level::getTile(int x, int y) {
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
-        } 
-        
+        }
 	return new DataSourceProxy(source, *noDataSource);
 }
 

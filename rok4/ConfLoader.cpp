@@ -5,173 +5,6 @@
 #include "tinystr.h"
 #include "config.h"
 
-//TODO
-Style* buildStyle(std::string fileName,bool inspire){
-	LOGGER_INFO("	Ajout du Style " << fileName);
-	std::string id ="";
-	std::vector<std::string> title;
-	std::vector<std::string> abstract;
-	std::vector<std::string> keyWords;
-	std::vector<LegendURL> legendURLs;
-	std::vector<Colour> colours;
-	
-	TiXmlDocument doc(fileName.c_str());
-	if (!doc.LoadFile()){
-		LOGGER_ERROR("		Ne peut pas charger le fichier " << fileName);
-		return NULL;
-	}
-
-	TiXmlHandle hDoc(&doc);
-	TiXmlElement* pElem;
-	TiXmlHandle hRoot(0);
-
-	pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
-	if (!pElem){
-		LOGGER_ERROR(fileName << "		Impossible de recuperer la racine.");
-		return NULL;
-	}
-	if (strcmp(pElem->Value(),"style")){
-		LOGGER_ERROR(fileName << "		La racine n'est pas un style.");
-		return NULL;
-	}
-	hRoot=TiXmlHandle(pElem);
-	
-	pElem=hRoot.FirstChild("Identifier").Element();
-	if (!pElem){
-		LOGGER_ERROR("Style " << fileName <<" pas de d'identifiant!!");
-		return NULL;
-	}
-	id = pElem->GetText();
-
-	for (pElem=hRoot.FirstChild("Title").Element(); pElem; pElem=pElem->NextSiblingElement("Title")){
-		std::string curtitle = std::string(pElem->GetText());
-		title.push_back(curtitle);
-	}
-	if (title.size()==0){
-		LOGGER_ERROR("Aucun Title trouvé dans le Style" << id <<" : il est invalide!!");
-		return NULL;
-	}
-
-	for (pElem=hRoot.FirstChild("Abstract").Element(); pElem; pElem=pElem->NextSiblingElement("Abstract")){
-		std::string curAbstract = std::string(pElem->GetText());
-		abstract.push_back(curAbstract);
-	}
-	if (abstract.size()==0 && inspire){
-		LOGGER_ERROR("Aucun Abstract trouvé dans le Style" << id <<" : il est invalide au sens INSPIRE!!");
-		return NULL;
-	}
-
-	for (pElem=hRoot.FirstChild("Keywords").FirstChild("Keyword").Element(); pElem; pElem=pElem->NextSiblingElement("Keyword")){
-		std::string keyword = std::string(pElem->GetText());
-		keyWords.push_back(keyword);
-	}
-
-	for(pElem=hRoot.FirstChild("LegendURL").Element(); pElem; pElem=pElem->NextSiblingElement("LegendURL")){
-		std::string format;
-		std::string href;
-		int width=0;
-		int height=0;
-		double minScaleDenominator=0.0;
-		double maxScaleDenominator=0.0;
-		int errorCode;
-		
-		if (pElem->QueryStringAttribute("format",&format) != TIXML_SUCCESS){
-			LOGGER_ERROR("Aucun format trouvé dans le LegendURL du Style " << id <<" : il est invalide!!");
-			continue;
-		}
-		
-		if (pElem->QueryStringAttribute("xlink:href",&href) != TIXML_SUCCESS){
-			LOGGER_ERROR("Aucun href trouvé dans le LegendURL du Style " << id <<" : il est invalide!!");
-			continue;
-		}
-		
-		errorCode = pElem->QueryIntAttribute("width",&width);
-		if (errorCode == TIXML_WRONG_TYPE){
-			LOGGER_ERROR("L'attribut width doit être un entier dans le Style " << id <<" : il est invalide!!");
-			continue;
-		}
-			
-		errorCode = pElem->QueryIntAttribute("height",&height);
-		if (errorCode == TIXML_WRONG_TYPE) {
-			LOGGER_ERROR("L'attribut height doit être un entier dans le Style " << id <<" : il est invalide!!");
-			continue;
-		}
-		
-		errorCode = pElem->QueryDoubleAttribute("minScaleDenominator",&minScaleDenominator);
-		if (errorCode == TIXML_WRONG_TYPE){
-			LOGGER_ERROR("L'attribut minScaleDenominator doit être un double dans le Style " << id <<" : il est invalide!!");
-			continue;
-		}
-		
-		errorCode = pElem->QueryDoubleAttribute("maxScaleDenominator",&maxScaleDenominator);
-		if (errorCode == TIXML_WRONG_TYPE){
-			LOGGER_ERROR("L'attribut maxScaleDenominator doit être un double dans le Style " << id <<" : il est invalide!!");
-			continue;
-		}
-		
-		legendURLs.push_back(LegendURL(format,href,width,height,minScaleDenominator,maxScaleDenominator));
-	}
-
-	if (legendURLs.size()==0 && inspire){
-		LOGGER_ERROR("Aucun legendURL trouvé dans le Style " << id <<" : il est invalide au sens INSPIRE!!");
-		return NULL;
-	}
-	
-	
-	
-	pElem = hRoot.FirstChild("palette").Element();
-	
-	if (pElem){ 
-		int maxValue=0;
-		
-		int errorCode = pElem->QueryIntAttribute("maxValue",&maxValue);
-		if (errorCode != TIXML_SUCCESS){
-			LOGGER_ERROR("L'attribut maxValue n'a pas été trouvé dans la palette du Style " << id <<" : il est invalide!!");
-		}else {
-			LOGGER_DEBUG("MaxValue " << maxValue);
-			Colour colourTab[maxValue];
-			colours.reserve(maxValue+1);
-			std::vector<int> setValue;
-			int value=0;
-			uint8_t r=0,g=0,b=0;
-			int a=0;
-			for(pElem=hRoot.FirstChild("palette").FirstChild("colour").Element(); pElem; pElem=pElem->NextSiblingElement("colour")){
-				LOGGER_DEBUG("Value avant Couleur" << value);
-				errorCode = pElem->QueryIntAttribute("value",&value);
-				if (errorCode == TIXML_WRONG_TYPE){
-					LOGGER_ERROR("Un attribut value invalide a été trouvé dans la palette du Style " << id <<" : il est invalide!!");
-					continue;
-				} 
-				else if( errorCode == TIXML_NO_ATTRIBUTE ) {
-					value=0;
-				}
-				LOGGER_DEBUG("Couleur de la valeur " << value);
-				TiXmlHandle cHdl(pElem);
-				r = atoi(cHdl.FirstChild("red").Element()->GetText());
-				g = atoi(cHdl.FirstChild("green").Element()->GetText());
-				b = atoi(cHdl.FirstChild("blue").Element()->GetText());
-				a = atoi(cHdl.FirstChild("alpha").Element()->GetText());
-				LOGGER_DEBUG("Style : " << id <<" Couleur XML de "<<value<<" = " <<r<<","<<g<<","<<b<<","<<a);
-				colourTab[value]=Colour(r,g,b,a);
-				setValue.push_back(value);
-			}
-			
-			for (int k =0; k < setValue.size() ; ++k){
-				int max = ((k == (setValue.size()-1))?(maxValue+1):setValue[k+1]);
-				for (int j = setValue[k] ; j < max ; ++j) {
-					Colour tmp = colourTab[setValue[k]];
-					colours.push_back(Colour(tmp.r,tmp.g,tmp.b,(tmp.a==-1?j:tmp.a)));
-				}
-			}
-		}	
-	}
-	Palette pal(colours);
-	Style * style = new Style(id,title,abstract,keyWords,legendURLs,pal);
-	LOGGER_DEBUG("Style Créé");
-	return style;
-
-}//buildStyle(std::string)
-
 TileMatrixSet* buildTileMatrixSet(std::string fileName){
 	LOGGER_INFO("	Ajout du TMS " << fileName);
 	std::string id;
@@ -499,17 +332,17 @@ Pyramid* buildPyramid(std::string fileName, std::map<std::string, TileMatrixSet*
 
 }// buildPyramid()
 
-Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
+Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool reprojectionCapability){
 	LOGGER_INFO("	Ajout du layer " << fileName);
 	std::string id;
 	std::string title="";
 	std::string abstract="";
 	std::vector<std::string> keyWords;
-	std::string styleName;
-	std::vector<Style*> styles;
+	std::string style;
+	std::vector<std::string> styles;
 	double minRes;
 	double maxRes;
-	std::vector<CRS*> WMSCRSList;
+	std::vector<std::string> WMSCRSList;
 	bool opaque;
 	std::string authority="";
 	std::string resampling;
@@ -562,38 +395,16 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
-	
-	for( pElem=hRoot.FirstChild( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement( "style")){
-		if (!pElem){
-			LOGGER_ERROR("Pas de style => style = " << (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE));
-			styleName = (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
-		}else{
-			styleName = pElem->GetText();
-		}
-		std::map<std::string, Style*>::iterator styleIt= stylesList.find(styleName);
-		if (styleIt == stylesList.end()) {
-			LOGGER_ERROR("Style " << styleName << "non défini");
-			continue;
-		}
-		styles.push_back(styleIt->second);
-		if (inspire && (styleName==DEFAULT_STYLE_INSPIRE)){
-			styles.pop_back();
-		} 
+
+	pElem=hRoot.FirstChild("style").Element();
+	if (!pElem){
+		LOGGER_ERROR("Pas de style => style = " << DEFAULT_STYLE);
+		style = DEFAULT_STYLE;
+	}else{
+		style = pElem->GetText();
 	}
-	if (inspire){
-		std::map<std::string, Style*>::iterator styleIt= stylesList.find(DEFAULT_STYLE_INSPIRE);
-		if (styleIt != stylesList.end()) {
-			styles.insert(styles.begin(),styleIt->second);
-		} else {
-			LOGGER_ERROR("Style " << styleName << "non défini");
-			return NULL;
-		}
-	}
-	if (styles.size()==0) {
-		LOGGER_ERROR("Pas de Style défini, Layer non valide");
-		return NULL;
-	}
-	
+	styles.push_back(style);
+
 	pElem = hRoot.FirstChild("minRes").Element();
 	if (!pElem){
 		minRes=0.;
@@ -690,12 +501,12 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 		for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
 			std::string str_crs(pElem->GetText());
 			// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-			CRS* crs = new CRS(str_crs);
-			if (!crs->isProj4Compatible())
+			CRS crs(str_crs);
+			if (!crs.isProj4Compatible())
 				LOGGER_WARN("Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche");
 			else{
 				LOGGER_INFO("		Ajout du crs "<<str_crs);
-				WMSCRSList.push_back(crs);
+				WMSCRSList.push_back(str_crs);
 			}
 		}
 	}
@@ -752,7 +563,7 @@ Layer * buildLayer(std::string fileName, std::map<std::string, TileMatrixSet*> &
 	return layer;
 }//buildLayer
 
-bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir){
+bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir){
 	std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
 	TiXmlDocument doc(serverConfigFile);
 	if (!doc.LoadFile()){
@@ -865,13 +676,6 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 		tmsDir=pElem->GetText();
 	}
 	
-	pElem=hRoot.FirstChild("styleDir").Element();
-	if (!pElem){
-		std::cerr<<"Pas de styleDir => styleDir = " << DEFAULT_STYLE_DIR<<std::endl;
-		styleDir = DEFAULT_STYLE_DIR;
-	}else{
-		styleDir = pElem->GetText();
-	}
 	// Définition de la variable PROJ_LIB à partir de la configuration
 	std::string projDir;
 	
@@ -899,10 +703,8 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 		}
 	}
 	projDirEnv = (char*) malloc(8+2+PATH_MAX);
-	memset(projDirEnv,'\0',8+2+PATH_MAX);
 	strcat(projDirEnv,"PROJ_LIB=");
 	strcat(projDirEnv,projDir.c_str());
-	std::cerr << projDirEnv << std::endl;
 	
 	if (putenv(projDirEnv)!=0) {
 	  std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
@@ -912,58 +714,6 @@ bool ConfLoader::getTechnicalParam(std::string serverConfigFile, LogOutput& logO
 
 	return true;
 }//getTechnicalParam
-
-
-bool ConfLoader::buildStylesList(std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire)
-{
-LOGGER_INFO("CHARGEMENT DES STYLES");
-
-	// lister les fichier du répertoire styleDir
-	std::vector<std::string> styleFiles;
-	std::vector<std::string> styleName;
-	std::string styleFileName;
-	struct dirent *fileEntry;
-	DIR *dir;
-	if ((dir = opendir(styleDir.c_str())) == NULL){
-		LOGGER_FATAL("Le répertoire des Styles " << styleDir << " n'est pas accessible.");
-		return false;
-	}
-	while ((fileEntry = readdir(dir))){
-		styleFileName = fileEntry->d_name;
-		if(styleFileName.rfind(".stl")==styleFileName.size()-4){
-			styleFiles.push_back(styleDir+"/"+styleFileName);
-			styleName.push_back(styleFileName.substr(0,styleFileName.size()-4));
-		}
-	}
-	closedir(dir);
-
-	if (styleFiles.empty()){
-		// FIXME:
-		// Aucun Style présents. 
-		LOGGER_FATAL("Aucun fichier *.stl dans le répertoire " << styleDir);
-		return false;
-	}
-
-	// générer les TMS décrits par les fichiers.
-	for (unsigned int i=0; i<styleFiles.size(); i++){
-		Style * style;
-		style = buildStyle(styleFiles[i],inspire);
-		if (style){
-			stylesList.insert( std::pair<std::string, Style *> (styleName[i], style));
-		}else{
-			LOGGER_ERROR("Ne peut charger le tms: " << styleFiles[i]);
-		}
-	}
-
-	if (stylesList.size()==0){
-		LOGGER_FATAL("Aucun Style n'a pu être chargé!");
-		return false;
-	}
-	
-	LOGGER_INFO("NOMBRE DE STYLES CHARGES : "<<stylesList.size());
-
-	return true;
-}
 
 
 bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList){
@@ -1016,7 +766,7 @@ bool ConfLoader::buildTMSList(std::string tmsDir,std::map<std::string, TileMatri
 	return true;
 }
 
-bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, bool inspire){
+bool ConfLoader::buildLayersList(std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Layer*> &layers, bool reprojectionCapability){
 	LOGGER_INFO("CHARGEMENT DES LAYERS");
 	// lister les fichier du répertoire layerDir
 	std::vector<std::string> layerFiles;
@@ -1044,7 +794,7 @@ bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, Ti
 	// générer les Layers décrits par les fichiers.
 	for (unsigned int i=0; i<layerFiles.size(); i++){
 		Layer * layer;
-		layer = buildLayer(layerFiles[i], tmsList, stylesList , reprojectionCapability, inspire);
+		layer = buildLayer(layerFiles[i], tmsList, reprojectionCapability);
 		if (layer){
 			layers.insert( std::pair<std::string, Layer *> (layer->getId(), layer));
 		}else{
@@ -1096,7 +846,6 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 	std::vector<std::string> formatList;
 	std::string serviceType;
 	std::string serviceTypeVersion;
-	bool inspire =false;
 	std::vector<std::string> applicationProfileList;
 
 	pElem=hRoot.FirstChild("name").Element();
@@ -1116,7 +865,6 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
 
 	pElem=hRoot.FirstChild("serviceProvider").Element();
 	if (pElem) serviceProvider = pElem->GetText();
-		
 
 	pElem=hRoot.FirstChild("fee").Element();
 	if (pElem) fee = pElem->GetText();
@@ -1157,18 +905,10 @@ ServicesConf * ConfLoader::buildServicesConf(std::string servicesConfigFile){
         if (pElem) serviceType = pElem->GetText();
 	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
         if (pElem) serviceTypeVersion = pElem->GetText();
-	
-	pElem=hRoot.FirstChild("inspire").Element();
-	if (pElem) {
-		std::string inspirestr = pElem->GetText();
-		if ( inspirestr.compare("true")==0 || inspirestr.compare("1")==0){
-			LOGGER_INFO("Utilisation du mode Inspire");
-			inspire = true;
-		}
-	}
-	
+
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion, inspire);
+			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion);
+
 	return servicesConf;
 }

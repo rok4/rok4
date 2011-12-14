@@ -31,7 +31,7 @@ our @EXPORT      = qw();
 
 ################################################################################
 # version
-my $VERSION = "0.0.1";
+our $VERSION = '0.0.5';
 
 ################################################################################
 # constantes
@@ -50,14 +50,11 @@ END {}
 #    [ pyramid ]
 #
 #    pyr_desc_path      =
-#    pyr_desc_path_old  =
 #    pyr_data_path      =
-#    pyr_data_path_old  =
 #    ; pyr_schema_path = 
 #    ; pyr_schema_name =
 #    
-#    pyr_level_bottom =
-#    pyr_level_top    =
+#    
 #    pyr_name_old     =
 #    pyr_name_new     =
 #
@@ -160,7 +157,6 @@ sub new {
                     pyr_desc_path     => undef, # path
                     pyr_desc_path_old => undef, # path
                     pyr_data_path     => undef, # path
-                    pyr_data_path_old => undef, # path
                     pyr_level_bottom  => undef, # number
                     pyr_level_top     => undef, # number
                     #
@@ -280,7 +276,7 @@ sub _init {
     #
     # All parameters are mandatory (or initializate by default) whatever the pyramid !
     # 
-    $pyr->{pyr_name_new}  = $params->{pyr_name_new}  || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
+    $pyr->{pyr_name_new} = $params->{pyr_name_new}   || ( ERROR ("key/value required to 'pyr_name_new' !") && return FALSE );
     $pyr->{pyr_desc_path} = $params->{pyr_desc_path} || ( ERROR ("key/value required to 'pyr_desc_path' !") && return FALSE );
     $pyr->{pyr_data_path} = $params->{pyr_data_path} || ( ERROR ("key/value required to 'pyr_data_path' !") && return FALSE );
     #
@@ -361,19 +357,11 @@ sub _init {
     }
     $pyr->{pyr_desc_path_old} = $params->{pyr_desc_path_old};
     #
-    if (! exists($params->{pyr_data_path_old})) {
-        WARN ("key/value optional to 'pyr_data_path_old' (by default, it's same the 'pyr_data_path' )!");
-        $params->{pyr_data_path_old} = $params->{pyr_data_path};
-    }
-    $pyr->{pyr_data_path_old} = $params->{pyr_data_path_old};
-    #
     # TODO path !
     if (! -d $pyr->{path_nodata}) {}
     if (! -d $pyr->{pyr_desc_path}) {}
-    if (! -d $pyr->{pyr_desc_path_old}) {}
     if (! -d $pyr->{tms_path}) {}
     if (! -d $pyr->{pyr_data_path}) {}
-    if (! -d $pyr->{pyr_data_path_old}) {}
     
     return TRUE;
 }
@@ -551,7 +539,7 @@ sub _fillFromPyramid {
     return FALSE;
   }
   
-  my $cachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
+  my $cachepyramid = File::Spec->catdir($self->getPyrDataPath(),
                                         $self->getPyrNameOld());
   
   if (! $self->readCachePyramid($cachepyramid)) {
@@ -886,21 +874,15 @@ sub writeCachePyramid {
   #
   # Params useful to create a cache directory empty or not 
   #
-  # pyr_data_path     : path of new pyramid (abs)
-  # pyr_data_path_old : path of old pyramid (abs)
-  # pyr_name_new      : new pyramid name
-  # pyr_name_old      : old pyramid name
-  # dir_image     : IMAGE
-  # cache_dir     : old or new directories (rel from new pyramid)
-  # cache_tile    : old tiles (rel from new pyramid)
+  # pyr_data_path : path of all pyramid
+  # pyr_name_new : new pyramid name
+  # pyr_name_old :
+  # dir_image    : 
+  # cache_dir    : old or new
+  # cache_tile   : old
   
-  my $oldcachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
-                                              $self->getPyrNameOld());
-  my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),
-                                              $self->getPyrName());
-  $newcachepyramid =~ s/\//\\\//g;
-  $oldcachepyramid =~ s/\//\\\//g;
-  DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
+  my $newpyrname = $self->getPyrName();
+  my $oldpyrname = $self->getPyrNameOld();
   my $dirimage   = $self->getDirImage();
   my $dirmetadata= undef; # TODO ?
   
@@ -913,12 +895,10 @@ sub writeCachePyramid {
     my $regex = undef;
     
     if ($expr !~ /$dirimage/) {
-        #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
-        $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirimage."/";
+        $regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
     }
     else {
-        #$regex = "s/".$oldpyrname."/".$newpyrname."/";
-        $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
+        $regex = "s/".$oldpyrname."/".$newpyrname."/";
     }
 
     eval ($regex);
@@ -945,13 +925,15 @@ sub writeCachePyramid {
     return FALSE;
   }
   
-  foreach my $absdir (@newdirs) {
+  foreach my $dir (@newdirs) {
+    
+    my $absdir = File::Spec->catdir($self->getPyrDataPath(), $dir);
     
     DEBUG($absdir);
     
     eval { mkpath([$absdir],0,0751); };
     if ($@) {
-      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
+      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $dir , $@);
       return FALSE;
     }
     
@@ -975,8 +957,8 @@ sub writeCachePyramid {
     
     foreach my $i (0..$ntile) {
       
-      my $new_absfile = $newtiles[$i];
-      my $old_absfile = $oldtiles[$i];
+      my $new_absfile = File::Spec->catfile($self->getPyrDataPath(), $newtiles[$i]);
+      my $old_absfile = File::Spec->catfile($self->getPyrDataPath(), $oldtiles[$i]);
       
       if (! -d dirname($new_absfile)) {
         ERROR(sprintf "The directory cache '%s' doesn't exist !",
@@ -1034,7 +1016,7 @@ sub writeCachePyramid {
 }
 sub readCachePyramid {
   my $self     = shift;
-  my $cachedir = shift; # old cache directory by default !
+  my $cachedir = shift;
   
   TRACE;
   
@@ -1088,8 +1070,7 @@ sub FindCacheNode {
     
     if ( -d File::Spec->catdir($directory, $entry)) {
       TRACE(sprintf "DIR:%s\n",$entry);
-      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
-      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
+      push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
       
       # recursif
       $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
@@ -1100,15 +1081,13 @@ sub FindCacheNode {
     elsif( -f File::Spec->catfile($directory, $entry) &&
          ! -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "FIL:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
     }
     
     elsif (  -f File::Spec->catfile($directory, $entry) &&
              -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "LIK:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+      push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
     }
     
     else {
@@ -1170,11 +1149,6 @@ sub getPyrDataPath {
   my $self = shift;
   
   return $self->{pyramid}->{pyr_data_path};
-}
-sub getPyrDataPathOld {
-  my $self = shift;
-  
-  return $self->{pyramid}->{pyr_data_path_old};
 }
 sub getPyrName {
   my $self = shift;

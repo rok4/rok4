@@ -5,7 +5,7 @@
 #include "Grid.h"
 #include "Decoder.h"
 #include "JPEGEncoder.h"
-#include "ColorizePNGEncoder.h"
+#include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 
@@ -40,7 +40,7 @@ Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
         	else if (format.compare("TIFF_PNG_INT8")==0) {
-                	ColorizePNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
+                	PNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
         	else if (format.compare("TIFF_FLOAT32")==0) {

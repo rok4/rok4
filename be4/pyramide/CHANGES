@@ -1,0 +1,34 @@
+- 0.0.2 [lib/BE4/Pyramid.pm] :
+- 0.0.2 [lib/BE4/Process.pm] :
+    > mise en place du parametre 'gamma' (valeur par defaut à 1), il est utilisé
+    avec l'outil merge4tiff.
+
+- 0.0.2 [lib/BE4/Product.pm] :
+    > desactivation du parametre 'compressionscheme'
+    
+- 0.0.3 [lib/BE4/Pyramid.pm] :
+    > bug sur la creation des chemins du cache lorsque l'indexe en base36 > à 4 car.
+    
+- 0.0.4 [lib/BE4/Pyramid.pm] :
+    > suppression des dependances au module File::Find::Node
+
+- 0.0.2 [bin/be4.pl] :
+    > suppression des dependances au module Term::AnsiColor
+
+- [Makefile.PL] :
+    > mise à jour des dependances !
+    
+- [bin/create-layer.pl] :
+  [bin/export-tree.pl ] :
+    > ajout d'utilitaires orientés maintenances !
+
+- 0.0.5 [lib/BE4/Pyramid.pm] :
+- 0.0.2 [lib/BE4/TileMatrixSet.pm] :
+- 0.0.2 [lib/BE4/Tree.pm] :
+- 0.0.3 [lib/BE4/Process.pm] :
+- 0.0.3 [bin/be4.pl] :
+    > mise en place des parametre 'tms_level_min', 'tms_level_max'.
+    > mise en place des parametre 'pyr_level_bottom', 'pyr_level_top'.
+    > gestion du choix du niveau minimum et/ou maximum des levels du tms/pyramid.
+    > chmod des scripts shell (0755)
+    > process des scripts shell avec l'option --test (orientés maintenances !)

@@ -37,8 +37,7 @@ private:
         std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
 
 	static void* thread_loop(void* arg);
-	
-	int GetDecimalPlaces(double number);
+
 	void buildWMSCapabilities();
 	void buildWMTSCapabilities();
 

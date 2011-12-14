@@ -32,7 +32,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # version
-my $VERSION = "0.0.1";
+my $VERSION = "0.0.3";
 
 #
 # Title: be4

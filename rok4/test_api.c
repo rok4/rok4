@@ -93,16 +93,13 @@ void* processThread(void* arg){
 	// Traitement des requetes
 	while (!feof(requestFile)){
 		char query[400],host[400],script[400];
-		memset(query,'\0',400);
-		memset(host,'\0',400);
-		memset(script,'\0',400);
 //		pthread_mutex_lock(&mutex_rok4);
 		if (fscanf(requestFile,"%s\t%s\t%s\n",host,script,query)!=3)
 			continue;
 //		pthread_mutex_unlock(&mutex_rok4);
 		fprintf(stdout,"\nRequete n°%d : %s\t%s\t%s\n",c,host,script,query);
 		c++;
-		HttpRequest* request=rok4InitRequest(query,host, script, "");
+		HttpRequest* request=rok4InitRequest(query,"localhost", "/target/bin/rok4");
 		
 		if (strcmp(request->service,"wmts")!=0){
 			fprintf(stdout,"\tService %s non gere\n",request->service);
@@ -112,7 +109,7 @@ void* processThread(void* arg){
 		
 		// GetCapabilities	
 		if (strcmp(request->operationType,"getcapabilities")==0){
-			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4","",server);
+			HttpResponse* capabilities=rok4GetWMTSCapabilities(query,"localhost","/target/bin/rok4",server);
 			fprintf(stdout,"\tStatut=%d\n",capabilities->status);
                         fprintf(stdout,"\ttype=%s\n",capabilities->type);
 			fprintf(stdout,"\tcontentSize=%d\n",capabilities->contentSize);
@@ -126,8 +123,7 @@ void* processThread(void* arg){
 		else if ( strcmp(request->operationType,"gettile")==0  ){
 			// TileReferences
 			TileRef tileRef;
-			TilePalette tilePalette;
-			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4","", server, &tileRef, &tilePalette);
+			HttpResponse* error=rok4GetTileReferences(query, "localhost", "/target/bin/rok4", server, &tileRef);
 			if (error){
         		        fprintf(stdout,"\tStatut=%d\n",error->status);
                 		fprintf(stdout,"\ttype=%s\n",error->type);
@@ -145,22 +141,12 @@ void* processThread(void* arg){
 					fprintf(stdout,"\n");
 					rok4DeleteTiffHeader(header);
 				}
-				if (strcmp(tileRef.type,"image/png")==0 && tileRef.channels==1 && tilePalette.size!=0){
-					PngPaletteHeader* header = rok4GetPngPaletteHeader(tileRef.width,tileRef.height,&tilePalette);
-					fprintf(stdout,"\tw=%d h=%d ps=%d\n\theader=",tileRef.width,tileRef.height,tilePalette.size);
-					int i;
-					for (i=0;i<header->size;i++)
-						fprintf(stdout,"%c",header->data[i]);
-					fprintf(stdout,"\n");
-					rok4DeletePngPaletteHeader(header);
-				}
-				
 				rok4FlushTileRef(&tileRef);
 			}
 			free(error);
 
 			// Tile
-			HttpResponse* tile=rok4GetTile(query, "localhost", "/target/bin/rok4","", server);
+			HttpResponse* tile=rok4GetTile(query, "localhost", "/target/bin/rok4", server);
 			char tileName[20];
 			sprintf(tileName,"test_%d.png",c);
 			FILE* T=fopen(tileName,"w");
@@ -171,7 +157,7 @@ void* processThread(void* arg){
 		}
 		// Operation non prise en charge
 		else{
-			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4","",server);
+			HttpResponse* response=rok4GetOperationNotSupportedException(query, "localhost", "/target/bin/rok4",server);
 			fprintf(stdout,"\tStatut=%d\n",response->status);
                 	fprintf(stdout,"\ttype=%s\n",response->type);
 			fprintf(stdout,"\terror content=%s\n",response->content);

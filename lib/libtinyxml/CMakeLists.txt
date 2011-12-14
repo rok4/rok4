@@ -27,15 +27,9 @@ set(BUILD_SHARED_LIBS OFF)
 
 
 #Build Type si les build types par défaut de CMake ne conviennent pas
-if(DEBUG_BUILD)
-  set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0")
-  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
-else(DEBUG_BUILD)
-  set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
-  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
-endif(DEBUG_BUILD)
+set(CMAKE_BUILD_TYPE specificbuild)
+set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+set(CMAKE_C_FLAGS_SPECIFICBUILD "-03")
 
 
 ########################################
