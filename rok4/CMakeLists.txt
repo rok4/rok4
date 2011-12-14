@@ -82,7 +82,7 @@ set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 if(UNITTEST)
     include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
     ENABLE_TESTING()
-
+    add_definitions(-DUNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )

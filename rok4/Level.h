@@ -25,12 +25,12 @@ private:
 	const int32_t minTileCol;
 	uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
 	uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
-	const std::string noDataFile;
-
+	std::string noDataFile;
 	DataSource* noDataSource;
 	
 	DataSource* getEncodedTile(int x, int y);
 	DataSource* getDecodedTile(int x, int y);
+	DataSource* getEncodedNoDataTile();
 	
 
 protected:
@@ -57,6 +57,7 @@ public:
 	uint32_t      getTilesPerHeight(){return tilesPerHeight;}
 
 	std::string getFilePath(int tilex, int tiley);
+	std::string getNoDataFilePath(){return noDataFile;}
 
 	Image* getbbox(BoundingBox<double> bbox, int width, int height);
 
@@ -76,13 +77,14 @@ public:
 
 	Image* getTile(int x, int y, int left, int top, int right, int bottom);
 
+	void setNoData(const std::string& file) {noDataFile=file;}
 	void setNoDataSource(DataSource* source) {noDataSource=source;}
 	
 	/** D */
 	Level(TileMatrix tm, int channels, std::string baseDir,
 			int tilesPerWidth, int tilesPerHeight,
 			uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-			int pathDepth, std::string format) : tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format), noDataSource(0){}
+			int pathDepth, std::string format, std::string noDataFile) : tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format),noDataFile(noDataFile){}
 
 	/*
 	 * Destructeur
@@ -92,6 +94,7 @@ public:
 };
 
 #endif
+
 
 
 

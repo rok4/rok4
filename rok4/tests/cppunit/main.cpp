@@ -50,6 +50,7 @@ main( int argc, char* argv[] )
   XmlTimedTestOutputterHook *xmlTimeHook = new XmlTimedTestOutputterHook(&ttlistener);
   xmlOut.addHook(xmlTimeHook);
   xmlOut.write();
+ 
   
   return result.wasSuccessful() ? 0 : 1;
 }

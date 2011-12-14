@@ -16,6 +16,8 @@
 					<xs:element name="baseDir"        type="xs:string"/>
 					<!-- informations sur les métadonnées -->
 					<xs:element name="metadata" type="metadataContent"/>
+					<!-- informations sur la tuile NoDAta -->
+					<xs:element name="nodata" type="nodataContent"/>
 					<!-- nombre de tuiles par dalle en largeur--> 
 					<xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
 					<!-- nombre de tuiles par dalles en hauteur --> 
@@ -39,6 +41,11 @@
 		<xs:element name="format"         type="imageFormat"/>
                 </xs:sequence>
 		<xs:attribute name="type"        type="metadataType"/>
+ 	</xs:complexType>
+	
+	<xs:complexType name="nodataContent">
+                <!-- chemin vers la dalle contenant la tuile de NoData-->
+                <xs:element name="filePath"        type="xs:string"/>
  	</xs:complexType>
 
 
