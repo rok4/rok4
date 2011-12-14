@@ -38,9 +38,6 @@ END {}
 #        <tilesPerWidth>16</tilesPerWidth>
 #        <tilesPerHeight>16</tilesPerHeight>
 #        <pathDepth>2</pathDepth>
-#        <nodata>
-#            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
-#        </nodata>
 #        <TMSLimits>
 #            <minTileRow>1</minTileRow>
 #            <maxTileRow>1000000</maxTileRow>
@@ -60,7 +57,6 @@ END {}
 #    *		id                => undef,
 #    *		dir_image         => undef,
 #    *		compress_image    => undef, # ie "TIFF_RAW_INT8"
-#    *		dir_nodata        => undef,
 #    *		dir_metadata      => undef,  # NOT IMPLEMENTED !
 #    *		compress_metadata => undef,  # NOT IMPLEMENTED !
 #    *		type_metadata     => undef,  # NOT IMPLEMENTED !
@@ -84,8 +80,7 @@ sub new {
   my $self = {
 	id                => undef,
 	dir_image         => undef,
-	compress_image    => undef, # ie "TIFF_INT8"
-	dir_nodata        => undef,
+	compress_image    => undef, # ie "TIFF_RAW_INT8"
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !
 	type_metadata     => undef,  # NOT IMPLEMENTED !
@@ -132,10 +127,6 @@ sub _init {
     }
     if (! exists($params->{compress_image})) {
       ERROR ("key/value required to 'compress_image' !");
-      return FALSE;
-    }
-    if (! exists($params->{dir_nodata})) {
-      ERROR ("key/value required to 'dir_nodata' !");
       return FALSE;
     }
     if (! exists($params->{bitspersample})) {
@@ -187,7 +178,6 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{dir_image}      = $params->{dir_image};
     $self->{compress_image} = $params->{compress_image};
-    $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{bitspersample}  = $params->{bitspersample};
     $self->{samplesperpixel}= $params->{samplesperpixel};
     $self->{size}           = $params->{size};
@@ -220,7 +210,6 @@ __END__
             id                => 1024,
             dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
             compress_image    => "TIFF_RAW_INT8",
-            dir_nodata        => undef,
             dir_metadata      => undef,
             compress_metadata => undef,
             type_metadata     => undef,
@@ -256,9 +245,6 @@ None by default.
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>1</minTileRow>
             <maxTileRow>1000000</maxTileRow>
@@ -272,9 +258,6 @@ None by default.
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>MNT_MAYOTTE_REDUCT/NODATA/1/nd.tif</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>1</minTileRow>
             <maxTileRow>1000000</maxTileRow>
