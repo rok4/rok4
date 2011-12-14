@@ -15,13 +15,18 @@
 				</xs:sequence>
 				</xs:complexType>
 			</xs:element>
-			<!-- identifiants des styles applicables au layer. (non utilisé au 07/2010)
-			     FIXME: une liste est a prévoir -->
-			<xs:element name="style" type="xs:string"/>
+			<!-- identifiants des fichiers de styles applicables au layer.-->
+			<xs:element name="styles">
+				<xs:complexType>
+				<xs:sequence>
+					<xs:element name="style" type="xs:string" maxOccurs="unbounded"/>
+				</xs:sequence>
+				</xs:complexType>
+			</xs:element>
 			<!-- BoundingBox WMS -->
                         <xs:element name="latLonBoundingBox">
                                 <xs:complexType>
-                                <xs:sequence>
+				<xs:sequence>
                                         <xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
                                         <xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
                                         <xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
