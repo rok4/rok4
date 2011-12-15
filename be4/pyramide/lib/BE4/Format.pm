@@ -319,9 +319,9 @@ __END__
   my $type = $objC->getBitsperSample(); # "8" !
 
   # mode static 
-  my @info = BE4::Compression->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
-  my $compressionCode = BE4::Compression->getCompressionCode("none");      # RAW !
-  my $compressionType = BE4::Compression->getCompressionType("RAW"); # raw !
+  my @info = BE4::Format->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
+  my $compressionCode = BE4::Format->getCompressionCode("none");      # RAW !
+  my $compressionType = BE4::Format->getCompressionType("RAW"); # raw !
 
 =head1 DESCRIPTION
 
