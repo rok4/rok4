@@ -5,7 +5,7 @@
 #include "Grid.h"
 #include "Decoder.h"
 #include "JPEGEncoder.h"
-#include "ColorizePNGEncoder.h"
+#include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 
