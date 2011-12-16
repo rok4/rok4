@@ -19,6 +19,25 @@ std::string genStatusHeader(int statusCode) {
 }
 
 /**
+ * Methode commune pour generer le nom du fichier en fonction du type mime
+ */
+std::string genFileName(std::string mime) {
+	if (mime.compare("image/tiff")==0)
+                return "image.tif";
+        else if (mime.compare("image/jpeg")==0)
+                return "image.jpg";
+        else if (mime.compare("image/png")==0)
+                return "image.png";
+        else if (mime.compare("image/x-bil;bits=32")==0)
+                return "image.bil";
+        else if (mime.compare("text/plain")==0)
+                return "message.txt";
+        else if (mime.compare("text/xml")==0)
+                return "message.xml";
+	return "file";
+}
+
+/**
  * Methode commune pour afficher les codes d'erreur FCGI
  */
 
@@ -48,10 +67,16 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 {
 	// Creation de l'en-tete
 	std::string statusHeader= genStatusHeader(source->getHttpStatus());
+	std::string filename = genFileName(source->getType());
+	LOGGER_DEBUG(filename);
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);
+	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
+	FCGX_PutStr(filename.c_str(),strlen(filename.c_str()), request->out);
+	FCGX_PutStr("\"\r\n",3,request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
+	
 	// Copie dans le flux de sortie
 	size_t buffer_size;
 	const uint8_t *buffer = source->getData(buffer_size);
@@ -83,9 +108,13 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 {
 	// Creation de l'en-tete
 	std::string statusHeader= genStatusHeader(stream->getHttpStatus());
+	std::string filename = genFileName(stream->getType());
+	LOGGER_DEBUG(filename);
 	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(stream->getType().c_str(), strlen(stream->getType().c_str()),request->out);
+	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
+	FCGX_PutStr(filename.c_str(),strlen(filename.c_str()), request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	uint8_t *buffer = new uint8_t[2 << 20];

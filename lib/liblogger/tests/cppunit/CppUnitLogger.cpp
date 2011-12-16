@@ -33,4 +33,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitLogger );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitLogger, "CppUnitLogger" );

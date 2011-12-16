@@ -117,4 +117,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitMultnoSSE );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitMultnoSSE , "CppUnitMultnoSSE" );

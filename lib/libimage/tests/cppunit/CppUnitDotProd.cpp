@@ -81,4 +81,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitDotProd );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitDotProd, "CppUnitDotProd" );

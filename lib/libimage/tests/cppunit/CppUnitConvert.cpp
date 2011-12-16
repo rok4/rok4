@@ -99,4 +99,4 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitConvert );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitConvert, "CppUnitConvert" );

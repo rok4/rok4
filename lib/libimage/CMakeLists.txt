@@ -50,7 +50,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp ColorizePNGEncoder.cpp PaletteDataSource.cpp )
+set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp )
 
 
 
@@ -98,7 +98,7 @@ if(UNITTEST)
     if(XSLTPROC_FOUND)
      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
 
-     add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+     add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
                 COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
 
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)

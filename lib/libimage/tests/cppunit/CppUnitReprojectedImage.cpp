@@ -110,5 +110,5 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitReprojectedImage );
-
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitReprojectedImage, "CppUnitReprojectedImage" );
 

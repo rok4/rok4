@@ -82,7 +82,7 @@ set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 if(UNITTEST)
     include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
     ENABLE_TESTING()
-
+    add_definitions(-DUNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
@@ -99,7 +99,7 @@ if(UNITTEST)
     find_package(Xsltproc)
     if(XSLTPROC_FOUND)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
-    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml
+    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
 		COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
 
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)

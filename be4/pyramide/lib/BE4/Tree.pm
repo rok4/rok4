@@ -446,10 +446,10 @@ sub computeBBox(){
 
   $BBox{xMin} = Math::BigFloat->new($xmin_reproj - $margeX);
   $BBox{yMin} = Math::BigFloat->new($ymin_reproj - $margeY);
-  $BBox{xMax} = Math::BigFloat->new($xmax_reproj - $margeX);
-  $BBox{yMax} = Math::BigFloat->new($ymax_reproj - $margeY);
+  $BBox{xMax} = Math::BigFloat->new($xmax_reproj + $margeX);
+  $BBox{yMax} = Math::BigFloat->new($ymax_reproj + $margeY);
   
-  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
   
   return %BBox;
 }
@@ -469,12 +469,12 @@ sub imgGroundSizeOfLevel(){
   #my $yRes =$tm->getResolution();
   my $xRes = Math::BigFloat->new($tm->getResolution()); 
   my $yRes = Math::BigFloat->new($tm->getResolution());
-  my $ImgGroundWith   = $tm->getTileWidth()  * $self->{pyramid}->getTilePerWidth() * $xRes;
-  my $ImgGroundHeight = $tm->getTileHeight() * $self->{pyramid}->getTilePerHeight() * $yRes;
+  my $imgGroundWidth   = $tm->getTileWidth()  * $self->{pyramid}->getTilePerWidth() * $xRes;
+  my $imgGroundHeight = $tm->getTileHeight() * $self->{pyramid}->getTilePerHeight() * $yRes;
   
-  DEBUG (sprintf "Size ground (level %s): %s * %s m", $levelId, $ImgGroundWith, $ImgGroundHeight);
+  DEBUG (sprintf "Size ground (level %s): %s * %s SRS unit", $levelId, $imgGroundWidth, $imgGroundHeight);
   
-  return ($ImgGroundWith,$ImgGroundHeight);
+  return ($imgGroundWidth,$imgGroundHeight);
 }
 
 # method: computeSrcRes

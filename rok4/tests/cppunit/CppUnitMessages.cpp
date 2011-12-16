@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+
+#include <fstream>
 #include <vector>
 #include "Message.h"
 #include "ServiceException.h"
@@ -41,6 +43,7 @@ protected:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CppUnitMessages );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CppUnitMessages, "CppUnitMessages" );
 
 void CppUnitMessages::setUp()
 {
@@ -49,12 +52,13 @@ void CppUnitMessages::setUp()
 	message= "Message d'erreur !!!" ;
 	wmsSE= NULL ;
 	wmtsSE= NULL ;
+	LogOutput logOutput;
+	logOutput = STANDARD_OUTPUT_STREAM_FOR_ERRORS;
 	
 }
 
 void CppUnitMessages::test1WMSException()
 {
-
 	// creation d'un objet ServiceException
 	ServiceException *se= new ServiceException(locator,code,message,"wms") ;
 	if (se==NULL) CPPUNIT_FAIL("Impossible de créer l'objet ServiceException !") ;

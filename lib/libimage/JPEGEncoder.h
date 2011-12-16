@@ -11,6 +11,7 @@ private:
 	Image *image;
 
 	int status;
+	int bufferLimit;
 	uint8_t *linebuffer;
 
 	struct jpeg_compress_struct cinfo;

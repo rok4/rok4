@@ -64,7 +64,7 @@ size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	if (colortype==0){
 		if(sizeof(PNG_HEADER_GRAY) > size) return 0;
 			memcpy(buffer, PNG_HEADER_GRAY, sizeof(PNG_HEADER_GRAY));       // cf: http://www.w3.org/TR/PNG/#11IHDR
-		if(palette->getPalettePNGSize()!=0) {
+		if(palette && palette->getPalettePNGSize()!=0) {
 			colortype=3;
 		} 
 	}
@@ -83,7 +83,7 @@ size_t PNGEncoder::write_IHDR(uint8_t *buffer, size_t size, uint8_t colortype) {
 	line++;
 	if (colortype==3) {
 			if(sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize() > size) return 0;
-			LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
+//			LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
 			memcpy(buffer+ sizeof(PNG_HEADER_PALETTE), palette->getPalettePNG(), palette->getPalettePNGSize());
 			return (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize());
 	}

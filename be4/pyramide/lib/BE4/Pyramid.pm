@@ -862,7 +862,11 @@ sub readConfPyramid {
                                            $self->getDirImage(),
                                            $tagtm
                                            );
+        ALWAYS(sprintf "baseimage : %s",$baseimage); #TEST#
         #
+        my $filenodata = File::Spec->catfile($v->findvalue('nodata/filePath'));
+        my $base;
+        ALWAYS(sprintf "filenodata : %s",$filenodata); #TEST#
         my $basenodata = File::Spec->catdir($self->getPyrDataPath(),
                                            $self->getPyrName(),
                                            $self->getDirNodata(),
@@ -974,16 +978,16 @@ sub writeCachePyramid {
   };
 
   # create new cache directory for images
-  my @newdirs;
+  my @newdirs = @{$self->{cache_dir_image}};
   my @olddirs = @{$self->{cache_dir_image}};
   
-  if ($self->isNewPyramid()) {
-    @newdirs = @{$self->{cache_dir_image}};
-  }
-  else {
-    @newdirs = map ({ &$substring($_) } @{$self->{cache_dir_image}}); # list cache modified !
+  ALWAYS(sprintf "@newdirs : %s",@newdirs); #TEST#
+  
+  if (!$self->isNewPyramid()) {
+    @newdirs = map ({ &$substring($_) } @newdirs); # list cache modified !
   }
   
+  ALWAYS(sprintf "@newdirs : %s",@newdirs); #TEST#
   
   if (! scalar @newdirs) {
     ERROR("Listing of new cache directory is empty !");
@@ -1030,8 +1034,6 @@ sub writeCachePyramid {
     }
     
   }
-
-  
   
   # search and create link for only new cache tile
   if (! $self->isNewPyramid()) {
@@ -1115,8 +1117,11 @@ sub readCachePyramid {
   
   TRACE;
   
+ALWAYS(sprintf "dir_image : %s",$self->getDirImage()); #TEST#
+ALWAYS(sprintf "dir_nodata : %s",$self->getDirNodata()); #TEST#
+  
   # Node IMAGE
-  my $dir = File::Spec->catdir($cachedir,$self->getDirImage());
+  my $dir = File::Spec->catdir($cachedir,"IMAGE");
   my $searchitem = $self->FindCacheNode($dir);
   
   DEBUG(Dumper($searchitem));
@@ -1138,7 +1143,7 @@ sub readCachePyramid {
   $self->{cache_tile_image}= \@tiles;
   
   # Node NODATA
-  $dir = File::Spec->catdir($cachedir,$self->getDirNodata());
+  $dir = File::Spec->catdir($cachedir,"NODATA");
   $searchitem = $self->FindCacheNode($dir);
   
   DEBUG(Dumper($searchitem));
@@ -1430,8 +1435,6 @@ sub calculateTMLimits {
         my $jMin=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymax}) / $height); 
         my $jMax=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymin}) / $height);
         
-        ALWAYS(sprintf "old values : \n - imin : %s \n - imax : %s\n - jmin : %s \n - jmax : %s",$objLevel->{limit}->[2],$objLevel->{limit}->[3],$objLevel->{limit}->[0],$objLevel->{limit}->[1]); #TEST#
-        
         # we store this values
         
         if (! defined $objLevel->{limit}->[0] || $jMin < $objLevel->{limit}->[0]) {$objLevel->{limit}->[0] = $jMin;}
@@ -1439,7 +1442,6 @@ sub calculateTMLimits {
         if (! defined $objLevel->{limit}->[2] || $iMin < $objLevel->{limit}->[2]) {$objLevel->{limit}->[2] = $iMin;}
         if (! defined $objLevel->{limit}->[3] || $iMax > $objLevel->{limit}->[3]) {$objLevel->{limit}->[3] = $iMax;}
         
-        ALWAYS(sprintf "new values : \n - imin : %s \n - imax : %s\n - jmin : %s \n - jmax : %s",$objLevel->{limit}->[2],$objLevel->{limit}->[3],$objLevel->{limit}->[0],$objLevel->{limit}->[1]); #TEST#
     }
     
     return TRUE;

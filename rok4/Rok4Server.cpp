@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "TiffEncoder.h"
-#include "ColorizePNGEncoder.h"
+#include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
 #include <sstream>

@@ -261,22 +261,7 @@ void Rok4Server::buildWMSCapabilities(){
 			childLayerEl->LinkEndChild(bbEl);
 		}
 
-		// Scale denominators
-		os.str("");
-		os<<childLayer->getMinRes()*1000/0.28;
-                childLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
-		os.str("");
-                os<<childLayer->getMaxRes()*1000/0.28;
-                childLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
-
-		// TODO : gerer le cas des CRS avec des unites en degres
-		
-		/* TODO:
-		 *
-		 layer->getAuthority();
-		 layer->getOpaque();
-		
-		*/
+		// Style
 		LOGGER_DEBUG("Nombre de styles : "<<childLayer->getStyles().size());
 		if (childLayer->getStyles().size() != 0){
 			for (unsigned int i=0; i < childLayer->getStyles().size(); i++){
@@ -284,11 +269,11 @@ void Rok4Server::buildWMSCapabilities(){
 				Style* style = childLayer->getStyles()[i];
 				styleEl->LinkEndChild(buildTextNode("Name", style->getId().c_str()));
 				int j;
-				for (j=0 ; j < style->getTitle().size(); ++j){
-					styleEl->LinkEndChild(buildTextNode("Title", style->getTitle()[j].c_str() ));
+				for (j=0 ; j < style->getTitles().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Title", style->getTitles()[j].c_str() ));
 				}
-				for (j=0 ; j < style->getAbstract().size(); ++j){
-					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstract()[j].c_str()));
+				for (j=0 ; j < style->getAbstracts().size(); ++j){
+					styleEl->LinkEndChild(buildTextNode("Abstract", style->getAbstracts()[j].c_str()));
 				}
 				for (j=0 ; j < style->getLegendURLs().size(); ++j){
 					LOGGER_DEBUG("LegendURL" << style->getId());
@@ -316,6 +301,23 @@ void Rok4Server::buildWMSCapabilities(){
 				childLayerEl->LinkEndChild(styleEl);
 			}
 		}
+
+		// Scale denominators
+		os.str("");
+		os<<childLayer->getMinRes()*1000/0.28;
+                childLayerEl->LinkEndChild(buildTextNode("MinScaleDenominator", os.str()));
+		os.str("");
+                os<<childLayer->getMaxRes()*1000/0.28;
+                childLayerEl->LinkEndChild(buildTextNode("MaxScaleDenominator", os.str()));
+
+		// TODO : gerer le cas des CRS avec des unites en degres
+		
+		/* TODO:
+		 *
+		 layer->getAuthority();
+		 layer->getOpaque();
+		
+		*/
 		LOGGER_DEBUG("Layer Fini");
 		parentLayerEl->LinkEndChild(childLayerEl);
 
@@ -492,24 +494,43 @@ void Rok4Server::buildWMTSCapabilities(){
 			}
 			layerEl->LinkEndChild(kwlEl);
 		}
-		//TODO: ows:WGS84BoundingBox (0,n)
+		//ows:WGS84BoundingBox (0,n)
+		
+		
+		TiXmlElement * wgsBBEl = new TiXmlElement( "ows:WGS84BoundingBox");
+		std::ostringstream os;
+		os<<layer->getGeographicBoundingBox().minx;
+		os<<" ";
+		os<<layer->getGeographicBoundingBox().miny;
+		wgsBBEl->LinkEndChild(buildTextNode("ows:LowerCorner", os.str()));
+		os.str("");
+		os<<layer->getGeographicBoundingBox().maxx;
+		os<<" ";
+		os<<layer->getGeographicBoundingBox().maxy;
+		wgsBBEl->LinkEndChild(buildTextNode("ows:UpperCorner", os.str()));
+		os.str("");
+		layerEl->LinkEndChild(wgsBBEl);
+		
+		
 		layerEl->LinkEndChild(buildTextNode("ows:Identifier", layer->getId()));
 
+		//Style
 		if (layer->getStyles().size() != 0){
 			for (unsigned int i=0; i < layer->getStyles().size(); i++){
 				TiXmlElement * styleEl= new TiXmlElement("Style");
 				if (i==0) styleEl->SetAttribute("isDefault","true");
 				Style* style = layer->getStyles()[i];
-				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
 				int j;
-				for (j=0 ; j < style->getTitle().size(); ++j){
-					LOGGER_DEBUG("Title : " << style->getTitle()[j].c_str());
-					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitle()[j].c_str() ));
+				for (j=0 ; j < style->getTitles().size(); ++j){
+					LOGGER_DEBUG("Title : " << style->getTitles()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Title", style->getTitles()[j].c_str() ));
 				}
-				for (j=0 ; j < style->getAbstract().size(); ++j){
-					LOGGER_DEBUG("Abstract : " << style->getAbstract()[j].c_str());
-					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstract()[j].c_str()));
+				for (j=0 ; j < style->getAbstracts().size(); ++j){
+					LOGGER_DEBUG("Abstract : " << style->getAbstracts()[j].c_str());
+					styleEl->LinkEndChild(buildTextNode("ows:Abstract", style->getAbstracts()[j].c_str()));
 				}
+				//TODO Keywords
+				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
 				for (j=0 ; j < style->getLegendURLs().size(); ++j){
 					LegendURL legendURL = style->getLegendURLs()[j];
 					TiXmlElement* legendURLEl = new TiXmlElement("ows:LegendURL");

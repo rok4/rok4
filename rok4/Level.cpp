@@ -184,7 +184,7 @@ DataSource* Level::getEncodedTile(int x, int y) {
 }
 
 DataSource* Level::getDecodedTile(int x, int y) {
-	DataSource* encData = getEncodedTile(x, y);
+	DataSource* encData = new DataSourceProxy(getEncodedTile(x, y),*getEncodedNoDataTile());
 	if (format.compare("TIFF_RAW_INT8")==0 || format.compare("TIFF_RAW_FLOAT32")==0)
 		return encData;
 	else if (format.compare("TIFF_JPG_INT8")==0)
@@ -195,6 +195,12 @@ DataSource* Level::getDecodedTile(int x, int y) {
 	LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
 	return 0;
 }
+
+DataSource* Level::getEncodedNoDataTile()
+{	
+	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)), *noDataSource);
+}
+
 
 
 DataSource* Level::getTile(int x, int y) {
@@ -211,6 +217,7 @@ DataSource* Level::getTile(int x, int y) {
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	int pixel_size=1;
+	LOGGER_DEBUG("GetTile");
 	if (format.compare("TIFF_RAW_FLOAT32")==0)
 		pixel_size=4;
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			

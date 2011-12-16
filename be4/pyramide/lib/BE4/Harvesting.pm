@@ -150,7 +150,7 @@ sub doRequestUrl {
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
     my ($image_width, $image_height) = @{$imagesize};
 
-    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s",
+    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLE=",
                         $self->url(),
                         $self->layer(),
                         $self->version(),
