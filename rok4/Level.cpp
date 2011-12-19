@@ -12,6 +12,7 @@
 #include <vector>
 #include "Pyramid.h"
 #include "PaletteDataSource.h"
+#include "format.h"
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -180,25 +181,26 @@ DataSource* Level::getEncodedTile(int x, int y) {
 	uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
 	std::string path=getFilePath(x, y);
 	LOGGER_DEBUG(path);
-	return new FileDataSource(path.c_str(),posoff,possize,getMimeType(format));
+	return new FileDataSource(path.c_str(),posoff,possize,format::toMimeType(format));
 }
 
 DataSource* Level::getDecodedTile(int x, int y) {
 	DataSource* encData = new DataSourceProxy(getEncodedTile(x, y),*getEncodedNoDataTile());
-	if (format.compare("TIFF_RAW_INT8")==0 || format.compare("TIFF_RAW_FLOAT32")==0)
+	if (format==TIFF_RAW_INT8 || format==TIFF_RAW_FLOAT32)
 		return encData;
-	else if (format.compare("TIFF_JPG_INT8")==0)
+	else if (format==TIFF_JPG_INT8)
 		return new DataSourceDecoder<JpegDecoder>(encData);
-	else if (format.compare("TIFF_PNG_INT8")==0)
+	else if (format==TIFF_PNG_INT8)
 		return new DataSourceDecoder<PngDecoder>(encData);
 
+	//TODO LZW decoding
 	LOGGER_ERROR("Type d'encodage inconnu : "<<format); 
 	return 0;
 }
 
 DataSource* Level::getEncodedNoDataTile()
 {	
-	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4,getMimeType(format)), *noDataSource);
+	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4, format::toMimeType(format)), *noDataSource);
 }
 
 
@@ -206,19 +208,23 @@ DataSource* Level::getEncodedNoDataTile()
 DataSource* Level::getTile(int x, int y) {
 	DataSource* source=getEncodedTile(x, y);
 	size_t size;
-	if (format.compare("TIFF_RAW_INT8")==0 && source!=0 && source->getData(size)!=0){
+	
+	if (format==TIFF_RAW_INT8 && source!=0 && source->getData(size)!=0){
+		LOGGER_DEBUG("GetTile Tiff");
                 RawImage* raw=new RawImage(tm.getTileW(),tm.getTileH(),channels,source);
                 TiffEncoder TiffStream(raw);
                 return new DataSourceProxy(new BufferedDataSource(TiffStream),*noDataSource);
         } 
+        LOGGER_DEBUG("GetTile No Tiff");
+        //TODO add TiffLZW Header
         
 	return new DataSourceProxy(source, *noDataSource);
 }
 
 Image* Level::getTile(int x, int y, int left, int top, int right, int bottom) {
 	int pixel_size=1;
-	LOGGER_DEBUG("GetTile");
-	if (format.compare("TIFF_RAW_FLOAT32")==0)
+	LOGGER_DEBUG("GetTile Image");
+	if (format==TIFF_RAW_FLOAT32)
 		pixel_size=4;
 	return new ImageDecoder(getDecodedTile(x,y), tm.getTileW(), tm.getTileH(), channels,			
 			BoundingBox<double>(tm.getX0() + x * tm.getTileW() * tm.getRes(),

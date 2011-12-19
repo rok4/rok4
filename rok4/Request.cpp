@@ -167,11 +167,14 @@ DataSource* Request::getTileParam(ServicesConf& servicesConf, std::map< std::str
 	if (sscanf(strTileCol.c_str(),"%d",&tileCol)!=1)
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La valeur du parametre TILECOL est incorrecte.","wmts"));
 	// FORMAT
+	
 	format=getParam("format");
-        if(format == "")
+	
+        LOGGER_DEBUG("format requete : " << format << " format pyramide : " << format::toMimeType((layer->getDataPyramid()->getFormat())));
+	if(format == "")
                 return new SERDataSource(new ServiceException("",OWS_MISSING_PARAMETER_VALUE,"Parametre FORMAT absent.","wmts"));
 	// TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
-	if (format != getMimeType(layer->getDataPyramid()->getFormat()))
+	if (format.compare(format::toMimeType((layer->getDataPyramid()->getFormat()))) !=0)
 		return new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le format "+format+" n'est pas gere pour la couche "+str_layer,"wmts"));
 	//Style
 	std::string styleName=getParam("style");

@@ -2,6 +2,7 @@
 syntax: glob
 .project
 build
+build*
 syntax: regexp
 ~
 kdev4
