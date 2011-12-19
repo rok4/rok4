@@ -9,7 +9,7 @@
 
 #define TIFF_SHORT              3       /* 16-bit unsigned integer */
 #define	TIFF_LONG               4       /* 32-bit unsigned integer */
-#define TIFF_RATIONAL   	5       /* 64-bit unsigned fraction */
+#define TIFF_RATIONAL           5       /* 64-bit unsigned fraction */
 
 
 #define TIFFTAG_SUBFILETYPE     254     /* subfile data descriptor */

@@ -1,0 +1,152 @@
+/**
+ * \file createNodata.cpp
+ * \brief création d'une image avec une seule valeur, pour la tuile de nodata
+ * \author IGN
+*
+*/
+
+#include "TiledTiffWriter.h"
+#include <cstdlib>
+#include <iostream>
+#include <string.h>
+#include "tiffio.h"
+#include <jpeglib.h>
+
+void usage() {
+    std::cerr << "createNodata -n nodata -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3] output_file"<< std::endl;
+}
+
+void error(std::string message) {
+    std::cerr << message << std::endl;
+    usage();
+    exit(1);
+}
+
+
+/**
+*@fn int h2i(char s)
+* Hexadecimal -> int
+*/
+
+int h2i(char s)
+{
+    if('0' <= s && s <= '9')
+        return (s - '0');
+    if('a' <= s && s <= 'f')
+        return (s - 'a' + 10);
+    if('A' <= s && s <= 'F')
+        return (10 + s - 'A');
+    else
+        return -1; /* invalid input! */
+}
+
+int main(int argc, char* argv[]) {
+    char* output = 0;
+    uint32_t imagewidth = 256, imageheight = 256;
+    uint16_t compression = COMPRESSION_NONE;
+    uint16_t photometric = PHOTOMETRIC_RGB;
+    char* strnodata;
+    int nodata;
+    uint32_t bitspersample = 8;
+    uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
+    uint16_t sampleperpixel = 3;
+    int quality = -1;
+    
+//  Nodata image dimensions are precised in parameters and image contains a single tile
+
+    for(int i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            switch(argv[i][1]) {
+                case 'c': // compression
+                    if(++i == argc) {std::cerr << "Error in -c option" << std::endl; exit(2);}
+                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "png",3) == 0) {
+                        compression = COMPRESSION_PNG;
+                        if(argv[i][3] == ':') quality = atoi(argv[i]+4);
+                    }
+                    else if(strncmp(argv[i], "jpeg",4) == 0) {
+                        compression = COMPRESSION_JPEG;
+                        if(argv[i][4] == ':') quality = atoi(argv[i]+5);
+                    }
+                    else if(strncmp(argv[i], "lzw",3) == 0) {
+                        compression = COMPRESSION_LZW;
+                    }
+                    else compression = COMPRESSION_NONE;
+                    break;
+                case 'n': // nodata
+                    if(++i == argc) error("missing parameter in -n argument");
+                    strnodata = argv[i];
+                    break;
+                case 'p': // photometric
+                    if(++i == argc) {std::cerr << "Error in -p option" << std::endl; exit(2);}          
+                    if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
+                    else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
+                    else photometric = PHOTOMETRIC_RGB;
+                    break;
+                case 't': // dimension de la tuile de nodata
+                    if(i+2 >= argc) {std::cerr << "Error in -t option" << std::endl; exit(2);}
+                    imagewidth = atoi(argv[++i]);
+                    imageheight = atoi(argv[++i]);
+                    break;
+                case 'a':
+                    if(++i == argc) {std::cerr << "Error in -a option" << std::endl; exit(2);}
+                    if (strncmp(argv[i],"uint",4)==0) {sampleformat = SAMPLEFORMAT_UINT;}
+                    else if (strncmp(argv[i],"float",5)==0) {sampleformat = SAMPLEFORMAT_IEEEFP;}
+                    break;
+                case 'b':
+                    if(i+1 >= argc) {std::cerr << "Error in -b option" << std::endl; exit(2);}
+                    bitspersample = atoi(argv[++i]);
+                    break;
+                case 's':
+                    if(i+1 >= argc) {std::cerr << "Error in -s option" << std::endl; exit(2);}
+                    sampleperpixel = atoi(argv[++i]);
+                    break;
+                default: usage();
+            }
+        }
+        else {
+            if(output == 0) output = argv[i];
+            else {std::cerr << "argument must specify one output file" << std::endl; usage(); exit(2);}
+        }
+    }
+
+    if(output == 0) {std::cerr << "argument must specify one output file" << std::endl; exit(2);}
+    if(photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG) {std::cerr << "Gray jpeg not supported" << std::endl; exit(2);}
+
+    // nodata treatment
+    // Cas MNT
+    if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
+        if (strnodata != 0) {
+            nodata = atoi(strnodata);
+            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid nodata value for this sampleformat/bitspersample couple");
+        } else {
+            nodata = -99999;
+        }
+        return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
+    }
+    // Cas images
+    else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
+        if (strnodata != 0) {
+            int a1 = h2i(strnodata[0]);
+            int a0 = h2i(strnodata[1]);
+            if (a1 < 0 || a0 < 0) error("invalid nodata value for this sampleformat/bitspersample couple");
+            nodata = 16*a1+a0;
+        } else {
+            nodata = 255;
+        }
+        return merge4uint8(width,height,sampleperpixel,gamma,nodata,BACKGROUND,INPUT,OUTPUT);
+    }
+    else
+        error("sampleformat/bitspersample not supported");
+        
+    TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,sampleformat);
+
+    int bytesperpixel = sampleperpixel*bitspersample/8;
+    uint8_t* data=new uint8_t[imageheight*imagewidth*bytesperpixel];
+
+    if(W.WriteTile(0, 0, data) < 0) {std::cerr << "Error while writting tile of nodata" << std::endl; return 2;}
+
+    if(W.close() < 0) {std::cerr << "Error while writting index" << std::endl; return 2;}
+    return 0;
+}
+

@@ -1,13 +1,13 @@
-#include "TiffReader.h"
-#include "TiledTiffWriter.h"
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
 #include "tiffio.h"
+#include "TiffReader.h"
+#include "TiledTiffWriter.h"
 #include <jpeglib.h>
 
 void usage() {
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file";
+    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file";
 }
 
 int main(int argc, char **argv) {
@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
                     }
                     else if(strncmp(argv[i], "lzw",3) == 0) {
                         compression = COMPRESSION_LZW;
-                        if(argv[i][3] == ':') quality = atoi(argv[i]+4);
                     }
                     else compression = COMPRESSION_NONE;
                     break;

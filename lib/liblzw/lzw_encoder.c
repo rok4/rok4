@@ -1,3 +1,4 @@
+//#include "lzw_encoder.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
  
 /* -------- aux stuff ---------- */
 void* mem_alloc(size_t item_size, size_t n_item)
