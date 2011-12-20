@@ -73,8 +73,8 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);
 	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
-	FCGX_PutStr(filename.c_str(),strlen(filename.c_str()), request->out);
-	FCGX_PutStr("\"\r\n",3,request->out);
+	FCGX_PutStr(filename.data(),filename.size(), request->out);
+	FCGX_PutStr("\"",1,request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	
 	// Copie dans le flux de sortie
@@ -95,6 +95,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 		wr += w;
 	}
 	delete source;
+	LOGGER_DEBUG("End of Response");
 	return 0;
 }
 
@@ -114,7 +115,8 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 	FCGX_PutStr("Content-Type: ",14,request->out);
 	FCGX_PutStr(stream->getType().c_str(), strlen(stream->getType().c_str()),request->out);
 	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
-	FCGX_PutStr(filename.c_str(),strlen(filename.c_str()), request->out);
+	FCGX_PutStr(filename.data(),filename.size(), request->out);
+	FCGX_PutStr("\"",1,request->out);
 	FCGX_PutStr("\r\n\r\n",4,request->out);
 	// Copie dans le flux de sortie
 	uint8_t *buffer = new uint8_t[2 << 20];
@@ -153,5 +155,6 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 
 	delete stream;
 	delete[] buffer;
+	LOGGER_DEBUG("End of Response");
 	return 0;
 }

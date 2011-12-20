@@ -117,18 +117,18 @@ sub _init {
     $self->{samplesperpixel}= $args->{samplesperpixel};
     $self->{sampleformat}   = $args->{sampleformat};
     $self->{photometric}    = $args->{photometric};
-#   for nodata value, it has to be coherent with bitspersample/samplesperpixel/sampleformat :
-#       - 32/1/float -> an integer in decimal format (-99999 for example) : DTM
-#       - 8/3/uint -> a uint in hexadecimal format (FF for example. Just first two are used) : image
+#   for nodata value, it has to be coherent with bitspersample/sampleformat :
+#       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
+#       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
     if (exists  ($args->{color}) && defined ($args->{color})) {
-        if (int($args->{bitspersample}) == 32 && int($args->{samplesperpixel}) == 1 && $args->{sampleformat} eq 'float') {
+        if (int($args->{bitspersample}) == 32 && $args->{sampleformat} eq 'float') {
             if (!($args->{color} =~ m/^[-+]?(\d)+$/)) {
-                ERROR ("Incorrect parameter nodata for a DTM !");
+                ERROR ("Incorrect parameter nodata for this bitspersample/sampleformat couple !");
                 return FALSE;
             }
-        } elsif (int($args->{bitspersample}) == 8 && int($args->{samplesperpixel}) == 3 && $args->{sampleformat} eq 'uint') {
+        } elsif (int($args->{bitspersample}) == 8 && $args->{sampleformat} eq 'uint') {
             if (!($args->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR ("Incorrect parameter nodata for an image !");
+                ERROR ("Incorrect parameter nodata for this bitspersample/sampleformat couple !");
                 return FALSE;
             }
         } else {

@@ -1,7 +1,7 @@
 #ifndef PALETTEDATASOURCE_H
 #define PALETTEDATASOURCE_H
 
-#include <Data.h>
+#include "Data.h"
 #include "Palette.h"
 
 class PaletteDataSource : public DataSource
@@ -17,8 +17,7 @@ public:
 	/** 
 	 * Constructeur. 
 	 * @param dataSource la source de l'image PNG
-	 * @param transparent 
-	 * @param rgb[3] couleur rouge,vert,bleu
+	 * @param palette une palette de couleur compatible PNG 
 	 */
 	//PaletteDataSource(DataSource* dataSource, bool transparent=false, const uint8_t rgb[3]=BLACK);
 	PaletteDataSource(DataSource* dataSource, Palette* palette);

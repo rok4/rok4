@@ -7,6 +7,7 @@
 #include "Data.h"
 #include "FileDataSource.h"
 #include "CRS.h"
+#include "format.h"
 
 /**
  */
@@ -17,7 +18,7 @@ private:
 	std::string   baseDir;
 	int           pathDepth;
 	TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
-	const std::string format; //format d'image des tuiles
+	const eformat_data format; //format d'image des tuiles
 	const int     channels;
 	const int32_t maxTileRow;
 	const int32_t minTileRow;
@@ -45,7 +46,7 @@ protected:
 
 public:
 	TileMatrix getTm(){return tm;}
-	std::string getFormat(){return format;}
+	eformat_data getFormat(){return format;}
 	int	    getChannels(){return channels;}
 	uint32_t    getMaxTileRow(){return maxTileRow;}
 	uint32_t    getMinTileRow(){return minTileRow;}
@@ -84,7 +85,7 @@ public:
 	Level(TileMatrix tm, int channels, std::string baseDir,
 			int tilesPerWidth, int tilesPerHeight,
 			uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-			int pathDepth, std::string format, std::string noDataFile) : tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format),noDataFile(noDataFile){}
+			int pathDepth, eformat_data format, std::string noDataFile) : tm(tm), channels(channels), baseDir(baseDir), tilesPerWidth(tilesPerWidth), tilesPerHeight(tilesPerHeight), maxTileRow(maxTileRow), minTileRow(minTileRow), maxTileCol(maxTileCol), minTileCol(minTileCol), pathDepth(pathDepth), format(format),noDataFile(noDataFile){}
 
 	/*
 	 * Destructeur

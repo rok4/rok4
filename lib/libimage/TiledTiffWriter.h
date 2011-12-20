@@ -6,10 +6,11 @@
 #include "zlib.h"
 #include <jpeglib.h>
 #include "lzw_encoder.h"
+#include <tiff.h>
 
-#define TIFF_SHORT              3       /* 16-bit unsigned integer */
-#define	TIFF_LONG               4       /* 32-bit unsigned integer */
-#define TIFF_RATIONAL           5       /* 64-bit unsigned fraction */
+//#define TIFF_SHORT              3       /* 16-bit unsigned integer */
+//#define	TIFF_LONG               4       /* 32-bit unsigned integer */
+//#define TIFF_RATIONAL           5       /* 64-bit unsigned fraction */
 
 
 #define TIFFTAG_SUBFILETYPE     254     /* subfile data descriptor */

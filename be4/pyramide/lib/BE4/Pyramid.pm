@@ -37,6 +37,7 @@ my $VERSION = "0.0.1";
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+use constant CREATE_NODATA     => "createNodata";
 
 ################################################################################
 # Preloaded methods go here.
@@ -481,6 +482,30 @@ sub _load {
     return TRUE;
   
 }
+
+# method: createNodata
+#  create a nodata tile with same parameters as images.
+#---------------------------------------------------------------------------------------------------
+sub createNodata {
+    my $self = shift;
+    my $nodataFilePath = shift;
+    
+    my $sizex = int($self->{pyramid}->{imagesize}) / int($self->{pyramid}->{image_width});
+    my $sizey = int($self->{pyramid}->{imagesize}) / int($self->{pyramid}->{image_height});
+    
+    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{pyramid}->{color});
+    $cmd .= sprintf ( " -c %s", $self->{pyramid}->{compression});
+    $cmd .= sprintf ( " -p %s", $self->{pyramid}->{photometric});
+    $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
+    $cmd .= sprintf ( " -b %s", $self->{pyramid}->{bitspersample});
+    $cmd .= sprintf ( " -s %s", $self->{pyramid}->{samplesperpixel});
+    $cmd .= sprintf ( " -a %s", $self->{pyramid}->{sampleformat});
+    $cmd .= sprintf ( " %s", $nodataFilePath);
+    return $cmd;
+    
+}
+
+
 sub _fillToPyramid { 
   my $self  = shift;
 
@@ -531,7 +556,7 @@ sub _fillToPyramid {
             id                => $objTm->getID(),
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             compress_image    => $self->getFormat()->getCode(), # ie TIFF_RAW_INT8 !
-            dir_nodata         => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
@@ -938,174 +963,180 @@ sub readConfPyramid {
 #  Manipulate the Directory Structure Cache (DSC) /* in/out */
 
 sub writeCachePyramid {
-  my $self = shift;
-  
-  TRACE;
-  
-  #
-  # Params useful to create a cache directory empty or not 
-  #
-  # pyr_data_path     : path of new pyramid (abs)
-  # pyr_data_path_old : path of old pyramid (abs)
-  # pyr_name_new      : new pyramid name
-  # pyr_name_old      : old pyramid name
-  # dir_image     : IMAGE
-  # dir_nodata     : NODATA
-  # cache_dir     : old or new directories (rel from new pyramid)
-  # cache_tile    : old tiles (rel from new pyramid)
-  
-  my $oldcachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),
-                                              $self->getPyrNameOld());
-  my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),
-                                              $self->getPyrName());
-                                              
+    my $self = shift;
 
-  $newcachepyramid =~ s/\//\\\//g;
-  $oldcachepyramid =~ s/\//\\\//g;
-  DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
-  my $dirimage      = $self->getDirImage();
-  my $dirnodata     = $self->getDirNodata();
-  my $dirmetadata   = undef; # TODO ?
+    TRACE;
 
-  # substring function 
-  my $substring;
-  $substring = sub {
-    my $expr = shift;
-    $_       = $expr;
+    #
+    # Params useful to create a cache directory empty or not 
+    #
+    # pyr_data_path     : path of new pyramid (abs)
+    # pyr_data_path_old : path of old pyramid (abs)
+    # pyr_name_new      : new pyramid name
+    # pyr_name_old      : old pyramid name
+    # dir_image     : IMAGE
+    # dir_nodata     : NODATA
+    # cache_dir     : old or new directories (rel from new pyramid)
+    # cache_tile    : old tiles (rel from new pyramid)
 
-    my $regex = undef;
+    my $oldcachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),$self->getPyrNameOld());
+    my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),$self->getPyrName());
 
-    $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
 
-    eval ($regex);
-    if ($@) {
-      ERROR(sprintf "REGEXE", $regex, $@);
-      return FALSE;
+    $newcachepyramid =~ s/\//\\\//g;
+    $oldcachepyramid =~ s/\//\\\//g;
+    
+    DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
+    my $dirimage      = $self->getDirImage();
+    my $dirnodata     = $self->getDirNodata();
+    my $dirmetadata   = undef; # TODO ?
+
+    # substring function 
+    my $substring;
+    $substring = sub {
+        my $expr = shift;
+        $_       = $expr;
+
+        my $regex = undef;
+
+        if ($expr !~ /$dirimage/) {
+            #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
+            $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirimage."/";
+        }
+        elsif ($expr !~ /$dirimage/) {
+            #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirnodata."/";
+            $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirnodata."/";
+        }
+        else {
+            #$regex = "s/".$oldpyrname."/".$newpyrname."/";
+            $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
+        }
+
+        eval ($regex);
+        if ($@) {
+          ERROR(sprintf "REGEXE", $regex, $@);
+          return FALSE;
+        }
+
+        return $_;
+    };
+
+    # create new cache directory
+    my @newdirs;
+    my @olddirs = @{$self->{cache_dir}};
+
+    if ($self->isNewPyramid()) {
+        @newdirs = @olddirs;
+    } else {
+        @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
     }
-    
-    return $_;
-  };
 
-  # create new cache directory for images
-  my @newdirs;
-  my @olddirs = @{$self->{cache_dir}};
-  
-  if (!$self->isNewPyramid()) {
-    @newdirs = @olddirs;
-  } else {
-    @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
-  }
-  
-  if (! scalar @newdirs) {
-    ERROR("Listing of new cache directory is empty !");
-    return FALSE;
-  }
-  
-  foreach my $absdir (@newdirs) {
-    
-    DEBUG($absdir);
-
-    #create folders
-    eval { mkpath([$absdir],0,0751); };
-    if ($@) {
-      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
-      return FALSE;
-    }
-    
-  }
-  
     if (! scalar @newdirs) {
     ERROR("Listing of new cache directory is empty !");
     return FALSE;
-  }
+    }
+
+    foreach my $absdir (@newdirs) {
+        #create folders
+        #ALWAYS($absdir); #TEST#
+        eval { mkpath([$absdir],0,0751); };
+        if ($@) {
+            ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
+            return FALSE;
+        }
+    }
   
-  foreach my $absdir (@newdirs) {
-    
-    DEBUG($absdir);
+    # search and create link for only new cache tile
+    if (! $self->isNewPyramid()) {
 
-    #create folders for nodata
-    eval { mkpath([$absdir],0,0751); };
-    if ($@) {
-      ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
-      return FALSE;
-    }
-    
-  }
-  
-  # search and create link for only new cache tile
-  if (! $self->isNewPyramid()) {
-    
-    my @oldtiles = @{$self->{cache_tile}};
-    my @newtiles = map ({ &$substring($_) } @{$self->{cache_tile}}); # list cache modified !
-    my $ntile    = scalar(@oldtiles)-1;
-    
-    if (! scalar @oldtiles) {
-      WARN("Listing of old cache tile is empty !");
-      # return FALSE;
+        my @oldtiles = @{$self->{cache_tile}};
+        my @newtiles = map ({ &$substring($_) } @{$self->{cache_tile}}); # list cache modified !
+        my $ntile    = scalar(@oldtiles)-1;
+
+        if (! scalar @oldtiles) {
+            WARN("Listing of old cache tile is empty !");
+            # return FALSE;
+        }
+
+        if (! scalar @newtiles) {
+            WARN("Listing of new cache tile is empty !");
+            # return FALSE;
+        }
+
+        foreach my $i (0..$ntile) {
+
+            my $new_absfile = $newtiles[$i];
+            my $old_absfile = $oldtiles[$i];
+
+            if (! -d dirname($new_absfile)) {
+                ERROR(sprintf "The directory cache '%s' doesn't exist !",dirname($new_absfile));
+                return FALSE;
+            }
+
+            if (! -e $old_absfile) {
+                ERROR(sprintf "The tile '%s' doesn't exist in '%s' !",
+                            basename($old_absfile),
+                            dirname($old_absfile));
+                return FALSE;  
+            }
+
+            my $follow_relfile = undef;
+
+            if (-f $old_absfile && ! -l $old_absfile) {
+                $follow_relfile = File::Spec->abs2rel($old_absfile,dirname($new_absfile));
+            }
+
+            elsif (-f $old_absfile && -l $old_absfile) {
+                my $linked   = File::Spec::Link->linked($old_absfile);
+                my $realname = File::Spec::Link->full_resolve($linked);
+                $follow_relfile = File::Spec->abs2rel($realname, dirname($new_absfile));
+            }
+
+            else {
+                ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",
+                            basename($old_absfile),
+                            dirname($old_absfile));
+                return FALSE;  
+            }
+
+            if (! defined $follow_relfile) {
+                ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
+                            basename($old_absfile),
+                            dirname($old_absfile));
+                return FALSE;
+            }
+
+            my $result = eval { symlink ($follow_relfile, $new_absfile); };
+            if (! $result) {
+                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
+                            $follow_relfile,
+                            $new_absfile,
+                            $!);
+                return FALSE;
+            }
+        }
     }
 
-    if (! scalar @newtiles) {
-      WARN("Listing of new cache tile is empty !");
-      # return FALSE;
+    # we need to create nodata tiles, for each level. If a symbolic link already exists, we move on
+    my @levels = $self->getLevels();
+    foreach my $objLevel (@levels){
+        my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
+        $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+        if (! -e $nodataFilePath) {
+            my $createNodataCommand = $self->createNodata($nodataFilePath);
+            
+            if (! system($createNodataCommand) == 0) {
+                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\nThe command is incorrect : '%s'",
+                                $objLevel->getID(),
+                                $createNodataCommand);
+                return FALSE;
+            }
+        } else {
+            ALWAYS(sprintf "The nodata tile '%s' already exist !",$nodataFilePath); #TEST#
+        }
     }
-    
-    foreach my $i (0..$ntile) {
-      
-      my $new_absfile = $newtiles[$i];
-      my $old_absfile = $oldtiles[$i];
-      
-      if (! -d dirname($new_absfile)) {
-        ERROR(sprintf "The directory cache '%s' doesn't exist !",
-              dirname($new_absfile));
-        return FALSE;
-      }
-      
-      if (! -e $old_absfile) {
-        ERROR(sprintf "The tile '%s' doesn't exist in '%s' !",
-              basename($old_absfile),
-              dirname($old_absfile));
-        return FALSE;  
-      }
-      
-      my $follow_relfile = undef;
-      
-      if (-f $old_absfile && ! -l $old_absfile) {
-        $follow_relfile = File::Spec->abs2rel($old_absfile,
-                                              dirname($new_absfile));
-      }
-      
-      elsif (-f $old_absfile && -l $old_absfile) {
-        my $linked   = File::Spec::Link->linked($old_absfile);
-        my $realname = File::Spec::Link->full_resolve($linked);
-        $follow_relfile = File::Spec->abs2rel($realname, dirname($new_absfile));
-      }
 
-      else {
-        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",
-              basename($old_absfile),
-              dirname($old_absfile));
-        return FALSE;  
-      }
-      
-      if (! defined $follow_relfile) {
-        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
-               basename($old_absfile),
-               dirname($old_absfile));
-        return FALSE;
-      }
-
-      my $result = eval { symlink ($follow_relfile, $new_absfile); };
-      if (! $result) {
-        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
-               $follow_relfile,
-               $new_absfile,
-               $!);
-        return FALSE;
-      }
-    }
-  }
-  
-  return TRUE;
+    return TRUE;
   
 }
 sub readCachePyramid {

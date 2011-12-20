@@ -114,39 +114,50 @@ int main(int argc, char* argv[]) {
     if(photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG) {std::cerr << "Gray jpeg not supported" << std::endl; exit(2);}
 
     // nodata treatment
-    // Cas MNT
+    // input data creation : the same value (nodata) everywhere
+    int bytesperpixel = sampleperpixel*bitspersample/8;
+    uint8_t data[imageheight*imagewidth*bytesperpixel], *pdata = data;
+    
+    // Case float32
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
         if (strnodata != 0) {
             nodata = atoi(strnodata);
-            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid nodata value for this sampleformat/bitspersample couple");
+            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid nodata value for this sampleformat/bitspersample couple : it must be a decimal format number");
         } else {
             nodata = -99999;
         }
-        return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
+        
+        for (int i = 0; i<imageheight*imagewidth*sampleperpixel; i++) {
+            *((float*) (pdata)) = (float) nodata;
+            pdata += 4;
+        }
     }
-    // Cas images
+    // Case int8
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
         if (strnodata != 0) {
             int a1 = h2i(strnodata[0]);
             int a0 = h2i(strnodata[1]);
-            if (a1 < 0 || a0 < 0) error("invalid nodata value for this sampleformat/bitspersample couple");
+            if (a1 < 0 || a0 < 0) error("invalid nodata value for this sampleformat/bitspersample couple : it must be hexadecimal format number");
             nodata = 16*a1+a0;
         } else {
             nodata = 255;
         }
-        return merge4uint8(width,height,sampleperpixel,gamma,nodata,BACKGROUND,INPUT,OUTPUT);
+        
+        for (int i = 0; i<imageheight*imagewidth*sampleperpixel; i++) {
+            *((uint8_t*) (pdata)) = nodata;
+            pdata++;
+        }
     }
     else
-        error("sampleformat/bitspersample not supported");
+        error("sampleformat/bitspersample not supported (float/32 or uint/8)");
         
     TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,sampleformat);
 
-    int bytesperpixel = sampleperpixel*bitspersample/8;
-    uint8_t* data=new uint8_t[imageheight*imagewidth*bytesperpixel];
 
     if(W.WriteTile(0, 0, data) < 0) {std::cerr << "Error while writting tile of nodata" << std::endl; return 2;}
 
     if(W.close() < 0) {std::cerr << "Error while writting index" << std::endl; return 2;}
+    
     return 0;
 }
 
