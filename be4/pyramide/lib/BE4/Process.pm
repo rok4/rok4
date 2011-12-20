@@ -176,13 +176,14 @@ sub wms2work {
   my $cmd="";
 
   $cmd .= "count=0\n";
-  $cmd .= "while [[ \$count -lt 5 ]] ; do\n";
+  $cmd .= "while [[ \$count -lt 15 ]] ; do\n";
   $cmd .= "  let count=count+1\n";
   $cmd .= sprintf ( "  wget --no-verbose -O \${TMP_DIR}/%s ",$fileName );
   $cmd .= sprintf ( " \"%s\" \n", $url);
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
+  $cmd .= "  sleep 60\n";
   $cmd .= "done\n";
-  $cmd .= "if [ \$count -eq 5 ] ; then \n";
+  $cmd .= "if [ \$count -eq 15 ] ; then \n";
   $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
   $cmd .= "  echo \"url: $url\"\n";
   $cmd .= "  exit 1\n"; 
