@@ -31,6 +31,9 @@ use BE4::Process;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# pas de bufferisation des sorties.
+$|=1;
+
 # version
 my $VERSION = "develop 0.2.6 : Renforcement du wget";
 
