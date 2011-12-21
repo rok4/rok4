@@ -421,13 +421,6 @@ sub doIt {
       ERROR ("Can not load Pyramid !");
       return FALSE;
     }
-    
-    ALWAYS(">>> Write Cache Pyramid ...");
-
-    if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
-    }
   
     # we cannot write the pyramid descriptor now. We need data's limits which are calculated in the Process creation
   
@@ -498,7 +491,14 @@ sub doIt {
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
     ##################
-    # write the pyramid descriptor
+    # write the pyramid descriptor and cache
+    
+    ALWAYS(">>> Write Cache Pyramid ...");
+
+    if (! $objPyramid->writeCachePyramid()) {
+      ERROR ("Can not write Pyramid Cache !");
+      return FALSE;
+    }
 
     ALWAYS(">>> Write Configuration Pyramid ...");
 

@@ -223,8 +223,6 @@ sub new {
   # a new pyramid or from existing pyramid !
   return undef if (! $self->_load());
   
-ALWAYS(Dumper($self)); #TEST#
-  
   return $self;
 }
 
@@ -573,8 +571,9 @@ sub _fillToPyramid {
       return FALSE;
     }
     push @{$self->{level}}, $objLevel;
-    # push dir to create
-    push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+    # push dir to create : just directories for nodata. Directories for image will be created during script execution
+    push @{$self->{cache_dir}}, $basenodata; #absolute path
+    #push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
     #push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
@@ -1038,7 +1037,6 @@ sub writeCachePyramid {
 
     foreach my $absdir (@newdirs) {
         #create folders
-        #ALWAYS($absdir); #TEST#
         eval { mkpath([$absdir],0,0751); };
         if ($@) {
             ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
@@ -1131,8 +1129,6 @@ sub writeCachePyramid {
                                 $createNodataCommand);
                 return FALSE;
             }
-        } else {
-            ALWAYS(sprintf "The nodata tile '%s' already exist !",$nodataFilePath); #TEST#
         }
     }
 
@@ -1416,7 +1412,6 @@ sub updateLimits {
 sub calculateTMLimits {
     my $self = shift;
     
-    ALWAYS("calculateTMLimits runs"); #TEST#
     if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
         ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
     {

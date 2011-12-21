@@ -144,7 +144,7 @@ sub _init {
         ERROR("Can not load Tree object !");
         return FALSE;
     }
-
+    
     DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
 
     return TRUE;
