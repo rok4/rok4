@@ -781,6 +781,7 @@ sub readConfPyramid {
     ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
     return FALSE;
     }
+    
 
     # create a object tileMatrixSet
 
@@ -813,13 +814,39 @@ sub readConfPyramid {
     # fill parameters if not... !
     $self->{pyramid}->{tms_name} = $self->getTileMatrixSet()->getFile();
     $self->{pyramid}->{tms_path} = $self->getTileMatrixSet()->getPath();
+    $self->{pyramid}->{samplesperpixel} = $tagsamplesperpixel;
 
     # create tile and format objects
 
     # ie TIFF, compression, sampleformat, bitspersample !
     # return compression = raw, jpg or png !
     my ($formatimg, $compression, $sampleformat, $bitspersample) = BE4::Format->decodeFormat($tagformat);
+    
+    # create format
+    my $objFormat = BE4::Format->new($compression, $sampleformat, $bitspersample);
 
+    if (! defined $objFormat) {
+    ERROR ("Can not create the Format object !");
+    return FALSE;
+    }
+
+    # save it if doesn't exist !
+    if (! defined ($self->getFormat())) {
+    $self->{format} = $objFormat;
+    }
+    
+    # check format
+    if ($self->getFormat()->getCode() ne $tagformat) {
+        ERROR (sprintf "The mode compression is different between configuration ('%s') and pyramid file ('%s') !",
+                    $self->getFormat()->getCode(),
+                    $tagformat);
+        return FALSE;
+    }
+    
+    $self->{pyramid}->{sampleformat} = $sampleformat;
+    $self->{pyramid}->{bitspersample} = $bitspersample;
+    $self->{pyramid}->{compression} = $compression;
+    
     # create tile
     my $tile = {
         bitspersample    => $bitspersample,
@@ -841,26 +868,7 @@ sub readConfPyramid {
     $self->{tile} = $objTile;
     }
 
-    # create Format
-    if (! defined ($self->getFormat())) {
-
-    my $type = undef;
-
-    # priority in this choice ...
-    $type = $compression if (defined $compression);
-    $type = $self->{pyramid}->{compression} if (defined $self->{pyramid}->{compression});
-
-    my $objFormat = BE4::Format->new($type,$sampleformat,$bitspersample);
-
-    if (! defined $objFormat) {
-        ERROR ("Can not load format !");
-        return FALSE;
-    }
-
-    $self->{format} = $objFormat;
-    }
-
-    # check compression mode 
+    # check format
     if ($self->getFormat()->getCode() ne $tagformat) {
         ERROR (sprintf "The mode compression is different between configuration ('%s') and pyramid file ('%s') !",
                     $self->getFormat()->getCode(),
@@ -996,20 +1004,7 @@ sub writeCachePyramid {
         my $expr = shift;
         $_       = $expr;
 
-        my $regex = undef;
-
-        if ($expr !~ /$dirimage/) {
-            #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirimage."/";
-            $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirimage."/";
-        }
-        elsif ($expr !~ /$dirimage/) {
-            #$regex = "s/".$oldpyrname."/".$newpyrname.'\/'.$dirnodata."/";
-            $regex = "s/".$oldcachepyramid."/".$newcachepyramid.'\/'.$dirnodata."/";
-        }
-        else {
-            #$regex = "s/".$oldpyrname."/".$newpyrname."/";
-            $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
-        }
+        my $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
 
         eval ($regex);
         if ($@) {

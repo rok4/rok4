@@ -461,6 +461,16 @@ sub doIt {
         
         DEBUG (sprintf "DATASOURCE (dump) = %s", Dumper($objData));
     }
+    
+    ##################
+    # write the pyramid cache
+    
+    ALWAYS(">>> Write Cache Pyramid ...");
+
+    if (! $objPyramid->writeCachePyramid()) {
+      ERROR ("Can not write Pyramid Cache !");
+      return FALSE;
+    }
   
     #######################
     # create process script
@@ -491,14 +501,7 @@ sub doIt {
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
     ##################
-    # write the pyramid descriptor and cache
-    
-    ALWAYS(">>> Write Cache Pyramid ...");
-
-    if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
-    }
+    # write the pyramid descriptor
 
     ALWAYS(">>> Write Configuration Pyramid ...");
 
