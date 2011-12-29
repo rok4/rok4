@@ -182,6 +182,7 @@ sub wms2work {
   $cmd .= sprintf ( "  wget --no-verbose -O \${TMP_DIR}/%s ",$fileName );
   $cmd .= sprintf ( " \"%s\" \n", $url);
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
+  $cmd .= "  sleep 5;\n";
   $cmd .= "done\n";
   $cmd .= "if [ \$count -eq 5 ] ; then \n";
   $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
