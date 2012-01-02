@@ -6,8 +6,8 @@
 using namespace std;
 
 void usage() {
-  cerr << endln << "usage: tiff2gray [-c (none|zip|packbits|jpeg|lzw)] <input_file> <output_file>" << endln << endln;
-  cerr << "       The default compression is the same as the source image." << endln << endln;
+  cerr << endl << "usage: tiff2gray [-c (none|zip|packbits|jpeg|lzw)] <input_file> <output_file>" << endl << endl;
+  cerr << "       The default compression is the same as the source image." << endl << endl;
 }
 
 void error(string message) {
