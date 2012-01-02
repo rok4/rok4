@@ -175,15 +175,15 @@ sub wms2work {
   
   my $cmd="";
 
-  $cmd .= "count=0\n";
-  $cmd .= "while [[ \$count -lt 15 ]] ; do\n";
+  $cmd .= "count=0; max=10; wait_delay=120\n";
+  $cmd .= "while [[ \$count -lt \$max ]] ; do\n";
   $cmd .= "  let count=count+1\n";
-  $cmd .= sprintf ( "  wget --no-verbose -O \${TMP_DIR}/%s ",$fileName );
-  $cmd .= sprintf ( " \"%s\" \n", $url);
+  $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-  $cmd .= "  sleep 60\n";
+  $cmd .= "  echo \"echec \$count/\$max: wait for \$wait_delay s\"\n";
+  $cmd .= "  sleep \$wait_delay\n";
   $cmd .= "done\n";
-  $cmd .= "if [ \$count -eq 15 ] ; then \n";
+  $cmd .= "if [ \$count -eq \$max ] ; then \n";
   $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
   $cmd .= "  echo \"url: $url\"\n";
   $cmd .= "  exit 1\n"; 
