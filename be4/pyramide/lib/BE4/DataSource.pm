@@ -122,9 +122,11 @@ sub computeImageSource {
   
   TRACE;
   
-  my %Res;
+  my %resDict;
   
   my $lstImagesSources = $self->{images}; # it's a ref !
+
+  my $badRefCtrl = 0;
   
   foreach my $filepath ($self->getListImages()) {
     
@@ -139,12 +141,21 @@ sub computeImageSource {
       ERROR ("Can not read image info ('$filepath') !");
       return FALSE;
     }
+  
+    if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
+      $badRefCtrl++;
+    }
+    if ($badRefCtrl>1){
+      ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
+      return FALSE;
+    }
+    
     # FIXME :
     #  - resolution resx == resy ?
     #  - unique resolution for all image !
-    my $key = $objImageSource->getXres();
-    $Res{$key} = 1;
-    $self->{resolution} = $key;
+    my $xRes = $objImageSource->getXres();
+    $resDict{$xRes} = 1;
+    $self->{resolution} = $xRes;
     #
     push @$lstImagesSources, $objImageSource;
   }
@@ -154,10 +165,12 @@ sub computeImageSource {
     return FALSE;
   }
   
-  if (keys (%Res) != 1) {
-    ERROR ("The resolution of image source is not unique !");
-    return FALSE;
-  }
+  # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
+  #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
+# if (keys (%resDict) != 1) {
+#   ERROR ("The resolution of image source is not unique !");
+#   return FALSE;
+# }
   
   return TRUE;
 }

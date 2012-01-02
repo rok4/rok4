@@ -219,6 +219,7 @@ sub computeInfo {
   $self->{pixelsize} = sprintf "%.8f", $dx;
   $self->{height} = $dataset->{RasterYSize};
   $self->{width}  = $dataset->{RasterXSize};
+
   
   #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
   #      $self->{xmin},
