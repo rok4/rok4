@@ -4,6 +4,7 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include "config.h"
+#include "format.h"
 
 Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
@@ -385,7 +386,8 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet(std::string fileName){
 Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
 	TileMatrixSet *tms;
-	std::string format;	
+	std::string formatStr;
+	eformat_data format;
 	int channels;
 	std::map<std::string, Level *> levels;
 	
@@ -423,19 +425,25 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                 LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de format.");
                 return NULL;
         }
-	format=pElem->GetText();
+	formatStr=pElem->GetText();
     
 //  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
-    if (format.compare("TIFF_INT8")==0) format = "TIFF_RAW_INT8";
-    if (format.compare("TIFF_FLOAT32")==0) format = "TIFF_RAW_FLOAT32";
+    if (formatStr.compare("TIFF_INT8")==0) formatStr = "TIFF_RAW_INT8";
+    if (formatStr.compare("TIFF_FLOAT32")==0) formatStr = "TIFF_RAW_FLOAT32";
     
-    if (format.compare("TIFF_RAW_INT8")!=0
-         && format.compare("TIFF_JPG_INT8")!=0
-         && format.compare("TIFF_PNG_INT8")!=0
-         && format.compare("TIFF_LZW_INT8")!=0
-         && format.compare("TIFF_RAW_FLOAT32")!=0
-         && format.compare("TIFF_LZW_FLOAT32")!=0){
-                LOGGER_ERROR(fileName << "Le format ["<< format <<"] n'est pas gere.");
+    /*if (formatStr.compare("TIFF_RAW_INT8")!=0
+         && formatStr.compare("TIFF_JPG_INT8")!=0
+         && formatStr.compare("TIFF_PNG_INT8")!=0
+         && formatStr.compare("TIFF_LZW_INT8")!=0
+         && formatStr.compare("TIFF_RAW_FLOAT32")!=0
+         && formatStr.compare("TIFF_LZW_FLOAT32")!=0){
+                LOGGER_ERROR(fileName << "Le format ["<< formatStr <<"] n'est pas gere.");
+                return NULL;
+    }*/
+    
+    format = format::fromString(formatStr);
+    if (!(format)){
+	    LOGGER_ERROR(fileName << "Le format ["<< formatStr <<"] n'est pas gere.");
                 return NULL;
     }
 
