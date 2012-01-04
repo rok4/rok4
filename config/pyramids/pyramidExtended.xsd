@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    
+    <xs:include schemaLocation="pyramid.xsd"/>
+    
+    <xs:element name="PyramidExtended">
+        <xs:complexType>
+            <xs:extension base="Pyramid">
+                <xs:sequence>
+                <xs:element name="photometric" type="imagePhotometric"/>
+                <xs:element name="interpolation" type="imageInterpolation"/>
+                <xs:element name="nodataValue" type="xs:string"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexType>
+    </xs:element>
+    
+    <!-- liste des interpolations autorisées pour la génération des images du cache -->
+    <xs:simpleType name="imagePhotometric">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="gray"/>
+            <xs:enumeration value="rgb"/>
+            <xs:enumeration value="mask"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <!-- liste des photométrique autorisées pour les images du cache -->
+    <xs:simpleType name="imageInterpolation">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="lanczos"/>
+            <xs:enumeration value="nn"/> <!-- Nearest Neighbour -->
+            <xs:enumeration value="cubic"/>
+            <xs:enumeration value="linear"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

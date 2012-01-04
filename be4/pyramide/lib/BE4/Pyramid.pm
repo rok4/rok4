@@ -102,6 +102,9 @@ my $STRPYRTMPLT   = <<"TPYR";
     <tileMatrixSet>__TMSNAME__</tileMatrixSet>
     <format>__FORMATIMG__</format>
     <channels>__CHANNEL__</channels>
+    <nodataValue>__NODATAVALUE__</nodataValue>
+    <interpolation>__INTERPOLATION__</interpolation>
+    <photometric>__PHOTOMETRIC__</photometric>
 <!-- __LEVELS__ -->
 </Pyramid>
 TPYR
@@ -187,7 +190,7 @@ sub new {
                     sampleformat            => undef,# number
                     photometric             => undef,# string value ie rgb by default !
                     samplesperpixel         => undef,# number
-                    interpolation           => undef,# string value ie bicubique by default !
+                    interpolation           => undef,# string value ie cubic by default !
                     #
                     path_nodata     => undef, # path
                     imagesize       => undef, # number ie 4096 px by default !
@@ -338,8 +341,8 @@ sub _init {
     $pyr->{color} = $params->{color};
     #
     if (! exists($params->{interpolation})) {
-        WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubique'");
-        $params->{interpolation} = 'bicubique';
+        WARN ("Parameter 'interpolation' has not been set. The default value is 'cubic'");
+        $params->{interpolation} = 'cubic';
     }
     $pyr->{interpolation} = $params->{interpolation};
     #
@@ -644,14 +647,23 @@ sub writeConfPyramid {
     my $strpyrtmplt = $doctpl->toString(0);
   
     #
-    my $tmsname  = $self->getTmsName();
+    my $tmsname = $self->getTmsName();
     $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
     #
     my $formatimg = $self->getFormat()->getCode(); # ie TIFF_RAW_INT8 !
     $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
     #  
-    my $channel  = $self->getTile()->getSamplesPerPixel();
+    my $channel = $self->getTile()->getSamplesPerPixel();
     $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+    #  
+    my $nodata = $self->{pyramid}->{color};
+    $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
+    #  
+    my $interpolation = $self->{pyramid}->{interpolation};
+    $strpyrtmplt =~ s/__INTERPOLATION__/$interpolation/;
+    #  
+    my $photometric = $self->{pyramid}->{photometric};
+    $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
 
     my @levels = $self->getLevels();
     foreach my $objLevel (@levels){
@@ -775,6 +787,31 @@ sub readConfPyramid {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
     }
+    
+    my $nodata = $root->findnodes('nodataValue')->to_literal;
+
+    if (! defined ($nodata)) {
+        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Default value is FFFFFF.");
+        $nodata = "FFFFFF";
+    }
+    
+    my $photometric = $root->findnodes('photometric')->to_literal;
+
+    if (! defined ($photometric)) {
+        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Default value is rgb.");
+        $photometric = "rgb";
+    }
+    
+    my $interpolation = $root->findnodes('interpolation')->to_literal;
+
+    if (! defined ($interpolation)) {
+        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Default value is cubic.");
+        $interpolation = "cubic";
+    }
+    
+    $self->{pyramid}->{color} = $nodata;
+    $self->{pyramid}->{interpolation} = $interpolation;
+    $self->{pyramid}->{photometric} = $photometric;
 
 #   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
     if ($tagformat eq 'TIFF_INT8') {
@@ -851,7 +888,7 @@ sub readConfPyramid {
 
     # save it if doesn't exist !
     if (! defined ($self->getFormat())) {
-    $self->{format} = $objFormat;
+        $self->{format} = $objFormat;
     }
     
     # check format
@@ -1862,7 +1899,7 @@ __END__
     imagesize     => "1024",
     color         => "FFFFFF,
     #
-    interpolation => "bicubique",
+    interpolation => "cubic",
     photometric   => "rgb",
  };
 
@@ -1903,7 +1940,7 @@ __END__
     sampleformat        => "uint", 
     photometric         => "rgb", 
     samplesperpixel     => "3",
-    interpolation       => "bicubique",
+    interpolation       => "cubic",
  };
 
  my $objP = BE4::Pyramid->new($params_options);
@@ -1944,7 +1981,7 @@ To create a new pyramid, you must fill all parameters following :
     sampleformat        = 
     photometric         => by default, it's 'rgb' !
     samplesperpixel     =
-    interpolation       => by default, it's 'bicubique' !
+    interpolation       => by default, it's 'cubic' !
 
 The pyramid file and the directory structure can be create.
 
@@ -1967,7 +2004,7 @@ To create a new pyramid, you must fill all parameters following :
     color         => by default, it's 'FFFFFF' !
     # 
     interpolation => by default, it's 'rgb' !
-    photometric   => by default, it's 'bicubique' !
+    photometric   => by default, it's 'cubic' !
 
 All paramaters are filled by loading the old configuration pyramid.
 So, object 'BE4::Product' and 'BE4::TileMatrixSet' are created, and the other

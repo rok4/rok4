@@ -737,7 +737,7 @@ These parameters can be null because of parameters by default :
    imagesize - 4096
  
  [ tile ] or [ pyramid ]
-   interpolation   - bicubique
+   interpolation   - cubic
    photometric     - rgb
  
  [ pyramid ]
