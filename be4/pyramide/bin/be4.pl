@@ -422,17 +422,9 @@ sub doIt {
       return FALSE;
     }
   
-    # we cannot write the pyramid descriptor now. We need data's limits which are calculated in the Process creation
-  
-#    ALWAYS(">>> Write Configuration Pyramid ...");
-
-#    if (! $objPyramid->writeConfPyramid()) {
-#      ERROR ("Can not write Pyramid File !");
-#      return FALSE;
-#    }
-  
-#    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-
+    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
+    # which are calculated in the Process creation
+    
     ###################
     # load data source
     
@@ -460,16 +452,6 @@ sub doIt {
         #        not implemented !
         
         DEBUG (sprintf "DATASOURCE (dump) = %s", Dumper($objData));
-    }
-    
-    ##################
-    # write the pyramid cache
-    
-    ALWAYS(">>> Write Cache Pyramid ...");
-
-    if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
     }
   
     #######################
@@ -501,6 +483,16 @@ sub doIt {
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
     ##################
+    # write the pyramid cache
+    
+    ALWAYS(">>> Write Cache Pyramid ...");
+
+    if (! $objPyramid->writeCachePyramid()) {
+      ERROR ("Can not write Pyramid Cache !");
+      return FALSE;
+    }
+    
+    ##################
     # write the pyramid descriptor
 
     ALWAYS(">>> Write Configuration Pyramid ...");
@@ -511,7 +503,7 @@ sub doIt {
     }
   
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-    
+
     #######################
     # execute process script
     

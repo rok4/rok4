@@ -440,6 +440,14 @@ sub _load {
       return FALSE;
     }
     
+    # save tms' extrema if doesn't exist !
+    if (! defined ($self->{pyramid}->{tms_level_min})) {
+        $self->{pyramid}->{tms_level_min} = $objTMS->{levelmin};
+    }
+    if (! defined ($self->{pyramid}->{tms_level_max})) {
+        $self->{pyramid}->{tms_level_max} = $objTMS->{levelmax};
+    }
+    
     $self->{tms} = $objTMS;
     DEBUG (sprintf "TMS = %s", Dumper($objTMS));
     
@@ -647,49 +655,52 @@ sub writeConfPyramid {
 
     my @levels = $self->getLevels();
     foreach my $objLevel (@levels){
-    
-        # image
-        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
+        if ($objLevel->{id} >= $self->{pyramid}->{pyr_level_top} && $objLevel->{id} <= $self->{pyramid}->{pyr_level_bottom}) {
         
-        my $id       = $objLevel->{id};
-        $strpyrtmplt =~ s/__ID__/$id/;
-    
-        my $dirimg   = $objLevel->{dir_image};
-        $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
+            # image
+            $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
+            
+            my $id       = $objLevel->{id};
+            $strpyrtmplt =~ s/__ID__/$id/;
         
-        my $dirnd   = $objLevel->{dir_nodata};
-        my $pathnd = $dirnd."/nd.tiff";
-        $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
+            my $dirimg   = $objLevel->{dir_image};
+            $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
+            
+            my $dirnd   = $objLevel->{dir_nodata};
+            my $pathnd = $dirnd."/nd.tiff";
+            $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
+            
+            my $tilew    = $objLevel->{size}->[0];
+            $strpyrtmplt =~ s/__TILEW__/$tilew/;
+            my $tileh    = $objLevel->{size}->[1];
+            $strpyrtmplt =~ s/__TILEH__/$tileh/;
+            
+            my $depth    =  $objLevel->{dir_depth};
+            $strpyrtmplt =~ s/__DEPTH__/$depth/;
+            
+            my $minrow   =  $objLevel->{limit}->[0];
+            $strpyrtmplt =~ s/__MINROW__/$minrow/;
+            my $maxrow   =  $objLevel->{limit}->[1];
+            $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
+            my $mincol   =  $objLevel->{limit}->[2];
+            $strpyrtmplt =~ s/__MINCOL__/$mincol/;
+            my $maxcol   =  $objLevel->{limit}->[3];
+            $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
         
-        my $tilew    = $objLevel->{size}->[0];
-        $strpyrtmplt =~ s/__TILEW__/$tilew/;
-        my $tileh    = $objLevel->{size}->[1];
-        $strpyrtmplt =~ s/__TILEH__/$tileh/;
-        
-        my $depth    =  $objLevel->{dir_depth};
-        $strpyrtmplt =~ s/__DEPTH__/$depth/;
-        
-        my $minrow   =  $objLevel->{limit}->[0];
-        $strpyrtmplt =~ s/__MINROW__/$minrow/;
-        my $maxrow   =  $objLevel->{limit}->[1];
-        $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
-        my $mincol   =  $objLevel->{limit}->[2];
-        $strpyrtmplt =~ s/__MINCOL__/$mincol/;
-        my $maxcol   =  $objLevel->{limit}->[3];
-        $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
-    
-        # metadata
-        if (defined $objLevel->{dir_metadata}) {
+            # metadata
+            if (defined $objLevel->{dir_metadata}) {
 
-            $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
+                $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
 
-            my $dirmtd   = $objLevel->{dir_metadata};
-            $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
+                my $dirmtd   = $objLevel->{dir_metadata};
+                $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
 
-            my $formatmtd = $objLevel->{compress_metadata};
-            $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
+                my $formatmtd = $objLevel->{compress_metadata};
+                $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
+            }
+            $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
+            
         }
-        $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
     }
     #
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
@@ -809,6 +820,14 @@ sub readConfPyramid {
     # save it if doesn't exist !
     if (! defined ($self->getTileMatrixSet())) {
     $self->{tms} = $objTMS;
+    }
+    
+    # save tms' extrema if doesn't exist !
+    if (! defined ($self->{pyramid}->{tms_level_min})) {
+        $self->{pyramid}->{tms_level_min} = $objTMS->{levelmin};
+    }
+    if (! defined ($self->{pyramid}->{tms_level_max})) {
+        $self->{pyramid}->{tms_level_max} = $objTMS->{levelmax};
     }
 
     # fill parameters if not... !
@@ -1113,18 +1132,35 @@ sub writeCachePyramid {
     # we need to create nodata tiles, for each level. If a symbolic link already exists, we move on
     my @levels = $self->getLevels();
     foreach my $objLevel (@levels){
-        my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
-        $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
-        if (! -e $nodataFilePath) {
-            my $createNodataCommand = $self->createNodata($nodataFilePath);
-            
-            if (! system($createNodataCommand) == 0) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\nThe command is incorrect : '%s'",
-                                $objLevel->getID(),
-                                $createNodataCommand);
+        
+        if ($objLevel->{id} >= $self->{pyramid}->{pyr_level_top} 
+            && $objLevel->{id} <= $self->{pyramid}->{pyr_level_bottom}) {
+            # we have to create the nodata tile
+            my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
+            $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+            if (! -e $nodataFilePath) {
+                my $createNodataCommand = $self->createNodata($nodataFilePath);
+                
+                if (! system($createNodataCommand) == 0) {
+                    ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
+                                    The command is incorrect : '%s'",
+                                    $objLevel->getID(),
+                                    $createNodataCommand);
+                    return FALSE;
+                }
+            }
+        }
+        
+        else {
+            # we have to remove the directory for this level
+            my $nodataDirPath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
+            eval { rmdir $nodataDirPath; };
+            if ($@) {
+                ERROR(sprintf "Can not remove the nodata directory '%s' : %s !", $nodataDirPath , $@);
                 return FALSE;
             }
         }
+        
     }
 
     return TRUE;
