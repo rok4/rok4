@@ -70,6 +70,7 @@ sub _init {
         return FALSE;
     }
 
+
     # manadatory !
     $self->{job_number} = $params_process->{job_number}; 
     $self->{path_temp}  = $params_process->{path_temp};
@@ -136,14 +137,21 @@ sub _init {
     #  it's an object !
   
     
-  $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
-  
+    $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
 
     if (! defined $self->{tree}) {
         ERROR("Can not load Tree object !");
         return FALSE;
     }
-
+    
+    # save extrem pyramid's levels if doesn't exist !
+    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_top})) {
+        $self->{pyramid}->{pyramid}->{pyr_level_top} = $self->{tree}->{topLevelId};
+    }
+    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_bottom})) {
+        $self->{pyramid}->{pyramid}->{pyr_level_bottom} = $self->{tree}->{bottomLevelId};
+    }
+    
     DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
 
     return TRUE;

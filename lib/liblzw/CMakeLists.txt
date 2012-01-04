@@ -51,10 +51,6 @@ add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
 
 include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
-
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff lzw)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -123,6 +119,7 @@ INSTALL(TARGETS ${PROJECT_NAME}
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
+
 
 #Installe la documentation
 if(BUILD_DOC)

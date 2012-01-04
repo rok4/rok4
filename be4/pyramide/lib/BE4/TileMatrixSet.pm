@@ -145,11 +145,23 @@ sub _load {
     return FALSE;
   }
   
+  # on va mémoriser les niveaux extrèmes du TMS. S'ils n'avaient pas été définis par l'utilisateur, ils seront stocké dans l'objet TMS
+  my $levelmin = 100;
+  my $levelmax = 0;
+  
   # load tileMatrix
   while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
     
-    next if (defined $self->{levelmin} && $k < $self->{levelmin});
-    next if (defined $self->{levelmax} && $k > $self->{levelmax});
+    if (defined $self->{levelmin} && $k < $self->{levelmin}) {
+        next;
+    } else {
+        if ($k<$levelmin) {$levelmin = $k;}
+    }
+    if (defined $self->{levelmax} && $k > $self->{levelmax}) {
+        next;
+    } else {
+        if ($k>$levelmax) {$levelmax = $k;}
+    }
     
     my $obj = BE4::TileMatrix->new({
                         id => $k,
@@ -188,6 +200,10 @@ sub _load {
   my $tm = $self->getFirstTileMatrix();
   $self->{tilewidth}  = $tm->getTileWidth();
   $self->{tileheight} = $tm->getTileHeight();
+  
+  # level extrema
+  if (!defined $self->{levelmin} && defined $levelmin) {$self->{levelmin} = $levelmin;}
+  if (!defined $self->{levelmax} && defined $levelmax) {$self->{levelmax} = $levelmax;}
   
   return TRUE;
 }
