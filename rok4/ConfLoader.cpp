@@ -454,14 +454,14 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                 channels=DEFAULT_CHANNELS;
                 return NULL;
         }else if (!sscanf(pElem->GetText(),"%d",&channels)){
-                LOGGER_ERROR("La pyramide ["<< fileName <<"] : channels=[" << pElem->GetText() <<"] n'est pas un entier.");
+                LOGGER_ERROR("La pyramide ["<< fileName <<"] : channels=[" << pElem->GetText() <<"] is not an integer.");
                 return NULL;
         }
 
 	for( pElem=hRoot.FirstChild( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement( "level")){
 		TileMatrix *tm;
-		std::string id;
-		std::string baseDir;
+		//std::string id;
+		//std::string baseDir;
 		int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
 		int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
@@ -469,13 +469,13 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		int tilesPerWidth;
 		int tilesPerHeight;
 		int pathDepth;
-		std::string noDataFilePath ="null";
+		std::string noDataFilePath;
 
 		TiXmlHandle hLvl(pElem);
 		TiXmlElement* pElemLvl = hLvl.FirstChild("tileMatrix").Element();
-		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<id<<" sans tileMatrix!!"); return NULL; }
+		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<"id"<<" sans tileMatrix!!"); return NULL; }
 		std::string tmName(pElemLvl->GetText());
-		id=tmName;
+		std::string id(tmName);
 		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
 		std::map<std::string, TileMatrix>::iterator it = tmList->find(tmName);
 
@@ -487,7 +487,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
 		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
-		baseDir=pElemLvl->GetText();
+		std::string baseDir(pElemLvl->GetText());
 
 		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
 		if (!pElemLvl){
@@ -495,7 +495,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 			return NULL;
 		}
 		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerWidth)){
-			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerWidth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerWidth=[" << pElemLvl->GetText() <<"] is not an integer.");
 			return NULL;
 		}
 
@@ -505,7 +505,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 			return NULL;
 		}
 		if (!sscanf(pElemLvl->GetText(),"%d",&tilesPerHeight)){
-			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerHeight=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			LOGGER_ERROR(fileName <<" Level "<< id <<": tilesPerHeight=[" << pElemLvl->GetText() <<"] is not an integer.");
 			return NULL;
 		}
 
@@ -515,54 +515,87 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 			return NULL;
 		}
 		if (!sscanf(pElemLvl->GetText(),"%d",&pathDepth)){
-			LOGGER_ERROR(fileName <<" Level "<< id <<": pathDepth=[" << pElemLvl->GetText() <<"] n'est pas un entier.");
+			LOGGER_ERROR(fileName <<" Level "<< id <<": pathDepth=[" << pElemLvl->GetText() <<"] is not an integer.");
 			return NULL;
 		}
 
-		TiXmlElement* pElemTMSL=hRoot.FirstChild( "TMSLimits" ).Element();
-		if (pElemTMSL){ // le bloc TMSLimits n'est pas obligatoire, mais s'il est là, il doit y avoir tous les champs.
-			TiXmlHandle hTMSL(pElem);
+		TiXmlElement *pElemLvlTMS =hLvl.FirstChild( "TMSLimits" ).Element();
+		if (pElemLvlTMS){ // le bloc TMSLimits n'est pas obligatoire, mais s'il est là, il doit y avoir tous les champs.
+                        
+			TiXmlHandle hTMSL(pElemLvlTMS);
 			TiXmlElement* pElemTMSL = hTMSL.FirstChild("minTileRow").Element();
+                        long int intBuff = -1;
 			if (!pElemTMSL){
-				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de minTileRow dans le bloc TMSLimits !!");
+                            LOGGER_ERROR(fileName <<" Level "<< id << ": no minTileRow in TMSLimits element !!");
+                            return NULL;
+			}
+			if (!pElemTMSL->GetText()){
+                            LOGGER_ERROR(fileName <<" Level "<< id << ": minTileRow is empty !!");
+                                return NULL;
+			}
+			if (!sscanf(pElemTMSL->GetText(),"%ld",&intBuff)){
+				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileRow=[" << pElemTMSL->GetText() <<"] is not an integer.");
 				return NULL;
 			}
-			if (!sscanf(pElemTMSL->GetText(),"%d",&minTileRow)){
-				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
-				return NULL;
-			}
-
+                        minTileRow = intBuff;
+                        intBuff = -1;
 			pElemTMSL = hTMSL.FirstChild("maxTileRow").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de maxTileRow dans le bloc TMSLimits !!");
+				LOGGER_ERROR(fileName <<" Level "<< id << ": no maxTileRow in TMSLimits element !!");
 				return NULL;
 			}
-			if (!sscanf(pElemTMSL->GetText(),"%d",&maxTileRow)){
-				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileRow=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+			if (!pElemTMSL->GetText()){
+                            LOGGER_ERROR(fileName <<" Level "<< id << ": maxTileRow is empty !!");
+                                return NULL;
+                        }
+			if (!sscanf(pElemTMSL->GetText(),"%ld",&intBuff)){
+				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileRow=[" << pElemTMSL->GetText() <<"] is not an integer.");
 				return NULL;
 			}
-
+                        maxTileRow = intBuff;
+                        intBuff = -1;
 			pElemTMSL = hTMSL.FirstChild("minTileCol").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR("Level "<< id << ": Pas de minTileCol dans le bloc TMSLimits !!");
+				LOGGER_ERROR("Level "<< id << ": no minTileCol in TMSLimits element !!");
 				return NULL;
 			}
-			if (!sscanf(pElemTMSL->GetText(),"%d",&minTileCol)){
-				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+			if (!pElemTMSL->GetText()){
+                            LOGGER_ERROR(fileName <<" Level "<< id << ": minTileCol is empty !!");
+                                return NULL;
+                        }
+			
+			if (!sscanf(pElemTMSL->GetText(),"%ld",&intBuff)){
+				LOGGER_ERROR(fileName <<" Level "<< id <<": minTileCol=[" << pElemTMSL->GetText() <<"] is not an integer.");
 				return NULL;
 			}
-
+                        minTileCol = intBuff;
+                        intBuff = -1;
 			pElemTMSL = hTMSL.FirstChild("maxTileCol").Element();
 			if (!pElemTMSL){
-				LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de maxTileCol dans le bloc TMSLimits !!");
+				LOGGER_ERROR(fileName <<" Level "<< id << ": no maxTileCol in TMSLimits element !!");
 				return NULL;
 			}
-			if (!sscanf(pElemTMSL->GetText(),"%d",&maxTileCol)){
-				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileCol=[" << pElemTMSL->GetText() <<"] n'est pas un entier.");
+                        if (!pElemTMSL->GetText()){
+                            LOGGER_ERROR(fileName <<" Level "<< id << ": maxTileCol is empty !!");
+                                return NULL;
+                        }
+			if (!sscanf(pElemTMSL->GetText(),"%ld",&intBuff)){
+				LOGGER_ERROR(fileName <<" Level "<< id <<": maxTileCol=[" << pElemTMSL->GetText() <<"] is not an integer.");
 				return NULL;
 			}
+			maxTileCol = intBuff;
+                        
 		}
 		
+		if (minTileCol <0) 
+                    minTileCol = 0;
+                if (minTileRow <0) 
+                    minTileRow = 0;
+                if (maxTileCol > tm->getMatrixW() || maxTileCol < 0)
+                    maxTileCol = tm->getMatrixW();
+		if (maxTileRow > tm->getMatrixH() || maxTileRow < 0)
+                    maxTileRow = tm->getMatrixH();
+
 		// Would be Mandatory in future release
 		TiXmlElement* pElemNoData=hRoot.FirstChild( "nodata" ).Element();
 		
@@ -575,6 +608,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 				if (!pElemNoDataPath){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
 			}
 		}
+		
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
 				maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath);
 		
@@ -897,7 +931,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 		std::cerr<<"Pas de logFilePeriod => logFilePeriod = " << DEFAULT_LOG_FILE_PERIOD;
 		logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
 	}else if (!sscanf(pElem->GetText(),"%d",&logFilePeriod))  {
-		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  n'est pas un entier."<<std::endl;	
+		std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  is not an integer."<<std::endl;	
 		return false;
 	}
 
@@ -921,7 +955,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 		std::cerr<<"Pas de nbThread => nbThread = " << DEFAULT_NB_THREAD<<std::endl;
 		nbThread = DEFAULT_NB_THREAD;
 	}else if (!sscanf(pElem->GetText(),"%d",&nbThread)){
-		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] n'est pas un entier."<<std::endl;
+		std::cerr<<"Le nbThread [" << pElem->GetText() <<"] is not an integer."<<std::endl;
 		return false;
 	}
 	

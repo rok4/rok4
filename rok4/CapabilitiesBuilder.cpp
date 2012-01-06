@@ -11,7 +11,7 @@
 /**
  * Conversion de int en std::string.
  */
-std::string numToStr(int i){
+std::string numToStr(long int i){
 	std::ostringstream strstr;
 	strstr << i;
 	return strstr.str();
@@ -557,7 +557,27 @@ void Rok4Server::buildWMTSCapabilities(){
 		 *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
 		TiXmlElement * tmsLinkEl = new TiXmlElement("TileMatrixSetLink");
 		tmsLinkEl->LinkEndChild(buildTextNode("TileMatrixSet",layer->getDataPyramid()->getTms().getId()));
-		layerEl->LinkEndChild(tmsLinkEl);
+                //tileMatrixSetLimits
+                TiXmlElement * tmsLimitsEl = new TiXmlElement("TileMatrixSetLimits");
+                
+                std::map<std::string, Level*> layerLevelList = layer->getDataPyramid()->getLevels();
+                
+                std::map<std::string, Level*>::iterator itLevelList(layerLevelList.begin());
+                std::map<std::string, Level*>::iterator itLevelListEnd(layerLevelList.end());
+                for (;itLevelList!=itLevelListEnd;++itLevelList){
+                    Level * level = itLevelList->second;
+                    TiXmlElement * tmLimitsEl = new TiXmlElement("TileMatrixLimits");
+                    tmLimitsEl->LinkEndChild(buildTextNode("tileMatrix",level->getTm().getId()));
+
+                    tmLimitsEl->LinkEndChild(buildTextNode("minTileRow",numToStr((level->getMinTileRow()<0?0:level->getMinTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileRow",numToStr((level->getMaxTileRow()<0?level->getTm().getMatrixW():level->getMaxTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("minTileCol",numToStr((level->getMinTileCol()<0?0:level->getMinTileCol() )  )));
+                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileCol",numToStr((level->getMaxTileCol()<0?level->getTm().getMatrixH():level->getMaxTileCol() )  )));
+                    tmsLimitsEl->LinkEndChild(tmLimitsEl);
+                }
+                tmsLinkEl->LinkEndChild(tmsLimitsEl);
+		
+                layerEl->LinkEndChild(tmsLinkEl);
 
 		contentsEl->LinkEndChild(layerEl);
 	}

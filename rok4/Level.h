@@ -20,10 +20,10 @@ private:
 	TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
 	const eformat_data format; //format d'image des tuiles
 	const int     channels;
-	const int32_t maxTileRow;
-	const int32_t minTileRow;
-	const int32_t maxTileCol;
-	const int32_t minTileCol;
+	const uint32_t maxTileRow;
+	const uint32_t minTileRow;
+	const uint32_t maxTileCol;
+	const uint32_t minTileCol;
 	uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
 	uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
 	std::string noDataFile;
