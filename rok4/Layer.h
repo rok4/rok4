@@ -6,6 +6,7 @@
 #include "Pyramid.h"
 #include "CRS.h"
 #include "Style.h"
+#include "MetadataURL.h"
 
 struct GeographicBoundingBoxWMS{
 public:
@@ -38,6 +39,7 @@ private:
 	std::string resampling; //FIXME: revoir le type de resampling (plutot un enum).
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
+        std::vector<MetadataURL> metadataURLs;
 	
 public:
 	std::string getId();
@@ -58,9 +60,20 @@ public:
 	std::vector<CRS*> getWMSCRSList() const { return WMSCRSList; }
 	GeographicBoundingBoxWMS getGeographicBoundingBox() const { return geographicBoundingBox; }
 	BoundingBoxWMS           getBoundingBox() const { return boundingBox; }
+	std::vector<MetadataURL> getMetadataURLs() const { return metadataURLs; }
 
-	Layer(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, Pyramid*& dataPyramid, std::vector<Style*> & styles, double minRes, double maxRes, std::vector<CRS*> & WMSCRSList, bool opaque, std::string authority, std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox, BoundingBoxWMS boundingBox)
-	:id(id), title(title), abstract(abstract), keyWords(keyWords), dataPyramid(dataPyramid), styles(styles), minRes(minRes), maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque), authority(authority), resampling(resampling), geographicBoundingBox(geographicBoundingBox), boundingBox(boundingBox)
+	Layer(std::string id, std::string title, std::string abstract,
+              std::vector<std::string> & keyWords, Pyramid*& dataPyramid,
+              std::vector<Style*> & styles, double minRes, double maxRes,
+              std::vector<CRS*> & WMSCRSList, bool opaque, std::string authority,
+              std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox,
+              BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs)
+              :id(id), title(title), abstract(abstract), keyWords(keyWords), 
+              dataPyramid(dataPyramid), styles(styles), minRes(minRes),
+              maxRes(maxRes), WMSCRSList(WMSCRSList), opaque(opaque),
+              authority(authority),resampling(resampling),
+              geographicBoundingBox(geographicBoundingBox),
+              boundingBox(boundingBox), metadataURLs(metadataURLs)
 	{
 	}
 	~Layer();

@@ -261,6 +261,21 @@ void Rok4Server::buildWMSCapabilities(){
 			bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
 			childLayerEl->LinkEndChild(bbEl);
 		}
+		//MetadataURL
+		if (childLayer->getMetadataURLs().size() != 0){
+                    for (unsigned int i=0; i < childLayer->getMetadataURLs().size(); ++i){
+                        TiXmlElement * mtdURLEl = new TiXmlElement("MetadataURL");
+                        MetadataURL mtdUrl = childLayer->getMetadataURLs().at(i);
+                        mtdURLEl->SetAttribute("type", mtdUrl.getType());
+                        mtdURLEl->LinkEndChild(buildTextNode("Format",mtdUrl.getFormat()));
+                        
+                        TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
+                        onlineResourceEl->SetAttribute("xlink:type","simple");
+                        onlineResourceEl->SetAttribute("xlink:href", mtdUrl.getHRef());
+                        mtdURLEl->LinkEndChild(onlineResourceEl);
+                        childLayerEl->LinkEndChild(mtdURLEl);
+                    }
+		}
 
 		// Style
 		LOGGER_DEBUG("Nombre de styles : "<<childLayer->getStyles().size());
@@ -282,10 +297,8 @@ void Rok4Server::buildWMSCapabilities(){
 					TiXmlElement* legendURLEl = new TiXmlElement("LegendURL");
 					
 					TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
-					LOGGER_DEBUG("OnlineResource");
+                                        onlineResourceEl->SetAttribute("xlink:type","simple");
 					onlineResourceEl->SetAttribute("xlink:href", legendURL.getHRef());
-					
-					LOGGER_DEBUG("OnlineResource OK");
 					legendURLEl->LinkEndChild(buildTextNode("Format", legendURL.getFormat()));
 					legendURLEl->LinkEndChild(onlineResourceEl);
 					legendURLEl->SetAttribute("format", legendURL.getFormat());

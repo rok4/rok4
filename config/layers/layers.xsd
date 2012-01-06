@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:import namespace="http://inspire.ec.europa.eu/schemas/common/1.0" schemaLocation="http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd"/>
 	<xs:element name="layer">
 		<xs:complexType>
 			<xs:sequence>
@@ -65,6 +66,8 @@
 			<xs:element name="resampling" type="xs:string"/>
 			<!-- Pyramide du layer -->
 			<xs:element name="pyramid" type="xs:string"/>
+			<!-- Elément MetadataURL Inspire -->
+			<xs:element ref="inpire_common:MetadataURL" minOccurs="0" maxOccurs="unbounded">
 		</xs:complexType>
 	</xs:element>
 

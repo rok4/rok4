@@ -5,6 +5,8 @@
 #include "tinystr.h"
 #include "config.h"
 #include "format.h"
+#include "MetadataURL.h"
+#include "LegendURL.h"
 
 Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
@@ -652,6 +654,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	Pyramid* pyramid;
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
+        std::vector<MetadataURL> metadataURLs;
 	
 	TiXmlHandle hDoc(doc);
 	TiXmlElement* pElem;
@@ -873,11 +876,43 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
                 LOGGER_ERROR("Aucune pyramide associee au layer "<< fileName);
                 return NULL;
 	}
+	
+	//MetadataURL Elements , mandatory in INSPIRE
+	for(pElem=hRoot.FirstChild("MetadataURL").Element(); pElem; pElem=pElem->NextSiblingElement("MetadataURL")){
+                std::string format;
+                std::string href;
+                std::string type;
+                
+                if(pElem->QueryStringAttribute("type",&type) != TIXML_SUCCESS){
+                    LOGGER_ERROR(fileName << "MetadataURL type missing");
+                    continue;
+                }
+                
+                TiXmlHandle hMetadata(pElem);
+                TiXmlElement *pElemMTD = hMetadata.FirstChild("Format").Element();
+                if (!pElemMTD || !pElemMTD->GetText()) {
+                    LOGGER_ERROR(fileName << "MetadataURL Format missing");
+                    continue;
+                }
+                format = pElemMTD->GetText();
+                pElemMTD = hMetadata.FirstChild("OnlineResource").Element();
+                if(!pElemMTD || pElemMTD->QueryStringAttribute("xlink:href",&href) != TIXML_SUCCESS){
+                    LOGGER_ERROR(fileName << "MetadataURL HRef missing");
+                    continue;
+                }
+                
+                metadataURLs.push_back(MetadataURL(format,href,type));
+        }
+	
+	if (metadataURLs.size() == 0 && inspire) {
+            LOGGER_ERROR("No MetadataURL found in the layer " << fileName <<" : not compatible with INSPIRE!!");
+                return NULL;
+	}
 
 	Layer *layer;
 
 	layer = new Layer(id, title, abstract, keyWords, pyramid, styles, minRes, maxRes,
-			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox);
+			WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs);
 
 	return layer;
 }//buildLayer
