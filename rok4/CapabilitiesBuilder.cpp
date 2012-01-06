@@ -77,6 +77,7 @@ void Rok4Server::buildWMSCapabilities(){
 		for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
 			kwlEl->LinkEndChild(buildTextNode("Keyword",servicesConf.getKeyWords()[i]));
 		}
+		kwlEl->LinkEndChild(buildTextNode("Keyword", ROK4_INFO));
 		serviceEl->LinkEndChild(kwlEl);
 	}
 	//OnlineResource
@@ -389,6 +390,7 @@ void Rok4Server::buildWMTSCapabilities(){
 		for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
 			kwlEl->LinkEndChild(buildTextNode("ows:Keyword", servicesConf.getKeyWords()[i]));
 		}
+		kwlEl->LinkEndChild(buildTextNode("ows:Keyword", ROK4_INFO));
 		serviceEl->LinkEndChild(kwlEl);
 	}
 	serviceEl->LinkEndChild(buildTextNode("ows:ServiceType", servicesConf.getServiceType()));
