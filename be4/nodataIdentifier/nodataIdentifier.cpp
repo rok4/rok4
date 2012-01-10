@@ -10,7 +10,8 @@
 using namespace std;
 
 void usage() {
-    cerr << "Usage: nodataIdentifier [-n nodataInit] input.tiff output.tiff";
+    cerr << "Usage: nodataIdentifier [-n nodataInit] inout.tiff" << endl;
+    cerr << "Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodataInit' will be changed in white" << endl;
 }
 
 void error(string message) {
@@ -18,17 +19,13 @@ void error(string message) {
     exit(2);
 }
 
-TIFF *SRC_TIFF = 0;
-TIFF *DST_TIFF  = 0;
+TIFF *TIFF_FILE = 0;
 
-char* src_tiff = 0;
-char* dst_tiff = 0;
+char* tiff_file = 0;
 char* strnodata = 0;
-uint8_t nodata = 255;
-uint8_t color[3] = {255,255,255};
+uint8_t nodataColor[4] = {255,255,255,255};
 uint8_t *IM ;
 bool *MASK;
-int C;
 queue<int> Q;
 
 uint32 width, height, rowsperstrip = -1;
@@ -48,7 +45,7 @@ int h2i(char s)
 }
 
 inline void propagate(int newpos) {
-    if(!memcmp(IM + newpos*C, color, C) && !MASK[newpos]) {
+    if(!memcmp(IM + newpos*sampleperpixel, nodataColor, sampleperpixel) && !MASK[newpos]) {
         MASK[newpos] = true;
         Q.push(newpos);
     }
@@ -70,60 +67,66 @@ int main(int argc, char* argv[]) {
             }
         }
         else {
-            if (src_tiff == 0) src_tiff = argv[i];
-            else if (dst_tiff  == 0) dst_tiff  = argv[i];
+            if (tiff_file == 0) tiff_file = argv[i];
             else error("too many parameters");
         }
     }
-    if(dst_tiff == 0) error("Missing output file");
-    if(src_tiff == 0) error("Missing input file");
+    if(tiff_file == 0) error("Missing input file");
 
-    SRC_TIFF = TIFFOpen(src_tiff, "r");
+    TIFF_FILE = TIFFOpen(tiff_file, "r");
+    if(!TIFF_FILE) error("Unable to open file for reading: " + string(tiff_file));
+    if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &width)                       ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, &height)                     ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, &photometric)                ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel)||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compression)                ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, &rowsperstrip)              ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_EXTRASAMPLES, &nb_extrasamples, &extrasamples))
+            error("Error reading file: " +  string(tiff_file));
 
-    if( ! TIFFGetField(SRC_TIFF, TIFFTAG_IMAGEWIDTH, &width)                       ||
-        ! TIFFGetField(SRC_TIFF, TIFFTAG_IMAGELENGTH, &height)                     ||
-        ! TIFFGetField(SRC_TIFF, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
-        ! TIFFGetFieldDefaulted(SRC_TIFF, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
-        ! TIFFGetField(SRC_TIFF, TIFFTAG_PHOTOMETRIC, &photometric)                ||
-        ! TIFFGetFieldDefaulted(SRC_TIFF, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel)||
-        ! TIFFGetField(SRC_TIFF, TIFFTAG_COMPRESSION, &compression)                ||
-        ! TIFFGetField(SRC_TIFF, TIFFTAG_ROWSPERSTRIP, &rowsperstrip)              ||
-        ! TIFFGetFieldDefaulted(SRC_TIFF, TIFFTAG_EXTRASAMPLES, &nb_extrasamples, &extrasamples))
-            error("Error reading input file: " +  string(src_tiff));
-
-    if(planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
-    if(bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
+    if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
+    if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
     
-    if (strnodata != 0) {
-        int a1 = h2i(strnodata[0]);
-        int a0 = h2i(strnodata[1]);
-        if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for image");
-        nodata = 16*a1+a0;
-        color = {nodata,nodata,nodata};
+    if (strlen(strnodata) != 2*sampleperpixel) {
+        error("nodata parameter too short or too long");
     }
     
-    C = sampleperpixel;
-    IM  = new uint8_t[width * height * C];
+    if (strnodata != 0) {
+        uint8_t nodata = 255;
+        for (int i=0; i<sampleperpixel; i++) {
+            int a1 = h2i(strnodata[i*2]);
+            int a0 = h2i(strnodata[i*2+1]);
+            if (a1 < 0 || a0 < 0) error("invalid caracter in the nodata value");
+            nodata = 16*a1+a0;
+            nodataColor[i] = nodata;
+        }
+    }
+    
+    IM  = new uint8_t[width * height * sampleperpixel];
     MASK = new bool[width * height];
     memset(MASK, false, width * height);
 
     for(int h = 0; h < height; h++) 
-        if(TIFFReadScanline(SRC_TIFF, IM + width*C*h, h) == -1) 
+        if(TIFFReadScanline(TIFF_FILE, IM + width*sampleperpixel*h, h) == -1) 
             error("Unable to read data");
+    
+    TIFFClose(TIFF_FILE);
 
     for(int pos = 0; pos < width; pos++) 
-        if(!memcmp(IM + C * pos, color, C)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = width*(height-1); pos < width*height; pos++) 
-        if(!memcmp(IM + C * pos, color, C)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = 0; pos < width*height; pos += width)
-        if(!memcmp(IM + C * pos, color, C)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = width -1; pos < width*height; pos+= width)
-        if(!memcmp(IM + C * pos, color, C)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     
-    if(Q.empty() && strcmp(src_tiff, dst_tiff) == 0) {
+    if(Q.empty()) {
+        cout << "No nodata pixel identified, nothing to do." << endl;
         delete[] IM;
         delete[] MASK;
-        cout << "Il n'y a pas de nodata qui touche le bord" << endl;
         return 0;
     }
 
@@ -144,37 +147,36 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    uint8_t *LINE = new uint8_t[width * C];
+    uint8_t *LINE = new uint8_t[width * sampleperpixel];
 
-    DST_TIFF = TIFFOpen(dst_tiff, "w");
-    if(!DST_TIFF) error("Unable to open output file: " + string(dst_tiff));
-    if( ! TIFFSetField(DST_TIFF, TIFFTAG_IMAGEWIDTH, width)               ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_IMAGELENGTH, height)             ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel) ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_PHOTOMETRIC, photometric)        ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_PLANARCONFIG, planarconfig)      ||
-        ! TIFFSetField(DST_TIFF, TIFFTAG_COMPRESSION, compression)        ||
-        (nb_extrasamples && ! TIFFSetField(DST_TIFF, TIFFTAG_EXTRASAMPLES, nb_extrasamples, extrasamples)))
-            error("Error writting output file: " +  string(dst_tiff));
+    TIFF_FILE = TIFFOpen(tiff_file, "w");
+    if(!TIFF_FILE) error("Unable to open file for writting: " + string(tiff_file));
+    if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel) ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, photometric)        ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig)      ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_COMPRESSION, compression)        ||
+        (nb_extrasamples && ! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES, nb_extrasamples, extrasamples)))
+            error("Error writting file: " +  string(tiff_file));
     
     for(int h = 0; h < height; h++) {
         
-        memcpy(LINE, IM+h*width*C, width * C);
+        memcpy(LINE, IM+h*width*sampleperpixel, width * sampleperpixel);
 
         for(int w = 0; w < width; w++) {
             if(MASK[h*width+w]) {
-                for(int c = 0; c < C; c++) {
-                    LINE[C*w + c] = (2-c)*127;
+                for(int c = 0; c < sampleperpixel; c++) {
+                    LINE[sampleperpixel*w + c] = (2-c)*127;
                 }
             }
         }
-        if(TIFFWriteScanline(DST_TIFF, LINE, h) == -1) error("Unable to write line to " + string(dst_tiff));
+        if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + string(tiff_file));
     }
 
-    TIFFClose(SRC_TIFF);
-    TIFFClose(DST_TIFF);
+    TIFFClose(TIFF_FILE);
     delete[] IM;
     delete[] MASK;
     delete[] LINE;
