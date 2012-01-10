@@ -272,7 +272,7 @@ sub mergeNtiff {
   $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
   
   my $pyr = $self->{pyramid};
-  #"cubic"; # TODO l'interpolateur pour les mtd sera "nn"
+  #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
   # TODO pour les métadonnées ce sera 0
 
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);

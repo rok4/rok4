@@ -190,7 +190,7 @@ sub new {
                     sampleformat            => undef,# number
                     photometric             => undef,# string value ie rgb by default !
                     samplesperpixel         => undef,# number
-                    interpolation           => undef,# string value ie cubic by default !
+                    interpolation           => undef,# string value ie bicubic by default !
                     #
                     path_nodata     => undef, # path
                     imagesize       => undef, # number ie 4096 px by default !
@@ -341,8 +341,13 @@ sub _init {
     $pyr->{color} = $params->{color};
     #
     if (! exists($params->{interpolation})) {
-        WARN ("Parameter 'interpolation' has not been set. The default value is 'cubic'");
-        $params->{interpolation} = 'cubic';
+        WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubic'");
+        $params->{interpolation} = 'bicubic';
+    }
+    # to remove when interpolation 'bicubique' will be remove
+    if ($params->{interpolation} eq 'bicubique') {
+        WARN("'bicubique' is a deprecated interpolation name, use 'bicubic' instead");
+        $params->{interpolation} = 'bicubic';
     }
     $pyr->{interpolation} = $params->{interpolation};
     #
@@ -805,8 +810,14 @@ sub readConfPyramid {
     my $interpolation = $root->findnodes('interpolation')->to_literal;
 
     if (! defined ($interpolation)) {
-        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Default value is cubic.");
-        $interpolation = "cubic";
+        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Default value is bicubic.");
+        $interpolation = "bicubic";
+    }
+    
+    # to remove when interpolation 'bicubique' will be remove
+    if ($interpolation eq 'bicubique') {
+        WARN("'bicubique' is a deprecated interpolation name, use 'bicubic' instead");
+        $interpolation = 'bicubic';
     }
     
     $self->{pyramid}->{color} = $nodata;
@@ -882,8 +893,8 @@ sub readConfPyramid {
     my $objFormat = BE4::Format->new($compression, $sampleformat, $bitspersample);
 
     if (! defined $objFormat) {
-    ERROR ("Can not create the Format object !");
-    return FALSE;
+        ERROR ("Can not create the Format object !");
+        return FALSE;
     }
 
     # save it if doesn't exist !
@@ -1899,7 +1910,7 @@ __END__
     imagesize     => "1024",
     color         => "FFFFFF,
     #
-    interpolation => "cubic",
+    interpolation => "bicubic",
     photometric   => "rgb",
  };
 
@@ -1940,7 +1951,7 @@ __END__
     sampleformat        => "uint", 
     photometric         => "rgb", 
     samplesperpixel     => "3",
-    interpolation       => "cubic",
+    interpolation       => "bicubic",
  };
 
  my $objP = BE4::Pyramid->new($params_options);
@@ -1981,7 +1992,7 @@ To create a new pyramid, you must fill all parameters following :
     sampleformat        = 
     photometric         => by default, it's 'rgb' !
     samplesperpixel     =
-    interpolation       => by default, it's 'cubic' !
+    interpolation       => by default, it's 'bicubic' !
 
 The pyramid file and the directory structure can be create.
 
@@ -2004,7 +2015,7 @@ To create a new pyramid, you must fill all parameters following :
     color         => by default, it's 'FFFFFF' !
     # 
     interpolation => by default, it's 'rgb' !
-    photometric   => by default, it's 'cubic' !
+    photometric   => by default, it's 'bicubic' !
 
 All paramaters are filled by loading the old configuration pyramid.
 So, object 'BE4::Product' and 'BE4::TileMatrixSet' are created, and the other

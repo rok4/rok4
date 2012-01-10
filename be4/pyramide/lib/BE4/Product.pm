@@ -51,7 +51,7 @@ INIT {
     # compressionscheme => ['none','zip','jpeg','packbits','lzw','deflate'],
     photometric       => ['rgb','gray','mask'], # ie 'min_is_black'
     samplesperpixel   => [1,3],
-    interpolation     => ['lanczos','nn','linear','cubic'],
+    interpolation     => ['lanczos','nn','linear','bicubic'],
   );
   
   # getter/setter except "" because of  !
@@ -88,7 +88,7 @@ END {}
 #  samplesperpixel             = 1,3
 #  ; rowsstrip                 = 1
 #  ; planarconfiguration       = 1
-#  interpolation               = lanczos nn linear cubic
+#  interpolation               = lanczos nn linear bicubic
 
 #
 # Group: variable
@@ -104,7 +104,7 @@ END {}
 #    *    samplesperpixel         => undef, # ie 3
 #    *    rowsstrip               => undef, # NOT IMPLEMENTED !
 #    *    planarconfiguration     => undef, # NOT IMPLEMENTED !
-#    *    interpolation           => undef, # ie resample : cubic
+#    *    interpolation           => undef, # ie resample : bicubic
 #
 
 #
@@ -252,7 +252,7 @@ sub is_Interpolation {
   foreach (@{$TILES{interpolation}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'interpolation' (unsupported)!");
+  ERROR (sprintf "Can not define 'interpolation' (%s) : unsupported !",$p);
   return FALSE;
 }
 ################################################################################
@@ -293,13 +293,13 @@ __END__
     sampleformat     => "uint",
     photometric      => "rgb",
     samplesperpixel  => 3,
-    interpolation    => "cubic",
+    interpolation    => "bicubic",
   };
 
   my $objP = BE4::Product->new($tile);
   
   $objP->getBitPerSample();   # 8
-  $objP->getInterpolation();  # cubic
+  $objP->getInterpolation();  # bicubic
   $objP->setInterpolation("linear");  # linear
   $objP->setSampleFormat("decimal");  # Can not define 'sampleformat' !
 
