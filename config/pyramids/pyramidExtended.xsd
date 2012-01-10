@@ -29,7 +29,8 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="lanczos"/>
             <xs:enumeration value="nn"/> <!-- Nearest Neighbour -->
-            <xs:enumeration value="cubic"/>
+            <xs:enumeration value="bicubique"/> <!-- Deprecated, use bicubic instead -->
+            <xs:enumeration value="bicubic"/>
             <xs:enumeration value="linear"/>
         </xs:restriction>
     </xs:simpleType>

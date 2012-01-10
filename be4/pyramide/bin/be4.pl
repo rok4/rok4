@@ -35,7 +35,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "develop 0.2.6 : Renforcement du wget";
+my $VERSION = "develop 0.3.2";
 
 #
 # Title: be4
@@ -737,7 +737,7 @@ These parameters can be null because of parameters by default :
    imagesize - 4096
  
  [ tile ] or [ pyramid ]
-   interpolation   - cubic
+   interpolation   - bicubic
    photometric     - rgb
  
  [ pyramid ]
