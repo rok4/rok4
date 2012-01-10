@@ -11,6 +11,8 @@
 				<xs:element name="abstract" type="xs:string"/>
 				<!-- Qui fournit le service -->
 				<xs:element name="serviceProvider" type="xs:string"/>
+				<!-- Provider site url -->
+				<xs:element name="providerSite' type="xs:string">
 				<!-- Des mots clefs -->
 				<xs:element name="keywordList">
 					<xs:complexType>
@@ -27,6 +29,33 @@
 				<xs:element name="maxWidth"         type="xs:positiveInteger"/>
 				<!-- Hauteur maximum des images requêtées -->
 				<xs:element name="maxHeight"        type="xs:positiveInteger"/>
+				
+				<!-- ContactPerson  -->
+				<xs:element name="individualName" type="xs:string"/>
+				<!-- ContactPosition  -->
+				<xs:element name="individualPosition" type="xs:string"/>
+				<!-- Contact Phone Number  -->
+				<xs:element name="voice" type="xs:string"/>
+				<!-- Contact Fax Number  -->
+				<xs:element name="facsimile" type="xs:string"/>
+				
+				<!-- Address Type  -->
+				<xs:element name="addressType" type="xs:string"/>
+				
+				<!-- Postal address  -->
+				<xs:element name="deliveryPoint" type="xs:string"/>
+				<!-- City  -->
+				<xs:element name="city" type="xs:string"/>
+				<!-- State or Province  -->
+				<xs:element name="administrativeArea" type="xs:string"/>
+				<!-- Postal Code  -->
+				<xs:element name="postCode" type="xs:string"/>
+				<!-- Country  -->
+				<xs:element name="country" type="xs:string"/>
+				<!-- E-Mail address  -->
+				<xs:element name="electronicMailAddress" type="xs:string"/>
+				
+				
 				<!-- Liste des formats des images en sortie qu’il est possible de demander. 
 				     Ne sert que pour le getCapabilies. Cette liste imposée par la spec WMS pose un 
 				     problème parce qu’elle impose les même formats pour tous les layers alors que 

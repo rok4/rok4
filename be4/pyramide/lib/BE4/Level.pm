@@ -33,19 +33,20 @@ END {}
 ################################################################################
 # sample: 
 # 
-#    <tileMatrix>18</tileMatrix>
-#    <baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
-#    <format>TIFF_INT8</format>
-#    <channels>3</channels>
-#    <tilesPerWidth>4</tilesPerWidth>
-#    <tilesPerHeight>4</tilesPerHeight>
-#    <pathDepth>2</pathDepth>
-#    <TMSLimits>
-#	    <minTileRow>1</minTileRow>
-#	    <maxTileRow>1000000</maxTileRow>
-#	    <minTileCol>1</minTileCol>
-#	    <maxTileCol>1000000</maxTileCol>
-#    </TMSLimits>
+#        <tileMatrix>0</tileMatrix>
+#        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/0</baseDir>
+#        <tilesPerWidth>16</tilesPerWidth>
+#        <tilesPerHeight>16</tilesPerHeight>
+#        <pathDepth>2</pathDepth>
+#        <nodata>
+#            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
+#        </nodata>
+#        <TMSLimits>
+#            <minTileRow>1</minTileRow>
+#            <maxTileRow>1000000</maxTileRow>
+#            <minTileCol>1</minTileCol>
+#            <maxTileCol>1000000</maxTileCol>
+#        </TMSLimits>
 # 
 ################################################################################
 
@@ -58,7 +59,8 @@ END {}
 #
 #    *		id                => undef,
 #    *		dir_image         => undef,
-#    *		compress_image    => undef, # ie "TIFF_INT8"
+#    *		compress_image    => undef, # ie "TIFF_RAW_INT8"
+#    *		dir_nodata        => undef,
 #    *		dir_metadata      => undef,  # NOT IMPLEMENTED !
 #    *		compress_metadata => undef,  # NOT IMPLEMENTED !
 #    *		type_metadata     => undef,  # NOT IMPLEMENTED !
@@ -83,6 +85,7 @@ sub new {
 	id                => undef,
 	dir_image         => undef,
 	compress_image    => undef, # ie "TIFF_INT8"
+	dir_nodata        => undef,
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !
 	type_metadata     => undef,  # NOT IMPLEMENTED !
@@ -129,6 +132,10 @@ sub _init {
     }
     if (! exists($params->{compress_image})) {
       ERROR ("key/value required to 'compress_image' !");
+      return FALSE;
+    }
+    if (! exists($params->{dir_nodata})) {
+      ERROR ("key/value required to 'dir_nodata' !");
       return FALSE;
     }
     if (! exists($params->{bitspersample})) {
@@ -180,6 +187,7 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{dir_image}      = $params->{dir_image};
     $self->{compress_image} = $params->{compress_image};
+    $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{bitspersample}  = $params->{bitspersample};
     $self->{samplesperpixel}= $params->{samplesperpixel};
     $self->{size}           = $params->{size};
@@ -211,7 +219,8 @@ __END__
   my $params = {
             id                => 1024,
             dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
-            compress_image    => "TIFF_INT8",
+            compress_image    => "TIFF_RAW_INT8",
+            dir_nodata        => undef,
             dir_metadata      => undef,
             compress_metadata => undef,
             type_metadata     => undef,
@@ -234,50 +243,46 @@ None by default.
 
 * Sample Pyramid file (.pyr) :
 
-  [SCAN_RAW_TEST.pyr]
+  [MNT_MAYOTTE_REDUCT.pyr]
   
-  <?xml version='1.0' encoding='US-ASCII'?>
-  <Pyramid>
-	<tileMatrixSet>LAMB93_50cm_TEST</tileMatrixSet>
-	<level>
-		<tileMatrix>18</tileMatrix>
-		<baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
-		<format>TIFF_INT8</format>
-		<metadata type='INT32_DB_LZW'>
-			<baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
-			<format>TIFF_INT8</format>
-		</metadata>
-		<channels>3</channels>
-		<tilesPerWidth>4</tilesPerWidth>
-		<tilesPerHeight>4</tilesPerHeight>
-		<pathDepth>2</pathDepth>
-		<TMSLimits>
-			<minTileRow>1</minTileRow>
-			<maxTileRow>1000000</maxTileRow>
-			<minTileCol>1</minTileCol>
-			<maxTileCol>1000000</maxTileCol>
-		</TMSLimits>
-	</level>
-	<level>
-		<tileMatrix>17</tileMatrix>
-		<baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
-		<format>TIFF_INT8</format>
-		<metadata type='INT32_DB_LZW'>
-			<baseDir>../config/pyramids/SCAN_RAW_TEST/1024</baseDir>
-			<format>TIFF_INT8</format>
-		</metadata>
-		<channels>3</channels>
-		<tilesPerWidth>4</tilesPerWidth>
-		<tilesPerHeight>4</tilesPerHeight>
-		<pathDepth>2</pathDepth>
-		<TMSLimits>
-			<minTileRow>1</minTileRow>
-			<maxTileRow>1000000</maxTileRow>
-			<minTileCol>1</minTileCol>
-			<maxTileCol>1000000</maxTileCol>
-		</TMSLimits>
-	</level>
-  </Pyramid>
+<?xml version="1.0" encoding="US-ASCII"?>
+<Pyramid>
+    <tileMatrixSet>RGM04UTM38S_10cm</tileMatrixSet>
+    <format>TIFF_LZW_FLOAT32</format>
+    <channels>1</channels>
+    <level>
+        <tileMatrix>0</tileMatrix>
+        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/0</baseDir>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>16</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <nodata>
+            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>1</minTileRow>
+            <maxTileRow>1000000</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1000000</maxTileCol>
+        </TMSLimits>
+    </level>
+    <level>
+        <tileMatrix>1</tileMatrix>
+        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/1</baseDir>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>16</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <nodata>
+            <filePath>MNT_MAYOTTE_REDUCT/NODATA/1/nd.tif</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>1</minTileRow>
+            <maxTileRow>1000000</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1000000</maxTileCol>
+        </TMSLimits>
+    </level>
+</Pyramid>
 
 =head1 LIMITATIONS AND BUGS
 
@@ -286,7 +291,7 @@ None by default.
 
 =head1 SEE ALSO
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 

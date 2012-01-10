@@ -35,16 +35,16 @@ INIT {
 
   
     %COMPRESSION = (
-    raw      => "RAW",
-#   floatraw => "RAW",  use raw instead
-    jpg      => "JPG",
-    png      => "PNG",
-    lzw      => "LZW"
+        raw      => "RAW",
+#       floatraw => "RAW",  use raw instead
+        jpg      => "JPG",
+        png      => "PNG",
+        lzw      => "LZW"
     );
 
     %SAMPLEFORMAT = (
-    uint      => "INT",
-    float     => "FLOAT"
+        uint      => "INT",
+        float     => "FLOAT"
     );
   
 }

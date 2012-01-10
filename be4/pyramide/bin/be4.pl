@@ -31,8 +31,11 @@ use BE4::Process;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# pas de bufferisation des sorties.
+$|=1;
+
 # version
-my $VERSION = "develop 0.2.6 : Renforcement du wget";
+my $VERSION = "develop 0.3.2";
 
 #
 # Title: be4
@@ -422,22 +425,9 @@ sub doIt {
       return FALSE;
     }
   
-    ALWAYS(">>> Write Configuration Pyramid ...");
-
-    if (! $objPyramid->writeConfPyramid()) {
-      ERROR ("Can not write Pyramid File !");
-      return FALSE;
-    }
-
-    ALWAYS(">>> Write Cache Pyramid ...");
-
-    if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
-    }
-  
-    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-  
+    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
+    # which are calculated in the Process creation
+    
     ###################
     # load data source
     
@@ -479,7 +469,7 @@ sub doIt {
                       $params->{harvesting},
                       $objPyramid,
                       $objData
-                      );
+                    );
   
     if (! defined $objProcess) {
       ERROR ("Can not prepare process !");
@@ -495,6 +485,28 @@ sub doIt {
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
+    ##################
+    # write the pyramid cache
+    
+    ALWAYS(">>> Write Cache Pyramid ...");
+
+    if (! $objPyramid->writeCachePyramid()) {
+      ERROR ("Can not write Pyramid Cache !");
+      return FALSE;
+    }
+    
+    ##################
+    # write the pyramid descriptor
+
+    ALWAYS(">>> Write Configuration Pyramid ...");
+
+    if (! $objPyramid->writeConfPyramid()) {
+      ERROR ("Can not write Pyramid File !");
+      return FALSE;
+    }
+  
+    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
+
     #######################
     # execute process script
     
@@ -725,7 +737,7 @@ These parameters can be null because of parameters by default :
    imagesize - 4096
  
  [ tile ] or [ pyramid ]
-   interpolation   - bicubique
+   interpolation   - bicubic
    photometric     - rgb
  
  [ pyramid ]

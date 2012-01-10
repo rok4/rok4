@@ -57,8 +57,8 @@
 */
 
 void usage() {
-    LOGGER_INFO("Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a [uint/float] -i [lanczos/ppv/linear/bicubique] -n (-99999 for DTM or CC00CC for image) -t [image/mtd] -s [1/3] -b [8/32] -p[gray/rgb/mask] ");
+    LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
+    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a float -i nn -n -99999 -t image -s 1] -b 32 -p gray ");
 }
 
 /**
@@ -103,8 +103,8 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
             case 'i': // interpolation
                 if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
                 if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Kernel::LANCZOS_3; // =4
-                else if(strncmp(argv[i], "ppv",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
-                else if(strncmp(argv[i], "bicubique",9) == 0) interpolation = Kernel::CUBIC; // =2
+                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
+                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Kernel::CUBIC; // =2
                 else if(strncmp(argv[i], "linear",6) == 0) interpolation = Kernel::LINEAR; // =2
                 else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
                 break;

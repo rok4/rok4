@@ -11,7 +11,7 @@
 /**
  * Conversion de int en std::string.
  */
-std::string numToStr(int i){
+std::string numToStr(long int i){
 	std::ostringstream strstr;
 	strstr << i;
 	return strstr.str();
@@ -77,6 +77,7 @@ void Rok4Server::buildWMSCapabilities(){
 		for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
 			kwlEl->LinkEndChild(buildTextNode("Keyword",servicesConf.getKeyWords()[i]));
 		}
+		kwlEl->LinkEndChild(buildTextNode("Keyword", ROK4_INFO));
 		serviceEl->LinkEndChild(kwlEl);
 	}
 	//OnlineResource
@@ -84,7 +85,35 @@ void Rok4Server::buildWMSCapabilities(){
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	onlineResourceEl->SetAttribute("xlink:href",hostNameTag);
 	serviceEl->LinkEndChild(onlineResourceEl);
-	// Pas de ContactInformation (facultatif).
+	// ContactInformation
+        TiXmlElement * contactInformationEl = new TiXmlElement("ContactInformation");
+        
+        TiXmlElement * contactPersonPrimaryEl = new TiXmlElement("ContactPersonPrimary");
+        contactPersonPrimaryEl->LinkEndChild(buildTextNode("ContactPerson",servicesConf.getIndividualName()));
+        contactPersonPrimaryEl->LinkEndChild(buildTextNode("ContactOrganization",servicesConf.getServiceProvider()));
+        
+        contactInformationEl->LinkEndChild(contactPersonPrimaryEl);
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactPosition",servicesConf.getIndividualPosition()));
+        
+        TiXmlElement * contactAddressEl = new TiXmlElement("ContactAddress");
+        contactAddressEl->LinkEndChild(buildTextNode("AddressType",servicesConf.getAddressType()));
+        contactAddressEl->LinkEndChild(buildTextNode("Address",servicesConf.getDeliveryPoint()));
+        contactAddressEl->LinkEndChild(buildTextNode("City",servicesConf.getCity()));
+        contactAddressEl->LinkEndChild(buildTextNode("StateOrProvince",servicesConf.getAdministrativeArea()));
+        contactAddressEl->LinkEndChild(buildTextNode("PostCode",servicesConf.getPostCode()));
+        contactAddressEl->LinkEndChild(buildTextNode("Country",servicesConf.getCountry()));
+        
+        contactInformationEl->LinkEndChild(contactAddressEl);
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactVoiceTelephone",servicesConf.getVoice()));
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactFacsimileTelephone",servicesConf.getFacsimile()));
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactElectronicMailAddress",servicesConf.getElectronicMailAddress()));
+
+        serviceEl->LinkEndChild(contactInformationEl);
+        
 	serviceEl->LinkEndChild(buildTextNode("Fees",servicesConf.getFee()));
 	serviceEl->LinkEndChild(buildTextNode("AccessConstraints",servicesConf.getAccessConstraint()));
 	serviceEl->LinkEndChild(buildTextNode("LayerLimit","1"));
@@ -260,6 +289,21 @@ void Rok4Server::buildWMSCapabilities(){
 			bbEl->SetAttribute("maxy",childLayer->getBoundingBox().maxy);
 			childLayerEl->LinkEndChild(bbEl);
 		}
+		//MetadataURL
+		if (childLayer->getMetadataURLs().size() != 0){
+                    for (unsigned int i=0; i < childLayer->getMetadataURLs().size(); ++i){
+                        TiXmlElement * mtdURLEl = new TiXmlElement("MetadataURL");
+                        MetadataURL mtdUrl = childLayer->getMetadataURLs().at(i);
+                        mtdURLEl->SetAttribute("type", mtdUrl.getType());
+                        mtdURLEl->LinkEndChild(buildTextNode("Format",mtdUrl.getFormat()));
+                        
+                        TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
+                        onlineResourceEl->SetAttribute("xlink:type","simple");
+                        onlineResourceEl->SetAttribute("xlink:href", mtdUrl.getHRef());
+                        mtdURLEl->LinkEndChild(onlineResourceEl);
+                        childLayerEl->LinkEndChild(mtdURLEl);
+                    }
+		}
 
 		// Style
 		LOGGER_DEBUG("Nombre de styles : "<<childLayer->getStyles().size());
@@ -281,10 +325,8 @@ void Rok4Server::buildWMSCapabilities(){
 					TiXmlElement* legendURLEl = new TiXmlElement("LegendURL");
 					
 					TiXmlElement* onlineResourceEl = new TiXmlElement("OnlineResource");
-					LOGGER_DEBUG("OnlineResource");
+                                        onlineResourceEl->SetAttribute("xlink:type","simple");
 					onlineResourceEl->SetAttribute("xlink:href", legendURL.getHRef());
-					
-					LOGGER_DEBUG("OnlineResource OK");
 					legendURLEl->LinkEndChild(buildTextNode("Format", legendURL.getFormat()));
 					legendURLEl->LinkEndChild(onlineResourceEl);
 					legendURLEl->SetAttribute("format", legendURL.getFormat());
@@ -389,20 +431,57 @@ void Rok4Server::buildWMTSCapabilities(){
 		for (unsigned int i=0; i < servicesConf.getKeyWords().size(); i++){
 			kwlEl->LinkEndChild(buildTextNode("ows:Keyword", servicesConf.getKeyWords()[i]));
 		}
+		kwlEl->LinkEndChild(buildTextNode("ows:Keyword", ROK4_INFO));
 		serviceEl->LinkEndChild(kwlEl);
 	}
 	serviceEl->LinkEndChild(buildTextNode("ows:ServiceType", servicesConf.getServiceType()));
 	serviceEl->LinkEndChild(buildTextNode("ows:ServiceTypeVersion", servicesConf.getServiceTypeVersion()));
 	serviceEl->LinkEndChild(buildTextNode("ows:Fees", servicesConf.getFee()));
 	serviceEl->LinkEndChild(buildTextNode("ows:AccessConstraints", servicesConf.getAccessConstraint()));
-
+        
+        
 	capabilitiesEl->LinkEndChild(serviceEl);
 
 	//----------------------------------------------------------------------
-	// Le serviceProvider (facultatif) n'est pas implémenté pour le moment.
-	//TiXmlElement * servProvEl = new TiXmlElement("ows:ServiceProvider");
+	// serviceProvider (facultatif)
 	//----------------------------------------------------------------------
-
+        TiXmlElement * serviceProviderEl = new TiXmlElement("ows:ServiceProvider");
+        
+        serviceProviderEl->LinkEndChild(buildTextNode("ows:ProviderName",servicesConf.getServiceProvider()));
+        TiXmlElement * providerSiteEl = new TiXmlElement("ows:ProviderSite");
+        providerSiteEl->SetAttribute("xlink:href",servicesConf.getProviderSite());
+        serviceProviderEl->LinkEndChild(providerSiteEl);
+        
+        TiXmlElement * serviceContactEl = new TiXmlElement("ows:ServiceContact");
+        
+        serviceContactEl->LinkEndChild(buildTextNode("ows:IndividualName",servicesConf.getIndividualName()));
+        serviceContactEl->LinkEndChild(buildTextNode("ows:PositionName",servicesConf.getIndividualPosition()));
+        
+        TiXmlElement * contactInfoEl = new TiXmlElement("ows:ContactInfo");
+        TiXmlElement * contactInfoPhoneEl = new TiXmlElement("ows:Phone");
+        
+        contactInfoPhoneEl->LinkEndChild(buildTextNode("ows:Voice",servicesConf.getVoice()));
+        contactInfoPhoneEl->LinkEndChild(buildTextNode("ows:Facsimile",servicesConf.getFacsimile()));
+        
+        contactInfoEl->LinkEndChild(contactInfoPhoneEl);
+        
+        TiXmlElement * contactAddressEl = new TiXmlElement("ows:Address");
+        //contactAddressEl->LinkEndChild(buildTextNode("AddressType","type"));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:DeliveryPoint",servicesConf.getDeliveryPoint()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:City",servicesConf.getCity()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:AdministrativeArea",servicesConf.getAdministrativeArea()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:PostCode",servicesConf.getPostCode()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:Country",servicesConf.getCountry()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:ElectronicMailAddress",servicesConf.getElectronicMailAddress()));
+        contactInfoEl->LinkEndChild(contactAddressEl);
+        
+        serviceContactEl->LinkEndChild(contactInfoEl);
+        
+        serviceProviderEl->LinkEndChild(serviceContactEl);
+        capabilitiesEl->LinkEndChild(serviceProviderEl);
+        
+        
+       
 
 	//----------------------------------------------------------------------
 	// OperationsMetadata
@@ -551,13 +630,33 @@ void Rok4Server::buildWMTSCapabilities(){
 		}
 
 		// Contrainte : 1 layer = 1 pyramide = 1 format
-		layerEl->LinkEndChild(buildTextNode("Format",getMimeType(layer->getDataPyramid()->getFormat())));
+		layerEl->LinkEndChild(buildTextNode("Format",format::toMimeType((layer->getDataPyramid()->getFormat()))));
 
 		/* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
 		 *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
 		TiXmlElement * tmsLinkEl = new TiXmlElement("TileMatrixSetLink");
 		tmsLinkEl->LinkEndChild(buildTextNode("TileMatrixSet",layer->getDataPyramid()->getTms().getId()));
-		layerEl->LinkEndChild(tmsLinkEl);
+                //tileMatrixSetLimits
+                TiXmlElement * tmsLimitsEl = new TiXmlElement("TileMatrixSetLimits");
+                
+                std::map<std::string, Level*> layerLevelList = layer->getDataPyramid()->getLevels();
+                
+                std::map<std::string, Level*>::iterator itLevelList(layerLevelList.begin());
+                std::map<std::string, Level*>::iterator itLevelListEnd(layerLevelList.end());
+                for (;itLevelList!=itLevelListEnd;++itLevelList){
+                    Level * level = itLevelList->second;
+                    TiXmlElement * tmLimitsEl = new TiXmlElement("TileMatrixLimits");
+                    tmLimitsEl->LinkEndChild(buildTextNode("tileMatrix",level->getTm().getId()));
+
+                    tmLimitsEl->LinkEndChild(buildTextNode("minTileRow",numToStr((level->getMinTileRow()<0?0:level->getMinTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileRow",numToStr((level->getMaxTileRow()<0?level->getTm().getMatrixW():level->getMaxTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("minTileCol",numToStr((level->getMinTileCol()<0?0:level->getMinTileCol() )  )));
+                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileCol",numToStr((level->getMaxTileCol()<0?level->getTm().getMatrixH():level->getMaxTileCol() )  )));
+                    tmsLimitsEl->LinkEndChild(tmLimitsEl);
+                }
+                tmsLinkEl->LinkEndChild(tmsLimitsEl);
+		
+                layerEl->LinkEndChild(tmsLinkEl);
 
 		contentsEl->LinkEndChild(layerEl);
 	}

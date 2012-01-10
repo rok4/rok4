@@ -49,26 +49,23 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 
 set(${PROJECT_NAME}_SRCS tiff2tile.cpp )
-set(lib${PROJECT_NAME}_SRCS TiffReader.cpp TiledTiffWriter.cpp)
+#set(lib${PROJECT_NAME}_SRCS TiffReader.cpp TiledTiffWriter.cpp)
 
-
-
-add_library(lib${PROJECT_NAME} STATIC ${lib${PROJECT_NAME}_SRCS})
-add_dependencies(lib${PROJECT_NAME} tiff)
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
+
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg)
+set(DEP_LIBRARY tiff zlib jpeg image lzw)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)

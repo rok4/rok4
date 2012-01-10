@@ -7,5 +7,5 @@
 		<Keyword>Défaut</Keyword>
 		<Keyword>INSPIRE</Keyword>
 	</Keywords>
-	<LegendURL type="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr/inspire" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+	<LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr/inspire" height="100" width="100" minScaleDenmminator="0" maxScaleDenominator="30"/>
 </style>

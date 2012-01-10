@@ -86,8 +86,8 @@ void parseCommandLine(int argc, char* argv[],
                 if(++i == argc) error("missing parameter in -i argument");
                 switch(argv[i-1][2]){
                     case '1':
-                    inputImages[0]=argv[i];
-                    break;
+                        inputImages[0]=argv[i];
+                        break;
                     case '2':
                         inputImages[1]=argv[i];
                         break;
@@ -341,10 +341,6 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     return 0;
 }
 
-int interpretNodata(char* strnodata,uint16_t sampleformat,uint16_t bitspersample) {
-
-
-}
 
 /**
 *@fn int h2i(char s)
@@ -353,14 +349,14 @@ int interpretNodata(char* strnodata,uint16_t sampleformat,uint16_t bitspersample
 
 int h2i(char s)
 {
-        if('0' <= s && s <= '9')
-                return (s - '0');
-        if('a' <= s && s <= 'f')
-                return (s - 'a' + 10);
-        if('A' <= s && s <= 'F')
-                return (10 + s - 'A');
-        else
-                return -1; /* invalid input! */
+    if('0' <= s && s <= '9')
+        return (s - '0');
+    if('a' <= s && s <= 'f')
+        return (s - 'a' + 10);
+    if('A' <= s && s <= 'F')
+        return (10 + s - 'A');
+    else
+        return -1; /* invalid input! */
 }
 
 int main(int argc, char* argv[]) {

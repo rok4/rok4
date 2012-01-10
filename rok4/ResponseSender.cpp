@@ -95,6 +95,7 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
 		wr += w;
 	}
 	delete source;
+	LOGGER_DEBUG("End of Response");
 	return 0;
 }
 
@@ -154,5 +155,6 @@ int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
 
 	delete stream;
 	delete[] buffer;
+	LOGGER_DEBUG("End of Response");
 	return 0;
 }

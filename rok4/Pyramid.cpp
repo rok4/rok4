@@ -5,16 +5,16 @@
 #include "Grid.h"
 #include "Decoder.h"
 #include "JPEGEncoder.h"
-#include "ColorizePNGEncoder.h"
+#include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 
-/**
+/*
 * @fn std::string extern getMimeType(std::string format)
 * @return Le type MIME correspindant au format passe en argument
 */
 
-std::string getMimeType(std::string format){
+/*std::string getMimeType(std::string format){
         if (format.compare("TIFF_RAW_INT8")==0)
                 return "image/tiff";
         else if (format.compare("TIFF_JPG_INT8")==0)
@@ -24,33 +24,33 @@ std::string getMimeType(std::string format){
         else if (format.compare("TIFF_RAW_FLOAT32")==0)
                 return "image/x-bil;bits=32";
         return "text/plain";
-}
+}*/
 
-Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, std::string format, int channels) : levels(levels), tms(tms), format(format), channels(channels){
+Pyramid::Pyramid(std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels) : levels(levels), tms(tms), format(format), channels(channels){
 	
 	std::map<std::string, TileMatrix>::iterator itTm;
 	for (itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++){	
 		//Empty Source as fallback
 		DataSource* noDataSource;
-		if (format.compare("TIFF_RAW_INT8")==0) {
+		if (format==TIFF_RAW_INT8) {
 	                TiffEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
         	        noDataSource = new BufferedDataSource(dataStream);
         	}
-        	else if (format.compare("TIFF_JPG_INT8")==0) {
+        	else if (format==TIFF_JPG_INT8) {
                 	JPEGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
-        	else if (format.compare("TIFF_PNG_INT8")==0) {
+        	else if (format==TIFF_PNG_INT8) {
                 	PNGEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
-        	else if (format.compare("TIFF_RAW_FLOAT32")==0) {
+        	else if (format==TIFF_RAW_FLOAT32) {
                 	BilEncoder dataStream(new ImageDecoder(0, itTm->second.getTileW(), itTm->second.getTileH(), channels));
                 	noDataSource = new BufferedDataSource(dataStream);
         	}
         	else
 			// Cas normalement filtre avant l'appel au constructeur
-                	LOGGER_ERROR("Format non pris en charge : "<<format);
+                	LOGGER_ERROR("Format non pris en charge : "<< format::toString(format));
 		noDataSources.insert(std::pair<std::string, DataSource*> (itTm->second.getId(), noDataSource));
 
 		std::map<std::string, Level*>::const_iterator itLevel=levels.find(itTm->second.getId());
