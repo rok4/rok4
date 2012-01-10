@@ -85,7 +85,35 @@ void Rok4Server::buildWMSCapabilities(){
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	onlineResourceEl->SetAttribute("xlink:href",hostNameTag);
 	serviceEl->LinkEndChild(onlineResourceEl);
-	// Pas de ContactInformation (facultatif).
+	// ContactInformation
+        TiXmlElement * contactInformationEl = new TiXmlElement("ContactInformation");
+        
+        TiXmlElement * contactPersonPrimaryEl = new TiXmlElement("ContactPersonPrimary");
+        contactPersonPrimaryEl->LinkEndChild(buildTextNode("ContactPerson",servicesConf.getIndividualName()));
+        contactPersonPrimaryEl->LinkEndChild(buildTextNode("ContactOrganization",servicesConf.getServiceProvider()));
+        
+        contactInformationEl->LinkEndChild(contactPersonPrimaryEl);
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactPosition",servicesConf.getIndividualPosition()));
+        
+        TiXmlElement * contactAddressEl = new TiXmlElement("ContactAddress");
+        contactAddressEl->LinkEndChild(buildTextNode("AddressType",servicesConf.getAddressType()));
+        contactAddressEl->LinkEndChild(buildTextNode("Address",servicesConf.getDeliveryPoint()));
+        contactAddressEl->LinkEndChild(buildTextNode("City",servicesConf.getCity()));
+        contactAddressEl->LinkEndChild(buildTextNode("StateOrProvince",servicesConf.getAdministrativeArea()));
+        contactAddressEl->LinkEndChild(buildTextNode("PostCode",servicesConf.getPostCode()));
+        contactAddressEl->LinkEndChild(buildTextNode("Country",servicesConf.getCountry()));
+        
+        contactInformationEl->LinkEndChild(contactAddressEl);
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactVoiceTelephone",servicesConf.getVoice()));
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactFacsimileTelephone",servicesConf.getFacsimile()));
+        
+        contactInformationEl->LinkEndChild(buildTextNode("ContactElectronicMailAddress",servicesConf.getElectronicMailAddress()));
+
+        serviceEl->LinkEndChild(contactInformationEl);
+        
 	serviceEl->LinkEndChild(buildTextNode("Fees",servicesConf.getFee()));
 	serviceEl->LinkEndChild(buildTextNode("AccessConstraints",servicesConf.getAccessConstraint()));
 	serviceEl->LinkEndChild(buildTextNode("LayerLimit","1"));
@@ -410,14 +438,50 @@ void Rok4Server::buildWMTSCapabilities(){
 	serviceEl->LinkEndChild(buildTextNode("ows:ServiceTypeVersion", servicesConf.getServiceTypeVersion()));
 	serviceEl->LinkEndChild(buildTextNode("ows:Fees", servicesConf.getFee()));
 	serviceEl->LinkEndChild(buildTextNode("ows:AccessConstraints", servicesConf.getAccessConstraint()));
-
+        
+        
 	capabilitiesEl->LinkEndChild(serviceEl);
 
 	//----------------------------------------------------------------------
-	// Le serviceProvider (facultatif) n'est pas implémenté pour le moment.
-	//TiXmlElement * servProvEl = new TiXmlElement("ows:ServiceProvider");
+	// serviceProvider (facultatif)
 	//----------------------------------------------------------------------
-
+        TiXmlElement * serviceProviderEl = new TiXmlElement("ows:ServiceProvider");
+        
+        serviceProviderEl->LinkEndChild(buildTextNode("ows:ProviderName",servicesConf.getServiceProvider()));
+        TiXmlElement * providerSiteEl = new TiXmlElement("ows:ProviderSite");
+        providerSiteEl->SetAttribute("xlink:href",servicesConf.getProviderSite());
+        serviceProviderEl->LinkEndChild(providerSiteEl);
+        
+        TiXmlElement * serviceContactEl = new TiXmlElement("ows:ServiceContact");
+        
+        serviceContactEl->LinkEndChild(buildTextNode("ows:IndividualName",servicesConf.getIndividualName()));
+        serviceContactEl->LinkEndChild(buildTextNode("ows:PositionName",servicesConf.getIndividualPosition()));
+        
+        TiXmlElement * contactInfoEl = new TiXmlElement("ows:ContactInfo");
+        TiXmlElement * contactInfoPhoneEl = new TiXmlElement("ows:Phone");
+        
+        contactInfoPhoneEl->LinkEndChild(buildTextNode("ows:Voice",servicesConf.getVoice()));
+        contactInfoPhoneEl->LinkEndChild(buildTextNode("ows:Facsimile",servicesConf.getFacsimile()));
+        
+        contactInfoEl->LinkEndChild(contactInfoPhoneEl);
+        
+        TiXmlElement * contactAddressEl = new TiXmlElement("ows:Address");
+        //contactAddressEl->LinkEndChild(buildTextNode("AddressType","type"));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:DeliveryPoint",servicesConf.getDeliveryPoint()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:City",servicesConf.getCity()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:AdministrativeArea",servicesConf.getAdministrativeArea()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:PostCode",servicesConf.getPostCode()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:Country",servicesConf.getCountry()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:ElectronicMailAddress",servicesConf.getElectronicMailAddress()));
+        contactInfoEl->LinkEndChild(contactAddressEl);
+        
+        serviceContactEl->LinkEndChild(contactInfoEl);
+        
+        serviceProviderEl->LinkEndChild(serviceContactEl);
+        capabilitiesEl->LinkEndChild(serviceProviderEl);
+        
+        
+       
 
 	//----------------------------------------------------------------------
 	// OperationsMetadata

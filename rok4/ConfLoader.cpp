@@ -1105,20 +1105,36 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	std::string accessConstraint;
 	unsigned int maxWidth;
 	unsigned int maxHeight;
+        //Contact Info
+        std::string providerSite="";
+        std::string individualName="";
+        std::string individualPosition="";
+        std::string voice="";
+        std::string facsimile="";
+        std::string addressType="";
+        std::string deliveryPoint="";
+        std::string city="";
+        std::string administrativeArea="";
+        std::string postCode="";
+        std::string country="";
+        std::string electronicMailAddress="";
+        //WMS
 	std::vector<std::string> formatList;
+        //WMTS
 	std::string serviceType;
 	std::string serviceTypeVersion;
+        //INSPIRE
 	bool inspire =false;
 	std::vector<std::string> applicationProfileList;
 
 	pElem=hRoot.FirstChild("name").Element();
-	if (pElem) name = pElem->GetText();
+	if (pElem && pElem->GetText()) name = pElem->GetText();
 
 	pElem=hRoot.FirstChild("title").Element();
-	if (pElem) title = pElem->GetText();
+	if (pElem && pElem->GetText()) title = pElem->GetText();
 
 	pElem=hRoot.FirstChild("abstract").Element();
-	if (pElem) abstract = pElem->GetText();
+	if (pElem && pElem->GetText()) abstract = pElem->GetText();
 
 
 	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
@@ -1127,15 +1143,62 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	}
 
 	pElem=hRoot.FirstChild("serviceProvider").Element();
-	if (pElem) serviceProvider = pElem->GetText();
-		
+	if (pElem && pElem->GetText()) serviceProvider = pElem->GetText();
+        
+        pElem=hRoot.FirstChild("providerSite").Element();
+        if (pElem && pElem->GetText())
+            providerSite = pElem->GetText();		
 
 	pElem=hRoot.FirstChild("fee").Element();
-	if (pElem) fee = pElem->GetText();
+	if (pElem && pElem->GetText()) fee = pElem->GetText();
 
 	pElem=hRoot.FirstChild("accessConstraint").Element();
-	if (pElem) accessConstraint = pElem->GetText();
+	if (pElem && pElem->GetText()) accessConstraint = pElem->GetText();
 
+        pElem=hRoot.FirstChild("individualName").Element();
+        if (pElem && pElem->GetText())
+            individualName= pElem->GetText();
+       
+        pElem=hRoot.FirstChild("individualPosition").Element();
+        if (pElem && pElem->GetText())
+            individualPosition= pElem->GetText();
+        
+        pElem=hRoot.FirstChild("voice").Element();
+        if (pElem && pElem->GetText())
+            voice= pElem->GetText();
+        
+        pElem=hRoot.FirstChild("facsimile").Element();
+        if (pElem && pElem->GetText())
+            facsimile= pElem->GetText();
+        
+        pElem=hRoot.FirstChild("addressType").Element();
+        if (pElem && pElem->GetText())
+            addressType = pElem->GetText();
+                
+        pElem=hRoot.FirstChild("deliveryPoint").Element();
+        if (pElem && pElem->GetText())
+            deliveryPoint= pElem->GetText();
+                
+        pElem=hRoot.FirstChild("city").Element();
+        if (pElem && pElem->GetText())
+            city = pElem->GetText();
+                
+        pElem=hRoot.FirstChild("administrativeArea").Element();
+        if (pElem && pElem->GetText())
+            administrativeArea = pElem->GetText();
+                
+        pElem=hRoot.FirstChild("postCode").Element();
+        if (pElem && pElem->GetText())
+            postCode = pElem->GetText();
+                
+        pElem=hRoot.FirstChild("country").Element();
+        if (pElem && pElem->GetText())
+            country = pElem->GetText();
+                
+        pElem=hRoot.FirstChild("electronicMailAddress").Element();
+        if (pElem && pElem->GetText())
+            electronicMailAddress= pElem->GetText();
+       
 	pElem = hRoot.FirstChild("maxWidth").Element();
 	if (!pElem){
 		maxWidth=MAX_IMAGE_WIDTH;
@@ -1181,7 +1244,10 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
-			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion, inspire);
+			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
+                        providerSite, individualName, individualPosition, voice, facsimile, 
+                        addressType, deliveryPoint, city, administrativeArea, postCode, country,
+                        electronicMailAddress, inspire );
 	return servicesConf;
 }
 
