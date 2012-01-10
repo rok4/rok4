@@ -8,6 +8,9 @@
             <xs:element name="format"         type="imageFormat"/>
             <!-- nombre de canaux utilisés dans les images (et tuiles) -->
             <xs:element name="channels"       type="xs:positiveInteger"/>
+            <xs:element name="nodataValue" type="xs:string" minOccurs="0"/>
+            <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
+            <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
             <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
                 <xs:complexType>
                 <xs:sequence>
@@ -82,5 +85,25 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
+    
+        <!-- liste des photométrique autorisées pour les images du cache -->
+    <xs:simpleType name="imagePhotometric">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="gray"/>
+            <xs:enumeration value="rgb"/>
+            <xs:enumeration value="mask"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <!-- liste des interpolations autorisées pour la génération des images du cache -->
+    <xs:simpleType name="imageInterpolation">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="lanczos"/>
+            <xs:enumeration value="nn"/> <!-- Nearest Neighbour -->
+            <xs:enumeration value="bicubique"/> <!-- Deprecated, use bicubic instead -->
+            <xs:enumeration value="bicubic"/>
+            <xs:enumeration value="linear"/>
+        </xs:restriction>
+    </xs:simpleType>
 
 </xs:schema>
