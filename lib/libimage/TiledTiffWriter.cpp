@@ -263,13 +263,24 @@ size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
 
 
 size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
+    
     cinfo.dest->next_output_byte = buffer;
     cinfo.dest->free_in_buffer = 2*rawtilesize;
     jpeg_start_compress(&cinfo, true);
+    
+    while (i<tilelinesize) {
+        while (j<tilelength) {
+            
+        }
+    }
+    
     while (cinfo.next_scanline < cinfo.image_height) {
         uint8_t *line = data + cinfo.next_scanline*tilelinesize;
+        
+        
         if(jpeg_write_scanlines(&cinfo, &line, 1) != 1) return 0;
     }
+    
     jpeg_finish_compress(&cinfo);
     return 2*rawtilesize - cinfo.dest->free_in_buffer;
 }
