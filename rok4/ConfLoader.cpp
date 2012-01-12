@@ -1381,9 +1381,9 @@ bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, Ti
 	closedir(dir);
 
 	if (layerFiles.empty()){
-		LOGGER_FATAL("Aucun fichier *.lay dans le répertoire " << layerDir);
-		LOGGER_FATAL("Le serveur n'a aucune données à servir. Dommage...");
-		return false;
+		LOGGER_ERROR("Aucun fichier *.lay dans le répertoire " << layerDir);
+		LOGGER_ERROR("Le serveur n'a aucune données à servir. Dommage...");
+		//return false;
 	}
 
 	// générer les Layers décrits par les fichiers.
@@ -1398,8 +1398,8 @@ bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, Ti
 	}
 
 	if (layers.size()==0){
-		LOGGER_FATAL("Aucun layer n'a pu être chargé!");
-		return false;
+		LOGGER_ERROR("Aucun layer n'a pu être chargé!");
+		//return false;
 	}
 
 	LOGGER_INFO("NOMBRE DE LAYERS CHARGES : "<<layers.size());

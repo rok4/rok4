@@ -200,8 +200,7 @@ void Rok4Server::buildWMSCapabilities(){
 	// Layer
 	if (layerList.empty()){
 		LOGGER_ERROR("Liste de layers vide");
-		return;
-	}
+	} else {
 	// Parent layer
 	TiXmlElement * parentLayerEl = new TiXmlElement( "Layer" );
 	// Title
@@ -365,11 +364,11 @@ void Rok4Server::buildWMSCapabilities(){
 	}// for layer
 	LOGGER_DEBUG("Layers Fini");
 	capabilityEl->LinkEndChild(parentLayerEl);
-
+        }
 
 	capabilitiesEl->LinkEndChild(capabilityEl);
 	doc.LinkEndChild( capabilitiesEl );
-
+        
 	// std::cout << doc; // ecriture non formatée dans le flux
 	// doc.Print();      // affichage formaté sur stdout
 	std::string wmsCapaTemplate;
