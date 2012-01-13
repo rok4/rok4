@@ -2,6 +2,7 @@
 #include "byteswap.h"
 #include <string.h>
 #include <iostream>
+#include <algorithm>
 
 
 // Fonctions pour le manager de sortie de la libjpeg
@@ -9,7 +10,7 @@ void init_destination (jpeg_compress_struct *cinfo) {return;}
 boolean empty_output_buffer (jpeg_compress_struct *cinfo) {return false;}
 void term_destination (jpeg_compress_struct *cinfo) {return;}
 
-
+uint8_t nodataColor[4] = {255,255,255,255};
 
 static const uint8_t PNG_IEND[12] = {
   0, 0, 0, 0, 'I', 'E', 'N', 'D',    // 8  | taille et type du chunck IHDR
@@ -268,21 +269,61 @@ size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
     cinfo.dest->free_in_buffer = 2*rawtilesize;
     jpeg_start_compress(&cinfo, true);
     
-    while (i<tilelinesize) {
-        while (j<tilelength) {
-            
-        }
-    }
+    uint8_t* buffheight = new uint8_t[8*tilelinesize];
+    int numLine = 0;
     
-    while (cinfo.next_scanline < cinfo.image_height) {
-        uint8_t *line = data + cinfo.next_scanline*tilelinesize;
+    while (numLine < tilelength) {
+        if (numLine % 8 == 0) {
+            int l = std::min((uint32_t)8,tilelength-numLine);
+            memcpy(buffheight,data + numLine*tilelinesize,tilelinesize*l);
+            emptyWhiteBlock(buffheight,l);
+        }
         
-        
+        uint8_t *line = buffheight + (numLine % 8)*tilelinesize;
         if(jpeg_write_scanlines(&cinfo, &line, 1) != 1) return 0;
+        numLine++;
     }
     
     jpeg_finish_compress(&cinfo);
+    delete[] buffheight;
+
     return 2*rawtilesize - cinfo.dest->free_in_buffer;
+}
+
+void TiledTiffWriter::emptyWhiteBlock(uint8_t *buffheight, int l) {
+
+    int I = 0;
+    int J = 0;
+    bool b = false; /* use to know if the current block has been fill with nodata*/
+    
+    int blocklinesize = 8*samplesperpixel;
+    
+    while (J<tilelinesize) {
+        while (I<l) {
+            if (!memcmp(buffheight + I*tilelinesize + J, nodataColor, samplesperpixel)) {
+                int jdeb = blocklinesize*((J+(blocklinesize-1))/blocklinesize);
+                int jfin = std::min(jdeb+blocklinesize,tilelinesize);
+                for (int i = 0; i<l; i++) {
+                    for (int j = jdeb; j<jfin; j+=samplesperpixel) {
+                        memcpy(buffheight + i*tilelinesize + j, nodataColor, samplesperpixel);
+                    }
+                }
+                I = 0;
+                J = jfin;
+                b = true;
+                break;
+                
+            } else {
+                I++;
+            }
+        }
+        if (!b) {
+            I = 0;
+            J += samplesperpixel;
+        }
+        b = false;
+    }
+    
 }
 
 

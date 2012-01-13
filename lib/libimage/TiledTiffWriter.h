@@ -104,6 +104,7 @@ class TiledTiffWriter {
 
     size_t computeRawTile (uint8_t *buffer, uint8_t *data);
     size_t computeJpegTile(uint8_t *buffer, uint8_t *data);
+    void emptyWhiteBlock(uint8_t *buffheight, int l);
     size_t computeLzwTile(uint8_t *buffer, uint8_t *data);
     size_t computePngTile (uint8_t *buffer, uint8_t *data);
   public: 
