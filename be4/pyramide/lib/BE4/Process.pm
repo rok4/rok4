@@ -483,7 +483,7 @@ sub computeAboveImage {
   # A-t-on besoin de quelque chose en fond d'image?
   my $bg="";
   if (scalar @childList != 4){
-    if (-f $newImgDesc->getFilePath() ){
+    if (-f $newImgDesc->getFilePath() && $node->{level}>3){
       # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
       my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
       $bg="-b $bgImgPath";
