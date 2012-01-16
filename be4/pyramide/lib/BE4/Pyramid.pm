@@ -1186,6 +1186,7 @@ sub writeCachePyramid {
             # we have to create the nodata tile
             my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
             $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+            
             if (! -e $nodataFilePath) {
                 my $createNodataCommand = $self->createNodata($nodataFilePath);
                 

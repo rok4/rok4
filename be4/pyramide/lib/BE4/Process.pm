@@ -483,7 +483,13 @@ sub computeAboveImage {
   # A-t-on besoin de quelque chose en fond d'image?
   my $bg="";
   if (scalar @childList != 4){
-    if (-f $newImgDesc->getFilePath() ){
+      
+    if (-f $newImgDesc->getFilePath() && $node->{level} > 3) {
+        
+         # FIXME il faut comparer l'emprise de la dalle avec la couverture du système de 
+         # projection requêté pour savoir si le moissonnage est à faire. Pour le moment,
+         # on ne requête les niveaux 4 et supérieur (empirique).
+         
       # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
       my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
       $bg="-b $bgImgPath";
@@ -496,7 +502,7 @@ sub computeAboveImage {
         # copie avec tiffcp pour passer du format de cache au format de travail.
         $res.=$self->cache2work($node, "bgImg.tif");
       }
-    }else{
+    } else {
       # On a pas d'image alors on donne une couleur de no-data
       $bg='-n ' . $self->{nodata}->getColor();
     }
