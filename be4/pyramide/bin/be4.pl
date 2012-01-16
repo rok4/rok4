@@ -35,7 +35,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "develop 0.3.2";
+my $VERSION = "develop 0.4.0";
 
 #
 # Title: be4
@@ -475,15 +475,6 @@ sub doIt {
       ERROR ("Can not prepare process !");
       return FALSE;
     }
-  
-    ALWAYS(">>> Compute Process ...");
-    
-    if (! $objProcess->computeWholeTree()) {
-      ERROR ("Can not compute process !");
-      return FALSE;
-    }
-      
-    DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
     ##################
     # write the pyramid cache
@@ -506,6 +497,19 @@ sub doIt {
     }
   
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
+  
+    ##################
+    # compute process
+    
+    ALWAYS(">>> Compute Process ...");
+    
+    if (! $objProcess->computeWholeTree()) {
+      ERROR ("Can not compute process !");
+      return FALSE;
+    }
+      
+    DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
+    
 
     #######################
     # execute process script
