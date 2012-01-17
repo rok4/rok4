@@ -14,6 +14,8 @@ private:
 public:
     LegendURL(std::string format, std::string href,int width, int height, double minScaleDenominator, double maxScaleDenominator);
     LegendURL(const LegendURL &origLUrl);
+    bool operator==(const LegendURL& other) const;
+    bool operator!=(const LegendURL& other) const;
     inline int getWidth(){return width;}
     inline int getHeight(){return height;}
     inline double getMinScaleDenominator(){return minScaleDenominator;}
