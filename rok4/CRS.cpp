@@ -47,6 +47,16 @@ bool isCrsLongLat(std::string crs) {
     return isLongLat;
 }
 
+/**
+ * Default constructor
+ */
+CRS::CRS()
+{
+    proj4Code = NO_PROJ4_CODE;
+}
+
+
+
 /*
 * Contructeur
 */
