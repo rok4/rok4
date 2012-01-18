@@ -8,6 +8,7 @@
 #include "MetadataURL.h"
 #include "LegendURL.h"
 #include <malloc.h>
+#include <stdlib.h>
 
 Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
