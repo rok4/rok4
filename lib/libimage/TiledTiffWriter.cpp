@@ -214,23 +214,7 @@ int TiledTiffWriter::close() {
 };
 
 size_t TiledTiffWriter::computeRawTile(uint8_t *buffer, uint8_t *data) {
-    
-    uint8_t* buffheight = new uint8_t[jpegBlockWidth*tilelinesize];
-    int numLine = 0;
-    
-    while (numLine < tilelength) {
-        if (numLine % jpegBlockWidth == 0) {
-            int l = std::min((uint32_t)jpegBlockWidth,tilelength-numLine);
-            memcpy(buffheight,data + numLine*tilelinesize,tilelinesize*l);
-            emptyWhiteBlock(buffheight,l);
-        }
-        
-        uint8_t *line = buffheight + (numLine % jpegBlockWidth)*tilelinesize;
-        memcpy(buffer+numLine*tilelinesize, line, tilelinesize);
-
-        numLine++;
-    }
-    
+    memcpy(buffer, data, rawtilesize);    
     return rawtilesize; 
 }
 
@@ -280,8 +264,8 @@ size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
 }
 
 
-size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
-    
+size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop) {
+            
     cinfo.dest->next_output_byte = buffer;
     cinfo.dest->free_in_buffer = 2*rawtilesize;
     jpeg_start_compress(&cinfo, true);
@@ -293,7 +277,9 @@ size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
         if (numLine % jpegBlockWidth == 0) {
             int l = std::min((uint32_t)jpegBlockWidth,tilelength-numLine);
             memcpy(buffheight,data + numLine*tilelinesize,tilelinesize*l);
-            emptyWhiteBlock(buffheight,l);
+            if (crop) {
+                emptyWhiteBlock(buffheight,l);
+            }
         }
         
         uint8_t *line = buffheight + (numLine % jpegBlockWidth)*tilelinesize;
@@ -344,7 +330,7 @@ void TiledTiffWriter::emptyWhiteBlock(uint8_t *buffheight, int l) {
 }
 
 
-int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
+int TiledTiffWriter::WriteTile(int n, uint8_t *data, bool crop) {
 
     if(n > tilex*tiley || n < 0) {std::cerr << "invalid tile number" << std::endl; return -1;}
     size_t size;
@@ -352,7 +338,7 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
     switch(compression) {
         case COMPRESSION_NONE: size = computeRawTile(Buffer, data); break;
         case COMPRESSION_LZW : size = computeLzwTile(Buffer, data); break;
-        case COMPRESSION_JPEG: size = computeJpegTile(Buffer, data); break;
+        case COMPRESSION_JPEG: size = computeJpegTile(Buffer, data, crop); break;
         case COMPRESSION_PNG : size = computePngTile(Buffer, data); break;
     }
     if(size == 0) return -1;
@@ -374,6 +360,6 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
     return 1;  
 }
 
-int TiledTiffWriter::WriteTile(int x, int y, uint8_t *data) {
-    return WriteTile(y*tilex + x, data);
+int TiledTiffWriter::WriteTile(int x, int y, uint8_t *data, bool crop) {
+    return WriteTile(y*tilex + x, data, crop);
 }
