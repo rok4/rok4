@@ -604,17 +604,19 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                     maxTileCol = tm->getMatrixW();
 		if (maxTileRow > tm->getMatrixH() || maxTileRow < 0)
                     maxTileRow = tm->getMatrixH();
-
+                
 		// Would be Mandatory in future release
-		TiXmlElement* pElemNoData=hRoot.FirstChild( "nodata" ).Element();
+		TiXmlElement* pElemNoData=hLvl.FirstChild( "nodata" ).Element();
 		
 		if (pElemNoData) {	// FilePath must be specified if nodata tag exist
+                
 			TiXmlElement* pElemNoDataPath;
-			pElemNoDataPath = hRoot.FirstChild("nodata").FirstChild("filePath").Element();
+			pElemNoDataPath = hLvl.FirstChild("nodata").FirstChild("filePath").Element();
 			if (!pElemNoDataPath  || !(pElemNoDataPath->GetText())){
                             LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin");
                             return NULL;
                         }
+                
 			noDataFilePath=pElemNoDataPath->GetText();
 			/*if (noDataFilePath.empty()){
 				if (!pElemNoDataPath){
