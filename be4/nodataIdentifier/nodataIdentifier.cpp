@@ -1,3 +1,11 @@
+
+/**
+ * \file nodataIdentifier.cpp
+ * \brief Modification de la valeur de nodata en une autre, en faisant attention de ne pas modifier les pixels légitimes de l'image, dont la valeur est celle du nodata. On modifie les pixels en partant des bords.
+ * \author IGN
+*
+*/
+
 #include "tiffio.h"
 #include <cstdlib>
 #include <cmath>
@@ -10,8 +18,8 @@
 using namespace std;
 
 void usage() {
-    cerr << "Usage: nodataIdentifier [-n nodataInit] inout.tiff" << endl;
-    cerr << "Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodataInit' will be changed in white" << endl;
+    cerr << "Usage: nodataIdentifier [-n1 nodata1] [-n2 nodata2] inout.tiff" << endl;
+    cerr << "Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodata1' will be changed in 'nodata2'" << endl;
 }
 
 void error(string message) {
@@ -22,8 +30,10 @@ void error(string message) {
 TIFF *TIFF_FILE = 0;
 
 char* tiff_file = 0;
-char* strnodata = 0;
-uint8_t nodataColor[4] = {255,255,255,255};
+char* strnodata1 = 0;
+char* strnodata2 = 0;
+uint8_t nodataColor1[4] = {0,0,0,0};
+uint8_t nodataColor2[4] = {255,255,255,255};
 uint8_t *IM ;
 bool *MASK;
 queue<int> Q;
@@ -31,6 +41,11 @@ queue<int> Q;
 uint32 width, height, rowsperstrip = -1;
 uint16 bitspersample, sampleperpixel, photometric, compression = -1, planarconfig, nb_extrasamples;
 uint16 *extrasamples;
+
+/**
+*@fn int h2i(char s)
+* Hexadecimal -> int
+*/
 
 int h2i(char s)
 {
@@ -44,12 +59,24 @@ int h2i(char s)
         return -1; /* invalid input! */
 }
 
+/**
+*@fn void propagate(int newpos)
+* Ajoute cette nouvelle position en tant que pixel de nodata si celui ci contient la valeur de nodata
+*/
+
 inline void propagate(int newpos) {
-    if(!memcmp(IM + newpos*sampleperpixel, nodataColor, sampleperpixel) && !MASK[newpos]) {
+    if(!memcmp(IM + newpos*sampleperpixel, nodataColor1, sampleperpixel) && !MASK[newpos]) {
         MASK[newpos] = true;
         Q.push(newpos);
     }
 }
+
+/**
+*@fn int main(int argc, char* argv[])
+* Implémentation de la commande nodataIdentifier.
+* Usage : nosataIdentifier [-n1 nodataIn] [-n2 nodataOut] inout.tiff" << endl;
+* nodataOut is 255 (FF) for each sample by default
+*/
 
 int main(int argc, char* argv[]) {
 
@@ -60,15 +87,25 @@ int main(int argc, char* argv[]) {
                     usage();
                     exit(0);
                 case 'n': 
-                    if(++i == argc) error("missing parameter in -n argument");
-                    strnodata = argv[i];
+                    if(++i == argc) error("Missing parameter in -n argument");
+                    switch(argv[i-1][2]){
+                        case '1':
+                            strnodata1 = argv[i];
+                            break;
+                        case '2':
+                            strnodata2 = argv[i];
+                            break;
+                        default:
+                            break;
+                    }
                     break;
-                break;
+                default:
+                    break;
             }
         }
         else {
             if (tiff_file == 0) tiff_file = argv[i];
-            else error("too many parameters");
+            else error("Too many parameters");
         }
     }
     if(tiff_file == 0) error("Missing input file");
@@ -88,20 +125,36 @@ int main(int argc, char* argv[]) {
 
     if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
     if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
+    if (compression != 1)  error("Sorry : compression not accepted");
     
-    if (strlen(strnodata) != 2*sampleperpixel) {
-        error("nodata parameter too short or too long");
+    if (strnodata1 != 0 && strlen(strnodata1) != 2*sampleperpixel || strnodata2 != 0 && strlen(strnodata2) != 2*sampleperpixel) {
+        error("A nodata parameter is too short or too long");
     }
     
-    if (strnodata != 0) {
+    if (strnodata1 != 0) {
         uint8_t nodata = 255;
         for (int i=0; i<sampleperpixel; i++) {
-            int a1 = h2i(strnodata[i*2]);
-            int a0 = h2i(strnodata[i*2+1]);
-            if (a1 < 0 || a0 < 0) error("invalid caracter in the nodata value");
+            int a1 = h2i(strnodata1[i*2]);
+            int a0 = h2i(strnodata1[i*2+1]);
+            if (a1 < 0 || a0 < 0) error("Invalid caracter in the input nodata value");
             nodata = 16*a1+a0;
-            nodataColor[i] = nodata;
+            nodataColor1[i] = nodata;
         }
+    } else {
+        error("No input nodata value, impossible to continue");
+    }
+    
+    if (strnodata2 != 0) {
+        uint8_t nodata = 255;
+        for (int i=0; i<sampleperpixel; i++) {
+            int a1 = h2i(strnodata2[i*2]);
+            int a0 = h2i(strnodata2[i*2+1]);
+            if (a1 < 0 || a0 < 0) error("Invalid caracter in the output nodata value");
+            nodata = 16*a1+a0;
+            nodataColor2[i] = nodata;
+        }
+    } else {
+        cout << "No output nodata value, 255 foreach sample will be use" << endl;
     }
     
     IM  = new uint8_t[width * height * sampleperpixel];
@@ -115,13 +168,13 @@ int main(int argc, char* argv[]) {
     TIFFClose(TIFF_FILE);
 
     for(int pos = 0; pos < width; pos++) 
-        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = width*(height-1); pos < width*height; pos++) 
-        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = 0; pos < width*height; pos += width)
-        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     for(int pos = width -1; pos < width*height; pos+= width)
-        if(!memcmp(IM + sampleperpixel * pos, nodataColor, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
+        if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     
     if(Q.empty()) {
         cout << "No nodata pixel identified, nothing to do." << endl;
@@ -169,7 +222,7 @@ int main(int argc, char* argv[]) {
         for(int w = 0; w < width; w++) {
             if(MASK[h*width+w]) {
                 for(int c = 0; c < sampleperpixel; c++) {
-                    LINE[sampleperpixel*w + c] = (2-c)*127;
+                    LINE[sampleperpixel*w + c] = nodataColor2[c];
                 }
             }
         }
