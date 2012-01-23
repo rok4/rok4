@@ -16,6 +16,20 @@ LegendURL::LegendURL(const LegendURL& origLUrl): ResourceLocator(origLUrl)
     minScaleDenominator = origLUrl.minScaleDenominator;
 }
 
+bool LegendURL::operator==(const LegendURL& other) const
+{
+    return (this->width == other.width && this->height == other.height 
+        && this->minScaleDenominator == other.minScaleDenominator 
+        && this->maxScaleDenominator == other.maxScaleDenominator 
+        && this->getFormat().compare( other.getFormat() ) == 0
+        && this->getHRef().compare( other.getHRef() ) == 0 );
+}
+
+bool LegendURL::operator!=(const LegendURL& other) const
+{
+    return !(*this == other);
+}
+
 
 LegendURL::~LegendURL()
 {

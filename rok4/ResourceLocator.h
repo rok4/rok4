@@ -6,16 +6,14 @@ class ResourceLocator
 private:
         std::string format;
         std::string href;
-        int width;
-        int height;
-        double minScaleDenominator;
-        double maxScaleDenominator;
 public:
     ResourceLocator(std::string format, std::string href);
     ResourceLocator(const ResourceLocator &origRL);
-    inline std::string getFormat(){return format;}
-    inline std::string getHRef(){return href;}
-    
+    inline const std::string getFormat() const {return format;}
+    inline const std::string getHRef() const {return href;}
+    bool operator==(const ResourceLocator& other) const;
+    bool operator!=(const ResourceLocator& other) const;
+
     virtual ~ResourceLocator();
     
 };

@@ -35,7 +35,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "develop 0.3.2";
+my $VERSION = "develop 0.4.0";
 
 #
 # Title: be4

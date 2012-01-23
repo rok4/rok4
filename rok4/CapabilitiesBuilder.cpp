@@ -200,8 +200,7 @@ void Rok4Server::buildWMSCapabilities(){
 	// Layer
 	if (layerList.empty()){
 		LOGGER_ERROR("Liste de layers vide");
-		return;
-	}
+	} else {
 	// Parent layer
 	TiXmlElement * parentLayerEl = new TiXmlElement( "Layer" );
 	// Title
@@ -329,7 +328,6 @@ void Rok4Server::buildWMSCapabilities(){
 					onlineResourceEl->SetAttribute("xlink:href", legendURL.getHRef());
 					legendURLEl->LinkEndChild(buildTextNode("Format", legendURL.getFormat()));
 					legendURLEl->LinkEndChild(onlineResourceEl);
-					legendURLEl->SetAttribute("format", legendURL.getFormat());
 					
 					if (legendURL.getWidth()!=0)
 						legendURLEl->SetAttribute("width", legendURL.getWidth());
@@ -366,11 +364,11 @@ void Rok4Server::buildWMSCapabilities(){
 	}// for layer
 	LOGGER_DEBUG("Layers Fini");
 	capabilityEl->LinkEndChild(parentLayerEl);
-
+        }
 
 	capabilitiesEl->LinkEndChild(capabilityEl);
 	doc.LinkEndChild( capabilitiesEl );
-
+        
 	// std::cout << doc; // ecriture non formatée dans le flux
 	// doc.Print();      // affichage formaté sur stdout
 	std::string wmsCapaTemplate;
@@ -470,7 +468,7 @@ void Rok4Server::buildWMTSCapabilities(){
         contactAddressEl->LinkEndChild(buildTextNode("ows:DeliveryPoint",servicesConf.getDeliveryPoint()));
         contactAddressEl->LinkEndChild(buildTextNode("ows:City",servicesConf.getCity()));
         contactAddressEl->LinkEndChild(buildTextNode("ows:AdministrativeArea",servicesConf.getAdministrativeArea()));
-        contactAddressEl->LinkEndChild(buildTextNode("ows:PostCode",servicesConf.getPostCode()));
+        contactAddressEl->LinkEndChild(buildTextNode("ows:PostalCode",servicesConf.getPostCode()));
         contactAddressEl->LinkEndChild(buildTextNode("ows:Country",servicesConf.getCountry()));
         contactAddressEl->LinkEndChild(buildTextNode("ows:ElectronicMailAddress",servicesConf.getElectronicMailAddress()));
         contactInfoEl->LinkEndChild(contactAddressEl);
@@ -612,7 +610,7 @@ void Rok4Server::buildWMTSCapabilities(){
 				styleEl->LinkEndChild(buildTextNode("ows:Identifier", style->getId()));
 				for (j=0 ; j < style->getLegendURLs().size(); ++j){
 					LegendURL legendURL = style->getLegendURLs()[j];
-					TiXmlElement* legendURLEl = new TiXmlElement("ows:LegendURL");
+					TiXmlElement* legendURLEl = new TiXmlElement("LegendURL");
 					legendURLEl->SetAttribute("format", legendURL.getFormat());
 					legendURLEl->SetAttribute("xlink:href", legendURL.getHRef());
 					if (legendURL.getWidth()!=0)
@@ -646,12 +644,12 @@ void Rok4Server::buildWMTSCapabilities(){
                 for (;itLevelList!=itLevelListEnd;++itLevelList){
                     Level * level = itLevelList->second;
                     TiXmlElement * tmLimitsEl = new TiXmlElement("TileMatrixLimits");
-                    tmLimitsEl->LinkEndChild(buildTextNode("tileMatrix",level->getTm().getId()));
+                    tmLimitsEl->LinkEndChild(buildTextNode("TileMatrix",level->getTm().getId()));
 
-                    tmLimitsEl->LinkEndChild(buildTextNode("minTileRow",numToStr((level->getMinTileRow()<0?0:level->getMinTileRow()))));
-                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileRow",numToStr((level->getMaxTileRow()<0?level->getTm().getMatrixW():level->getMaxTileRow()))));
-                    tmLimitsEl->LinkEndChild(buildTextNode("minTileCol",numToStr((level->getMinTileCol()<0?0:level->getMinTileCol() )  )));
-                    tmLimitsEl->LinkEndChild(buildTextNode("maxTileCol",numToStr((level->getMaxTileCol()<0?level->getTm().getMatrixH():level->getMaxTileCol() )  )));
+                    tmLimitsEl->LinkEndChild(buildTextNode("MinTileRow",numToStr((level->getMinTileRow()<0?0:level->getMinTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("MaxTileRow",numToStr((level->getMaxTileRow()<0?level->getTm().getMatrixW():level->getMaxTileRow()))));
+                    tmLimitsEl->LinkEndChild(buildTextNode("MinTileCol",numToStr((level->getMinTileCol()<0?0:level->getMinTileCol() )  )));
+                    tmLimitsEl->LinkEndChild(buildTextNode("MaxTileCol",numToStr((level->getMaxTileCol()<0?level->getTm().getMatrixH():level->getMaxTileCol() )  )));
                     tmsLimitsEl->LinkEndChild(tmLimitsEl);
                 }
                 tmsLinkEl->LinkEndChild(tmsLimitsEl);

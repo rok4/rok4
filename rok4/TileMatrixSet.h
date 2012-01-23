@@ -14,30 +14,41 @@
 
 class TileMatrixSet {
 private:
-	std::string id;
-	std::string title;
-	std::string abstract;
-	std::vector<std::string> keyWords;
-	CRS crs;
-	std::map<std::string, TileMatrix> tmList;
+    std::string id;
+    std::string title;
+    std::string abstract;
+    std::vector<std::string> keyWords;
+    CRS crs;
+    std::map<std::string, TileMatrix> tmList;
 public:
-	std::map<std::string, TileMatrix>* getTmList();
-	std::string getId();
-	CRS getCrs() const {return crs;}
-	int best_scale(double resolution_x, double resolution_y);
+    std::map<std::string, TileMatrix>* getTmList();
+    std::string getId();
+    std::string getTitle(){return title;}
+    std::string getAbstract(){return abstract;}
+    std::vector<std::string>* getKeyWords(){return &keyWords;}
+    CRS getCrs() const {
+        return crs;
+    }
+    //TODO
+    int best_scale(double resolution_x, double resolution_y);
 
-	TileMatrixSet(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList) :
-		id(id), title(title), abstract(abstract), keyWords(keyWords), crs(crs), tmList(tmList) {};
-	TileMatrixSet(const TileMatrixSet& t)
-	{
-		id=t.id;
-		title=t.title;
-		abstract=t.abstract;
-		keyWords=t.keyWords;
-		crs=t.crs;
-		tmList=t.tmList;
-	}
-	~TileMatrixSet(){}
+    TileMatrixSet(std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList) :
+            id(id), title(title), abstract(abstract), keyWords(keyWords), crs(crs), tmList(tmList) {};
+
+
+    bool operator==(const TileMatrixSet& other) const;
+    bool operator!=(const TileMatrixSet& other) const;
+
+    TileMatrixSet(const TileMatrixSet& t)
+    {
+        id=t.id;
+        title=t.title;
+        abstract=t.abstract;
+        keyWords=t.keyWords;
+        crs=t.crs;
+        tmList=t.tmList;
+    }
+    ~TileMatrixSet() {}
 };
 
 #endif /* TILEMATRIXSET_H_ */

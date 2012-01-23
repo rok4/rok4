@@ -200,6 +200,7 @@ DataSource* Level::getDecodedTile(int x, int y) {
 
 DataSource* Level::getEncodedNoDataTile()
 {	
+        LOGGER_DEBUG("Tile : " << noDataFile);
 	return new DataSourceProxy(new FileDataSource(noDataFile.c_str(),2048,2048+4, format::toMimeType(format)), *noDataSource);
 }
 
