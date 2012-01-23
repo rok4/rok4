@@ -498,7 +498,7 @@ sub _load {
 }
 
 # method: createNodata
-#  create a nodata tile with same parameters as images.
+#  create command to create a nodata tile with same parameters as images.
 #---------------------------------------------------------------------------------------------------
 sub createNodata {
     my $self = shift;

@@ -1,12 +1,13 @@
 
 /**
- * \file nodataIdentifier.cpp
- * \brief Modification de la valeur de nodata en une autre, en faisant attention de ne pas modifier les pixels légitimes de l'image, dont la valeur est celle du nodata. On modifie les pixels en partant des bords.
- * \author IGN
+ * @file nodataIdentifier.cpp
+ * @brief Modification de la valeur de nodata en une autre, en faisant attention de ne pas modifier les pixels légitimes de l'image, dont la valeur est celle du nodata. On modifie les pixels en partant des bords.
+ * @author IGN
 *
 */
 
 #include "tiffio.h"
+#include "Logger.h"
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -18,20 +19,18 @@
 using namespace std;
 
 void usage() {
-    cerr << "Usage: nodataIdentifier [-n1 nodata1] [-n2 nodata2] inout.tiff" << endl;
-    cerr << "Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodata1' will be changed in 'nodata2'" << endl;
+    LOGGER_INFO("Usage: nodataIdentifier [-n1 nodata1] [-n2 nodata2] inout.tiff");
+    LOGGER_INFO("Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodata1' will be changed in 'nodata2'");
 }
 
 void error(string message) {
-    cerr << message << endl;
+    LOGGER_DEBUG(message);
     exit(2);
 }
 
 TIFF *TIFF_FILE = 0;
 
 char* tiff_file = 0;
-char* strnodata1 = 0;
-char* strnodata2 = 0;
 uint8_t nodataColor1[4] = {0,0,0,0};
 uint8_t nodataColor2[4] = {255,255,255,255};
 uint8_t *IM ;
@@ -45,6 +44,7 @@ uint16 *extrasamples;
 /**
 *@fn int h2i(char s)
 * Hexadecimal -> int
+* @return valeur décimale positive, -1 en cas d'erreur
 */
 
 int h2i(char s)
@@ -73,12 +73,16 @@ inline void propagate(int newpos) {
 
 /**
 *@fn int main(int argc, char* argv[])
-* Implémentation de la commande nodataIdentifier.
-* Usage : nosataIdentifier [-n1 nodataIn] [-n2 nodataOut] inout.tiff" << endl;
-* nodataOut is 255 (FF) for each sample by default
+* Implémentation de la commande nodataIdentifier
+* 
+* Usage : nodataIdentifier [-n1 nodataIn] [-n2 nodataOut] inout.tiff \n
+* nodataOut is 255 (FF) for each sample by default.
 */
 
 int main(int argc, char* argv[]) {
+    
+    char* strnodata1 = 0;
+    char* strnodata2 = 0;
 
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
@@ -127,8 +131,8 @@ int main(int argc, char* argv[]) {
     if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
     if (compression != 1)  error("Sorry : compression not accepted");
     
-    if (strnodata1 != 0 && strlen(strnodata1) != 2*sampleperpixel || strnodata2 != 0 && strlen(strnodata2) != 2*sampleperpixel) {
-        error("A nodata parameter is too short or too long");
+    if (strnodata1 != 0 && strlen(strnodata1) < 2*sampleperpixel || strnodata2 != 0 && strlen(strnodata2) < 2*sampleperpixel) {
+        error("A nodata parameter is too short");
     }
     
     if (strnodata1 != 0) {
@@ -154,7 +158,7 @@ int main(int argc, char* argv[]) {
             nodataColor2[i] = nodata;
         }
     } else {
-        cout << "No output nodata value, 255 foreach sample will be use" << endl;
+        LOGGER_DEBUG("No output nodata value, 255 foreach sample will be use");
     }
     
     IM  = new uint8_t[width * height * sampleperpixel];
@@ -177,7 +181,7 @@ int main(int argc, char* argv[]) {
         if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     
     if(Q.empty()) {
-        cout << "No nodata pixel identified, nothing to do." << endl;
+        LOGGER_DEBUG("No nodata pixel identified, nothing to do.");
         delete[] IM;
         delete[] MASK;
         return 0;

@@ -1,3 +1,16 @@
-createNodata
+Janvier 2012
 
-Description du projet
+---------------------------------------------------------------------------------------------
+createNodata -n -99999 -c none -p gray -t 256 256 -b 32 -a float -s 1 nodata.tiff
+---------------------------------------------------------------------------------------------
+
+
+Ce programme a pour but de réer une dalle à la taille donnée (-t), contenant une unique tuile, ayant les
+caractéristiques suivantes :
+    - c : compression [none/lzw/jpeg/png]
+    - p : photometric [gray/rgb]
+    - b : bitspersample [8/32]
+    - a : sampleformat [uint/float]
+    - s : sampleperpixel [1/3]
+Cette image nodata.tiff sera remplies avec la valeur -n, donnée en héxadécimal dans le cas du canal entier,
+et en décimal dans le cas du canal flottant.

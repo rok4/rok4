@@ -434,8 +434,10 @@ sub doIt {
     if (main::HasDataSource()) {
     
         ALWAYS(">>> Load Data Source ...");
-        
+
         $objData = BE4::DataSource->new($params->{datasource});
+        $objData->{nodataColor} = $objPyramid->{pyramid}->{color};
+        ALWAYS (sprintf "nodata = %s", $objPyramid->{pyramid}->{color});#TEST#
         
         if (! defined $objData) {
           ERROR ("Can not load the data source !");

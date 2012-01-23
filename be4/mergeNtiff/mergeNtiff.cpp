@@ -58,7 +58,7 @@
 
 void usage() {
     LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a float -i nn -n -99999 -t image -s 1] -b 32 -p gray ");
+    LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }
 
 /**
@@ -154,14 +154,14 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
     if (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) {
         nodata = atoi(strnodata);
         if (nodata == 0 && strcmp(strnodata,"0")!=0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for a DTM,a integer in decimal format is expected");
+            LOGGER_ERROR("Invalid parameter in -n argument for float samples,a integer in decimal format is expected");
             return -1;
         }
     } else if (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) {
         int a1 = h2i(strnodata[0]);
         int a0 = h2i(strnodata[1]);
         if (a1 < 0 || a0 < 0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for image");
+            LOGGER_ERROR("Invalid parameter in -n argument for integer samples");
             return -1;
         } 
         nodata = 16*a1+a0;

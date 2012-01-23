@@ -63,6 +63,13 @@ sub new {
     images  => [],    # list of images sources
     #
     resolution => undef,
+    #
+    bitspersample => undef,
+    sampleformat => undef,
+    samplesperpixel => undef,
+    photometric => undef,
+    #
+    nodataColor => undef,
   };
 
   bless($self, $class);
@@ -137,11 +144,38 @@ sub computeImageSource {
       return FALSE;
     }
     
-    if (! $objImageSource->computeInfo()) {
+    # images reading and analysis
+    my @imageInfo  = $objImageSource->computeInfo();
+    # @imageInfo = (bitspersample,photometric,sampleformat,samplesperpixel)
+    if (! defined @imageInfo ) {
       ERROR ("Can not read image info ('$filepath') !");
       return FALSE;
     }
-  
+    
+    if (! defined $self->{samplesperpixel}) {
+        # we have read the first image, components are empty. This first image will be the reference.
+        $self->{bitspersample} = $imageInfo[0];
+        $self->{photometric} = $imageInfo[1];
+        $self->{sampleformat} = $imageInfo[2];
+        $self->{samplesperpixel} = $imageInfo[3];
+    } else {
+        # we have already values. We must have the same components for all images
+        if (
+        ! ($self->{bitspersample} eq $imageInfo[0] && $self->{photometric} eq $imageInfo[1] &&
+         $self->{sampleformat} eq $imageInfo[2] && $self->{samplesperpixel} eq $imageInfo[3])) {
+            ERROR ("All images must have same components. This image ('$filepath') is different !");
+            return FALSE;
+        }
+    }
+    
+    # image's nodata treatment, if samples are 8bits unsigned integer
+    if ($self->{bitspersample} == 8 && $self->{sampleformat} eq "uint") {
+        if (! $objImageSource->treatNodata($self->{nodataColor})) {
+            ERROR ("Can not treat nodata for this image ('$filepath') !");
+            return FALSE;
+        }
+    }
+    
     if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
       $badRefCtrl++;
     }
@@ -244,6 +278,8 @@ sub computeBbox {
   
   return @bbox;
 }
+
+
 ################################################################################
 # method: getListImages
 #   Get the list of all path data image (image tiff only !)
