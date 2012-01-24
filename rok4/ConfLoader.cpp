@@ -9,6 +9,7 @@
 #include "LegendURL.h"
 #include <malloc.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
@@ -394,7 +395,17 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet(std::string fileName){
 
 Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
-	TileMatrixSet *tms;
+        // Relative file Path 
+        char * fileNameChar = (char *)malloc(strlen(fileName.c_str()) + 1);
+        strcpy(fileNameChar, fileName.c_str());
+        char * parentDirChar = dirname(fileNameChar);
+        std::string parentDir(parentDirChar);
+        free(fileNameChar);
+        fileNameChar=NULL;
+        parentDirChar=NULL;
+        LOGGER_INFO("           BaseDir Relative to : " << parentDir);
+	
+        TileMatrixSet *tms;
 	std::string formatStr="";
 	eformat_data format;
 	int channels;
@@ -497,6 +508,13 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
 		if (!pElemLvl || !(pElemLvl->GetText())){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
 		std::string baseDir(pElemLvl->GetText());
+                //Relative Path
+                if (baseDir.compare(0,2,"./")==0){
+                    baseDir.replace(0,1,parentDir);
+                } else if (baseDir.compare(0,1,"/")!=0){
+                    baseDir.insert(0,"/");
+                    baseDir.insert(0,parentDir);
+                }
 
 		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
 		if (!pElemLvl || !(pElemLvl->GetText())){
@@ -618,6 +636,14 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                         }
                 
 			noDataFilePath=pElemNoDataPath->GetText();
+                        //Relative Path
+                        if (noDataFilePath.compare(0,2,"./")==0){
+                            noDataFilePath.replace(0,1,parentDir);
+                        } else if (noDataFilePath.compare(0,1,"/")!=0){
+                            noDataFilePath.insert(0,"/");
+                            noDataFilePath.insert(0,parentDir);
+                        }
+
 			/*if (noDataFilePath.empty()){
 				if (!pElemNoDataPath){
                                     LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin");
@@ -654,6 +680,16 @@ Pyramid* ConfLoader::buildPyramid(std::string fileName, std::map<std::string, Ti
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("	Ajout du layer " << fileName);
+        // Relative file Path 
+        char * fileNameChar = (char *)malloc(strlen(fileName.c_str()) + 1);
+        strcpy(fileNameChar, fileName.c_str());
+        char * parentDirChar = dirname(fileNameChar);
+        std::string parentDir(parentDirChar);
+        free(fileNameChar);
+        fileNameChar=NULL;
+        parentDirChar=NULL;
+        LOGGER_INFO("           BaseDir Relative to : " << parentDir);
+        
 	std::string id;
 	std::string title="";
 	std::string abstract="";
@@ -905,9 +941,18 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 
 	pElem=hRoot.FirstChild("pyramid").Element();
 	if (pElem && pElem->GetText()){
-		pyramid = buildPyramid(pElem->GetText(), tmsList);
+            
+                std::string pyramidFilePath(pElem->GetText());
+                //Relative Path
+                        if (pyramidFilePath.compare(0,2,"./")==0){
+                            pyramidFilePath.replace(0,1,parentDir);
+                        } else if (pyramidFilePath.compare(0,1,"/")!=0){
+                            pyramidFilePath.insert(0,"/");
+                            pyramidFilePath.insert(0,parentDir);
+                        }
+		pyramid = buildPyramid(pyramidFilePath, tmsList);
 		if (!pyramid){
-                        LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
+                        LOGGER_ERROR("La pyramide " << pyramidFilePath << " ne peut être chargée");
                         return NULL;
                 }
 	}
