@@ -250,7 +250,7 @@ sub computeInfo {
     #      $self->{width});
     
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
-        ERROR ("Can not determine all components for this image ('$image') !");
+        ERROR ("The format of this image ('$image') is not handled by be4 !");
         return undef;
     }
     
@@ -278,12 +278,15 @@ sub treatNodata {
         return FALSE;
     }
     
-    $command = $self->nodataIdentifier('FEFEFE','0000FF');
-    if (! system($command) == 0) {
-        ERROR (sprintf "Impossible to identify nodata in '%s' with the command %s",
-                $self->{PATHFILENAME},
-                $command);
-        return FALSE;
+    if ($nodataColor =~ m/^(FF|ff)+$/) {
+        # nodata is white (255 for all samples). 'convert' transform it to FEFEFE. We have to restore this value.
+        $command = $self->nodataIdentifier('FEFEFE','FFFFFF');
+        if (! system($command) == 0) {
+            ERROR (sprintf "Impossible to identify nodata in '%s' with the command %s",
+                    $self->{PATHFILENAME},
+                    $command);
+            return FALSE;
+        }
     }
     
     return TRUE;
@@ -301,7 +304,6 @@ sub nodataIdentifier {
     $cmd .= sprintf ( " -n2 %s", '0000FF');
     $cmd .= sprintf ( " %s", $self->{PATHFILENAME});
     return $cmd;
-    
 }
 
 # method: convert
@@ -310,9 +312,9 @@ sub nodataIdentifier {
 sub convert {
     my $self = shift;
     my $colorToRemove = shift;
-    my $colorToPut = shift;
+    my $colorToAdd = shift;
     
-    my $cmd = sprintf ("%s -fill \"#%s\"",CONVERT, $colorToPut);
+    my $cmd = sprintf ("%s -fill \"#%s\"",CONVERT, $colorToAdd);
     $cmd .= sprintf ( " -opaque \"#%s\"", $colorToRemove);
     $cmd .= sprintf ( " %s %s", $self->{PATHFILENAME}, $self->{PATHFILENAME});
     return $cmd;

@@ -19,20 +19,20 @@
 using namespace std;
 
 void usage() {
-    LOGGER_INFO("Usage: nodataIdentifier [-n1 nodata1] [-n2 nodata2] inout.tiff");
-    LOGGER_INFO("Pixels in file 'inout.tiff' which touch borders and contains the nodata value 'nodata1' will be changed in 'nodata2'");
+    cout << "Usage: nodataIdentifier -n1 nodata1 [-n2 nodata2] inout.tiff" << endl;
+    cout << "Pixels in file 'inout.tiff' which touch edges and contains the value 'nodata1' will be changed in 'nodata2' (white by default). Values are in hexadecimal format." << endl;
 }
 
 void error(string message) {
-    LOGGER_DEBUG(message);
+    LOGGER_ERROR(message);
     exit(2);
 }
 
 TIFF *TIFF_FILE = 0;
 
 char* tiff_file = 0;
-uint8_t nodataColor1[4] = {0,0,0,0};
-uint8_t nodataColor2[4] = {255,255,255,255};
+uint8_t* nodataColor1;
+uint8_t* nodataColor2;
 uint8_t *IM ;
 bool *MASK;
 queue<int> Q;
@@ -134,6 +134,9 @@ int main(int argc, char* argv[]) {
     if (strnodata1 != 0 && strlen(strnodata1) < 2*sampleperpixel || strnodata2 != 0 && strlen(strnodata2) < 2*sampleperpixel) {
         error("A nodata parameter is too short");
     }
+    
+    nodataColor1 = new uint8_t[sampleperpixel];
+    nodataColor2 = new uint8_t[sampleperpixel];
     
     if (strnodata1 != 0) {
         uint8_t nodata = 255;
