@@ -54,7 +54,8 @@ void Rok4Server::buildWMSCapabilities(){
 	capabilitiesEl->SetAttribute("xmlns","http://www.opengis.net/wms");
 	capabilitiesEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	capabilitiesEl->SetAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-	capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd");
+        capabilitiesEl->SetAttribute("xmlns:sld","http://www.opengis.net/sld");
+        capabilitiesEl->SetAttribute("xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd http://www.opengis.net/sld http://schemas.opengis.net/sld/1.1/sld_All.xsd");
 	
 	// Pour Inspire. Cf. remarque plus bas.
 	if (servicesConf.isInspire()){
@@ -135,13 +136,20 @@ void Rok4Server::buildWMSCapabilities(){
 	TiXmlElement * DCPTypeEl = new TiXmlElement( "DCPType" );
 	TiXmlElement * HTTPEl = new TiXmlElement( "HTTP" );
 	TiXmlElement * GetEl = new TiXmlElement( "Get" );
+        TiXmlElement * PostEl = new TiXmlElement( "Post" );
 	//OnlineResource
 	onlineResourceEl = new TiXmlElement( "OnlineResource" );
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	onlineResourceEl->SetAttribute("xlink:href",pathTag);
 	onlineResourceEl->SetAttribute("xlink:type","simple");
 	GetEl->LinkEndChild(onlineResourceEl);
+        onlineResourceEl = new TiXmlElement( "OnlineResource" );
+        onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
+        onlineResourceEl->SetAttribute("xlink:href",pathTag);
+        onlineResourceEl->SetAttribute("xlink:type","simple");
+        PostEl->LinkEndChild(onlineResourceEl);
 	HTTPEl->LinkEndChild(GetEl);
+        HTTPEl->LinkEndChild(PostEl);
 	DCPTypeEl->LinkEndChild(HTTPEl);
 	getCapabilitiestEl->LinkEndChild(DCPTypeEl);
 	requestEl->LinkEndChild(getCapabilitiestEl);
@@ -153,12 +161,19 @@ void Rok4Server::buildWMSCapabilities(){
 	DCPTypeEl = new TiXmlElement( "DCPType" );
 	HTTPEl = new TiXmlElement( "HTTP" );
 	GetEl = new TiXmlElement( "Get" );
+        PostEl = new TiXmlElement( "Post" );
 	onlineResourceEl = new TiXmlElement( "OnlineResource" );
 	onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
 	onlineResourceEl->SetAttribute("xlink:href",pathTag);
 	onlineResourceEl->SetAttribute("xlink:type","simple");
 	GetEl->LinkEndChild(onlineResourceEl);
 	HTTPEl->LinkEndChild(GetEl);
+        onlineResourceEl = new TiXmlElement( "OnlineResource" );
+        onlineResourceEl->SetAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
+        onlineResourceEl->SetAttribute("xlink:href",pathTag);
+        onlineResourceEl->SetAttribute("xlink:type","simple");
+        PostEl->LinkEndChild(onlineResourceEl);
+        HTTPEl->LinkEndChild(PostEl);
 	DCPTypeEl->LinkEndChild(HTTPEl);
 	getMapEl->LinkEndChild(DCPTypeEl);
 
@@ -171,6 +186,17 @@ void Rok4Server::buildWMSCapabilities(){
 	exceptionEl->LinkEndChild(buildTextNode("Format","XML"));
 	capabilityEl->LinkEndChild(exceptionEl);
 
+        //UserDefinedSymbolization
+        TiXmlElement * userDefSymbolEl = new TiXmlElement( "sld:UserDefinedSymbolization" );
+        userDefSymbolEl->SetAttribute("SupportSLD","0");
+        userDefSymbolEl->SetAttribute("UserLayer","0");
+        userDefSymbolEl->SetAttribute("UserStyle","0");
+        userDefSymbolEl->SetAttribute("RemoteWFS","0");
+        userDefSymbolEl->SetAttribute("InlineFeature","0");
+        userDefSymbolEl->SetAttribute("RemoteWCS","0");
+        
+        capabilityEl->LinkEndChild(userDefSymbolEl);
+        
 	// Inspire (extended Capability)
 	if(servicesConf.isInspire()){
 		// TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
@@ -498,6 +524,17 @@ void Rok4Server::buildWMTSCapabilities(){
 	constraintEl->LinkEndChild(allowedValuesEl);
 	getEl->LinkEndChild(constraintEl);
 	httpEl->LinkEndChild(getEl);
+        TiXmlElement * postEl = new TiXmlElement("ows:Post");
+        postEl->SetAttribute("xlink:href","]HOSTNAME/PATH[");
+        constraintEl = new TiXmlElement("ows:Constraint");
+        constraintEl->SetAttribute("name","PostEncoding");
+        allowedValuesEl = new TiXmlElement("ows:AllowedValues");
+        allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "XML"));
+        //TODO Implement SOAP like request
+        //allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "SOAP"));
+        constraintEl->LinkEndChild(allowedValuesEl);
+        postEl->LinkEndChild(constraintEl);
+        httpEl->LinkEndChild(postEl);
 	dcpEl->LinkEndChild(httpEl);
 	opEl->LinkEndChild(dcpEl);
 
@@ -516,6 +553,17 @@ void Rok4Server::buildWMTSCapabilities(){
         constraintEl->LinkEndChild(allowedValuesEl);
         getEl->LinkEndChild(constraintEl);
 	httpEl->LinkEndChild(getEl);
+        postEl = new TiXmlElement("ows:Post");
+        postEl->SetAttribute("xlink:href","]HOSTNAME/PATH[");
+        constraintEl = new TiXmlElement("ows:Constraint");
+        constraintEl->SetAttribute("name","PostEncoding");
+        allowedValuesEl = new TiXmlElement("ows:AllowedValues");
+        allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "XML"));
+        //TODO Implement SOAP like request
+        //allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "SOAP"));
+        constraintEl->LinkEndChild(allowedValuesEl);
+        postEl->LinkEndChild(constraintEl);
+        httpEl->LinkEndChild(postEl);
 	dcpEl->LinkEndChild(httpEl);
 	opEl->LinkEndChild(dcpEl);
 
