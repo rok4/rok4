@@ -89,7 +89,7 @@ class Kernel {
    * Fonction calculant les poids à appliquer aux pixels sources en fonction
    * du centre du pixel à calculer et du ratio de réchantillonage
    *
-   * @param W Tableau de coefficients d'interpollation à calculer.
+   * @param W Tableau de coefficients d'interpolation à calculer.
    * @param length Taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
    * @param x Valeur à interpoler
    * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.

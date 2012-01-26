@@ -352,7 +352,7 @@ sub _init {
     $pyr->{interpolation} = $params->{interpolation};
     #
     if (! exists($params->{photometric})) {
-        WARN ("key/value optional to 'photometric' (value by default) !");
+        WARN ("Parameter 'photometric' has not been set. The default value is 'rgb'");
         $params->{photometric} = 'rgb';
     }
     $pyr->{photometric} = $params->{photometric};
@@ -793,36 +793,38 @@ sub readConfPyramid {
         return FALSE;
     }
     
-    my $nodata = $root->findnodes('nodataValue')->to_literal;
+    my $tagnodata = $root->findnodes('nodataValue')->to_literal;
 
-    if (! defined ($nodata)) {
-        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Default value is FFFFFF.");
-        $nodata = "FFFFFF";
+    if (! defined ($tagnodata)) {
+        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Nodata value ('%s') in the XML file Pyramid is used",$tagnodata);
+        $self->{pyramid}->{color} = $tagnodata;
     }
     
-    my $photometric = $root->findnodes('photometric')->to_literal;
+    my $tagphotometric = $root->findnodes('photometric')->to_literal;
 
-    if (! defined ($photometric)) {
-        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Default value is rgb.");
-        $photometric = "rgb";
+    if (! defined ($tagphotometric)) {
+        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Photometric value ('%s') in the XML file Pyramid is used",$tagphotometric);
+        $self->{pyramid}->{photometric} = $tagphotometric;
     }
     
-    my $interpolation = $root->findnodes('interpolation')->to_literal;
+    my $taginterpolation = $root->findnodes('interpolation')->to_literal;
 
-    if (! defined ($interpolation)) {
-        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Default value is bicubic.");
-        $interpolation = "bicubic";
+    if (! defined ($taginterpolation)) {
+        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Interpolation value ('%s') in the XML file Pyramid is used",$taginterpolation);
+        $self->{pyramid}->{interpolation} = $taginterpolation;
     }
     
     # to remove when interpolation 'bicubique' will be remove
-    if ($interpolation eq 'bicubique') {
+    if ($taginterpolation eq 'bicubique') {
         WARN("'bicubique' is a deprecated interpolation name, use 'bicubic' instead");
-        $interpolation = 'bicubic';
+        $taginterpolation = 'bicubic';
     }
-    
-    $self->{pyramid}->{color} = $nodata;
-    $self->{pyramid}->{interpolation} = $interpolation;
-    $self->{pyramid}->{photometric} = $photometric;
 
 #   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
     if ($tagformat eq 'TIFF_INT8') {

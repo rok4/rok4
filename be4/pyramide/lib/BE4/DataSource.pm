@@ -168,14 +168,6 @@ sub computeImageSource {
         }
     }
     
-    # image's nodata treatment, if samples are 8bits unsigned integer
-    if ($self->{bitspersample} == 8 && $self->{sampleformat} eq "uint") {
-        if (! $objImageSource->treatNodata($self->{nodataColor})) {
-            ERROR ("Can not treat nodata for this image ('$filepath') !");
-            return FALSE;
-        }
-    }
-    
     if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
       $badRefCtrl++;
     }

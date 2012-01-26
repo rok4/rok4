@@ -400,25 +400,25 @@ bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPh
 int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {
     std::vector<Image*> vTmp;
-    
+
     // Initilisation du tableau de sortie
     pTabImageIn->push_back(ImageIn);
 
     // Creation de vecteurs contenant des images avec une resolution en x homogene
     // TODO : Attention, ils ne sont forcement en phase
     for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
+    {
+        std::stable_sort(it->begin(),it->end(),InfResx); 
+        for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
+        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
         {
-                std::stable_sort(it->begin(),it->end(),InfResx); 
-                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
-                        {
-                vTmp.assign(it2+1,it->end());
-                                it->assign(it->begin(),it2+1);
-                                pTabImageIn->push_back(vTmp);
-                return 0;
-                                it++;
-                        }
+            vTmp.assign(it2+1,it->end());
+            it->assign(it->begin(),it2+1);
+            pTabImageIn->push_back(vTmp);
+            return 0;
+            it++;
         }
+    }
 
 //TODO : A refaire proprement
 /*
@@ -436,7 +436,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
                     }
         }
 
-    // Creation de vecteurs contenant des images avec une resolution en x et en y, et une pihase en x homogenes
+    // Creation de vecteurs contenant des images avec une resolution en x et en y, et une phase en x homogenes
         for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
                 std::sort(it->begin(),it->end(),InfPhasex); 

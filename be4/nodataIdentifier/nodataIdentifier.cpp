@@ -7,7 +7,6 @@
 */
 
 #include "tiffio.h"
-#include "Logger.h"
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -24,7 +23,7 @@ void usage() {
 }
 
 void error(string message) {
-    LOGGER_ERROR(message);
+    cerr << message << endl;
     exit(2);
 }
 
@@ -160,9 +159,7 @@ int main(int argc, char* argv[]) {
             nodata = 16*a1+a0;
             nodataColor2[i] = nodata;
         }
-    } else {
-        LOGGER_DEBUG("No output nodata value, 255 foreach sample will be use");
-    }
+    } // else 255 (default)
     
     IM  = new uint8_t[width * height * sampleperpixel];
     MASK = new bool[width * height];
@@ -184,7 +181,7 @@ int main(int argc, char* argv[]) {
         if(!memcmp(IM + sampleperpixel * pos, nodataColor1, sampleperpixel)) {Q.push(pos); MASK[pos] = true;}
     
     if(Q.empty()) {
-        LOGGER_DEBUG("No nodata pixel identified, nothing to do.");
+        // No nodata pixel identified, nothing to do
         delete[] IM;
         delete[] MASK;
         return 0;
