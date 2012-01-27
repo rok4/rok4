@@ -46,6 +46,8 @@ if(NOT TARGET jpeg)
   add_library(${PROJECT_NAME} STATIC IMPORTED)
 endif(NOT TARGET jpeg)
 
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/libjpeg.a)
+
 add_custom_command(OUTPUT install/lib/libjpeg.a 
   COMMAND mkdir -p install/lib 
   COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a install/lib

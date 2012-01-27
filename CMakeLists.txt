@@ -2,7 +2,8 @@
 project(Rok4)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH 
 
-#Lecture de la version dans le fichier du projet
+
+#Lecture de la version de ROK4 dans le fichier du projet
 FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
 STRING(SUBSTRING ${version_line} 15 -1 version)
 STRING(REPLACE "." ";" ROK4_VERSION ${version})
@@ -10,6 +11,11 @@ list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 cmake_minimum_required(VERSION 2.6)
+
+#Lecture de la version de BE4 dans le fichier du projet
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README tmpbe4 REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
+STRING(SUBSTRING ${tmpbe4} 15 -1 subtmpbe4)
+STRING(REPLACE "." ";" BE4_VERSION ${subtmpbe4})
 
 if(NOT DEFINED CPACK_INCLUDE_TOPLEVEL_DIRECTORY)
   SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
