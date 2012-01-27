@@ -1195,6 +1195,7 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	std::string accessConstraint="";
 	unsigned int maxWidth;
 	unsigned int maxHeight;
+        bool postMode =false;
         //Contact Info
         std::string providerSite="";
         std::string individualName="";
@@ -1217,6 +1218,8 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	bool inspire = false;
 	std::vector<std::string> applicationProfileList;
 
+        
+        
 	pElem=hRoot.FirstChild("name").Element();
 	if (pElem && pElem->GetText()) name = pElem->GetText();
 
@@ -1336,12 +1339,21 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 		}
 	}
 	
+	pElem=hRoot.FirstChild("postMode").Element();
+        if (pElem && pElem->GetText()) {
+                std::string postStr = pElem->GetText();
+                if ( postStr.compare("true")==0 || postStr.compare("1")==0){
+                        LOGGER_INFO("Utilisation du mode Inspire");
+                        postMode = true;
+                }
+        }
+	
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
 			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
                         providerSite, individualName, individualPosition, voice, facsimile, 
                         addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                        electronicMailAddress, inspire );
+                        electronicMailAddress, inspire , postMode);
 	return servicesConf;
 }
 

@@ -12,7 +12,7 @@
 				<!-- Qui fournit le service -->
 				<xs:element name="serviceProvider" type="xs:string"/>
 				<!-- Provider site url -->
-				<xs:element name="providerSite' type="xs:string">
+				<xs:element name="providerSite" type="xs:string">
 				<!-- Des mots clefs -->
 				<xs:element name="keywordList">
 					<xs:complexType>
@@ -21,6 +21,8 @@
 					</xs:sequence>
 					</xs:complexType>
 				</xs:element>
+				 <!-- Autoriser les requête POST -->
+				 <xs:element name="postMode" type="xs:boolean" minOccurs="0" default="false">
 				<!-- Info relative à la facturation du service -->
 				<xs:element name="fee" type="xs:string"/>
 				<!-- Info sur les contraintes d’accès -->
@@ -74,7 +76,7 @@
 				<xs:element name="serviceTypeVersion" type="xs:string"/>
 				 <!-- Paramètre INSPIRE -->
 				 <!-- Activation du mode Inspire -->
-				 <xs:element name="inspire" type="xs:boolean">
+				 <xs:element name="inspire" type="xs:boolean" default="false">
 			</xs:sequence>
 
 		</xs:complexType>
