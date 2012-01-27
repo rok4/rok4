@@ -58,7 +58,7 @@
 
 void usage() {
     LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-    LOGGER_INFO(" Exemple : mergeNtiff -f myfile.txt -a float -i nn -n -99999 -t image -s 1] -b 32 -p gray ");
+    LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }
 
 /**
@@ -154,14 +154,14 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
     if (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) {
         nodata = atoi(strnodata);
         if (nodata == 0 && strcmp(strnodata,"0")!=0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for a DTM,a integer in decimal format is expected");
+            LOGGER_ERROR("Invalid parameter in -n argument for float samples,a integer in decimal format is expected");
             return -1;
         }
     } else if (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) {
         int a1 = h2i(strnodata[0]);
         int a0 = h2i(strnodata[1]);
         if (a1 < 0 || a0 < 0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for image");
+            LOGGER_ERROR("Invalid parameter in -n argument for integer samples");
             return -1;
         } 
         nodata = 16*a1+a0;
@@ -400,25 +400,25 @@ bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPh
 int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {
     std::vector<Image*> vTmp;
-    
+
     // Initilisation du tableau de sortie
     pTabImageIn->push_back(ImageIn);
 
     // Creation de vecteurs contenant des images avec une resolution en x homogene
     // TODO : Attention, ils ne sont forcement en phase
     for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
+    {
+        std::stable_sort(it->begin(),it->end(),InfResx); 
+        for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
+        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
         {
-                std::stable_sort(it->begin(),it->end(),InfResx); 
-                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
-                        {
-                vTmp.assign(it2+1,it->end());
-                                it->assign(it->begin(),it2+1);
-                                pTabImageIn->push_back(vTmp);
-                return 0;
-                                it++;
-                        }
+            vTmp.assign(it2+1,it->end());
+            it->assign(it->begin(),it2+1);
+            pTabImageIn->push_back(vTmp);
+            return 0;
+            it++;
         }
+    }
 
 //TODO : A refaire proprement
 /*
@@ -436,7 +436,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
                     }
         }
 
-    // Creation de vecteurs contenant des images avec une resolution en x et en y, et une pihase en x homogenes
+    // Creation de vecteurs contenant des images avec une resolution en x et en y, et une phase en x homogenes
         for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
         {
                 std::sort(it->begin(),it->end(),InfPhasex); 

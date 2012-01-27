@@ -7,7 +7,8 @@
 #include <jpeglib.h>
 
 void usage() {
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file";
+    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
+    std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -16,10 +17,15 @@ int main(int argc, char **argv) {
     uint16_t compression = COMPRESSION_NONE;
     uint16_t photometric = PHOTOMETRIC_RGB;
     uint32_t bitspersample = 8;
+    bool crop = false;
     uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
     int quality = -1;
 
     for(int i = 1; i < argc; i++) {
+        if(!strcmp(argv[i],"-crop")) {
+            crop = true;
+            continue;
+        }
         if(argv[i][0] == '-') {
             switch(argv[i][1]) {
                 case 'c': // compression
@@ -60,11 +66,15 @@ int main(int argc, char **argv) {
                     break;
                 default: usage();
             }
-        }
+        }        
         else {
             if(input == 0) input = argv[i];
             else if(output == 0) output = argv[i];
-            else {std::cerr << "argument must specify one input file and one output file" << std::endl; usage(); exit(2);}
+            else {
+                std::cerr << "Argument must specify one input file and one output file" << std::endl;
+                usage();
+                exit(2);
+            }
         }
     }
 
@@ -85,7 +95,7 @@ int main(int argc, char **argv) {
 
     for(int y = 0; y < tiley; y++) for(int x = 0; x < tilex; x++) {
         R.getWindow(x*tilewidth, y*tilelength, tilewidth, tilelength, data);
-        if(W.WriteTile(x, y, data) < 0) {std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl; return 2;}
+        if(W.WriteTile(x, y, data, crop) < 0) {std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl; return 2;}
     }
 
     R.close();

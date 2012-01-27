@@ -9,7 +9,7 @@
 #include <tiff.h>
 
 //#define TIFF_SHORT              3       /* 16-bit unsigned integer */
-//#define	TIFF_LONG               4       /* 32-bit unsigned integer */
+//#define TIFF_LONG               4       /* 32-bit unsigned integer */
 //#define TIFF_RATIONAL           5       /* 64-bit unsigned fraction */
 
 
@@ -103,7 +103,8 @@ class TiledTiffWriter {
 //    struct jpeg_error_mgr       jerr;
 
     size_t computeRawTile (uint8_t *buffer, uint8_t *data);
-    size_t computeJpegTile(uint8_t *buffer, uint8_t *data);
+    size_t computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop);
+    void emptyWhiteBlock(uint8_t *buffheight, int l);
     size_t computeLzwTile(uint8_t *buffer, uint8_t *data);
     size_t computePngTile (uint8_t *buffer, uint8_t *data);
   public: 
@@ -126,8 +127,8 @@ class TiledTiffWriter {
      * Write a tile from uncompressed data
      * data must contain more than tilewidth*tilelength*samplesperpixel bytes
      */
-    int WriteTile(int n, uint8_t *data);      
-    int WriteTile(int x, int y, uint8_t *data);
+    int WriteTile(int n, uint8_t *data, bool crop);      
+    int WriteTile(int x, int y, uint8_t *data, bool crop = false);
 
 };
 
