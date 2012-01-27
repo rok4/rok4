@@ -781,21 +781,21 @@ sub readConfPyramid {
 
     my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
 
-    if (! defined ($tagtmsname)) {
+    if ($tagtmsname eq '') {
         ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
         return FALSE;
     }
 
     my $tagformat = $root->findnodes('format')->to_literal;
 
-    if (! defined ($tagformat)) {
+    if ($tagtmsname eq '') {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
     }
     
     my $tagnodata = $root->findnodes('nodataValue')->to_literal;
 
-    if (! defined ($tagnodata)) {
+    if ($tagnodata eq '') {
         WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Nodata value ('%s') in the XML file Pyramid is used",$tagnodata);
@@ -804,7 +804,7 @@ sub readConfPyramid {
     
     my $tagphotometric = $root->findnodes('photometric')->to_literal;
 
-    if (! defined ($tagphotometric)) {
+    if ($tagphotometric eq '') {
         WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Photometric value ('%s') in the XML file Pyramid is used",$tagphotometric);
@@ -813,7 +813,7 @@ sub readConfPyramid {
     
     my $taginterpolation = $root->findnodes('interpolation')->to_literal;
 
-    if (! defined ($taginterpolation)) {
+    if ($taginterpolation eq '') {
         WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Interpolation value ('%s') in the XML file Pyramid is used",$taginterpolation);
@@ -838,7 +838,7 @@ sub readConfPyramid {
   
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
 
-    if (! defined ($tagsamplesperpixel)) {
+    if ($tagsamplesperpixel eq '') {
     ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
     return FALSE;
     }
