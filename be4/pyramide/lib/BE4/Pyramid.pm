@@ -352,7 +352,7 @@ sub _init {
     $pyr->{interpolation} = $params->{interpolation};
     #
     if (! exists($params->{photometric})) {
-        WARN ("key/value optional to 'photometric' (value by default) !");
+        WARN ("Parameter 'photometric' has not been set. The default value is 'rgb'");
         $params->{photometric} = 'rgb';
     }
     $pyr->{photometric} = $params->{photometric};
@@ -498,7 +498,7 @@ sub _load {
 }
 
 # method: createNodata
-#  create a nodata tile with same parameters as images.
+#  create command to create a nodata tile with same parameters as images.
 #---------------------------------------------------------------------------------------------------
 sub createNodata {
     my $self = shift;
@@ -781,48 +781,50 @@ sub readConfPyramid {
 
     my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
 
-    if (! defined ($tagtmsname)) {
+    if ($tagtmsname eq '') {
         ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
         return FALSE;
     }
 
     my $tagformat = $root->findnodes('format')->to_literal;
 
-    if (! defined ($tagformat)) {
+    if ($tagtmsname eq '') {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
     }
     
-    my $nodata = $root->findnodes('nodataValue')->to_literal;
+    my $tagnodata = $root->findnodes('nodataValue')->to_literal;
 
-    if (! defined ($nodata)) {
-        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Default value is FFFFFF.");
-        $nodata = "FFFFFF";
+    if ($tagnodata eq '') {
+        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Nodata value ('%s') in the XML file Pyramid is used",$tagnodata);
+        $self->{pyramid}->{color} = $tagnodata;
     }
     
-    my $photometric = $root->findnodes('photometric')->to_literal;
+    my $tagphotometric = $root->findnodes('photometric')->to_literal;
 
-    if (! defined ($photometric)) {
-        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Default value is rgb.");
-        $photometric = "rgb";
+    if ($tagphotometric eq '') {
+        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Photometric value ('%s') in the XML file Pyramid is used",$tagphotometric);
+        $self->{pyramid}->{photometric} = $tagphotometric;
     }
     
-    my $interpolation = $root->findnodes('interpolation')->to_literal;
+    my $taginterpolation = $root->findnodes('interpolation')->to_literal;
 
-    if (! defined ($interpolation)) {
-        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Default value is bicubic.");
-        $interpolation = "bicubic";
+    if ($taginterpolation eq '') {
+        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Value from parameters kept");
+    } else {
+        INFO (sprintf "Interpolation value ('%s') in the XML file Pyramid is used",$taginterpolation);
+        $self->{pyramid}->{interpolation} = $taginterpolation;
     }
     
     # to remove when interpolation 'bicubique' will be remove
-    if ($interpolation eq 'bicubique') {
+    if ($taginterpolation eq 'bicubique') {
         WARN("'bicubique' is a deprecated interpolation name, use 'bicubic' instead");
-        $interpolation = 'bicubic';
+        $taginterpolation = 'bicubic';
     }
-    
-    $self->{pyramid}->{color} = $nodata;
-    $self->{pyramid}->{interpolation} = $interpolation;
-    $self->{pyramid}->{photometric} = $photometric;
 
 #   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
     if ($tagformat eq 'TIFF_INT8') {
@@ -836,7 +838,7 @@ sub readConfPyramid {
   
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
 
-    if (! defined ($tagsamplesperpixel)) {
+    if ($tagsamplesperpixel eq '') {
     ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
     return FALSE;
     }
@@ -1186,6 +1188,7 @@ sub writeCachePyramid {
             # we have to create the nodata tile
             my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
             $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+            
             if (! -e $nodataFilePath) {
                 my $createNodataCommand = $self->createNodata($nodataFilePath);
                 

@@ -182,7 +182,7 @@ sub is_BitsPerSample {
   foreach (@{$TILES{bitspersample}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'bitspersample' (unsupported)!");
+  ERROR (sprintf "Can not define 'bitspersample' (%s) : unsupported !",$p);
   return FALSE;
 }
 sub is_SampleFormat {
@@ -196,7 +196,7 @@ sub is_SampleFormat {
   foreach (@{$TILES{sampleformat}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'sampleformat' (unsupported)!");
+  ERROR (sprintf "Can not define 'sampleformat' (%s) : unsupported !",$p);
   return FALSE;
 }
 sub is_CompressionScheme {
@@ -210,7 +210,7 @@ sub is_CompressionScheme {
   foreach (@{$TILES{compressionscheme}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'compressionscheme' (unsupported)!");
+  ERROR (sprintf "Can not define 'compressionscheme' (%s) : unsupported !",$p);
   return FALSE;
 }
 sub is_Photometric {
@@ -224,7 +224,7 @@ sub is_Photometric {
   foreach (@{$TILES{photometric}}) {
     return TRUE if (lc $p eq lc $_);
   }
-  ERROR ("Can not define 'photometric' (unsupported)!");
+  ERROR (sprintf "Can not define 'photometric' (%s) : unsupported !",$p);
   return FALSE;
 }
 sub is_SamplesPerPixel {
@@ -238,7 +238,7 @@ sub is_SamplesPerPixel {
   foreach (@{$TILES{samplesperpixel}}) {
     return TRUE if ($p eq $_);
   }
-  ERROR ("Can not define 'samplesperpixel' (unsupported)!");
+  ERROR (sprintf "Can not define 'samplesperpixel' (%s) : unsupported !",$p);
   return FALSE;
 }
 sub is_Interpolation {

@@ -223,9 +223,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
     float  line_out[nbsamples];
     int left,right;
     
-    for (int i = 0; i<nbsamples; i++) {
-        line_background[i] = nodata;
-    }
+    memset(line_background,(float)nodata,nbsamples);
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -249,10 +247,8 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
             
-            for (int i = 0; i<nbsamples; i++) {
-                line_out[i] = line_background[i];
-            }
-            
+            memcpy(line_out,line_background,nbsamples);
+
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) {
 
                 for(int j = sampleperpixel; j > 0 ; j--, pos_in++) {
@@ -265,12 +261,10 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
 
                     if (nbData>1) {
                         float value = 0.;
-                        for (int i=0; i<nbData; i++)
-                            value += data[i];
+                        for (int i=0; i<nbData; i++) {value += data[i];}
                             
                         line_out[pos_out] = value/(float)nbData;
                         pos_out++;
-
                     }else {
                         line_out[pos_out] = nodata;
                         pos_out++;
@@ -299,10 +293,8 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     uint8  line_out[nbsamples];
     int left,right;
     
-    for (int i = 0; i<nbsamples; i++) {
-        line_background[i] = nodata;
-    } 
-    
+    memset(line_background,nodata,nbsamples);
+
       for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
         if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
@@ -324,9 +316,7 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
             
-            for (int i = 0; i<nbsamples; i++) {
-                line_out[i] = line_background[i];
-            }
+            memcpy(line_out,line_background,nbsamples);
 
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
                 for(int j = sampleperpixel; j--; pos_in++) 

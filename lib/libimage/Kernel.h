@@ -62,7 +62,7 @@ class Kernel {
    *
    *
    */
-  typedef enum {NEAREST_NEIGHBOUR, LINEAR, CUBIC, LANCZOS_2, LANCZOS_3, LANCZOS_4} KernelType;
+  typedef enum {UNKNOWN = 0, NEAREST_NEIGHBOUR = 1, LINEAR = 2, CUBIC = 3, LANCZOS_2 = 4, LANCZOS_3 = 5, LANCZOS_4 = 6} KernelType;
   
   /**
    * Factory permettant d'obtenir une instance d'un type de noyau donné.
@@ -89,7 +89,7 @@ class Kernel {
    * Fonction calculant les poids à appliquer aux pixels sources en fonction
    * du centre du pixel à calculer et du ratio de réchantillonage
    *
-   * @param W Tableau de coefficients d'interpollation à calculer.
+   * @param W Tableau de coefficients d'interpolation à calculer.
    * @param length Taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
    * @param x Valeur à interpoler
    * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.

@@ -37,6 +37,8 @@ private:
 	std::string serviceTypeVersion;
 	//Inspire
 	bool inspire;
+        
+        bool postMode;
 public:
 
 	ServicesConf(std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
@@ -45,7 +47,7 @@ public:
 			std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                         std::string individualPosition, std::string voice, std::string facsimile, std::string addressType, 
                         std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode, 
-                        std::string country, std::string electronicMailAddress , bool inspire=0) :
+                        std::string country, std::string electronicMailAddress , bool inspire=0, bool postMode=0) :
 				name(name), title(title), abstract(abstract), keyWords(keyWords),
 				serviceProvider(serviceProvider), fee(fee), accessConstraint(accessConstraint),
 				maxWidth(maxWidth), maxHeight(maxHeight), formatList(formatList), serviceType(serviceType),
@@ -82,6 +84,7 @@ public:
 	std::string inline getServiceType() {return serviceType;}
 	std::string inline getServiceTypeVersion() {return serviceTypeVersion;}
 	bool inline isInspire(){return inspire;}
+	bool inline isPostEnabled(){return postMode;}
 	
 };
 

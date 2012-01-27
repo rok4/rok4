@@ -9,50 +9,50 @@
 
 class LibtiffImage : public Image {
 
-	friend class libtiffImageFactory;
+    friend class libtiffImageFactory;
 
-  	private:
-  	TIFF* tif;
-  	char* filename;
-	uint16_t bitspersample;
-	uint16_t photometric;
-	uint16_t compression;
-	uint16_t rowsperstrip;
+    private:
+        TIFF* tif;
+        char* filename;
+        uint16_t bitspersample;
+        uint16_t photometric;
+        uint16_t compression;
+        uint16_t rowsperstrip;
 
-	size_t strip_size;
-	uint8_t* strip_buffer;
-	uint16_t current_strip;
+        size_t strip_size;
+        uint8_t* strip_buffer;
+        uint16_t current_strip;
 
-	template<typename T>
+        template<typename T>
         int _getline(T* buffer, int line);
 
-	protected:
-  	/** Constructeur */
-  	LibtiffImage(int width, int height, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);
+    protected:
+        /** Constructeur */
+        LibtiffImage(int width, int height, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);
 
-  	public:
+    public:
 
-  	/** D */
-  	int getline(uint8_t* buffer, int line);
+        /** D */
+        int getline(uint8_t* buffer, int line);
 
-  	/** D */
-  	int getline(float* buffer, int line);
+        /** D */
+        int getline(float* buffer, int line);
 
-	void inline setfilename(char* str) {strcpy(filename,str);};
-	inline char* getfilename() {return filename;}
-	uint16_t inline getbitspersample() {return bitspersample;}
-	uint16_t inline getphotometric() {return photometric;}
-	uint16_t inline getcompression() {return compression;}
-	uint32_t inline getrowsperstrip() {return rowsperstrip;}
-	
-  	/** Destructeur */
-  	~LibtiffImage();
+        void inline setfilename(char* str) {strcpy(filename,str);};
+        inline char* getfilename() {return filename;}
+        uint16_t inline getbitspersample() {return bitspersample;}
+        uint16_t inline getphotometric() {return photometric;}
+        uint16_t inline getcompression() {return compression;}
+        uint32_t inline getrowsperstrip() {return rowsperstrip;}
+        
+        /** Destructeur */
+        ~LibtiffImage();
 };
 
 class libtiffImageFactory {
-  	public:
+    public:
         LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox);
-	LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip);
+        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip);
 };
 
 

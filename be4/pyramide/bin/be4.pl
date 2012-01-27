@@ -35,7 +35,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "develop 0.3.2";
+my $VERSION = "develop 0.4.0";
 
 #
 # Title: be4
@@ -434,8 +434,9 @@ sub doIt {
     if (main::HasDataSource()) {
     
         ALWAYS(">>> Load Data Source ...");
-        
+
         $objData = BE4::DataSource->new($params->{datasource});
+        $objData->{nodataColor} = $objPyramid->{pyramid}->{color};
         
         if (! defined $objData) {
           ERROR ("Can not load the data source !");

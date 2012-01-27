@@ -95,9 +95,41 @@ Palette::Palette(const std::vector<Colour>& mcolours)
 	}
 }
 
+Palette& Palette::operator=(const Palette& pal)
+{
+    if (this != &pal) {
+        this->pngPaletteSize = pal.pngPaletteSize;
+        if (this->pngPaletteSize !=0) {
+            this->pngPalette = new uint8_t[pngPaletteSize];
+            memcpy(pngPalette,pal.pngPalette,this->pngPaletteSize);
+        }else {
+            this->pngPalette = NULL;
+        }
+    }
+    return *this;
+}
+
+
 uint8_t* Palette::getPalettePNG()
 {
 	return pngPalette;
+}
+
+
+bool Palette::operator==(const Palette& other) const
+{
+    bool equal = true;
+    if (this->pngPaletteSize != other.pngPaletteSize)
+        return false;
+    for ( size_t pos = this->pngPaletteSize -1; pos && equal; --pos ) {
+         equal = ( * ( this->pngPalette+pos ) == * ( other.pngPalette+pos ) );
+    }
+    return equal;
+}
+
+bool Palette::operator!=(const Palette& other) const
+{
+    return !(*this == other);
 }
 
 

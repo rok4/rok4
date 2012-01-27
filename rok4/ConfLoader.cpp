@@ -7,6 +7,9 @@
 #include "format.h"
 #include "MetadataURL.h"
 #include "LegendURL.h"
+#include <malloc.h>
+#include <stdlib.h>
+#include <libgen.h>
 
 Style* ConfLoader::parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire){
 	LOGGER_INFO("	Ajout du Style " << fileName);
@@ -280,20 +283,25 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet(TiXmlDocument* doc,std::string fil
 	id=fileName.substr(idBegin+1, idEnd-idBegin-1);
 
 	pElem=hRoot.FirstChild("crs").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("TileMaxtrixSet " << id <<" pas de crs!!");
 		return NULL;
 	}
 	CRS crs(pElem->GetText());
 
-	pElem=hRoot.FirstChild("abstract").Element();
-	if (pElem) abstract = pElem->GetText();
-
 	pElem=hRoot.FirstChild("title").Element();
-	if (pElem) title = pElem->GetText();
+	if (pElem && pElem->GetText()) {
+            title = pElem->GetText();
+        }
 
+        pElem=hRoot.FirstChild("abstract").Element();
+        if (pElem && pElem->GetText()) {
+            abstract = pElem->GetText();
+        }
 
 	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
+                if (!(pElem->GetText()))
+                    continue;
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
@@ -310,53 +318,53 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet(TiXmlDocument* doc,std::string fil
 
 		TiXmlHandle hTM(pElem);
 		TiXmlElement* pElemTM = hTM.FirstChild("id").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMatrix sans id!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMatrix sans id!!"); return NULL; }
 		tmId=pElemTM->GetText();
 
 		pElemTM = hTM.FirstChild("resolution").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans resolution!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans resolution!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&res)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": La resolution est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("topLeftCornerX").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerX!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerX!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&x0)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerX est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("topLeftCornerY").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerY!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerY!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%lf",&y0)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerY est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("tileWidth").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileWidth!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileW)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileWidth est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("tileHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileHeight!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%d",&tileH)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileHeight est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("matrixWidth").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans MatrixWidth!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans MatrixWidth!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixW)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le MatrixWidth est inexploitable.");
 			return NULL;
 		}
 
 		pElemTM = hTM.FirstChild("matrixHeight").Element();
-		if (!pElemTM){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans matrixHeight!!"); return NULL; }
+		if (!pElemTM || !(pElemTM->GetText())){LOGGER_ERROR("TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans matrixHeight!!"); return NULL; }
 		if (!sscanf(pElemTM->GetText(),"%ld",&matrixH)){
 			LOGGER_ERROR("TileMaxtrixSet " << id <<", tileMaxtrix " << tmId <<": Le matrixHeight est inexploitable.");
 			return NULL;
@@ -387,8 +395,18 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet(std::string fileName){
 
 Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList){
 	LOGGER_INFO("		Ajout de la pyramide : " << fileName);
-	TileMatrixSet *tms;
-	std::string formatStr;
+        // Relative file Path 
+        char * fileNameChar = (char *)malloc(strlen(fileName.c_str()) + 1);
+        strcpy(fileNameChar, fileName.c_str());
+        char * parentDirChar = dirname(fileNameChar);
+        std::string parentDir(parentDirChar);
+        free(fileNameChar);
+        fileNameChar=NULL;
+        parentDirChar=NULL;
+        LOGGER_INFO("           BaseDir Relative to : " << parentDir);
+	
+        TileMatrixSet *tms;
+	std::string formatStr="";
 	eformat_data format;
 	int channels;
 	std::map<std::string, Level *> levels;
@@ -409,7 +427,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 	hRoot=TiXmlHandle(pElem);
 
 	pElem=hRoot.FirstChild("tileMatrixSet").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de TMS. C'est un problème.");
 		return NULL;
 	}
@@ -423,7 +441,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 	tms=it->second;
 
 	pElem=hRoot.FirstChild("format").Element();
-        if (!pElem){
+        if (!pElem || !(pElem->GetText())){
                 LOGGER_ERROR("La pyramide ["<< fileName <<"] n'a pas de format.");
                 return NULL;
         }
@@ -451,7 +469,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 
 
 	pElem=hRoot.FirstChild("channels").Element();
-        if (!pElem){
+        if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("La pyramide ["<< fileName <<"] Pas de channels => channels = " << DEFAULT_CHANNELS);
                 channels=DEFAULT_CHANNELS;
                 return NULL;
@@ -471,11 +489,11 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		int tilesPerWidth;
 		int tilesPerHeight;
 		int pathDepth;
-		std::string noDataFilePath;
+		std::string noDataFilePath="";
 
 		TiXmlHandle hLvl(pElem);
 		TiXmlElement* pElemLvl = hLvl.FirstChild("tileMatrix").Element();
-		if (!pElemLvl){LOGGER_ERROR(fileName <<" level "<<"id"<<" sans tileMatrix!!"); return NULL; }
+		if (!pElemLvl || !(pElemLvl->GetText())){LOGGER_ERROR(fileName <<" level "<<"id"<<" sans tileMatrix!!"); return NULL; }
 		std::string tmName(pElemLvl->GetText());
 		std::string id(tmName);
 		std::map<std::string, TileMatrix>* tmList = tms->getTmList();
@@ -488,11 +506,18 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		tm = &(it->second);
 
 		pElemLvl = hLvl.FirstChild("baseDir").Element();
-		if (!pElemLvl){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
+		if (!pElemLvl || !(pElemLvl->GetText())){LOGGER_ERROR(fileName <<" Level "<< id <<" sans baseDir!!"); return NULL; }
 		std::string baseDir(pElemLvl->GetText());
+                //Relative Path
+                if (baseDir.compare(0,2,"./")==0){
+                    baseDir.replace(0,1,parentDir);
+                } else if (baseDir.compare(0,1,"/")!=0){
+                    baseDir.insert(0,"/");
+                    baseDir.insert(0,parentDir);
+                }
 
 		pElemLvl = hLvl.FirstChild("tilesPerWidth").Element();
-		if (!pElemLvl){
+		if (!pElemLvl || !(pElemLvl->GetText())){
 			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerWidth !!");
 			return NULL;
 		}
@@ -502,7 +527,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		}
 
 		pElemLvl = hLvl.FirstChild("tilesPerHeight").Element();
-		if (!pElemLvl){
+		if (!pElemLvl || !(pElemLvl->GetText())){
 			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de tilesPerHeight !!");
 			return NULL;
 		}
@@ -512,7 +537,7 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
 		}
 
 		pElemLvl = hLvl.FirstChild("pathDepth").Element();
-		if (!pElemLvl){
+		if (!pElemLvl || !(pElemLvl->GetText())){
 			LOGGER_ERROR(fileName <<" Level "<< id << ": Pas de pathDepth !!");
 			return NULL;
 		}
@@ -597,18 +622,34 @@ Pyramid* ConfLoader::parsePyramid(TiXmlDocument* doc,std::string fileName, std::
                     maxTileCol = tm->getMatrixW();
 		if (maxTileRow > tm->getMatrixH() || maxTileRow < 0)
                     maxTileRow = tm->getMatrixH();
-
+                
 		// Would be Mandatory in future release
-		TiXmlElement* pElemNoData=hRoot.FirstChild( "nodata" ).Element();
+		TiXmlElement* pElemNoData=hLvl.FirstChild( "nodata" ).Element();
 		
 		if (pElemNoData) {	// FilePath must be specified if nodata tag exist
+                
 			TiXmlElement* pElemNoDataPath;
-			pElemNoDataPath = hRoot.FirstChild("nodata").FirstChild("filePath").Element();
-			if (!pElemNoDataPath){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
+			pElemNoDataPath = hLvl.FirstChild("nodata").FirstChild("filePath").Element();
+			if (!pElemNoDataPath  || !(pElemNoDataPath->GetText())){
+                            LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin");
+                            return NULL;
+                        }
+                
 			noDataFilePath=pElemNoDataPath->GetText();
-			if (noDataFilePath.empty()){
-				if (!pElemNoDataPath){LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin"); return NULL; }
-			}
+                        //Relative Path
+                        if (noDataFilePath.compare(0,2,"./")==0){
+                            noDataFilePath.replace(0,1,parentDir);
+                        } else if (noDataFilePath.compare(0,1,"/")!=0){
+                            noDataFilePath.insert(0,"/");
+                            noDataFilePath.insert(0,parentDir);
+                        }
+
+			/*if (noDataFilePath.empty()){
+				if (!pElemNoDataPath){
+                                    LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin");
+                                    return NULL;
+                                }
+			}*/
 		}
 		
 		Level *TL = new Level(*tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
@@ -639,18 +680,28 @@ Pyramid* ConfLoader::buildPyramid(std::string fileName, std::map<std::string, Ti
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire){
 	LOGGER_INFO("	Ajout du layer " << fileName);
+        // Relative file Path 
+        char * fileNameChar = (char *)malloc(strlen(fileName.c_str()) + 1);
+        strcpy(fileNameChar, fileName.c_str());
+        char * parentDirChar = dirname(fileNameChar);
+        std::string parentDir(parentDirChar);
+        free(fileNameChar);
+        fileNameChar=NULL;
+        parentDirChar=NULL;
+        LOGGER_INFO("           BaseDir Relative to : " << parentDir);
+        
 	std::string id;
 	std::string title="";
 	std::string abstract="";
 	std::vector<std::string> keyWords;
-	std::string styleName;
+	std::string styleName="";
 	std::vector<Style*> styles;
 	double minRes;
 	double maxRes;
 	std::vector<CRS*> WMSCRSList;
 	bool opaque;
 	std::string authority="";
-	std::string resampling;
+	std::string resampling="";
 	Pyramid* pyramid;
 	GeographicBoundingBoxWMS geographicBoundingBox;
 	BoundingBoxWMS boundingBox;
@@ -685,19 +736,25 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	id=fileName.substr(idBegin+1, idEnd-idBegin-1);
 
 	pElem=hRoot.FirstChild("title").Element();
-	if (pElem) title=pElem->GetText();
+	if (pElem && pElem->GetText()) { 
+            title=pElem->GetText();
+        }
 
 	pElem=hRoot.FirstChild("abstract").Element();
-	if (pElem) abstract=pElem->GetText();
+	if (pElem && pElem->GetText()) {
+            abstract=pElem->GetText();
+        }
 
 
 	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
+                if (!(pElem->GetText()))
+                    continue;
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
 	
 	for( pElem=hRoot.FirstChild( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement( "style")){
-		if (!pElem){
+		if (!pElem || !(pElem->GetText())){
 			LOGGER_ERROR("Pas de style => style = " << (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE));
 			styleName = (inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE);
 		}else{
@@ -728,7 +785,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	}
 	
 	pElem = hRoot.FirstChild("minRes").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		minRes=0.;
 	}else if (!sscanf(pElem->GetText(),"%lf",&minRes)){
 		LOGGER_ERROR("La resolution min est inexploitable:[" << pElem->GetText() << "]");
@@ -736,7 +793,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	}
 
 	pElem = hRoot.FirstChild("maxRes").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		maxRes=0.;
 	}else if (!sscanf(pElem->GetText(),"%lf",&maxRes)){
 		LOGGER_ERROR("La resolution max est inexploitable:[" << pElem->GetText() << "]");
@@ -744,13 +801,13 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	}
 	// EX_GeographicBoundingBox
         pElem = hRoot.FirstChild("EX_GeographicBoundingBox").Element();
-        if (!pElem){
+        if (!pElem ){
                 LOGGER_ERROR("Pas de geographicBoundingBox = ");
 		return NULL;
         }else{
 		// westBoundLongitude
 		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("westBoundLongitude").Element();
-		if (!pElem){
+		if (!pElem  || !(pElem->GetText())){
 			LOGGER_ERROR("Pas de westBoundLongitude");
                         return NULL;
 		}
@@ -760,7 +817,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
                 }
 		// southBoundLatitude
 		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("southBoundLatitude").Element();
-                if (!pElem){
+                if (!pElem || !(pElem->GetText())){
                         LOGGER_ERROR("Pas de southBoundLatitude");
                         return NULL;
                 }
@@ -770,7 +827,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
                 }
 		// eastBoundLongitude
 		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("eastBoundLongitude").Element();
-                if (!pElem){
+                if (!pElem || !(pElem->GetText())){
                         LOGGER_ERROR("Pas de eastBoundLongitude");
                         return NULL;
                 }
@@ -780,7 +837,7 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
                 }
 		// northBoundLatitude
 		pElem = hRoot.FirstChild("EX_GeographicBoundingBox").FirstChild("northBoundLatitude").Element();
-                if (!pElem){
+                if (!pElem || !(pElem->GetText())){
                         LOGGER_ERROR("Pas de northBoundLatitude");
                         return NULL;
                 }
@@ -794,24 +851,38 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	if (!pElem){
 		LOGGER_ERROR("Pas de BoundingBox");
 	}else{
-		std::string tmp;
-		tmp=pElem->Attribute("CRS");
-		if (tmp.c_str()==0){
+		if (!(pElem->Attribute("CRS"))){
 			LOGGER_ERROR("Le CRS est inexploitable:[" << pElem->GetText() << "]");
                         return NULL;
 		}
 		boundingBox.srs=pElem->Attribute("CRS");
+                if (!(pElem->Attribute("minx"))){
+                    LOGGER_ERROR("minx attribute is missing");
+                    return NULL;
+                }
 		if (!sscanf(pElem->Attribute("minx"),"%lf",&boundingBox.minx)){
 			LOGGER_ERROR("Le minx est inexploitable:[" << pElem->Attribute("minx") << "]");
 			return NULL;
 		}
+                if (!(pElem->Attribute("miny"))){
+                    LOGGER_ERROR("miny attribute is missing");
+                    return NULL;
+                }
                 if (!sscanf(pElem->Attribute("miny"),"%lf",&boundingBox.miny)){
                         LOGGER_ERROR("Le miny est inexploitable:[" << pElem->Attribute("miny") << "]");
                         return NULL;
                 }
+                if (!(pElem->Attribute("maxx"))){
+                    LOGGER_ERROR("maxx attribute is missing");
+                    return NULL;
+                }
                 if (!sscanf(pElem->Attribute("maxx"),"%lf",&boundingBox.maxx)){
                         LOGGER_ERROR("Le maxx est inexploitable:[" << pElem->Attribute("maxx") << "]");
                         return NULL;
+                }
+                if (!(pElem->Attribute("maxy"))){
+                    LOGGER_ERROR("maxy attribute is missing");
+                    return NULL;
                 }
                 if (!sscanf(pElem->Attribute("maxy"),"%lf",&boundingBox.maxy)){
                         LOGGER_ERROR("Le maxy est inexploitable:[" << pElem->Attribute("maxy") << "]");
@@ -821,6 +892,8 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 
 	if (reprojectionCapability==true){
 		for (pElem=hRoot.FirstChild("WMSCRSList").FirstChild("WMSCRS").Element(); pElem; pElem=pElem->NextSiblingElement("WMSCRS")){
+                        if (!(pElem->GetText()))
+                            continue;
 			std::string str_crs(pElem->GetText());
 			// On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
 			CRS* crs = new CRS(str_crs);
@@ -835,9 +908,10 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	if (WMSCRSList.size()==0){
 		LOGGER_WARN(fileName << ": Aucun CRS autorisé pour le WMS");
 	}
-
+        
+        //DEPRECATED
 	pElem=hRoot.FirstChild("opaque").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("Pas de opaque => opaque = " << DEFAULT_OPAQUE);
 		opaque = DEFAULT_OPAQUE;
 	}else{
@@ -853,10 +927,12 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	}
 
 	pElem=hRoot.FirstChild("authority").Element();
-	if (pElem) authority=pElem->GetText();
+	if (pElem && pElem->GetText()) {
+            authority=pElem->GetText();
+        }
 
 	pElem=hRoot.FirstChild("resampling").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		LOGGER_ERROR("Pas de resampling => resampling = " << DEFAULT_RESAMPLING);
 		resampling = DEFAULT_RESAMPLING;
 	}else{
@@ -864,10 +940,19 @@ Layer * ConfLoader::parseLayer(TiXmlDocument* doc,std::string fileName, std::map
 	}
 
 	pElem=hRoot.FirstChild("pyramid").Element();
-	if (pElem){
-		pyramid = buildPyramid(pElem->GetText(), tmsList);
+	if (pElem && pElem->GetText()){
+            
+                std::string pyramidFilePath(pElem->GetText());
+                //Relative Path
+                        if (pyramidFilePath.compare(0,2,"./")==0){
+                            pyramidFilePath.replace(0,1,parentDir);
+                        } else if (pyramidFilePath.compare(0,1,"/")!=0){
+                            pyramidFilePath.insert(0,"/");
+                            pyramidFilePath.insert(0,parentDir);
+                        }
+		pyramid = buildPyramid(pyramidFilePath, tmsList);
 		if (!pyramid){
-                        LOGGER_ERROR("La pyramide " << pElem->GetText() << " ne peut être chargée");
+                        LOGGER_ERROR("La pyramide " << pyramidFilePath << " ne peut être chargée");
                         return NULL;
                 }
 	}
@@ -943,26 +1028,28 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	hRoot=TiXmlHandle(pElem);
 
 	pElem=hRoot.FirstChild("logOutput").Element();
-	std::string strLogOutput=(pElem->GetText());
-	if (!pElem){
+        if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de logOutput => logOutput = " << DEFAULT_LOG_OUTPUT;
 		logOutput = DEFAULT_LOG_OUTPUT;
-	}else if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
-	else if (strLogOutput=="standard_output_stream_for_errors") logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
-	else{
+	}else {
+            std::string strLogOutput=(pElem->GetText());
+            if (strLogOutput=="rolling_file") logOutput=ROLLING_FILE;
+            else if (strLogOutput=="standard_output_stream_for_errors") logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
+            else{
 		std::cerr<<"Le logOutput [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
 		return false;
+            }
 	}
 
 	pElem=hRoot.FirstChild("logFilePrefix").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de logFilePrefix => logFilePrefix = " << DEFAULT_LOG_FILE_PREFIX;
 		logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
 	}else{
 		logFilePrefix=pElem->GetText();
 	}
 	pElem=hRoot.FirstChild("logFilePeriod").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de logFilePeriod => logFilePeriod = " << DEFAULT_LOG_FILE_PERIOD;
 		logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
 	}else if (!sscanf(pElem->GetText(),"%d",&logFilePeriod))  {
@@ -971,22 +1058,25 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 
 	pElem=hRoot.FirstChild("logLevel").Element();
-	std::string strLogLevel(pElem->GetText());
-	if (!pElem){
+	
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de logLevel => logLevel = " << DEFAULT_LOG_LEVEL;
 		logLevel = DEFAULT_LOG_LEVEL;
-	}else if (strLogLevel=="fatal") logLevel=FATAL;
-	else if (strLogLevel=="error") logLevel=ERROR;
-	else if (strLogLevel=="warn") logLevel=WARN; 
-	else if (strLogLevel=="info") logLevel=INFO;
-	else if (strLogLevel=="debug") logLevel=DEBUG;
-	else{
+	}else {
+            std::string strLogLevel(pElem->GetText());
+            if (strLogLevel=="fatal") logLevel=FATAL;
+            else if (strLogLevel=="error") logLevel=ERROR;
+            else if (strLogLevel=="warn") logLevel=WARN; 
+            else if (strLogLevel=="info") logLevel=INFO;
+            else if (strLogLevel=="debug") logLevel=DEBUG;
+            else{
 		std::cerr<<"Le logLevel [" << pElem->GetText() <<"]  est inconnu."<<std::endl;
 		return false;
-	}
+            }
+        }
 		
 	pElem=hRoot.FirstChild("nbThread").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de nbThread => nbThread = " << DEFAULT_NB_THREAD<<std::endl;
 		nbThread = DEFAULT_NB_THREAD;
 	}else if (!sscanf(pElem->GetText(),"%d",&nbThread)){
@@ -995,7 +1085,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 	
 	pElem=hRoot.FirstChild("reprojectionCapability").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de reprojectionCapability => reprojectionCapability = true"<<std::endl;
 		reprojectionCapability = true;
 	}else{
@@ -1009,7 +1099,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 
 	pElem=hRoot.FirstChild("servicesConfigFile").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de servicesConfigFile => servicesConfigFile = " << DEFAULT_SERVICES_CONF_PATH <<std::endl;
 		servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
 	}else{
@@ -1017,7 +1107,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 
 	pElem=hRoot.FirstChild("layerDir").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de layerDir => layerDir = " << DEFAULT_LAYER_DIR<<std::endl;
 		layerDir = DEFAULT_LAYER_DIR;
 	}else{
@@ -1025,7 +1115,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 
 	pElem=hRoot.FirstChild("tileMatrixSetDir").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de tileMatrixSetDir => tileMatrixSetDir = " << DEFAULT_TMS_DIR<<std::endl;
 		tmsDir = DEFAULT_TMS_DIR;
 	}else{
@@ -1033,7 +1123,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	}
 	
 	pElem=hRoot.FirstChild("styleDir").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de styleDir => styleDir = " << DEFAULT_STYLE_DIR<<std::endl;
 		styleDir = DEFAULT_STYLE_DIR;
 	}else{
@@ -1045,7 +1135,7 @@ bool ConfLoader::parseTechnicalParam(TiXmlDocument* doc,std::string serverConfig
 	char* projDirEnv;
 	bool absolut=true;
 	pElem=hRoot.FirstChild("projConfigDir").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		std::cerr<<"Pas de projConfigDir => projConfigDir = " << DEFAULT_PROJ_DIR<<std::endl;
 		char* pwdBuff = (char*) malloc(PATH_MAX);
 		getcwd(pwdBuff,PATH_MAX);
@@ -1100,11 +1190,12 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	std::string title="";
 	std::string abstract="";
 	std::vector<std::string> keyWords;
-	std::string serviceProvider;
-	std::string fee;
-	std::string accessConstraint;
+	std::string serviceProvider="";
+	std::string fee="";
+	std::string accessConstraint="";
 	unsigned int maxWidth;
 	unsigned int maxHeight;
+        bool postMode =false;
         //Contact Info
         std::string providerSite="";
         std::string individualName="";
@@ -1121,12 +1212,14 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
         //WMS
 	std::vector<std::string> formatList;
         //WMTS
-	std::string serviceType;
-	std::string serviceTypeVersion;
+	std::string serviceType="";
+	std::string serviceTypeVersion="";
         //INSPIRE
-	bool inspire =false;
+	bool inspire = false;
 	std::vector<std::string> applicationProfileList;
 
+        
+        
 	pElem=hRoot.FirstChild("name").Element();
 	if (pElem && pElem->GetText()) name = pElem->GetText();
 
@@ -1138,6 +1231,8 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 
 
 	for (pElem=hRoot.FirstChild("keywordList").FirstChild("keyword").Element(); pElem; pElem=pElem->NextSiblingElement("keyword")){
+                if (!(pElem->GetText()))
+                    continue;
 		std::string keyword(pElem->GetText());
 		keyWords.push_back(keyword);
 	}
@@ -1200,7 +1295,7 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
             electronicMailAddress= pElem->GetText();
        
 	pElem = hRoot.FirstChild("maxWidth").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		maxWidth=MAX_IMAGE_WIDTH;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxWidth)){
 		LOGGER_ERROR(servicesConfigFile << "Le maxWidth est inexploitable:[" << pElem->GetText() << "]");
@@ -1208,7 +1303,7 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	}
 
 	pElem = hRoot.FirstChild("maxHeight").Element();
-	if (!pElem){
+	if (!pElem || !(pElem->GetText())){
 		maxHeight=MAX_IMAGE_HEIGHT;
 	}else if (!sscanf(pElem->GetText(),"%d",&maxHeight)){
 		LOGGER_ERROR(servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]");
@@ -1216,7 +1311,9 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	}
 
 	for (pElem=hRoot.FirstChild("formatList").FirstChild("format").Element(); pElem; pElem=pElem->NextSiblingElement("format")){
-		std::string format(pElem->GetText());
+            if (!(pElem->GetText()))
+                continue;
+            std::string format(pElem->GetText());
 		if (format != "image/jpeg" &&
 			format != "image/png"  &&
 			format != "image/tiff" &&
@@ -1229,12 +1326,12 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 	}
 
 	pElem=hRoot.FirstChild("serviceType").Element();
-        if (pElem) serviceType = pElem->GetText();
+        if (pElem && pElem->GetText()) serviceType = pElem->GetText();
 	pElem=hRoot.FirstChild("serviceTypeVersion").Element();
-        if (pElem) serviceTypeVersion = pElem->GetText();
+        if (pElem && pElem->GetText()) serviceTypeVersion = pElem->GetText();
 	
 	pElem=hRoot.FirstChild("inspire").Element();
-	if (pElem) {
+	if (pElem && pElem->GetText()) {
 		std::string inspirestr = pElem->GetText();
 		if ( inspirestr.compare("true")==0 || inspirestr.compare("1")==0){
 			LOGGER_INFO("Utilisation du mode Inspire");
@@ -1242,12 +1339,21 @@ ServicesConf * ConfLoader::parseServicesConf(TiXmlDocument* doc,std::string serv
 		}
 	}
 	
+	pElem=hRoot.FirstChild("postMode").Element();
+        if (pElem && pElem->GetText()) {
+                std::string postStr = pElem->GetText();
+                if ( postStr.compare("true")==0 || postStr.compare("1")==0){
+                        LOGGER_INFO("Utilisation du mode Inspire");
+                        postMode = true;
+                }
+        }
+	
 	ServicesConf * servicesConf;
 	servicesConf = new ServicesConf(name, title, abstract, keyWords,serviceProvider, fee,
 			accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
                         providerSite, individualName, individualPosition, voice, facsimile, 
                         addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                        electronicMailAddress, inspire );
+                        electronicMailAddress, inspire , postMode);
 	return servicesConf;
 }
 
@@ -1381,9 +1487,9 @@ bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, Ti
 	closedir(dir);
 
 	if (layerFiles.empty()){
-		LOGGER_FATAL("Aucun fichier *.lay dans le répertoire " << layerDir);
-		LOGGER_FATAL("Le serveur n'a aucune données à servir. Dommage...");
-		return false;
+		LOGGER_ERROR("Aucun fichier *.lay dans le répertoire " << layerDir);
+		LOGGER_ERROR("Le serveur n'a aucune données à servir. Dommage...");
+		//return false;
 	}
 
 	// générer les Layers décrits par les fichiers.
@@ -1398,8 +1504,8 @@ bool ConfLoader::buildLayersList(std::string layerDir, std::map< std::string, Ti
 	}
 
 	if (layers.size()==0){
-		LOGGER_FATAL("Aucun layer n'a pu être chargé!");
-		return false;
+		LOGGER_ERROR("Aucun layer n'a pu être chargé!");
+		//return false;
 	}
 
 	LOGGER_INFO("NOMBRE DE LAYERS CHARGES : "<<layers.size());
