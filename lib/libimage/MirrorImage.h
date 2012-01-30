@@ -13,7 +13,7 @@
 #include "Logger.h"
 #include "Utils.h"
 
-/*
+/**
 * @class MirrorImage
 * @brief Image obtenue par effet miroir a partir de 4 autres images voisines
 * Utiles pour eviter les effets de bord lors du reechantillonnage d'une ExtendCompoundImage contenant du nodata :
@@ -25,52 +25,53 @@
 * Contrainte : images correctement disposees, de meme caracteristiques geometriques (Cf. les CompoundImage)
 */
 
-/*			 _______________
-			|               |
-			|               |
-			|   Image1	|		
-			|               |		
-	 _______________|_______________|_______________
-	|		|		|		|
-	|		|		|		|
-	| Image0	|   Mirror	|   Image2	|
-	|		|		|		|
-	|_______________|_______________|______	________|
-        	       	|               |
-                	|               |
-	                |   Image3      |               
-        	        |               |               
-			|_______________|
+/*
+                     _______________
+                    |               |
+                    |               |
+                    |   Image1      |        
+                    |               |        
+     _______________|_______________|_______________
+    |               |               |               |
+    |               |               |               |
+    | Image0        |   Mirror      |   Image2      |
+    |               |               |               |
+    |_______________|_______________|_______________|
+                    |               |
+                    |               |
+                    |   Image3      |               
+                    |               |               
+                    |_______________|
 
 
 */
 class MirrorImage : public Image {
 
-        friend class mirrorImageFactory;
+    friend class mirrorImageFactory;
 
-	private:
-	// Contient obligatoirement 4 images (NULL si une image contient du nodata)
-	std::vector<Image*> images;
+    private:
+    // Contient obligatoirement 4 images (NULL si une image contient du nodata)
+    std::vector<Image*> images;
 
-        protected:
-        /** Constructeur */
-        MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images);
+    protected:
+    /** Constructeur */
+    MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images);
 
-        public:
+    public:
 
-        /** D */
-        int getline(uint8_t* buffer, int line);
+    /** D */
+    int getline(uint8_t* buffer, int line);
 
-        /** D */
-        int getline(float* buffer, int line);
+    /** D */
+    int getline(float* buffer, int line);
 
-        /** Destructeur */
-        ~MirrorImage();
+    /** Destructeur */
+    ~MirrorImage();
 };
 
 class mirrorImageFactory {
-        public:
-        MirrorImage* createMirrorImage(Image* pImage0, Image* pImage1, Image* pImage2, Image* pImage3);
+    public:
+    MirrorImage* createMirrorImage(Image* pImage0, Image* pImage1, Image* pImage2, Image* pImage3);
 };
 
 #endif

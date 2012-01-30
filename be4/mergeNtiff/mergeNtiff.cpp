@@ -404,8 +404,14 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
     // Initilisation du tableau de sortie
     pTabImageIn->push_back(ImageIn);
 
-    // Creation de vecteurs contenant des images avec une resolution en x homogene
+    // Creation de vecteurs contenant des images avec une resolution en y homogene
     // TODO : Attention, ils ne sont forcement en phase
+    /* TOS FIXME : les images sont triées en fonction de leur résolution en x, qu'elles soient très différentes ou pas.
+     * Après, les images sont séparées dans des vecteurs différents si leur résolution en y sont trop différentes
+     * (plus de 1% d'écart)
+     * On se retrouve donc avec des vecteurs d'images qui ont certes des résolutions en y simillaire mais les
+     * résolutions en x ne sont pas contrôlées. 
+     */
     for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
     {
         std::stable_sort(it->begin(),it->end(),InfResx); 
@@ -415,8 +421,6 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
             vTmp.assign(it2+1,it->end());
             it->assign(it->begin(),it2+1);
             pTabImageIn->push_back(vTmp);
-            return 0;
-            it++;
         }
     }
 
