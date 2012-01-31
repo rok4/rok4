@@ -148,8 +148,9 @@ int main(int argc, char* argv[]) {
             pdata++;
         }
     }
-    else
+    else {
         error("sampleformat/bitspersample not supported (float/32 or uint/8)");
+    }
         
     TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,sampleformat);
 

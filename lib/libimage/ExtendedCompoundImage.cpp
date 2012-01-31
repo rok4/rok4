@@ -47,6 +47,10 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         if (masks.empty()) {
             memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
         } else {
+            /* #TOS# : ici, le masque est utilisé comme s'il était à superposer avec l'image courante, alors
+             * qu'il correspond à l'emprise de l'image courante sur l'ECI (à superposer avec l'ECI)
+             */
+            /*
             int j;
             uint8_t* buffer_m = new uint8_t[masks[i]->width];
 
@@ -55,7 +59,18 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
                     memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
                 }
+            }*/
+            
+            int j;
+            uint8_t* buffer_m = new uint8_t[masks[i]->width];
+
+            masks[i]->getline(buffer_m,line);
+            for (j=c0;j<c1;j++) {
+                if (buffer_m[j]>=127) {  // Seuillage subjectif du masque
+                    memcpy(&buffer[j*channels],&buffer_t[(c2+j-c0)*channels],sizeof(T)*channels);
+                }
             }
+            
             delete buffer_m;
         }
         delete [] buffer_t;
@@ -92,33 +107,38 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  uint mirrors)
 {
     uint i;
-        double intpart, phasex0, phasey0, phasex1, phasey1;
+    double phasex0, phasey0, phasex1, phasey1;
 
     if (images.size()==0){
         LOGGER_ERROR("Creation d'une image composite sans image");
         return NULL;
     }
 
-        for (i=0;i<images.size()-1;i++)
+    for (i=0;i<images.size()-1;i++)
+    {
+        if ( fabs(images[i]->getresx()-images[i+1]->getresx())>epsilon || fabs(images[i]->getresy()-images[i+1]->getresy())>epsilon )
         {
-            if ( fabs(images[i]->getresx()-images[i+1]->getresx())>epsilon || fabs(images[i]->getresy()-images[i+1]->getresy())>epsilon )
-                {
-                    LOGGER_WARN("Les images ne sont pas toutes a la meme resolution "<<images[i]->getresx()<<" "<<images[i+1]->getresx()<<" "<<images[i]->getresy()<<" "<<images[i+1]->getresy());
-                        return NULL;
-                }
-                phasex0 = modf(images[i]->getxmin()/images[i]->getresx(),&intpart);
-                phasex1 = modf(images[i+1]->getxmin()/images[i+1]->getresx(),&intpart);
-                phasey0 = modf(images[i]->getymax()/images[i]->getresy(),&intpart);
-                phasey1 = modf(images[i+1]->getymax()/images[i+1]->getresy(),&intpart);
-                if ( (fabs(phasex1-phasex0)>epsilon && ( (fabs(phasex0)>epsilon && fabs(1-phasex0)>epsilon) || (fabs(phasex1)>epsilon && fabs(1-phasex1)>epsilon)))
-                || (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
-                {
-                    LOGGER_WARN("Les images ne sont pas toutes en phase "<<phasex0<<" "<<phasex1<<" "<<phasey0<<" "<<phasey1);
-                        return NULL;
-                }
+            LOGGER_WARN("Les images ne sont pas toutes a la meme resolution "<<images[i]->getresx()<<" "<<images[i+1]->getresx()<<" "<<images[i]->getresy()<<" "<<images[i+1]->getresy());
+            return NULL;
         }
+        phasex0 = images[i]->getresx();
+        phasex1 = images[i+1]->getresx();
+        phasey0 = images[i]->getresy();
+        phasey1 = images[i+1]->getresy();
+        
+        /* #TOS# Avant, le test était :
+         * if ( (fabs(phasex1-phasex0)>epsilon && ( (fabs(phasex0)>epsilon && fabs(1-phasex0)>epsilon) || (fabs(phasex1)>epsilon && fabs(1-phasex1)>epsilon)))
+            || (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
+        */
+        
+        if ( (fabs(phasex1-phasex0)>epsilon) || (fabs(phasey1-phasey0)>epsilon))
+        {
+            LOGGER_WARN("Les images ne sont pas toutes en phase "<<phasex0<<" "<<phasex1<<" "<<phasey0<<" "<<phasey1);
+            return NULL;
+        }
+    }
 
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
 }
 
 ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors)

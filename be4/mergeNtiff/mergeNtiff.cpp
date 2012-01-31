@@ -343,52 +343,72 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
     return 0;
 }
 
+/* #TOS# le test de compatibilité des phases en x et y n'est pas le même ici que dans ExtendedCompoundImage.
+ * Peut être faudrait-il homogénéiser tout cela. D'autant plus qu'ici, des valeurs sont mises de manière
+ * arbitraire
+ */
+
 /**
 * @fn double getPhasex(Image* pImage)
 * @brief Calcul de la phase en X d'une image
 */
-
+/*
 double getPhasex(Image* pImage) {
-        double intpart;
-        double phi=modf( pImage->getxmin()/pImage->getresx(), &intpart);
-        //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
-    if (fabs(1-phi)<pImage->getresx()/100.)
-        phi=0.0000001; //NV cette valeur devrait etre calculee
+    double intpart;
+    double phi=modf( pImage->getxmin()/pImage->getresx(), &intpart);
+    // NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
+    if (fabs(1-phi)<pImage->getresx()/100.) {phi=0.0000001;} // NV cette valeur devrait etre calculee
+    // #TOS# la phase est déjà relative à la résolution. La comparer à 1% de res n'a aucun sens. Il faut
+    // la comparer à 1%
+    
     return phi;
 }
-
+*/
 /**
 * @fn double getPhasey(Image* pImage)
 * @brief Calcul de la phase en Y d'une image
 */
-
+/*
 double getPhasey(Image* pImage) {
-        double intpart;
-        double phi=modf( pImage->getymax()/pImage->getresy(), &intpart);
-        //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
-    if (fabs(1-phi)<pImage->getresy()/100.)
-                phi=0.0000001;//NV cette valeur devrait etre calculee
-        return phi;
+    double intpart;
+    double phi=modf( pImage->getymax()/pImage->getresy(), &intpart);
+    //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
+    if (fabs(1-phi)<pImage->getresy()/100.) {phi=0.0000001;} // NV cette valeur devrait etre calculee
+    // #TOS# la phase est déjà relative à la résolution. La comparer à 1% de res n'a aucun sens. Il faut
+    // la comparer à 1%
+     
+    return phi;
 }
+*/
 
-/* Teste si 2 images sont superposabbles */
-bool areOverlayed(Image* pImage1, Image* pImage2)
+/* #TOS# un nouveau calcul de phase (test) est implémenté comme méthode de la classe Image.
+ * Désormais, la phase est une valeur entre -0.5 et 0.5, rendant compte du décalage entre le pixel et la
+ * grille de l'image finale. 
+ */ 
+
+ 
+/* Teste si 2 images sont superposables */
+bool areCompatible(Image* pImage1, Image* pImage2)
 {
-        double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
-        double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
+    double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
+    double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
 
-    if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) return false;
-        if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) return false;
-    if (fabs(getPhasex(pImage1)-getPhasex(pImage2)) > epsilon_x) return false;
-        if (fabs(getPhasey(pImage1)-getPhasey(pImage2)) > epsilon_y) return false;
+    if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) {std::cout << "1" << std::endl;return false;} // #TOS#
+    if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) {std::cout << "2" << std::endl;return false;} // #TOS#
+    
+    // #TOS# : On comparait les phases à 1% de la résolution, ce qui n'a aucun sens. On peut éventuellement
+    // comparer à 1%.
+    if (fabs(pImage1->getPhasex()-pImage2->getPhasex()) > 0.01) {std::cout << "3" << std::endl;return false;} // #TOS#
+    if (fabs(pImage1->getPhasey()-pImage2->getPhasey()) > 0.01) {std::cout << "4" << std::endl;return false;} // #TOS#
+    
     return true;
 } 
 
 /* Fonctions d'ordre */
 bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx() - __min(pImage1->getresx(), pImage2->getresx())/100.);}
 bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy() - __min(pImage1->getresy(), pImage2->getresy())/100.);}
-bool InfPhasex(Image* pImage1, Image* pImage2) {return (getPhasex(pImage1)<getPhasex(pImage2) - __min(pImage1->getresx(), pImage2->getresx())/100.);}
-bool InfPhasey(Image* pImage1, Image* pImage2) {return (getPhasey(pImage1)<getPhasey(pImage2) - __min(pImage1->getresy(), pImage2->getresy())/100.);}
+bool InfPhasex(Image* pImage1, Image* pImage2) {return (pImage1->getPhasex()<pImage2->getPhasex() - __min(pImage1->getresx(), pImage2->getresx())/100.);}
+bool InfPhasey(Image* pImage1, Image* pImage2) {return (pImage1->getPhasey()<pImage2->getPhasey() - __min(pImage1->getresy(), pImage2->getresy())/100.);}
 
 /**
 * @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
@@ -406,7 +426,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 
     // Creation de vecteurs contenant des images avec une resolution en y homogene
     // TODO : Attention, ils ne sont forcement en phase
-    /* TOS FIXME : les images sont triées en fonction de leur résolution en x, qu'elles soient très différentes ou pas.
+    /* #TOS# FIXME : les images sont triées en fonction de leur résolution en x, qu'elles soient très différentes ou pas.
      * Après, les images sont séparées dans des vecteurs différents si leur résolution en y sont trop différentes
      * (plus de 1% d'écart)
      * On se retrouve donc avec des vecteurs d'images qui ont certes des résolutions en y simillaire mais les
@@ -518,92 +538,110 @@ uint addMirrors(ExtendedCompoundImage* pECI)
     int h=pECI->getimages()->at(0)->height;
     double resx=pECI->getimages()->at(0)->getresx();
     double resy=pECI->getimages()->at(0)->getresy();
-        double epsilon_x = resx / 100.;
-        double epsilon_y = resx / 100.;
+    double epsilon_x = resx / 100.;
+    double epsilon_y = resy / 100.;
 
     int i,j;
     double intpart;
-    for (i=1;i<pECI->getimages()->size();i++){    
+    
+    /* #TOS# : je ne vois pas ce qu'on teste ici. Si ce sont les compatibilité de résolution et de phase,
+     * ce travail est censé avoir déjà été fait auparavant( sauf pour les dimensions).
+     * Ce qui semblerait s'approcher d'un calcul de phase (2 dernières) est comparé à une valeur
+     * dépendant de la résolution : n'a aucun sens.
+     */
+    
+    for (i=1;i<pECI->getimages()->size();i++) {    
         if (abs(pECI->getimages()->at(i)->getresx() - resx) > epsilon_x
         || abs(pECI->getimages()->at(i)->getresy() - resy) > epsilon_y
         || pECI->getimages()->at(i)->width != w
         || pECI->getimages()->at(i)->height != h
         || abs(modf(pECI->getimages()->at(i)->getxmin() - pECI->getxmin()/(w*resx),&intpart)) > epsilon_x
-        || abs(modf(pECI->getimages()->at(i)->getymax() - pECI->getymax()/(h*resy),&intpart)) > epsilon_y){
+        || abs(modf(pECI->getimages()->at(i)->getymax() - pECI->getymax()/(h*resy),&intpart)) > epsilon_y) {
             LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
             return 0;
         }
     }
 
-    int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/(w*resx) + 0.5), // taille de l'ECI en nombre d'images en x 
-        ny=(int)floor((pECI->getymax()-pECI->getymin())/(h*resy) + 0.5), // taille de l'ECI en nombre d'images en y 
-        n=pECI->getimages()->size();
+    int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/(w*resx) + 0.5); // taille de l'ECI en nombre d'images en x 
+    int ny=(int)floor((pECI->getymax()-pECI->getymin())/(h*resy) + 0.5); // taille de l'ECI en nombre d'images en y 
+    int n=pECI->getimages()->size();
 
-        LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
-        LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
+    LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
+    LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
 
+    LOGGER_ERROR("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx); // #TOS#
+    LOGGER_ERROR("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny); // #TOS#
+    
     unsigned int k,l;
-    Image*pI0,*pI1,*pI2,*pI3;
+    Image *pI0,*pI1,*pI2,*pI3;
     double xmin,ymax;
     mirrorImageFactory MIFactory;
 
-    for (i=-1; i < nx+1; i++)
+    for (i=-1; i < nx+1; i++) {
         for (j=-1; j < ny+1; j++){
-                        LOGGER_DEBUG("I:"<<i<<" J:"<<j);
+            LOGGER_DEBUG("I:"<<i<<" J:"<<j);
+            LOGGER_ERROR("I:"<<i<<" J:"<<j); //#TOS#
 
-            if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) )
-                        /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
-                continue;
+            //if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
+            /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 
             for (k=0;k<n;k++){
                 if ((fabs(pECI->getimages()->at(k)->getxmin() - (pECI->getxmin()+i*w*resx)) < epsilon_x)
-                 && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)){
+                && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)) {
                     LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax());
+                    LOGGER_ERROR("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax()); //#TOS#
                     break;
-                                }
-                        }
+                }
+            }
 
-                        /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
+            /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
             if (k==n){
-                                LOGGER_DEBUG("=> CALCUL DE MIROIR");
+                LOGGER_DEBUG("=> CALCUL DE MIROIR");
 
                 // Image 0
                 pI0=NULL;
                 xmin=pECI->getxmin()+(i-1)*w*resx;
                 ymax=pECI->getymax()-j*h*resy;
-                for (l=0;l<n;l++)
-                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax) < epsilon_y)
+                for (l=0;l<n;l++) {
+                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax) < epsilon_y) {
                         break;
-                if (l<n)
-                    pI0=pECI->getimages()->at(l);
+                    }
+                }
+                if (l<n) {pI0=pECI->getimages()->at(l);}
+                
                 // Image 1
-                                pI1=NULL;
-                                xmin=pECI->getxmin()+i*w*resx;
-                                ymax=pECI->getymax()-(j-1)*h*resy;
-                                for (l=0;l<n;l++)
-                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
+                pI1=NULL;
+                xmin=pECI->getxmin()+i*w*resx;
+                ymax=pECI->getymax()-(j-1)*h*resy;
+                for (l=0;l<n;l++) {
+                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
                         break;
-                                if (l<n)
-                                        pI1=pECI->getimages()->at(l);
+                    }
+                }
+                if (l<n) {pI1=pECI->getimages()->at(l);}
+                
                 // Image 2
-                                pI2=NULL;
-                                xmin=pECI->getxmin()+(i+1)*w*resx;
-                                ymax=pECI->getymax()-j*h*resy;
-                                for (l=0;l<n;l++)
-                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
-                    break;
-                                if (l<n)
-                                        pI2=pECI->getimages()->at(l);
-                                // Image 3
-                                pI3=NULL;
-                                xmin=pECI->getxmin()+i*w*resx;
-                                ymax=pECI->getymax()-(j+1)*h*resy;
-                                for (l=0;l<n;l++)
-                                        if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y)
+                pI2=NULL;
+                xmin=pECI->getxmin()+(i+1)*w*resx;
+                ymax=pECI->getymax()-j*h*resy;
+                for (l=0;l<n;l++) {
+                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
                         break;
-                                if (l<n)
-                                        pI3=pECI->getimages()->at(l);
-            
+                    }
+                }
+                if (l<n) {pI2=pECI->getimages()->at(l);}
+                
+                // Image 3
+                pI3=NULL;
+                xmin=pECI->getxmin()+i*w*resx;
+                ymax=pECI->getymax()-(j+1)*h*resy;
+                for (l=0;l<n;l++) {
+                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
+                        break;
+                    }
+                }
+                if (l<n) {pI3=pECI->getimages()->at(l);}
+
                 MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
 
                 if (mirror!=NULL){
@@ -614,6 +652,8 @@ uint addMirrors(ExtendedCompoundImage* pECI)
                 }
             }
         }
+    }
+    
     //LOGGER_DEBUG(mirrors);
     return mirrors;
 }
@@ -690,30 +730,37 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
     std::vector<Image*> pMask;
-
+// #TOS#
+    std::cout << "mergeTabImage" << std::endl;
+    
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
         // Mise en superposition du paquet d'images en 2 etapes
 
-            // Etape 1 : Creation d'une image composite
-            ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,sampleformat,0);
+        // Etape 1 : Creation d'une image composite
+        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,sampleformat,0);
         ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
-            if (pECI==NULL) {
-                    LOGGER_ERROR("Impossible d'assembler les images");
-                    return -1;
-            }
+        if (pECI==NULL) {
+            LOGGER_ERROR("Impossible d'assembler les images");
+            return -1;
+        }
+        
+        printf("ECI : \n - resx : %f\n - resy : %f\n - phasex : %f\n - phasey : %f\n",pECI->getresx(),pECI->getresy(),pECI->getPhasex(),pECI->getPhasey());
+        printf("imageOut : \n - resx : %f\n - resy : %f\n - phasex : %f\n - phasey : %f\n",pImageOut->getresx(),pImageOut->getresy(),pImageOut->getPhasex(),pImageOut->getPhasey());
 
-                //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 
-        if (areOverlayed(pImageOut,pECI)){
-                        /* les images sources et finale ont la meme res et la meme phase
-                         * on aura donc pas besoin de reechantillonnage.*/
+        if (areCompatible(pImageOut,pECI)){
+            std::cout << "Par le miracle de notre bon roi, ces images sont utilisables" << std::endl; // #TOS#
+            /* les images sources et finale ont la meme res et la meme phase
+             * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
             //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
             mask = new ExtendedCompoundMaskImage(pECI);
             pMask.push_back(mask);
-        }else{
-                // Etape 2 : Reechantillonnage de l'image composite si necessaire
+        } else {
+            std::cout << "Foutredieu, me voilà bien souffleté par ces manantes d'images non superposables" << std::endl; // #TOS#
+            // Etape 2 : Reechantillonnage de l'image composite si necessaire
             
             uint mirrors=addMirrors(pECI);
 
@@ -721,8 +768,8 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-            //saveImage(pECI,"test2.tif",3,8,1,PHOTOMETRIC_RGB);
-            //saveImage(pECI_withMirrors,"test2bis.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI_withMirrors,"pECI_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB);
             //return -1;
 
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
@@ -735,12 +782,11 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
                 return -1;
             }
             pOverlayedImage.push_back(pRImage);
-            //saveImage(pRImage,"test3.tif",3,8,1,PHOTOMETRIC_RGB);
             pMask.push_back(pResampledMask);
-            //saveImage(pRImage,"rimage.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB);
             //saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
-            //saveImage(pResampledMask,"rmask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
-            }
+            //saveImage(pResampledMask,"pResampledMask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
+        }
     }
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie

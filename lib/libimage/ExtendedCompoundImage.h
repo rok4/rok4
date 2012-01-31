@@ -59,9 +59,9 @@ protected:
         mirrors(mirrors) {}
 
     ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors) :
-                Image(width, height, channels,bbox),
+        Image(width, height, channels,bbox),
         images(images),
-                masks(masks),
+        masks(masks),
         nodata(nodata),
         sampleformat(sampleformat),
         mirrors(mirrors) {}
