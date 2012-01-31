@@ -132,9 +132,9 @@ TLEVEL
 
 my $STRLEVELTMPLTMORE = <<"TMTD";
             <metadata type='INT32_DB_LZW'>
-		<baseDir>__DIRMTD__</baseDir>
-		<format>__FORMATMTD__</format>
-	    </metadata>
+                <baseDir>__DIRMTD__</baseDir>
+                <format>__FORMATMTD__</format>
+            </metadata>
 TMTD
 
 ################################################################################
@@ -588,9 +588,9 @@ sub _fillToPyramid {
     }
     push @{$self->{level}}, $objLevel;
     # push dir to create : just directories for nodata. Directories for image will be created during script execution
-    push @{$self->{cache_dir}}, $basenodata; #absolute path
-    #push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
-    #push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
+    # push @{$self->{cache_dir}}, $basenodata; #absolute path
+    # push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+    # push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
   
@@ -1190,6 +1190,18 @@ sub writeCachePyramid {
             $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
             
             if (! -e $nodataFilePath) {
+                
+                my $nodatadir = dirname($nodataFilePath);
+
+                if (! -e $nodatadir) {
+                    #create folders
+                    eval { mkpath([$nodatadir],0,0751); };
+                    if ($@) {
+                        ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
+                        return FALSE;
+                    }
+                }
+
                 my $createNodataCommand = $self->createNodata($nodataFilePath);
                 
                 if (! system($createNodataCommand) == 0) {
@@ -1200,18 +1212,7 @@ sub writeCachePyramid {
                     return FALSE;
                 }
             }
-        }
-        
-        else {
-            # we have to remove the directory for this level
-            my $nodataDirPath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
-            eval { rmdir $nodataDirPath; };
-            if ($@) {
-                ERROR(sprintf "Can not remove the nodata directory '%s' : %s !", $nodataDirPath , $@);
-                return FALSE;
-            }
-        }
-        
+        }        
     }
 
     return TRUE;
