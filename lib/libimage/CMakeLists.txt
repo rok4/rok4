@@ -149,7 +149,8 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################
