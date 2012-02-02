@@ -1281,6 +1281,10 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     //INSPIRE
     bool inspire = false;
     std::vector<std::string> applicationProfileList;
+    std::string metadataUrlWMS;
+    std::string metadataMediaTypeWMS;
+    std::string metadataUrlWMTS;
+    std::string metadataMediaTypeWMTS;
 
 
 
@@ -1299,6 +1303,15 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             continue;
         std::string keyword ( pElem->GetText() );
         keyWords.push_back ( keyword );
+    }
+
+    pElem=hRoot.FirstChild ( "postMode" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string postStr = pElem->GetText();
+        if ( postStr.compare ( "true" ) ==0 || postStr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( "Requête POST autorisée" );
+            postMode = true;
+        }
     }
 
     pElem=hRoot.FirstChild ( "serviceProvider" ).Element();
@@ -1403,21 +1416,66 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         }
     }
 
-    pElem=hRoot.FirstChild ( "postMode" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string postStr = pElem->GetText();
-        if ( postStr.compare ( "true" ) ==0 || postStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( "Utilisation du mode Inspire" );
-            postMode = true;
+    pElem=hRoot.FirstChild ( "metadataWMS" ).Element();
+    if ( pElem ) {
+        pElem = pElem->FirstChildElement("url");
+        if ( pElem &&  pElem->GetText() ) {
+            metadataUrlWMS = pElem->GetText();
+            pElem = pElem->NextSiblingElement("mediaType");
+        } else {
+            if (inspire) {
+                LOGGER_ERROR("Metadata element incorrect");
+                return false;
+            }else {
+                LOGGER_INFO("Metadata element incorrect");
+            }
+        }
+        if ( pElem &&  pElem->GetText() ) {
+            metadataMediaTypeWMS = pElem->GetText();
+        } else {
+            if (inspire) {
+                LOGGER_ERROR("Metadata element incorrect");
+                return false;
+            }else {
+                LOGGER_INFO("Metadata element incorrect");
+            }
         }
     }
+    
+    pElem=hRoot.FirstChild ( "metadataWMTS" ).Element();
+    if ( pElem ) {
+        pElem = pElem->FirstChildElement("url");
+        if ( pElem &&  pElem->GetText() ) {
+            metadataUrlWMTS = pElem->GetText();
+            pElem = pElem->NextSiblingElement("mediaType");
+        } else {
+            if (inspire) {
+                LOGGER_ERROR("Metadata element incorrect");
+                return false;
+            }else {
+                LOGGER_INFO("Metadata element incorrect");
+            }
+        }
+        if ( pElem &&  pElem->GetText() ) {
+            metadataMediaTypeWMTS = pElem->GetText();
+        } else {
+            if (inspire) {
+                LOGGER_ERROR("Metadata element incorrect");
+                return false;
+            }else {
+                LOGGER_INFO("Metadata element incorrect");
+            }
+        }
+    }
+
 
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
                                       accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, inspire , postMode );
+                                      electronicMailAddress, MetadataURL("simple",metadataUrlWMS,metadataMediaTypeWMS),
+                                      MetadataURL("simple",metadataUrlWMTS,metadataMediaTypeWMTS), postMode, inspire );
     return servicesConf;
 }
 

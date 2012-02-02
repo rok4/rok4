@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include "MetadataURL.h"
 
 class ServicesConf {
 private:
@@ -50,6 +51,7 @@ private:
     std::string serviceProvider;
     std::string fee;
     std::string accessConstraint;
+    bool postMode;
     //Contact Info
     std::string providerSite;
     std::string individualName;
@@ -74,8 +76,9 @@ private:
     std::string serviceTypeVersion;
     //Inspire
     bool inspire;
-
-    bool postMode;
+    MetadataURL metadataWMS;
+    MetadataURL metadataWMTS;
+  
 public:
 
     ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
@@ -84,14 +87,14 @@ public:
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
-                   std::string country, std::string electronicMailAddress , bool inspire=0, bool postMode=0 ) :
+                   std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0, bool inspire=0 ) :
             name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
             serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ),
             maxWidth ( maxWidth ), maxHeight ( maxHeight ), formatList ( formatList ), serviceType ( serviceType ),
             serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
             individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
             deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
-            country ( country ), electronicMailAddress ( electronicMailAddress ), inspire ( inspire ) {};
+            country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS(metadataWMS), metadataWMTS(metadataWMTS) , postMode(postMode),  inspire ( inspire ) {};
     //  WMS & WMTS
     std::string inline getAbstract() const      {
         return abstract;
@@ -104,6 +107,9 @@ public:
     }
     std::vector<std::string> inline getKeyWords() const {
         return keyWords;
+    }
+    bool inline isPostEnabled() {
+        return postMode;
     }
     std::string inline getServiceProvider() const {
         return serviceProvider;
@@ -171,10 +177,13 @@ public:
     bool inline isInspire() {
         return inspire;
     }
-    bool inline isPostEnabled() {
-        return postMode;
-    }
 
+    MetadataURL inline *getWMSMetadataURL() {
+        return &metadataWMS;
+    }
+    MetadataURL inline *getWMTSMetadataURL() {
+        return &metadataWMTS;
+    }
 };
 
 #endif /* SERVICESCONF_H_ */

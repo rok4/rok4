@@ -250,7 +250,8 @@ void Rok4Server::buildWMSCapabilities() {
 
         // MetadataURL
         TiXmlElement * metadataUrlEl = new TiXmlElement ( "inspire_common:MetadataUrl" );
-        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:URL", "A specifier" ) );
+        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:URL", servicesConf.getWMSMetadataURL()->getHRef() ) );
+        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:MediaType", servicesConf.getWMSMetadataURL()->getType() ) );
         extendedCapabilititesEl->LinkEndChild ( metadataUrlEl );
 
         // Languages
@@ -628,7 +629,8 @@ void Rok4Server::buildWMTSCapabilities() {
 
         // MetadataURL
         TiXmlElement * metadataUrlEl = new TiXmlElement ( "inspire_common:MetadataUrl" );
-        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:URL", "A specifier" ) );
+        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:URL", servicesConf.getWMTSMetadataURL()->getHRef() ) );
+        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:MediaType", servicesConf.getWMTSMetadataURL()->getType() ) );
         extendedCapabilititesEl->LinkEndChild ( metadataUrlEl );
 
         // Languages

@@ -1,85 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	<xs:element name="servicesConf">
-		<xs:complexType>
-			<xs:sequence>
-				<!-- Un nom simple pour faire référence au service. Ex : WMS_IGN -->
-				<xs:element name="name"     type="xs:string"/>
-				<!-- Une dénomination plus explicite -->
-				<xs:element name="title"    type="xs:string"/>
-				<!-- Une présentation du service -->
-				<xs:element name="abstract" type="xs:string"/>
-				<!-- Qui fournit le service -->
-				<xs:element name="serviceProvider" type="xs:string"/>
-				<!-- Provider site url -->
-				<xs:element name="providerSite" type="xs:string">
-				<!-- Des mots clefs -->
-				<xs:element name="keywordList">
-					<xs:complexType>
-					<xs:sequence>
-						<xs:element name="keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-					</xs:sequence>
-					</xs:complexType>
-				</xs:element>
-				 <!-- Autoriser les requête POST -->
-				 <xs:element name="postMode" type="xs:boolean" minOccurs="0" default="false">
-				<!-- Info relative à la facturation du service -->
-				<xs:element name="fee" type="xs:string"/>
-				<!-- Info sur les contraintes d’accès -->
-				<xs:element name="accessConstraint" type="xs:string"/>
-				<!-- Largeur maximum des images requêtées -->
-				<xs:element name="maxWidth"         type="xs:positiveInteger"/>
-				<!-- Hauteur maximum des images requêtées -->
-				<xs:element name="maxHeight"        type="xs:positiveInteger"/>
-				
-				<!-- ContactPerson  -->
-				<xs:element name="individualName" type="xs:string"/>
-				<!-- ContactPosition  -->
-				<xs:element name="individualPosition" type="xs:string"/>
-				<!-- Contact Phone Number  -->
-				<xs:element name="voice" type="xs:string"/>
-				<!-- Contact Fax Number  -->
-				<xs:element name="facsimile" type="xs:string"/>
-				
-				<!-- Address Type  -->
-				<xs:element name="addressType" type="xs:string"/>
-				
-				<!-- Postal address  -->
-				<xs:element name="deliveryPoint" type="xs:string"/>
-				<!-- City  -->
-				<xs:element name="city" type="xs:string"/>
-				<!-- State or Province  -->
-				<xs:element name="administrativeArea" type="xs:string"/>
-				<!-- Postal Code  -->
-				<xs:element name="postCode" type="xs:string"/>
-				<!-- Country  -->
-				<xs:element name="country" type="xs:string"/>
-				<!-- E-Mail address  -->
-				<xs:element name="electronicMailAddress" type="xs:string"/>
-				
-				
-				<!-- Liste des formats des images en sortie qu’il est possible de demander. 
-				     Ne sert que pour le getCapabilies. Cette liste imposée par la spec WMS pose un 
-				     problème parce qu’elle impose les même formats pour tous les layers alors que 
-				     dans notre cas il dépendent des layers.-->
-				<xs:element name="formatList">
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element name="format" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
-						</xs:sequence>
-					</xs:complexType>
-				</xs:element>
-				<!-- Paramètres spécifiques WMTS -->
-				<!-- Type de service -->
-				<xs:element name="serviceType" type="xs:string"/>
-				<!-- Version du Service -->
-				<xs:element name="serviceTypeVersion" type="xs:string"/>
-				 <!-- Paramètre INSPIRE -->
-				 <!-- Activation du mode Inspire -->
-				 <xs:element name="inspire" type="xs:boolean" default="false">
-			</xs:sequence>
-
-		</xs:complexType>
-	</xs:element>
+    <xs:element name="servicesConf">
+        <xs:complexType>
+            <xs:sequence>
+                <!-- Un nom simple pour faire référence au service. Ex : WMS_IGN -->
+                <xs:element name="name"     type="xs:string"/>
+                <!-- Une dénomination plus explicite -->
+                <xs:element name="title"    type="xs:string"/>
+                <!-- Une présentation du service -->
+                <xs:element name="abstract" type="xs:string"/>
+                <!-- Qui fournit le service -->
+                <xs:element name="serviceProvider" type="xs:string"/>
+                <!-- Provider site url -->
+                <xs:element name="providerSite" type="xs:string">
+                <!-- Des mots clefs -->
+                <xs:element name="keywordList">
+                    <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                 <!-- Autoriser les requête POST -->
+                 <xs:element name="postMode" type="xs:boolean" minOccurs="0" default="false">
+                <!-- Info relative à la facturation du service -->
+                <xs:element name="fee" type="xs:string"/>
+                <!-- Info sur les contraintes d’accès -->
+                <xs:element name="accessConstraint" type="xs:string"/>
+                <!-- Largeur maximum des images requêtées -->
+                <xs:element name="maxWidth"         type="xs:positiveInteger"/>
+                <!-- Hauteur maximum des images requêtées -->
+                <xs:element name="maxHeight"        type="xs:positiveInteger"/>
+                
+                <!-- ContactPerson  -->
+                <xs:element name="individualName" type="xs:string"/>
+                <!-- ContactPosition  -->
+                <xs:element name="individualPosition" type="xs:string"/>
+                <!-- Contact Phone Number  -->
+                <xs:element name="voice" type="xs:string"/>
+                <!-- Contact Fax Number  -->
+                <xs:element name="facsimile" type="xs:string"/>
+                
+                <!-- Address Type  -->
+                <xs:element name="addressType" type="xs:string"/>
+                
+                <!-- Postal address  -->
+                <xs:element name="deliveryPoint" type="xs:string"/>
+                <!-- City  -->
+                <xs:element name="city" type="xs:string"/>
+                <!-- State or Province  -->
+                <xs:element name="administrativeArea" type="xs:string"/>
+                <!-- Postal Code  -->
+                <xs:element name="postCode" type="xs:string"/>
+                <!-- Country  -->
+                <xs:element name="country" type="xs:string"/>
+                <!-- E-Mail address  -->
+                <xs:element name="electronicMailAddress" type="xs:string"/>
+                
+                
+                <!-- Liste des formats des images en sortie qu’il est possible de demander. 
+                     Ne sert que pour le getCapabilies. Cette liste imposée par la spec WMS pose un 
+                     problème parce qu’elle impose les même formats pour tous les layers alors que 
+                     dans notre cas il dépendent des layers.-->
+                <xs:element name="formatList">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="format" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <!-- Paramètres spécifiques WMTS -->
+                <!-- Type de service -->
+                <xs:element name="serviceType" type="xs:string"/>
+                <!-- Version du Service -->
+                <xs:element name="serviceTypeVersion" type="xs:string"/>
+                <!-- Paramètre INSPIRE -->
+                <!-- Activation du mode Inspire -->
+                <xs:element name="inspire" type="xs:boolean" default="false">
+                <!-- Service Metadata -->
+                <xs:element name="metadataWMS">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="url" type="xs:string"/>
+                            <xs:element name="mediaType" type="xs:string"/>
+                        </xs:sequence>
+                        </xs:complexType>
+                </xs:element>
+                <xs:element name="metadataWMTS">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="url" type="xs:string"/>
+                            <xs:element name="mediaType" type="xs:string"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
 </xs:schema>
