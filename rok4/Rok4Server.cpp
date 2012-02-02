@@ -221,10 +221,18 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     LOGGER_DEBUG ( "GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
 
     if ( image == 0 ) {
-        if ( error==1 )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms" ) );
-        else
-            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms" ) );
+        switch (error) {
+            
+            case 1: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms" ) );
+            }
+            case 2: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox trop grande","wms" ) );
+            }
+            default : {
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms" ) );
+            }
+        }
     }
 
     if ( format=="image/png" )
@@ -302,3 +310,5 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+request->service+" est inconnu pour ce serveur.","wmts" ) ),&fcgxRequest );
     }
 }
+
+

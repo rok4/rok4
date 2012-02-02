@@ -165,9 +165,9 @@ Image* Pyramid::getbbox ( BoundingBox<double> bbox, int width, int height, CRS d
     LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
 
     if ( getTms().getCrs() ==dst_crs )
-        return levels[l]->getbbox ( bbox, width, height );
+        return levels[l]->getbbox ( bbox, width, height, error );
     else
-        return levels[l]->getbbox ( bbox, width, height, getTms().getCrs(), dst_crs );
+        return levels[l]->getbbox ( bbox, width, height, getTms().getCrs(), dst_crs, error );
 
 }
 
