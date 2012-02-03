@@ -135,7 +135,7 @@ sub computeInfo {
     eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
     if ($@) {
         ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return undef;
+        return ();
     }
 
     my $driver = $dataset->GetDriver();
@@ -143,7 +143,7 @@ sub computeInfo {
     # FIXME : type of driver ?
     if ($code !~ /(GTiff|GeoTIFF)/) {
         ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
-        return undef;
+        return ();
     }
 
     # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
@@ -175,7 +175,7 @@ sub computeInfo {
         } else {
             if (! (lc $objBand->DataType() eq $DataType)) {
                 ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
-                return undef;
+                return ();
             }
         }
         
@@ -216,7 +216,7 @@ sub computeInfo {
     my $refgeo = $dataset->GetGeoTransform();
     if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
         ERROR ("Can not found parameters of image ('$image') !");
-        return undef;
+        return ();
     }
 
     # forced formatting string !
@@ -251,7 +251,7 @@ sub computeInfo {
     
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return undef;
+        return ();
     }
     
     return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);

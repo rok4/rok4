@@ -144,8 +144,6 @@ sub computeImageSource {
   }
   
   foreach my $filepath (@listSourcePath) {
-    
-ALWAYS(sprintf "filepath : %s", $filepath); #TOS#
   
     my $objImageSource = BE4::ImageSource->new($filepath);
     
@@ -291,7 +289,7 @@ sub getListImages {
   
   TRACE;
   
-  my $lstImagesSources = [];
+  my @lstImagesSources = ();
   
   my $pathdir = $self->{PATHIMG};
   
@@ -299,11 +297,11 @@ sub getListImages {
     ERROR ("Can not open directory source ('$pathdir') !");
     return undef;
   }
-  
+
   foreach my $entry (readdir DIR) {
     next if ($entry=~m/^\.{1,2}$/);
     next if (! -f File::Spec->catdir($pathdir,$entry));
-    
+
     # FIXME : type of data product (tif by default !)
     # but implemented too in Class ImageSource !
     
@@ -314,29 +312,27 @@ sub getListImages {
     if ($entry=~/.*\.(tif|TIF|tiff|TIFF)$/) {
         if (! defined($self->{IMG})) {
             $self->{IMG} = TRUE;
-        }
-        elsif (! $self->{IMG}) {
+        } elsif (! $self->{IMG}) {
             ERROR ("Source can not contain images and BBOXes files !");
-            return undef;
+            return ();
         }
-        push @$lstImagesSources, File::Spec->catdir($pathdir,$entry);
+        push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
     }
     elsif ($entry=~/.*\.(txt|TXT)$/) {
         if (! defined($self->{IMG})) {
             $self->{IMG} = FALSE;
-        }
-        elsif ($self->{IMG}) {
+        } elsif ($self->{IMG}) {
             ERROR ("Source can not contain images and BBOXes files !");
-            return undef;
+            return ();
         }
-        push @$lstImagesSources, File::Spec->catdir($pathdir,$entry);
+        push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
     }
 
   }
   
   closedir(DIR);
   
-  return @$lstImagesSources;
+  return @lstImagesSources;
 }
 ################################################################################
 # method: hasImages
