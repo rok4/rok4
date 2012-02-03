@@ -587,9 +587,8 @@ sub _fillToPyramid {
       return FALSE;
     }
     push @{$self->{level}}, $objLevel;
-    # push dir to create : just directories for nodata. Directories for image will be created during script execution
-    # push @{$self->{cache_dir}}, $basenodata; #absolute path
-    # push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+    # push dir to create : directories for nodata and images.
+    push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
     # push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
