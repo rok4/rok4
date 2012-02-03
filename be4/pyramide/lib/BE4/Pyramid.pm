@@ -216,7 +216,7 @@ sub new {
                     #
                     dir_depth    => undef, # number
                     dir_image    => undef, # dir name
-                    dir_nodata    => undef, # dir name
+                    dir_nodata   => undef, # dir name
                     dir_metadata => undef, # dir name
                     image_width  => undef, # number
                     image_height => undef, # number
@@ -277,7 +277,7 @@ sub _init {
     TRACE;
 
     if (! defined $params ) {
-        ERROR ("paramters argument required (null) !");
+        ERROR ("parameters argument required (null) !");
         return FALSE;
     }
     
@@ -622,9 +622,8 @@ sub _fillToPyramid {
       return FALSE;
     }
     push @{$self->{level}}, $objLevel;
-    # push dir to create : just directories for nodata. Directories for image will be created during script execution
-    # push @{$self->{cache_dir}}, $basenodata; #absolute path
-    # push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+    # push dir to create : directories for nodata and images.
+    push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
     # push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
     $i++;
   }
@@ -823,7 +822,7 @@ sub readConfPyramid {
 
     my $tagformat = $root->findnodes('format')->to_literal;
 
-    if ($tagtmsname eq '') {
+    if ($tagformat eq '') {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
     }
@@ -1947,10 +1946,10 @@ __END__
     #
     path_nodata   => "./t/data/nodata/",
     imagesize     => "1024",
-    color         => "FFFFFF,
+    color         => "FFFFFF, ----> present in the file .pyr
     #
-    interpolation => "bicubic",
-    photometric   => "rgb",
+    interpolation => "bicubic", ----> present in the file .pyr
+    photometric   => "rgb", ----> present in the file .pyr
  };
 
  my $objP = BE4::Pyramid->new($params_options);
@@ -2071,12 +2070,17 @@ it's the tms value name of the existing pyramid that's considered valid!
 
 =item * create a directory structure
 
-For an new pyramid, the directory structure is empty, only the level directory
+For an new pyramid, the directory structure is empty, only the level directory for images and directory and
+ tile for nodata
 are written on disk !
 ie :
  ROOTDIR/
   |__PYRAMID_NAME/
         |__IMAGE/
+            |__ ID_LEVEL0/
+            |__ ID_LEVEL1/
+            |__ ID_LEVEL2/
+        |__NODATA/
             |__ ID_LEVEL0/
             |__ ID_LEVEL1/
             |__ ID_LEVEL2/
@@ -2123,12 +2127,16 @@ None by default.
                             |__ ${ID_LEVEL0}/
                                 |__ DEPTH(BASE36)
                                         |__X(BASE36)/
-                                            |__ Y(BASE36).tif (it's a link !)
+                                            |__ Y(BASE36).tif (it can be a link !)
                                             |__ ...
                             |__ ${ID_LEVEL1}/
                             |__ ${ID_LEVELN}/
                 |_____ ${NODATA}/
                             |__ ${ID_LEVEL0}/
+                                |__nd.tiff (it can be a link)
+                            .
+                            .
+                            .
                             |__ ${ID_LEVELN}/
                 |_____ ${METADATA}/
                 |_____ ${PYRAMID_FILE}
@@ -2171,7 +2179,12 @@ None by default.
   
   <?xml version='1.0' encoding='US-ASCII'?>
   <Pyramid>
-    <tileMatrixSet>LAMB93_50cm_TEST</tileMatrixSet>
+    <tileMatrixSet>LAMB93_10cm</tileMatrixSet>
+    <format>TIFF_RAW_INT8</format>
+    <channels>3</channels>
+    <nodataValue>FFFFFF</nodataValue>
+    <interpolation>bicubic</interpolation>
+    <photometric>rgb</photometric>
     <level>
         <tileMatrix>18</tileMatrix>
         <baseDir>../config/pyramids/SCAN_RAW_TEST/512</baseDir>
