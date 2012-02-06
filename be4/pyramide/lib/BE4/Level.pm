@@ -119,7 +119,7 @@ sub new {
   my $self = {
 	id                => undef,
 	dir_image         => undef,
-	compress_image    => undef, # ie "TIFF_INT8"
+	compress_image    => undef, # ie "TIFF_RAW_INT8"
 	dir_nodata        => undef,
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !

@@ -41,6 +41,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 
 use XML::Simple;
+use Data::Dumper;
 
 use BE4::TileMatrix;
 
@@ -99,8 +100,11 @@ sub new {
     filename => undef,
     filepath => undef,
     #
-    levelmin => undef,
-    levelmax => undef,
+    levelIdx => undef, # hash associant les id de TM à leur indice dans le tableau du TMS (dans le sens croissant des résolutions)
+    leveltop => undef,
+    resworst => undef,
+    levelbottom => undef,
+    resbest  => undef,
     #
     srs        => undef, # ie proj4 !
     tileheight => undef, # determined by TileMatrix(0) !
@@ -125,8 +129,6 @@ sub new {
 sub _init {
     my $self     = shift;
     my $pathfile = shift;
-    my $levelmin = shift;
-    my $levelmax = shift;
 
     TRACE;
     
@@ -148,20 +150,6 @@ sub _init {
     
     TRACE (sprintf "name : %s", $self->{name});
     
-    #
-    if (defined $levelmin) {
-      $self->{levelmin} = $levelmin;
-    }
-    
-    if (defined $levelmax) {
-      $self->{levelmax} = $levelmax;
-    }
-    
-    if (defined $levelmin && defined $levelmax && $levelmin > $levelmax) {
-      $self->{levelmax} = $levelmin;
-      $self->{levelmin} = $levelmax;
-    }
-    
     return TRUE;
 }
 
@@ -180,22 +168,19 @@ sub _load {
     return FALSE;
   }
   
-  # on va mémoriser les niveaux extrèmes du TMS. S'ils n'avaient pas été définis par l'utilisateur, ils seront stocké dans l'objet TMS
-  my $levelmin = 100;
-  my $levelmax = 0;
-  
   # load tileMatrix
   while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
+
+    # we identify level max (with the best resolution, the smallest) and level min (with the 
+    # worst resolution, the biggest)
     
-    if (defined $self->{levelmin} && $k < $self->{levelmin}) {
-        next;
-    } else {
-        if ($k<$levelmin) {$levelmin = $k;}
+    if (! defined $self->{leveltop} || ! defined $self->{resworst} || $v->{resolution} > $self->{resworst}) {
+        $self->{leveltop} = $k;
+        $self->{resworst} = $v->{resolution};
     }
-    if (defined $self->{levelmax} && $k > $self->{levelmax}) {
-        next;
-    } else {
-        if ($k>$levelmax) {$levelmax = $k;}
+    if (! defined $self->{levelbottom} || ! defined $self->{resbest} || $v->{resolution} < $self->{resbest}) {
+        $self->{levelbottom} = $k;
+        $self->{resbest} = $v->{resolution};
     }
     
     my $obj = BE4::TileMatrix->new({
@@ -208,9 +193,9 @@ sub _load {
                         matrixwidth    => $v->{matrixWidth},
                         matrixheight   => $v->{matrixHeight},
                           });
-    
+ 
     return FALSE if (! defined $obj);
-    
+   
     $self->{tilematrix}->{$k} = $obj;
     undef $obj;
   }
@@ -230,16 +215,20 @@ sub _load {
   # clean
   $xmltree = undef;
   $xmltms  = undef;
+
+  # tilematrix list sort by resolution
+  my @tmList = $self->getTileMatrixByArray();
+
+  # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+  for (my $i=0; $i < scalar @tmList; $i++){
+    $self->{levelIdx}{$tmList[$i]->getID()} = $i;
+  }
   
   # tile size
-  my $tm = $self->getFirstTileMatrix();
+  my $tm = $self->getBottomTileMatrix();
   $self->{tilewidth}  = $tm->getTileWidth();
   $self->{tileheight} = $tm->getTileHeight();
-  
-  # level extrema
-  if (!defined $self->{levelmin} && defined $levelmin) {$self->{levelmin} = $levelmin;}
-  if (!defined $self->{levelmax} && defined $levelmax) {$self->{levelmax} = $levelmax;}
-  
+
   return TRUE;
 }
 ################################################################################
@@ -273,30 +262,41 @@ sub getTileHeight {
 }
 ################################################################################
 # public method to TileMatrix
+
+# method: getTileMatrixByArray
+#  return the tile matrix array in the ascending resolution order.
+#---------------------------------------------------------------------------------------------------------------
 sub getTileMatrixByArray {
-  my $self = shift;
-  
-  my @levels;
-  my $i = ($self->getFirstTileMatrix())->getID();
-  while(defined (my $objTm = $self->getNextTileMatrix($i))) {
-    push @levels, $objTm;
-    $i++;
-  }
-  
-  return sort {$a->getResolution() <=> $b->getResolution()} @levels;
+    my $self = shift;
+
+    my @levels;
+
+    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tilematrix}})) {
+        push @levels, $k;
+    }
+
+    return @levels;
+    # return sort {$a->getResolution() <=> $b->getResolution()} @levels;
 }
+
+# method: getTileMatrix
+#  return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
+#  order (integer).
+#---------------------------------------------------------------------------------------------------------------
 sub getTileMatrix {
   my $self = shift;
   my $level= shift; # id !
   
   if (! defined $level) {
-    return $self->{tilematrix};
+    return undef;
+    #return $self->{tilematrix};
   }
   
   return undef if (! exists($self->{tilematrix}->{$level}));
   
   return $self->{tilematrix}->{$level};
 }
+
 sub getCountTileMatrix {
   my $self = shift;
   
@@ -306,59 +306,89 @@ sub getCountTileMatrix {
   }
   return $count;
 }
-sub getFirstTileMatrix {
-  my $self = shift;
-  
-  my $level = 0;
 
-  TRACE;
-  
-  # fixme : variable POSIX to put correctly !
-  foreach my $k (sort {$a <=> $b} (keys %{$self->{tilematrix}})) {
-    $level = $k;
-    last;
-  }
-  
-  return $self->{tilematrix}->{$level};
+# method: getTopTileMatrix
+#  return the bottom tile matrix ID, with the smallest resolution and the order '0'.
+#---------------------------------------------------------------------------------
+sub getBottomTileMatrix {
+    my $self = shift;
+
+    TRACE;
+
+    # FIXME : variable POSIX to put correctly !
+
+    my $bottomID = $self->getTileMatrixID(0);  
+    return $self->{tilematrix}->{$bottomID};
 }
 
-sub getLastTileMatrix {
-  my $self = shift;
-  
-  my $level = 0;
-  
-  TRACE;
-  
-  # fixme : variable POSIX to put correctly !
-  foreach my $k (sort {$a <=> $b} (keys %{$self->{tilematrix}})) {
-    $level = $k;
-  }
-  
-  return $self->{tilematrix}->{$level};
+# method: getTopTileMatrix
+#  return the top tile matrix ID, with the biggest resolution and the order 'NumberOfTM'.
+#---------------------------------------------------------------------------------
+sub getTopTileMatrix {
+    my $self = shift;
+
+    my $TopOrder = $self->getCountTileMatrix()-1;
+    my $TopID = $self->getTileMatrixID($TopOrder);
+
+    TRACE;
+
+    return $self->{tilematrix}->{$TopID};
 }
-sub getNextTileMatrix {
-  my $self = shift;
-  my $level= shift; # id !
-  
-  TRACE;
-  
-  return $self->getTileMatrix($level);
+
+# method: getTileMatrixID
+#  return the tile matrix ID from the ascending resolution order (integer) :  
+#   - 0 (bottom level, smallest resolution)
+#   - NumberOfTM (top level, biggest resolution).
+#  Hash levelIdx is used.
+#---------------------------------------------------------------------------------
+sub getTileMatrixID {
+    my $self = shift;
+    my $order= shift; 
+
+    TRACE;
+
+    foreach my $k (keys %{$self->{levelIdx}}) {
+        if ($self->{levelIdx}->{$k} == $order) {return $k;}
+    }
+
+    return undef;
 }
+
+# method: getTileMatrixOrder
+#  return the tile matrix order from the ID :  
+#   - 0 (bottom level, smallest resolution)
+#   - NumberOfTM (top level, biggest resolution).
+#  Hash levelIdx is used.
+#---------------------------------------------------------------------------------
+sub getTileMatrixOrder {
+    my $self = shift;
+    my $ID= shift; 
+
+    TRACE;
+
+    if (exists $self->{levelIdx}->{$ID}) {
+        return $self->{levelIdx}->{$ID};
+    } else {
+        return undef;
+    }
+}
+
 ################################################################################
 # to_string method
 sub to_string {
-  my $self = shift;
-  
-  TRACE;
-  
-  printf "%s\n", $self->{srs};
-  
-  my $i = ($self->getFirstTileMatrix())->getID();
-  while(defined (my $tm = $self->getNextTileMatrix($i))) {
-    printf "tilematrix:\n";
-    printf "%s\n", $tm->to_string();
-    $i++;
-  }
+    my $self = shift;
+
+    TRACE;
+
+    printf "%s\n", $self->{srs};
+
+    my $i = 0;
+
+    while(defined (my $tm = $self->getTileMatrix($self->getTileMatrixID($i)))) {
+        printf "tilematrix:\n";
+        printf "%s\n", $tm->to_string();
+        $i++;
+    }
 }
 
 1;
@@ -385,16 +415,16 @@ __END__
   $objT->getFile();                   # ie 'LAMB93_50cm_TEST.tms'
   $objT->getPath();                   # ie './t/data/tms/'
   
-  my $i = ($objT->getFirstTileMatrix())->getID();
-  while(defined (my $objTm = $objT->getNextTileMatrix($i))) {
+  my $i = ($objT->getBottomTileMatrix())->getID();
+  while(defined (my $objTm = $objT->getNextTileMatrixID($i))) {
     printf "%s\n", $objTm->to_string();
-    $i++;
+    $i = $self->getNextTileMatrixID($i)
   }
   ...
   
-  $objT = BE4::TileMatrixSet->new($filepath, 8, 12);
-  $objT->getFirstTileMatrix()->getID(); # 8
-  $objT->getLastTileMatrix()->getID();  # 12
+  $objT = BE4::TileMatrixSet->new($filepath);
+  $objT->getBottomTileMatrix(); (best resolution)
+  $objT->getTopTileMatrix(); (worst resolution)
 
 =head1 DESCRIPTION
 

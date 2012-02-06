@@ -607,7 +607,7 @@ sub computeTopBranch {
   DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
   
   # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
-  return '' if ($node->{level} == $self->{tree}->getCutLevelId());
+  return '' if ($node->{level} eq $self->{tree}->getCutLevelId());
 
   my $res='';
   my @childList = $self->{tree}->getChilds($node);
@@ -628,7 +628,7 @@ sub computeTopBranches {
   
   TRACE;
     
-  if ($self->{tree}->getTopLevelId() == $self->{tree}->getCutLevelId()){
+  if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
     return "echo \"Le script de fin n'a rien à faire\" \n";
   }
   

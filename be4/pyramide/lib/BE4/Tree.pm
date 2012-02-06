@@ -169,6 +169,7 @@ sub _load {
     $self->{levelIdx}{$tmList[$i]->getID()} = $i;
   }
 
+
   # initialisation de la transfo de coord du srs des données initiales vers
   # le srs de la pyramide. Si les srs sont identique on laisse undef.
   my $ct = undef;  
@@ -281,7 +282,7 @@ sub _load {
         # On a une nouvelle image a calculer (merge4tiff)
         $self->{levels}{$aboveLevelId}{$parentNodeId}=1;
       }
-      if ($levelId == $self->{bottomLevelId}){
+      if ($levelId eq $self->{bottomLevelId}){
         # On ajoute le poids du calcul de l'image de base (mergeNtiff)
         # TODO: ce poids est ici égal a celui de merge4tiff, pour bien faire
         #       il faudrait lui trouver une ponderation plus realiste.
@@ -588,7 +589,7 @@ sub getImgDescOfBottomNode(){
   my $node = shift;
   
   my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-  return undef if ($node->{level} != $self->{bottomLevelId});
+  return undef if ($node->{level} ne $self->{bottomLevelId});
   return $self->{levels}{$node->{level}}{$keyidx};
 }
 

@@ -100,8 +100,8 @@ END {}
 #    ; eg section [ tilematrixset ]
 #    tms_name     =  
 #    tms_path     =
-#    tms_level_min=
-#    tms_level_max=
+#    tms_level_top=
+#    tms_level_bottom=
 #    ; tms_schema_path = 
 #    ; tms_schema_name =
 #
@@ -208,8 +208,8 @@ sub new {
                     #
                     tms_name     => undef, # string name
                     tms_path     => undef, # path
-                    tms_level_min=> undef, # number
-                    tms_level_max=> undef, # number
+                    tms_level_top=> undef, # number
+                    tms_level_bottom=> undef, # number
                     #
                     compression  => undef, # string value ie raw by default !
                     gamma        => undef, # number ie 1 by default !
@@ -260,7 +260,9 @@ sub new {
   # init. :
   # a new pyramid or from existing pyramid !
   return undef if (! $self->_load());
-  
+
+#ALWAYS (sprintf "PYRAMID (dump) = %s", Dumper($self));#TEST#
+
   return $self;
 }
 
@@ -473,9 +475,7 @@ sub _load {
     
     # create TileMatrixSet !
     my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
-                                                             $self->{pyramid}->{tms_name}),
-                                                             $self->{pyramid}->{tms_level_min},
-                                                             $self->{pyramid}->{tms_level_max});
+                                                             $self->{pyramid}->{tms_name}));
 
     
     if (! defined $objTMS) {
@@ -483,13 +483,9 @@ sub _load {
       return FALSE;
     }
     
-    # save tms' extrema if doesn't exist !
-    if (! defined ($self->{pyramid}->{tms_level_min})) {
-        $self->{pyramid}->{tms_level_min} = $objTMS->{levelmin};
-    }
-    if (! defined ($self->{pyramid}->{tms_level_max})) {
-        $self->{pyramid}->{tms_level_max} = $objTMS->{levelmax};
-    }
+    # save tms' extrema !
+    $self->{pyramid}->{tms_level_top} = $objTMS->{leveltop};
+    $self->{pyramid}->{tms_level_bottom} = $objTMS->{levelbottom};
     
     $self->{tms} = $objTMS;
     DEBUG (sprintf "TMS = %s", Dumper($objTMS));
@@ -569,10 +565,10 @@ sub _fillToPyramid {
   }
   
   # load all level
-  my $i = ($objTMS->getFirstTileMatrix())->getID();
-  while(defined (my $objTm = $objTMS->getNextTileMatrix($i))) {
+  my $i = 0;
+  while(defined (my $objTm = $objTMS->getTileMatrix($objTMS->getTileMatrixID($i)))) {
     
-    my $tileperwidth     = $self->getTilePerWidth(); 
+    my $tileperwidth     = $self->getTilePerWidth();
     my $tileperheight    = $self->getTilePerHeight();
     
     # base dir image
@@ -611,9 +607,9 @@ sub _fillToPyramid {
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
             bitspersample     => $self->getTile()->getBitsPerSample(),
             samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
-            size              => [ $tileperwidth, $tileperheight],
+            size              => [$tileperwidth, $tileperheight],
             dir_depth         => $self->getDirDepth(),
-            limit             => [undef, undef, undef, undef] # FIXME : can be computed or fix ?
+            limit             => [undef, undef, undef, undef] # computed
     };
     my $objLevel = BE4::Level->new($params);
     
@@ -625,6 +621,7 @@ sub _fillToPyramid {
     # push dir to create : directories for nodata and images.
     push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
     # push @{$self->{cache_dir}}, File::Spec->abs2rel($baseimage, $self->getPyrDataPath());
+
     $i++;
   }
   
@@ -705,8 +702,14 @@ sub writeConfPyramid {
     $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
 
     my @levels = $self->getLevels();
+
+    my $topLevelOrder = $self->getLevelOrder($self->{pyramid}->{pyr_level_top});
+    my $bottomLevelOrder = $self->getLevelOrder($self->{pyramid}->{pyr_level_bottom});
+
     foreach my $objLevel (@levels){
-        if ($objLevel->{id} >= $self->{pyramid}->{pyr_level_top} && $objLevel->{id} <= $self->{pyramid}->{pyr_level_bottom}) {
+        my $levelOrder = $self->getLevelOrder($objLevel->{id});
+        
+        if ( $levelOrder <= $topLevelOrder && $levelOrder >= $bottomLevelOrder) {
         
             # image
             $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
@@ -892,9 +895,7 @@ sub readConfPyramid {
     }
 
     my $tmsfile = join(".", $tmsname, "tms"); 
-    my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile),
-                                         $self->{pyramid}->{tms_level_min},
-                                         $self->{pyramid}->{tms_level_max});
+    my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
 
     if (! defined $objTMS) {
     ERROR ("Can not create object TileMatrixSet !");
@@ -906,13 +907,9 @@ sub readConfPyramid {
     $self->{tms} = $objTMS;
     }
     
-    # save tms' extrema if doesn't exist !
-    if (! defined ($self->{pyramid}->{tms_level_min})) {
-        $self->{pyramid}->{tms_level_min} = $objTMS->{levelmin};
-    }
-    if (! defined ($self->{pyramid}->{tms_level_max})) {
-        $self->{pyramid}->{tms_level_max} = $objTMS->{levelmax};
-    }
+    # save tms' extrema !
+    $self->{pyramid}->{tms_level_top} = $objTMS->{leveltop};
+    $self->{pyramid}->{tms_level_bottom} = $objTMS->{levelbottom};
 
     # fill parameters if not... !
     $self->{pyramid}->{tms_name} = $self->getTileMatrixSet()->getFile();
@@ -1213,12 +1210,19 @@ sub writeCachePyramid {
         }
     }
 
-    # we need to create nodata tiles, for each level. If a symbolic link already exists, we move on
+    # we need to create nodata tiles, for each level between pyr_level_bottom and pyr_level_top.
+    # If a symbolic link already exists, we move on
+
     my @levels = $self->getLevels();
+
+    my $topLevelOrder = $self->getLevelOrder($self->{pyramid}->{pyr_level_top});
+    my $bottomLevelOrder = $self->getLevelOrder($self->{pyramid}->{pyr_level_bottom});
+
     foreach my $objLevel (@levels){
+
+        my $levelOrder = $self->getLevelOrder($objLevel->{id});
         
-        if ($objLevel->{id} >= $self->{pyramid}->{pyr_level_top} 
-            && $objLevel->{id} <= $self->{pyramid}->{pyr_level_bottom}) {
+        if ( $levelOrder <= $topLevelOrder && $levelOrder >= $bottomLevelOrder) {
             # we have to create the nodata tile
             my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
             $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
@@ -1570,36 +1574,7 @@ sub getLevels {
   my $self = shift;
   return @{$self->{level}};
 }
-sub getFirstLevel {
-  my $self = shift;
-  
-  my $levelid = 0;
 
-  TRACE;
-  
-  # fixme : variable POSIX to put correctly !
-  foreach my $k (sort {$a->getID() <=> $b->getID()} ($self->getLevels())) {
-    $levelid = $k->getID();
-    last;
-  }
-  
-  return $levelid;
-}
-
-sub getLastLevel {
-  my $self = shift;
-  
-  my $levelid = 0;
-  
-  TRACE;
-  
-  # fixme : variable POSIX to put correctly !
-  foreach my $k (sort {$a->getID() <=> $b->getID()} ($self->getLevels())) {
-    $levelid = $k->getID();
-  }
-  
-  return $levelid;
-}
 ################################################################################
 # privates method (low level)
 #  Manipulate the Directory Structure Cache (DSC)
@@ -1872,6 +1847,20 @@ sub isNewPyramid {
   my $self = shift;
   return $self->{isnewpyramid};
 }
+
+# method: getLevelOrder
+#  return the tile matrix order from the ID :  
+#   - 0 (bottom level, smallest resolution)
+#   - NumberOfTM (top level, biggest resolution).
+#---------------------------------------------------------------------------------
+sub getLevelOrder {
+    my $self = shift;
+    my $ID = shift;
+
+    return $self->getTileMatrixSet()->getTileMatrixOrder($ID);
+}
+
+
 ################################################################################
 # public method
 #  TileImage of Work (TIW)
@@ -1883,32 +1872,13 @@ sub isNewPyramid {
 #  Manipulate the Level Pyramid
 
 sub getBottomLevel {
-  my $self = shift;
-  
-  my $level = $self->getPyrLevelBottom();
-  
-  return undef if (! defined $level);
-  
-  foreach my $l ($self->getLevels()) {
-    next if ($l->getID() != $level);
-    return $level;
-  }
-  # level not found !
-  return undef;
+    my $self = shift;
+    return $self->{pyramid}->{pyr_level_bottom};
 }
+
 sub getTopLevel {
-  my $self = shift;
-  
-  my $level = $self->getPyrLevelTop();
-  
-  return undef if (! defined $level);
-  
-  foreach my $l ($self->getLevels()) {
-    next if ($l->getID() != $level);
-    return $level;
-  }
-  # level not found !
-  return undef;
+    my $self = shift;
+    return $self->{pyramid}->{pyr_level_top};
 }
 
 ################################################################################
