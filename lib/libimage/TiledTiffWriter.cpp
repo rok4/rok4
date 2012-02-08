@@ -1,7 +1,45 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #include "TiledTiffWriter.h"
 #include "byteswap.h"
 #include <string.h>
 #include <iostream>
+#include <algorithm>
 
 
 // Fonctions pour le manager de sortie de la libjpeg
@@ -9,7 +47,8 @@ void init_destination (jpeg_compress_struct *cinfo) {return;}
 boolean empty_output_buffer (jpeg_compress_struct *cinfo) {return false;}
 void term_destination (jpeg_compress_struct *cinfo) {return;}
 
-
+uint8_t nodataColor[4] = {255,255,255,255};
+int jpegBlockWidth = 16; // 8 ou 16
 
 static const uint8_t PNG_IEND[12] = {
   0, 0, 0, 0, 'I', 'E', 'N', 'D',    // 8  | taille et type du chunck IHDR
@@ -212,7 +251,7 @@ int TiledTiffWriter::close() {
 };
 
 size_t TiledTiffWriter::computeRawTile(uint8_t *buffer, uint8_t *data) {
-    memcpy(buffer, data, rawtilesize);
+    memcpy(buffer, data, rawtilesize);    
     return rawtilesize; 
 }
 
@@ -262,20 +301,73 @@ size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
 }
 
 
-size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data) {
+size_t TiledTiffWriter::computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop) {
+            
     cinfo.dest->next_output_byte = buffer;
     cinfo.dest->free_in_buffer = 2*rawtilesize;
     jpeg_start_compress(&cinfo, true);
-    while (cinfo.next_scanline < cinfo.image_height) {
-        uint8_t *line = data + cinfo.next_scanline*tilelinesize;
+    
+    uint8_t* buffheight = new uint8_t[jpegBlockWidth*tilelinesize];
+    int numLine = 0;
+    
+    while (numLine < tilelength) {
+        if (numLine % jpegBlockWidth == 0) {
+            int l = std::min((uint32_t)jpegBlockWidth,tilelength-numLine);
+            memcpy(buffheight,data + numLine*tilelinesize,tilelinesize*l);
+            if (crop) {
+                emptyWhiteBlock(buffheight,l);
+            }
+        }
+        
+        uint8_t *line = buffheight + (numLine % jpegBlockWidth)*tilelinesize;
         if(jpeg_write_scanlines(&cinfo, &line, 1) != 1) return 0;
+        numLine++;
     }
+    
     jpeg_finish_compress(&cinfo);
+    delete[] buffheight;
+
     return 2*rawtilesize - cinfo.dest->free_in_buffer;
 }
 
+void TiledTiffWriter::emptyWhiteBlock(uint8_t *buffheight, int l) {
 
-int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
+    int I = 0;
+    int J = 0;
+    bool b = false; /* use to know if the current block has been fill with nodata*/
+    
+    int blocklinesize = jpegBlockWidth*samplesperpixel;
+    
+    while (J<tilelinesize) {
+        while (I<l) {
+            if (!memcmp(buffheight + I*tilelinesize + J, nodataColor, samplesperpixel)) {
+                int jdeb = (J/blocklinesize)*blocklinesize;
+                int jfin = std::min(jdeb+blocklinesize,tilelinesize);
+                for (int i = 0; i<l; i++) {
+                    for (int j = jdeb; j<jfin; j+=samplesperpixel) {
+                        memcpy(buffheight + i*tilelinesize + j, nodataColor, samplesperpixel);
+                    }
+                }
+                I = 0;
+                J = jfin;
+                b = true;
+                break;
+                
+            } else {
+                I++;
+            }
+        }
+        if (!b) {
+            I = 0;
+            J += samplesperpixel;
+        }
+        b = false;
+    }
+    
+}
+
+
+int TiledTiffWriter::WriteTile(int n, uint8_t *data, bool crop) {
 
     if(n > tilex*tiley || n < 0) {std::cerr << "invalid tile number" << std::endl; return -1;}
     size_t size;
@@ -283,7 +375,7 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
     switch(compression) {
         case COMPRESSION_NONE: size = computeRawTile(Buffer, data); break;
         case COMPRESSION_LZW : size = computeLzwTile(Buffer, data); break;
-        case COMPRESSION_JPEG: size = computeJpegTile(Buffer, data); break;
+        case COMPRESSION_JPEG: size = computeJpegTile(Buffer, data, crop); break;
         case COMPRESSION_PNG : size = computePngTile(Buffer, data); break;
     }
     if(size == 0) return -1;
@@ -305,6 +397,6 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data) {
     return 1;  
 }
 
-int TiledTiffWriter::WriteTile(int x, int y, uint8_t *data) {
-    return WriteTile(y*tilex + x, data);
+int TiledTiffWriter::WriteTile(int x, int y, uint8_t *data, bool crop) {
+    return WriteTile(y*tilex + x, data, crop);
 }

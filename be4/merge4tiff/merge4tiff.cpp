@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 /**
  * \file mergeitiff.cpp
  * \brief Sous echantillonage de 4 images 
@@ -86,8 +123,8 @@ void parseCommandLine(int argc, char* argv[],
                 if(++i == argc) error("missing parameter in -i argument");
                 switch(argv[i-1][2]){
                     case '1':
-                    inputImages[0]=argv[i];
-                    break;
+                        inputImages[0]=argv[i];
+                        break;
                     case '2':
                         inputImages[1]=argv[i];
                         break;
@@ -223,9 +260,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
     float  line_out[nbsamples];
     int left,right;
     
-    for (int i = 0; i<nbsamples; i++) {
-        line_background[i] = nodata;
-    }
+    memset(line_background,(float)nodata,sizeof(float)*nbsamples);
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -249,10 +284,8 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
             
-            for (int i = 0; i<nbsamples; i++) {
-                line_out[i] = line_background[i];
-            }
-            
+            memcpy(line_out,line_background,sizeof(float)*nbsamples);
+
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) {
 
                 for(int j = sampleperpixel; j > 0 ; j--, pos_in++) {
@@ -265,12 +298,10 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
 
                     if (nbData>1) {
                         float value = 0.;
-                        for (int i=0; i<nbData; i++)
-                            value += data[i];
+                        for (int i=0; i<nbData; i++) {value += data[i];}
                             
                         line_out[pos_out] = value/(float)nbData;
                         pos_out++;
-
                     }else {
                         line_out[pos_out] = nodata;
                         pos_out++;
@@ -299,10 +330,8 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     uint8  line_out[nbsamples];
     int left,right;
     
-    for (int i = 0; i<nbsamples; i++) {
-        line_background[i] = nodata;
-    } 
-    
+    memset(line_background,nodata,nbsamples);
+
       for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
         if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
@@ -324,9 +353,7 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
             
-            for (int i = 0; i<nbsamples; i++) {
-                line_out[i] = line_background[i];
-            }
+            memcpy(line_out,line_background,nbsamples);
 
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
                 for(int j = sampleperpixel; j--; pos_in++) 
@@ -341,10 +368,6 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
     return 0;
 }
 
-int interpretNodata(char* strnodata,uint16_t sampleformat,uint16_t bitspersample) {
-
-
-}
 
 /**
 *@fn int h2i(char s)
@@ -353,14 +376,14 @@ int interpretNodata(char* strnodata,uint16_t sampleformat,uint16_t bitspersample
 
 int h2i(char s)
 {
-        if('0' <= s && s <= '9')
-                return (s - '0');
-        if('a' <= s && s <= 'f')
-                return (s - 'a' + 10);
-        if('A' <= s && s <= 'F')
-                return (10 + s - 'A');
-        else
-                return -1; /* invalid input! */
+    if('0' <= s && s <= '9')
+        return (s - '0');
+    if('a' <= s && s <= 'f')
+        return (s - 'a' + 10);
+    if('A' <= s && s <= 'F')
+        return (10 + s - 'A');
+    else
+        return -1; /* invalid input! */
 }
 
 int main(int argc, char* argv[]) {

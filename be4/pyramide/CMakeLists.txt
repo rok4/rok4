@@ -2,14 +2,14 @@
 project(pyramide)
 #définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
+if(NOT DEFINED BE4_VERSION)
         FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
         STRING(SUBSTRING ${tmp} 15 -1 ROK4_VERSION_TEXT)
-        STRING(REPLACE "." ";" ROK4_VERSION ${ROK4_VERSION_TEXT})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+        STRING(REPLACE "." ";" BE4_VERSION ${ROK4_VERSION_TEXT})
+endif(NOT DEFINED BE4_VERSION)
+list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 
 cmake_minimum_required(VERSION 2.6)
@@ -44,14 +44,18 @@ set(BUILD_SHARED_LIBS OFF)
 #Définition des dépendances.
 include(ROK4Dependencies)
 
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/src/makefile)
+
 set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 
 set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
 add_custom_command(OUTPUT install/lib COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+
 
 add_custom_target(be4-build ALL DEPENDS install/lib)
 
@@ -108,7 +112,8 @@ endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
     )
     endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

@@ -1,4 +1,38 @@
 #!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
 
 use warnings;
 use strict;
@@ -31,8 +65,11 @@ use BE4::Process;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# pas de bufferisation des sorties.
+$|=1;
+
 # version
-my $VERSION = "develop 0.2.6 : Renforcement du wget";
+my $VERSION = "@VERSION_TEXT@";
 
 #
 # Title: be4
@@ -422,30 +459,18 @@ sub doIt {
       return FALSE;
     }
   
-    ALWAYS(">>> Write Configuration Pyramid ...");
-
-    if (! $objPyramid->writeConfPyramid()) {
-      ERROR ("Can not write Pyramid File !");
-      return FALSE;
-    }
-
-    ALWAYS(">>> Write Cache Pyramid ...");
-
-    if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
-    }
-  
-    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-  
+    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
+    # which are calculated in the Process creation
+    
     ###################
     # load data source
     
     if (main::HasDataSource()) {
     
         ALWAYS(">>> Load Data Source ...");
-        
+
         $objData = BE4::DataSource->new($params->{datasource});
+        $objData->{nodataColor} = $objPyramid->{pyramid}->{color};
         
         if (! defined $objData) {
           ERROR ("Can not load the data source !");
@@ -479,13 +504,38 @@ sub doIt {
                       $params->{harvesting},
                       $objPyramid,
                       $objData
-                      );
+                    );
   
     if (! defined $objProcess) {
       ERROR ("Can not prepare process !");
       return FALSE;
     }
+    
+    ##################
+    # write the pyramid cache
+    
+    ALWAYS(">>> Write Cache Pyramid ...");
+
+    if (! $objPyramid->writeCachePyramid()) {
+      ERROR ("Can not write Pyramid Cache !");
+      return FALSE;
+    }
+    
+    ##################
+    # write the pyramid descriptor
+
+    ALWAYS(">>> Write Configuration Pyramid ...");
+
+    if (! $objPyramid->writeConfPyramid()) {
+      ERROR ("Can not write Pyramid File !");
+      return FALSE;
+    }
   
+    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
+  
+    ##################
+    # compute process
+    
     ALWAYS(">>> Compute Process ...");
     
     if (! $objProcess->computeWholeTree()) {
@@ -495,6 +545,7 @@ sub doIt {
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
+
     #######################
     # execute process script
     
@@ -725,7 +776,7 @@ These parameters can be null because of parameters by default :
    imagesize - 4096
  
  [ tile ] or [ pyramid ]
-   interpolation   - bicubique
+   interpolation   - bicubic
    photometric     - rgb
  
  [ pyramid ]

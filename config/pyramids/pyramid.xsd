@@ -1,85 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	<xs:element name="Pyramid">
-		<xs:complexType>
-			<xs:sequence>
-			<xs:element name="tileMatrixSet" type="xs:string"/>
-                        <xs:element name="format"         type="imageFormat"/>
-			<!-- nombre de canaux utilisés dans les images (et tuiles) -->
-                        <xs:element name="channels"       type="xs:positiveInteger"/>
-			<xs:element name="level" minOccurs="1" maxOccurs="unbounded">
-				<xs:complexType>
-				<xs:sequence>
-					<!-- id du tileMatrix utilisé -->
-					<xs:element name="tileMatrix"     type="xs:string"/>
-					<!-- repertoire racine des données du level -->
-					<xs:element name="baseDir"        type="xs:string"/>
-					<!-- informations sur les métadonnées -->
-					<xs:element name="metadata" type="metadataContent"/>
-					<!-- informations sur la tuile NoDAta -->
-					<xs:element name="nodata" type="nodataContent"/>
-					<!-- nombre de tuiles par dalle en largeur--> 
-					<xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
-					<!-- nombre de tuiles par dalles en hauteur --> 
-					<xs:element name="tilesPerHeight" type="xs:positiveInteger"/>
-					<!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
-					<xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
-					<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-					<xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
-				</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	
-	<xs:complexType name="metadataContent">
-        	<xs:sequence>
+    
+    <xs:element name="Pyramid">
+        <xs:complexType>
+            <xs:sequence>
+            <xs:element name="tileMatrixSet" type="xs:string"/>
+            <xs:element name="format"         type="imageFormat"/>
+            <!-- nombre de canaux utilisés dans les images (et tuiles) -->
+            <xs:element name="channels"       type="xs:positiveInteger"/>
+            <xs:element name="nodataValue" type="xs:string" minOccurs="0"/>
+            <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
+            <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
+            <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                <xs:sequence>
+                    <!-- id du tileMatrix utilisé -->
+                    <xs:element name="tileMatrix"     type="xs:string"/>
+                    <!-- repertoire racine des données du level -->
+                    <xs:element name="baseDir"        type="xs:string"/>
+                    <!-- informations sur les métadonnées -->
+                    <xs:element name="metadata" type="metadataContent"/>
+                    <!-- informations sur la tuile NoDAta -->
+                    <xs:element name="nodata" type="nodataContent"/>
+                    <!-- nombre de tuiles par dalle en largeur--> 
+                    <xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
+                    <!-- nombre de tuiles par dalles en hauteur --> 
+                    <xs:element name="tilesPerHeight" type="xs:positiveInteger"/>
+                    <!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
+                    <xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
+                    <!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
+                    <xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:complexType name="metadataContent">
+            <xs:sequence>
                 <!-- repertoire racine des données du level pour les métadonnées-->
                 <xs:element name="baseDir"        type="xs:string"/>
                 <!-- format des masques de métadonnées du cache -->
-		<xs:element name="format"         type="imageFormat"/>
+        <xs:element name="format"         type="imageFormat"/>
                 </xs:sequence>
-		<xs:attribute name="type"        type="metadataType"/>
- 	</xs:complexType>
-	
-	<xs:complexType name="nodataContent">
+        <xs:attribute name="type"        type="metadataType"/>
+     </xs:complexType>
+    
+    <xs:complexType name="nodataContent">
                 <!-- chemin vers la dalle contenant la tuile de NoData-->
                 <xs:element name="filePath"        type="xs:string"/>
- 	</xs:complexType>
+     </xs:complexType>
 
 
-	<!-- liste des formats autorisés pour les images du cache -->
-	<xs:simpleType name="imageFormat">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="TIFF_INT8"/>     <!-- deprecated -->
-			<xs:enumeration value="TIFF_JPG_INT8"/>
-			<xs:enumeration value="TIFF_PNG_INT8"/>
-			<xs:enumeration value="TIFF_LZW_INT8"/>
-			<xs:enumeration value="TIFF_FLOAT32"/>  <!-- deprecated -->
+    <!-- liste des formats autorisés pour les images du cache -->
+    <xs:simpleType name="imageFormat">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="TIFF_INT8"/>     <!-- deprecated -->
+            <xs:enumeration value="TIFF_JPG_INT8"/>
+            <xs:enumeration value="TIFF_PNG_INT8"/>
+            <xs:enumeration value="TIFF_LZW_INT8"/>
+            <xs:enumeration value="TIFF_FLOAT32"/>  <!-- deprecated -->
             <xs:enumeration value="TIFF_RAW_FLOAT32"/>
             <xs:enumeration value="TIFF_LZW_FLOAT32"/>
             <xs:enumeration value="TIFF_RAW_INT8"/>
-		</xs:restriction>
-	</xs:simpleType>
+        </xs:restriction>
+    </xs:simpleType>
 
-	<!-- liste des types de métadonnées autorisés -->
-	<xs:simpleType name="metadataType">
+    <!-- liste des types de métadonnées autorisés -->
+    <xs:simpleType name="metadataType">
                 <xs:restriction base="xs:string">
                         <xs:enumeration value="INT32_DB_LZW"/>
                 </xs:restriction>
         </xs:simpleType>
-	
-	<!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
-	<xs:element name="TMSLimits" >
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="minTileRow"  type="xs:nonNegativeInteger"/>
-				<xs:element name="maxTileRow"  type="xs:nonNegativeInteger"/>
-				<xs:element name="minTileCol"  type="xs:nonNegativeInteger"/>
-				<xs:element name="maxTileCol"  type="xs:nonNegativeInteger"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+    
+    <!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
+    <xs:element name="TMSLimits" >
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="minTileRow"  type="xs:nonNegativeInteger"/>
+                <xs:element name="maxTileRow"  type="xs:nonNegativeInteger"/>
+                <xs:element name="minTileCol"  type="xs:nonNegativeInteger"/>
+                <xs:element name="maxTileCol"  type="xs:nonNegativeInteger"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+        <!-- liste des photométrique autorisées pour les images du cache -->
+    <xs:simpleType name="imagePhotometric">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="gray"/>
+            <xs:enumeration value="rgb"/>
+            <xs:enumeration value="mask"/>
+        </xs:restriction>
+    </xs:simpleType>
+    
+    <!-- liste des interpolations autorisées pour la génération des images du cache -->
+    <xs:simpleType name="imageInterpolation">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="lanczos"/>
+            <xs:enumeration value="nn"/> <!-- Nearest Neighbour -->
+            <xs:enumeration value="bicubique"/> <!-- Deprecated, use bicubic instead -->
+            <xs:enumeration value="bicubic"/>
+            <xs:enumeration value="linear"/>
+        </xs:restriction>
+    </xs:simpleType>
 
 </xs:schema>

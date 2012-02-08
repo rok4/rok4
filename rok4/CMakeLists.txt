@@ -10,8 +10,6 @@ endif(NOT DEFINED ROK4_VERSION)
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-cmake_minimum_required(VERSION 2.6)
-
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -43,8 +41,9 @@ endif(DEBUG_BUILD)
 
 ########################################
 #définition des fichiers sources
+configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
-set(rok4core_SRCS LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -144,7 +143,7 @@ INSTALL(FILES Rok4Api.h
   DESTINATION include)
 
 #Installe la documentation
-INSTALL(FILES README
+INSTALL(FILES README LICENCE
   DESTINATION doc/${PROJECT_NAME})
 
 if(BUILD_DOC)

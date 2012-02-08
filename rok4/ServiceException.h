@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière
+ *
+ * Géoportail SAV <geop_services@geoportail.fr>
+ *
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ *
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use,
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info".
+ *
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability.
+ *
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
+ * The fact that you are presently reading this means that you have had
+ *
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #ifndef SERVICE_EXCEPTION_H
 #define SERVICE_EXCEPTION_H
 
@@ -9,51 +46,51 @@
  * Codes d'exceptions definis par les specs WMS et OWS (reprise texto par WMTS)
  */
 typedef enum {
-	OWS_MISSING_PARAMETER_VALUE = 0, /*!< Request is for an operation that is 
+    OWS_MISSING_PARAMETER_VALUE = 0, /*!< Request is for an operation that is
                                         not supported by this server */
-	OWS_INVALID_PARAMETER_VALUE = 1, /*!< Operation request does not include a 
-                                        parameter value, and this server did 
-                                        not declare a default value for that 
+    OWS_INVALID_PARAMETER_VALUE = 1, /*!< Operation request does not include a
+                                        parameter value, and this server did
+                                        not declare a default value for that
                                         parameter */
-	OWS_VERSION_NEGOTIATION_FAILED= 2, /*!< List of versions in “AcceptVersions” 
+    OWS_VERSION_NEGOTIATION_FAILED= 2, /*!< List of versions in “AcceptVersions”
                                           parameter value, in GetCapabilities
                                           operation request, did not include
                                           any version supported by this server.*/
-	OWS_INVALID_UPDATESEQUENCE= 3, /*!< Value of (optional) updateSequence 
-                                      parameter, in GetCapabilities operation 
-                                      request, is greater  parameter than 
-                                      current value of service metadata 
+    OWS_INVALID_UPDATESEQUENCE= 3, /*!< Value of (optional) updateSequence
+                                      parameter, in GetCapabilities operation
+                                      request, is greater  parameter than
+                                      current value of service metadata
                                       updateSequence number */
-	OWS_NOAPPLICABLE_CODE= 4,      /*! < No other exceptionCode specified by this 
-                                       service and server applies to this 
+    OWS_NOAPPLICABLE_CODE= 4,      /*! < No other exceptionCode specified by this
+                                       service and server applies to this
                                        exception */
-	WMS_INVALID_FORMAT= 5,         /*!< Request contains a Format not offered by 
+    WMS_INVALID_FORMAT= 5,         /*!< Request contains a Format not offered by
                                       the server.*/
-	WMS_INVALID_CRS= 6,            /*!< Request contains a CRS not offered by the 
-                                    server for one or more of the Layers in 
+    WMS_INVALID_CRS= 6,            /*!< Request contains a CRS not offered by the
+                                    server for one or more of the Layers in
                                     the request. */
-	WMS_LAYER_NOT_DEFINED= 7,      /*!< GetMap request is for a Layer not offered 
-                                    by the server, or GetFeatureInfo request is 
+    WMS_LAYER_NOT_DEFINED= 7,      /*!< GetMap request is for a Layer not offered
+                                    by the server, or GetFeatureInfo request is
                                     for a Layer not shown on the map. */
-	WMS_STYLE_NOT_DEFINED= 8,      /*!< Request is for a Layer in a Style not 
+    WMS_STYLE_NOT_DEFINED= 8,      /*!< Request is for a Layer in a Style not
                                     offered by the server. */
-	WMS_LAYER_NOT_QUERYABLE= 9,      /*!< GetFeatureInfo request is applied to a 
+    WMS_LAYER_NOT_QUERYABLE= 9,      /*!< GetFeatureInfo request is applied to a
                                         Layer which is not declared queryable. */
-	WMS_INVALID_POINT= 10,           /*!< GetFeatureInfo request contains invalid 
+    WMS_INVALID_POINT= 10,           /*!< GetFeatureInfo request contains invalid
                                         X or Y value. */
-	WMS_CURRENT_UPDATESEQUENCE= 11,  /*!< Value of (optional) UpdateSequence 
-                                        parameter in GetCapabilities request is 
-                                        equal to current value of service 
+    WMS_CURRENT_UPDATESEQUENCE= 11,  /*!< Value of (optional) UpdateSequence
+                                        parameter in GetCapabilities request is
+                                        equal to current value of service
                                         metadata update sequence number.*/
-	WMS_MISSING_DIMENSION_VALUE= 12, /*<! Request does not include a sample
+    WMS_MISSING_DIMENSION_VALUE= 12, /*<! Request does not include a sample
                                         dimension value, and the server did not
-                                        declare a default value for that 
+                                        declare a default value for that
                                         dimension.*/
-	WMS_INVALID_DIMENSION_VALUE= 13, /*!< Request contains an invalid sample 
+    WMS_INVALID_DIMENSION_VALUE= 13, /*!< Request contains an invalid sample
                                         dimension value. */
-	OWS_OPERATION_NOT_SUPORTED= 14,  /*!< Request is for an optional operation 
+    OWS_OPERATION_NOT_SUPORTED= 14,  /*!< Request is for an optional operation
                                         that is not supported by the server.*/
-	WMTS_TILE_OUT_OF_RANGE= 15       /*!< TileRow or TileCol out of range */
+    WMTS_TILE_OUT_OF_RANGE= 15       /*!< TileRow or TileCol out of range */
 
 } ExceptionCode;
 
@@ -62,59 +99,63 @@ typedef enum {
  * @class ServiceException
  * Gere les informations permettant de generer la partie du message d'erreur XML suivante:
  * <ServiceException code='__CODE__' locator='__LOCATOR__' >
- * 		__MESSAGE__
+ *              __MESSAGE__
  * </ServiceException>
  *
  */
 class ServiceException {
 private:
-	std::string locator;
-	ExceptionCode code ;
-	std::string message;
-	std::string service;
-//	static void _init() ;
-//	static std::map<ExceptionCode, std::string> _errCodes ;
+    std::string locator;
+    ExceptionCode code ;
+    std::string message;
+    std::string service;
+//      static void _init() ;
+//      static std::map<ExceptionCode, std::string> _errCodes ;
 
 public:
-/**
-	* constructeur d'une exception
-	* @param locator la valeur de l'attribut locator (selon specs OGC)
-	* @param code la valeur de l'attribut code (selon specs OGC)
-	* @param message le texte du message d'erreur
-	* @param service le type de service ("wms" ou "wmts")
-	*/
-	ServiceException(std::string locator, ExceptionCode code, std::string message, std::string service) ;
+    /**
+        * constructeur d'une exception
+        * @param locator la valeur de l'attribut locator (selon specs OGC)
+        * @param code la valeur de l'attribut code (selon specs OGC)
+        * @param message le texte du message d'erreur
+        * @param service le type de service ("wms" ou "wmts")
+        */
+    ServiceException ( std::string locator, ExceptionCode code, std::string message, std::string service ) ;
 
-	/**
-	 * Retourne le code d'erreur sous forme de string.
-	 * @param code le code d'erreur enumere
-	 */
-	static std::string getCodeAsString(ExceptionCode code);
+    /**
+     * Retourne le code d'erreur sous forme de string.
+     * @param code le code d'erreur enumere
+     */
+    static std::string getCodeAsString ( ExceptionCode code );
 
-	/**
-	 * Retourne le status code HTTP associe à l'exception.
-	 * @param code le code d'erreur enumere
-	 */
-	static int getCodeAsStatusCode(ExceptionCode code);
+    /**
+     * Retourne le status code HTTP associe à l'exception.
+     * @param code le code d'erreur enumere
+     */
+    static int getCodeAsStatusCode ( ExceptionCode code );
 
-	/**
-	 * Retourne la "reason phrase" associée au status code http
-	 * @param statusCode le status code HTTP à traduire
-	 */
-	static std::string getStatusCodeAsReasonPhrase(int statusCode);
+    /**
+     * Retourne la "reason phrase" associée au status code http
+     * @param statusCode le status code HTTP à traduire
+     */
+    static std::string getStatusCodeAsReasonPhrase ( int statusCode );
 
-	/**
-	 * Genere la chaine de caracteres relative a l'exception decrite par l'objet
-	 */
-	std::string toString();
-	/**
-		* acces au champ service
-		*/
-	std::string getService() {return this->service ;} ;
-	/**
-	 * access au champ code
-	 */
-	ExceptionCode getCode() {return this->code;} ;
+    /**
+     * Genere la chaine de caracteres relative a l'exception decrite par l'objet
+     */
+    std::string toString();
+    /**
+        * acces au champ service
+        */
+    std::string getService() {
+        return this->service ;
+    } ;
+    /**
+     * access au champ code
+     */
+    ExceptionCode getCode() {
+        return this->code;
+    } ;
 };
 
 

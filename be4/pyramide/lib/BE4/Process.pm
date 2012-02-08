@@ -1,3 +1,38 @@
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
 package BE4::Process;
 
 # use strict;
@@ -70,6 +105,7 @@ sub _init {
         return FALSE;
     }
 
+
     # manadatory !
     $self->{job_number} = $params_process->{job_number}; 
     $self->{path_temp}  = $params_process->{path_temp};
@@ -136,14 +172,21 @@ sub _init {
     #  it's an object !
   
     
-  $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
-  
+    $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
 
     if (! defined $self->{tree}) {
         ERROR("Can not load Tree object !");
         return FALSE;
     }
-
+    
+    # save extrem pyramid's levels if doesn't exist !
+    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_top})) {
+        $self->{pyramid}->{pyramid}->{pyr_level_top} = $self->{tree}->{topLevelId};
+    }
+    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_bottom})) {
+        $self->{pyramid}->{pyramid}->{pyr_level_bottom} = $self->{tree}->{bottomLevelId};
+    }
+    
     DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
 
     return TRUE;
@@ -175,14 +218,15 @@ sub wms2work {
   
   my $cmd="";
 
-  $cmd .= "count=0\n";
-  $cmd .= "while [[ \$count -lt 5 ]] ; do\n";
+  $cmd .= "count=0; max=10; wait_delay=120\n";
+  $cmd .= "while [[ \$count -lt \$max ]] ; do\n";
   $cmd .= "  let count=count+1\n";
-  $cmd .= sprintf ( "  wget --no-verbose -O \${TMP_DIR}/%s ",$fileName );
-  $cmd .= sprintf ( " \"%s\" \n", $url);
+  $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
+  $cmd .= "  echo \"echec \$count/\$max: wait for \$wait_delay s\"\n";
+  $cmd .= "  sleep \$wait_delay\n";
   $cmd .= "done\n";
-  $cmd .= "if [ \$count -eq 5 ] ; then \n";
+  $cmd .= "if [ \$count -eq \$max ] ; then \n";
   $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
   $cmd .= "  echo \"url: $url\"\n";
   $cmd .= "  exit 1\n"; 
@@ -263,7 +307,7 @@ sub mergeNtiff {
   $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
   
   my $pyr = $self->{pyramid};
-  #"bicubique"; # TODO l'interpolateur pour les mtd sera "ppv"
+  #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
   # TODO pour les métadonnées ce sera 0
 
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
@@ -474,7 +518,13 @@ sub computeAboveImage {
   # A-t-on besoin de quelque chose en fond d'image?
   my $bg="";
   if (scalar @childList != 4){
-    if (-f $newImgDesc->getFilePath() ){
+      
+    if (-f $newImgDesc->getFilePath() && $node->{level} > 3) {
+        
+         # FIXME il faut comparer l'emprise de la dalle avec la couverture du système de 
+         # projection requêté pour savoir si le moissonnage est à faire. Pour le moment,
+         # on ne requête les niveaux 4 et supérieur (empirique).
+         
       # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
       my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
       $bg="-b $bgImgPath";
@@ -487,7 +537,7 @@ sub computeAboveImage {
         # copie avec tiffcp pour passer du format de cache au format de travail.
         $res.=$self->cache2work($node, "bgImg.tif");
       }
-    }else{
+    } else {
       # On a pas d'image alors on donne une couleur de no-data
       $bg='-n ' . $self->{nodata}->getColor();
     }

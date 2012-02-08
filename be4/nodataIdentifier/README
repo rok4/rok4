@@ -1,0 +1,11 @@
+
+Janvier 2012
+
+---------------------------------------------------------------------------------------------
+nodataIdentifier -n1 FFFFFF -n2 0000FF AvecNodata.tif
+---------------------------------------------------------------------------------------------
+
+
+Ce programme doit identifier les pixels de nodata (valeur n1) et leur affecter la nouvelle valeur (n2). On doit
+cependant faire attention à bien distinguer les pixels de nodata et les pixels légitimes de l'image contenant la
+valeur de nodata. Pour cela, on considère que le nodata touche le bord. On va donc partir de ces bords.

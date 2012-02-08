@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #ifndef KERNEL_H
 #define KERNEL_H
 
@@ -62,7 +99,7 @@ class Kernel {
    *
    *
    */
-  typedef enum {NEAREST_NEIGHBOUR, LINEAR, CUBIC, LANCZOS_2, LANCZOS_3, LANCZOS_4} KernelType;
+  typedef enum {UNKNOWN = 0, NEAREST_NEIGHBOUR = 1, LINEAR = 2, CUBIC = 3, LANCZOS_2 = 4, LANCZOS_3 = 5, LANCZOS_4 = 6} KernelType;
   
   /**
    * Factory permettant d'obtenir une instance d'un type de noyau donné.
@@ -89,7 +126,7 @@ class Kernel {
    * Fonction calculant les poids à appliquer aux pixels sources en fonction
    * du centre du pixel à calculer et du ratio de réchantillonage
    *
-   * @param W Tableau de coefficients d'interpollation à calculer.
+   * @param W Tableau de coefficients d'interpolation à calculer.
    * @param length Taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
    * @param x Valeur à interpoler
    * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
