@@ -127,12 +127,13 @@ int main(int argc, char **argv) {
     if(width % tilewidth || length % tilelength) {std::cerr << "Image size must be a multiple of tile size" << std::endl; exit(2);}  
     int tilex = width / tilewidth;
     int tiley = length / tilelength;
-
-    uint8_t* data=new uint8_t[tilelength*tilewidth*R.getSampleSize()];
+    
+    size_t dataSize = tilelength*tilewidth*R.getSampleSize();
+    uint8_t* data=new uint8_t[dataSize];
 
     for(int y = 0; y < tiley; y++) for(int x = 0; x < tilex; x++) {
         R.getWindow(x*tilewidth, y*tilelength, tilewidth, tilelength, data);
-        if(W.WriteTile(x, y, data, crop) < 0) {std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl; return 2;}
+        if(W.WriteTile(x, y, data, *dataSize, crop) < 0) {std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl; return 2;}
     }
 
     R.close();

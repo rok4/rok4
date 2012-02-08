@@ -81,6 +81,7 @@ typedef void Rok4Server;
         int width;
         int height;
         int channels;
+	char* format;
     } TileRef;
 
     typedef struct {
@@ -107,7 +108,10 @@ typedef void Rok4Server;
     HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
     HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
 
+// DEPRECATED
     TiffHeader* rok4GetTiffHeader ( int width, int height, int channels );
+
+TiffHeader* rok4GetTiffHeaderFormat(int width, int height, int channels, char* format, uint32_t possize);
     PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* palette );
     HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     void rok4DeleteRequest ( HttpRequest* request );

@@ -43,6 +43,7 @@
 #include "RawImage.h"
 #include "Decoder.h"
 #include "TiffEncoder.h"
+#include "TiffHeaderDataSource.h"
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
@@ -250,8 +251,8 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<JpegDecoder> ( encData );
     else if ( format==TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
-
-    //TODO LZW decoding
+    else if ( format==TIFF_LZW_INT8 || TIFF_LZW_FLOAT32 )
+        return new DataSourceDecoder<LzwDecoder> ( encData );
     LOGGER_ERROR ( "Type d'encodage inconnu : "<<format );
     return 0;
 }
@@ -267,14 +268,11 @@ DataSource* Level::getTile ( int x, int y ) {
     DataSource* source=getEncodedTile ( x, y );
     size_t size;
 
-    if ( format==TIFF_RAW_INT8 && source!=0 && source->getData ( size ) !=0 ) {
+	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( "GetTile Tiff" );
-        RawImage* raw=new RawImage ( tm.getTileW(),tm.getTileH(),channels,source );
-        TiffEncoder TiffStream ( raw );
-        return new DataSourceProxy ( new BufferedDataSource ( TiffStream ),*noDataSource );
+                TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
+                return new DataSourceProxy(fullTiffDS,*noDataSource);
     }
-    LOGGER_DEBUG ( "GetTile No Tiff" );
-    //TODO add TiffLZW Header
 
     return new DataSourceProxy ( source, *noDataSource );
 }
