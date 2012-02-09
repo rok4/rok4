@@ -43,9 +43,9 @@
 #include <list>
 #include <iostream>
 
-#define M_CLR    256    /* clear table marker */
-#define M_EOD    257    /* end-of-data marker */
-
+#define M_CLR    256          // clear table marker 
+#define M_EOD    257          // end-of-data marker 
+#define BUFFER_SIZE 256*256*4 // Default tile Size
 
 lzwDecoder::lzwDecoder(uint8_t maxBit) : maxBit(maxBit) {
     bitSize=9;
@@ -88,8 +88,8 @@ void lzwDecoder::clearDict() {
 
 
 uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos ) {
-
-    size_t outSize= inSize * 3;
+    
+    size_t outSize= (outPos?outPos:BUFFER_SIZE);
     uint8_t* out = new uint8_t[outSize];
     outPos=0;
     lzwWord outString = lzwWord();
@@ -164,9 +164,17 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
 
             for (lzwWord::iterator it = outString.begin(); it != outString.end(); it++) {
                 if (outPos >= outSize) {
-                    //  LOGGER_ERROR("Buffer too small");
-                    outPos = 0;
-                    return NULL;
+                    uint8_t* tmpBuffer = new uint8_t[(outSize*2)];
+                    if (tmpBuffer) { // Enlarge your Buffer
+                        memset(tmpBuffer+outSize ,0,outSize);
+                        memcpy(tmpBuffer, out, outSize);
+                        delete[] out;
+                        out = tmpBuffer;
+                        outSize *=2;
+                    } else { //Allocation error
+                        outPos = 0;
+                        return NULL;
+                    }
                 }
                 out[outPos++]= *it;
             }

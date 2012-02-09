@@ -50,6 +50,7 @@ class CppUnitLZW : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST ( largeString );
     CPPUNIT_TEST ( veryLargeString );
     CPPUNIT_TEST ( randomData );
+    CPPUNIT_TEST ( whiteData );
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -60,6 +61,7 @@ public:
     void largeString();
     void veryLargeString();
     void randomData();
+    void whiteData();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitLZW );
@@ -178,3 +180,14 @@ void CppUnitLZW::randomData()
     delete[] rawBuffer;
 }
 
+void CppUnitLZW::whiteData()
+{
+    size_t rawBufferSize = 256*256*3;
+    uint8_t* rawBuffer = new uint8_t[rawBufferSize];
+    for (size_t pos = rawBufferSize; pos; --pos){
+        rawBuffer[pos] = 255;
+    }
+
+    compressUncompress(rawBuffer,rawBufferSize);
+    delete[] rawBuffer;
+}

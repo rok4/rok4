@@ -280,7 +280,7 @@ DataSource* Level::getTile ( int x, int y ) {
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
     LOGGER_DEBUG ( "GetTile Image" );
-    if ( format==TIFF_RAW_FLOAT32 )
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32)
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
