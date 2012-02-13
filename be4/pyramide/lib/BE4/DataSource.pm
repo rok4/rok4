@@ -157,91 +157,90 @@ sub _init {
 
 ################################################################################
 # method: computeImageSource
-#   Load all image in a list of object BE4::ImageSource, and determmine the medium
-#   resolution of data.
+#   Load all image in a list of object BE4::ImageSource, determine the medium
+#   resolution of data, check components.
 
 sub computeImageSource {
-  my $self = shift;
-  
-  TRACE;
-  
-  my %resDict;
-  
-  my $lstImagesSources = $self->{images}; # it's a ref !
+    my $self = shift;
 
-  my $badRefCtrl = 0;
-  
-  my @listSourcePath = $self->getListImages();
-  
-  if (! @listSourcePath) {
-      ERROR ("Can not load data source !");
-      return FALSE;
-  }
-  
-  foreach my $filepath (@listSourcePath) {
-  
-    my $objImageSource = BE4::ImageSource->new($filepath);
-    
-    if (! defined $objImageSource) {
-      ERROR ("Can not load image source ('$filepath') !");
-      return FALSE;
+    TRACE;
+
+    my %resDict;
+
+    my $lstImagesSources = $self->{images}; # it's a ref !
+
+    my $badRefCtrl = 0;
+
+    my @listSourcePath = $self->getListData();
+
+    if (! @listSourcePath) {
+        ERROR ("Can not load data source !");
+        return FALSE;
     }
-    
-    # images reading and analysis
-    my @imageInfo  = $objImageSource->computeInfo();
-    # @imageInfo = (bitspersample,photometric,sampleformat,samplesperpixel)
-    if (! @imageInfo) {
-      ERROR ("Can not read image info ('$filepath') !");
-      return FALSE;
-    }
-    
-    if (! defined $self->{samplesperpixel}) {
-        # we have read the first image, components are empty. This first image will be the reference.
-        $self->{bitspersample} = $imageInfo[0];
-        $self->{photometric} = $imageInfo[1];
-        $self->{sampleformat} = $imageInfo[2];
-        $self->{samplesperpixel} = $imageInfo[3];
-    } else {
-        # we have already values. We must have the same components for all images
-        if (
-        ! ($self->{bitspersample} eq $imageInfo[0] && $self->{photometric} eq $imageInfo[1] &&
-         $self->{sampleformat} eq $imageInfo[2] && $self->{samplesperpixel} eq $imageInfo[3])) {
-            ERROR ("All images must have same components. This image ('$filepath') is different !");
+
+    foreach my $filepath (@listSourcePath) {
+
+        my $objImageSource = BE4::ImageSource->new($filepath);
+
+        if (! defined $objImageSource) {
+            ERROR ("Can not load image source ('$filepath') !");
             return FALSE;
         }
+
+        # images reading and analysis
+        my @imageInfo  = $objImageSource->computeInfo();
+        # @imageInfo = (bitspersample,photometric,sampleformat,samplesperpixel)
+        if (! @imageInfo) {
+            ERROR ("Can not read image info ('$filepath') !");
+            return FALSE;
+        }
+
+        if (! defined $self->{samplesperpixel}) {
+            # we have read the first image, components are empty. This first image will be the reference.
+            $self->{bitspersample} = $imageInfo[0];
+            $self->{photometric} = $imageInfo[1];
+            $self->{sampleformat} = $imageInfo[2];
+            $self->{samplesperpixel} = $imageInfo[3];
+        } else {
+            # we have already values. We must have the same components for all images
+            if (! ($self->{bitspersample} eq $imageInfo[0] && $self->{photometric} eq $imageInfo[1] &&
+                    $self->{sampleformat} eq $imageInfo[2] && $self->{samplesperpixel} eq $imageInfo[3])) {
+                ERROR ("All images must have same components. This image ('$filepath') is different !");
+                return FALSE;
+            }
+        }
+
+        if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
+            $badRefCtrl++;
+        }
+        if ($badRefCtrl>1){
+            ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
+            return FALSE;
+        }
+
+        # FIXME :
+        #  - resolution resx == resy ?
+        #  - unique resolution for all image !
+        my $xRes = $objImageSource->getXres();
+        $resDict{$xRes} = 1;
+        $self->{resolution} = $xRes;
+        #
+        push @$lstImagesSources, $objImageSource;
     }
-    
-    if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
-      $badRefCtrl++;
+
+    if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
+        ERROR ("Can not found image source in '$self->{PATHIMG}' !");
+        return FALSE;
     }
-    if ($badRefCtrl>1){
-      ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
-      return FALSE;
-    }
-    
-    # FIXME :
-    #  - resolution resx == resy ?
-    #  - unique resolution for all image !
-    my $xRes = $objImageSource->getXres();
-    $resDict{$xRes} = 1;
-    $self->{resolution} = $xRes;
-    #
-    push @$lstImagesSources, $objImageSource;
-  }
-  
-  if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
-    ERROR ("Can not found image source in '$self->{PATHIMG}' !");
-    return FALSE;
-  }
-  
-  # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
-  #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
-# if (keys (%resDict) != 1) {
-#   ERROR ("The resolution of image source is not unique !");
-#   return FALSE;
-# }
-  
-  return TRUE;
+
+    # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
+    #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
+    # if (keys (%resDict) != 1) {
+    #   ERROR ("The resolution of image source is not unique !");
+    #   return FALSE;
+    # }
+
+    return TRUE;
 }
 ################################################################################
 # method: exportImageSource
@@ -316,15 +315,15 @@ sub computeBbox {
 
 
 ################################################################################
-# method: getListImages
+# method: getListData
 #   Get the list of all path data image (image tiff only !)
 #   
-sub getListImages {
+sub getListData {
   my $self = shift;
   
   TRACE;
   
-  my @lstImagesSources = ();
+  my @lstDataSources = ();
   
   my $pathdir = $self->{PATHIMG};
   
@@ -351,7 +350,7 @@ sub getListImages {
             ERROR ("Source can not contain images and BBOXes files !");
             return ();
         }
-        push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
+        push @lstDataSources, File::Spec->catdir($pathdir,$entry);
     }
     elsif ($entry=~/.*\.(txt|TXT)$/) {
         if (! defined($self->{IMG})) {
@@ -360,14 +359,14 @@ sub getListImages {
             ERROR ("Source can not contain images and BBOXes files !");
             return ();
         }
-        push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
+        push @lstDataSources, File::Spec->catdir($pathdir,$entry);
     }
 
   }
   
   closedir(DIR);
   
-  return @lstImagesSources;
+  return @lstDataSources;
 }
 ################################################################################
 # method: hasImages

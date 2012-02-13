@@ -59,8 +59,6 @@ our $VERSION = '0.0.1';
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant NODATA_IDENTIFIER => "nodataIdentifier";
-use constant CONVERT => "convert";
 
 ################################################################################
 # Preloaded methods go here.
@@ -290,69 +288,6 @@ sub computeInfo {
     }
     
     return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
-}
-
-################################################################################
-# method: treatNodata
-#
-
-sub treatNodata {
-    my $self = shift;
-    my $nodataColor = shift;
-
-    DEBUG(sprintf "Treat nodata for '%s'", $self->{PATHFILENAME});
-    
-    my $command = undef;
-
-    $command = $self->convert('FFFFFF','FEFEFE');
-    if (! system($command) == 0) {
-        ERROR (sprintf "Impossible to replace white with FEFEFE in '%s' with the command %s",
-                $self->{PATHFILENAME},
-                $command);
-        return FALSE;
-    }
-    
-    if ($nodataColor =~ m/^(FF|ff)+$/) {
-        # nodata is white (255 for all samples). 'convert' transform it to FEFEFE. We have to restore this value.
-        $command = $self->nodataIdentifier('FEFEFE','FFFFFF');
-        if (! system($command) == 0) {
-            ERROR (sprintf "Impossible to identify nodata in '%s' with the command %s",
-                    $self->{PATHFILENAME},
-                    $command);
-            return FALSE;
-        }
-    }
-    
-    return TRUE;
-
-}
-
-# method: nodataIdentifier
-#  create commands to identify pixel of nodata and change their value
-#---------------------------------------------------------------------------------------------------
-sub nodataIdentifier {
-    my $self = shift;
-    my $nodataColor = shift;
-    
-    my $cmd = sprintf ("%s -n1 %s",NODATA_IDENTIFIER, $nodataColor);
-    $cmd .= sprintf ( " -n2 %s", '0000FF');
-    $cmd .= sprintf ( " %s", $self->{PATHFILENAME});
-    return $cmd;
-}
-
-# method: convert
-#  create commands to switch pixel's color
-#---------------------------------------------------------------------------------------------------
-sub convert {
-    my $self = shift;
-    my $colorToRemove = shift;
-    my $colorToAdd = shift;
-    
-    my $cmd = sprintf ("%s -fill \"#%s\"",CONVERT, $colorToAdd);
-    $cmd .= sprintf ( " -opaque \"#%s\"", $colorToRemove);
-    $cmd .= sprintf ( " %s %s", $self->{PATHFILENAME}, $self->{PATHFILENAME});
-    return $cmd;
     
 }
 

@@ -297,6 +297,9 @@ sub getTileMatrix {
   return $self->{tilematrix}->{$level};
 }
 
+# method: getCountTileMatrix
+#  return the count of tile matrix in the TMS
+#---------------------------------------------------------------------------------------------------------------
 sub getCountTileMatrix {
   my $self = shift;
   
@@ -316,9 +319,7 @@ sub getBottomTileMatrix {
     TRACE;
 
     # FIXME : variable POSIX to put correctly !
-
-    my $bottomID = $self->getTileMatrixID(0);  
-    return $self->{tilematrix}->{$bottomID};
+    return $self->{tilematrix}->{$self->{levelbottom}};
 }
 
 # method: getTopTileMatrix
@@ -327,12 +328,9 @@ sub getBottomTileMatrix {
 sub getTopTileMatrix {
     my $self = shift;
 
-    my $TopOrder = $self->getCountTileMatrix()-1;
-    my $TopID = $self->getTileMatrixID($TopOrder);
-
     TRACE;
 
-    return $self->{tilematrix}->{$TopID};
+    return $self->{tilematrix}->{$self->{leveltop}};
 }
 
 # method: getTileMatrixID

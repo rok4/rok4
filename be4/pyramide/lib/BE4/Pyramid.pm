@@ -812,24 +812,10 @@ sub readConfPyramid {
         return FALSE;
     }
 
-    my $root   = $xmltree->getDocumentElement;
+    my $root = $xmltree->getDocumentElement;
 
-    # read tag value of tileMatrixSet, format and channel
+    # read tag value of nodata value, photometric and interpolation (not obligatory)
 
-    my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
-
-    if ($tagtmsname eq '') {
-        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
-        return FALSE;
-    }
-
-    my $tagformat = $root->findnodes('format')->to_literal;
-
-    if ($tagformat eq '') {
-        ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
-        return FALSE;
-    }
-    
     my $tagnodata = $root->findnodes('nodataValue')->to_literal;
 
     if ($tagnodata eq '') {
@@ -863,6 +849,22 @@ sub readConfPyramid {
         $taginterpolation = 'bicubic';
     }
 
+    # read tag value of tileMatrixSet, format and channel
+
+    my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
+
+    if ($tagtmsname eq '') {
+        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+        return FALSE;
+    }
+
+    my $tagformat = $root->findnodes('format')->to_literal;
+
+    if ($tagformat eq '') {
+        ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
+        return FALSE;
+    }
+
 #   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
     if ($tagformat eq 'TIFF_INT8') {
         WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
@@ -876,8 +878,8 @@ sub readConfPyramid {
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
 
     if ($tagsamplesperpixel eq '') {
-    ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
-    return FALSE;
+        ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
+        return FALSE;
     }
     
 
@@ -885,26 +887,26 @@ sub readConfPyramid {
 
     my $tmsname = $self->getTmsName();
     if (! defined $tmsname) {
-    WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
-    $tmsname = $tagtmsname;
+        WARN ("Null parameter for the name of TMS, so extracting from file pyramid !");
+        $tmsname = $tagtmsname;
     }
 
     if ($tmsname ne $tagtmsname) {
-    WARN ("Selecting the name of TMS in the file of the pyramid !");
-    $tmsname = $tagtmsname;
+        WARN ("Selecting the name of TMS in the file of the pyramid !");
+        $tmsname = $tagtmsname;
     }
 
     my $tmsfile = join(".", $tmsname, "tms"); 
     my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($self->getTmsPath(), $tmsfile));
 
     if (! defined $objTMS) {
-    ERROR ("Can not create object TileMatrixSet !");
-    return FALSE;
+        ERROR ("Can not create object TileMatrixSet !");
+        return FALSE;
     }
 
     # save it if doesn't exist !
     if (! defined ($self->getTileMatrixSet())) {
-    $self->{tms} = $objTMS;
+        $self->{tms} = $objTMS;
     }
     
     # save tms' extrema !
@@ -1074,7 +1076,6 @@ sub writeCachePyramid {
 
     TRACE;
 
-    #
     # Params useful to create a cache directory empty or not 
     #
     # pyr_data_path     : path of new pyramid (abs)
@@ -1125,9 +1126,14 @@ sub writeCachePyramid {
         @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
     }
 
+    # Now, @newdir contains :
+    #  - for a new pyramid : directories {IMAGE} and {NODATA}/{level}
+    #  - for an update pyramid : every directory which contains an image (data or nodata) in the old pyramid
+    # @newdir cannot be empty.
+
     if (! scalar @newdirs) {
-    ERROR("Listing of new cache directory is empty !");
-    return FALSE;
+        ERROR("Listing of new cache directory is empty !");
+        return FALSE;
     }
 
     foreach my $absdir (@newdirs) {
@@ -1510,7 +1516,6 @@ sub setTile {
 # 
 sub getTileMatrixSet {
   my $self = shift;
-  
   return $self->{tms};
 }
 sub setTileMatrixSet {
@@ -1519,7 +1524,12 @@ sub setTileMatrixSet {
   
   $self->{tms} = $tms;
 }
-#
+
+################################################################################
+
+# method: updateLimits
+#  compare old corners' coordinates with the news and update values.
+#---------------------------------------------------------------------------------------------------------------
 sub updateLimits {
     my $self = shift;
     my ($xMin, $yMin, $xMax, $yMax) = @_;
@@ -1530,6 +1540,10 @@ sub updateLimits {
     if (! defined $self->{dataLimits}->{ymax} || $yMax > $self->{dataLimits}->{ymax}) {$self->{dataLimits}->{ymax} = $yMax;}
 }
 
+# method: calculateTMLimits
+#  calculate tile limits for each level of the pyramid. It use the resolution and corners' coordinates. If values
+#  already exists, we take account of.
+#---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
     my $self = shift;
     
