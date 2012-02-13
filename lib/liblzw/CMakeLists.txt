@@ -41,7 +41,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS lzwDecoder.cpp lzw_encoder.c)
+set(${PROJECT_NAME}_SRCS lzwDecoder.cpp lzwEncoder.cpp lzw_encoder.c)
 
 
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})

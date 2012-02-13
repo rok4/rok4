@@ -38,8 +38,8 @@
 #include "lzwDecoder.h"
 
 #include "Logger.h"
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstring>
 #include <list>
 #include <iostream>
 
