@@ -39,7 +39,6 @@
  * \file createNodata.cpp
  * \brief création d'une image avec une seule valeur, pour la tuile de nodata
  * \author IGN
-*
 */
 
 #include "TiledTiffWriter.h"
@@ -47,7 +46,6 @@
 #include <iostream>
 #include <string.h>
 #include "tiffio.h"
-#include <jpeglib.h>
 
 void usage() {
     std::cerr << "createNodata -n nodata -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3] output_file"<< std::endl;
@@ -153,7 +151,8 @@ int main(int argc, char* argv[]) {
     // nodata treatment
     // input data creation : the same value (nodata) everywhere
     int bytesperpixel = sampleperpixel*bitspersample/8;
-    uint8_t data[imageheight*imagewidth*bytesperpixel], *pdata = data;
+    uint8_t* data = new uint8_t[imageheight*imagewidth*bytesperpixel];
+    uint8_t *pdata = data;
     
     // Case float32
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
@@ -185,16 +184,15 @@ int main(int argc, char* argv[]) {
             pdata++;
         }
     }
-    else
-        error("sampleformat/bitspersample not supported (float/32 or uint/8)");
-        
+    else {error("sampleformat/bitspersample not supported (float/32 or uint/8)");}
+    
     TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,sampleformat);
 
-
     if(W.WriteTile(0, 0, data) < 0) {std::cerr << "Error while writting tile of nodata" << std::endl; return 2;}
-
     if(W.close() < 0) {std::cerr << "Error while writting index" << std::endl; return 2;}
-    
+  
+    delete [] data;
+
     return 0;
 }
 

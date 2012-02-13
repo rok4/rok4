@@ -129,7 +129,7 @@ class TiledTiffWriter {
 
     std::ofstream output;  // tiff file output stream
 
-
+    size_t BufferSize;
     uint8_t* Buffer, *PNG_buffer;
     z_stream zstream;
     struct jpeg_compress_struct cinfo;

@@ -37,6 +37,7 @@
 
 #include "TiledTiffWriter.h"
 #include "byteswap.h"
+#include "lzwEncoder.h"
 #include <string.h>
 #include <iostream>
 #include <algorithm>
@@ -198,7 +199,8 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     tilelinesize = tilewidth*samplesperpixel*bitspersample/8;
     rawtilesize = tilelinesize*tilelength;
 
-    Buffer = new uint8_t[2*rawtilesize];
+    BufferSize = 2*rawtilesize;
+    Buffer = new uint8_t[BufferSize];
 
 // z compression initalization
     if(compression == COMPRESSION_PNG) {
@@ -256,7 +258,20 @@ size_t TiledTiffWriter::computeRawTile(uint8_t *buffer, uint8_t *data) {
 }
 
 size_t TiledTiffWriter::computeLzwTile(uint8_t *buffer, uint8_t *data) {
-    return lzw_encode(data, rawtilesize, buffer);
+    
+    size_t outSize;
+
+    lzwEncoder LZWE;
+    uint8_t* temp = LZWE.encode(data, rawtilesize, outSize);
+    
+    if (outSize > BufferSize) {
+        delete[] Buffer;
+        BufferSize = outSize * 2;
+        Buffer = new uint8_t[BufferSize];
+    }
+    memcpy(buffer,temp,outSize);
+    
+    return outSize;
 }
 
 

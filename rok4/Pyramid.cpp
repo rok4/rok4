@@ -72,13 +72,19 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
         if ( format==TIFF_RAW_INT8 ) {
             TiffEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
             noDataSource = new BufferedDataSource ( dataStream );
-        } else if ( format==TIFF_JPG_INT8 ) {
+        } else if ( format==TIFF_LZW_INT8 ) {
+            TiffEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
+            noDataSource = new BufferedDataSource ( dataStream );
+        }  else if ( format==TIFF_JPG_INT8 ) {
             JPEGEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
             noDataSource = new BufferedDataSource ( dataStream );
         } else if ( format==TIFF_PNG_INT8 ) {
             PNGEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
             noDataSource = new BufferedDataSource ( dataStream );
         } else if ( format==TIFF_RAW_FLOAT32 ) {
+            BilEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
+            noDataSource = new BufferedDataSource ( dataStream );
+        } else if ( format==TIFF_LZW_FLOAT32 ) {
             BilEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
             noDataSource = new BufferedDataSource ( dataStream );
         } else

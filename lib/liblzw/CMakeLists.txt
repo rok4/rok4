@@ -41,7 +41,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS lzw_encoder.c)
+set(${PROJECT_NAME}_SRCS lzwDecoder.cpp lzwEncoder.cpp lzw_encoder.c)
 
 
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
@@ -51,6 +51,10 @@ add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
 
 include(ROK4Dependencies)
 
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+
+#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+#set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff lzw)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -66,14 +70,13 @@ target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
-  ENABLE_TESTING()
- 
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit) 
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
+    ENABLE_TESTING()
+    add_definitions(-DUNITTEST)
     # Exécution des tests unitaires CppUnit
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
   "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
+    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
     TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
@@ -81,9 +84,17 @@ if(UNITTEST)
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
           ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
     ENDFOREACH(test)
-  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit) 
-endif(UNITTEST)
 
+    #Transformation des sorties Xml CppUnit en Xml Junit
+    find_package(Xsltproc)
+    if(XSLTPROC_FOUND)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY)
+    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
+		COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
+
+    add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
+    endif(XSLTPROC_FOUND)
+endif(UNITTEST)
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
@@ -120,7 +131,6 @@ FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_C
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
 
-
 #Installe la documentation
 if(BUILD_DOC)
 if(DOXYGEN_FOUND)
@@ -128,8 +138,7 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
+
 
 
 
