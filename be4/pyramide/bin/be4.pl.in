@@ -510,8 +510,6 @@ sub doIt {
       ERROR ("Can not prepare process !");
       return FALSE;
     }
-    
-#ALWAYS (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));#TEST#
 
     ##################
     # write the pyramid cache

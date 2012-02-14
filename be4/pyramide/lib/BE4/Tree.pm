@@ -169,9 +169,8 @@ sub _load {
         $self->{levelIdx}{$tmList[$i]->getID()} = $i;
     }
 
-
     # initialisation de la transfo de coord du srs des données initiales vers
-    # le srs de la pyramide. Si les srs sont identique on laisse undef.
+    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
     my $ct = undef;  
     if ($tms->getSRS() ne $src->getSRS()){
         my $srsini= new Geo::OSR::SpatialReference;
@@ -199,7 +198,6 @@ sub _load {
     } else {
         $self->{topLevelId} = $tmList[$#tmList]->getID();
     }
-
 
     # Intitialisation du bottomLevel:
     #  - En priorité celui fourni en paramètre
@@ -231,10 +229,13 @@ sub _load {
     my $tm = $tms->getTileMatrix($self->{bottomLevelId});
 
     my @images = $src->getImages();
-
     foreach my $objImg (@images){
-        # On reprojette l'emprise si nécessaire 
+        # On reprojette l'emprise si nécessaire
         my %bbox = $self->computeBBox($objImg, $ct);
+        if ($bbox{xMin} == 0 && $bbox{xMax} == 0) {
+            ERROR(sprintf "Impossible to compute BBOX for the image '%s'. Probably limits are reached !",$objImg->getName());
+            return FALSE;
+        }
 
         # pyramid's limits update : we store data's limits in the object Pyramid
         $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
@@ -422,7 +423,7 @@ sub computeBBox(){
   TRACE;
   
   my %BBox = ();
-  
+
   if (!defined($ct)){
     $BBox{xMin} = Math::BigFloat->new($img->getXmin());
     $BBox{yMin} = Math::BigFloat->new($img->getYmin());
@@ -468,7 +469,14 @@ sub computeBBox(){
   for my $i (@{[0..$#polygon]}) {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
-    my $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]);
+
+    my $p = 0;
+    eval { $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]); };
+    if ($@) {
+        ERROR($@);
+        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
+        return [0,0,0,0];
+    }
 
     if ($i==0) {
       $xmin_reproj= $xmax_reproj= @{$p}[0];
@@ -536,11 +544,23 @@ sub computeSrcRes(){
   my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
   foreach my $img (@imgs){
     # FIXME: il faut absoluement tester les erreurs ici:
-    #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà  de 85.05°.
-    
-    my $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin());
+    #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà de 85.05°.
+   
+    my $p1 = 0;
+    eval { $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin()); };
+    if ($@) {
+        ERROR($@);
+        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmin(),$img->getYmin());
+        return -1;
+    }
 
-    my $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax());
+    my $p2 = 0;
+    eval { $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax()); };
+    if ($@) {
+        ERROR($@);
+        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmax(),$img->getYmax());
+        return -1;
+    }
 
     # JPB : FIXME attention au erreur d'arrondi avec les divisions 
     my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());

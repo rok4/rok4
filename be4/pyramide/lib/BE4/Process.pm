@@ -170,7 +170,6 @@ sub _init {
     #    use case with only a transformation proj or compression without data ?
 
     #  it's an object !
-  
     
     $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
 
