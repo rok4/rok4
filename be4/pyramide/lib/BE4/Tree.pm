@@ -176,13 +176,15 @@ sub _load {
         my $srsini= new Geo::OSR::SpatialReference;
         eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
         if ($@) {
-            ERROR(Geo::GDAL::GetLastErrorMsg());
+            ERROR($@);
+            ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$src->getSRS());
             return FALSE;
         }
         my $srsfin= new Geo::OSR::SpatialReference;
         eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
         if ($@) {
-            ERROR(Geo::GDAL::GetLastErrorMsg());
+            ERROR($@);
+            ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$tms->getSRS());
             return FALSE;
         }
         $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
@@ -194,6 +196,10 @@ sub _load {
     my $toplevel = $self->{pyramid}->getTopLevel();
 
     if (defined $toplevel) {
+        if (! exists $self->{levelIdx}{$toplevel}) {
+            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$toplevel);
+            return FALSE;
+        }
         $self->{topLevelId} = $toplevel;
     } else {
         $self->{topLevelId} = $tmList[$#tmList]->getID();
@@ -206,7 +212,12 @@ sub _load {
     #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
     #  le plus bas de la pyramide.
     my $bottomlevel = $self->{pyramid}->getBottomLevel();
-        if (defined $bottomlevel) {
+    
+    if (defined $bottomlevel) {
+        if (! exists $self->{levelIdx}{$bottomlevel}) {
+            ERROR(sprintf "The bottom level defined in configuration ('%s') does not exist in the TMS !",$bottomlevel);
+            return FALSE;
+        }
         $self->{bottomLevelId} = $bottomlevel;
     } else {
         my $projSrcRes = $self->computeSrcRes($ct);

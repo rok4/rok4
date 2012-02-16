@@ -255,6 +255,9 @@ sub computeInfo {
     # forced formatting string !
     my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
 
+    ALWAYS(sprintf "\n - xmin : %s\n - dx : %s\n - rx : %s\n - ymax : %s\n - ry : %s\n - ndy : %s\n",
+          $xmin,$dx,$rx,$ymax,$ry,$ndy); #TEST#
+
     # FIXME : precision ?
     $self->{xmin} = sprintf "%.8f", $xmin;
     $self->{xmax} = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize};
@@ -270,17 +273,11 @@ sub computeInfo {
 
 
     #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-    #      $self->{xmin},
-    #      $self->{xmax},
-    #      $self->{ymin},
-    #      $self->{ymax},
-    #      $self->{xres},
-    #      $self->{yres},
-    #      $self->{xcenter},
-    #      $self->{ycenter},
+    #      $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
+    #      $self->{xres},$self->{yres},
+    #      $self->{xcenter},$self->{ycenter},
     #      $self->{pixelsize},
-    #      $self->{height},
-    #      $self->{width});
+    #      $self->{height},$self->{width});
     
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");

@@ -188,8 +188,8 @@ sub computeImageSource {
         }
 
         # images reading and analysis
-        my @imageInfo  = $objImageSource->computeInfo();
-        # @imageInfo = (bitspersample,photometric,sampleformat,samplesperpixel)
+        my @imageInfo = $objImageSource->computeInfo();
+        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
         if (! @imageInfo) {
             ERROR ("Can not read image info ('$filepath') !");
             return FALSE;
