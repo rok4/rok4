@@ -63,7 +63,7 @@ size_t BilEncoder::read(uint8_t *buffer, size_t size) {
 		offset += linesize;
 	}
 
-	delete buf_f;
+	delete[] buf_f;
 
 	return offset;
 }
