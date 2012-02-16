@@ -1518,7 +1518,7 @@ bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, 
         return false;
     }
 
-    // générer les TMS décrits par les fichiers.
+    // générer les styles décrits par les fichiers.
     for ( unsigned int i=0; i<styleFiles.size(); i++ ) {
         Style * style;
         style = buildStyle ( styleFiles[i],inspire );

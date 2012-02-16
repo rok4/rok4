@@ -130,8 +130,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 /**
 * @brief Construction du serveur
 */
-Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList ) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ), threads ( nbThread ) {
+Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList) :
+        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList) , threads ( nbThread ) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );
     buildWMSCapabilities();

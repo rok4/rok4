@@ -150,7 +150,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
-    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList );
+    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList);
 }
 
 /**
@@ -244,11 +244,11 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-        std::string tmId,mimeType,format;
+    std::string tmId,mimeType,format;
     int x,y;
     Style* style =0;
     // Analyse de la requete
-        DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style);
+    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style);
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -271,19 +271,19 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->filename=new char[imageFilePath.length() +1];
     strcpy ( tileRef->filename,imageFilePath.c_str() );
 
-	tileRef->type=new char[mimeType.length()+1];
-	strcpy(tileRef->type,mimeType.c_str());
+    tileRef->type=new char[mimeType.length()+1];
+    strcpy(tileRef->type,mimeType.c_str());
 
     tileRef->width=level->getTm().getTileW();
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
 
-	format = format::toString(layer->getDataPyramid()->getFormat());
-	tileRef->format= new char[format.length()+1];
-	strcpy(tileRef->format, format.c_str());
-	
+    format = format::toString(layer->getDataPyramid()->getFormat());
+    tileRef->format= new char[format.length()+1];
+    strcpy(tileRef->format, format.c_str());
+
     //Palette uniquement PNG pour le moment
-	if (mimeType == "image/png"){
+    if (mimeType == "image/png") {
         palette->size = style->getPalette()->getPalettePNGSize();
         palette->data = style->getPalette()->getPalettePNG();
     } else {
@@ -378,12 +378,12 @@ TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
 
 TiffHeader* rok4GetTiffHeaderFormat(int width, int height, int channels, char* format, uint32_t possize)
 {
-	TiffHeader* header = new TiffHeader;
-	size_t tiffHeaderSize;
-	const uint8_t* tiffHeader;
-	TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(0,format::fromString(format),channels,width,height,possize);
-	tiffHeader = fullTiffDS->getData(tiffHeaderSize);
-	memcpy(header->data,tiffHeader,tiffHeaderSize); 
+    TiffHeader* header = new TiffHeader;
+    size_t tiffHeaderSize;
+    const uint8_t* tiffHeader;
+    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(0,format::fromString(format),channels,width,height,possize);
+    tiffHeader = fullTiffDS->getData(tiffHeaderSize);
+    memcpy(header->data,tiffHeader,tiffHeaderSize);
 }
 
 
@@ -452,7 +452,7 @@ void rok4DeleteResponse ( HttpResponse* response ) {
 void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->filename;
     delete[] tileRef->type;
-	delete[] tileRef->format;
+    delete[] tileRef->format;
 }
 
 /**
@@ -488,11 +488,15 @@ void rok4KillServer ( Rok4Server* server ) {
     LOGGER_INFO ( "Extinction du serveur ROK4" );
 
     std::map<std::string,TileMatrixSet*>::iterator iTms;
-    for ( iTms=server->getTmsList().begin();iTms!=server->getTmsList().end();iTms++ )
+    for ( iTms = server->getTmsList().begin(); iTms != server->getTmsList().end(); iTms++ )
         delete ( *iTms ).second;
 
+    std::map<std::string, Style*>::iterator iStyle;
+    for ( iStyle = server->getStyleList().begin(); iStyle != server->getStyleList().end(); iStyle++)
+        delete ( *iStyle).second;
+
     std::map<std::string, Layer*>::iterator iLayer;
-    for ( iLayer=server->getLayerList().begin();iLayer!=server->getLayerList().end();iLayer++ )
+    for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
         delete ( *iLayer ).second;
 
     // TODO Supprimer le logger
