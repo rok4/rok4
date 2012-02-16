@@ -74,6 +74,8 @@ private:
     std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
     std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
 
+    char* projEnv;
+    
     static void* thread_loop ( void* arg );
 
     int GetDecimalPlaces ( double number );
@@ -87,6 +89,7 @@ private:
     void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
 
 public:
+    
     ServicesConf& getServicesConf() {
         return servicesConf;
     }
@@ -108,9 +111,10 @@ public:
     DataSource* getTile ( Request* request );
     DataStream* WMTSGetCapabilities ( Request* request );
 
+    char* getProjEnv() { return projEnv;}
     void run();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv );
 
 };
 

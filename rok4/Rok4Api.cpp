@@ -87,8 +87,9 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     int nbThread,logFilePeriod;
     LogLevel logLevel;
     bool reprojectionCapability;
+    char* projEnv;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv ) ) {
         std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
         return false;
     }
@@ -150,7 +151,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
-    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList);
+    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv);
 }
 
 /**
@@ -204,6 +205,7 @@ HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hos
     HttpResponse* response=initResponseFromSource ( /*new BufferedDataSource(*stream)*/source );
     delete request;
     delete stream;
+    delete source;
     return response;
 }
 
@@ -468,6 +470,7 @@ void rok4DeleteTiffHeader ( TiffHeader* header ) {
 */
 
 void rok4DeletePngPaletteHeader ( PngPaletteHeader* header ) {
+    free (header->data);
     delete header;
 }
 
@@ -499,6 +502,7 @@ void rok4KillServer ( Rok4Server* server ) {
     for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
         delete ( *iLayer ).second;
 
+    free (server->getProjEnv());
     // TODO Supprimer le logger
 }
 

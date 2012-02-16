@@ -962,9 +962,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             std::string str_crs ( pElem->GetText() );
             // On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
             CRS* crs = new CRS ( str_crs );
-            if ( !crs->isProj4Compatible() )
+            if ( !crs->isProj4Compatible() ) {
                 LOGGER_WARN ( "Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" );
-            else {
+                delete crs;
+            } else {
                 LOGGER_INFO ( "         Ajout du crs "<<str_crs );
                 WMSCRSList.push_back ( crs );
             }
@@ -1075,7 +1076,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,inspire );
 }
 
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1196,7 +1197,6 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     // Définition de la variable PROJ_LIB à partir de la configuration
     std::string projDir;
 
-    char* projDirEnv;
     bool absolut=true;
     pElem=hRoot.FirstChild ( "projConfigDir" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
@@ -1219,17 +1219,16 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             free ( pwdBuff );
         }
     }
-    projDirEnv = ( char* ) malloc ( 8+2+PATH_MAX );
-    memset ( projDirEnv,'\0',8+2+PATH_MAX );
-    strcat ( projDirEnv,"PROJ_LIB=" );
-    strcat ( projDirEnv,projDir.c_str() );
-    std::cerr << projDirEnv << std::endl;
+    projEnv = ( char* ) malloc ( 8+2+PATH_MAX );
+    memset ( projEnv,'\0',8+2+PATH_MAX );
+    strcat ( projEnv,"PROJ_LIB=" );
+    strcat ( projEnv,projDir.c_str() );
+    std::cerr << projEnv << std::endl;
 
-    if ( putenv ( projDirEnv ) !=0 ) {
+    if ( putenv ( projEnv ) !=0 ) {
         std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
         return false;
     }
-
 
     return true;
 }//parseTechnicalParam
@@ -1469,24 +1468,28 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     }
 
 
+    MetadataURL mtdMWS = MetadataURL("simple",metadataUrlWMS,metadataMediaTypeWMS);
+    MetadataURL mtdWMTS = MetadataURL("simple",metadataUrlWMTS,metadataMediaTypeWMTS);
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
                                       accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, MetadataURL("simple",metadataUrlWMS,metadataMediaTypeWMS),
-                                      MetadataURL("simple",metadataUrlWMTS,metadataMediaTypeWMTS), postMode, inspire );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, inspire );
     return servicesConf;
 }
 
-bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir ) {
+bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
+                                     int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability,
+                                     std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
+                                     std::string &styleDir, char*& projEnv ) {
     std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir,projEnv );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
