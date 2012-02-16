@@ -123,7 +123,7 @@ PaletteDataSource::~PaletteDataSource()
 	dataSource->releaseData();
 	delete dataSource;
 	if(data)
-		delete data;
+		delete[] data;
 }
 
 
