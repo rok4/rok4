@@ -255,8 +255,7 @@ sub computeInfo {
     # forced formatting string !
     my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
 
-    ALWAYS(sprintf "\n - xmin : %s\n - dx : %s\n - rx : %s\n - ymax : %s\n - ry : %s\n - ndy : %s\n",
-          $xmin,$dx,$rx,$ymax,$ry,$ndy); #TEST#
+#ALWAYS(sprintf "\n - xmin : %s\n - dx : %s\n - rx : %s\n - ymax : %s\n - ry : %s\n - ndy : %s\n",$xmin,$dx,$rx,$ymax,$ry,$ndy); #TEST#
 
     # FIXME : precision ?
     $self->{xmin} = sprintf "%.8f", $xmin;

@@ -472,9 +472,7 @@ sub _load {
     DEBUG (sprintf "FORMAT = %s", Dumper($objFormat));
     
     # create TileMatrixSet !
-    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},
-                                                             $self->{pyramid}->{tms_name}));
-
+    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($self->{pyramid}->{tms_path},$self->{pyramid}->{tms_name}));
     
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
@@ -490,7 +488,7 @@ sub _load {
     
     # init. method has checked all parameters,
     # so we can only create all level...
-    
+
     return FALSE if (! $self->_fillToPyramid());
   }
   else 
@@ -1270,6 +1268,11 @@ sub readCachePyramid {
   my $dir = File::Spec->catdir($cachedir);
   my $searchitem = $self->FindCacheNode($dir);
   
+  if (! defined $searchitem) {
+    ERROR("Can not find cache file or directory");
+    return FALSE;
+  }
+
   DEBUG(Dumper($searchitem));
   
   # Info, cache file of old cache !
@@ -1305,7 +1308,7 @@ sub FindCacheNode {
   my $pyr_datapath = $self->getPyrDataPath();
 
   if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directory cache ?");
+    ERROR("Can not open directory cache (%s) ?",$directory);
     return undef;
   }
 
@@ -1891,6 +1894,18 @@ sub getBottomLevel {
 sub getTopLevel {
     my $self = shift;
     return $self->{pyramid}->{pyr_level_top};
+}
+
+sub setBottomLevel {
+    my $self = shift;
+    my $BottomLevel = shift;
+    $self->{pyramid}->{pyr_level_bottom} = $BottomLevel;
+}
+
+sub setTopLevel {
+    my $self = shift;
+    my $TopLevel = shift;
+    $self->{pyramid}->{pyr_level_top} = $TopLevel;
 }
 
 ################################################################################

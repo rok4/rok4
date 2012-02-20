@@ -109,10 +109,10 @@ sub new {
 
     my $class= ref($this) || $this;
     my $self = {
-    compression => undef, # ie raw
-    sampleformat => undef, # ie uint
-    bitspersample => undef, # ie 8
-    code => undef, # ie TIFF_RAW_INT8
+        compression => undef, # ie raw
+        sampleformat => undef, # ie uint
+        bitspersample => undef, # ie 8
+        code => undef, # ie TIFF_RAW_INT8
     };
 
     bless($self, $class);

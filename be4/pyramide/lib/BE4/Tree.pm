@@ -203,6 +203,8 @@ sub _load {
         $self->{topLevelId} = $toplevel;
     } else {
         $self->{topLevelId} = $tmList[$#tmList]->getID();
+ALWAYS(sprintf "Je mets le top level dans la pyramide : %s",$self->{topLevelId}); #TEST#
+        $self->{pyramid}->setTopLevel($self->{topLevelId});
     }
 
     # Intitialisation du bottomLevel:
@@ -231,6 +233,8 @@ sub _load {
             next if ($tm->getResolution() * 0.95  > $projSrcRes);
             $self->{bottomLevelId} = $tm->getID();
         }
+ALWAYS(sprintf "Je mets le bottom level dans la pyramide : %s",$self->{bottomLevelId}); #TEST#
+        $self->{pyramid}->setBottomLevel($self->{bottomLevelId});
     }
 
     # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:

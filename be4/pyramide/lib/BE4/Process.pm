@@ -178,14 +178,6 @@ sub _init {
         return FALSE;
     }
     
-    # save extrem pyramid's levels if doesn't exist !
-    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_top})) {
-        $self->{pyramid}->{pyramid}->{pyr_level_top} = $self->{tree}->{topLevelId};
-    }
-    if (! defined ($self->{pyramid}->{pyramid}->{pyr_level_bottom})) {
-        $self->{pyramid}->{pyramid}->{pyr_level_bottom} = $self->{tree}->{bottomLevelId};
-    }
-    
     DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
 
     return TRUE;
@@ -477,7 +469,7 @@ sub computeBottomImage {
     $res .= $self->mergeNtiff($confFilePathForScript);
   }
 
-  # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
+  # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
   $res .= $self->work2cache($node);
 
   # Si on a copié une image pour le fond, on la supprime maintenant

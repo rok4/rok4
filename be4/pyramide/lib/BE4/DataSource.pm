@@ -94,7 +94,6 @@ sub new {
     PATHIMG => undef, # path to images
     PATHMTD => undef, # path to metadata
     SRS     => undef, # ie proj4 !
-    IMG     => undef, # true if directory contains images, false for files with BBOXes
     #
     images  => [],    # list of images sources
     #
@@ -171,7 +170,7 @@ sub computeImageSource {
 
     my $badRefCtrl = 0;
 
-    my @listSourcePath = $self->getListData();
+    my @listSourcePath = $self->getListImages();
 
     if (! @listSourcePath) {
         ERROR ("Can not load data source !");
@@ -315,15 +314,15 @@ sub computeBbox {
 
 
 ################################################################################
-# method: getListData
+# method: getListImages
 #   Get the list of all path data image (image tiff only !)
 #   
-sub getListData {
+sub getListImages {
   my $self = shift;
   
   TRACE;
   
-  my @lstDataSources = ();
+  my @lstImagesSources = ();
   
   my $pathdir = $self->{PATHIMG};
   
@@ -331,43 +330,23 @@ sub getListData {
     ERROR ("Can not open directory source ('$pathdir') !");
     return undef;
   }
-
+  
   foreach my $entry (readdir DIR) {
     next if ($entry=~m/^\.{1,2}$/);
     next if (! -f File::Spec->catdir($pathdir,$entry));
-
+    
     # FIXME : type of data product (tif by default !)
     # but implemented too in Class ImageSource !
+    next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
     
-    # Datasource directory can contains 
-    #   - either images (TIFF format)
-    #   - or files (TXT format) with BBOXes
-    
-    if ($entry=~/.*\.(tif|TIF|tiff|TIFF)$/) {
-        if (! defined($self->{IMG})) {
-            $self->{IMG} = TRUE;
-        } elsif (! $self->{IMG}) {
-            ERROR ("Source can not contain images and BBOXes files !");
-            return ();
-        }
-        push @lstDataSources, File::Spec->catdir($pathdir,$entry);
-    }
-    elsif ($entry=~/.*\.(txt|TXT)$/) {
-        if (! defined($self->{IMG})) {
-            $self->{IMG} = FALSE;
-        } elsif ($self->{IMG}) {
-            ERROR ("Source can not contain images and BBOXes files !");
-            return ();
-        }
-        push @lstDataSources, File::Spec->catdir($pathdir,$entry);
-    }
-
+    push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
   }
   
   closedir(DIR);
   
-  return @lstDataSources;
+  return @lstImagesSources;
 }
+
 ################################################################################
 # method: hasImages
 #   
