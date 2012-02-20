@@ -184,7 +184,7 @@ bool PNGEncoder::eof()
 	return (line > image->height+1);
 }
 
-PNGEncoder::PNGEncoder(Image* image,Palette* palette) : image(image), line(-1), palette(palette) {
+PNGEncoder::PNGEncoder(Image* image,Palette* palette) : image(image), line(-1), palette(palette) , stubpalette(NULL) {
 	zstream.zalloc = Z_NULL;
 	zstream.zfree = Z_NULL;
 	zstream.opaque = Z_NULL;
@@ -194,7 +194,8 @@ PNGEncoder::PNGEncoder(Image* image,Palette* palette) : image(image), line(-1), 
 	linebuffer = new uint8_t[image->width * image->channels + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
 	linebuffer[0] = 0;
 	if (! palette) {
-		palette = new Palette();
+		stubpalette = new Palette();
+                palette = stubpalette;
 	}
 }
 
@@ -202,6 +203,8 @@ PNGEncoder::~PNGEncoder() {
 	deflateEnd(&zstream);
 	if(linebuffer) delete[] linebuffer;
 	delete image;
+        if (stubpalette)
+            delete stubpalette;
 }
 
 

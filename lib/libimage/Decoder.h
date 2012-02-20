@@ -82,7 +82,8 @@ public:
     DataSourceDecoder(DataSource* encData) : encData(encData), decData(0), decSize(0) {}
 
     ~DataSourceDecoder() {
-        delete decData;
+        if (decData) 
+            delete[] decData;
         delete encData;
     }
 
@@ -90,7 +91,7 @@ public:
         if (!decData && encData) {
             decData = Decoder::decode(encData, decSize);
             if (!decData) {
-                delete encData;
+                delete[] encData;
                 encData = 0;
             }
         }

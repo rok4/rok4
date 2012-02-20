@@ -59,6 +59,7 @@ bool isCrsProj4Compatible ( std::string crs ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
         // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+        pj_ctx_free ( ctx );
         return false;
     }
     bool isCompatible;
@@ -76,6 +77,7 @@ bool isCrsLongLat ( std::string crs ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
         // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+        pj_ctx_free ( ctx );
         return false;
     }
     bool isLongLat=pj_is_latlong ( pj );

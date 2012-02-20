@@ -60,6 +60,7 @@ protected:
 	virtual size_t write_IEND(uint8_t *buffer, size_t size);
 	void addCRC(uint8_t *buffer, uint32_t length);
 	Palette* palette;
+        Palette* stubpalette;
 
 public:
 	/** D */

@@ -94,7 +94,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         	if (buffer_m[c2+j]>=127)   // Seuillage subjectif du masque
                                 	memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
                         }
-                        delete buffer_m;
+                        delete [] buffer_m;
                 }
                 delete [] buffer_t;
 

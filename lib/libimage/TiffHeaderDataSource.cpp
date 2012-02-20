@@ -226,5 +226,5 @@ TiffHeaderDataSource::~TiffHeaderDataSource()
 		delete dataSource;
 	}
 	if(data)
-		delete data;
+		delete[] data;
 }

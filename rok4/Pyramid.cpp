@@ -181,5 +181,9 @@ Pyramid::~Pyramid() {
     std::map<std::string, DataSource*>::iterator itDataSource;
     for ( itDataSource=noDataSources.begin();itDataSource!=noDataSources.end();itDataSource++ )
         delete ( *itDataSource ).second;
+    
+    std::map<std::string, Level*>::iterator iLevel;
+    for ( iLevel=levels.begin();iLevel!=levels.end();iLevel++ )
+        delete ( *iLevel ).second;
 }
 

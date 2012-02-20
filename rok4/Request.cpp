@@ -705,7 +705,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( version=="" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,"Parametre VERSION absent.","wms" ) );
     if ( version!="1.3.0" )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.3.0 disponible seulement))","wmts" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.3.0 disponible seulement))","wms" ) );
     // LAYER
     std::string str_layer=getParam ( "layers" );
     if ( str_layer == "" )

@@ -172,6 +172,7 @@ bool Palette::operator!=(const Palette& other) const
 
 Palette::~Palette()
 {
-
+    if (pngPalette)
+        delete[] pngPalette;
 }
 
