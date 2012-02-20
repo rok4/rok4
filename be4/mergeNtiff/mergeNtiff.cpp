@@ -94,7 +94,7 @@
 */
 
 void usage() {
-    LOGGER_INFO ( " Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] " );
+    LOGGER_INFO ( " Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3/4] -b [8/32] -p[min_is_black/rgb/mask] " );
     LOGGER_INFO ( " Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray " );
 }
 
@@ -179,6 +179,7 @@ int parseCommandLine ( int argc, char** argv, char* imageListFilename, Kernel::K
                 }
                 if ( strncmp ( argv[i], "1",1 ) == 0 ) sampleperpixel = 1 ;
                 else if ( strncmp ( argv[i], "3",1 ) == 0 ) sampleperpixel = 3 ;
+                else if ( strncmp ( argv[i], "4",1 ) == 0 ) sampleperpixel = 4 ;
                 else {
                     LOGGER_ERROR ( "Erreur sur l'option -s" );
                     return -1;

@@ -277,6 +277,7 @@ sub work2cache {
   $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
   $cmd   .= sprintf ("-b %s ",    $tile->getBitsPerSample());
   $cmd   .= sprintf ("-a %s ",    $tile->getSampleFormat());
+  $cmd   .= sprintf ("-s %s ",    $tile->getSamplesPerPixel());
   $cmd   .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
   $cmd   .= sprintf ("%s", RESULT_TEST);
 

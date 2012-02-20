@@ -238,6 +238,15 @@ sub computeInfo {
         $samplesperpixel = 3;
     }
 
+    if ($Band == 4) {
+        foreach (@Interpretation) {
+            last if ($_ !~ m/(red|green|blue|alpha)band/);
+        }
+        $photometric     = "rgb";
+        $samplesperpixel = 4;
+ALWAYS("J'ai bien reconnu du 4 canaux"); #TEST#
+    }
+
     if ($Band == 1 && $Interpretation[0] eq "grayindex") {
         $photometric     = "gray";
         $samplesperpixel = 1;

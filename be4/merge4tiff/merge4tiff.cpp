@@ -252,7 +252,7 @@ void checkImages(
             error("Error writting output file: " + std::string(outputImage));     
 }
 
-int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
     int nbsamples = width * sampleperpixel;
     float  line_background[nbsamples];
     float  line1[2*nbsamples];
@@ -260,7 +260,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
     float  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,(float)nodata,sizeof(float)*nbsamples);
+    memset(line_background,nodata,sizeof(float)*nbsamples);
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -292,9 +292,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
                     float data[4];
                     int nbData = 0;
                     if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in];
-                    if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
-                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in];
-                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in + sampleperpixel];
+                    if (line1[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
+                    if (line2[pos_in] != nodata) data[nbData++]=line2[pos_in];
+                    if (line2[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
 
                     if (nbData>1) {
                         float value = 0.;
@@ -320,6 +320,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
 };
 
 int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double gamma, int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+    
     uint8 MERGE[1024];
     for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gamma) * 255.);
 
@@ -405,21 +406,21 @@ int main(int argc, char* argv[]) {
                 compression,planarconfig,backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
                 
     // Cas MNT
-    if (sampleformat == 3 && bitspersample == 32) {
+    if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
         if (strnodata != 0) {
             nodata = atoi(strnodata);
-            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a DTM");
+            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a float samples image");
         } else {
             nodata = -99999;
         }
-        return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
+        return merge4float32(width,height,sampleperpixel,(float) nodata,BACKGROUND,INPUT,OUTPUT);
     }
     // Cas images
-    else if (sampleformat == 1 && bitspersample == 8) {
+    else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
         if (strnodata != 0) {
             int a1 = h2i(strnodata[0]);
             int a0 = h2i(strnodata[1]);
-            if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for image");
+            if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for integer samples image");
             nodata = 16*a1+a0;
         } else {
             nodata = 255;

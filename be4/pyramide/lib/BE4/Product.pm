@@ -85,7 +85,7 @@ INIT {
     sampleformat      => ['uint','float'],
     # compressionscheme => ['none','zip','jpeg','packbits','lzw','deflate'],
     photometric       => ['rgb','gray','mask'], # ie 'min_is_black'
-    samplesperpixel   => [1,3],
+    samplesperpixel   => [1,3,4],
     interpolation     => ['lanczos','nn','linear','bicubic'],
   );
   
@@ -120,7 +120,7 @@ END {}
 #  sampleformat                = uint,float
 #  ; compressionscheme           = none,jpeg,lzw,deflate,zip,packbits
 #  photometric                 = rgb,gray,(mask?)
-#  samplesperpixel             = 1,3
+#  samplesperpixel             = 1,3,4
 #  ; rowsstrip                 = 1
 #  ; planarconfiguration       = 1
 #  interpolation               = lanczos nn linear bicubic
