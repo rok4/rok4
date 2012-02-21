@@ -118,6 +118,7 @@ sub new {
   my $class= ref($this) || $this;
   my $self = {
 	id                => undef,
+        from_old_pyramid  => FALSE, # is this level in the old pyramid ?
 	dir_image         => undef,
 	compress_image    => undef, # ie "TIFF_RAW_INT8"
 	dir_nodata        => undef,
@@ -228,6 +229,9 @@ sub _init {
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
+    if (! exists($params->{from_old_pyramid})) {
+        $self->{from_old_pyramid}          = $params->{from_old_pyramid};
+    }
     
     return TRUE;
 }

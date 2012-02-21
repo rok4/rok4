@@ -104,7 +104,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
 
 // write the number of entries in the IFD
 
-    // We can have 4 samples, each sample with the same size
+    // We can have 4 samples per pixel, each sample with the same size
     *((uint16_t*) (p += 4)) = bitspersample;
     *((uint16_t*) (p += 2)) = bitspersample;
     *((uint16_t*) (p += 2)) = bitspersample;
@@ -115,6 +115,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     else 
         *((uint16_t*) (p += 2)) = 11;
 
+// Offset of the IFD is here
     *((uint16_t*) (p += 2)) = TIFFTAG_IMAGEWIDTH;      //
     *((uint16_t*) (p += 2)) = TIFF_LONG;               //
     *((uint32_t*) (p += 2)) = 1;                       //
@@ -290,8 +291,9 @@ size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
     memcpy(buffer, PNG_HEADER, sizeof(PNG_HEADER));
     *((uint32_t*)(buffer+16)) = bswap_32(tilewidth);
     *((uint32_t*)(buffer+20)) = bswap_32(tilelength);
-    if(photometric == PHOTOMETRIC_MINISBLACK) buffer[25] = 0; // gray
-    else buffer[25] = 2;                                      // RGB
+    if(samplesperpixel == 1) {buffer[25] = 0;} // gray
+    else if(samplesperpixel == 3) {buffer[25] = 2;} // RGB
+    else if(samplesperpixel == 4) {buffer[25] = 6;} // RGBA
 
     uint32_t crc = crc32(0, Z_NULL, 0);
     crc = crc32(crc, buffer + 12, 17);

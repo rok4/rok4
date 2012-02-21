@@ -605,7 +605,8 @@ sub _fillToPyramid {
             samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
             size              => [$tileperwidth, $tileperheight],
             dir_depth         => $self->getDirDepth(),
-            limit             => [undef, undef, undef, undef] # computed
+            limit             => [undef, undef, undef, undef], # computed
+            from_old_pyramid  => FALSE
     };
     my $objLevel = BE4::Level->new($params);
     
@@ -1033,6 +1034,7 @@ sub readConfPyramid {
                 size              => [$tagsize[0],$tagsize[1]],
                 dir_depth         => $tagdirdepth,
                 limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+                from_old_pyramid  => FALSE
             });
             
 

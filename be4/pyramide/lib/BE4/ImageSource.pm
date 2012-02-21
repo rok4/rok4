@@ -244,7 +244,6 @@ sub computeInfo {
         }
         $photometric     = "rgb";
         $samplesperpixel = 4;
-ALWAYS("J'ai bien reconnu du 4 canaux"); #TEST#
     }
 
     if ($Band == 1 && $Interpretation[0] eq "grayindex") {
@@ -263,8 +262,6 @@ ALWAYS("J'ai bien reconnu du 4 canaux"); #TEST#
 
     # forced formatting string !
     my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
-
-#ALWAYS(sprintf "\n - xmin : %s\n - dx : %s\n - rx : %s\n - ymax : %s\n - ry : %s\n - ndy : %s\n",$xmin,$dx,$rx,$ymax,$ry,$ndy); #TEST#
 
     # FIXME : precision ?
     $self->{xmin} = sprintf "%.8f", $xmin;
