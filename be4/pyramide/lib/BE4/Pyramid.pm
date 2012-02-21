@@ -177,6 +177,7 @@ sub new {
                     tms_level_max=> undef, # number
                     #
                     compression  => undef, # string value ie raw by default !
+                    compressionoption  => undef, # string value ie none by default !
                     gamma        => undef, # number ie 1 by default !
                     #
                     dir_depth    => undef, # number
@@ -309,6 +310,14 @@ sub _init {
     }
     $params->{dir_metadata} = undef;
     #
+    if (! exists($params->{compressionoption})) {
+        WARN ("Optional parameter 'compressionoption' is not set. The default value is none");
+        $params->{compression} = 'none';
+    }
+
+    $pyr->{compressionoption}  = $params->{compressionoption};
+    #
+
     if (! exists($params->{pyr_level_bottom})) {
         WARN ("Parameter 'pyr_level_bottom' has not been set. The default value is undef, then the min level will be calculated with source images resolution");
         $params->{pyr_level_bottom} = undef;
@@ -472,6 +481,18 @@ sub _load {
     # so, we must read file pyramid to initialyze them...
     
     return FALSE if (! $self->_fillFromPyramid());
+  }
+
+  # we are testing the compression option, depending on the compression
+
+  if ($self->{pyramid}->{compressionoption} ne 'none' && $self->{pyramid}->{compressionoption} ne 'crop') {
+    ERROR (sprintf "Compression option '%s' not allowed !",$self->{pyramid}->{compressionoption});
+    return FALSE;
+  }
+
+  if ($self->{pyramid}->{compressionoption} eq 'crop' && $self->{pyramid}->{compression} ne 'jpg') {
+    ERROR (sprintf "Crop option is just allowed for jpeg compression, not for compression '%s' !",$self->{pyramid}->{compression});
+    return FALSE;
   }
 
     # create NoData !
@@ -1426,6 +1447,12 @@ sub getDirDepth {
   my $self = shift;
   
   return $self->{pyramid}->{dir_depth};
+}
+#
+sub getCompressionOption {
+  my $self = shift;
+  
+  return $self->{pyramid}->{compressionoption};
 }
 #
 sub getInterpolation {

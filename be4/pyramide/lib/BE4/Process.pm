@@ -232,6 +232,7 @@ sub work2cache {
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tile= $self->{pyramid}->getTile();
   my $compression = $self->{pyramid}->getFormat()->getCompression();
+  my $compressionoption = $self->{pyramid}->getCompressionOption();
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
@@ -247,6 +248,11 @@ sub work2cache {
   $cmd   .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
   $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
   $cmd   .= sprintf ("-c %s ",    $compression);
+
+  if ($compressionoption eq 'crop') {
+    $cmd   .= sprintf ("-crop ");
+  }
+
   $cmd   .= sprintf ("-p %s ",    $tile->getPhotometric());
   $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
   $cmd   .= sprintf ("-b %s ",    $tile->getBitsPerSample());
