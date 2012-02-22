@@ -218,19 +218,19 @@ sub wms2work {
   
   my $cmd="";
 
-  $cmd .= "count=0; max=10; wait_delay=120\n";
-  $cmd .= "while [[ \$count -lt \$max ]] ; do\n";
+  $cmd .= "count=0; wait_delay=60\n";
+  $cmd .= "while :\n";
+  $cmd .= "do\n";
   $cmd .= "  let count=count+1\n";
   $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-  $cmd .= "  echo \"echec \$count/\$max: wait for \$wait_delay s\"\n";
+  $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
   $cmd .= "  sleep \$wait_delay\n";
+  $cmd .= "  let wait_delay=wait_delay*2\n";
+  $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
+  $cmd .= "    let wait_delay=3600\n";
+  $cmd .= "  fi\n";
   $cmd .= "done\n";
-  $cmd .= "if [ \$count -eq \$max ] ; then \n";
-  $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
-  $cmd .= "  echo \"url: $url\"\n";
-  $cmd .= "  exit 1\n"; 
-  $cmd .= "fi\n";
   
   return $cmd;
 }
