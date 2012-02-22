@@ -347,7 +347,7 @@ sub _init {
     #
     if (! exists($params->{compressionoption})) {
         WARN ("Optional parameter 'compressionoption' is not set. The default value is none");
-        $params->{compression} = 'none';
+        $params->{compressionoption} = 'none';
     }
 
     $pyr->{compressionoption}  = $params->{compressionoption};
