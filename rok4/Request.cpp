@@ -793,8 +793,8 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         }
     }*/
 
-    // Data are stored in Long/Lat, Geographical system need to be inverted except CRS:84
-    if ( crs.isLongLat() && ! ( crs.getAuthority() =="CRS" ) ) {
+    // Data are stored in Long/Lat, Geographical system need to be inverted in EPSG registry
+    if ((crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") && crs.isLongLat()) {
         bbox.xmin=bb[1];
         bbox.ymin=bb[0];
         bbox.xmax=bb[3];
