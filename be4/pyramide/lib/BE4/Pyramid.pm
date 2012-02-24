@@ -1081,8 +1081,7 @@ sub calculateExtremLevels {
     }
 
     if ($topOrder == $bottomOrder) {
-        ERROR(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$self->getBottomLevel());
-        return FALSE;
+        ALWAYS(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$self->getBottomLevel());
     }
 
     return TRUE;
@@ -1265,16 +1264,11 @@ sub calculateTMLimits {
         ERROR("Can not calculate TM limits, limit coordinates are not defined !");
         return FALSE;
     }
-
-    ALWAYS(sprintf "xmin : %s ymin : %s xmax : %s ymax : %s",
-        $self->{dataLimits}->{xmin},$self->{dataLimits}->{ymin},
-        $self->{dataLimits}->{xmax},$self->{dataLimits}->{ymax}); #TEST#
     
     my %levels = $self->getLevels();
     foreach my $objLevel (values %levels){
         if ($objLevel->{is_in_pyramid} == 0) {
-            # This level just come from the old pyramid. Limits are not update
-            ALWAYS(sprintf "Niveau dont limites pas mises à jour : %s",$objLevel->getID()); #TEST#
+            # This level is just present in the old pyramid. Limits are not update
             next;
         }
 

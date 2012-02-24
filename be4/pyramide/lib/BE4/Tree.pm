@@ -210,7 +210,6 @@ sub _load {
         }
 
         # pyramid's limits update : we store data's limits in the object Pyramid
-        ALWAYS(sprintf "image : %s xmin : %s ymin : %s xmax : %s ymax : %s",$objImg->{filename},$bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax}); #TEST#
         $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
 
         # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
@@ -218,8 +217,6 @@ sub _load {
         my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
         my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
         my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
-
-        my $level  = $self->{bottomLevelId};
 
         for (my $i = $iMin; $i<= $iMax; $i++){       
             for (my $j = $jMin; $j<= $jMax; $j++){
@@ -233,15 +230,13 @@ sub _load {
         }
     }
 
-
     DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
-
 
     # Si au bottomLevelId il y a moins de noeud que le nombre de processus demande,
     # on le definit tout de meme comme cutLevel. Tant pis, on aura des scripts vides.
     $self->{cutLevelId}=$self->{bottomLevelId};
     # Calcul des branches à partir des feuilles et de leur poids:
-    for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i < scalar(@tmList)-1; $i++){
+    for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i <= $self->{levelIdx}{$self->{topLevelId}}; $i++){
         my $levelId = $tmList[$i]->getID();
 
         # On compare au passage le nombre de noeuds du niveau courrant avec le nombre de processus demandé 
@@ -252,28 +247,32 @@ sub _load {
             $self->{cutLevelId}=$levelId;
             DEBUG(sprintf "cutLevelId become: %s", $levelId);
         }
-        my $aboveLevelId = $tmList[$i+1]->getID();
-        foreach my $refnode ($self->getNodesOfLevel($levelId)){
-            my $parentNodeId = int($refnode->{x}/2)."_".int($refnode->{y}/2);
-            if (!defined($self->{levels}{$aboveLevelId}{$parentNodeId})){
-                # On a une nouvelle image a calculer (merge4tiff)
-                $self->{levels}{$aboveLevelId}{$parentNodeId}=1;
-            }
-            if ($levelId eq $self->{bottomLevelId}){
-                # On ajoute le poids du calcul de l'image de base (mergeNtiff)
-                # TODO: ce poids est ici égal a celui de merge4tiff, pour bien faire
-                #       il faudrait lui trouver une ponderation plus realiste.
-                #       Ce n'est pas evident car dans le cas d'un moissonnage, on 
-                #       ne fait pas de mergeNtiff mais un wget.
-                $self->{levels}{$aboveLevelId}{$parentNodeId} += 1;
-            } else {
-                # On ajoute le poids calcule pour les noeuds du dessous
-                $self->{levels}{$aboveLevelId}{$parentNodeId} += $self->{levels}{$levelId}{$refnode->{x}."_".$refnode->{y}}; 
+        if ($i != $self->{levelIdx}{$self->{topLevelId}}) {
+            my $aboveLevelId = $tmList[$i+1]->getID();
+            foreach my $refnode ($self->getNodesOfLevel($levelId)){
+                my $parentNodeId = int($refnode->{x}/2)."_".int($refnode->{y}/2);
+                if (!defined($self->{levels}{$aboveLevelId}{$parentNodeId})){
+                    # On a une nouvelle image a calculer (merge4tiff)
+                    $self->{levels}{$aboveLevelId}{$parentNodeId}=1;
+                }
+                if ($levelId eq $self->{bottomLevelId}){
+                    # On ajoute le poids du calcul de l'image de base (mergeNtiff)
+                    # TODO: ce poids est ici égal a celui de merge4tiff, pour bien faire
+                    #       il faudrait lui trouver une ponderation plus realiste.
+                    #       Ce n'est pas evident car dans le cas d'un moissonnage, on 
+                    #       ne fait pas de mergeNtiff mais un wget.
+                    $self->{levels}{$aboveLevelId}{$parentNodeId} += 1;
+                } else {
+                    # On ajoute le poids calcule pour les noeuds du dessous
+                    $self->{levels}{$aboveLevelId}{$parentNodeId} += $self->{levels}{$levelId}{$refnode->{x}."_".$refnode->{y}}; 
+                }
             }
         }
 
         DEBUG(sprintf "N. Tile Cache by level (%s) : %d", $levelId, scalar keys( %{$self->{levels}{$levelId}} ));
     }  
+
+    $self->exportTree("/home/theo/TEST/BE4/tree.txt"); #TEST#
 
     return TRUE;
 }

@@ -653,7 +653,7 @@ sub computeTopBranches {
   TRACE;
     
   if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
-    return "echo \"Le script de fin n'a rien à faire\" \n";
+    return "echo \"Le script de fin n'a rien à faire. On ne fait alors que supprimer les images laissées par les scripts d'en dessous.\" \n";
   }
   
   my $res = '';
@@ -757,15 +757,22 @@ sub saveScript {
 #  temporaire du script final.
 #-------------------------------------------------------------------------------
 sub collectWorkImage(){
-  my $self = shift;
-  my ($node, $scriptId, $finishId) = @_;
-  
-  TRACE;
-  
-  my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
-  my $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
+    my $self = shift;
+    my ($node, $scriptId, $finishId) = @_;
 
-  return $code;
+    TRACE;
+
+    my $code = '';
+
+    if ($node->{level} eq $self->{tree}->{cutLevelId}) {
+        my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+        $code   = sprintf ("rm %s\n", $source);
+    } else {
+        my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+        $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
+    }
+
+    return $code;
 }
 
 # method: computeWholeTree
@@ -822,7 +829,7 @@ sub computeWholeTree {
             $scriptCode = $self->prepareScript($scriptId);
             foreach my $node (@{$nodeRack[$scriptCount-1]}){
                 INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
-                $scriptCode .= sprintf "echo \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"\n", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
+                $scriptCode .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
                 $scriptCode .= $self->computeBranch($node, $scriptId);
                 # on récupère l'image de travail finale pour le job de fin.
                 $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);

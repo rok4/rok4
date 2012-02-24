@@ -487,14 +487,13 @@ int sortImages ( std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >*
     // Initilisation du tableau de sortie
     pTabImageIn->push_back(ImageIn);
 
-    // Creation de vecteurs contenant des images avec une resolution en x homogene
+    // Creation de vecteurs contenant des images avec une resolution en y homogene
     // TODO : Attention, ils ne sont forcement en phase
     for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
     {
-        std::stable_sort(it->begin(),it->end(),InfResx); 
         for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
-        {
+        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.
+        || fabs((*it2)->getresx()-(*(it2+1))->getresx()) > __min((*it2)->getresx(), (*(it2+1))->getresx())/100.) {
             vTmp.assign(it2+1,it->end());
             it->assign(it->begin(),it2+1);
             pTabImageIn->push_back(vTmp);
@@ -899,8 +898,6 @@ int main ( int argc, char **argv ) {
         sleep ( 1 );
         return -1;
     }
-    
-std::cout << "nombre de paquet d'image : " << TabImageIn.size() << std::endl; // #TEST#
     
     LOGGER_DEBUG ( "Merge" );
     // Fusion des paquets d images
