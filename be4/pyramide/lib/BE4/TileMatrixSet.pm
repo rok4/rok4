@@ -276,7 +276,6 @@ sub getTileMatrixByArray {
     }
 
     return @levels;
-    # return sort {$a->getResolution() <=> $b->getResolution()} @levels;
 }
 
 # method: getTileMatrix
@@ -310,7 +309,7 @@ sub getCountTileMatrix {
   return $count;
 }
 
-# method: getTopTileMatrix
+# method: getBottomTileMatrix
 #  return the bottom tile matrix ID, with the smallest resolution and the order '0'.
 #---------------------------------------------------------------------------------
 sub getBottomTileMatrix {

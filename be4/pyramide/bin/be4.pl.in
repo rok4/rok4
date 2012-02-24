@@ -446,22 +446,7 @@ sub doIt {
     my $objPyramid     = undef;
     my $objData        = undef;
     my $objProcess     = undef;
-  
-    ##################
-    # create a pyramid
-    
-    ALWAYS(">>> Load a Pyramid ...");
-    
-    $objPyramid = BE4::Pyramid->new($params->{pyramid});
-    
-    if (! defined $objPyramid) {
-      ERROR ("Can not load Pyramid !");
-      return FALSE;
-    }
-  
-    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
-    # which are calculated in the Process creation
-    
+
     ###################
     # load data source
     
@@ -470,20 +455,18 @@ sub doIt {
         ALWAYS(">>> Load Data Source ...");
 
         $objData = BE4::DataSource->new($params->{datasource});
-        $objData->{nodataColor} = $objPyramid->{pyramid}->{color};
         
         if (! defined $objData) {
-          ERROR ("Can not load the data source !");
-          return FALSE;
+            ERROR ("Can not load the data source !");
+            return FALSE;
         }
         
         # load an image descriptor of data source
         ALWAYS(">>> Compute Data Source image ...");
         
-        if (! $objData->hasImages() ||
-            ! $objData->computeImageSource()) {
-          ERROR ("Can not compute the list of data image !");
-          return FALSE;
+        if (! $objData->hasImages() || ! $objData->computeImageSource()) {
+            ERROR ("Can not compute the list of data image !");
+            return FALSE;
         }
         
         # TODO : Metadata
@@ -491,6 +474,21 @@ sub doIt {
         
         DEBUG (sprintf "DATASOURCE (dump) = %s", Dumper($objData));
     }
+  
+    ##################
+    # create a pyramid
+    
+    ALWAYS(">>> Load a Pyramid ...");
+    
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objData);
+    
+    if (! defined $objPyramid) {
+        ERROR ("Can not load Pyramid !");
+        return FALSE;
+    }
+  
+    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
+    # which are calculated in the Process creation
   
     #######################
     # create process script
@@ -507,8 +505,8 @@ sub doIt {
                     );
   
     if (! defined $objProcess) {
-      ERROR ("Can not prepare process !");
-      return FALSE;
+        ERROR ("Can not prepare process !");
+        return FALSE;
     }
 
     ##################
@@ -517,8 +515,8 @@ sub doIt {
     ALWAYS(">>> Write Cache Pyramid ...");
 
     if (! $objPyramid->writeCachePyramid()) {
-      ERROR ("Can not write Pyramid Cache !");
-      return FALSE;
+        ERROR ("Can not write Pyramid Cache !");
+        return FALSE;
     }
     
     ##################
@@ -527,8 +525,8 @@ sub doIt {
     ALWAYS(">>> Write Configuration Pyramid ...");
 
     if (! $objPyramid->writeConfPyramid()) {
-      ERROR ("Can not write Pyramid File !");
-      return FALSE;
+        ERROR ("Can not write Pyramid File !");
+        return FALSE;
     }
   
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
@@ -539,8 +537,8 @@ sub doIt {
     ALWAYS(">>> Compute Process ...");
     
     if (! $objProcess->computeWholeTree()) {
-      ERROR ("Can not compute process !");
-      return FALSE;
+        ERROR ("Can not compute process !");
+        return FALSE;
     }
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
@@ -552,8 +550,8 @@ sub doIt {
     return TRUE if (! $opts{test});
     
     if (! $objProcess->processScript()) {
-      ERROR ("Can not execute process !");
-      return FALSE;
+        ERROR ("Can not execute process !");
+        return FALSE;
     }
     
     return TRUE;

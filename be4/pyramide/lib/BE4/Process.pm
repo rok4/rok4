@@ -209,19 +209,19 @@ sub wms2work {
   
   my $cmd="";
 
-  $cmd .= "count=0; max=10; wait_delay=120\n";
-  $cmd .= "while [[ \$count -lt \$max ]] ; do\n";
+  $cmd .= "count=0; wait_delay=60\n";
+  $cmd .= "while :\n";
+  $cmd .= "do\n";
   $cmd .= "  let count=count+1\n";
   $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
   $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-  $cmd .= "  echo \"echec \$count/\$max: wait for \$wait_delay s\"\n";
+  $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
   $cmd .= "  sleep \$wait_delay\n";
+  $cmd .= "  let wait_delay=wait_delay*2\n";
+  $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
+  $cmd .= "    let wait_delay=3600\n";
+  $cmd .= "  fi\n";
   $cmd .= "done\n";
-  $cmd .= "if [ \$count -eq \$max ] ; then \n";
-  $cmd .= "  echo \"wget n'a pas pu recuperer $fileName correctement: Erreur a la ligne \$(( \$LINENO - 1))\" >&2 \n" ;
-  $cmd .= "  echo \"url: $url\"\n";
-  $cmd .= "  exit 1\n"; 
-  $cmd .= "fi\n";
   
   return $cmd;
 }
@@ -258,6 +258,7 @@ sub work2cache {
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tile= $self->{pyramid}->getTile();
   my $compression = $self->{pyramid}->getFormat()->getCompression();
+  my $compressionoption = $self->{pyramid}->getCompressionOption();
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
@@ -273,6 +274,11 @@ sub work2cache {
   $cmd   .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
   $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
   $cmd   .= sprintf ("-c %s ",    $compression);
+  
+  if ($compressionoption eq 'crop') {
+    $cmd   .= sprintf ("-crop ");
+  }
+
   $cmd   .= sprintf ("-p %s ",    $tile->getPhotometric());
   $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
   $cmd   .= sprintf ("-b %s ",    $tile->getBitsPerSample());
@@ -285,7 +291,7 @@ sub work2cache {
 }
 
 # method: mergeNtiff
-#  Fusionne des images (mergeNtiff).
+#  compose la commande qui fusionne des images (mergeNtiff).
 #---------------------------------------------------------------------------------------------------
 sub mergeNtiff {
   my $self = shift;
@@ -313,8 +319,9 @@ sub mergeNtiff {
     $cmd .= sprintf ("%s" ,RESULT_TEST);
   return $cmd;
 }
+
 # method:merge4tiff
-#  Calcule une dalle d'un niveau de la pyramide en sous échantillonnant 4 dalles du niveau inférieur
+#  compose la commande qui calcule une dalle d'un niveau de la pyramide en sous échantillonnant 4 dalles du niveau inférieur
 #  et en les répartissant ainsi: NO, NE, SO, SE. 
 #---------------------------------------------------------------------------------------------------
 sub merge4tiff {
@@ -534,23 +541,27 @@ sub computeAboveImage {
         my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilePerWidth();
         my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilePerHeight();
 
-        if (-f $newImgDesc->getFilePath() && ! ($tooWide || $tooHigh)) {
+        if (-f $newImgDesc->getFilePath()) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
             my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
             $bg="-b $bgImgPath";
 
             if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
                 $self->{pyramid}->getFormat()->getCompression() eq 'png') {
-                # On doit chercher l'image de fond sur le WMS
-                $res .= $self->wms2work($node, "bgImg.tif");
+                # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
+                if ($tooWide || $tooHigh) {
+                    WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
+                    # On ne peut pas avoir d'image alors on donne une couleur de nodata
+                    $bg='-n ' . $self->{nodata}->getColor();
+                } else {
+                    # On peut et doit chercher l'image de fond sur le WMS
+                    $res .= $self->wms2work($node, "bgImg.tif");
+                }
             } else {
                 # copie avec tiffcp pour passer du format de cache au format de travail.
                 $res.=$self->cache2work($node, "bgImg.tif");
             }
         } else {
-            if ($tooWide || $tooHigh) {
-                WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
-            }
             # On a pas d'image alors on donne une couleur de nodata
             $bg='-n ' . $self->{nodata}->getColor();
         }

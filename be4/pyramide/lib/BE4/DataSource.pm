@@ -103,8 +103,6 @@ sub new {
     sampleformat => undef,
     samplesperpixel => undef,
     photometric => undef,
-    #
-    nodataColor => undef,
   };
 
   bless($self, $class);

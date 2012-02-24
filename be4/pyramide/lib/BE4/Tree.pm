@@ -159,6 +159,10 @@ sub _load {
     # initialisation pratique:
     my $tms    = $self->{pyramid}->getTileMatrixSet();
     my $src    = $self->{datasource};
+    
+    # récupération d'information dans la pyramide
+    $self->{topLevelId} = $self->{pyramid}->getTopLevel();
+    $self->{bottomLevelId} = $self->{pyramid}->getBottomLevel();
 
     # tilematrix list sort by resolution
     my @tmList = $tms->getTileMatrixByArray();
@@ -190,52 +194,6 @@ sub _load {
         $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
-    # Intitialisation du topLevel:
-    #  - En priorité celui fourni en paramètre
-    #  - Par defaut, c'est le plus haut niveau du TMS, 
-    my $toplevel = $self->{pyramid}->getTopLevel();
-
-    if (defined $toplevel) {
-        if (! exists $self->{levelIdx}{$toplevel}) {
-            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$toplevel);
-            return FALSE;
-        }
-        $self->{topLevelId} = $toplevel;
-    } else {
-        $self->{topLevelId} = $tmList[$#tmList]->getID();
-        $self->{pyramid}->setTopLevel($self->{topLevelId});
-    }
-
-    # Intitialisation du bottomLevel:
-    #  - En priorité celui fourni en paramètre
-    #  - Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
-    #  (réduite de 5%) est meilleure que celle des données sources.
-    #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
-    #  le plus bas de la pyramide.
-    my $bottomlevel = $self->{pyramid}->getBottomLevel();
-    
-    if (defined $bottomlevel) {
-        if (! exists $self->{levelIdx}{$bottomlevel}) {
-            ERROR(sprintf "The bottom level defined in configuration ('%s') does not exist in the TMS !",$bottomlevel);
-            return FALSE;
-        }
-        $self->{bottomLevelId} = $bottomlevel;
-    } else {
-        my $projSrcRes = $self->computeSrcRes($ct);
-        if ($projSrcRes < 0) {
-            ERROR("La resolution reprojetee est negative");
-            return FALSE;
-        }
-
-        $self->{bottomLevelId} = $tmList[0]->getID(); 
-        foreach my $tm (@tmList){
-            next if ($tm->getResolution() * 0.95  > $projSrcRes);
-            $self->{bottomLevelId} = $tm->getID();
-        }
-
-        $self->{pyramid}->setBottomLevel($self->{bottomLevelId});
-    }
-
     # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
     my ($ImgGroundWidth, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
@@ -252,6 +210,7 @@ sub _load {
         }
 
         # pyramid's limits update : we store data's limits in the object Pyramid
+        ALWAYS(sprintf "image : %s xmin : %s ymin : %s xmax : %s ymax : %s",$objImg->{filename},$bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax}); #TEST#
         $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
 
         # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
@@ -527,8 +486,6 @@ sub imgGroundSizeOfLevel(){
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tm  = $tms->getTileMatrix($levelId);
-  #my $xRes = $tm->getResolution(); 
-  #my $yRes =$tm->getResolution();
   my $xRes = Math::BigFloat->new($tm->getResolution()); 
   my $yRes = Math::BigFloat->new($tm->getResolution());
   my $imgGroundWidth   = $tm->getTileWidth()  * $self->{pyramid}->getTilePerWidth() * $xRes;
@@ -539,53 +496,6 @@ sub imgGroundSizeOfLevel(){
   return ($imgGroundWidth,$imgGroundHeight);
 }
 
-# method: computeSrcRes
-#  Retourne la meilleure résolution des images source. Ceci implique une 
-#  reprojection dans le cas où le SRS des images source n'est pas le même 
-#  que celui de la pyramide.
-#------------------------------------------------------------------------------
-sub computeSrcRes(){
-  my $self = shift;
-  my $ct = shift;
-  
-  TRACE();
-  
-  my $srcRes = $self->{datasource}->getResolution();
-  if (!defined($ct)){
-    return $srcRes;
-  }
-  my @imgs = $self->{datasource}->getImages();
-  my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
-  foreach my $img (@imgs){
-    # FIXME: il faut absoluement tester les erreurs ici:
-    #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà de 85.05°.
-   
-    my $p1 = 0;
-    eval { $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin()); };
-    if ($@) {
-        ERROR($@);
-        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmin(),$img->getYmin());
-        return -1;
-    }
-
-    my $p2 = 0;
-    eval { $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax()); };
-    if ($@) {
-        ERROR($@);
-        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmax(),$img->getYmax());
-        return -1;
-    }
-
-    # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());
-    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1]) / ($img->getYmax()-$img->getYmin());
-    
-    $res=$xRes if $xRes < $res;
-    $res=$yRes if $yRes < $res;
-  }
- 
-  return $res;
-}
 
 # method: getImgDescOfNode
 #  Retourne la description d'une image identifiée par node.

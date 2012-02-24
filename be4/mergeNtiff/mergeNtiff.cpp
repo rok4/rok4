@@ -485,20 +485,22 @@ int sortImages ( std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >*
     std::vector<Image*> vTmp;
 
     // Initilisation du tableau de sortie
-    pTabImageIn->push_back ( ImageIn );
+    pTabImageIn->push_back(ImageIn);
 
     // Creation de vecteurs contenant des images avec une resolution en x homogene
     // TODO : Attention, ils ne sont forcement en phase
-    for ( std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++ ) {
-        std::stable_sort ( it->begin(),it->end(),InfResx );
-        for ( std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++ )
-            if ( fabs ( ( *it2 )->getresy()- ( * ( it2+1 ) )->getresy() ) > __min ( ( *it2 )->getresy(), ( * ( it2+1 ) )->getresy() ) /100. ) {
-                vTmp.assign ( it2+1,it->end() );
-                it->assign ( it->begin(),it2+1 );
-                pTabImageIn->push_back ( vTmp );
-                return 0;
-                it++;
-            }
+    for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
+    {
+        std::stable_sort(it->begin(),it->end(),InfResx); 
+        for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
+        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
+        {
+            vTmp.assign(it2+1,it->end());
+            it->assign(it->begin(),it2+1);
+            pTabImageIn->push_back(vTmp);
+            return 0;
+            it++;
+        }
     }
 
 //TODO : A refaire proprement
@@ -897,6 +899,9 @@ int main ( int argc, char **argv ) {
         sleep ( 1 );
         return -1;
     }
+    
+std::cout << "nombre de paquet d'image : " << TabImageIn.size() << std::endl; // #TEST#
+    
     LOGGER_DEBUG ( "Merge" );
     // Fusion des paquets d images
     if ( mergeTabImages ( pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat ) < 0 ) {

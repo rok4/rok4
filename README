@@ -73,6 +73,9 @@ UNITTEST : compilation des tests unitaires (BOOL)
     make test 
   par défaut : FALSE 
 
+DEBUG_BUILD : compilation en mode debug (BOOL)
+ par défaut : FALSE
+
 RPM_PACKAGE : (EXPERIMENTAL)
   Création d'un paquet RPM à la place d'un tar.gz 
   make all doc package
