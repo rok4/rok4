@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
         else if(!output_file) output_file = argv[i];
         else error("Error : argument must specify exactly one input file and one output file");
     }
-    if(!output_file) error("Error : argument must specify exactly one input file and one output file");
+    if(!output_file || !input_file) error("Error : argument must specify exactly one input file and one output file");
     
     char commandConvert[1000];
     strcpy(commandConvert,"convert -fill \"#FEFEFE\" -opaque \"#FFFFFF\" ");

@@ -66,7 +66,7 @@ inline void convert(T* to, const T* from, size_t length) {
  * @param length Nombre d'éléments à convertir
  */
 #ifdef __SSE2__
-
+// Maximum value : 254
 inline void convert(float* to, const uint8_t* from, int length) {
   while( (intptr_t)to & 0x0f && length) {--length; *to++ = (float) *from++;}
   while(length & 0x0f) {--length; to[length] = (float) from[length];} // On s'arrange pour avoir un multiple de 16 d'éléments à traiter.

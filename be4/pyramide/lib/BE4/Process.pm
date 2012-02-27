@@ -653,7 +653,8 @@ sub computeTopBranches {
   TRACE;
     
   if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
-    return "echo \"Le script de fin n'a rien à faire. On ne fait alors que supprimer les images laissées par les scripts d'en dessous.\" \n";
+    INFO("Final script will be empty (except temporary files deletion)");
+    return "echo \"Final script have nothing to do, except to delete temporary images made by other scripts.\" \n";
   }
   
   my $res = '';
@@ -764,7 +765,7 @@ sub collectWorkImage(){
 
     my $code = '';
 
-    if ($node->{level} eq $self->{tree}->{cutLevelId}) {
+    if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
         my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
         $code   = sprintf ("rm %s\n", $source);
     } else {

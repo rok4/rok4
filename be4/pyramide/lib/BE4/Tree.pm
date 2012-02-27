@@ -270,9 +270,7 @@ sub _load {
         }
 
         DEBUG(sprintf "N. Tile Cache by level (%s) : %d", $levelId, scalar keys( %{$self->{levels}{$levelId}} ));
-    }  
-
-    $self->exportTree("/home/theo/TEST/BE4/tree.txt"); #TEST#
+    }
 
     return TRUE;
 }

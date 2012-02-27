@@ -1115,12 +1115,9 @@ sub createLevels {
         }
 
         if (exists $self->{levels}->{$tmID}) {
-            ALWAYS(sprintf "the level %s already exists",$tmID,$i); #TEST#
             $self->{levels}->{$tmID}->{is_in_pyramid} = 2;
             next;
         }
-
-        ALWAYS(sprintf "LevelID : %s & LevelOrder : %s",$tmID,$i); #TEST#
 
         my $tileperwidth     = $self->getTilePerWidth();
         my $tileperheight    = $self->getTilePerHeight();
@@ -1183,8 +1180,6 @@ sub createLevels {
         ERROR ("No level loaded !");
         return FALSE;
     }
-
-    #ALWAYS(sprintf "Niveaux :\n%s",Dumper($self->{levels})); #TEST#
 
     return TRUE;
 }
@@ -1374,16 +1369,6 @@ sub writeConfPyramid {
     my $bottomLevelOrder = $self->getLevelOrder($self->{pyramid}->{pyr_level_bottom});
 
     foreach my $objLevel (values %levels){
-        
-        if ($objLevel->{is_in_pyramid} == 0) {
-            ALWAYS(sprintf "this level was present in the old pyramid : %s",$objLevel->getID()); #TEST#
-        }
-        if ($objLevel->{is_in_pyramid} == 1) {
-            ALWAYS(sprintf "this level is present in the new pyramid : %s",$objLevel->getID()); #TEST#
-        }
-        if ($objLevel->{is_in_pyramid} == 2) {
-            ALWAYS(sprintf "this level is present in two pyramid : %s",$objLevel->getID()); #TEST#
-        }
 
         # image
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
