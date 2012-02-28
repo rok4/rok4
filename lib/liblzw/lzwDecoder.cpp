@@ -37,7 +37,6 @@
 
 #include "lzwDecoder.h"
 
-#include "Logger.h"
 #include <cstddef>
 #include <cstring>
 #include <list>
