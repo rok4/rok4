@@ -98,6 +98,7 @@ protected:
 
   string name(int kernel_type) {
     switch(kernel_type) {
+      case Kernel::UNKNOWN: return "(Default) Lanczos 3";
       case Kernel::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
       case Kernel::LINEAR: return "Linear";
       case Kernel::CUBIC: return "Cubic";
@@ -139,9 +140,11 @@ protected:
   }
 
   void performance() {
-    for(int i = 1; i <= 4; i++) 
-      for(int j = 0; j < 6; j++) 
+    for(int i = 1; i <= 4; i++){
+     // i=(i==2?++i:i);
+      for(int j = 0; j < 7; j++) 
         _chrono(i, j);
+    }
   }
 
 };
