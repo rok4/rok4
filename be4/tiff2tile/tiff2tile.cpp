@@ -41,34 +41,11 @@
 #include "tiffio.h"
 #include "TiffReader.h"
 #include "TiledTiffWriter.h"
+#include "TiffWhiteManager.h"
 
 void usage() {
     std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
     std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
-}
-
-int removeWhite(char* input) {
-    char commandConvert[1000];
-    strcpy(commandConvert,"convert -fill \"#FEFEFE\" -opaque \"#FFFFFF\" ");
-    strcat(commandConvert,input);
-    strcat(commandConvert," ");
-    strcat(commandConvert,input);
-    
-    if (system(commandConvert)) {
-        std::cerr << "Convert failed" << std::endl;
-        return 1;
-    }
-    
-    char commandNodataIdentifier[1000];
-    strcpy(commandNodataIdentifier,"nodataIdentifier -n1 FEFEFE -n2 FFFFFF ");
-    strcat(commandNodataIdentifier,input);
-    
-    if (system(commandNodataIdentifier)) {
-        std::cerr << "NodataIdentifier failed" << std::endl;
-        return 1;
-    }
-    
-    return 0;
 }
 
 int main(int argc, char **argv) {
@@ -156,8 +133,9 @@ int main(int argc, char **argv) {
     
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if (crop) {
-        if (removeWhite(input)) {
-            std::cerr << "Impossible to remove white pixels in this image : " << input << std::endl;
+        TiffWhiteManager TWM(input,input,true,true);
+        if (! TWM.treatWhite()) {
+            std::cerr << "Unbale to treat white pixels in this image : " << input << std::endl;
             exit(2);
         }
     }
