@@ -1,5 +1,5 @@
 #Défini le nom du projet 
-project(nodataIdentifier)
+project(removeFF)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
 if(NOT DEFINED BE4_VERSION)
@@ -10,6 +10,7 @@ endif(NOT DEFINED BE4_VERSION)
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -47,19 +48,21 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS nodataIdentifier.cpp )
+set(${PROJECT_NAME}_SRCS removeFF.cpp )
 
 
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
+add_dependencies(${PROJECT_NAME} tiff)
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg lzw image)
+set(DEP_LIBRARY tiff zlib jpeg)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -136,13 +139,14 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
   INSTALL(FILES README 
     DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
+
 if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   if(DOXYGEN_FOUND)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
-  endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+  endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
 
@@ -150,7 +154,6 @@ endif(BUILD_DOC)
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
-
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")

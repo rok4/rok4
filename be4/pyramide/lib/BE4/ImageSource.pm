@@ -59,8 +59,6 @@ our $VERSION = '0.0.1';
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant NODATA_IDENTIFIER => "nodataIdentifier";
-use constant CONVERT => "convert";
 
 ################################################################################
 # Preloaded methods go here.
@@ -170,7 +168,7 @@ sub computeInfo {
     eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
     if ($@) {
         ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return undef;
+        return ();
     }
 
     my $driver = $dataset->GetDriver();
@@ -178,7 +176,7 @@ sub computeInfo {
     # FIXME : type of driver ?
     if ($code !~ /(GTiff|GeoTIFF)/) {
         ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
-        return undef;
+        return ();
     }
 
     # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
@@ -210,7 +208,7 @@ sub computeInfo {
         } else {
             if (! (lc $objBand->DataType() eq $DataType)) {
                 ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
-                return undef;
+                return ();
             }
         }
         
@@ -240,6 +238,14 @@ sub computeInfo {
         $samplesperpixel = 3;
     }
 
+    if ($Band == 4) {
+        foreach (@Interpretation) {
+            last if ($_ !~ m/(red|green|blue|alpha)band/);
+        }
+        $photometric     = "rgb";
+        $samplesperpixel = 4;
+    }
+
     if ($Band == 1 && $Interpretation[0] eq "grayindex") {
         $photometric     = "gray";
         $samplesperpixel = 1;
@@ -251,7 +257,7 @@ sub computeInfo {
     my $refgeo = $dataset->GetGeoTransform();
     if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
         ERROR ("Can not found parameters of image ('$image') !");
-        return undef;
+        return ();
     }
 
     # forced formatting string !
@@ -272,87 +278,18 @@ sub computeInfo {
 
 
     #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-    #      $self->{xmin},
-    #      $self->{xmax},
-    #      $self->{ymin},
-    #      $self->{ymax},
-    #      $self->{xres},
-    #      $self->{yres},
-    #      $self->{xcenter},
-    #      $self->{ycenter},
+    #      $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
+    #      $self->{xres},$self->{yres},
+    #      $self->{xcenter},$self->{ycenter},
     #      $self->{pixelsize},
-    #      $self->{height},
-    #      $self->{width});
+    #      $self->{height},$self->{width});
     
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return undef;
+        return ();
     }
     
     return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
-}
-
-################################################################################
-# method: treatNodata
-#
-
-sub treatNodata {
-    my $self = shift;
-    my $nodataColor = shift;
-
-    DEBUG(sprintf "Treat nodata for '%s'", $self->{PATHFILENAME});
-    
-    my $command = undef;
-
-    $command = $self->convert('FFFFFF','FEFEFE');
-    if (! system($command) == 0) {
-        ERROR (sprintf "Impossible to replace white with FEFEFE in '%s' with the command %s",
-                $self->{PATHFILENAME},
-                $command);
-        return FALSE;
-    }
-    
-    if ($nodataColor =~ m/^(FF|ff)+$/) {
-        # nodata is white (255 for all samples). 'convert' transform it to FEFEFE. We have to restore this value.
-        $command = $self->nodataIdentifier('FEFEFE','FFFFFF');
-        if (! system($command) == 0) {
-            ERROR (sprintf "Impossible to identify nodata in '%s' with the command %s",
-                    $self->{PATHFILENAME},
-                    $command);
-            return FALSE;
-        }
-    }
-    
-    return TRUE;
-
-}
-
-# method: nodataIdentifier
-#  create commands to identify pixel of nodata and change their value
-#---------------------------------------------------------------------------------------------------
-sub nodataIdentifier {
-    my $self = shift;
-    my $nodataColor = shift;
-    
-    my $cmd = sprintf ("%s -n1 %s",NODATA_IDENTIFIER, $nodataColor);
-    $cmd .= sprintf ( " -n2 %s", '0000FF');
-    $cmd .= sprintf ( " %s", $self->{PATHFILENAME});
-    return $cmd;
-}
-
-# method: convert
-#  create commands to switch pixel's color
-#---------------------------------------------------------------------------------------------------
-sub convert {
-    my $self = shift;
-    my $colorToRemove = shift;
-    my $colorToAdd = shift;
-    
-    my $cmd = sprintf ("%s -fill \"#%s\"",CONVERT, $colorToAdd);
-    $cmd .= sprintf ( " -opaque \"#%s\"", $colorToRemove);
-    $cmd .= sprintf ( " %s %s", $self->{PATHFILENAME}, $self->{PATHFILENAME});
-    return $cmd;
     
 }
 

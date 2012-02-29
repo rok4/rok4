@@ -129,7 +129,7 @@ class TiledTiffWriter {
 
     std::ofstream output;  // tiff file output stream
 
-
+    size_t BufferSize;
     uint8_t* Buffer, *PNG_buffer;
     z_stream zstream;
     struct jpeg_compress_struct cinfo;
@@ -151,7 +151,7 @@ class TiledTiffWriter {
      * Open a new tiff file and write header and IFD
      */
     TiledTiffWriter(const char *filename, uint32_t width, uint32_t length, uint16_t photometric,
-        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample, uint16_t sampleformat);
+        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample, uint16_t samplesperpixel, uint16_t sampleformat);
 
     /*
      * Write tileoffset and tilebytecounts then close file

@@ -118,16 +118,18 @@ sub new {
   my $class= ref($this) || $this;
   my $self = {
 	id                => undef,
+        order             => undef,
+        is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyamids
 	dir_image         => undef,
-	compress_image    => undef, # ie "TIFF_INT8"
+	compress_image    => undef, # ie "TIFF_RAW_INT8"
 	dir_nodata        => undef,
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !
 	type_metadata     => undef,  # NOT IMPLEMENTED !
-	bitspersample     => 0,     # ie 8
-	samplesperpixel   => 0,     # ie 3
+#	bitspersample     => 0,     # ie 8
+#	samplesperpixel   => 0,     # ie 3
 	size              => [],    # number w/h !
-	dir_depth         => 0,     # ie 2
+        dir_depth         => 0,     # ie 2
 	limit             => []     # dim bbox Row/Col !!!
   };
 
@@ -159,6 +161,10 @@ sub _init {
     # parameters mandatoy !
     if (! exists($params->{id})) {
       ERROR ("key/value required to 'id' !");
+      return FALSE;
+    }
+    if (! exists($params->{order})) {
+      ERROR ("key/value required to 'order' !");
       return FALSE;
     }
     if (! exists($params->{dir_image})) {
@@ -215,19 +221,24 @@ sub _init {
       ERROR("list empty to 'limit' !");
       return FALSE;
     }
+    if (! exists($params->{is_in_pyramid})) {
+        $params->{is_in_pyramid} = 1;
+    }
     
     # parameters optional !
     # TODO : metadata 
     
     $self->{id}             = $params->{id};
+    $self->{order}          = $params->{order};
     $self->{dir_image}      = $params->{dir_image};
     $self->{compress_image} = $params->{compress_image};
     $self->{dir_nodata}     = $params->{dir_nodata};
-    $self->{bitspersample}  = $params->{bitspersample};
-    $self->{samplesperpixel}= $params->{samplesperpixel};
+#    $self->{bitspersample}  = $params->{bitspersample};
+#    $self->{samplesperpixel}= $params->{samplesperpixel};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
+    $self->{is_in_pyramid}          = $params->{is_in_pyramid};
     
     return TRUE;
 }

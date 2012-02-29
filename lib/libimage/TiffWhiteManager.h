@@ -35,54 +35,47 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+#ifndef _TIFFWHITEMANAGER_
+#define _TIFFWHITEMANAGER_
+
+#include <stdint.h>
+#include <tiff.h>
 
 /**
- * @file removeWhite.cpp
- * @brief On ne veut pas qu'il y ait tous les canaux à 255 lorsque ceux ci sont des entiers sur 8 bits.
- * Dans les cas du rgb, on ne veut donc pas de blanc dans l'image. Cette couleur doit être réservée au nodata,
- * même si ce n'est pas celle donnée dans la configuration de be4.
- * La raison est la suivante : le blanc pourra être rendu transparent, et dans le cas du jpeg, le blanc de nodata
- * doit être pur, c'est pourquoi on remplit de blanc les blocs (16*16 pixels) qui contiennent au moins un pixel blanc.
- * Pour éviter de "trouer" les données, on remplace ce blanc légitime par du gris très clair (FEFEFE).
- * @author IGN
-*
+* @file TiffWhiteManager.h
+* @brief Tool which remove white pixels in images and keep this color for nodata pixels (front pixels)
+* Pixels in images (which don't touch sides) : 'white' -> 'whiteForData
+* Front pixels (which touch sides) : 'white' -> 'whiteForNodata'
+* By default, whiteForNodata = (255,255,255) and whiteForData = (254,254,254)
+* @author IGN
 */
 
-#include "TiffWhiteManager.h"
-#include <cstdlib>
-#include <iostream>
-#include <string.h>
-
-using namespace std;
-
-void usage() {
-    cerr << endl << "usage: removeWhite <input_file> <output_file>" << endl << endl;
-    cerr << "remove white pixels in the image but not pixels which touch edges (nodata)" << endl;
-}
-
-void error(string message) {
-    cerr << message << endl;
-    usage();
-    exit(1);
-}
-
-int main(int argc, char* argv[]) {
-    char *input_file = 0, *output_file = 0;
-
-    for(int i = 1; i < argc; i++) {
-        if(!input_file) input_file = argv[i];
-        else if(!output_file) output_file = argv[i];
-        else {
-            error("Error : argument must specify exactly one input file and one output file");
-        }
-    }
-    if(!output_file || !input_file) error("Error : argument must specify exactly one input file and one output file");
+class TiffWhiteManager {
+private:
+      
+    char* input;
+    char* output;
+    uint8_t *IM;
     
-    TiffWhiteManager TWM(input_file,output_file,true,true);
-    if (! TWM.treatWhite()) {
-        error("Error : unable to treat white for this file : " + string(input_file));
-    }
-    
-    return 0;
-}
+    uint32 width , height, rowsperstrip;
+    uint16 bitspersample, sampleperpixel, photometric, compression , planarconfig, nb_extrasamples;
+    uint16 *extrasamples;
 
+    bool bRemoveWhite;
+    bool bAddNodataWhite;
+    
+    void addNodataWhite();
+
+public: 
+
+    /*
+     * Constrctor
+     * Configure the white manager
+     */
+    TiffWhiteManager(char* input, char* output, bool bRemoveWhite, bool bAddNodataWhite);
+
+    bool treatWhite();
+
+};
+
+#endif // _TIFFWHITEMANAGER_
