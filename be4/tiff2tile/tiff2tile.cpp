@@ -80,7 +80,11 @@ int main(int argc, char **argv) {
                     else if(strncmp(argv[i], "lzw",3) == 0) {
                         compression = COMPRESSION_LZW;
                     }
-                    else compression = COMPRESSION_NONE;
+                    else {
+                        compression = COMPRESSION_NONE;
+                        std::cerr << "Warning : unknown compression ("<< argv[i] 
+                            <<"), no compression will be used" << std::endl;
+                    }
                     break;
                 case 'p': // photometric
                     if(++i == argc) {std::cerr << "Error in -p option" << std::endl; exit(2);}          

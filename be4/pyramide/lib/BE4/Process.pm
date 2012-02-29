@@ -257,7 +257,7 @@ sub work2cache {
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tile= $self->{pyramid}->getTile();
-  my $compression = $self->{pyramid}->getFormat()->getCompression();
+  my $compression = $self->{pyramid}->getCompression();
   my $compressionoption = $self->{pyramid}->getCompressionOption();
   
   # cas particulier de la commande tiff2tile :

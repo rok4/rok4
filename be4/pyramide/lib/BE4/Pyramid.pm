@@ -1304,15 +1304,21 @@ sub createNodata {
     
     my $sizex = int($self->{pyramid}->{imagesize}) / int($self->{pyramid}->{image_width});
     my $sizey = int($self->{pyramid}->{imagesize}) / int($self->{pyramid}->{image_height});
+    my $compression = $self->getCompression();
+  
+    # cas particulier de la commande createNodata :
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{pyramid}->{color});
-    $cmd .= sprintf ( " -c %s", $self->{pyramid}->{compression});
+    $cmd .= sprintf ( " -c %s", $compression);
     $cmd .= sprintf ( " -p %s", $self->{pyramid}->{photometric});
     $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
     $cmd .= sprintf ( " -b %s", $self->{pyramid}->{bitspersample});
     $cmd .= sprintf ( " -s %s", $self->{pyramid}->{samplesperpixel});
     $cmd .= sprintf ( " -a %s", $self->{pyramid}->{sampleformat});
     $cmd .= sprintf ( " %s", $nodataFilePath);
+
     return $cmd;
     
 }
@@ -1764,6 +1770,12 @@ sub getDirDepth {
   my $self = shift;
   
   return $self->{pyramid}->{dir_depth};
+}
+#
+sub getCompression {
+  my $self = shift;
+  
+  return $self->{pyramid}->{compression};
 }
 #
 sub getCompressionOption {
