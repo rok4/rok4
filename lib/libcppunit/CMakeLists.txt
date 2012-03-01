@@ -36,6 +36,8 @@ set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 #définition des fichiers sources
 
 set(ENV{CFLAGS} "-O3")
+
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/src/configure)
 add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/cppunit-1.12.1/* src)
 
 add_custom_command(OUTPUT install/lib/libcppunit.so 

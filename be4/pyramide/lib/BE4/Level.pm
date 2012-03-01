@@ -1,3 +1,38 @@
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
 package BE4::Level;
 
 use strict;
@@ -83,16 +118,18 @@ sub new {
   my $class= ref($this) || $this;
   my $self = {
 	id                => undef,
+        order             => undef,
+        is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyamids
 	dir_image         => undef,
-	compress_image    => undef, # ie "TIFF_INT8"
+	compress_image    => undef, # ie "TIFF_RAW_INT8"
 	dir_nodata        => undef,
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !
 	type_metadata     => undef,  # NOT IMPLEMENTED !
-	bitspersample     => 0,     # ie 8
-	samplesperpixel   => 0,     # ie 3
+#	bitspersample     => 0,     # ie 8
+#	samplesperpixel   => 0,     # ie 3
 	size              => [],    # number w/h !
-	dir_depth         => 0,     # ie 2
+        dir_depth         => 0,     # ie 2
 	limit             => []     # dim bbox Row/Col !!!
   };
 
@@ -124,6 +161,10 @@ sub _init {
     # parameters mandatoy !
     if (! exists($params->{id})) {
       ERROR ("key/value required to 'id' !");
+      return FALSE;
+    }
+    if (! exists($params->{order})) {
+      ERROR ("key/value required to 'order' !");
       return FALSE;
     }
     if (! exists($params->{dir_image})) {
@@ -180,19 +221,24 @@ sub _init {
       ERROR("list empty to 'limit' !");
       return FALSE;
     }
+    if (! exists($params->{is_in_pyramid})) {
+        $params->{is_in_pyramid} = 1;
+    }
     
     # parameters optional !
     # TODO : metadata 
     
     $self->{id}             = $params->{id};
+    $self->{order}          = $params->{order};
     $self->{dir_image}      = $params->{dir_image};
     $self->{compress_image} = $params->{compress_image};
     $self->{dir_nodata}     = $params->{dir_nodata};
-    $self->{bitspersample}  = $params->{bitspersample};
-    $self->{samplesperpixel}= $params->{samplesperpixel};
+#    $self->{bitspersample}  = $params->{bitspersample};
+#    $self->{samplesperpixel}= $params->{samplesperpixel};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
+    $self->{is_in_pyramid}          = $params->{is_in_pyramid};
     
     return TRUE;
 }

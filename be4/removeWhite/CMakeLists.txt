@@ -2,14 +2,14 @@
 project(removeWhite)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
+if(NOT DEFINED BE4_VERSION)
         FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
         STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+        STRING(REPLACE "." ";" BE4_VERSION ${subtmp})
+endif(NOT DEFINED BE4_VERSION)
+list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 
 cmake_minimum_required(VERSION 2.6)
@@ -59,10 +59,10 @@ add_dependencies(${PROJECT_NAME} tiff)
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg)
+set(DEP_LIBRARY tiff image)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -112,7 +112,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 endif(BUILD_DOC)
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière
+ *
+ * Géoportail SAV <geop_services@geoportail.fr>
+ *
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ *
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use,
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info".
+ *
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability.
+ *
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
+ * The fact that you are presently reading this means that you have had
+ *
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #include "ResponseSender.h"
 #include "ServiceException.h"
 #include "Message.h"
@@ -10,51 +47,50 @@
 /**
  * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
  */
-std::string genStatusHeader(int statusCode) {
-	// Creation de l'en-tete
-	std::stringstream out;
-	out << statusCode;
-	std::string statusHeader= "Status: "+out.str()+" "+ServiceException::getStatusCodeAsReasonPhrase(statusCode)+"\r\n" ;
-	return statusHeader ;
+std::string genStatusHeader ( int statusCode ) {
+    // Creation de l'en-tete
+    std::stringstream out;
+    out << statusCode;
+    std::string statusHeader= "Status: "+out.str() +" "+ServiceException::getStatusCodeAsReasonPhrase ( statusCode ) +"\r\n" ;
+    return statusHeader ;
 }
 
 /**
  * Methode commune pour generer le nom du fichier en fonction du type mime
  */
-std::string genFileName(std::string mime) {
-	if (mime.compare("image/tiff")==0)
-                return "image.tif";
-        else if (mime.compare("image/jpeg")==0)
-                return "image.jpg";
-        else if (mime.compare("image/png")==0)
-                return "image.png";
-        else if (mime.compare("image/x-bil;bits=32")==0)
-                return "image.bil";
-        else if (mime.compare("text/plain")==0)
-                return "message.txt";
-        else if (mime.compare("text/xml")==0)
-                return "message.xml";
-	return "file";
+std::string genFileName ( std::string mime ) {
+    if ( mime.compare ( "image/tiff" ) ==0 )
+        return "image.tif";
+    else if ( mime.compare ( "image/jpeg" ) ==0 )
+        return "image.jpg";
+    else if ( mime.compare ( "image/png" ) ==0 )
+        return "image.png";
+    else if ( mime.compare ( "image/x-bil;bits=32" ) ==0 )
+        return "image.bil";
+    else if ( mime.compare ( "text/plain" ) ==0 )
+        return "message.txt";
+    else if ( mime.compare ( "text/xml" ) ==0 )
+        return "message.xml";
+    return "file";
 }
 
 /**
  * Methode commune pour afficher les codes d'erreur FCGI
  */
 
-void displayFCGIError(int error)
-{
-	if (error>0)
-		LOGGER_ERROR("Code erreur : "<<error); // Erreur errno(2) (Cf. manpage )
-        else if (error==FCGX_UNSUPPORTED_VERSION)
-        	LOGGER_ERROR("Version FCGI non supportee");
-        else if (error==FCGX_UNSUPPORTED_VERSION)
-        	LOGGER_ERROR("Erreur de protocole");
-        else if (error==FCGX_CALL_SEQ_ERROR)
-        	LOGGER_ERROR("Erreur de parametre");
-        else if (error==FCGX_UNSUPPORTED_VERSION)
-        	LOGGER_ERROR("Preconditions non remplies");
-        else
-        	LOGGER_ERROR("Erreur inconnue");
+void displayFCGIError ( int error ) {
+    if ( error>0 )
+        LOGGER_ERROR ( "Code erreur : "<<error ); // Erreur errno(2) (Cf. manpage )
+    else if ( error==FCGX_UNSUPPORTED_VERSION )
+        LOGGER_ERROR ( "Version FCGI non supportee" );
+    else if ( error==FCGX_UNSUPPORTED_VERSION )
+        LOGGER_ERROR ( "Erreur de protocole" );
+    else if ( error==FCGX_CALL_SEQ_ERROR )
+        LOGGER_ERROR ( "Erreur de parametre" );
+    else if ( error==FCGX_UNSUPPORTED_VERSION )
+        LOGGER_ERROR ( "Preconditions non remplies" );
+    else
+        LOGGER_ERROR ( "Erreur inconnue" );
 }
 
 /**
@@ -63,40 +99,39 @@ void displayFCGIError(int error)
  * @return 0 sinon
  */
 
-int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
-{
-	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(source->getHttpStatus());
-	std::string filename = genFileName(source->getType());
-	LOGGER_DEBUG(filename);
-	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
-	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(source->getType().c_str(), strlen(source->getType().c_str()),request->out);
-	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
-	FCGX_PutStr(filename.data(),filename.size(), request->out);
-	FCGX_PutStr("\"",1,request->out);
-	FCGX_PutStr("\r\n\r\n",4,request->out);
-	
-	// Copie dans le flux de sortie
-	size_t buffer_size;
-	const uint8_t *buffer = source->getData(buffer_size);
-	int wr = 0;
-	// Ecriture iterative de la source de donnees dans le flux de sortie
-	while(wr < buffer_size) {
-		// Taille ecrite dans le flux de sortie
-		int w = FCGX_PutStr((char*)(buffer + wr), buffer_size,request->out);
-		if(w < 0) {
-			LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
-			displayFCGIError(FCGX_GetError(request->out));
-			delete source;
-			//delete[] buffer;
-			return -1;
-		}
-		wr += w;
-	}
-	delete source;
-	LOGGER_DEBUG("End of Response");
-	return 0;
+int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
+    // Creation de l'en-tete
+    std::string statusHeader= genStatusHeader ( source->getHttpStatus() );
+    std::string filename = genFileName ( source->getType() );
+    LOGGER_DEBUG ( filename );
+    FCGX_PutStr ( statusHeader.data(),statusHeader.size(),request->out );
+    FCGX_PutStr ( "Content-Type: ",14,request->out );
+    FCGX_PutStr ( source->getType().c_str(), strlen ( source->getType().c_str() ),request->out );
+    FCGX_PutStr ( "\r\nContent-Disposition: filename=\"",33,request->out );
+    FCGX_PutStr ( filename.data(),filename.size(), request->out );
+    FCGX_PutStr ( "\"",1,request->out );
+    FCGX_PutStr ( "\r\n\r\n",4,request->out );
+
+    // Copie dans le flux de sortie
+    size_t buffer_size;
+    const uint8_t *buffer = source->getData ( buffer_size );
+    int wr = 0;
+    // Ecriture iterative de la source de donnees dans le flux de sortie
+    while ( wr < buffer_size ) {
+        // Taille ecrite dans le flux de sortie
+        int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), buffer_size,request->out );
+        if ( w < 0 ) {
+            LOGGER_ERROR ( "Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId );
+            displayFCGIError ( FCGX_GetError ( request->out ) );
+            delete source;
+            //delete[] buffer;
+            return -1;
+        }
+        wr += w;
+    }
+    delete source;
+    LOGGER_DEBUG ( "End of Response" );
+    return 0;
 }
 
 
@@ -105,56 +140,55 @@ int ResponseSender::sendresponse(DataSource* source, FCGX_Request* request)
  * @return -1 en cas d'erreur
  * @return 0 sinon
  */
-int ResponseSender::sendresponse(DataStream* stream, FCGX_Request* request)
-{
-	// Creation de l'en-tete
-	std::string statusHeader= genStatusHeader(stream->getHttpStatus());
-	std::string filename = genFileName(stream->getType());
-	LOGGER_DEBUG(filename);
-	FCGX_PutStr(statusHeader.data(),statusHeader.size(),request->out);
-	FCGX_PutStr("Content-Type: ",14,request->out);
-	FCGX_PutStr(stream->getType().c_str(), strlen(stream->getType().c_str()),request->out);
-	FCGX_PutStr("\r\nContent-Disposition: filename=\"",33,request->out);
-	FCGX_PutStr(filename.data(),filename.size(), request->out);
-	FCGX_PutStr("\"",1,request->out);
-	FCGX_PutStr("\r\n\r\n",4,request->out);
-	// Copie dans le flux de sortie
-	uint8_t *buffer = new uint8_t[2 << 20];
-	size_t size_to_read = 2 << 20;
-	int pos = 0;
+int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
+    // Creation de l'en-tete
+    std::string statusHeader= genStatusHeader ( stream->getHttpStatus() );
+    std::string filename = genFileName ( stream->getType() );
+    LOGGER_DEBUG ( filename );
+    FCGX_PutStr ( statusHeader.data(),statusHeader.size(),request->out );
+    FCGX_PutStr ( "Content-Type: ",14,request->out );
+    FCGX_PutStr ( stream->getType().c_str(), strlen ( stream->getType().c_str() ),request->out );
+    FCGX_PutStr ( "\r\nContent-Disposition: filename=\"",33,request->out );
+    FCGX_PutStr ( filename.data(),filename.size(), request->out );
+    FCGX_PutStr ( "\"",1,request->out );
+    FCGX_PutStr ( "\r\n\r\n",4,request->out );
+    // Copie dans le flux de sortie
+    uint8_t *buffer = new uint8_t[2 << 20];
+    size_t size_to_read = 2 << 20;
+    int pos = 0;
 
-	// Ecriture progressive du flux d'entree dans le flux de sortie
-	while(true) {
-		// Recuperation d'une portion du flux d'entree
+    // Ecriture progressive du flux d'entree dans le flux de sortie
+    while ( true ) {
+        // Recuperation d'une portion du flux d'entree
 
-		size_t read_size = stream->read(buffer, size_to_read);
-		if (read_size==0)
-			break;
-		int wr = 0;
-		// Ecriture iterative de la portion du flux d'entree dans le flux de sortie
-		while(wr < read_size) {
-			// Taille ecrite dans le flux de sortie
-			int w = FCGX_PutStr((char*)(buffer + wr), read_size,request->out);
-			if(w < 0) {
-				LOGGER_ERROR("Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId);
-				displayFCGIError(FCGX_GetError(request->out));
-				delete stream;
-				delete[] buffer;
-				return -1;
-			}
-			wr += w;
-		}
-		if(wr != read_size) {
-			LOGGER_DEBUG( "Nombre incorrect d'octets ecrits dans le flux de sortie" );
-			delete stream;
-			delete[] buffer;
-			break;
-		}
-		pos += read_size;
-	}
+        size_t read_size = stream->read ( buffer, size_to_read );
+        if ( read_size==0 )
+            break;
+        int wr = 0;
+        // Ecriture iterative de la portion du flux d'entree dans le flux de sortie
+        while ( wr < read_size ) {
+            // Taille ecrite dans le flux de sortie
+            int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), read_size,request->out );
+            if ( w < 0 ) {
+                LOGGER_ERROR ( "Echec d'écriture dans le flux de sortie de la requête FCGI " << request->requestId );
+                displayFCGIError ( FCGX_GetError ( request->out ) );
+                delete stream;
+                delete[] buffer;
+                return -1;
+            }
+            wr += w;
+        }
+        if ( wr != read_size ) {
+            LOGGER_DEBUG ( "Nombre incorrect d'octets ecrits dans le flux de sortie" );
+            delete stream;
+            delete[] buffer;
+            break;
+        }
+        pos += read_size;
+    }
 
-	delete stream;
-	delete[] buffer;
-	LOGGER_DEBUG("End of Response");
-	return 0;
+    delete stream;
+    delete[] buffer;
+    LOGGER_DEBUG ( "End of Response" );
+    return 0;
 }
