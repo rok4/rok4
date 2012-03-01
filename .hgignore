@@ -5,3 +5,7 @@ build
 build*
 *.kate-swp
 .kdev_include_paths
+syntax: regexp
+~
+kdev4
+.orig
