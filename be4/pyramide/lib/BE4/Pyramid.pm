@@ -853,8 +853,6 @@ sub readConfPyramid {
                 dir_metadata      => undef,      # TODO !
                 compress_metadata => undef,      # TODO !
                 type_metadata     => undef,      # TODO !
-                bitspersample     => $bitspersample,
-                samplesperpixel   => $tagsamplesperpixel,
                 size              => [$tagsize[0],$tagsize[1]],
                 dir_depth         => $tagdirdepth,
                 limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
@@ -1156,9 +1154,7 @@ sub createLevels {
             dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
-            type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW, 
-            bitspersample     => $self->getTile()->getBitsPerSample(),
-            samplesperpixel   => $self->getTile()->getSamplesPerPixel(),
+            type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW,
             size              => [$tileperwidth, $tileperheight],
             dir_depth         => $self->getDirDepth(),
             limit             => [undef, undef, undef, undef], # computed

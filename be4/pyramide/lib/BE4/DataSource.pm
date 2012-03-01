@@ -162,8 +162,6 @@ sub computeImageSource {
 
     TRACE;
 
-ALWAYS(sprintf "Lecture des images dans le dossier %s",$self->{PATHIMG}); #TEST#
-
     my %resDict;
 
     my $lstImagesSources = $self->{images}; # it's a ref !
