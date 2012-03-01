@@ -82,7 +82,7 @@ public:
     DataSourceDecoder(DataSource* encData) : encData(encData), decData(0), decSize(0) {}
 
     ~DataSourceDecoder() {
-        if (decData) 
+        if (decData)
             delete[] decData;
         delete encData;
     }
@@ -157,6 +157,7 @@ private:
                 dataSource = 0;
             }
         }
+        LOGGER_DEBUG("Decoding error, fill with black");
         return getNoDataline(buffer, line);
     }
 
