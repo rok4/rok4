@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 /**
  * \file mergeitiff.cpp
  * \brief Sous echantillonage de 4 images 
@@ -215,7 +252,7 @@ void checkImages(
             error("Error writting output file: " + std::string(outputImage));     
 }
 
-int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
     int nbsamples = width * sampleperpixel;
     float  line_background[nbsamples];
     float  line1[2*nbsamples];
@@ -223,7 +260,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
     float  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,(float)nodata,sizeof(float)*nbsamples);
+    memset(line_background,nodata,sizeof(float)*nbsamples);
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -255,9 +292,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
                     float data[4];
                     int nbData = 0;
                     if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in];
-                    if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
-                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in];
-                    if (line1[pos_in] != nodata) data[nbData++]=line2[pos_in + sampleperpixel];
+                    if (line1[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
+                    if (line2[pos_in] != nodata) data[nbData++]=line2[pos_in];
+                    if (line2[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
 
                     if (nbData>1) {
                         float value = 0.;
@@ -283,6 +320,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,int n
 };
 
 int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double gamma, int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+    
     uint8 MERGE[1024];
     for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gamma) * 255.);
 
@@ -368,21 +406,21 @@ int main(int argc, char* argv[]) {
                 compression,planarconfig,backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
                 
     // Cas MNT
-    if (sampleformat == 3 && bitspersample == 32) {
+    if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
         if (strnodata != 0) {
             nodata = atoi(strnodata);
-            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a DTM");
+            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a float samples image");
         } else {
             nodata = -99999;
         }
-        return merge4float32(width,height,sampleperpixel,nodata,BACKGROUND,INPUT,OUTPUT);
+        return merge4float32(width,height,sampleperpixel,(float) nodata,BACKGROUND,INPUT,OUTPUT);
     }
     // Cas images
-    else if (sampleformat == 1 && bitspersample == 8) {
+    else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
         if (strnodata != 0) {
             int a1 = h2i(strnodata[0]);
             int a0 = h2i(strnodata[1]);
-            if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for image");
+            if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for integer samples image");
             nodata = 16*a1+a0;
         } else {
             nodata = 255;

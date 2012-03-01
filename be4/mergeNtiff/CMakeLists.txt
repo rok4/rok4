@@ -111,7 +111,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 endif(BUILD_DOC)
-
+INSTALL(FILES LICENCE readme.txt
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

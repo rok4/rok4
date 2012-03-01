@@ -1,3 +1,38 @@
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
 package BE4::Tree;
 
 use Math::BigFloat;
@@ -117,152 +152,127 @@ sub _init {
 #  getting parents upward to the top level of the pyramid.
 #---------------------------------------------------------------------------------------------------
 sub _load {
-  my $self = shift;
-  
-  TRACE;
-  
-  # initialisation pratique:
-  my $tms    = $self->{pyramid}->getTileMatrixSet();
-  my $src    = $self->{datasource};
-  
-  # tilematrix list sort by resolution
-  my @tmList = $tms->getTileMatrixByArray();
-  @{$self->{tmList}} = @tmList;
-  
-  # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-  for (my $i=0; $i < scalar @tmList; $i++){
-    $self->{levelIdx}{$tmList[$i]->getID()} = $i;
-  }
+    my $self = shift;
 
-  # initialisation de la transfo de coord du srs des données initiales vers
-  # le srs de la pyramide. Si les srs sont identique on laisse undef.
-  my $ct = undef;  
-  if ($tms->getSRS() ne $src->getSRS()){
-    my $srsini= new Geo::OSR::SpatialReference;
-    eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
-    if ($@) {
-      ERROR(Geo::GDAL::GetLastErrorMsg());
-      return FALSE;
+    TRACE;
+
+    # initialisation pratique:
+    my $tms    = $self->{pyramid}->getTileMatrixSet();
+    my $src    = $self->{datasource};
+    
+    # récupération d'information dans la pyramide
+    $self->{topLevelId} = $self->{pyramid}->getTopLevel();
+    $self->{bottomLevelId} = $self->{pyramid}->getBottomLevel();
+
+    # tilematrix list sort by resolution
+    my @tmList = $tms->getTileMatrixByArray();
+    @{$self->{tmList}} = @tmList;
+
+    # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    for (my $i=0; $i < scalar @tmList; $i++){
+        $self->{levelIdx}{$tmList[$i]->getID()} = $i;
     }
-    my $srsfin= new Geo::OSR::SpatialReference;
-    eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
-    if ($@) {
-      ERROR(Geo::GDAL::GetLastErrorMsg());
-      return FALSE;
+
+    # initialisation de la transfo de coord du srs des données initiales vers
+    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
+    my $ct = undef;  
+    if ($tms->getSRS() ne $src->getSRS()){
+        my $srsini= new Geo::OSR::SpatialReference;
+        eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
+        if ($@) {
+            ERROR($@);
+            ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$src->getSRS());
+            return FALSE;
+        }
+        my $srsfin= new Geo::OSR::SpatialReference;
+        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
+        if ($@) {
+            ERROR($@);
+            ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$tms->getSRS());
+            return FALSE;
+        }
+        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
-    $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
-  }
 
-  # Intitialisation du topLevel:
-  #  Par defaut, c'est le plus haut niveau du TMS, 
-  $self->{topLevelId} = $tmList[$#tmList]->getID();
-  
-  #  ou celui fournit en parametre !
-  my $toplevel = $self->{pyramid}->getTopLevel();
-  $self->{topLevelId} = $toplevel if (defined $toplevel);
-  
-  # Intitialisation du bottomLevel:
-  #  (déterminer le niveau de base du calcul)
-  #  Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
-  #  (réduite de 5%) est meilleure que celle des données sources.
-  #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
-  #  le plus bas de la pyramide.
-  my $projSrcRes = $self->computeSrcRes($ct);
-  if ($projSrcRes < 0) {
-    ERROR("La resolution reprojetee est negative");
-    return FALSE;
-  }
-  
-  $self->{bottomLevelId} = $tmList[0]->getID(); 
-  foreach my $tm (@tmList){
-    next if ($tm->getResolution() * 0.95  > $projSrcRes);
-    $self->{bottomLevelId} = $tm->getID();
-  }
-  
-  #  ou celui fournit en parametre !
-  my $bottomlevel = $self->{pyramid}->getBottomLevel();
-  $self->{bottomLevelId} = $bottomlevel if (defined $bottomlevel);
-  
-  # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
+    # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
 
-  my ($ImgGroundWidth, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
-  
-  my $tm = $tms->getTileMatrix($self->{bottomLevelId});
-  
-  my @images = $src->getImages();
+    my ($ImgGroundWidth, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelId});
 
-  foreach my $objImg (@images){
-    # On reprojette l'emprise si nécessaire 
-    my %bbox = $self->computeBBox($objImg, $ct);
-    
-    # pyramid's limits update : we store data's limits in the object Pyramid
-    $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
+    my $tm = $tms->getTileMatrix($self->{bottomLevelId});
 
-    # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-    my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
-    my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
-    my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
-    my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
-    
-    my $level  = $self->{bottomLevelId};
-    
-    for (my $i = $iMin; $i<= $iMax; $i++){       
-      for (my $j = $jMin; $j<= $jMax; $j++){
-        my $idxkey = sprintf "%s_%s", $i, $j;
-        push (@{$self->{levels}{$self->{bottomLevelId}}{$idxkey}},$objImg);
-        
-        # { level1 => { x1_y2 => [list objimage1],
-        #               x2_y2 => [list objimage2],
-        #               x3_y2 => [list objimage3], ...} }
-      }
+    my @images = $src->getImages();
+    foreach my $objImg (@images){
+        # On reprojette l'emprise si nécessaire
+        my %bbox = $self->computeBBox($objImg, $ct);
+        if ($bbox{xMin} == 0 && $bbox{xMax} == 0) {
+            ERROR(sprintf "Impossible to compute BBOX for the image '%s'. Probably limits are reached !",$objImg->getName());
+            return FALSE;
+        }
+
+        # pyramid's limits update : we store data's limits in the object Pyramid
+        $self->{pyramid}->updateLimits($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
+
+        # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
+        my $iMin=int(($bbox{xMin} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
+        my $iMax=int(($bbox{xMax} - $tm->getTopLeftCornerX()) / $ImgGroundWidth);   
+        my $jMin=int(($tm->getTopLeftCornerY() - $bbox{yMax}) / $ImgGroundHeight); 
+        my $jMax=int(($tm->getTopLeftCornerY() - $bbox{yMin}) / $ImgGroundHeight);
+
+        for (my $i = $iMin; $i<= $iMax; $i++){       
+            for (my $j = $jMin; $j<= $jMax; $j++){
+                my $idxkey = sprintf "%s_%s", $i, $j;
+                push (@{$self->{levels}{$self->{bottomLevelId}}{$idxkey}},$objImg);
+
+                # { level1 => { x1_y2 => [list objimage1],
+                #               x2_y2 => [list objimage2],
+                #               x3_y2 => [list objimage3], ...} }
+            }
+        }
     }
-    
-    
-  }
-  
 
-  DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
-  
-  
-  # Si au bottomLevelId il y a moins de noeud que le nombre de processus demande,
-  # on le definit tout de meme comme cutLevel. Tant pis, on aura des scripts vides.
-  $self->{cutLevelId}=$self->{bottomLevelId};
-  # Calcul des branches à partir des feuilles et de leur poids:
-  for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i < scalar(@tmList)-1; $i++){
-    my $levelId = $tmList[$i]->getID();
-    
-    # On compare au passage le nombre de noeuds du niveau courrant avec le nombre de processus demandé 
-    # pour déterminer le cutLevel. A noter que tel que c'est fait ici, le cutLevel ne peut pas etre 
-    # le topLevel. On s'evite ainsi des complications avec un script finisher vide et de toute façon
-    # le cas n'arrive jamais avec les TMS GPP3.
-    if (keys(%{$self->{levels}->{$levelId}}) >= $self->{job_number}){
-      $self->{cutLevelId}=$levelId;
-      DEBUG(sprintf "cutLevelId become: %s", $levelId);
+    DEBUG(sprintf "N. Tile Cache to the bottom level : %d", scalar keys( %{$self->{levels}{$self->{bottomLevelId}}} ));
+
+    # Si au bottomLevelId il y a moins de noeud que le nombre de processus demande,
+    # on le definit tout de meme comme cutLevel. Tant pis, on aura des scripts vides.
+    $self->{cutLevelId}=$self->{bottomLevelId};
+    # Calcul des branches à partir des feuilles et de leur poids:
+    for (my $i = $self->{levelIdx}{$self->{bottomLevelId}}; $i <= $self->{levelIdx}{$self->{topLevelId}}; $i++){
+        my $levelId = $tmList[$i]->getID();
+
+        # On compare au passage le nombre de noeuds du niveau courrant avec le nombre de processus demandé 
+        # pour déterminer le cutLevel. A noter que tel que c'est fait ici, le cutLevel ne peut pas etre 
+        # le topLevel. On s'evite ainsi des complications avec un script finisher vide et de toute façon
+        # le cas n'arrive jamais avec les TMS GPP3.
+        if (keys(%{$self->{levels}->{$levelId}}) >= $self->{job_number}){
+            $self->{cutLevelId}=$levelId;
+            DEBUG(sprintf "cutLevelId become: %s", $levelId);
+        }
+        if ($i != $self->{levelIdx}{$self->{topLevelId}}) {
+            my $aboveLevelId = $tmList[$i+1]->getID();
+            foreach my $refnode ($self->getNodesOfLevel($levelId)){
+                my $parentNodeId = int($refnode->{x}/2)."_".int($refnode->{y}/2);
+                if (!defined($self->{levels}{$aboveLevelId}{$parentNodeId})){
+                    # On a une nouvelle image a calculer (merge4tiff)
+                    $self->{levels}{$aboveLevelId}{$parentNodeId}=1;
+                }
+                if ($levelId eq $self->{bottomLevelId}){
+                    # On ajoute le poids du calcul de l'image de base (mergeNtiff)
+                    # TODO: ce poids est ici égal a celui de merge4tiff, pour bien faire
+                    #       il faudrait lui trouver une ponderation plus realiste.
+                    #       Ce n'est pas evident car dans le cas d'un moissonnage, on 
+                    #       ne fait pas de mergeNtiff mais un wget.
+                    $self->{levels}{$aboveLevelId}{$parentNodeId} += 1;
+                } else {
+                    # On ajoute le poids calcule pour les noeuds du dessous
+                    $self->{levels}{$aboveLevelId}{$parentNodeId} += $self->{levels}{$levelId}{$refnode->{x}."_".$refnode->{y}}; 
+                }
+            }
+        }
+
+        DEBUG(sprintf "N. Tile Cache by level (%s) : %d", $levelId, scalar keys( %{$self->{levels}{$levelId}} ));
     }
-    my $aboveLevelId = $tmList[$i+1]->getID();
-    foreach my $refnode ($self->getNodesOfLevel($levelId)){
-      my $parentNodeId = int($refnode->{x}/2)."_".int($refnode->{y}/2);
-      if (!defined($self->{levels}{$aboveLevelId}{$parentNodeId})){
-        # On a une nouvelle image a calculer (merge4tiff)
-        $self->{levels}{$aboveLevelId}{$parentNodeId}=1;
-      }
-      if ($levelId == $self->{bottomLevelId}){
-        # On ajoute le poids du calcul de l'image de base (mergeNtiff)
-        # TODO: ce poids est ici égal a celui de merge4tiff, pour bien faire
-        #       il faudrait lui trouver une ponderation plus realiste.
-        #       Ce n'est pas evident car dans le cas d'un moissonnage, on 
-        #       ne fait pas de mergeNtiff mais un wget.
-        $self->{levels}{$aboveLevelId}{$parentNodeId} += 1;
-      }else{
-        # On ajoute le poids calcule pour les noeuds du dessous
-        $self->{levels}{$aboveLevelId}{$parentNodeId} += $self->{levels}{$levelId}{$refnode->{x}."_".$refnode->{y}}; 
-      }
-    }
-    
-    DEBUG(sprintf "N. Tile Cache by level (%s) : %d", $levelId, scalar keys( %{$self->{levels}{$levelId}} ));
-  }  
-  
-  return TRUE;
+
+    return TRUE;
 }
 
 # method: exportTree
@@ -383,20 +393,21 @@ sub computeBBox(){
   TRACE;
   
   my %BBox = ();
-  
+
   if (!defined($ct)){
     $BBox{xMin} = Math::BigFloat->new($img->getXmin());
     $BBox{yMin} = Math::BigFloat->new($img->getYmin());
     $BBox{xMax} = Math::BigFloat->new($img->getXmax());
     $BBox{yMax} = Math::BigFloat->new($img->getYmax());
-    DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $img->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+    DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $img->getName(),
+        $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
     return %BBox;
   }
   
   # TODO:
   # Dans le cas où le SRS de la pyramide n'est pas le SRS natif des données, il faut reprojeter la bbox.
   # 1. L'algo trivial consiste à reprojeter les coins et prendre une marge de 20%.
-  #    C'est rapide et simple mais comment on justifie les 20%??
+  #    C'est rapide et simple mais comment on justifie les 20% ?
   
   # 2. on fait une densification fixe (ex: 5 pts par coté) et on prend une marge beaucoup plus petite.
   #    Ca reste relativement simple, mais on ne sait toujours pas quoi prendre comme marge.
@@ -428,7 +439,14 @@ sub computeBBox(){
   for my $i (@{[0..$#polygon]}) {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
-    my $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]);
+
+    my $p = 0;
+    eval { $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]); };
+    if ($@) {
+        ERROR($@);
+        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
+        return [0,0,0,0];
+    }
 
     if ($i==0) {
       $xmin_reproj= $xmax_reproj= @{$p}[0];
@@ -465,8 +483,6 @@ sub imgGroundSizeOfLevel(){
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tm  = $tms->getTileMatrix($levelId);
-  #my $xRes = $tm->getResolution(); 
-  #my $yRes =$tm->getResolution();
   my $xRes = Math::BigFloat->new($tm->getResolution()); 
   my $yRes = Math::BigFloat->new($tm->getResolution());
   my $imgGroundWidth   = $tm->getTileWidth()  * $self->{pyramid}->getTilePerWidth() * $xRes;
@@ -477,41 +493,6 @@ sub imgGroundSizeOfLevel(){
   return ($imgGroundWidth,$imgGroundHeight);
 }
 
-# method: computeSrcRes
-#  Retourne la meilleure résolution des images source. Ceci implique une 
-#  reprojection dans le cas où le SRS des images source n'est pas le même 
-#  que celui de la pyramide.
-#------------------------------------------------------------------------------
-sub computeSrcRes(){
-  my $self = shift;
-  my $ct = shift;
-  
-  TRACE();
-  
-  my $srcRes = $self->{datasource}->getResolution();
-  if (!defined($ct)){
-    return $srcRes;
-  }
-  my @imgs = $self->{datasource}->getImages();
-  my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
-  foreach my $img (@imgs){
-    # FIXME: il faut absoluement tester les erreurs ici:
-    #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà  de 85.05°.
-    
-    my $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin());
-
-    my $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax());
-
-    # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-    my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());
-    my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1]) / ($img->getYmax()-$img->getYmin());
-    
-    $res=$xRes if $xRes < $res;
-    $res=$yRes if $yRes < $res;
-  }
- 
-  return $res;
-}
 
 # method: getImgDescOfNode
 #  Retourne la description d'une image identifiée par node.
@@ -553,7 +534,7 @@ sub getImgDescOfBottomNode(){
   my $node = shift;
   
   my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-  return undef if ($node->{level} != $self->{bottomLevelId});
+  return undef if ($node->{level} ne $self->{bottomLevelId});
   return $self->{levels}{$node->{level}}{$keyidx};
 }
 
@@ -658,6 +639,23 @@ sub getNodesOfTopLevel(){
 sub getNodesOfCutLevel(){
   my $self = shift;
   return $self->getNodesOfLevel($self->{cutLevelId});
+}
+
+# method: getTileMatrix
+#  return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
+#  order (integer).
+#---------------------------------------------------------------------------------------------------------------
+sub getTileMatrix {
+  my $self = shift;
+  my $level= shift; # id !
+  
+  if (! defined $level) {
+    return undef;
+  }
+  
+  return undef if (! exists($self->{levelIdx}->{$level}));
+  
+  return $self->{tmList}[$self->{levelIdx}->{$level}];
 }
 
 1;

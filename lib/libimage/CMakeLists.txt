@@ -50,7 +50,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp TiffReader.cpp TiledTiffWriter.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp format.cpp Interpolation.cpp )
+set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp TiffReader.cpp TiffWhiteManager.cpp TiledTiffWriter.cpp Decoder.cpp ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp format.cpp Interpolation.cpp TiffHeaderDataSource.cpp )
 
 
 add_library(image STATIC ${libimage_SRCS})
@@ -149,7 +149,8 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

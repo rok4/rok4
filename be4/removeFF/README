@@ -1,0 +1,9 @@
+removeFF
+
+On ne veut pas qu'il y ait tous les canaux à 255 lorsque ceux ci sont des entiers sur 8 bits.
+Dans les cas du rgb, on ne veut donc pas de blanc dans l'image. Cette couleur doit être réservée au nodata,
+même si ce n'est pas celle donnée dans la configuration de be4.
+La raison est la suivante : le blanc pourra être rendu transparent, et dans le cas du jpeg, le blanc de nodata
+doit être pur, c'est pourquoi on remplit de blanc les blocs (16*16 pixels) qui contiennent au moins un pixel blanc.
+Pour éviter de "trouer" les données, on supprime ce blanc légitime.
+

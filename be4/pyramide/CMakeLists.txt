@@ -112,7 +112,8 @@ endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
     )
     endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

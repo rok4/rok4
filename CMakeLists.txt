@@ -1,8 +1,6 @@
 #Défini le nom du projet 
 project(Rok4)
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH 
-
-
+#définit la version du projet
 #Lecture de la version de ROK4 dans le fichier du projet
 FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
 STRING(SUBSTRING ${version_line} 15 -1 version)

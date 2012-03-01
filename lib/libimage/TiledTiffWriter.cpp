@@ -1,5 +1,43 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #include "TiledTiffWriter.h"
 #include "byteswap.h"
+#include "lzwEncoder.h"
 #include <string.h>
 #include <iostream>
 #include <algorithm>
@@ -35,8 +73,8 @@ static const uint8_t PNG_HEADER[33] = {
 
 
 TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t length, uint16_t photometric = PHOTOMETRIC_RGB,
-    uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t tilewidth = 256, uint32_t tilelength = 256, uint32_t bitspersample = 8, uint16_t sampleformat = SAMPLEFORMAT_UINT) :
-    width(width), length(length), photometric(photometric), compression(compression), quality(_quality), tilewidth(tilewidth), tilelength(tilelength), bitspersample(bitspersample), sampleformat(sampleformat)
+    uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t tilewidth = 256, uint32_t tilelength = 256, uint32_t bitspersample = 8, uint16_t samplesperpixel = 3, uint16_t sampleformat = SAMPLEFORMAT_UINT) :
+    width(width), length(length), photometric(photometric), compression(compression), quality(_quality), tilewidth(tilewidth), tilelength(tilelength), bitspersample(bitspersample), samplesperpixel(samplesperpixel), sampleformat(sampleformat)
 {
 // input control
     if(width % tilewidth || length % tilelength) std::cerr << "Image size must be a multiple of tile size" << std::endl;
@@ -44,9 +82,6 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     if(compression != COMPRESSION_NONE && compression != COMPRESSION_JPEG && compression != COMPRESSION_PNG && compression != COMPRESSION_LZW) std::cerr << "Compression not supported" << std::endl;
 
     if(photometric == PHOTOMETRIC_RGB && compression == COMPRESSION_JPEG) photometric = PHOTOMETRIC_YCBCR;
-
-    if(photometric == PHOTOMETRIC_MINISBLACK) samplesperpixel = 1;
-    else samplesperpixel = 3;
 
 // output opening
     output.open(filename, std::ios_base::trunc | std::ios::binary);
@@ -65,19 +100,22 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
 
     *((uint16_t*) (p))      = 0x4949;            // Little Endian
     *((uint16_t*) (p += 2)) = 42;                // Tiff specification
-    *((uint32_t*) (p += 2)) = 14;                // Offset of the IFD
+    *((uint32_t*) (p += 2)) = 16;                // Offset of the IFD
 
 // write the number of entries in the IFD
 
-    *((uint16_t*) (p += 4)) = 8;  //
-    *((uint16_t*) (p += 2)) = 8;  // RBG TIFFTAG_BITSPERSAMPLE values
-    *((uint16_t*) (p += 2)) = 8;  //
+    // We can have 4 samples per pixel, each sample with the same size
+    *((uint16_t*) (p += 4)) = bitspersample;
+    *((uint16_t*) (p += 2)) = bitspersample;
+    *((uint16_t*) (p += 2)) = bitspersample;
+    *((uint16_t*) (p += 2)) = bitspersample;
 
     if(photometric == PHOTOMETRIC_YCBCR) // Number of tags
         *((uint16_t*) (p += 2)) = 12;
     else 
         *((uint16_t*) (p += 2)) = 11;
 
+// Offset of the IFD is here
     *((uint16_t*) (p += 2)) = TIFFTAG_IMAGEWIDTH;      //
     *((uint16_t*) (p += 2)) = TIFF_LONG;               //
     *((uint32_t*) (p += 2)) = 1;                       //
@@ -87,11 +125,16 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     *((uint16_t*) (p += 2)) = TIFF_LONG;               //
     *((uint32_t*) (p += 2)) = 1;                       //
     *((uint32_t*) (p += 4)) = length;                  //
-
+    
     *((uint16_t*) (p += 4)) = TIFFTAG_BITSPERSAMPLE;   //
     *((uint16_t*) (p += 2)) = TIFF_SHORT;              //
-    *((uint32_t*) (p += 2)) = samplesperpixel; 
-    *((uint32_t*) (p += 4)) = bitspersample;            // 8/32 = value for 1 sample per pixel or 8 = pointer for 3 samples per pixel
+    if (samplesperpixel == 1) {
+        *((uint32_t*) (p += 2)) = (uint32_t) 1; 
+        *((uint32_t*) (p += 4)) = bitspersample;            // 8/32 = value for 1 sample per pixel
+    } else {            //
+        *((uint32_t*) (p += 2)) = samplesperpixel; 
+        *((uint32_t*) (p += 4)) = (uint32_t) 8;            // 8 = pointer for 3 or 4 samples per pixel        
+    }
 
     *((uint16_t*) (p += 4)) = TIFFTAG_COMPRESSION;     //
     *((uint16_t*) (p += 2)) = TIFF_SHORT;              //
@@ -145,7 +188,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
         *((uint16_t*) (p += 2)) = TIFF_SHORT;              //
         *((uint32_t*) (p += 2)) = 2;                       //
         *((uint16_t*) (p += 4)) = 2;                       //
-        *((uint16_t*) (p + 2))  = 2;                       // FIXME : ce serait pas p+=2 ?
+        *((uint16_t*) (p + 2))  = 2;                       //
     }
 
     *((uint32_t*) (p += 4)) = 0;                       // end of IFD
@@ -161,7 +204,8 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     tilelinesize = tilewidth*samplesperpixel*bitspersample/8;
     rawtilesize = tilelinesize*tilelength;
 
-    Buffer = new uint8_t[2*rawtilesize];
+    BufferSize = 2*rawtilesize;
+    Buffer = new uint8_t[BufferSize];
 
 // z compression initalization
     if(compression == COMPRESSION_PNG) {
@@ -219,7 +263,20 @@ size_t TiledTiffWriter::computeRawTile(uint8_t *buffer, uint8_t *data) {
 }
 
 size_t TiledTiffWriter::computeLzwTile(uint8_t *buffer, uint8_t *data) {
-    return lzw_encode(data, rawtilesize, buffer);
+    
+    size_t outSize;
+
+    lzwEncoder LZWE;
+    uint8_t* temp = LZWE.encode(data, rawtilesize, outSize);
+    
+    if (outSize > BufferSize) {
+        delete[] Buffer;
+        BufferSize = outSize * 2;
+        Buffer = new uint8_t[BufferSize];
+    }
+    memcpy(buffer,temp,outSize);
+    
+    return outSize;
 }
 
 
@@ -234,8 +291,9 @@ size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
     memcpy(buffer, PNG_HEADER, sizeof(PNG_HEADER));
     *((uint32_t*)(buffer+16)) = bswap_32(tilewidth);
     *((uint32_t*)(buffer+20)) = bswap_32(tilelength);
-    if(photometric == PHOTOMETRIC_MINISBLACK) buffer[25] = 0; // gray
-    else buffer[25] = 2;                                      // RGB
+    if(samplesperpixel == 1) {buffer[25] = 0;} // gray
+    else if(samplesperpixel == 3) {buffer[25] = 2;} // RGB
+    else if(samplesperpixel == 4) {buffer[25] = 6;} // RGBA
 
     uint32_t crc = crc32(0, Z_NULL, 0);
     crc = crc32(crc, buffer + 12, 17);
@@ -344,7 +402,7 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data, bool crop) {
     if(size == 0) return -1;
     
     if (tilex*tiley == 1) {
-        output.seekp(132);
+        output.seekp(134);
         uint32_t Size[1];
         Size[0] = (uint32_t) size;
         output.write((char*) Size,4);
