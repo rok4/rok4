@@ -99,8 +99,6 @@ END {}
 #    *		dir_metadata      => undef,  # NOT IMPLEMENTED !
 #    *		compress_metadata => undef,  # NOT IMPLEMENTED !
 #    *		type_metadata     => undef,  # NOT IMPLEMENTED !
-#    *		bitspersample     => 0,     # ie 8
-#    *		samplesperpixel   => 0,     # ie 3
 #    *		size              => [],    # number w/h !
 #    *		dir_depth         => 0,     # ie 2
 #    *		limit             => []     # dim bbox Row/Col !!!
@@ -126,8 +124,6 @@ sub new {
 	dir_metadata      => undef,  # NOT IMPLEMENTED !
 	compress_metadata => undef,  # NOT IMPLEMENTED !
 	type_metadata     => undef,  # NOT IMPLEMENTED !
-#	bitspersample     => 0,     # ie 8
-#	samplesperpixel   => 0,     # ie 3
 	size              => [],    # number w/h !
         dir_depth         => 0,     # ie 2
 	limit             => []     # dim bbox Row/Col !!!
@@ -179,14 +175,6 @@ sub _init {
       ERROR ("key/value required to 'dir_nodata' !");
       return FALSE;
     }
-    if (! exists($params->{bitspersample})) {
-      ERROR ("key/value required to 'bitspersample' !");
-      return FALSE;
-    }
-    if (! exists($params->{samplesperpixel})) {
-      ERROR ("key/value required to 'samplesperpixel' !");
-      return FALSE;
-    }
     if (! exists($params->{size})) {
       ERROR ("key/value required to 'size' !");
       return FALSE;
@@ -201,14 +189,6 @@ sub _init {
     }
 
     # check type ref
-    if (! $params->{bitspersample}){
-      ERROR("value not informed to 'bitspersample' !");
-      return FALSE;
-    }
-    if (! $params->{samplesperpixel}){
-      ERROR("value not informed to 'samplesperpixel' !");
-      return FALSE;
-    }
     if (! scalar ($params->{size})){
       ERROR("list empty to 'size' !");
       return FALSE;
@@ -233,8 +213,6 @@ sub _init {
     $self->{dir_image}      = $params->{dir_image};
     $self->{compress_image} = $params->{compress_image};
     $self->{dir_nodata}     = $params->{dir_nodata};
-#    $self->{bitspersample}  = $params->{bitspersample};
-#    $self->{samplesperpixel}= $params->{samplesperpixel};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
@@ -264,14 +242,13 @@ __END__
   
   my $params = {
             id                => 1024,
+            order             => undef,
             dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
             compress_image    => "TIFF_RAW_INT8",
             dir_nodata        => undef,
             dir_metadata      => undef,
             compress_metadata => undef,
             type_metadata     => undef,
-            bitspersample     => 8,
-            samplesperpixel   => 3,
             size              => [ 4, 4],
             dir_depth         => 2,
             limit             => [1, 1000000, 1, 1000000] 

@@ -547,7 +547,7 @@ sub doIt {
     #######################
     # execute process script
     
-    return TRUE if (! $opts{test});
+    return TRUE if (! $opts{test}); #TEST#
     
     if (! $objProcess->processScript()) {
         ERROR ("Can not execute process !");
