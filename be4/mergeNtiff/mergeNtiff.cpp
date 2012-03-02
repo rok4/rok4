@@ -343,44 +343,6 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
     return 0;
 }
 
-/* #TOS# le test de compatibilité des phases en x et y n'est pas le même ici que dans ExtendedCompoundImage.
- * Peut être faudrait-il homogénéiser tout cela. D'autant plus qu'ici, des valeurs sont mises de manière
- * arbitraire
- */
-
-/**
-* @fn double getPhasex(Image* pImage)
-* @brief Calcul de la phase en X d'une image
-*/
-/*
-double getPhasex(Image* pImage) {
-    double intpart;
-    double phi=modf( pImage->getxmin()/pImage->getresx(), &intpart);
-    // NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
-    if (fabs(1-phi)<pImage->getresx()/100.) {phi=0.0000001;} // NV cette valeur devrait etre calculee
-    // #TOS# la phase est déjà relative à la résolution. La comparer à 1% de res n'a aucun sens. Il faut
-    // la comparer à 1%
-    
-    return phi;
-}
-*/
-/**
-* @fn double getPhasey(Image* pImage)
-* @brief Calcul de la phase en Y d'une image
-*/
-/*
-double getPhasey(Image* pImage) {
-    double intpart;
-    double phi=modf( pImage->getymax()/pImage->getresy(), &intpart);
-    //NV le traitement suivant est vraiment louche. Pourquoi fait-on cela?
-    if (fabs(1-phi)<pImage->getresy()/100.) {phi=0.0000001;} // NV cette valeur devrait etre calculee
-    // #TOS# la phase est déjà relative à la résolution. La comparer à 1% de res n'a aucun sens. Il faut
-    // la comparer à 1%
-     
-    return phi;
-}
-*/
-
 /* #TOS# un nouveau calcul de phase (test) est implémenté comme méthode de la classe Image.
  * Désormais, la phase est une valeur entre -0.5 et 0.5, rendant compte du décalage entre le pixel et la
  * grille de l'image finale. 
@@ -393,13 +355,11 @@ bool areCompatible(Image* pImage1, Image* pImage2)
     double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
     double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
 
-    if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) {std::cout << "1" << std::endl;return false;} // #TOS#
-    if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) {std::cout << "2" << std::endl;return false;} // #TOS#
-    
-    // #TOS# : On comparait les phases à 1% de la résolution, ce qui n'a aucun sens. On peut éventuellement
-    // comparer à 1%.
-    if (fabs(pImage1->getPhasex()-pImage2->getPhasex()) > 0.01) {std::cout << "3" << std::endl;return false;} // #TOS#
-    if (fabs(pImage1->getPhasey()-pImage2->getPhasey()) > 0.01) {std::cout << "4" << std::endl;return false;} // #TOS#
+    if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) {return false;}
+    if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) {return false;}
+
+    if (fabs(pImage1->getPhasex()-pImage2->getPhasex()) > 0.01) {return false;}
+    if (fabs(pImage1->getPhasey()-pImage2->getPhasey()) > 0.01) {return false;}
     
     return true;
 } 
@@ -420,74 +380,23 @@ bool InfPhasey(Image* pImage1, Image* pImage2) {return (pImage1->getPhasey()<pIm
 int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {
     std::vector<Image*> vTmp;
+    std::vector<Image*>::iterator itini = ImageIn.begin();
 
-    // Initilisation du tableau de sortie
-    pTabImageIn->push_back(ImageIn);
+    // we create consistent images' vectors (X/Y resolution and X/Y phases)
 
-    // Creation de vecteurs contenant des images avec une resolution en y homogene
-    // TODO : Attention, ils ne sont forcement en phase
-    /* #TOS# FIXME : les images sont triées en fonction de leur résolution en x, qu'elles soient très différentes ou pas.
-     * Après, les images sont séparées dans des vecteurs différents si leur résolution en y sont trop différentes
-     * (plus de 1% d'écart)
-     * On se retrouve donc avec des vecteurs d'images qui ont certes des résolutions en y simillaire mais les
-     * résolutions en x ne sont pas contrôlées. 
-     */
-    for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
-    {
-        std::stable_sort(it->begin(),it->end(),InfResx); 
-        for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-        if ( fabs((*it2)->getresy()-(*(it2+1))->getresy()) > __min((*it2)->getresy(), (*(it2+1))->getresy())/100.)
-        {
-            vTmp.assign(it2+1,it->end());
-            it->assign(it->begin(),it2+1);
+    for (std::vector<Image*>::iterator it = ImageIn.begin(); it < ImageIn.end()-1;it++) {
+        if (! areCompatible(*it,*(it+1))) {
+            // two following images are not compatible, we split images' vector
+            vTmp.assign(itini,it+1);
+            itini = it+1;
             pTabImageIn->push_back(vTmp);
         }
     }
+    
+    // we don't forget to store last images in pTabImageIn
+    vTmp.assign(itini,ImageIn.end());
+    pTabImageIn->push_back(vTmp);
 
-//TODO : A refaire proprement
-/*
-    // Creation de vecteurs contenant des images avec une resolution en x et en y homogenes
-        for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
-        {
-                std::sort(it->begin(),it->end(),InfResy); 
-                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                    if ((*it2)->getresy()!=(*(it2+1))->getresy() && it2+2!=it->end())
-                    {
-                            it->assign(it->begin(),it2);
-                            vTmp.assign(it2+1,it->end());
-                            pTabImageIn->push_back(vTmp);
-                            it++;
-                    }
-        }
-
-    // Creation de vecteurs contenant des images avec une resolution en x et en y, et une phase en x homogenes
-        for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
-        {
-                std::sort(it->begin(),it->end(),InfPhasex); 
-                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                    if (getPhasex(*it2)!=getPhasex(*(it2+1)) && it2+2!=it->end())
-                    {
-                            it->assign(it->begin(),it2);
-                            vTmp.assign(it2+1,it->end());
-                            pTabImageIn->push_back(vTmp);
-                            it++;
-                    }
-        }
-
-    // Creation de vecteurs contenant des images superposables
-        for (std::vector<std::vector<Image*> >::iterator it=pTabImageIn->begin();it<pTabImageIn->end();it++)
-        {
-                std::sort(it->begin(),it->end(),InfPhasey); 
-                for (std::vector<Image*>::iterator it2 = it->begin();it2+1<it->end();it2++)
-                    if (getPhasey(*it2)!=getPhasey(*(it2+1)) && it2+2!=it->end())
-                    {
-                            it->assign(it->begin(),it2);
-                            vTmp.assign(it2+1,it->end());
-                            pTabImageIn->push_back(vTmp);
-                            it++;
-                    }
-        }
-*/
     return 0;
 }
 
@@ -568,9 +477,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 
     LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
     LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
-
-    LOGGER_ERROR("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx); // #TOS#
-    LOGGER_ERROR("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny); // #TOS#
     
     unsigned int k,l;
     Image *pI0,*pI1,*pI2,*pI3;
@@ -580,7 +486,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
     for (i=-1; i < nx+1; i++) {
         for (j=-1; j < ny+1; j++){
             LOGGER_DEBUG("I:"<<i<<" J:"<<j);
-            LOGGER_ERROR("I:"<<i<<" J:"<<j); //#TOS#
 
             //if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
             /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
@@ -589,7 +494,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
                 if ((fabs(pECI->getimages()->at(k)->getxmin() - (pECI->getxmin()+i*w*resx)) < epsilon_x)
                 && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)) {
                     LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax());
-                    LOGGER_ERROR("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax()); //#TOS#
                     break;
                 }
             }
@@ -730,8 +634,6 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
     std::vector<Image*> pMask;
-// #TOS#
-    std::cout << "mergeTabImage" << std::endl;
     
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
         // Mise en superposition du paquet d'images en 2 etapes
@@ -744,14 +646,10 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             LOGGER_ERROR("Impossible d'assembler les images");
             return -1;
         }
-        
-        printf("ECI : \n - resx : %f\n - resy : %f\n - phasex : %f\n - phasey : %f\n",pECI->getresx(),pECI->getresy(),pECI->getPhasex(),pECI->getPhasey());
-        printf("imageOut : \n - resx : %f\n - resy : %f\n - phasex : %f\n - phasey : %f\n",pImageOut->getresx(),pImageOut->getresy(),pImageOut->getPhasex(),pImageOut->getPhasey());
 
         //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 
         if (areCompatible(pImageOut,pECI)){
-            std::cout << "Par le miracle de notre bon roi, ces images sont utilisables" << std::endl; // #TOS#
             /* les images sources et finale ont la meme res et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
@@ -759,7 +657,6 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             mask = new ExtendedCompoundMaskImage(pECI);
             pMask.push_back(mask);
         } else {
-            std::cout << "Foutredieu, me voilà bien souffleté par ces manantes d'images non superposables" << std::endl; // #TOS#
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
             
             uint mirrors=addMirrors(pECI);
