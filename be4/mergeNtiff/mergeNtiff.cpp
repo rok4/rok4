@@ -343,33 +343,6 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
     return 0;
 }
 
-/* #TOS# un nouveau calcul de phase (test) est implémenté comme méthode de la classe Image.
- * Désormais, la phase est une valeur entre -0.5 et 0.5, rendant compte du décalage entre le pixel et la
- * grille de l'image finale. 
- */ 
-
- 
-/* Teste si 2 images sont superposables */
-bool areCompatible(Image* pImage1, Image* pImage2)
-{
-    double epsilon_x=__min(pImage1->getresx(), pImage2->getresx())/100.;
-    double epsilon_y=__min(pImage1->getresy(), pImage2->getresy())/100.;
-
-    if (fabs(pImage1->getresx()-pImage2->getresx()) > epsilon_x) {return false;}
-    if (fabs(pImage1->getresy()-pImage2->getresy()) > epsilon_y) {return false;}
-
-    if (fabs(pImage1->getPhasex()-pImage2->getPhasex()) > 0.01) {return false;}
-    if (fabs(pImage1->getPhasey()-pImage2->getPhasey()) > 0.01) {return false;}
-    
-    return true;
-} 
-
-/* Fonctions d'ordre */
-bool InfResx(Image* pImage1, Image* pImage2) {return (pImage1->getresx()<pImage2->getresx() - __min(pImage1->getresx(), pImage2->getresx())/100.);}
-bool InfResy(Image* pImage1, Image* pImage2) {return (pImage1->getresy()<pImage2->getresy() - __min(pImage1->getresy(), pImage2->getresy())/100.);}
-bool InfPhasex(Image* pImage1, Image* pImage2) {return (pImage1->getPhasex()<pImage2->getPhasex() - __min(pImage1->getresx(), pImage2->getresx())/100.);}
-bool InfPhasey(Image* pImage1, Image* pImage2) {return (pImage1->getPhasey()<pImage2->getPhasey() - __min(pImage1->getresy(), pImage2->getresy())/100.);}
-
 /**
 * @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
 * @param ImageIn : vecteur contenant les images non triees
@@ -385,7 +358,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
     // we create consistent images' vectors (X/Y resolution and X/Y phases)
 
     for (std::vector<Image*>::iterator it = ImageIn.begin(); it < ImageIn.end()-1;it++) {
-        if (! areCompatible(*it,*(it+1))) {
+        if (! (*it)->isCompatibleWith(*(it+1))) {
             // two following images are not compatible, we split images' vector
             vTmp.assign(itini,it+1);
             itini = it+1;
@@ -649,7 +622,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
         //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 
-        if (areCompatible(pImageOut,pECI)){
+        if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme res et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);

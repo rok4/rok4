@@ -38,6 +38,10 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 #include <stdint.h>
 #include "BoundingBox.h"
 #include "math.h"    // Pour lround
@@ -124,6 +128,20 @@ class Image {
             if (phi < -0.5) {phi += 1.0;}
             return phi;
         }
+        
+        /* Teste si 2 images sont superposables : compatibilité en phase/résolution X/Y*/
+        bool isCompatibleWith(Image* pImage) {
+            double epsilon_x=__min(getresx(), pImage->getresx())/100.;
+            double epsilon_y=__min(getresy(), pImage->getresy())/100.;
+
+            if (fabs(getresx()-pImage->getresx()) > epsilon_x) {return false;}
+            if (fabs(getresy()-pImage->getresy()) > epsilon_y) {return false;}
+
+            if (fabs(getPhasex()-pImage->getPhasex()) > 0.01) {return false;}
+            if (fabs(getPhasey()-pImage->getPhasey()) > 0.01) {return false;}
+            
+            return true;
+        } 
         
         /** Constructeur */
         Image(int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :

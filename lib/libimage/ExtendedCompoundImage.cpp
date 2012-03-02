@@ -107,7 +107,6 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  uint mirrors)
 {
     uint i;
-    double phasex0, phasey0, phasex1, phasey1;
 
     if (images.size()==0){
         LOGGER_ERROR("Creation d'une image composite sans image");
@@ -115,25 +114,13 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
     }
 
     for (i=0;i<images.size()-1;i++)
-    {
-        if ( fabs(images[i]->getresx()-images[i+1]->getresx())>epsilon || fabs(images[i]->getresy()-images[i+1]->getresy())>epsilon )
-        {
-            LOGGER_WARN("Les images ne sont pas toutes a la meme resolution "<<images[i]->getresx()<<" "<<images[i+1]->getresx()<<" "<<images[i]->getresy()<<" "<<images[i+1]->getresy());
-            return NULL;
-        }
-        phasex0 = images[i]->getresx();
-        phasex1 = images[i+1]->getresx();
-        phasey0 = images[i]->getresy();
-        phasey1 = images[i+1]->getresy();
-        
-        /* #TOS# Avant, le test était :
-         * if ( (fabs(phasex1-phasex0)>epsilon && ( (fabs(phasex0)>epsilon && fabs(1-phasex0)>epsilon) || (fabs(phasex1)>epsilon && fabs(1-phasex1)>epsilon)))
-            || (fabs(phasey1-phasey0)>epsilon && ( (fabs(phasey0)>epsilon && fabs(1-phasey0)>epsilon) || (fabs(phasey1)>epsilon && fabs(1-phasey1)>epsilon))) )
-        */
-        
-        if ( (fabs(phasex1-phasex0)>epsilon) || (fabs(phasey1-phasey0)>epsilon))
-        {
-            LOGGER_WARN("Les images ne sont pas toutes en phase "<<phasex0<<" "<<phasex1<<" "<<phasey0<<" "<<phasey1);
+    {  
+        if (! images[i]->isCompatibleWith(images[i+1])) {
+            LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
+                "- image " << i << " : " << images[i]->getresx() << "," << images[i]->getresy() << " " << images[i]->getPhasex() << " " << images[i]->getPhasey() << "\n" <<
+                "- image " << i+1 << " : " << images[i+1]->getresx() << "," << images[i+1]->getresy() << " " << images[i+1]->getPhasex() << " " << images[i+1]->getPhasey() << "\n"
+                
+            );
             return NULL;
         }
     }
@@ -144,7 +131,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors)
 {
     // TODO : controler que les images et les masques sont superposables a l'image
-        return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors);
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors);
 }
 
 /**
