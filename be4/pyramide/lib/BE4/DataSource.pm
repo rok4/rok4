@@ -68,19 +68,7 @@ use constant FALSE => 0;
 BEGIN {}
 INIT {}
 END {}
-#
-# Group: variable
-#
 
-#
-# variable: $self
-#
-#    * PATHIMG => undef, # path to images
-#    * PATHMTD => undef, # path to metadata
-#    * SRS     => undef, # ie proj4 !
-#    * images  => [],    # list of object images sources (BE4::ImageSource)
-
-#
 # Group: constructor
 #
 
@@ -93,7 +81,7 @@ sub new {
   my $self = {
     PATHIMG => undef, # path to images
     PATHMTD => undef, # path to metadata
-    SRS     => undef, # ie proj4 !
+    SRS     => undef, # 
     #
     images  => [],    # list of images sources
     #
@@ -128,7 +116,7 @@ sub _init {
     # init. params    
     $self->{PATHIMG}=$params->{path_image}    if (exists($params->{path_image})); 
     $self->{PATHMTD}=$params->{path_metadata} if (exists($params->{path_metadata}));
-    $self->{SRS}=$params->{srs}               if (exists($params->{srs}));
+    $self->{SRS}=uc($params->{srs})               if (exists($params->{srs}));
     
     if (defined ($self->{PATHIMG}) && ! -d $self->{PATHIMG}) {
         ERROR ("Directory image doesn't exist !");

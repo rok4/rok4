@@ -1012,16 +1012,22 @@ sub calculateExtremLevels {
         my $srsini= new Geo::OSR::SpatialReference;
         eval { $srsini->ImportFromProj4('+init='.$self->{datasource}->getSRS().' +wktext'); };
         if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$self->{datasource}->getSRS());
-            return FALSE;
+            eval { $srsini->ImportFromProj4('+init='.lc($self->{datasource}->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$self->{datasource}->getSRS());
+                return FALSE;
+            }
         }
         my $srsfin= new Geo::OSR::SpatialReference;
         eval { $srsfin->ImportFromProj4('+init='.$self->{tms}->getSRS().' +wktext'); };
         if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$self->{tms}->getSRS());
-            return FALSE;
+            eval { $srsfin->ImportFromProj4('+init='.lc($self->{tms}->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$self->{tms}->getSRS());
+                return FALSE;
+            }
         }
         $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
