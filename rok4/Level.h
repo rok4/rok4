@@ -65,6 +65,8 @@ private:
     uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
     std::string noDataFile;
     DataSource* noDataSource;
+    DataSource* noDataTileSource;
+    DataSource* noDataSourceProxy;
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );
@@ -139,23 +141,19 @@ public:
 
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
 
-    void setNoData ( const std::string& file ) {
-        noDataFile=file;
-    }
-    void setNoDataSource ( DataSource* source ) {
-        noDataSource=source;
-    }
+    void setNoData ( const std::string& file ) ;
+    void setNoDataSource ( DataSource* source );
 
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, eformat_data format, std::string noDataFile ) : tm ( tm ), channels ( channels ), baseDir ( baseDir ), tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ), maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ), minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ) {}
+            int pathDepth, eformat_data format, std::string noDataFile );
 
     /*
      * Destructeur
      */
-    ~Level() {}
+    ~Level();
 
 };
 
