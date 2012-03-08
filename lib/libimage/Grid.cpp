@@ -137,7 +137,7 @@ bool Grid::reproject(std::string from_srs, std::string to_srs) {
 
 	pj_free(pj_src);
 	pj_free(pj_dst);
-        pj_ctx_free(ctx)
+        pj_ctx_free(ctx);
 	pthread_mutex_unlock (& mutex_proj);
 
 	if (code!=0){
