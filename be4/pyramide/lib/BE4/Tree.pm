@@ -179,17 +179,23 @@ sub _load {
     if ($tms->getSRS() ne $src->getSRS()){
         my $srsini= new Geo::OSR::SpatialReference;
         eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
-        if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$src->getSRS());
-            return FALSE;
+        if ($@) { 
+            eval { $srsini->ImportFromProj4('+init='.lc($src->getSRS()).' +wktext'); };
+            if ($@) { 
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$src->getSRS());
+                return FALSE;
+            }
         }
         my $srsfin= new Geo::OSR::SpatialReference;
         eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
         if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$tms->getSRS());
-            return FALSE;
+            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$tms->getSRS());
+                return FALSE;
+            }
         }
         $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }

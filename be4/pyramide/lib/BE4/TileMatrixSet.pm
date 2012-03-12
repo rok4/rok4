@@ -106,7 +106,7 @@ sub new {
     levelbottom => undef,
     resbest  => undef,
     #
-    srs        => undef, # ie proj4 !
+    srs        => undef, # srs is casted in uppercase
     tileheight => undef, # determined by TileMatrix(0) !
     tilewidth  => undef, # determined by TileMatrix(0) !
     tilematrix => {},
@@ -210,7 +210,7 @@ sub _load {
     ERROR (sprintf "Can not determine parameter 'srs' in the XML file TMS !");
     return FALSE;
   }
-  $self->{srs} = $xmltree->{crs};
+  $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
   
   # clean
   $xmltree = undef;
