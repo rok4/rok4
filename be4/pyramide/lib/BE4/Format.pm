@@ -68,7 +68,6 @@ my %SAMPLEFORMAT;
 BEGIN {}
 INIT {
 
-  
     %COMPRESSION = (
         raw      => "RAW",
 #       floatraw => "RAW",  use raw instead
@@ -189,68 +188,7 @@ sub isSampleFormat {
     return FALSE;
 }
 ################################################################################
-# Group: static method
-#
 
-sub listCompressionType {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-
-    foreach (keys %COMPRESSION) {
-        print "$_\n";
-    }
-}
-
-sub listCompressionCode {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-
-    foreach (values %COMPRESSION) {
-        print "$_\n";
-    }
-}
-
-sub listCompression {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-
-    while (my ($k,$v) = each (%COMPRESSION)) {
-        print "$k => $v\n";
-    }
-}
-
-sub getCompressionType {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-
-    my $code = shift;
-
-    foreach (keys %COMPRESSION) {
-        return $_ if ($COMPRESSION{$_} eq $code);
-    }
-    ERROR(sprintf "No find type for the code '%s' !", $code);
-    return undef;
-}
-
-sub getCompressionCode {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-
-    my $type = shift;
-
-    $type = 'raw' if ($type eq 'none');
-    
-    if ($type eq 'floatraw') {
-        WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
-        $type = 'raw';
-    }
-
-    foreach (keys %COMPRESSION) {
-        return $COMPRESSION{$_} if ($_ eq $type);
-    }
-    ERROR(sprintf "No find code for the type '%s' !", $type);
-    return undef;
-}
 
 sub decodeFormat {
     my $class = shift;
@@ -355,8 +293,6 @@ __END__
 
   # mode static 
   my @info = BE4::Format->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
-  my $compressionCode = BE4::Format->getCompressionCode("none");      # RAW !
-  my $compressionType = BE4::Format->getCompressionType("RAW"); # raw !
 
 =head1 DESCRIPTION
 
