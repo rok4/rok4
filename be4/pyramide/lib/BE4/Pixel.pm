@@ -33,7 +33,7 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
-package BE4::Format;
+package BE4::Pixel;
 
 use strict;
 use warnings;
@@ -60,27 +60,20 @@ use constant FALSE => 0;
 
 ################################################################################
 # Global
-my %COMPRESSION;
-my %SAMPLEFORMAT;
+my %PIXEL;
 
 ################################################################################
 # Preloaded methods go here.
 BEGIN {}
 INIT {
 
-    %COMPRESSION = (
-        raw      => "RAW",
-#       floatraw => "RAW",  use raw instead
-        jpg      => "JPG",
-        png      => "PNG",
-        lzw      => "LZW"
-    );
+%PIXEL = (
+    bitspersample     => [8,32],
+    sampleformat      => ['uint','float'],
+    photometric       => ['rgb','gray','mask'],
+    samplesperpixel   => [1,3,4],
+);
 
-    %SAMPLEFORMAT = (
-        uint      => "INT",
-        float     => "FLOAT"
-    );
-  
 }
 END {}
 
@@ -91,10 +84,10 @@ END {}
 #
 # variable: $self
 #
-#    * compression
+#    * photometric
 #    * sampleformat
 #    * bitspersample
-#    * code
+#    * samplesperpixel
 #
 
 ################################################################################
@@ -102,53 +95,39 @@ END {}
 #
 sub new {
     my $this = shift;
-    my $compression = shift;
+    my $photometric = shift;
     my $sampleformat = shift;
     my $bitspersample = shift;
+    my $samplesperpixel = shift;
 
     my $class= ref($this) || $this;
     my $self = {
-        compression => undef, # ie raw
+        photometric => undef, # ie raw
         sampleformat => undef, # ie uint
         bitspersample => undef, # ie 8
-        code => undef, # ie TIFF_RAW_INT8
+        samplesperpixel => undef, # ie 3
     };
 
     bless($self, $class);
 
     TRACE;
-    
-#   to remove when compression type 'floatraw' will be remove
-    if ($compression eq 'floatraw') {
-        WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
-        $compression = 'raw';
-    }
-  
-    # exception :
-    $compression = 'raw' if (!defined ($compression) || $compression eq 'none');
+
+    $photometric = 'rgb' if (!defined ($photometric));
     $sampleformat = 'uint' if (!defined ($sampleformat));
     $bitspersample = 8 if (!defined ($bitspersample));
+    $samplesperpixel = 3 if (!defined ($samplesperpixel));
 
-    return undef if (! $self->isCompressionExist($compression));
-    return undef if (! $self->isSampleFormat($sampleformat));
+    if (! $self->is_SampleFormat($sampleformat) ||
+        ! $self->is_SamplesPerPixel($samplesperpixel) ||
+        ! $self->is_Photometric($photometric) ||
+        ! $self->is_BitsPerSample($bitspersample)) {
+        return undef;
+    }
 
-    $self->{compression} = $compression;
+    $self->{photometric} = $photometric;
     $self->{sampleformat} = $sampleformat;
     $self->{bitspersample} = $bitspersample;
-
-    # codes handled by rok4 are :
-    #     - TIFF_INT8 (deprecated, use TIFF_RAW_INT8 instead)
-    #     - TIFF_RAW_INT8
-    #     - TIFF_JPG_INT8
-    #     - TIFF_LZW_INT8
-    #     - TIFF_PNG_INT8
-
-    #     - TIFF_FLOAT32 (deprecated, use TIFF_RAW_FLOAT32 instead)
-    #     - TIFF_RAW_FLOAT32
-    #     - TIFF_LZW_FLOAT32
-
-    # code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
-    $self->{code} = 'TIFF_'.$COMPRESSION{$compression}.'_'.$SAMPLEFORMAT{$sampleformat}.$bitspersample;
+    $self->{samplesperpixel} = $samplesperpixel;
 
     return $self;
 }
@@ -156,104 +135,73 @@ sub new {
 ################################################################################
 # Group: public methods
 #
-sub isCompressionExist {
-    my $self = shift;
-    my $compression = shift;
 
-    TRACE;
-    
-    #   to remove when compression type 'floatraw' will be remove
-    if ($compression eq 'floatraw') {
-        WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
-        $compression = 'raw';
-    }
-
-    foreach (keys %COMPRESSION) {
-        return TRUE if $compression eq $_;
-    }
-    ERROR(sprintf "the type of compression '%s' doesn't exist ?", $compression);
-    return FALSE;
-}
-
-sub isSampleFormat {
+sub is_SampleFormat {
     my $self = shift;
     my $sampleformat = shift;
 
     TRACE;
 
-    foreach (keys %SAMPLEFORMAT) {
-        return TRUE if $sampleformat eq $_;
+    return FALSE if (! defined $sampleformat);
+
+    foreach (@{$TILES{sampleformat}}) {
+        return TRUE if ($sampleformat eq $_);
     }
-    ERROR(sprintf "the sample format '%s' doesn't exist ?", $sampleformat);
+    ERROR (sprintf "Can not define 'sampleformat' (%s) : unsupported !",$sampleformat);
     return FALSE;
 }
-################################################################################
 
+sub is_BitsPerSample {
+    my $self = shift;
+    my $bitspersample = shift;
 
-sub decodeFormat {
-    my $class = shift;
-    return undef if (!$class->isa(__PACKAGE__));
-    
-    my $format = shift;
-    
-#   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-    if ($format eq 'TIFF_INT8') {
-        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-        $format = 'TIFF_RAW_INT8';
+    TRACE;
+
+    return FALSE if (! defined $bitspersample);
+
+    foreach (@{$TILES{bitspersample}}) {
+        return TRUE if ($bitspersample eq $_);
     }
-    if ($format eq 'TIFF_FLOAT32') {
-        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-        $format = 'TIFF_RAW_FLOAT32';
-    }
-    
-    my @value = split(/_/, $format);
-    if (scalar @value != 3) {
-        ERROR(sprintf "Compression code is not valid '%s' !", $format);
-        return undef;
-    }
-  
-    $value[2] =~ m/(\w+)(\d+)/;
-    
-    my $compression = '';
-    my $sampleformat = '';
-    my $bitspersample = $2;
-    
-    foreach (keys %SAMPLEFORMAT) {
-        if ($1 eq $SAMPLEFORMAT{$_}) {
-            $sampleformat = $_;
-        }
-    }
-    if ($sampleformat eq '') {
-        ERROR(sprintf "Can not decode the sample's format '%s' !", $1);
-        return undef;
-    }
-    
-    foreach (keys %COMPRESSION) {
-        if ($value[1] eq $COMPRESSION{$_}) {
-            $compression = $_;
-        }
-    }
-    if ($compression eq '') {
-        ERROR(sprintf "Can not decode the compression '%s' !", $value[1]);
-        return undef;
-    }
-    
-    return (lc $value[0], $compression, $sampleformat, $bitspersample);
-  
-    # ie 'tiff', 'raw', 'uint' , '8'
-    # ie 'tiff', 'png', 'uint' , '8'
-    # ie 'tiff', 'jpg', 'uint' , '8'
-    # ie 'tiff', 'lzw', 'uint' , '8'
-    # ie 'tiff', 'raw', 'float', '32'    
-    # ie 'tiff', 'lzw', 'float', '32'
-    
+    ERROR (sprintf "Can not define 'bitspersample' (%s) : unsupported !",$bitspersample);
+    return FALSE;
 }
+
+sub is_Photometric {
+    my $self = shift;
+    my $photometric = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $photometric);
+
+    foreach (@{$TILES{photometric}}) {
+        return TRUE if ($photometric eq $_);
+    }
+    ERROR (sprintf "Can not define 'photometric' (%s) : unsupported !",$photometric);
+    return FALSE;
+}
+
+sub is_SamplesPerPixel {
+    my $self = shift;
+    my $samplesperpixel = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $samplesperpixel);
+
+    foreach (@{$TILES{samplesperpixel}}) {
+        return TRUE if ($samplesperpixel eq $_);
+    }
+    ERROR (sprintf "Can not define 'samplesperpixel' (%s) : unsupported !",$samplesperpixel);
+    return FALSE;
+}
+
 ################################################################################
 # Group: get
 #
-sub getCompression {
+sub getPhotometric {
     my $self = shift;
-    return $self->{compression};
+    return $self->{photometric};
 }
 
 sub getSampleFormat {
@@ -266,10 +214,11 @@ sub getBitsperSample {
     return $self->{bitspersample};
 }
 
-sub getCode {
+sub getSamplesperPixels {
     my $self = shift;
-    return $self->{code};
+    return $self->{samplesperpixel};
 }
+
 
 1;
 __END__
@@ -278,18 +227,15 @@ __END__
 
 =head1 NAME
 
- BE4::Format - mapping between compression/sampleformat/bitspersample and code
+ BE4::Pixel - components of a pixel in output images
 
 =head1 SYNOPSIS
 
   use BE4::Format;
   
-  my $objC = BE4::Format->new("raw","uint",8);
+  my $objC = BE4::Pixel->new("rgb","uint",8);
   
-  my $code = $objC->getCode(); # "TIFF_RAW_INT8" !
-  my $type = $objC->getCompression(); # "raw" !
-  my $type = $objC->getSampleFormat(); # "uint" !
-  my $type = $objC->getBitsperSample(); # "8" !
+
 
   # mode static 
   my @info = BE4::Format->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !

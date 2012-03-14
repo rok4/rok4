@@ -848,7 +848,6 @@ sub readConfPyramid {
                 id                => $tagtm,
                 order             => $levelOrder,
                 dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-                compress_image    => $tagformat, 
                 dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
                 dir_metadata      => undef,      # TODO !
                 compress_metadata => undef,      # TODO !
@@ -1156,7 +1155,6 @@ sub createLevels {
             id                => $tmID,
             order             => $i,
             dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
-            compress_image    => $self->getFormat()->getCode(), # ie TIFF_RAW_INT8 !
             dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,

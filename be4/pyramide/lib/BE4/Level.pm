@@ -95,7 +95,6 @@ END {}
 #    *          id                => undef,
 #    *          order             => undef,
 #    *          dir_image         => undef,
-#    *          compress_image    => undef, # ie "TIFF_RAW_INT8"
 #    *          dir_nodata        => undef,
 #    *          dir_metadata      => undef,  # NOT IMPLEMENTED !
 #    *          compress_metadata => undef,  # NOT IMPLEMENTED !
@@ -121,7 +120,6 @@ sub new {
         order             => undef,
         is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyamids
         dir_image         => undef,
-        compress_image    => undef, # ie "TIFF_RAW_INT8"
         dir_nodata        => undef,
         dir_metadata      => undef,  # NOT IMPLEMENTED !
         compress_metadata => undef,  # NOT IMPLEMENTED !
@@ -169,10 +167,6 @@ sub _init {
       ERROR ("key/value required to 'dir_image' !");
       return FALSE;
     }
-    if (! exists($params->{compress_image})) {
-      ERROR ("key/value required to 'compress_image' !");
-      return FALSE;
-    }
     if (! exists($params->{dir_nodata})) {
       ERROR ("key/value required to 'dir_nodata' !");
       return FALSE;
@@ -213,7 +207,6 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{order}          = $params->{order};
     $self->{dir_image}      = $params->{dir_image};
-    $self->{compress_image} = $params->{compress_image};
     $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
@@ -246,7 +239,6 @@ __END__
             id                => 1024,
             order             => 12,
             dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
-            compress_image    => "TIFF_RAW_INT8",
             dir_nodata        => undef,
             dir_metadata      => undef,
             compress_metadata => undef,
