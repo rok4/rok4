@@ -223,29 +223,15 @@ sub computeWholeTree {
         }
     }
 
-    # Détermination du cutLevel optimal
-    $self->{tree}->distributeNodesOnJobs();
-    INFO (sprintf "CutLevel:", $self->{tree}->{cutLevelId});
-
-    # creation des scripts calculant le bas de la pyramide
-    my @cutLevelNodeList = $self->{tree}->getNodesOfCutLevel();
-
-    if (! scalar @cutLevelNodeList) {
+    # Détermination du cutLevel optimal et répartition des noeuds sur les jobs
+    my @nodeRack = $self->{tree}->shareNodesOnJobs();
+    if (! scalar @nodeRack) {
         ERROR("Cut Level Node List is empty !");
         return FALSE;
     }
+    INFO (sprintf "CutLevel : %s", $self->{tree}->{cutLevelId});
 
     $finishScriptCode .= "#recuperation des images calculees par les scripts precedents\n";
-
-    # repartition des travaux sur les differents scripts
-    my @nodeRack;
-    my $nodeCounter=0;
-    INFO ("Node List (cut level):");
-    foreach my $node (@cutLevelNodeList){
-        push (@{$nodeRack[$nodeCounter % $self->{job_number}]}, $node);
-        INFO (sprintf "Node '%s-%s-%s'.", $node->{level} ,$node->{x}, $node->{y});
-        $nodeCounter++;
-    }
 
     # creation des scripts
     for (my $scriptCount=1; $scriptCount<=$self->{job_number}; $scriptCount++){

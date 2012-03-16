@@ -67,11 +67,11 @@ my $VERSION = "0.0.1";
 use constant TRUE  => 1;
 use constant FALSE => 0;
 # commands' weights
-use constant MERGE4TIFF_W => 2;
-use constant MERGENTIFF_W => 10;
-use constant WGET_W => 30;
-use constant TIFF2TILE_W => 1;
-use constant TIFFCP_W => 1;
+use constant MERGE4TIFF_W => 1;
+use constant MERGENTIFF_W => 4;
+use constant WGET_W => 35;
+use constant TIFF2TILE_W => 0;
+use constant TIFFCP_W => 0;
 
 #-------------------------------------------------------------------------------
 # Global
@@ -512,18 +512,19 @@ sub weightAboveNode {
 }
 
 
-# method: distributeNodesOnJobs
+# method: shareNodesOnJobs
 #  Détermine le cutLevel afin que la répartition sur les différents scripts et le temps d'exécution
 #  de ceux-ci soient, a priori, optimaux.
 #  Création du tableau de répartition des noeuds sur les jobs
 #-------------------------------------------------------------------------------
-sub distributeNodesOnJobs {
+sub shareNodesOnJobs {
     my $self = shift;
 
     TRACE;
 
     my $optimalWeight = undef;
     my $cutLevelId = undef;
+    my @jobsSharing = undef;
 
     # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel
     my $wholeTreeWeight = 0;
@@ -531,7 +532,6 @@ sub distributeNodesOnJobs {
     foreach my $node (@topLevelNodeList) {
         $wholeTreeWeight += $self->getAccumulatedWeightOfNode($node);
     }
-print "\nPoids total de l'arbre : $wholeTreeWeight\n";#TEST#
 
     for (my $i = $self->{levelIdx}{$self->{topLevelId}}; $i >= $self->{levelIdx}{$self->{bottomLevelId}}; $i--){
         my $levelId = $self->{tmList}[$i]->getID();
@@ -540,37 +540,36 @@ print "\nPoids total de l'arbre : $wholeTreeWeight\n";#TEST#
         if (scalar @levelNodeList < $self->{job_number}) {
             next;
         }
-print "\nNiveau : $levelId\n";#TEST#
-        my @WEIGHTS;
-        foreach my $node (@levelNodeList) {
-            push @WEIGHTS, $self->getAccumulatedWeightOfNode($node);
-        }
-        @WEIGHTS = sort {$b <=> $a} @WEIGHTS;
 
+        @levelNodeList =
+            sort {$self->getAccumulatedWeightOfNode($b) <=> $self->getAccumulatedWeightOfNode($a)} @levelNodeList;
+
+        my @JOBSWEIGHT;
         my @JOBS;
         for (my $j = 0; $j < $self->{job_number}; $j++) {
-            push @JOBS, 0
+            push @JOBSWEIGHT, 0;
         }
         
-        for (my $j = 0; $j < scalar @WEIGHTS; $j++) {
-            $JOBS[$self->minArrayIndex(@JOBS)] += $WEIGHTS[$j];
+        for (my $j = 0; $j < scalar @levelNodeList; $j++) {
+            my $indexMin = $self->minArrayIndex(@JOBSWEIGHT);
+            $JOBSWEIGHT[$indexMin] += $self->getAccumulatedWeightOfNode($levelNodeList[$j]);
+            push (@{$JOBS[$indexMin]}, $levelNodeList[$j]);
         }
         
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
-        my $finisherWeight = $wholeTreeWeight - $self->sumArray(@JOBS);
-        my $worstWeight = $self->maxArrayValue(@JOBS) + $finisherWeight;
-print "JOBS : @JOBS\n";#TEST#
-print "Poids du FINISHER : $finisherWeight\n";#TEST#
-print "WorstWeight : $worstWeight\n";#TEST#
-$self->statArray(@JOBS); #TEST#
+        my $finisherWeight = $wholeTreeWeight - $self->sumArray(@JOBSWEIGHT);
+        my $worstWeight = $self->maxArrayValue(@JOBSWEIGHT) + $finisherWeight;
+
         # on compare ce pire des cas avec celui obtenu jusqu'ici. S'il est plus petit, on garde ce niveau comme
         # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
         if (! defined $optimalWeight || $worstWeight < $optimalWeight) {
             $optimalWeight = $worstWeight;
             $cutLevelId = $levelId;
+            @jobsSharing = @JOBS;
             DEBUG (sprintf "New cutLevel found : %s (worstWeight : %s)",$levelId,$optimalWeight);
         }
+
     }
 
     if (! defined $cutLevelId) {
@@ -580,6 +579,8 @@ $self->statArray(@JOBS); #TEST#
     }
 
     $self->{cutLevelId} = $cutLevelId;
+
+    return @jobsSharing;
 }
 
 ####################################################################################################
@@ -644,6 +645,25 @@ sub sumArray {
     }
 
     return $sum;
+}
+
+# method: oldSharing #TEST#
+#-------------------------------------------------------------------------------
+sub oldSharing {
+    my $self = shift;
+    my @nodes = @_;
+
+    TRACE;
+
+    my @nodeRackWeight;
+    my $nodeCounter=0;
+
+    foreach my $node (@nodes){
+        $nodeRackWeight[$nodeCounter % $self->{job_number}] += $self->getAccumulatedWeightOfNode($node);
+        $nodeCounter++;
+    }
+
+    print "Ancienne répartition : @nodeRackWeight\n"; 
 }
 
 # method: statArray #TEST#
