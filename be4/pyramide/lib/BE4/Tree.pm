@@ -575,7 +575,12 @@ sub shareNodesOnJobs {
     if (! defined $cutLevelId) {
         # Nous sommes dans le cas où même le niveau du bas contient moins de noeuds qu'il y a de jobs.
         # Dans ce cas, on définit le cutLevel comme le niveau du bas.
+        INFO("The number of nodes in the bottomLevel is smaller than the number of jobs. Some one will be empty");
         $cutLevelId = $self->{bottomLevelId};
+        my @levelNodeList = $self->getNodesOfLevel($cutLevelId);
+        for (my $i = 0; $i < scalar @levelNodeList; $i++) {
+            push (@{$jobsSharing[$i]}, $levelNodeList[$i]);
+        }
     }
 
     $self->{cutLevelId} = $cutLevelId;
