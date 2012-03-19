@@ -84,10 +84,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         if (masks.empty()) {
             memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
         } else {
-            /* #TOS# : ici, le masque est utilisé comme s'il était à superposer avec l'image courante, alors
-             * qu'il correspond à l'emprise de l'image courante sur l'ECI (à superposer avec l'ECI)
-             */
-            /*
+            
             int j;
             uint8_t* buffer_m = new uint8_t[masks[i]->width];
 
@@ -95,16 +92,6 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             for (j=0;j<c1-c0;j++) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
                     memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
-                }
-            }*/
-            
-            int j;
-            uint8_t* buffer_m = new uint8_t[masks[i]->width];
-
-            masks[i]->getline(buffer_m,line);
-            for (j=c0;j<c1;j++) {
-                if (buffer_m[j]>=127) {  // Seuillage subjectif du masque
-                    memcpy(&buffer[j*channels],&buffer_t[(c2+j-c0)*channels],sizeof(T)*channels);
                 }
             }
             

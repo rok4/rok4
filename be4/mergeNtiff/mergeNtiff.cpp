@@ -463,12 +463,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
     int i,j;
     double intpart;
     
-    /* #TOS# : je ne vois pas ce qu'on teste ici. Si ce sont les compatibilité de résolution et de phase,
-     * ce travail est censé avoir déjà été fait auparavant( sauf pour les dimensions).
-     * Ce qui semblerait s'approcher d'un calcul de phase (2 dernières) est comparé à une valeur
-     * dépendant de la résolution : n'a aucun sens.
-     */
-    
     for (i=1;i<pECI->getimages()->size();i++) {    
         if (abs(pECI->getimages()->at(i)->getresx() - resx) > epsilon_x
         || abs(pECI->getimages()->at(i)->getresy() - resy) > epsilon_y
@@ -497,7 +491,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
         for (j=-1; j < ny+1; j++){
             LOGGER_DEBUG("I:"<<i<<" J:"<<j);
 
-            //if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
+            if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
             /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 
             for (k=0;k<n;k++){
@@ -657,14 +651,15 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             return -1;
         }
 
-        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
 
         if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme res et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
-            //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             mask = new ExtendedCompoundMaskImage(pECI);
+            //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK); /*TEST*/
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
@@ -675,8 +670,8 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-            //saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB);
-            //saveImage(pECI_withMirrors,"pECI_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            //saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             //return -1;
 
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
@@ -690,7 +685,8 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             }
             pOverlayedImage.push_back(pRImage);
             pMask.push_back(pResampledMask);
-            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            //saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MASK);
             //saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
             //saveImage(pResampledMask,"pResampledMask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         }
@@ -738,8 +734,8 @@ int main(int argc, char **argv) {
     logd.setf(std::ios::fixed,std::ios::floatfield);
 
     std::ostream &logw = LOGGER(WARN);
-        logw.precision(16);
-        logw.setf(std::ios::fixed,std::ios::floatfield);
+    logw.precision(16);
+    logw.setf(std::ios::fixed,std::ios::floatfield);
 
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
