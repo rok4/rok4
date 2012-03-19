@@ -56,6 +56,58 @@
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
 #define MAXTILEX 256
 #define MAXTILEY 256
+
+
+Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
+             int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
+             uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
+             eformat_data format, std::string noDataFile) : 
+             tm ( tm ), channels ( channels ), baseDir ( baseDir ),
+             tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
+             maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
+             minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource(NULL)
+{
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    noDataSourceProxy = noDataTileSource;
+}
+
+Level::~Level()
+{
+    if (noDataSourceProxy )  {
+        noDataSourceProxy->releaseData();
+        delete noDataSourceProxy;
+    }
+}
+
+void Level::setNoData(const std::string& file)
+{
+    noDataFile=file;
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    if (noDataTileSource) {
+        delete noDataTileSource;
+    }
+
+    if (noDataSource) {
+        delete noDataSourceProxy;
+        noDataSourceProxy = new DataSourceProxy(tmpDataSource, *noDataSource);
+    }else {
+        noDataSourceProxy = tmpDataSource;
+    }
+    
+    noDataTileSource= tmpDataSource;
+}
+
+
+void Level::setNoDataSource ( DataSource* source ) {
+    if (noDataSource) {
+        delete noDataSourceProxy;
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    }
+    noDataSource=source;
+    noDataSourceProxy = new DataSourceProxy(noDataTileSource, *noDataSource);
+}
+
+
 /*
  * A REFAIRE
  */
@@ -259,7 +311,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
 DataSource* Level::getEncodedNoDataTile() {
     LOGGER_DEBUG ( "Tile : " << noDataFile );
-    return new DataSourceProxy ( new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ) ), *noDataSource );
+    return noDataSourceProxy;
 }
 
 
@@ -271,10 +323,10 @@ DataSource* Level::getTile ( int x, int y ) {
 	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( "GetTile Tiff" );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
-                return new DataSourceProxy(fullTiffDS,*noDataSource);
+                return new DataSourceProxy(fullTiffDS,*noDataSourceProxy);
     }
 
-    return new DataSourceProxy ( source, *noDataSource );
+    return new DataSourceProxy ( source, *noDataSourceProxy );
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
