@@ -170,7 +170,7 @@ Image* Pyramid::getbbox ( BoundingBox<double> bbox, int width, int height, CRS d
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
 
-    if ( getTms().getCrs() ==dst_crs )
+    if ( getTms().getCrs() == dst_crs )
         return levels[l]->getbbox ( bbox, width, height, error );
     else
         return levels[l]->getbbox ( bbox, width, height, getTms().getCrs(), dst_crs, error );

@@ -585,6 +585,8 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     // L'image reechantillonnee est limitee a l'image de sortie
     double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax()),
            ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
+           
+    std::cerr <<"_dst : "<<xmin_dst<<","<<ymin_dst<<" "<<xmax_dst<<","<<ymax_dst<< std::endl; /*TEST*/
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
     if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
@@ -663,11 +665,11 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            
+            std:: cerr <<"pECI : "<<pECI->getxmin()<<","<<pECI->getymin()<<" "<<pECI->getxmax()<<","<<pECI->getymax()<< std::endl; /*TEST*/
             uint mirrors=addMirrors(pECI);
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
-
+            
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
             //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
@@ -677,6 +679,10 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
             ResampledImage* pResampledMask;
+            
+            std:: cerr <<"pECI_withMirrors : "<<pECI_withMirrors->getxmin()<<","<<pECI_withMirrors->getymin()<<" "<<pECI_withMirrors->getxmax()<<","<<pECI_withMirrors->getymax()<< std::endl; /*TEST*/
+            std:: cerr <<"pImageOut : "<<pImageOut->getxmin()<<","<<pImageOut->getymin()<<" "<<pImageOut->getxmax()<<","<<pImageOut->getymax()<< std::endl; /*TEST*/
+            
             ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
 
             if (pRImage==NULL) {
