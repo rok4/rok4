@@ -70,6 +70,8 @@ private:
     std::string name;
     unsigned int maxWidth;
     unsigned int maxHeight;
+    unsigned int maxTileX;
+    unsigned int maxTileY;
     std::vector<std::string> formatList;
     // WMTS
     std::string serviceType;
@@ -83,14 +85,14 @@ public:
 
     ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
                    std::string serviceProvider, std::string fee, std::string accessConstraint,
-                   unsigned int maxWidth, unsigned int maxHeight, std::vector<std::string> formatList, std::string serviceType,
+                   unsigned int maxWidth, unsigned int maxHeight, unsigned int maxTileX, unsigned int maxTileY, std::vector<std::string> formatList, std::string serviceType,
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
                    std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0, bool inspire=0 ) :
             name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
             serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ),
-            maxWidth ( maxWidth ), maxHeight ( maxHeight ), formatList ( formatList ), serviceType ( serviceType ),
+            maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX(maxTileX), maxTileY(maxTileY) , formatList ( formatList ), serviceType ( serviceType ),
             serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
             individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
             deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
@@ -160,6 +162,12 @@ public:
     }
     unsigned int inline getMaxWidth() const {
         return maxWidth;
+    }
+       unsigned int inline getMaxTileX() const {
+        return maxTileX;
+    }
+    unsigned int inline getMaxTileY() const {
+        return maxTileY;
     }
     std::string inline getName() const {
         return name;

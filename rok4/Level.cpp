@@ -54,8 +54,7 @@
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
-#define MAXTILEX 256
-#define MAXTILEY 256
+
 
 
 Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
@@ -111,7 +110,7 @@ void Level::setNoDataSource ( DataSource* source ) {
 /*
  * A REFAIRE
  */
-Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
     grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() );
@@ -131,7 +130,7 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, CRS s
                                     ceil ( ( grid->bbox.xmax - tm.getX0() ) /tm.getRes() + bufx ),
                                     ceil ( ( tm.getY0() - grid->bbox.ymin ) /tm.getRes() + bufy ) );
 
-    Image* image = getwindow ( bbox_int, error );
+    Image* image = getwindow (servicesConf, bbox_int, error );
     if (!image) {
         LOGGER_DEBUG("Image invalid !");
         return 0;
@@ -142,7 +141,7 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, CRS s
 }
 
 
-Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, int& error ) {
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -159,7 +158,7 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, int& 
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
             bbox.xmin - bbox_int.xmin < EPS && bbox.ymin - bbox_int.ymin < EPS &&
             bbox_int.xmax - bbox.xmax < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
-        return getwindow ( bbox_int, error );
+        return getwindow (servicesConf, bbox_int, error );
     }
 
     // Rappel : les coordonnees de la bbox sont ici en pixels
@@ -173,7 +172,7 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, int& 
     bbox_int.ymin = floor ( bbox.ymin - kk.size ( ratio_y ) );
     bbox_int.ymax = ceil ( bbox.ymax + kk.size ( ratio_y ) );
 
-    Image* imageout = getwindow ( bbox_int, error );
+    Image* imageout = getwindow (servicesConf, bbox_int, error );
     if (!imageout) {
         LOGGER_DEBUG("Image invalid !");
         return 0;
@@ -194,20 +193,20 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
     return r;
 }
 
-Image* Level::getwindow ( BoundingBox< int64_t > bbox, int& error ) {
+Image* Level::getwindow (ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
     int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
-    if (nbx >= MAXTILEX) {
-        LOGGER_DEBUG("Too Much Tile on X axis");
+    if (nbx >= servicesConf.getMaxTileX()) {
+        LOGGER_INFO("Too Much Tile on X axis");
         error=2;
         return 0;
     }
     int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
-    if (nby >= MAXTILEY) {
-        LOGGER_DEBUG("Too Much Tile on Y axis");
+    if (nby >= servicesConf.getMaxTileY()) {
+        LOGGER_INFO("Too Much Tile on Y axis");
         error=2;
         return 0;
     }
