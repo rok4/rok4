@@ -45,6 +45,7 @@
 #include "FileDataSource.h"
 #include "CRS.h"
 #include "format.h"
+#include "ServicesConf.h"
 
 /**
  */
@@ -80,7 +81,7 @@ protected:
      * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tilex.
      * Toutes les coordonnées sont entière depuis le coin haut gauche.
      */
-    Image* getwindow ( BoundingBox<int64_t> src_bbox, int& error );
+    Image* getwindow (ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 
 public:
@@ -123,9 +124,9 @@ public:
         return noDataFile;
     }
 
-    Image* getbbox ( BoundingBox<double> bbox, int width, int height, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, int& error );
 
-    Image* getbbox ( BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error );
     /**
      * Renvoie la tuile x, y numéroté depuis l'origine.
      * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)

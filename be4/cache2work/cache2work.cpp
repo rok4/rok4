@@ -35,144 +35,82 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include <cstdlib>
-#include <iostream>
-#include <string.h>
-#include "tiffio.h"
-#include "TiffReader.h"
-#include "TiledTiffWriter.h"
-#include "TiffWhiteManager.h"
 
-void usage() {
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
-    std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
+#include <stdio.h>
+#include "tiffio.h"
+#include <iostream>
+#include <stdint.h>
+#include <string>
+#include <sstream>
+
+#define STRIP_OFFSETS      273
+#define ROWS_PER_STRIP     278
+#define STRIP_BYTE_COUNTS  279
+
+using namespace std;
+
+struct Entry {
+  uint16_t tag;
+  uint16_t type;
+  uint32_t count;
+  uint32_t value; 
+};
+
+inline void error(string message) {
+    cerr << message << endl;
 }
+
+uint8_t *IM;
+
+uint32 width , height,tilewidth , tileheight, rowsperstrip;
+uint16 bitspersample, sampleperpixel, photometric, compression , planarconfig, nb_extrasamples;
+uint16 *extrasamples;
+
 
 int main(int argc, char **argv) {
-    char* input = 0, *output = 0;
-    uint32_t tilewidth = 256, tilelength = 256;
-    uint16_t compression = COMPRESSION_NONE;
-    uint16_t photometric = PHOTOMETRIC_RGB;
-    uint32_t bitspersample = 8;
-    uint16_t sampleperpixel = 3;
-    bool crop = false;
-    uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
-    int quality = -1;
+    
+    char *input_file = 0, *output_file = 0;
 
+    if (argc == 1){
+        cout << std::endl << "cache2work: uncompress and merge tiles in a tiff" << std::endl; 
+        cout << "usage: cache2work <inputfile> <outputfile>" << std::endl << std::endl;
+        return(0);
+    }
     for(int i = 1; i < argc; i++) {
-        if(!strcmp(argv[i],"-crop")) {
-            crop = true;
-            continue;
-        }
-        if(argv[i][0] == '-') {
-            switch(argv[i][1]) {
-                case 'c': // compression
-                    if(++i == argc) {std::cerr << "Error in -c option" << std::endl; exit(2);}
-                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
-                    else if(strncmp(argv[i], "png",3) == 0) {
-                        compression = COMPRESSION_PNG;
-                        if(argv[i][3] == ':') quality = atoi(argv[i]+4);
-                    }
-                    else if(strncmp(argv[i], "jpeg",4) == 0) {
-                        compression = COMPRESSION_JPEG;
-                        if(argv[i][4] == ':') quality = atoi(argv[i]+5);
-                    }
-                    else if(strncmp(argv[i], "lzw",3) == 0) {
-                        compression = COMPRESSION_LZW;
-                    }
-                    else {
-                        compression = COMPRESSION_NONE;
-                        std::cerr << "Warning : unknown compression ("<< argv[i] 
-                            <<"), no compression will be used" << std::endl;
-                    }
-                    break;
-                case 'p': // photometric
-                    if(++i == argc) {std::cerr << "Error in -p option" << std::endl; exit(2);}          
-                    if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
-                    else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
-                    else photometric = PHOTOMETRIC_RGB;
-                    break;
-                case 't':
-                    if(i+2 >= argc) {std::cerr << "Error in -t option" << std::endl; exit(2);}
-                    tilewidth = atoi(argv[++i]);
-                    tilelength = atoi(argv[++i]);
-                    break;
-                case 'a':
-                    if(++i == argc) {std::cerr << "Error in -a option" << std::endl; exit(2);}
-                    if (strncmp(argv[i],"uint",4)==0) {sampleformat = SAMPLEFORMAT_UINT;}
-                    else if (strncmp(argv[i],"float",5)==0) {sampleformat = SAMPLEFORMAT_IEEEFP;}
-                    else {std::cerr << "Error in -a option. Possibilities are uint or float." << std::endl; exit(2);}
-                    break;
-                case 's': // sampleperpixel
-                    if ( ++i == argc ) {std::cerr << "Error in -s option" << std::endl; exit(2);}
-                    if ( strncmp ( argv[i], "1",1 ) == 0 ) sampleperpixel = 1 ;
-                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) sampleperpixel = 3 ;
-                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) sampleperpixel = 4 ;
-                    else {std::cerr << "Error in -s option. Possibilities are 1,3 or 4." << std::endl; exit(2);}
-                    break;
-                case 'b':
-                    if(i+1 >= argc) {std::cerr << "Error in -b option" << std::endl; exit(2);}
-                    bitspersample = atoi(argv[++i]);
-                    break;
-                default: usage();
-            }
-        }        
+        if(!input_file) input_file = argv[i];
+        else if(!output_file) output_file = argv[i];
         else {
-            if(input == 0) input = argv[i];
-            else if(output == 0) output = argv[i];
-            else {
-                std::cerr << "Argument must specify one input file and one output file" << std::endl;
-                usage();
-                exit(2);
-            }
+            error("Error : argument must specify exactly one input file and one output file");
         }
     }
-
-    if(output == 0) {
-        std::cerr << "Argument must specify one input file and one output file" << std::endl; exit(2);
-    }
-    if(photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG) {
-        std::cerr << "Gray jpeg not supported" << std::endl; exit(2);
-    }
+    if(!output_file || !input_file) error("Error : argument must specify exactly one input file and one output file");
+  
+    TIFF *TIFF_FILE = 0;
     
-    // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
-    if (crop) {
-        TiffWhiteManager TWM(input,input,true,true);
-        if (! TWM.treatWhite()) {
-            std::cerr << "Unbale to treat white pixels in this image : " << input << std::endl;
-            exit(2);
-        }
-    }
-
-    TiffReader R(input);
-
-    uint32_t width = R.getWidth();
-    uint32_t length = R.getLength();  
-    TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,sampleperpixel,sampleformat);
-
-    if(width % tilewidth || length % tilelength) {
-        std::cerr << "Image size must be a multiple of tile size" << std::endl;
-        exit(2);
-    }  
-    int tilex = width / tilewidth;
-    int tiley = length / tilelength;
+    TIFF_FILE = TIFFOpen(input_file, "r");
+    if(!TIFF_FILE) error("Unable to open file for reading: " + string(input_file));
     
-    size_t dataSize = tilelength*tilewidth*R.getSampleSize();
-    uint8_t* data = new uint8_t[dataSize];
-
-    for(int y = 0; y < tiley; y++) for(int x = 0; x < tilex; x++) {
-        R.getWindow(x*tilewidth, y*tilelength, tilewidth, tilelength, data);
-        if(W.WriteTile(x, y, data, crop) < 0) {
-            std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl;
-            return 2;
-        }
+    if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &width)                       ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, &height)                     ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, &photometric)                ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel)||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_TILELENGTH, &tileheight)                  ||
+        ! TIFFGetField(TIFF_FILE, TIFFTAG_TILEWIDTH, &tilewidth)                    ||
+         ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compression)               ||
+        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_EXTRASAMPLES, &nb_extrasamples, &extrasamples))
+    {
+        error("Error reading file components: " +  string(input_file));
+        return false;
     }
 
-    R.close();
-    if(W.close() < 0) {
-        std::cerr << "Error while writting index" << std::endl;
-        return 2;
-    }
+    if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
+    if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
+    if (sampleperpixel != 3)  error("Sorry : tool white manager is just available for sampleperpixel = 3");
     
-    return 0;
-}
+    std::cerr << "compression : " << compression << std::endl; /*TEST*/
+    std::cerr << "tilewidth : " << tilewidth << std::endl; /*TEST*/
+    std::cerr << "tileheight : " << tileheight << std::endl; /*TEST*/
+
+}  
