@@ -61,6 +61,7 @@ use constant CACHE_2_WORK_PRG => "tiffcp -s";
 use constant WORK_2_CACHE_PRG => "tiff2tile";
 use constant MERGE_N_TIFF     => "mergeNtiff";
 use constant MERGE_4_TIFF     => "merge4tiff";
+use constant UNTILE     => "untile";
 
 
 ####################################################################################################
@@ -158,8 +159,7 @@ sub _init {
         )
         ||
         (! $self->{pyramid}->isNewPyramid() && (
-        $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
-        $self->{pyramid}->getFormat()->getCompression() eq 'png')
+        $self->{pyramid}->getFormat()->getCompression() eq 'jpg')
     )) {
 
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -324,8 +324,7 @@ sub computeBottomImage {
       )
       ||
       (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
-         $self->{pyramid}->getFormat()->getCompression() eq 'png')
+       $self->{pyramid}->getFormat()->getCompression() eq 'jpg')
       )) {
     $res .= $self->wms2work($node,$self->workNameOfNode($node));
   }
@@ -455,8 +454,7 @@ sub computeAboveImage {
             my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
             $bg="-b $bgImgPath";
 
-            if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
-                $self->{pyramid}->getFormat()->getCompression() eq 'png') {
+            if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
@@ -627,16 +625,30 @@ sub wms2work {
 #  Copie une dalle de la pyramide dans le répertoire de travail en la passant au format de cache.
 #---------------------------------------------------------------------------------------------------
 sub cache2work {
-  my ($self, $node, $workName) = @_;
-  
-  my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
-  my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
+    my ($self, $node, $workName) = @_;
 
-  INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
-  
-  # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
-  my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
-  return $cmd;
+    my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
+
+    INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
+
+    if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
+        # Dans le cas du png, l'oparétion de copie doit se faire en 3 étapes :
+        #       - la copie du fichier dans le dossier temporaire
+        #       - le détuilage (untile)
+        #       - la fusion de tous les png en un tiff
+        my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
+
+        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/\n%s", UNTILE, $workName, RESULT_TEST);
+
+        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s", $self->{pyramid}->getTile()->getBitsPerSample(), $workName, RESULT_TEST);
+
+        return $cmd;
+    } else {
+        # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
+        my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
+        return $cmd;
+    }
 }
 
 # method: work2cache
@@ -809,49 +821,56 @@ sub prepareScript {
 }
 
 # method: saveScript
+#  ajoute la commande de suppression des tuiles le cas échéant
 #  sauvegarde le script.
 #-------------------------------------------------------------------------------
 sub saveScript {
-  my $self = shift;
-  my $code = shift;
-  my $scriptId = shift;
-  
-  TRACE;
-  
-  if (! defined $code) {
-    ERROR("No code to pass into the script ?"); 
-    return FALSE;
-  }
-  if (! defined $scriptId) {
-    ERROR("No ScriptId to save the script ?");
-    return FALSE;
-  }
-  
-  my $scriptName     = join('.',$scriptId,'sh');
-  my $scriptFilePath = File::Spec->catfile($self->{path_shell}, $scriptName);
-  
-  if (! -d dirname($scriptFilePath)) {
-    my $dir = dirname($scriptFilePath);
-    DEBUG (sprintf "Create the script directory'%s' !", $dir);
-    eval { mkpath([$dir],0,0751); };
-    if ($@) {
-      ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
-      return FALSE;
+    my $self = shift;
+    my $code = shift;
+    my $scriptId = shift;
+
+    TRACE;
+
+    if (! defined $code) {
+        ERROR("No code to pass into the script ?"); 
+        return FALSE;
     }
-  }
-  
-  if ( ! (open SCRIPT,">", $scriptFilePath)) {
-    ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
-    return FALSE;
-  }
-  
-  # Would Be Nice: On pourra faire une évaluation de la charge de ce script ici, par analyse de son contenu.
-  #                c'est parfois utilisé par les orchestrateurs (ex: Torque)
-  
-  printf SCRIPT "%s", $code;
-  close SCRIPT;
-  
-  return TRUE;
+    if (! defined $scriptId) {
+        ERROR("No ScriptId to save the script ?");
+        return FALSE;
+    }
+
+    my $scriptName     = join('.',$scriptId,'sh');
+    my $scriptFilePath = File::Spec->catfile($self->{path_shell}, $scriptName);
+
+    if (! -d dirname($scriptFilePath)) {
+        my $dir = dirname($scriptFilePath);
+        DEBUG (sprintf "Create the script directory'%s' !", $dir);
+        eval { mkpath([$dir],0,0751); };
+        if ($@) {
+            ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+
+    if ( ! (open SCRIPT,">", $scriptFilePath)) {
+        ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
+        return FALSE;
+    }
+
+    # Would Be Nice: On pourra faire une évaluation de la charge de ce script ici, par analyse de son contenu.
+    #                c'est parfois utilisé par les orchestrateurs (ex: Torque)
+    # Utilisation du poids calculé des branches traitées dans ce script
+
+    if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
+        # Dans le cas du png, on doit supprimer les *.tile dans le dossier temporaire
+        $code .= sprintf ("rm \${TMP_DIR}/*.png\n");
+    }
+
+    printf SCRIPT "%s", $code;
+    close SCRIPT;
+
+    return TRUE;
 }
 
 # method: collectWorkImage
