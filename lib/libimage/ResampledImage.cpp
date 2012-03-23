@@ -46,9 +46,9 @@
 
 
 
-ResampledImage::ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y,  Kernel::KernelType KT, BoundingBox<double> bbox) :
-Image(width, height, image->channels, bbox), image(image) , left(left), top(top), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance(KT)) {
-
+ResampledImage::ResampledImage(Image *image, int width, int height, double lefttmp, double toptmp, double ratio_x, double ratio_y,  Kernel::KernelType KT, BoundingBox<double> bbox) :
+Image(width, height, image->channels, bbox), image(image) , left(lefttmp), top(toptmp), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance(KT)) {
+    
     left += 0.5*ratio_x - 0.5; // Pour prendre en compte que les échantillons 
     top  += 0.5*ratio_y - 0.5; // sont positionnés aux centres des pixels
 
@@ -79,7 +79,6 @@ Image(width, height, image->channels, bbox), image(image) , left(left), top(top)
     mux_src_line_buffer = B; B += 4*sz1;
     mux_resampled_line = B; B += 4*sz2;
 
-
     for(int i = 0; i < Ky+4; i++) {
             resampled_line[i] = B; B += sz2;
             resampled_line_index[i] = -1;
@@ -104,13 +103,14 @@ Image(width, height, image->channels, bbox), image(image) , left(left), top(top)
 float* ResampledImage::resample_src_line(int line) {
     if(resampled_line_index[line % (Ky+4)] == line) return resampled_line[line % (Ky+4)];
 
-    for(int i = 0; i < 4; i++) if(4*(line/4) + i < image->height)
+    for(int i = 0; i < 4; i++)
+        if(4*(line/4) + i < image->height)
             image->getline(src_line_buffer[i], 4*(line/4) + i);
 
     multiplex(mux_src_line_buffer, src_line_buffer[0], src_line_buffer[1], src_line_buffer[2], src_line_buffer[3], image->width*image->channels);
 
     for(int x = 0; x < width; x++) 
-            dot_prod(channels, Kx, mux_resampled_line + 4*x*channels, mux_src_line_buffer + 4*xmin[x]*channels, Wx + 4*Kx*x);
+        dot_prod(channels, Kx, mux_resampled_line + 4*x*channels, mux_src_line_buffer + 4*xmin[x]*channels, Wx + 4*Kx*x);
 
     demultiplex(resampled_line[(4*(line/4))%(Ky+4)],
                 resampled_line[(4*(line/4)+1)%(Ky+4)],

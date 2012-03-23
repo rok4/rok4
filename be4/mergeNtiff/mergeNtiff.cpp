@@ -608,7 +608,6 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
     int height_dst = int(ymax_dst-ymin_dst+0.1);
-    std::cerr <<"width : " << width_dst << ", height : " << height_dst << std::endl; /*TEST*/
     xmin_dst*=resx_dst;
     xmax_dst*=resx_dst;
     ymin_dst*=resy_dst;
@@ -624,6 +623,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
     // Reechantillonage du masque
     resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    
     return pRImage;
 }
 
@@ -667,7 +667,6 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            std:: cerr <<"pECI : "<<pECI->getxmin()<<","<<pECI->getymin()<<" "<<pECI->getxmax()<<","<<pECI->getymax()<< std::endl; /*TEST*/
             uint mirrors=addMirrors(pECI);
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
@@ -682,11 +681,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             ResampledImage* pResampledMask;
             
-            std:: cerr <<"pECI_withMirrors : "<<pECI_withMirrors->getxmin()<<","<<pECI_withMirrors->getymin()<<" "<<pECI_withMirrors->getxmax()<<","<<pECI_withMirrors->getymax()<< std::endl; /*TEST*/
-            std:: cerr <<"pImageOut : "<<pImageOut->getxmin()<<","<<pImageOut->getymin()<<" "<<pImageOut->getxmax()<<","<<pImageOut->getymax()<< std::endl; /*TEST*/
-            
             ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
-
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;

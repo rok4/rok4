@@ -42,14 +42,17 @@ int Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
-    if(length < 2*Ks) xmin = ceil(x - length*0.5 + 1e-9);
+    if(length < 2*Ks) {
+        xmin = ceil(x - length*0.5 + 1e-9);
+    }
     double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
     double indf = (x - xmin) * step;          // index flottant dans le tableau coeff 
-
+    
     int i = 0;
     for(;indf >= 0; indf -= step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+        // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
     }
     for(indf = -indf; indf < 1024. && i < length; indf += step) {
         int ind = (int) indf;
