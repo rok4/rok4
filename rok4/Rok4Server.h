@@ -81,7 +81,10 @@ private:
     int GetDecimalPlaces ( double number );
     void buildWMSCapabilities();
     void buildWMTSCapabilities();
-
+    
+    bool hasParam ( std::map<std::string, std::string>& option, std::string paramName );
+    std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
+    
     DataStream* getMap ( Request* request );
     DataStream* WMSGetCapabilities ( Request* request );
     void        processWMS ( Request *request, FCGX_Request&  fcgxRequest );

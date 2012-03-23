@@ -85,7 +85,7 @@ PaletteDataSource::PaletteDataSource(DataSource *dataSource,Palette* mpalette) :
 		// On récupère le contenu du fichier 
 		size_t tmp_size;
 		const uint8_t* tmp = dataSource->getData(tmp_size);
-		dataSize = tmp_size + palette->getPalettePNGSize();
+		dataSize = tmp_size + palette->getPalettePNGSize() +1;
 		size_t pos = 33;
 		// Taille en sortie = taille en entrée +  3*256+12 (PLTE) + 256+12 (tRNS) 
 		data = new uint8_t[dataSize];

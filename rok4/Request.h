@@ -64,7 +64,7 @@ public:
     std::string scheme;
     std::map<std::string, std::string> params;
     DataSource* getTileParam ( ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style );
-    DataStream* getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style );
+    DataStream* getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style,std::map <std::string, std::string >& format_option );
 
     Request ( char* strquery, char* hostName, char* path, char* https );
     Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent );

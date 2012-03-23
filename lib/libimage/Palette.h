@@ -67,7 +67,7 @@ public:
      * @param alpha : doit contenir une valeur par niveau compris entre 0 et la dernière valeure possible ou être vide (désactivation de la transparence)
      */
     Palette();
-    Palette(size_t pngPaletteSize, uint8_t* pngPalette) : pngPaletteSize(pngPaletteSize), pngPalette(pngPalette) {}
+    Palette(size_t pngPaletteSize, uint8_t* pngPalette);
     Palette(const Palette& pal);
     Palette(const std::vector< Colour >& mcolours);
     Palette & operator=(const Palette& pal);
