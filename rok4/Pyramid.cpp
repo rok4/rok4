@@ -170,7 +170,7 @@ Image* Pyramid::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, i
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
 
-    if ( getTms().getCrs() ==dst_crs )
+    if ( getTms().getCrs() == dst_crs )
         return levels[l]->getbbox ( servicesConf, bbox, width, height, error );
     else
         return levels[l]->getbbox ( servicesConf, bbox, width, height, getTms().getCrs(), dst_crs, error );

@@ -34,7 +34,9 @@
  * 
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
-
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+/*++++ NE FAIT RIEN POUR LE MOMENT : NE PAS UTILISER ++++*/
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 #include <stdio.h>
 #include "tiffio.h"
@@ -108,9 +110,5 @@ int main(int argc, char **argv) {
     if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
     if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
     if (sampleperpixel != 3)  error("Sorry : tool white manager is just available for sampleperpixel = 3");
-    
-    std::cerr << "compression : " << compression << std::endl; /*TEST*/
-    std::cerr << "tilewidth : " << tilewidth << std::endl; /*TEST*/
-    std::cerr << "tileheight : " << tileheight << std::endl; /*TEST*/
 
 }  
