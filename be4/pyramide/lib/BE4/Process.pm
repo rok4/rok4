@@ -863,8 +863,8 @@ sub saveScript {
     # Utilisation du poids calculé des branches traitées dans ce script
 
     if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
-        # Dans le cas du png, on doit supprimer les *.tile dans le dossier temporaire
-        $code .= sprintf ("rm \${TMP_DIR}/*.png\n");
+        # Dans le cas du png, on doit éventuellement supprimer les *.png dans le dossier temporaire
+        $code .= sprintf ("rm -f \${TMP_DIR}/*.png\n");
     }
 
     printf SCRIPT "%s", $code;
