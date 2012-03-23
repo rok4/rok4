@@ -35,13 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/* -------------------------------------------------------------------------
-   Version prototype de l'outil d'extraction des tuiles d'une dalle de cache
+/* --------------------------------------------------------------------------------
+   Version prototype de l'outil d'extraction des tuiles en png d'une dalle de cache
    Permet par exemple de contrôler le contenu d'une dalle tuilée en png.
----------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>
 #include <stdint.h>
 #include <sstream>
 
@@ -63,13 +64,13 @@ int main(int argc, char **argv) {
     std::cout << std::endl << "untile: get tiles out of the tiff" << std::endl; 
     std::cout << "usage: until <filename> [-c <colomn> -r <row> -s <suffix>] !! options are not implemented yet !!" << std::endl << std::endl; 
     std::cout << "Kind of prototype..." << std::endl; 
-    std::cout << "o not handle tiled image yet" << std::endl; 
+    std::cout << "Do not handle tiled image yet" << std::endl; 
     std::cout << "Do not handle bigendian yet" << std::endl; 
     std::cout << "Do not handle multi directories tiff yet" << std::endl << std::endl; 
     return(0);
   }
-  if (argc > 2){
-    std::cerr << "untile: too many parameters! 1 expected." << std::endl;
+  if (argc > 3){
+    std::cerr << "untile: too many parameters! 1 or 2 expected." << std::endl;
     return(1);
   }
   
@@ -82,6 +83,12 @@ int main(int argc, char **argv) {
     return(2);
   } 
 
+  char* dir;
+  if (argc == 3){
+    // l'utilisateur a précisé le dossier dans lequel il veut détuiler
+    dir = argv[2];
+  }
+  
   // taille du fichier
   fseek (pFile, 0, SEEK_END); 
   file_size=ftell (pFile); 
@@ -128,13 +135,14 @@ int main(int argc, char **argv) {
     fseek(pFile, offset[n], SEEK_SET);
     if (fread (buff, sizeof(uint8_t), size[n], pFile) != size[n]){std::cerr << "untile: Can't read in File" << std::endl; return(4);}
     std::ostringstream name;
-    name << n << ".tile";
+    if (argc == 3){name << dir;}
+    name << std::setfill ('0') << std::setw(3);
+    name << n << ".png";
     FILE * pOuputFile = fopen (name.str().c_str() , "wb");
     fwrite (buff , 1 , sizeof(buff) , pOuputFile );
     fclose (pOuputFile);
   }
 
-  fclose (pFile); 
-  std::cout << "untile: All seems ok!" << std::endl ;
+  fclose (pFile);
   return 0;
 }  

@@ -19,6 +19,9 @@
 #define MAX_IMAGE_WIDTH  65536
 #define MAX_IMAGE_HEIGHT 65536
 
+#define MAX_TILE_X 256
+#define MAX_TILE_Y 256
+
 #define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
 #define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
 

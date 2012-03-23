@@ -69,6 +69,7 @@ use constant FALSE => 0;
 # commands' weights
 use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
+use constant CACHE2WORK_PNG_W => 3;
 use constant WGET_W => 35;
 use constant TIFF2TILE_W => 0;
 use constant TIFFCP_W => 0;
@@ -447,8 +448,7 @@ sub weightBottomNode {
             $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
     ||
         (! $self->{pyramid}->isNewPyramid() &&
-            ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
-            $self->{pyramid}->getFormat()->getCompression() eq 'png'))
+            ($self->{pyramid}->getFormat()->getCompression() eq 'jpg'))
     ) {
 
         $self->updateWeightOfNode($node,WGET_W);
@@ -456,7 +456,11 @@ sub weightBottomNode {
     } else {
         my $newImgDesc = $self->getImgDescOfNode($node);
         if ( -f $newImgDesc->getFilePath() ){
-            $self->updateWeightOfNode($node,TIFFCP_W);
+            if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
+                $self->updateWeightOfNode($node,CACHE2WORK_PNG_W);
+            } else {
+                $self->updateWeightOfNode($node,TIFFCP_W);
+            }
         }
 
         $self->updateWeightOfNode($node,MERGENTIFF_W);

@@ -58,6 +58,11 @@
                 <xs:element name="electronicMailAddress" type="xs:string"/>
                 
                 
+                <!-- Nombre maximal de tuile composant la largeur d'une image -->
+                <xs:element name="maxTileX"        type="xs:positiveInteger"/>
+                <!-- Nombre maximal de tuile composant la hauteur d'une image -->
+                <xs:element name="maxTileY"        type="xs:positiveInteger"/>
+                
                 <!-- Liste des formats des images en sortie qu’il est possible de demander. 
                      Ne sert que pour le getCapabilies. Cette liste imposée par la spec WMS pose un 
                      problème parce qu’elle impose les même formats pour tous les layers alors que 

@@ -40,7 +40,6 @@
 #include "Logger.h"
 int Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
-//    std::cerr << "taille du noyau : " << Ks << std::endl; /*TEST*/
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
     if(length < 2*Ks) xmin = ceil(x - length*0.5 + 1e-9);

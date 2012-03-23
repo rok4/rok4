@@ -216,7 +216,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     }
 
     int error;
-    Image* image = L->getbbox ( bbox, width, height, crs, error );
+    Image* image = L->getbbox (servicesConf, bbox, width, height, crs, error );
 
     LOGGER_DEBUG ( "GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
 

@@ -145,7 +145,7 @@ TileMatrixSet Pyramid::getTms() {
 }
 
 
-Image* Pyramid::getbbox ( BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
+Image* Pyramid::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
     if ( getTms().getCrs() ==dst_crs ) {
@@ -171,9 +171,9 @@ Image* Pyramid::getbbox ( BoundingBox<double> bbox, int width, int height, CRS d
     LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
 
     if ( getTms().getCrs() == dst_crs )
-        return levels[l]->getbbox ( bbox, width, height, error );
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, error );
     else
-        return levels[l]->getbbox ( bbox, width, height, getTms().getCrs(), dst_crs, error );
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, getTms().getCrs(), dst_crs, error );
 
 }
 
