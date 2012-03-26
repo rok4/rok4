@@ -39,8 +39,10 @@
 
 #include "Rok4Server.h"
 #include <iostream>
+#include <algorithm>
 
 #include "TiffEncoder.h"
+#include "TiffLZWEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
@@ -170,6 +172,33 @@ void Rok4Server::run() {
 }
 
 
+/**
+ * @vriedf test de la présence de paramName dans option
+ * @return true si présent
+ */
+bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return false;
+    }
+    return true;
+}
+
+
+/**
+ * @vriedf récupération du parametre paramName dans la requete
+ * @return la valeur du parametre si existant "" sinon
+ */
+std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return "";
+    }
+    return it->second;
+}
+
+
+
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
     /* concaténation des fragments invariant de capabilities en intercalant les
      * parties variables dépendantes de la requête */
@@ -207,16 +236,17 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     CRS crs;
     std::string format;
     Style* style=0;
+    std::map <std::string, std::string > format_option;
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format,style );
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format ,style, format_option );
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getMap" );
         return errorResp;
     }
 
     int error;
-    Image* image = L->getbbox ( bbox, width, height, crs, error );
+    Image* image = L->getbbox (servicesConf, bbox, width, height, crs, error );
 
     LOGGER_DEBUG ( "GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
 
@@ -234,11 +264,14 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             }
         }
     }
-
     if ( format=="image/png" )
         return new PNGEncoder ( image,style->getPalette() );
-    else if ( format == "image/tiff" )
+    else if ( format == "image/tiff" ) { // Handle compression option
+        if ( getParam(format_option,"compression").compare("lzw")==0){
+            return new TiffLZWEncoder( image );
+        }
         return new TiffEncoder ( image );
+    }
     else if ( format == "image/jpeg" )
         return new JPEGEncoder ( image );
     else if ( format == "image/x-bil;bits=32" )

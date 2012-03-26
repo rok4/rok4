@@ -68,9 +68,16 @@ private:
     void clearDict();
     inline void writeBits(uint16_t lzwCode, uint8_t* out, size_t& outPos);
     
+    uint8_t* encodeAlt(const uint8_t * in, size_t inSize, size_t &outSize);
+    
+    uint8_t* streamEncode(const uint8_t * in, size_t inSize, uint8_t* outbuffer , size_t &outSize);
+    void streamEnd(uint8_t* out, size_t& outSize);
+    
 public:
     lzwEncoder();
     uint8_t* encode(const uint8_t * in, size_t inSize, size_t &outSize);
+
+    
     virtual ~lzwEncoder();
 };
 

@@ -162,7 +162,7 @@ class DataSourceProxy : public DataSource {
 		DataSourceProxy	(DataSource* dataSource, DataSource& noDataSource) :
 			status(UNKNOWN), dataSource(dataSource), noDataSource(noDataSource) {}
 
-		~DataSourceProxy() {delete dataSource;}
+		virtual ~DataSourceProxy() {delete dataSource;}
 
 		inline const uint8_t* getData(size_t &size) {return getDataSource().getData(size);}
 		inline bool releaseData()                   {return getDataSource().releaseData();}
@@ -191,7 +191,7 @@ class BufferedDataSource : public DataSource {
 		BufferedDataSource(DataStream& dataStream);
 
 		/** Destructeur **/
-		~BufferedDataSource() {delete[] data;}
+		virtual ~BufferedDataSource() {delete[] data;}
 
 		/** Implémentation de l'interface DataSource **/
 		const uint8_t* getData(size_t &size) {

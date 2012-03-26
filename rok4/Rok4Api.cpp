@@ -470,7 +470,7 @@ void rok4DeleteTiffHeader ( TiffHeader* header ) {
 */
 
 void rok4DeletePngPaletteHeader ( PngPaletteHeader* header ) {
-    free (header->data);
+    //free (header->data);
     delete header;
 }
 
@@ -503,6 +503,7 @@ void rok4KillServer ( Rok4Server* server ) {
         delete ( *iLayer ).second;
 
     free (server->getProjEnv());
-    // TODO Supprimer le logger
+    
+    //Logger::stopLogger();
 }
 

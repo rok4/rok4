@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 /**
  * \file mergeNtiff.cpp
  * \brief Creation d une image georeference a partir de n images source
@@ -426,12 +463,6 @@ uint addMirrors(ExtendedCompoundImage* pECI)
     int i,j;
     double intpart;
     
-    /* #TOS# : je ne vois pas ce qu'on teste ici. Si ce sont les compatibilité de résolution et de phase,
-     * ce travail est censé avoir déjà été fait auparavant( sauf pour les dimensions).
-     * Ce qui semblerait s'approcher d'un calcul de phase (2 dernières) est comparé à une valeur
-     * dépendant de la résolution : n'a aucun sens.
-     */
-    
     for (i=1;i<pECI->getimages()->size();i++) {    
         if (abs(pECI->getimages()->at(i)->getresx() - resx) > epsilon_x
         || abs(pECI->getimages()->at(i)->getresy() - resy) > epsilon_y
@@ -460,7 +491,7 @@ uint addMirrors(ExtendedCompoundImage* pECI)
         for (j=-1; j < ny+1; j++){
             LOGGER_DEBUG("I:"<<i<<" J:"<<j);
 
-            //if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
+            if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
             /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
 
             for (k=0;k<n;k++){
@@ -552,8 +583,10 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
     // L'image reechantillonnee est limitee a l'image de sortie
-    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax()),
-           ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
+    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin());
+    double xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax());
+    double ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin());
+    double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
     if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
@@ -571,6 +604,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         xmax_dst=ceil(xmax_dst-0.1);
     ymax_dst/=resy_dst;
         ymax_dst=ceil(ymax_dst-0.1);
+        
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
     int height_dst = int(ymax_dst-ymin_dst+0.1);
@@ -589,6 +623,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
     // Reechantillonage du masque
     resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    
     return pRImage;
 }
 
@@ -620,40 +655,41 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             return -1;
         }
 
-        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
 
         if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme res et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
-            //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             mask = new ExtendedCompoundMaskImage(pECI);
+            //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK); /*TEST*/
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            
             uint mirrors=addMirrors(pECI);
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
-
+            
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
-            //saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB);
-            //saveImage(pECI_withMirrors,"pECI_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            //saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             //return -1;
 
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
             ResampledImage* pResampledMask;
+            
             ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
-
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
             }
             pOverlayedImage.push_back(pRImage);
             pMask.push_back(pResampledMask);
-            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            //saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MASK);
             //saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
             //saveImage(pResampledMask,"pResampledMask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
         }
@@ -701,8 +737,8 @@ int main(int argc, char **argv) {
     logd.setf(std::ios::fixed,std::ios::floatfield);
 
     std::ostream &logw = LOGGER(WARN);
-        logw.precision(16);
-        logw.setf(std::ios::fixed,std::ios::floatfield);
+    logw.precision(16);
+    logw.setf(std::ios::fixed,std::ios::floatfield);
 
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){

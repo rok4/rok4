@@ -149,6 +149,109 @@ uint8_t* lzwEncoder::encode(const uint8_t* in, size_t inSize, size_t& outSize)
     return out;
 }
 
+uint8_t* lzwEncoder::streamEncode(const uint8_t* in, size_t inSize, uint8_t* out, size_t& outSize)
+{
+    size_t outBufferSize = outSize;
+    size_t outPos = 0;
+    uint8_t character=0;
+    uint16_t nextCode=0;
+    if (firstPass && inSize) {
+        //Initialize with first character
+        lastCode = *(in++);
+        inSize--;
+        firstPass = false;
+        writeBits(M_CLR,out, outPos);
+    }
+
+    while (inSize) {
+        character= *(in++);
+        inSize--;
+        if ((nextCode = dict.at(lastCode).nextValue[character])) { // input already in dictionary waiting for new character
+            lastCode = nextCode;
+        } else { // Write Code and append to dictionary
+            writeBits(lastCode,out, outPos); // put LastCode in the write buffer
+            dict[lastCode].nextValue[character]=dict.size();
+            dict.push_back(lzwEncoderWord());
+            if (dict.size() == maxCode) {
+                if (bitSize < maxBit) { //Extend
+                    bitSize++;
+                    maxCode*=2;
+                    //dict.reserve(maxCode);
+                } else { // Clear Dict
+                    writeBits(M_CLR,out, outPos);
+                    clearDict();
+                }
+            }
+            lastCode = character;
+            if (outPos+3 > outBufferSize) {//Buffer too small
+                outSize = outPos;
+                return (uint8_t*) in;
+            }
+        }
+
+    }
+    /*writeBits(lastCode,out, outPos);
+    //Should be triggered at the end
+    writeBits(M_EOD,out, outPos);
+
+
+    if (buffer) { // Flush the remaining data
+        writeBits(buffer,out, outPos);
+    }*/
+    outSize = outPos;
+    return out;
+}
+
+void lzwEncoder::streamEnd(uint8_t* out, size_t& outPos)
+{
+    writeBits(lastCode,out, outPos);
+    //Should be triggered at the end
+    writeBits(M_EOD,out, outPos);
+
+
+    if (buffer) { // Flush the remaining data
+        writeBits(buffer,out, outPos);
+    }
+
+}
+
+
+uint8_t* lzwEncoder::encodeAlt(const uint8_t* in, size_t inSize, size_t& outSize)
+{
+    outSize = 20;
+    size_t outPos = outSize;
+    size_t outBufferPos = 0;
+    uint8_t* outBuffer = new uint8_t[outSize];
+    memset(outBuffer ,0,outSize);
+    uint8_t* out = outBuffer;
+    uint8_t* oldout = out;
+    uint8_t* inBuffer=(uint8_t*) in;
+    out = streamEncode(in, inSize, out, outPos);
+    while (out != oldout ) {
+
+        uint8_t* tmpBuffer = new uint8_t[(outSize*2)];
+        if (tmpBuffer) { // Enlarge your Buffer
+            memset(tmpBuffer+outSize ,0,outSize);
+            memcpy(tmpBuffer, outBuffer, outSize);
+            delete[] outBuffer;
+            outBuffer = tmpBuffer;
+            tmpBuffer = NULL;
+            outSize *=2;
+        } else { //Allocation error
+            outSize = 0;
+            return NULL;
+        }
+        inBuffer = out;
+        size_t inPos = (inBuffer - in);
+        outBufferPos += outPos;
+        oldout = outBuffer + outBufferPos;
+        outPos = outSize - outPos;
+        out = streamEncode(inBuffer, inSize - inPos, oldout, outPos);
+    }
+    outSize= outBufferPos + outPos;
+    streamEnd(out,outSize);
+    return out;
+}
 
 
 lzwEncoder::~lzwEncoder()

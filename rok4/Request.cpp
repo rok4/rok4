@@ -699,7 +699,9 @@ void stringSplit ( std::string str, std::string delim, std::vector<std::string> 
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style ) {
+DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer,
+                                   BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
+                                   Style*& style, std::map< std::string, std::string >& format_option ) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
@@ -847,5 +849,25 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     }
     if ( ! ( style ) )
         return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,"Le style "+styles+" n'est pas gere pour la couche "+str_layer,"wms" ) );
-    return NULL;
+
+    std::string formatOptionString= getParam("format_options").c_str();
+    char* formatOptionChar = new char[formatOptionString.size()+1];
+    memset(formatOptionChar,0,formatOptionString.size()+1);
+    memcpy(formatOptionChar,formatOptionString.c_str(),formatOptionString.size());
+
+    for ( int pos = 0; formatOptionChar[pos]; ) {
+        char* key = formatOptionChar + pos;
+        for ( ;formatOptionChar[pos] && formatOptionChar[pos] != ':' && formatOptionChar[pos] != ';'; pos++ ); // on trouve le premier "=", "&" ou 0
+        char* value = formatOptionChar + pos;
+        for ( ;formatOptionChar[pos] && formatOptionChar[pos] != ';'; pos++ ); // on trouve le suivant "&" ou 0
+        if ( *value == ':' ) *value++ = 0; // on met un 0 à la place du '=' entre key et value
+        if ( formatOptionChar[pos] ) formatOptionChar[pos++] = 0; // on met un 0 à la fin du char* value
+
+        toLowerCase ( key );
+        toLowerCase ( value );
+        format_option.insert ( std::pair<std::string, std::string> ( key, value ) );
+    }
+    delete[] formatOptionChar;
+    formatOptionChar=NULL;
+return NULL;
 }

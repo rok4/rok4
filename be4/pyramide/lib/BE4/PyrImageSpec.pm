@@ -97,6 +97,16 @@ END {}
 #        interpolation => bicubic,
 #        gamma  => 1
 #    }
+#
+#    variable: $self
+#
+#       * pixel (Pixel object)
+#       * compression
+#       * compressionoption
+#       * interpolation
+#       * gamma
+#       * formatCode
+
 
 #---------------------------------------------------------------------------------------------------
 sub new {
