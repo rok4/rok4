@@ -61,7 +61,14 @@ use constant CACHE_2_WORK_PRG => "tiffcp -s";
 use constant WORK_2_CACHE_PRG => "tiff2tile";
 use constant MERGE_N_TIFF     => "mergeNtiff";
 use constant MERGE_4_TIFF     => "merge4tiff";
-use constant UNTILE     => "untile";
+use constant UNTILE           => "untile";
+# commands' weights
+use constant MERGE4TIFF_W => 1;
+use constant MERGENTIFF_W => 4;
+use constant CACHE2WORK_PNG_W => 3;
+use constant WGET_W => 35;
+use constant TIFF2TILE_W => 0;
+use constant TIFFCP_W => 0;
 
 
 ####################################################################################################
@@ -191,18 +198,24 @@ sub _init {
 
 
 ####################################################################################################
-#                                     COMPUTING METHODS                                            #
+#                                  GENERAL COMPUTING METHOD                                        #
 ####################################################################################################
 
 # method: computeWholeTree
 #  Crée tous les script permettant de calculer les images de la pyramide.
 #
-#  Il y a exactement jobNbr +1 scripts crées.
+#  NOTE
+#  Il y a exactement jobNbr +1 scripts crées :
+#       - Le script final se nomme SCRIPT_FINISHER.sh
+#       - Les scripts précédant calculant effectivement des données (ou pas) se nomment SCRIPT_X.sh
 #
-#  Le script final se nomme SCRIPT_FINISHER.sh
-#
-#  Les scripts précédant calculant effectivement des données (ou pas) se nomment SCRIPT_X.sh
-#
+#  Pour ce faire, on exécute 3 étapes :
+#       - Le parcours de l'arbre : à chaque noeud, on définit le poids et le code correspondant à
+#         sa construction (image)
+#       - L'arbre étant pondéré, on peut définir le cutLevel, qui optimisera la répartition et le
+#         temps total de génération de la pyramide.
+#       - Les commande étant déjà écrites, il ne reste plus qu'à parcourir l'arbre et concaténer
+#         les bouts de code, et les écrire dans les scripts.
 #-------------------------------------------------------------------------------
 sub computeWholeTree {
     my $self = shift;
@@ -215,10 +228,11 @@ sub computeWholeTree {
     my $finishScriptCode = $self->prepareScript($finishScriptId);
 
     # Pondération de l'arbre en fonction des opérations à réaliser
+    # et création du code script (ajoter aux noeuds de l'arbre
     my @topLevelNodeList = $self->{tree}->getNodesOfTopLevel();
     foreach my $topNode (@topLevelNodeList) {
-        if (! $self->{tree}->weightBranch($topNode)) {
-            ERROR(sprintf "Can not weight the node of the top level '%s'!", Dumper($topNode));
+        if (! $self->computeBranch($topNode)) {
+            ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
             return FALSE;
         }
     }
@@ -233,7 +247,7 @@ sub computeWholeTree {
 
     $finishScriptCode .= "#recuperation des images calculees par les scripts precedents\n";
 
-    # creation des scripts
+    # écriture des scripts
     for (my $scriptCount=1; $scriptCount<=$self->{job_number}; $scriptCount++){
         my $scriptId   = sprintf "SCRIPT_%s", $scriptCount;
         # record scripid
@@ -247,19 +261,20 @@ sub computeWholeTree {
             foreach my $node (@{$nodeRack[$scriptCount-1]}){
                 INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
                 $scriptCode .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
-                $scriptCode .= $self->computeBranch($node, $scriptId);
+                $scriptCode .= $self->writeBranchCode($node);
                 # on récupère l'image de travail finale pour le job de fin.
                 $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
             }
         }
         if (! $self->saveScript($scriptCode,$scriptId)) {
-            ERROR(sprintf "Can not save the script '%s'!", $scriptId);
+            ERROR(sprintf "Can not save the script '%s' !", $scriptId);
             return FALSE;
         }
     }
 
     # creation du script final
-    $finishScriptCode .= $self->computeTopBranches($finishScriptId);
+
+    $finishScriptCode .= $self->writeTopCodes();
 
     if (! defined $finishScriptCode) {
         ERROR();
@@ -267,7 +282,7 @@ sub computeWholeTree {
     }
 
     if (! $self->saveScript($finishScriptCode, $finishScriptId)) {
-        ERROR(sprintf "Can not save the script FINISHER '%s' ?", $finishScriptId);
+        ERROR(sprintf "Can not save the script FINISHER '%s' !", $finishScriptId);
         return FALSE;
     }
 
@@ -277,8 +292,13 @@ sub computeWholeTree {
     return TRUE;
 }
 
+####################################################################################################
+#                                  COMPUTING/WEIGHTER METHOD                                       #
+####################################################################################################
+
 # method: computeBottomImage 
 #  Construction de l'image du bas de la pyramide désignée par 'node'.
+#  On détermine le poids et le code correspondant à la génération de l'image du bas
 #
 # NOTE:
 #  Si les dalles sources ne sont pas dans la projection de la pyramide on utilise le WMS pour
@@ -286,118 +306,120 @@ sub computeWholeTree {
 # et on n'a pas besoin d'appeller mergeNtiff.
 #
 #  Si les dalles sources sont dans la projection de la pyramides MAIS que la pyramide utilise
-# une compression avec perte (JPEG) ou en PNG (ce qui nous interdit le tiffcp pour passer
-# du format de cache au format de travail) on est contraint d'utiliser le WMS pour obtenir 
+# une compression avec perte (JPEG), on est contraint d'utiliser le WMS pour obtenir 
 # la dalle de fond. Du coup, on peut récupérer la nouvelle dalle complète et se passer de 
 # mergeNtiff.
 #
-# TODO:
-#  Dans le cas du PNG qui ne dégrade pas les images, il serait possible de se passer du
-# WMS à condition d'écrire un outil de conversion de format cache vers format de 
-# travail.
-#
-# REMARQUE:
 #  Dans le cas JPEG en projection native, on a effectivement besoin d'une image de 
 # fond pour le mergeNtiff que quand les données sources ne couvrent pas entièrement la
 # dalle. On ne fait pas la distinction ici par soucis de simplicité du code et parce que 
 # l'efficacité n'est probablement pas moins bonne.
+#
+# TODO:
+#  Dans le cas du PNG qui ne dégrade pas les images, on utilise untile+montage. Il faudrait écrire
+#  un outil améliorant cette tâche.
+#
 #---------------------------------------------------------------------------------------------------
 sub computeBottomImage {
-  my $self = shift;
-  my $node = shift;
-  my $scriptId = shift;
+    my $self = shift;
+    my $node = shift;
+    my $scriptId = shift;
 
-  TRACE;
+    TRACE;
 
-  my $res  = "\n";
-  
-  my $bgImgPath=undef;
+    my $weight  = 0;
+    my $code  = "\n";
+
+    my $bgImgPath=undef;
   
 # FIXME (TOS) Ici, on fait appel au service WMS sans vérifier que la zone demandée n'est pas trop grande.
 # On considère que le niveau le plus bas de la pyramide que l'on est en train de construire n'est pas trop élevé.
 # A terme, il faudra vérifier cette zone et ne demander que les tuiles contenant des données, et reconstruire une
 # image entière à partir de là (en ajoutant sur place des tuiles de nodata pour compléter).
 
-  if ((
-       defined ($self->{datasource}) &&
-       $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
-      )
-      ||
-      (! $self->{pyramid}->isNewPyramid() && (
-       $self->{pyramid}->getFormat()->getCompression() eq 'jpg')
-      )) {
-    $res .= $self->wms2work($node,$self->workNameOfNode($node));
-  }
-  else {
-    my $newImgDesc      = $self->{tree}->getImgDescOfNode($node);
-    my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir($scriptId), $self->workNameOfNode($node));
-    my $workImgDesc     = $newImgDesc->copy($workImgFilePath); # copie du descripteur avec changement du nom de fichier
+    if (
+    (defined ($self->{datasource}) && $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
+    ||
+    (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getFormat()->getCompression() eq 'jpg')))
+    {
+        $code .= $self->wms2work($node,$self->workNameOfNode($node));
+        $self->{tree}->updateWeightOfNode($node,WGET_W);
+    } else {
+        my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
+        my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir($scriptId), $self->workNameOfNode($node));
+        my $workImgDesc = $newImgDesc->copy($workImgFilePath); # copie du descripteur avec changement du nom de fichier
 
-    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-    # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
-    # correspondant dans la nouvelle pyramide.
-    if ( -f $newImgDesc->getFilePath() ){
-      $bgImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), "bgImg.tif");
-      # copie avec tiffcp pour passer du format de cache au format de travail.
-      $res.=$self->cache2work($node, "bgImg.tif");
+        # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+        # en la convertissant du format cache au format de travail: c'est notre image de fond.
+        # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
+        # correspondant dans la nouvelle pyramide.
+        if ( -f $newImgDesc->getFilePath() ){
+            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), "bgImg.tif");
+            # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
+            $code .= $self->cache2work($node, "bgImg.tif");
+        }
+
+        # On cree maintenant le fichier de config pour l'outil mergeNtiff
+        my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir($scriptId), "mergeNtiff");
+
+        if (! -d $confDirPath) {
+            DEBUG (sprintf "create dir mergeNtiff");
+            eval { mkpath([$confDirPath],0,0751); };
+            if ($@) {
+                ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
+                return FALSE;
+            }
+        }
+
+        my $confFilePath = File::Spec->catfile($confDirPath,
+            join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
+        my $confFilePathForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',
+            join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
+
+        DEBUG (sprintf "create mergeNtiff");
+        if (! open CFGF, ">", $confFilePath ){
+            ERROR(sprintf "Impossible de creer le fichier $confFilePath.");
+            return FALSE;
+        }
+        # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+        printf CFGF $workImgDesc->to_string();
+
+        # Maintenant les dalles en entrée:
+        my $bgImgDesc;
+        if (defined $bgImgPath){
+            # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
+            $bgImgDesc = $newImgDesc->copy($bgImgPath);
+            printf CFGF "%s", $bgImgDesc->to_string();
+        }
+        # ajout des images sources
+        my $listDesc = $self->{tree}->getImgDescOfBottomNode($node);
+        foreach my $desc (@{$listDesc}){
+            printf CFGF "%s", $desc->to_string();
+        }
+        close CFGF;
+
+        $weight += MERGENTIFF_W;
+        $code .= $self->mergeNtiff($confFilePathForScript);
     }
 
-    # On cree maintenant le fichier de config pour l'outil mergeNtiff
-    my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir($scriptId), "mergeNtiff");
-    
-    if (! -d $confDirPath) {
-      
-      DEBUG (sprintf "create dir mergeNtiff");
-      eval { mkpath([$confDirPath],0,0751); };
-      if ($@) {
-        ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
-        return undef;
-      }
-    }
-    my $confFilePath          = File::Spec->catfile($confDirPath,
-                                  join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
-    my $confFilePathForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',
-                                  join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
-    
-    DEBUG (sprintf "create mergeNtiff");
-    if (! open CFGF, ">", $confFilePath ){
-      ERROR(sprintf "Impossible de creer le fichier $confFilePath.");
-      return undef;
-    }
-    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    printf CFGF $workImgDesc->to_string();
-    
-    # Maintenant les dalles en entrée:
-    my $bgImgDesc;
-    if (defined $bgImgPath){
-      # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
-      $bgImgDesc = $newImgDesc->copy($bgImgPath);
-      printf CFGF "%s", $bgImgDesc->to_string();
-    }
-    # ajout des images sources
-    my $listDesc = $self->{tree}->getImgDescOfBottomNode($node);
-    foreach my $desc (@{$listDesc}){
-      printf CFGF "%s", $desc->to_string();
-    }
-    close CFGF;
+    # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
+    $weight += TIFF2TILE_W;
+    $code .= $self->work2cache($node);
 
-    $res .= $self->mergeNtiff($confFilePathForScript);
-  }
+    # Si on a copié une image pour le fond, on la supprime maintenant
+    if ( defined($bgImgPath) ){
+        $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    }
 
-  # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-  $res .= $self->work2cache($node);
+    $self->{tree}->updateWeightOfNode($node,$weight);
+    $self->{tree}->setComputingCode($node,$code);
 
-  # Si on a copié une image pour le fond, on la supprime maintenant
-  if ( defined($bgImgPath) ){
-    $res.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
-  }
-  
-  return $res;
+    return TRUE;
 }
 
 # method: computeAboveImage
 #  Construction d'une image pyramide qui n'est pas au bottomLevel.
+#  On détermine le poids et le code correspondant à la génération de l'image qui n'est pas en bas
 #
 #  NOTE:
 #  Le choix d'utiliser ou non le WMS pour les niveaux supérieurs ne dépend pas de la 
@@ -423,7 +445,8 @@ sub computeAboveImage {
 
     TRACE;
 
-    my $res = "\n";
+    my $code = "\n";
+    my $weight = 0;
     my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
     my @childList = $self->{tree}->getChilds($node);
 
@@ -462,10 +485,11 @@ sub computeAboveImage {
                     $bg='-n ' . $self->{nodata}->getColor();
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
-                    $res .= $self->wms2work($node, "bgImg.tif");
+                    $weight += WGET_W;
+                    $code .= $self->wms2work($node, "bgImg.tif");
                 }
             } else {
-                # copie avec tiffcp pour passer du format de cache au format de travail.
+                # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $res.=$self->cache2work($node, "bgImg.tif");
             }
         } else {
@@ -483,96 +507,140 @@ sub computeAboveImage {
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)
         }
     }
-    $res .= $self->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), $bg, $childImgParam);
+    $code .= $self->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), $bg, $childImgParam);
 
     # Suppression des images de travail dont on a plus besoin.
     foreach my $node (@childList){
         my $workName = $self->workNameOfNode($node);
-        $res .= "rm -f \${TMP_DIR}/$workName \n";
+        $code .= "rm -f \${TMP_DIR}/$workName \n";
     }
 
     # Si on a copié une image pour le fond, on en a plus besoin, on la supprime maintenant
-    $res.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    $res .= $self->work2cache($node);
+    $code .= $self->work2cache($node);
 
-    return $res;
+    $self->{tree}->updateWeightOfNode($node,$weight);
+    $self->{tree}->setComputingCode($node,$code);
+
+    return TRUE;
 }
 
 # method: computeBranch
-#  Renvoie le code du script calculant les images depuis le bas de la pyramide
-#  et jusqu'au cutLevel.
-#-------------------------------------------------------------------------------
+#  On détermine le poids et le code correspondant à la génération de toute les images d'une branche
+#--------------------------------------------------------------------------------------------------
 sub computeBranch {
-  my $self = shift;
-  my $node = shift;
-  my $scriptId = shift;
-  
-  TRACE;
-  DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
-  
-  my $res = '';
-  my @childList = $self->{tree}->getChilds($node);
-  if (scalar @childList == 0){
-    $res .= $self->computeBottomImage($node, $scriptId);
-    return $res;
-  }
-  foreach my $n (@childList){
-    $res .= $self->computeBranch($n, $scriptId);
-  }
-  
-  return $res .= $self->computeAboveImage($node, $scriptId);
-}
-
-# method: computeTopBranch
-#  Renvoie le code du script calculant les images depuis le cutLevel jusqu'au
-#  niveau du node en paramètre.
-#-------------------------------------------------------------------------------
-sub computeTopBranch {
     my $self = shift;
     my $node = shift;
     my $scriptId = shift;
 
+    my $weight = 0;
+
     TRACE;
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
+
+    my $res = '';
+    my @childList = $self->{tree}->getChilds($node);
+    if (scalar @childList == 0){
+        if (! $self->computeBottomImage($node, $scriptId)) {
+            ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
+            return FALSE;
+        }
+        return TRUE;
+    }
+    foreach my $n (@childList){
+        if (! $self->computeBranch($n, $scriptId)) {
+            ERROR(sprintf "Cannot compute the branch from node %s_%s , level %s)", $node->{x}, $node->{y}, $node->{level});
+            return FALSE;
+        }
+        $weight += $self->{tree}->getAccumulatedWeightOfNode($n);
+    }
+
+    if (! $self->computeAboveImage($node, $scriptId)) {
+        ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
+        return FALSE;
+    }
+
+    $self->{tree}->setAccumulatedWeightOfNode($node,$weight);
+
+    return TRUE;
+}
+
+
+####################################################################################################
+#                                          WRITER METHODS                                          #
+####################################################################################################
+
+# method: writeBranchCode
+#  On assemble les bouts de code de chaque noeud de l'arbre, en partant du noeud passé en paramètre
+#--------------------------------------------------------------------------------------------------
+sub writeBranchCode {
+    my $self = shift;
+    my $node = shift;
+
+    TRACE;
+
+    my $code = '';
+    my @childList = $self->{tree}->getChilds($node);
+
+    # Le noeud est une feuille
+    if (scalar @childList == 0){
+        return $self->{tree}->getComputingCode($node);
+    }
+
+    # Le noeud a des enfants
+    foreach my $n (@childList){
+        $code .= $self->writeBranchCode($n);
+    }
+    $code .= $self->{tree}->getComputingCode($node);
+
+    return $code;
+}
+
+# method: writeTopCodes
+#  On assemble les bouts de code de tous les noeuds du haut de l'arbre, jusqu'au cutLevel
+#-------------------------------------------------------------------------------
+sub writeTopCodes {
+    my $self = shift;
+
+    TRACE;
+
+    if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
+        INFO("Final script will be empty (except temporary files deletion)");
+        return "echo \"Final script have nothing to do, except to delete temporary images made by other scripts.\" \n";
+    }
+
+    my $code = '';
+    my @nodeList = $self->{tree}->getNodesOfTopLevel();
+    foreach my $node (@nodeList){
+        $code .= $self->writeTopCode($node);
+    }
+    return $code;
+}
+
+
+# method: writeTopCode
+#  On assemble les bouts de code d'un noeud du haut de l'arbre, jusqu'au cutLevel
+#--------------------------------------------------------------------------------------------------
+sub writeTopCode {
+    my $self = shift;
+    my $node = shift;
+
+    TRACE;
 
     # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
     return '' if ($node->{level} eq $self->{tree}->getCutLevelId());
 
-    my $res='';
+    my $code = '';
     my @childList = $self->{tree}->getChilds($node);
     foreach my $n (@childList){
-        $res .= $self->computeTopBranch($n, $scriptId);
+        $code .= $self->writeTopCode($n);
     }
+    $code .= $self->{tree}->getComputingCode($node);
 
-    return $res .= $self->computeAboveImage($node, $scriptId);
+    return $code;
 }
-
-# method: computeTopBranches
-#  Renvoie le code du script calculant toute les images depuis le cutLevel
-#  jusqu'en haut de la pyramide
-#-------------------------------------------------------------------------------
-sub computeTopBranches {
-  my $self = shift;
-  my $scriptId = shift;
-  
-  TRACE;
-    
-  if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
-    INFO("Final script will be empty (except temporary files deletion)");
-    return "echo \"Final script have nothing to do, except to delete temporary images made by other scripts.\" \n";
-  }
-  
-  my $res = '';
-  my @nodeList = $self->{tree}->getNodesOfTopLevel();
-  foreach my $node (@nodeList){
-    $res .= $self->computeTopBranch($node, $scriptId);
-  }
-  return $res;
-}
-
-
 
 ####################################################################################################
 #                                      COMMANDS METHODS                                            #
@@ -633,10 +701,11 @@ sub cache2work {
     INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
 
     if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
-        # Dans le cas du png, l'oparétion de copie doit se faire en 3 étapes :
+        # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
+        $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
         my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
 
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/\n%s", UNTILE, $workName, RESULT_TEST);
@@ -646,6 +715,7 @@ sub cache2work {
         return $cmd;
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
+        $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
         my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
         return $cmd;
     }
