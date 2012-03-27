@@ -283,7 +283,7 @@ sub _load {
 # method: computeBBox
 #  Renvoie la bbox de l'imageSource en parametre dans le SRS de la pyramide.
 #------------------------------------------------------------------------------
-sub computeBBox(){
+sub computeBBox {
   my $self = shift;
   my $img = shift;
   my $ct = shift;
@@ -536,7 +536,8 @@ sub sumArray {
     return $sum;
 }
 
-# method: oldSharing #TEST#
+# method: oldSharing
+#  fonction de test renvoyant l'ancienne distribution du travail sur les jobs
 #-------------------------------------------------------------------------------
 sub oldSharing {
     my $self = shift;
@@ -555,7 +556,9 @@ sub oldSharing {
     print "Ancienne répartition : @nodeRackWeight\n"; 
 }
 
-# method: statArray #TEST#
+# method: statArray
+#  fonction de test renvoyant des statistiques sur le tableau donné : moyenne
+#  et écart type.
 #-------------------------------------------------------------------------------
 sub statArray {
     my $self = shift;
@@ -775,7 +778,7 @@ sub setComputingCode(){
 }
 
 # method: getComputingCode
-#  Ajoute au noeud le code script pour le générer
+#  Revnvoie le code script du noeud
 #------------------------------------------------------------------------------
 sub getComputingCode(){
     my $self = shift;
@@ -847,9 +850,9 @@ sub exportTree {
   my $file = shift; # filepath !
   
   # sur le bottomlevel, on a :
-  # { level1 => { x1_y2 => [[objimage1, objimage2, ...],w1],
-  #               x2_y2 => [[objimage2],w1],
-  #               x3_y2 => [[objimage3],w1], ...} }
+  # { level1 => { x1_y2 => [[objimage1, objimage2, ...],w1,c1],
+  #               x2_y2 => [[objimage2],w2,c2],
+  #               x3_y2 => [[objimage3],w3,c3], ...} }
   
   # on exporte dans un fichier la liste des indexes par images sources en projection :
   #  imagesource

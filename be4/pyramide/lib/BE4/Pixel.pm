@@ -39,6 +39,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use Data::Dumper;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -95,10 +96,7 @@ END {}
 #
 sub new {
     my $this = shift;
-    my $photometric = shift;
-    my $sampleformat = shift;
-    my $bitspersample = shift;
-    my $samplesperpixel = shift;
+    my $params = shift;
 
     my $class= ref($this) || $this;
     my $self = {
@@ -112,22 +110,36 @@ sub new {
 
     TRACE;
 
-    $photometric = 'rgb' if (!defined ($photometric));
-    $sampleformat = 'uint' if (!defined ($sampleformat));
-    $bitspersample = 8 if (!defined ($bitspersample));
-    $samplesperpixel = 3 if (!defined ($samplesperpixel));
+    # All attributes have to be present in parameters and defined
 
-    if (! $self->is_SampleFormat($sampleformat) ||
-        ! $self->is_SamplesPerPixel($samplesperpixel) ||
-        ! $self->is_Photometric($photometric) ||
-        ! $self->is_BitsPerSample($bitspersample)) {
+    my $sampleformat = $params->{sampleformat};
+    if ( ! defined $sampleformat || ! $self->is_SampleFormat($sampleformat)) {
+        ERROR ("'sampleformat' is undefined or not valid !");
         return undef;
     }
-
-    $self->{photometric} = $photometric;
     $self->{sampleformat} = $sampleformat;
-    $self->{bitspersample} = $bitspersample;
+
+    my $samplesperpixel = $params->{samplesperpixel};
+    if (! defined $samplesperpixel || ! $self->is_SamplesPerPixel($samplesperpixel)) {
+        ERROR ("'samplesperpixel' is undefined or not valid !");
+        return undef;
+    }
     $self->{samplesperpixel} = $samplesperpixel;
+
+    my $photometric = $params->{photometric};
+    if (! defined $photometric || ! $self->is_Photometric($photometric)) {
+        ERROR ("'photometric' is undefined or not valid !");
+        return undef;
+    }
+    $self->{photometric} = $photometric;
+
+    my $bitspersample = $params->{bitspersample};
+    if (! defined $bitspersample || ! $self->is_BitsPerSample($bitspersample)) {
+        ERROR ("'bitspersample' is undefined or not valid !");
+        return undef;
+    }
+    $self->{bitspersample} = $bitspersample;
+
 
     return $self;
 }
@@ -144,10 +156,10 @@ sub is_SampleFormat {
 
     return FALSE if (! defined $sampleformat);
 
-    foreach (@{$TILES{sampleformat}}) {
+    foreach (@{$PIXEL{sampleformat}}) {
         return TRUE if ($sampleformat eq $_);
     }
-    ERROR (sprintf "Can not define 'sampleformat' (%s) : unsupported !",$sampleformat);
+    ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
     return FALSE;
 }
 
@@ -159,10 +171,10 @@ sub is_BitsPerSample {
 
     return FALSE if (! defined $bitspersample);
 
-    foreach (@{$TILES{bitspersample}}) {
+    foreach (@{$PIXEL{bitspersample}}) {
         return TRUE if ($bitspersample eq $_);
     }
-    ERROR (sprintf "Can not define 'bitspersample' (%s) : unsupported !",$bitspersample);
+    ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
     return FALSE;
 }
 
@@ -174,10 +186,10 @@ sub is_Photometric {
 
     return FALSE if (! defined $photometric);
 
-    foreach (@{$TILES{photometric}}) {
+    foreach (@{$PIXEL{photometric}}) {
         return TRUE if ($photometric eq $_);
     }
-    ERROR (sprintf "Can not define 'photometric' (%s) : unsupported !",$photometric);
+    ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
     return FALSE;
 }
 
@@ -189,10 +201,10 @@ sub is_SamplesPerPixel {
 
     return FALSE if (! defined $samplesperpixel);
 
-    foreach (@{$TILES{samplesperpixel}}) {
+    foreach (@{$PIXEL{samplesperpixel}}) {
         return TRUE if ($samplesperpixel eq $_);
     }
-    ERROR (sprintf "Can not define 'samplesperpixel' (%s) : unsupported !",$samplesperpixel);
+    ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
     return FALSE;
 }
 
@@ -230,8 +242,6 @@ __END__
  BE4::Pixel - components of a pixel in output images
 
 =head1 SYNOPSIS
-
-  use BE4::Format;
   
   my $objC = BE4::Pixel->new("rgb","uint",8);
   

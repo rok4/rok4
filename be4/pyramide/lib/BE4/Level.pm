@@ -211,7 +211,7 @@ sub _init {
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
-    $self->{is_in_pyramid}          = $params->{is_in_pyramid};
+    $self->{is_in_pyramid}  = $params->{is_in_pyramid};
     
     return TRUE;
 }

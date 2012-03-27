@@ -77,11 +77,8 @@ sub new {
     path_nodata     => undef,
     #
     imagesize       => '4096', # ie 4096 px by default !
-    bitspersample   => undef, # ie 8
-    samplesperpixel => undef, # ie 3
-    sampleformat    => undef, # ie uint
-    photometric     => undef, # ie rgb
-    color           => 'FFFFFF', # ie FFFFFF by default !
+    pixel           => undef, # Pixel object
+    color           => undef, # ie FFFFFF by default !
     # no interpolation for the tile image !
   };
 
@@ -100,79 +97,72 @@ sub new {
 sub _init {
     my $self = shift;
     my $params = shift;
-    
-    my $args = $params;
-    
-    if (ref($args) ne "HASH") {
-      ERROR ("Parameters in a HASH structure required !");
-      return undef;
-    }
 
     TRACE;
     
-    return FALSE if (! defined $args);
+    return FALSE if (! defined $params);
     
     # init. params
-    if (! exists  ($args->{imagesize})) {
-      WARN ("Parameter 'imagesize' by default !");
+    # All attributes have to be present in parameters and defined, except 'color' which could be undefined
+
+    if (! exists  $params->{imagesize} || ! defined  $params->{imagesize}) {
+        ERROR ("Parameter 'imagesize' required !");
+        return FALSE;
     }
-    if (! exists  ($args->{bitspersample})) {
-      ERROR ("Parameter 'bitspersample' required !");
-      return FALSE;
-    }
-    if (! exists  ($args->{samplesperpixel})) {
-      ERROR ("Parameter 'samplesperpixel' required !");
-      return FALSE;
-    }
-    if (! exists  ($args->{sampleformat})) {
-      ERROR ("Parameter 'sampleformat' required !");
-      return FALSE;
-    }
-    if (! exists  ($args->{photometric})) {
-      ERROR ("Parameter 'photometric' required !");
-      return FALSE;
-    }
-    if (! exists  ($args->{color})) {
-      WARN ("Parameter 'color' by default !");
-    }
+    $self->{imagesize}      = $params->{imagesize};
     #
-    if (! exists  ($args->{path_nodata})) {
-      ERROR ("Parameter 'path' required !");
-      return FALSE;
+    if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
+        ERROR ("Parameter 'pixel' required !");
+        return FALSE;
     }
+    $self->{pixel}          = $params->{pixel};
     #
-    if (! -d $args->{path_nodata}) {
-      ERROR ("Directory doesn't exist !");
-      return FALSE;
+    if (! exists  $params->{path_nodata} || ! defined  $params->{path_nodata}) {
+        ERROR ("Parameter 'path_nodata' required !");
+        return FALSE;
     }
+    if (! -d $params->{path_nodata}) {
+        ERROR ("Directory doesn't exist !");
+        return FALSE;
+    }
+    $self->{path_nodata}    = $params->{path_nodata};
     #
-    $self->{path_nodata}    = $args->{path_nodata};
-    $self->{imagesize}      = $args->{imagesize} if (exists  ($args->{imagesize}) && defined ($args->{imagesize}));
-    $self->{bitspersample}  = $args->{bitspersample};
-    $self->{samplesperpixel}= $args->{samplesperpixel};
-    $self->{sampleformat}   = $args->{sampleformat};
-    $self->{photometric}    = $args->{photometric};
+    if (! exists  $params->{color}) {
+        ERROR ("Parameter 'color' required !");
+        return FALSE;
+    }
 #   for nodata value, it has to be coherent with bitspersample/sampleformat :
 #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
 #       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
-    if (exists  ($args->{color}) && defined ($args->{color})) {
-        if (int($args->{bitspersample}) == 32 && $args->{sampleformat} eq 'float') {
-            if (!($args->{color} =~ m/^[-+]?(\d)+$/)) {
-                ERROR ("Incorrect parameter nodata for this bitspersample/sampleformat couple !");
+    if (! defined ($params->{color})) {
+        if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
+            WARN ("Parameter 'nodata.color' has not been set. The default value is -99999");
+            $params->{color} = '-99999';
+        } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
+            WARN ("Parameter 'nodata.color' has not been set. The default value is FFFFFF");
+            $params->{color} = 'FFFFFF';
+        } else {
+            ERROR ("sampleformat/bitspersample not supported !");
+            return FALSE;
+        }
+    } else {
+        if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
+            if (!($params->{color} =~ m/^[-+]?(\d)+$/)) {
+                ERROR ("Incorrect parameter nodata for a float32 pixel's format !");
                 return FALSE;
             }
-        } elsif (int($args->{bitspersample}) == 8 && $args->{sampleformat} eq 'uint') {
-            if (!($args->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR ("Incorrect parameter nodata for this bitspersample/sampleformat couple !");
+        } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
+            if (!($params->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
+                ERROR ("Incorrect parameter nodata for this int8 pixel's format !");
                 return FALSE;
             }
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
         }
-    
-        $self->{color} =$args->{color};
     }
+    
+    $self->{color} = $params->{color};
     
     return TRUE;
 }
@@ -184,9 +174,7 @@ sub getColor {
 }
 sub getFile {
   my $self = shift;
-  
   my $imagefile = join(".", $self->getName(), "tif");
-  
   return $imagefile;
 }
 sub getPath {

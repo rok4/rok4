@@ -55,8 +55,8 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my %IMAGESPEC;
-my %Code2SampleFormat;
-my %SampleFormat2Code;
+my %CODE2SAMPLEFORMAT;
+my %SAMPLEFORMAT2CODE;
 
 ################################################################################
 # Preloaded methods go here.
@@ -65,16 +65,16 @@ INIT {
 
 %IMAGESPEC = (
     interpolation => ['nn','bicubic','linear','lanczos'],
-    compression => ['raw','jpeg','png','lzw'],
+    compression => ['raw','jpg','png','lzw'],
     compressionoption => ['none','crop']
 );
 
-%Code2SampleFormat = (
+%CODE2SAMPLEFORMAT = (
     INT => "uint",
     FLOAT => "float"
 );
 
-%SampleFormat2Code = (
+%SAMPLEFORMAT2CODE = (
     uint => "INT",
     float => "FLOAT"
 );
@@ -157,12 +157,12 @@ sub _init {
     }
 
     # Pixel object creation
-    my $objPixel = BE4::Pixel->new(
-        $params->{photometric},
-        $params->{sampleformat},
-        $params->{bitspersample},
-        $params->{samplesperpixel}
-    );
+    my $objPixel = BE4::Pixel->new({
+        photometric => $params->{photometric},
+        sampleformat => $params->{sampleformat},
+        bitspersample => $params->{bitspersample},
+        samplesperpixel => $params->{samplesperpixel}
+    });
 
     if (! defined $objPixel) {
         ERROR ("Can not create Pixel object !");
@@ -172,31 +172,48 @@ sub _init {
     $self->{pixel} = $objPixel;
     
     # Other attributes
+    # All attributes have to be present in parameters and defined
 
     # Compression parameters
-    if (! exists($params->{compression}) || ! $self->is_Compression($params->{compression})) {
-        ERROR ("'compression' is undefined or invalid !");
-        return FALSE;
-    }
     # to remove when compression type 'floatraw' will be remove
-    if ($params->{compression} eq 'floatraw') {
+    if (exists($params->{compression}) && $params->{compression} eq 'floatraw') {
         WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
         $params->{compression} = 'raw';
     }
-
-    if (! exists($params->{compressionoption}) || ! $self->is_CompressionOption($params->{compressionoption})) {
-        ERROR ("'compressionoption' is undefined or invalid !");
+    if (! exists $params->{compression} || ! defined $params->{compression}) {
+        ERROR ("'compression' is required !");
         return FALSE;
     }
+    if (! $self->is_Compression($params->{compression})) {
+        ERROR ("'compression' is not valid !");
+        return FALSE;
+    }
+    $self->{compression} = $params->{compression};
+
+    if (! exists $params->{compressionoption} || ! defined $params->{compressionoption}) {
+        ERROR ("'compressionoption' is required !");
+        return FALSE;
+    }
+    if (! $self->is_CompressionOption($params->{compressionoption})) {
+        ERROR ("'compressionoption' is not valid !");
+        return FALSE;
+    }
+    $self->{compressionoption} = $params->{compressionoption};
 
     # Interpolation parameter
-    if (! exists($params->{interpolation}) || ! $self->is_Interpolation($params->{interpolation})) {
-        ERROR ("'interpolation' is undefined or invalid !");
+
+    if (! exists $params->{interpolation} || ! defined $params->{interpolation}) {
+        ERROR ("'interpolation' is required !");
         return FALSE;
     }
+    if (! $self->is_Interpolation($params->{interpolation})) {
+        ERROR ("'interpolation' is not valid !");
+        return FALSE;
+    }
+    $self->{interpolation} = $params->{interpolation};
 
     # Gamma parameter
-    if (! exists($params->{gamma})) {
+    if (! exists $params->{gamma} || ! defined $params->{interpolation}) {
         ERROR ("'gamma' is undefined !");
         return FALSE;
     }
@@ -208,18 +225,14 @@ sub _init {
         WARN ("Given value for gamma is greater than 1 : 1 is used !");
         $params->{gamma} = 1;
     }
-
-    $self->{compression} = $params->{compression};
-    $self->{compressionoption} = $params->{compressionoption};
-    $self->{interpolation} = $params->{interpolation};
     $self->{gamma} = $params->{gamma};
 
     # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
-    $self->{FormatCode} = sprintf "TIFF_%s_%s%s",
-        $self->{compression},
-        SampleFormat2Code{$self->{pixel}->{sampleformat}}
-        SampleFormat2Code{$self->{pixel}->{bitspersample}};
-    
+    $self->{formatCode} = sprintf "TIFF_%s_%s%s",
+        uc $self->{compression},
+        $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}},
+        $self->{pixel}->{bitspersample};
+
     return TRUE;
 }
 
@@ -238,22 +251,39 @@ sub is_Compression {
     foreach (@{$IMAGESPEC{compression}}) {
         return TRUE if ($compression eq $_);
     }
-    ERROR (sprintf "Can not define 'compression' (%s) : unsupported !",$compression);
+    ERROR (sprintf "Unknown 'compression' (%s) !",$compression);
     return FALSE;
 }
+
 sub is_CompressionOption {
     my $self = shift;
     my $compressionoption = shift;
 
     TRACE;
 
+    my $bool = FALSE;
+
     return FALSE if (! defined $compressionoption);
 
     foreach (@{$IMAGESPEC{compressionoption}}) {
-        return TRUE if ($compressionoption eq $_);
+        if ($compressionoption eq $_) {
+            $bool = TRUE;
+            last;
+        }
     }
-    ERROR (sprintf "Can not define 'compressionoption' (%s) : unsupported !",$compressionoption);
-    return FALSE;
+    if (! $bool) {
+        ERROR (sprintf "Unknown 'compressionoption' (%s) !",$compressionoption);
+        return FALSE;
+    }
+    # NOTE
+    # Compression have to be already define in the pixel objet
+    if ($compressionoption eq 'crop' && $self->{compression} ne 'jpg') {
+        ERROR (sprintf "Crop option is just allowed for jpeg compression, not for compression '%s' !",
+            $self->{pixel}->{compression});
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 sub is_Interpolation {
@@ -267,7 +297,7 @@ sub is_Interpolation {
     foreach (@{$IMAGESPEC{interpolation}}) {
         return TRUE if ($interpolation eq $_);
     }
-    ERROR (sprintf "Can not define 'interpolation' (%s) : unsupported !",$interpolation);
+    ERROR (sprintf "Unknown 'interpolation' (%s) !",$interpolation);
     return FALSE;
 }
 
@@ -299,22 +329,35 @@ sub decodeFormat {
         WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
         $formatCode = 'TIFF_RAW_FLOAT32';
     }
+
+    $self->{formatCode} = $formatCode;
     
     my @value = split(/_/, $formatCode);
     if (scalar @value != 3) {
-        ERROR(sprintf "Fomat code is not valid '%s' !", $formatCode);
+        ERROR(sprintf "Format code is not valid '%s' !", $formatCode);
         return undef;
     }
   
     $value[2] =~ m/(\w+)(\d+)/;
-    
-    my $sampleformat = $1;
 
-    if (! exists($Code2SampleFormat->{$sampleformat})) {
-        ERROR(sprintf "Extracted sampleFormat is not valid '%s' !", $sampleformat);
+    # Contrôle de la valeur sampleFormat extraite
+    my $sampleformatCode = $1;
+    my $sampleformat = '';
+
+    foreach (keys %CODE2SAMPLEFORMAT) {
+        if ($sampleformatCode eq $_) {
+            $sampleformat = $CODE2SAMPLEFORMAT{$_};
+        }
+    }
+    if ($sampleformat eq '') {
+        ERROR(sprintf "Extracted sampleFormat is not valid '%s' !", $sampleformatCode);
         return undef;
-    } else {
-        $sampleformat = $Code2SampleFormat->{$sampleformat};
+    }
+
+    # Contrôle de la valeur compression extraite
+    if (! $self->is_Compression(lc $value[1])) {
+        ERROR(sprintf "Extracted compression is not valid '%s' !", $value[1]);
+        return undef;
     }
 
     my $bitspersample = $2;

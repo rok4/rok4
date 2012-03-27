@@ -84,7 +84,6 @@ sub new {
     my $self = {
         # in
         pyramid    => undef, # object Pyramid !
-        datasource => undef, # object DataSource !
         #
         job_number => undef, # param value !
         path_temp  => undef, # param value !
@@ -107,7 +106,7 @@ sub new {
 
 # privates init.
 sub _init {
-    my ($self, $params_process, $params_harvest, $pyr, $src) = @_;
+    my ($self, $params_process, $params_harvest, $pyr) = @_;
 
     TRACE;
 
@@ -118,7 +117,6 @@ sub _init {
         ERROR("Can not load Pyramid!");
         return FALSE;
     }
-
 
     # manadatory !
     $self->{job_number} = $params_process->{job_number}; 
@@ -140,16 +138,8 @@ sub _init {
         return FALSE;
     }
 
-    # it's an object and it's optional !
-    $self->{datasource} = $src;
-
-    if (! defined $self->{datasource} || ref ($self->{datasource}) ne "BE4::DataSource") {
-        WARN("Can not load Data (May be, there are not really data source ?) !");
-        return FALSE;
-    }
-
     # it's an object !
-    $self->{nodata} = $self->{pyramid}->getNoData();
+    $self->{nodata} = $self->{pyramid}->getNodata();
 
     if (! defined $self->{nodata} || ref ($self->{nodata}) ne "BE4::NoData") {
         ERROR("Can not load NoData Tile !");
@@ -160,13 +150,10 @@ sub _init {
     #    use case with only a transformation proj or compression without data ?
 
     # it's an object !
-    if ((
-        defined ($self->{datasource}) &&
-        $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()
-        )
+    if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
         ||
         (! $self->{pyramid}->isNewPyramid() && (
-        $self->{pyramid}->getFormat()->getCompression() eq 'jpg')
+        $self->{pyramid}->getCompression() eq 'jpg')
     )) {
 
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -184,7 +171,7 @@ sub _init {
 
     #  it's an object !
     
-    $self->{tree} = BE4::Tree->new($self->{datasource}, $self->{pyramid}, $self->{job_number});
+    $self->{tree} = BE4::Tree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
 
     if (! defined $self->{tree}) {
         ERROR("Can not create Tree object !");
@@ -337,10 +324,9 @@ sub computeBottomImage {
 # A terme, il faudra vérifier cette zone et ne demander que les tuiles contenant des données, et reconstruire une
 # image entière à partir de là (en ajoutant sur place des tuiles de nodata pour compléter).
 
-    if (
-    (defined ($self->{datasource}) && $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
+    if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
     ||
-    (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getFormat()->getCompression() eq 'jpg')))
+    (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg')))
     {
         $code .= $self->wms2work($node,$self->workNameOfNode($node));
         $self->{tree}->updateWeightOfNode($node,WGET_W);
@@ -477,7 +463,7 @@ sub computeAboveImage {
             my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
             $bg="-b $bgImgPath";
 
-            if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg') {
+            if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
@@ -700,7 +686,7 @@ sub cache2work {
 
     INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
 
-    if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
+    if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
@@ -710,7 +696,7 @@ sub cache2work {
 
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/\n%s", UNTILE, $workName, RESULT_TEST);
 
-        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s", $self->{pyramid}->getTile()->getBitsPerSample(), $workName, RESULT_TEST);
+        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s", $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
 
         return $cmd;
     } else {
@@ -735,7 +721,6 @@ sub work2cache {
   my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
-  my $tile= $self->{pyramid}->getTile();
   my $compression = $self->{pyramid}->getCompression();
   my $compressionoption = $self->{pyramid}->getCompressionOption();
   
@@ -758,11 +743,11 @@ sub work2cache {
     $cmd   .= sprintf ("-crop ");
   }
 
-  $cmd   .= sprintf ("-p %s ",    $tile->getPhotometric());
+  $cmd   .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
   $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
-  $cmd   .= sprintf ("-b %s ",    $tile->getBitsPerSample());
-  $cmd   .= sprintf ("-a %s ",    $tile->getSampleFormat());
-  $cmd   .= sprintf ("-s %s ",    $tile->getSamplesPerPixel());
+  $cmd   .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
+  $cmd   .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
+  $cmd   .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
   $cmd   .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
   $cmd   .= sprintf ("%s", RESULT_TEST);
 
@@ -788,13 +773,13 @@ sub mergeNtiff {
   # TODO pour les métadonnées ce sera 0
 
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
-    $cmd .= sprintf ( " -i %s ", $pyr->getTile()->getInterpolation());
+    $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
     $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
     $cmd .= sprintf ( " -t %s ", $dataType);
-    $cmd .= sprintf ( " -s %s ", $pyr->getTile()->getSamplesPerPixel());
-    $cmd .= sprintf ( " -b %s ", $pyr->getTile()->getBitsPerSample() );
-    $cmd .= sprintf ( " -p %s ", $pyr->getTile()->getPhotometric() );
-    $cmd .= sprintf ( " -a %s\n",$pyr->getTile()->getSampleFormat());
+    $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());
+    $cmd .= sprintf ( " -b %s ", $pyr->getBitsPerSample() );
+    $cmd .= sprintf ( " -p %s ", $pyr->getPhotometric() );
+    $cmd .= sprintf ( " -a %s\n",$pyr->getSampleFormat());
     $cmd .= sprintf ("%s" ,RESULT_TEST);
   return $cmd;
 }
@@ -932,7 +917,7 @@ sub saveScript {
     #                c'est parfois utilisé par les orchestrateurs (ex: Torque)
     # Utilisation du poids calculé des branches traitées dans ce script
 
-    if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
+    if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, on doit éventuellement supprimer les *.png dans le dossier temporaire
         $code .= sprintf ("rm -f \${TMP_DIR}/*.png\n");
     }
