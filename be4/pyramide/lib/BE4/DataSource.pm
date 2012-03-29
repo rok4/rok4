@@ -345,7 +345,6 @@ sub getListImages {
 
     next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
     
-    ALWAYS(sprintf "Nouvelle image : %s",File::Spec->catfile($directory, $entry)); #TEST#
     push @{$search->{images}}, File::Spec->catfile($directory, $entry);
   }
   
