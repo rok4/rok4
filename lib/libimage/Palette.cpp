@@ -59,6 +59,13 @@ Palette::Palette()
 	pngPalette = NULL;
 }
 
+Palette::Palette(size_t pngPaletteSize, uint8_t* pngPaletteData)  : pngPaletteSize(pngPaletteSize)
+{
+    pngPalette = new uint8_t[pngPaletteSize];
+    memcpy(pngPalette,pngPaletteData,pngPaletteSize);
+}
+
+
 
 Palette::Palette(const Palette& pal) : pngPaletteSize(0)
 {

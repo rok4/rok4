@@ -37,6 +37,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include "Kernel.h"
+#include "Interpolation.h"
 #include <sys/time.h>
 #include <cmath>
 #include <cstdlib>
@@ -62,7 +63,7 @@ protected:
     float W[100];
     for(int i = 0; i < 1000; i++) {    
       
-      const Kernel &K = Kernel::getInstance(Kernel::KernelType(i%6)); // Il y a 6 Noyaux défini dans KernelType
+      const Kernel &K = Kernel::getInstance(Interpolation::KernelType(i%6)); // Il y a 6 Noyaux défini dans KernelType
 
 
       int l = 2 + rand() % 99;

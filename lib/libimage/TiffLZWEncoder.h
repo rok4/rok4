@@ -35,20 +35,30 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef LZW_ENCODER_H
-#define LZW_ENCODER_H
+#ifndef _TIFFLZWENCODER_
+#define _TIFFLZWENCODER_
 
-#include <stddef.h>
-#include <stdint.h>
+#include "Data.h"
+#include "Image.h"
 
-#ifdef __cplusplus
-extern "C" {
+class TiffLZWEncoder : public DataStream {
+	Image *image;
+  	int line;	// Ligne courante
+  	size_t rawBufferSize;
+  	uint8_t* rawBuffer;
+        size_t lzwBufferSize;
+        size_t lzwBufferPos;
+        uint8_t* lzwBuffer;
+
+  	public:
+  	TiffLZWEncoder(Image *image);
+  	~TiffLZWEncoder();
+  	size_t read(uint8_t *buffer, size_t size);
+	bool eof();
+	std::string getType() {return "image/tiff";}
+	int getHttpStatus() {return 200;}	
+};
+
 #endif
 
-extern size_t lzw_encode(uint8_t * in, size_t in_len, uint8_t * out);
 
-#ifdef __cplusplus
-}
-#endif 
-
-#endif // LZW_ENCODER_H

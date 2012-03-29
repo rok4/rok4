@@ -1,4 +1,5 @@
 #include "TiffHeaderDataSource.h"
+#include <string.h>
 
 const size_t header_size = 128;
 

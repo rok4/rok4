@@ -51,7 +51,7 @@
 #include "math.h"
 #include "Utils.h"
 
-/*
+/**
 * @class ExtendedCompoundImage
 * @brief Image compose de n autres images
 * Ces images doivent etre superposables, c'est-a-dire remplir les conditions suivantes :
@@ -96,9 +96,9 @@ protected:
         mirrors(mirrors) {}
 
     ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors) :
-                Image(width, height, channels,bbox),
+        Image(width, height, channels,bbox),
         images(images),
-                masks(masks),
+        masks(masks),
         nodata(nodata),
         sampleformat(sampleformat),
         mirrors(mirrors) {}
@@ -116,15 +116,13 @@ public:
     /** Destructeur
       Suppression des images */
     virtual ~ExtendedCompoundImage() {
-        for(uint i=0; i < images.size(); i++)
-            delete images[i];
-        for(uint i=0; i < masks.size(); i++)
-                        delete masks[i];
+        for(uint i=0; i < images.size(); i++) {delete images[i];}
+        for(uint i=0; i < masks.size(); i++) {delete masks[i];}
     }
 
 };
 
-/*
+/**
 * @class ExtendedCompoundImageFactory
 * @brief Fabrique de extendedCompoundImageFactory
 * @return Un pointeur sur l'ExtendedCompoundImage creee, NULL en cas d'echec
@@ -140,7 +138,7 @@ public:
     ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors);
 };
 
-/*
+/**
 * @class ExtendedCompoundMaskImage
 * @brief Masque d'une ExtendedCompoundImage
 * 255 : si une image occupe un pixel, 0 sinon
@@ -154,18 +152,18 @@ private:
 
 public:
     /** Constructeur */
-        ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
-                Image(ECI->width, ECI->height, 1,ECI->getbbox()),
-                ECI(ECI) {}
+    ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
+        Image(ECI->width, ECI->height, 1,ECI->getbbox()),
+        ECI(ECI) {}
 
-        /** Implementation de getline pour les uint8_t */
-        int getline(uint8_t* buffer, int line); 
+    /** Implementation de getline pour les uint8_t */
+    int getline(uint8_t* buffer, int line); 
     /** Implementation de getline pour les float */
     int getline(float* buffer, int line);
 
-        /** Destructeur
-      Suppression des images */
-        virtual ~ExtendedCompoundMaskImage() {}
+    /** Destructeur
+    Suppression des images */
+    virtual ~ExtendedCompoundMaskImage() {}
 
 };
 

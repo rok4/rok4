@@ -106,9 +106,7 @@ sub new {
     levelbottom => undef,
     resbest  => undef,
     #
-    srs        => undef, # ie proj4 !
-    tileheight => undef, # determined by TileMatrix(0) !
-    tilewidth  => undef, # determined by TileMatrix(0) !
+    srs        => undef, # srs is casted in uppercase
     tilematrix => {},
   };
 
@@ -210,7 +208,7 @@ sub _load {
     ERROR (sprintf "Can not determine parameter 'srs' in the XML file TMS !");
     return FALSE;
   }
-  $self->{srs} = $xmltree->{crs};
+  $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
   
   # clean
   $xmltree = undef;
@@ -223,11 +221,6 @@ sub _load {
   for (my $i=0; $i < scalar @tmList; $i++){
     $self->{levelIdx}{$tmList[$i]->getID()} = $i;
   }
-  
-  # tile size
-  my $tm = $self->getBottomTileMatrix();
-  $self->{tilewidth}  = $tm->getTileWidth();
-  $self->{tileheight} = $tm->getTileHeight();
 
   return TRUE;
 }
@@ -253,12 +246,12 @@ sub getFile {
 sub getTileWidth {
   my $self = shift;
   # size of tile in pixel !
-  return $self->{tilewidth};
+  return $self->{tilematrix}->{$self->{levelbottom}}->{tilewidth};
 }
 sub getTileHeight {
   my $self = shift;
   # size of tile in pixel !
-  return $self->{tileheight};
+  return $self->{tilematrix}->{$self->{levelbottom}}->{tileheight};
 }
 ################################################################################
 # public method to TileMatrix

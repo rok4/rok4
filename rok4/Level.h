@@ -45,6 +45,8 @@
 #include "FileDataSource.h"
 #include "CRS.h"
 #include "format.h"
+#include "ServicesConf.h"
+#include "Interpolation.h"
 
 /**
  */
@@ -65,6 +67,8 @@ private:
     uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
     std::string noDataFile;
     DataSource* noDataSource;
+    DataSource* noDataTileSource;
+    DataSource* noDataSourceProxy;
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );
@@ -78,7 +82,7 @@ protected:
      * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tilex.
      * Toutes les coordonnées sont entière depuis le coin haut gauche.
      */
-    Image* getwindow ( BoundingBox<int64_t> src_bbox, int& error );
+    Image* getwindow (ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 
 public:
@@ -121,9 +125,9 @@ public:
         return noDataFile;
     }
 
-    Image* getbbox ( BoundingBox<double> bbox, int width, int height, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
-    Image* getbbox ( BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
     /**
      * Renvoie la tuile x, y numéroté depuis l'origine.
      * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
@@ -139,23 +143,19 @@ public:
 
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
 
-    void setNoData ( const std::string& file ) {
-        noDataFile=file;
-    }
-    void setNoDataSource ( DataSource* source ) {
-        noDataSource=source;
-    }
+    void setNoData ( const std::string& file ) ;
+    void setNoDataSource ( DataSource* source );
 
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, eformat_data format, std::string noDataFile ) : tm ( tm ), channels ( channels ), baseDir ( baseDir ), tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ), maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ), minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ) {}
+            int pathDepth, eformat_data format, std::string noDataFile );
 
     /*
      * Destructeur
      */
-    ~Level() {}
+    ~Level();
 
 };
 

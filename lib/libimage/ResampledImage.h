@@ -40,6 +40,7 @@
 
 #include "Image.h"
 #include "Kernel.h"
+#include "Interpolation.h"
 
 
 class ResampledImage : public Image {
@@ -96,7 +97,7 @@ class ResampledImage : public Image {
   int* xmin;
 
   public:
-  ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y, Kernel::KernelType KT = Kernel::LANCZOS_3, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
+  ResampledImage(Image *image, int width, int height, double left, double top, double ratio_x, double ratio_y, Interpolation::KernelType KT = Interpolation::LANCZOS_3, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
   ~ResampledImage();
   int getline(float* buffer, int line);
   int getline(uint8_t* buffer, int line);

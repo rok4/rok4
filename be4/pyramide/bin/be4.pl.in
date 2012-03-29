@@ -500,8 +500,7 @@ sub doIt {
     $objProcess = BE4::Process->new(
                       $params->{process},
                       $params->{harvesting},
-                      $objPyramid,
-                      $objData
+                      $objPyramid
                     );
   
     if (! defined $objProcess) {

@@ -36,6 +36,7 @@
  */
 
 #include "Level.h"
+#include "Interpolation.h"
 #include "FileDataSource.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
@@ -54,19 +55,72 @@
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
-#define MAXTILEX 256
-#define MAXTILEY 256
+
+
+
+Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
+             int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
+             uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
+             eformat_data format, std::string noDataFile) : 
+             tm ( tm ), channels ( channels ), baseDir ( baseDir ),
+             tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
+             maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
+             minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource(NULL)
+{
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    noDataSourceProxy = noDataTileSource;
+}
+
+Level::~Level()
+{
+    if (noDataSourceProxy )  {
+        noDataSourceProxy->releaseData();
+        delete noDataSourceProxy;
+    }
+}
+
+void Level::setNoData(const std::string& file)
+{
+    noDataFile=file;
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    if (noDataTileSource) {
+        delete noDataTileSource;
+    }
+
+    if (noDataSource) {
+        delete noDataSourceProxy;
+        noDataSourceProxy = new DataSourceProxy(tmpDataSource, *noDataSource);
+    }else {
+        noDataSourceProxy = tmpDataSource;
+    }
+    
+    noDataTileSource= tmpDataSource;
+}
+
+
+void Level::setNoDataSource ( DataSource* source ) {
+    if (noDataSource) {
+        delete noDataSourceProxy;
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ));
+    }
+    noDataSource=source;
+    noDataSourceProxy = new DataSourceProxy(noDataTileSource, *noDataSource);
+}
+
+
 /*
  * A REFAIRE
  */
-Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
     grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() );
 
     // Calcul de la taille du noyau
-    // TODO : type de noyau a parametrer
-    const Kernel& kk = Kernel::getInstance ( Kernel::LANCZOS_2 );
+    //Maintain previous Lanczos behaviour : Lanczos_2 for resampling and reprojecting
+    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_2;
+    
+    const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_2
     double ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / ( tm.getRes() *double ( width ) );
     double ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / ( tm.getRes() *double ( height ) );
     double bufx=kk.size ( ratio_x );
@@ -79,18 +133,18 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, CRS s
                                     ceil ( ( grid->bbox.xmax - tm.getX0() ) /tm.getRes() + bufx ),
                                     ceil ( ( tm.getY0() - grid->bbox.ymin ) /tm.getRes() + bufy ) );
 
-    Image* image = getwindow ( bbox_int, error );
+    Image* image = getwindow (servicesConf, bbox_int, error );
     if (!image) {
         LOGGER_DEBUG("Image invalid !");
         return 0;
     }
     image->setbbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
 
-    return new ReprojectedImage ( image, bbox, grid/*,Kernel::LINEAR*/ );
+    return new ReprojectedImage ( image, bbox, grid, interpolation );
 }
 
 
-Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -107,26 +161,28 @@ Image* Level::getbbox ( BoundingBox< double > bbox, int width, int height, int& 
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
             bbox.xmin - bbox_int.xmin < EPS && bbox.ymin - bbox_int.ymin < EPS &&
             bbox_int.xmax - bbox.xmax < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
-        return getwindow ( bbox_int, error );
+        return getwindow (servicesConf, bbox_int, error );
     }
 
     // Rappel : les coordonnees de la bbox sont ici en pixels
     double ratio_x = ( bbox.xmax - bbox.xmin ) / width;
     double ratio_y = ( bbox.ymax - bbox.ymin ) / height;
-
-    const Kernel& kk = Kernel::getInstance ( Kernel::LANCZOS_3 );
+    
+    //Maintain previous Lanczos behaviour : Lanczos_3 for resampling only
+    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_3;
+    const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_3
 
     bbox_int.xmin = floor ( bbox.xmin - kk.size ( ratio_x ) );
     bbox_int.xmax = ceil ( bbox.xmax + kk.size ( ratio_x ) );
     bbox_int.ymin = floor ( bbox.ymin - kk.size ( ratio_y ) );
     bbox_int.ymax = ceil ( bbox.ymax + kk.size ( ratio_y ) );
 
-    Image* imageout = getwindow ( bbox_int, error );
+    Image* imageout = getwindow (servicesConf, bbox_int, error );
     if (!imageout) {
         LOGGER_DEBUG("Image invalid !");
         return 0;
     }
-    return new ResampledImage ( imageout, width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y );
+    return new ResampledImage ( imageout, width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
 }
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {
@@ -142,20 +198,20 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
     return r;
 }
 
-Image* Level::getwindow ( BoundingBox< int64_t > bbox, int& error ) {
+Image* Level::getwindow (ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
     int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
-    if (nbx >= MAXTILEX) {
-        LOGGER_DEBUG("Too Much Tile on X axis");
+    if (nbx >= servicesConf.getMaxTileX()) {
+        LOGGER_INFO("Too Much Tile on X axis");
         error=2;
         return 0;
     }
     int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
-    if (nby >= MAXTILEY) {
-        LOGGER_DEBUG("Too Much Tile on Y axis");
+    if (nby >= servicesConf.getMaxTileY()) {
+        LOGGER_INFO("Too Much Tile on Y axis");
         error=2;
         return 0;
     }
@@ -259,7 +315,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
 DataSource* Level::getEncodedNoDataTile() {
     LOGGER_DEBUG ( "Tile : " << noDataFile );
-    return new DataSourceProxy ( new FileDataSource ( noDataFile.c_str(),2048,2048+4, format::toMimeType ( format ) ), *noDataSource );
+    return noDataSourceProxy;
 }
 
 
@@ -271,10 +327,10 @@ DataSource* Level::getTile ( int x, int y ) {
 	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( "GetTile Tiff" );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
-                return new DataSourceProxy(fullTiffDS,*noDataSource);
+                return new DataSourceProxy(fullTiffDS,*noDataSourceProxy);
     }
 
-    return new DataSourceProxy ( source, *noDataSource );
+    return new DataSourceProxy ( source, *noDataSourceProxy );
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {

@@ -92,16 +92,17 @@ END {}
 #
 # variable: $self
 #
-#    *		id                => undef,
-#    *		dir_image         => undef,
-#    *		compress_image    => undef, # ie "TIFF_RAW_INT8"
-#    *		dir_nodata        => undef,
-#    *		dir_metadata      => undef,  # NOT IMPLEMENTED !
-#    *		compress_metadata => undef,  # NOT IMPLEMENTED !
-#    *		type_metadata     => undef,  # NOT IMPLEMENTED !
-#    *		size              => [],    # number w/h !
-#    *		dir_depth         => 0,     # ie 2
-#    *		limit             => []     # dim bbox Row/Col !!!
+#    *          id                => undef,
+#    *          order             => undef,
+#    *          dir_image         => undef,
+#    *          dir_nodata        => undef,
+#    *          dir_metadata      => undef,  # NOT IMPLEMENTED !
+#    *          compress_metadata => undef,  # NOT IMPLEMENTED !
+#    *          type_metadata     => undef,  # NOT IMPLEMENTED !
+#    *          size              => [],    # number w/h !
+#    *          dir_depth         => 0,     # ie 2
+#    *          limit             => []     # dim bbox Row/Col !!!
+#    *          is_in_pyramid     => undef,
 #
 
 #
@@ -115,18 +116,17 @@ sub new {
 
   my $class= ref($this) || $this;
   my $self = {
-	id                => undef,
+        id                => undef,
         order             => undef,
         is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyamids
-	dir_image         => undef,
-	compress_image    => undef, # ie "TIFF_RAW_INT8"
-	dir_nodata        => undef,
-	dir_metadata      => undef,  # NOT IMPLEMENTED !
-	compress_metadata => undef,  # NOT IMPLEMENTED !
-	type_metadata     => undef,  # NOT IMPLEMENTED !
-	size              => [],    # number w/h !
+        dir_image         => undef,
+        dir_nodata        => undef,
+        dir_metadata      => undef,  # NOT IMPLEMENTED !
+        compress_metadata => undef,  # NOT IMPLEMENTED !
+        type_metadata     => undef,  # NOT IMPLEMENTED !
+        size              => [],    # number w/h !
         dir_depth         => 0,     # ie 2
-	limit             => []     # dim bbox Row/Col !!!
+        limit             => []     # dim bbox Row/Col !!!
   };
 
   bless($self, $class);
@@ -165,10 +165,6 @@ sub _init {
     }
     if (! exists($params->{dir_image})) {
       ERROR ("key/value required to 'dir_image' !");
-      return FALSE;
-    }
-    if (! exists($params->{compress_image})) {
-      ERROR ("key/value required to 'compress_image' !");
       return FALSE;
     }
     if (! exists($params->{dir_nodata})) {
@@ -211,12 +207,11 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{order}          = $params->{order};
     $self->{dir_image}      = $params->{dir_image};
-    $self->{compress_image} = $params->{compress_image};
     $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
-    $self->{is_in_pyramid}          = $params->{is_in_pyramid};
+    $self->{is_in_pyramid}  = $params->{is_in_pyramid};
     
     return TRUE;
 }
@@ -242,9 +237,8 @@ __END__
   
   my $params = {
             id                => 1024,
-            order             => undef,
+            order             => 12,
             dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
-            compress_image    => "TIFF_RAW_INT8",
             dir_nodata        => undef,
             dir_metadata      => undef,
             compress_metadata => undef,
@@ -252,6 +246,7 @@ __END__
             size              => [ 4, 4],
             dir_depth         => 2,
             limit             => [1, 1000000, 1, 1000000] 
+            is_in_pyramid     => 1
     };
     
   my $objLevel = BE4::Level->new($params);

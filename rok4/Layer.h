@@ -44,6 +44,8 @@
 #include "CRS.h"
 #include "Style.h"
 #include "MetadataURL.h"
+#include "ServicesConf.h"
+#include "Interpolation.h"
 
 struct GeographicBoundingBoxWMS {
 public:
@@ -73,7 +75,7 @@ private:
     std::vector<CRS*> WMSCRSList;
     bool opaque;
     std::string authority;
-    std::string resampling; //FIXME: revoir le type de resampling (plutot un enum).
+    Interpolation::KernelType resampling;
     GeographicBoundingBoxWMS geographicBoundingBox;
     BoundingBoxWMS boundingBox;
     std::vector<MetadataURL> metadataURLs;
@@ -82,7 +84,7 @@ public:
     std::string getId();
 
     DataSource* gettile ( int x, int y, std::string tmId );
-    Image* getbbox ( BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
 
     std::string              getAbstract()   const {
         return abstract;
@@ -105,7 +107,7 @@ public:
     Pyramid*&            getDataPyramid() {
         return dataPyramid;
     }
-    std::string              getResampling() const {
+    Interpolation::KernelType getResampling() const {
         return resampling;
     }
     std::vector<Style*>      getStyles()     const {
@@ -131,7 +133,7 @@ public:
             std::vector<std::string> & keyWords, Pyramid*& dataPyramid,
             std::vector<Style*> & styles, double minRes, double maxRes,
             std::vector<CRS*> & WMSCRSList, bool opaque, std::string authority,
-            std::string resampling, GeographicBoundingBoxWMS geographicBoundingBox,
+            Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
             :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
             dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),

@@ -47,6 +47,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include "Interpolation.h"
 
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
     LOGGER_INFO ( "     Ajout du Style " << fileName );
@@ -320,7 +321,7 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet ( TiXmlDocument* doc,std::string f
 
     pElem=hRoot.FirstChild ( "crs" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( "TileMaxtrixSet " << id <<" pas de crs!!" );
+        LOGGER_ERROR ( "TileMatrixSet " << id <<" pas de crs!!" );
         return NULL;
     }
     CRS crs ( pElem->GetText() );
@@ -355,78 +356,78 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet ( TiXmlDocument* doc,std::string f
         TiXmlHandle hTM ( pElem );
         TiXmlElement* pElemTM = hTM.FirstChild ( "id" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMatrix sans id!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix sans id!!" );
             return NULL;
         }
         tmId=pElemTM->GetText();
 
         pElemTM = hTM.FirstChild ( "resolution" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans resolution!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans resolution!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%lf",&res ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": La resolution est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": La resolution est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "topLeftCornerX" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerX!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerX!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%lf",&x0 ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerX est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": Le topLeftCornerX est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "topLeftCornerY" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerY!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans topLeftCornerY!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%lf",&y0 ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le topLeftCornerY est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": Le topLeftCornerY est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "tileWidth" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileWidth!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans tileWidth!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%d",&tileW ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileWidth est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": Le tileWidth est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "tileHeight" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans tileHeight!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans tileHeight!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%d",&tileH ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le tileHeight est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": Le tileHeight est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "matrixWidth" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans MatrixWidth!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans MatrixWidth!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%ld",&matrixW ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", TileMaxtrix " << tmId <<": Le MatrixWidth est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", TileMatrix " << tmId <<": Le MatrixWidth est inexploitable." );
             return NULL;
         }
 
         pElemTM = hTM.FirstChild ( "matrixHeight" ).Element();
         if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<" tileMatrix " << tmId <<" sans matrixHeight!!" );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<" tileMatrix " << tmId <<" sans matrixHeight!!" );
             return NULL;
         }
         if ( !sscanf ( pElemTM->GetText(),"%ld",&matrixH ) ) {
-            LOGGER_ERROR ( "TileMaxtrixSet " << id <<", tileMaxtrix " << tmId <<": Le matrixHeight est inexploitable." );
+            LOGGER_ERROR ( "TileMatrixSet " << id <<", tileMatrix " << tmId <<": Le matrixHeight est inexploitable." );
             return NULL;
         }
 
@@ -767,7 +768,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     std::vector<CRS*> WMSCRSList;
     bool opaque;
     std::string authority="";
-    std::string resampling="";
+    std::string resamplingStr="";
+    Interpolation::KernelType resampling;
     Pyramid* pyramid;
     GeographicBoundingBoxWMS geographicBoundingBox;
     BoundingBoxWMS boundingBox;
@@ -1000,10 +1002,12 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     pElem=hRoot.FirstChild ( "resampling" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         LOGGER_ERROR ( "Pas de resampling => resampling = " << DEFAULT_RESAMPLING );
-        resampling = DEFAULT_RESAMPLING;
+        resamplingStr = DEFAULT_RESAMPLING;
     } else {
-        resampling = pElem->GetText();
+        resamplingStr = pElem->GetText();
     }
+    
+    resampling = Interpolation::fromString(resamplingStr);
 
     pElem=hRoot.FirstChild ( "pyramid" ).Element();
     if ( pElem && pElem->GetText() ) {
@@ -1258,6 +1262,8 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string accessConstraint="";
     unsigned int maxWidth;
     unsigned int maxHeight;
+    unsigned int maxTileX;
+    unsigned int maxTileY;
     bool postMode =false;
     //Contact Info
     std::string providerSite="";
@@ -1385,7 +1391,23 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         LOGGER_ERROR ( servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]" );
         return false;
     }
-
+    
+    pElem = hRoot.FirstChild ( "maxTileX" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        maxTileX=MAX_TILE_X;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileX ) ) {
+        LOGGER_ERROR ( servicesConfigFile << "Le maxTileX est inexploitable:[" << pElem->GetText() << "]" );
+        return NULL;
+    }
+    
+    pElem = hRoot.FirstChild ( "maxTileY" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        maxTileY=MAX_TILE_Y;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileY ) ) {
+        LOGGER_ERROR ( servicesConfigFile << "Le maxTileY est inexploitable:[" << pElem->GetText() << "]" );
+        return NULL;
+    }
+    
     for ( pElem=hRoot.FirstChild ( "formatList" ).FirstChild ( "format" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "format" ) ) {
         if ( ! ( pElem->GetText() ) )
             continue;
@@ -1472,7 +1494,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     MetadataURL mtdWMTS = MetadataURL("simple",metadataUrlWMTS,metadataMediaTypeWMTS);
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, maxWidth, maxHeight, formatList, serviceType, serviceTypeVersion,
+                                      accessConstraint, maxWidth, maxHeight, maxTileX, maxTileY, formatList, serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, postMode, inspire );

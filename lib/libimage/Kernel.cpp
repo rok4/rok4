@@ -42,14 +42,17 @@ int Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
-    if(length < 2*Ks) xmin = ceil(x - length*0.5 + 1e-9);
+    if(length < 2*Ks) {
+        xmin = ceil(x - length*0.5 + 1e-9);
+    }
     double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
     double indf = (x - xmin) * step;          // index flottant dans le tableau coeff 
-
+    
     int i = 0;
     for(;indf >= 0; indf -= step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+        // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
     }
     for(indf = -indf; indf < 1024. && i < length; indf += step) {
         int ind = (int) indf;
@@ -64,7 +67,7 @@ int Kernel::weight(float* W, int &length, double x, double ratio) const {
 
 template<int s>
 class Lanczos : public Kernel {
-    friend const Kernel& Kernel::getInstance(KernelType T);
+    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
 
     private:
     double kernel_function(double d) {
@@ -81,7 +84,7 @@ class Lanczos : public Kernel {
 
 
 class NearestNeighbour : public Kernel {
-    friend const Kernel& Kernel::getInstance(KernelType T);
+    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
         if(d > 0.5) return 0.;
@@ -92,7 +95,7 @@ class NearestNeighbour : public Kernel {
 
 
 class Linear : public Kernel {
-    friend const Kernel& Kernel::getInstance(KernelType T);
+    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
         if(d > 1) return 0.;
@@ -128,7 +131,7 @@ class Linear : public Kernel {
 
 
 class CatRom : public Kernel {
-    friend const Kernel& Kernel::getInstance(KernelType T);
+    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
     if(d > 2) return 0.;
@@ -140,7 +143,7 @@ class CatRom : public Kernel {
 
 
 
-const Kernel& Kernel::getInstance(KernelType T) {
+const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
     static NearestNeighbour nearest_neighbour;
     static Linear linear;
     static CatRom catrom;
@@ -149,12 +152,12 @@ const Kernel& Kernel::getInstance(KernelType T) {
     static Lanczos<4> lanczos_4;
 
     switch(T) {
-        case NEAREST_NEIGHBOUR: return nearest_neighbour; break;
-        case LINEAR: return linear; break;
-        case CUBIC: return catrom; break;
-        case LANCZOS_2: return lanczos_2; break;
-        case LANCZOS_3: return lanczos_3; break;
-        case LANCZOS_4: return lanczos_4; break;
+        case Interpolation::NEAREST_NEIGHBOUR: return nearest_neighbour; break;
+        case Interpolation::LINEAR: return linear; break;
+        case Interpolation::CUBIC: return catrom; break;
+        case Interpolation::LANCZOS_2: return lanczos_2; break;
+        case Interpolation::LANCZOS_3: return lanczos_3; break;
+        case Interpolation::LANCZOS_4: return lanczos_4; break;
     }
     return lanczos_3;
 }
