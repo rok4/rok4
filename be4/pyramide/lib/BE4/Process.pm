@@ -193,8 +193,9 @@ sub _init {
 #
 #  NOTE
 #  Il y a exactement jobNbr +1 scripts crées :
-#       - Le script final se nomme SCRIPT_FINISHER.sh
-#       - Les scripts précédant calculant effectivement des données (ou pas) se nomment SCRIPT_X.sh
+#       - Les scripts du début (du bottomLevel au cutLevel) se nomment SCRIPT_X.sh
+#       - Le script final (du cutLevel au topLevel) se nomme SCRIPT_FINISHER.sh
+#  Ils peuvent être vides.
 #
 #  Pour ce faire, on exécute 3 étapes :
 #       - Le parcours de l'arbre : à chaque noeud, on définit le poids et le code correspondant à
@@ -941,11 +942,10 @@ sub collectWorkImage(){
 
     my $code = '';
 
+    my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
     if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
-        my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
-        $code   = sprintf ("rm %s\n", $source);
+        $code   = sprintf ("rm -f %s\n", $source);
     } else {
-        my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
         $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
     }
 
