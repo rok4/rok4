@@ -78,6 +78,7 @@
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
 #include "MirrorImage.h"
+#include "Interpolation.h"
 #include "math.h"
 
 #ifndef __max
@@ -116,11 +117,11 @@ int h2i(char s)
 }
 
 /**
-* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
+* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
 * Lecture des parametres de la ligne de commande
 */
 
-int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, int& nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
     char strnodata[10];
     
@@ -139,10 +140,10 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
                 break;
             case 'i': // interpolation
                 if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
-                if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Kernel::LANCZOS_3; // =4
-                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
-                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Kernel::CUBIC; // =2
-                else if(strncmp(argv[i], "linear",6) == 0) interpolation = Kernel::LINEAR; // =2
+                if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
+                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
+                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Interpolation::CUBIC; // =2
+                else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
                 else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
                 break;
             case 'n': // nodata
@@ -568,13 +569,13 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 
 
 /**
-* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 * @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
     const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -628,7 +629,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 }
 
 /**
-* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata, uint16_t sampleformat)
+* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, char* nodata, uint16_t sampleformat)
 * @brief Fusion des images
 * @param pImageOut : image de sortie
 * @param TabImageIn : tableau de vecteur d images superposables
@@ -637,7 +638,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, int nodata, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int nodata, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
@@ -715,7 +716,7 @@ int main(int argc, char **argv) {
     int nodata;
     uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
     int type=-1;
-    Kernel::KernelType interpolation;
+    Interpolation::KernelType interpolation;
 
     LibtiffImage* pImageOut ;
     std::vector<Image*> ImageIn;
