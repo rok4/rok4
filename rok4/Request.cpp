@@ -234,6 +234,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     std::string layers;
     std::string styles;
     std::string bbox;
+    std::stringstream format_options;
 
     parameters.insert ( std::pair<std::string, std::string> ( "service", "wms" ) );
     parameters.insert ( std::pair<std::string, std::string> ( "request", "getmap" ) );
@@ -393,12 +394,27 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
             if ( pElemOut->ValueStr().find ( "BGcolor" ) !=std::string::npos && pElemOut->GetText() ) {
 
                 parameters.insert ( std::pair<std::string, std::string> ( "bgcolor", pElemOut->GetText() ) );
+                pElemOut =  pElemOut->NextSiblingElement();
             }
+        }
+        while ( pElemOut ) {
+            if ( pElemOut->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElemOut->Attribute("name") && pElemOut->GetText() ) {
+                if (format_options.str().size()>0) {
+                    format_options << ";";
+                }
+                format_options <<  pElemOut->Attribute("name") << ":"<< pElemOut->GetText();
+                
+            }
+            pElemOut =  pElemOut->NextSiblingElement();
         }
 
     }
-
-
+    
+    // Handle output format options
+    if (format_options.str().size() > 0) {
+        parameters.insert ( std::pair<std::string, std::string> ( "format_options", format_options.str())  );
+    }
+    
     //OPTIONAL
 
     //Exceptions
