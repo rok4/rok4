@@ -87,10 +87,7 @@ sub new {
     #
     resolution => undef,
     #
-    bitspersample => undef,
-    sampleformat => undef,
-    samplesperpixel => undef,
-    photometric => undef,
+    pixel => undef, #Pixel object
   };
 
   bless($self, $class);
@@ -156,12 +153,19 @@ sub computeImageSource {
 
     my $badRefCtrl = 0;
 
-    my @listSourcePath = $self->getListImages();
+    my $search = $self->getListImages($self->{PATHIMG});
+    if (! defined $search) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
 
+    my @listSourcePath = @{$search->{images}};
     if (! @listSourcePath) {
         ERROR ("Can not load data source !");
         return FALSE;
     }
+
+    my $pixel = undef;
 
     foreach my $filepath (@listSourcePath) {
 
@@ -180,16 +184,22 @@ sub computeImageSource {
             return FALSE;
         }
 
-        if (! defined $self->{samplesperpixel}) {
+        if (! defined $pixel) {
             # we have read the first image, components are empty. This first image will be the reference.
-            $self->{bitspersample} = $imageInfo[0];
-            $self->{photometric} = $imageInfo[1];
-            $self->{sampleformat} = $imageInfo[2];
-            $self->{samplesperpixel} = $imageInfo[3];
+            $pixel = BE4::Pixel->new({
+                bitspersample => $imageInfo[0],
+                photometric => $imageInfo[1],
+                sampleformat => $imageInfo[2],
+                samplesperpixel => $imageInfo[3]
+            });
+            if (! defined $pixel) {
+                ERROR ("Can not create Pixel object for DataSource !");
+                return FALSE;
+            }
         } else {
             # we have already values. We must have the same components for all images
-            if (! ($self->{bitspersample} eq $imageInfo[0] && $self->{photometric} eq $imageInfo[1] &&
-                    $self->{sampleformat} eq $imageInfo[2] && $self->{samplesperpixel} eq $imageInfo[3])) {
+            if (! ($pixel->{bitspersample} eq $imageInfo[0] && $pixel->{photometric} eq $imageInfo[1] &&
+                    $pixel->{sampleformat} eq $imageInfo[2] && $pixel->{samplesperpixel} eq $imageInfo[3])) {
                 ERROR ("All images must have same components. This image ('$filepath') is different !");
                 return FALSE;
             }
@@ -212,6 +222,8 @@ sub computeImageSource {
         #
         push @$lstImagesSources, $objImageSource;
     }
+
+    $self->{pixel} = $pixel;
 
     if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
         ERROR ("Can not found image source in '$self->{PATHIMG}' !");
@@ -304,33 +316,40 @@ sub computeBbox {
 #   Get the list of all path data image (image tiff only !)
 #   
 sub getListImages {
-  my $self = shift;
+  my $self      = shift;
+  my $directory = shift;
+
+  TRACE();
   
-  TRACE;
-  
-  my @lstImagesSources = ();
-  
-  my $pathdir = $self->{PATHIMG};
-  
-  if (! opendir DIR, $pathdir) {
-    ERROR ("Can not open directory source ('$pathdir') !");
+  my $search = {
+    images => [],
+  };
+
+  if (! opendir (DIR, $directory)) {
+    ERROR("Can not open directory cache (%s) ?",$directory);
     return undef;
   }
+
+  my $newsearch;
   
   foreach my $entry (readdir DIR) {
-    next if ($entry=~m/^\.{1,2}$/);
-    next if (! -f File::Spec->catdir($pathdir,$entry));
     
-    # FIXME : type of data product (tif by default !)
-    # but implemented too in Class ImageSource !
+    next if ($entry =~ m/^\.{1,2}$/);
+    
+    if ( -d File::Spec->catdir($directory, $entry)) {
+      TRACE(sprintf "DIR:%s\n",$entry);      
+      # recursif
+      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+    }
+
     next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
     
-    push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
+    ALWAYS(sprintf "Nouvelle image : %s",File::Spec->catfile($directory, $entry)); #TEST#
+    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
   }
   
-  closedir(DIR);
-  
-  return @lstImagesSources;
+  return $search;
 }
 
 ################################################################################
