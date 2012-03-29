@@ -251,7 +251,7 @@ sub computeWholeTree {
                 $scriptCode .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
                 $scriptCode .= $self->writeBranchCode($node);
                 # on récupère l'image de travail finale pour le job de fin.
-                $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
+                $finishScriptCode .= $self->collectWorkImage($node);
             }
         }
         if (! $self->saveScript($scriptCode,$scriptId)) {
@@ -311,7 +311,6 @@ sub computeWholeTree {
 sub computeBottomImage {
     my $self = shift;
     my $node = shift;
-    my $scriptId = shift;
 
     TRACE;
 
@@ -333,7 +332,7 @@ sub computeBottomImage {
         $self->{tree}->updateWeightOfNode($node,WGET_W);
     } else {
         my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
-        my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir($scriptId), $self->workNameOfNode($node));
+        my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir(), $self->workNameOfNode($node));
         my $workImgDesc = $newImgDesc->copy($workImgFilePath); # copie du descripteur avec changement du nom de fichier
 
         # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
@@ -341,14 +340,13 @@ sub computeBottomImage {
         # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
         # correspondant dans la nouvelle pyramide.
         if ( -f $newImgDesc->getFilePath() ){
-            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir($scriptId), "bgImg.tif");
+            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir(), "bgImg.tif");
             # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
             $code .= $self->cache2work($node, "bgImg.tif");
         }
 
         # On cree maintenant le fichier de config pour l'outil mergeNtiff
-        my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir($scriptId), "mergeNtiff");
-
+        my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
         if (! -d $confDirPath) {
             DEBUG (sprintf "create dir mergeNtiff");
             eval { mkpath([$confDirPath],0,0751); };
@@ -360,7 +358,7 @@ sub computeBottomImage {
 
         my $confFilePath = File::Spec->catfile($confDirPath,
             join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
-        my $confFilePathForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',
+        my $confFilePathForScript = File::Spec->catfile('${ROOT_TMP_DIR}/mergeNtiff',
             join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt");
 
         DEBUG (sprintf "create mergeNtiff");
@@ -428,7 +426,6 @@ sub computeBottomImage {
 sub computeAboveImage {
     my $self = shift;
     my $node = shift;
-    my $scriptId = shift;
 
     TRACE;
 
@@ -477,7 +474,7 @@ sub computeAboveImage {
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $res.=$self->cache2work($node, "bgImg.tif");
+                $code .= $self->cache2work($node, "bgImg.tif");
             }
         } else {
             # On a pas d'image alors on donne une couleur de nodata
@@ -520,7 +517,6 @@ sub computeAboveImage {
 sub computeBranch {
     my $self = shift;
     my $node = shift;
-    my $scriptId = shift;
 
     my $weight = 0;
 
@@ -530,21 +526,21 @@ sub computeBranch {
     my $res = '';
     my @childList = $self->{tree}->getChilds($node);
     if (scalar @childList == 0){
-        if (! $self->computeBottomImage($node, $scriptId)) {
+        if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
         return TRUE;
     }
     foreach my $n (@childList){
-        if (! $self->computeBranch($n, $scriptId)) {
+        if (! $self->computeBranch($n)) {
             ERROR(sprintf "Cannot compute the branch from node %s_%s , level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
         $weight += $self->{tree}->getAccumulatedWeightOfNode($n);
     }
 
-    if (! $self->computeAboveImage($node, $scriptId)) {
+    if (! $self->computeAboveImage($node)) {
         ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
         return FALSE;
     }
@@ -835,15 +831,27 @@ sub workNameOfNode {
 #                                        PUBLIC METHODS                                            #
 ####################################################################################################
 
-# method: getScriptTmpDir
-#  Retourne le répertoire de travail du script dont l'identifiant est passé en paramètre.
+# method: getRootTmpDir
+#  Retourne le répertoire de travail de la pyramide
 #-------------------------------------------------------------------------------
+sub getRootTmpDir {
+  my $self = shift;
+  my $pyrName = $self->{pyramid}->getPyrName();
+  return File::Spec->catdir($self->{path_temp}, $pyrName);
+  # ie .../TMP/PYRNAME/
+}
+
+# method: getScriptTmpDir
+#  Retourne le répertoire de travail du script
+#  NOTE
+#  le code commenté permettra de rétablir un tri des fichiers temporaires dans différents dossiers
+#-------------------------------------------------------------------------------------------------
 sub getScriptTmpDir {
   my $self = shift;
-  my $scriptId = shift;
   my $pyrName = $self->{pyramid}->getPyrName();
-  return File::Spec->catdir($self->{path_temp}, $pyrName, $scriptId);
-  # ie ./WORK/PYRNAME_levelID_x_y/
+  return File::Spec->catdir($self->{path_temp}, $pyrName);
+  #return File::Spec->catdir($self->{path_temp}, $pyrName, "\${SCRIPT_ID}/");
+  # ie .../TMP/PYRNAME/SCRIPT_X/
 }
 
 # method: prepareScript
@@ -851,29 +859,29 @@ sub getScriptTmpDir {
 #  dalles noData.
 #-------------------------------------------------------------------------------
 sub prepareScript {
-  my $self = shift;
-  my $scriptId = shift;
+    my $self = shift;
+    my $scriptId = shift;
 
-  TRACE;
-  
-  # definition des variables d'environnement du script
-  my $pyrName = $self->{pyramid}->getPyrName();
-  my $tmpDir  = $self->getScriptTmpDir($scriptId);
-  my $pyrpath = File::Spec->catdir($self->{pyramid}->getPyrDataPath(),
-                                   $pyrName);
-  
-  my $code = sprintf ("# Variables d'environnement\n");
-  $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
-  $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
-  $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
-  $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
-  $code   .= "\n";
-  
-  # creation du répertoire de travail:
-  $code .= "# creation du repertoire de travail\n";
-  $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
-  
-  return $code;
+    TRACE;
+
+    # definition des variables d'environnement du script
+    my $pyrName = $self->{pyramid}->getPyrName();
+    my $tmpDir  = $self->getScriptTmpDir();
+    my $pyrpath = File::Spec->catdir($self->{pyramid}->getPyrDataPath(),$pyrName);
+
+    my $code = sprintf ("# Variables d'environnement\n");
+    $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
+    $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
+    $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
+    $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
+    $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
+    $code   .= "\n";
+
+    # creation du répertoire de travail:
+    $code .= "# creation du repertoire de travail\n";
+    $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+    return $code;
 }
 
 # method: saveScript
@@ -933,21 +941,25 @@ sub saveScript {
 #  Récupère les images au format de travail dans les répertoires temporaires des
 #  scripts de calcul du bas de la pyramide, pour les copier dans le répertoire
 #  temporaire du script final.
-#-------------------------------------------------------------------------------
+#  NOTE
+#  le code commenté permettra de rétablir un tri des fichiers temporaires dans différents dossiers
+#--------------------------------------------------------------------------------------------------
 sub collectWorkImage(){
     my $self = shift;
-    my ($node, $scriptId, $finishId) = @_;
+    my $node = shift;
 
     TRACE;
 
     my $code = '';
 
-    my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+    my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $self->workNameOfNode($node));
+    #my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', DIR , $self->workNameOfNode($node));
     if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
         $code   = sprintf ("rm -f %s\n", $source);
-    } else {
-        $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
     }
+    #else {
+    #    $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
+    #}
 
     return $code;
 }

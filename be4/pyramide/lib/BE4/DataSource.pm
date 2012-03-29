@@ -153,8 +153,13 @@ sub computeImageSource {
 
     my $badRefCtrl = 0;
 
-    my @listSourcePath = $self->getListImages();
+    my $search = $self->getListImages($self->{PATHIMG});
+    if (! defined $search) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
 
+    my @listSourcePath = @{$search->{images}};
     if (! @listSourcePath) {
         ERROR ("Can not load data source !");
         return FALSE;
@@ -311,33 +316,40 @@ sub computeBbox {
 #   Get the list of all path data image (image tiff only !)
 #   
 sub getListImages {
-  my $self = shift;
+  my $self      = shift;
+  my $directory = shift;
+
+  TRACE();
   
-  TRACE;
-  
-  my @lstImagesSources = ();
-  
-  my $pathdir = $self->{PATHIMG};
-  
-  if (! opendir DIR, $pathdir) {
-    ERROR ("Can not open directory source ('$pathdir') !");
+  my $search = {
+    images => [],
+  };
+
+  if (! opendir (DIR, $directory)) {
+    ERROR("Can not open directory cache (%s) ?",$directory);
     return undef;
   }
+
+  my $newsearch;
   
   foreach my $entry (readdir DIR) {
-    next if ($entry=~m/^\.{1,2}$/);
-    next if (! -f File::Spec->catdir($pathdir,$entry));
     
-    # FIXME : type of data product (tif by default !)
-    # but implemented too in Class ImageSource !
+    next if ($entry =~ m/^\.{1,2}$/);
+    
+    if ( -d File::Spec->catdir($directory, $entry)) {
+      TRACE(sprintf "DIR:%s\n",$entry);      
+      # recursif
+      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+    }
+
     next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
     
-    push @lstImagesSources, File::Spec->catdir($pathdir,$entry);
+    ALWAYS(sprintf "Nouvelle image : %s",File::Spec->catfile($directory, $entry)); #TEST#
+    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
   }
   
-  closedir(DIR);
-  
-  return @lstImagesSources;
+  return $search;
 }
 
 ################################################################################
