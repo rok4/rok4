@@ -36,6 +36,7 @@
  */
 
 #include "format.h"
+#include <string.h>
 
 namespace format {
 const char *eformat_name[] = {

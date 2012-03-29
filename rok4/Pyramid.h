@@ -44,6 +44,7 @@
 #include "CRS.h"
 #include "format.h"
 #include "ServicesConf.h"
+#include <Interpolation.h>
 
 //std::string getMimeType(std::string format);
 
@@ -75,7 +76,7 @@ public:
     }
 
     DataSource* getTile ( int x, int y, std::string tmId );
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels );
     ~Pyramid();

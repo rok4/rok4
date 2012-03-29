@@ -46,7 +46,7 @@
 
 
 
-ResampledImage::ResampledImage(Image *image, int width, int height, double lefttmp, double toptmp, double ratio_x, double ratio_y,  Kernel::KernelType KT, BoundingBox<double> bbox) :
+ResampledImage::ResampledImage(Image *image, int width, int height, double lefttmp, double toptmp, double ratio_x, double ratio_y,  Interpolation::KernelType KT, BoundingBox<double> bbox) :
 Image(width, height, image->channels, bbox), image(image) , left(lefttmp), top(toptmp), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance(KT)) {
     
     left += 0.5*ratio_x - 0.5; // Pour prendre en compte que les échantillons 

@@ -39,15 +39,32 @@
 #define INTERPOLATION_H
 
 #include <string>
-#include <string.h>
-#include "Kernel.h"
 
 //To declare a new interpolation change the implementation too
 
+
+
 namespace Interpolation {
     
-    Kernel::KernelType fromString(std::string strInterpolation);
-    std::string toString(Kernel::KernelType interpolation);
+    /**
+ * Type définissant les différentes méthodes de d'interpolation.
+ *
+ *
+ */
+enum KernelType {
+    UNKNOWN = 0,
+    NEAREST_NEIGHBOUR = 1,
+    LINEAR = 2,
+    CUBIC = 3,
+    LANCZOS_2 = 4,
+    LANCZOS_3 = 5,
+    LANCZOS_4 = 6
+};
+    
+    
+    KernelType fromString(std::string strInterpolation);
+    std::string toString(KernelType interpolation);
+    std::string toBe4String(KernelType interpolation);
 
 }
 

@@ -46,6 +46,7 @@
 #include "CRS.h"
 #include "format.h"
 #include "ServicesConf.h"
+#include "Interpolation.h"
 
 /**
  */
@@ -124,9 +125,9 @@ public:
         return noDataFile;
     }
 
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
     /**
      * Renvoie la tuile x, y numéroté depuis l'origine.
      * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)

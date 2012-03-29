@@ -41,6 +41,7 @@
 #include "Image.h"
 #include "Grid.h"
 #include "Kernel.h"
+#include "Interpolation.h"
 
 class ReprojectedImage : public Image {
   private:
@@ -87,7 +88,7 @@ class ReprojectedImage : public Image {
   float* compute_dst_line(int line);
 
   public:
-  ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Kernel::KernelType KT = Kernel::LANCZOS_2);
+  ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Interpolation::KernelType KT = Interpolation::LANCZOS_2);
 
   int getline(float* buffer, int line);
 

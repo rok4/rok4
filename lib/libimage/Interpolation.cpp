@@ -36,8 +36,9 @@
  */
 
 #include "Interpolation.h"
+#include <string.h>
 
-namespace interpolation {
+namespace Interpolation {
     
 const char *einterpolation_name[] = {
     "UNKNOWN",
@@ -52,18 +53,32 @@ const char *einterpolation_name[] = {
 const int einterpolation_size = 6;
 
 
-Kernel::KernelType fromString(std::string strInterpolation)
+Interpolation::KernelType fromString(std::string strInterpolation)
 {
     int i;
+    //handle be4 element : lanczos to lanczos_2
+    if (strInterpolation.compare("lanczos")==0){
+        strInterpolation.append("_2");
+    }
+    
     for (i=einterpolation_size; i ; --i) {
         if (strInterpolation.compare(einterpolation_name[i])==0)
             break;
     }
-    return static_cast<Kernel::KernelType>(i);
+    
+    return static_cast<Interpolation::KernelType>(i);
 }
 
-std::string toString(Kernel::KernelType KT)
+std::string toString(Interpolation::KernelType KT)
 {
+    return std::string(einterpolation_name[KT]);
+}
+
+std::string toBe4String(Interpolation::KernelType KT)
+{
+    if (KT >= Interpolation::LANCZOS_2) {
+        return std::string("lanczos");
+    }
     return std::string(einterpolation_name[KT]);
 }
 

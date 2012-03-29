@@ -47,6 +47,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include "Interpolation.h"
 
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
     LOGGER_INFO ( "     Ajout du Style " << fileName );
@@ -767,7 +768,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     std::vector<CRS*> WMSCRSList;
     bool opaque;
     std::string authority="";
-    std::string resampling="";
+    std::string resamplingStr="";
+    Interpolation::KernelType resampling;
     Pyramid* pyramid;
     GeographicBoundingBoxWMS geographicBoundingBox;
     BoundingBoxWMS boundingBox;
@@ -1000,10 +1002,12 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     pElem=hRoot.FirstChild ( "resampling" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         LOGGER_ERROR ( "Pas de resampling => resampling = " << DEFAULT_RESAMPLING );
-        resampling = DEFAULT_RESAMPLING;
+        resamplingStr = DEFAULT_RESAMPLING;
     } else {
-        resampling = pElem->GetText();
+        resamplingStr = pElem->GetText();
     }
+    
+    resampling = Interpolation::fromString(resamplingStr);
 
     pElem=hRoot.FirstChild ( "pyramid" ).Element();
     if ( pElem && pElem->GetText() ) {

@@ -48,7 +48,7 @@
 class CppUnitLZW : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST_SUITE ( CppUnitLZW );
 
- /*   CPPUNIT_TEST ( smallString ); 
+    CPPUNIT_TEST ( smallString ); 
 
     CPPUNIT_TEST ( largeString );
 
@@ -56,18 +56,17 @@ class CppUnitLZW : public CPPUNIT_NS::TestFixture {
 
     CPPUNIT_TEST ( randomData );
 
-    CPPUNIT_TEST ( whiteData );*/
+    CPPUNIT_TEST ( whiteData );
 
-   // CPPUNIT_TEST ( smallStringStream ); 
+   /* CPPUNIT_TEST ( smallStringStream ); 
 
-   // CPPUNIT_TEST ( largeStringStream );
+    CPPUNIT_TEST ( largeStringStream );
 
-   // CPPUNIT_TEST ( veryLargeStringStream );
+    CPPUNIT_TEST ( veryLargeStringStream );
 
     CPPUNIT_TEST ( randomDataStream );
 
-    CPPUNIT_TEST ( whiteDataStream );
-    
+    CPPUNIT_TEST ( whiteDataStream );*/
 
     CPPUNIT_TEST_SUITE_END();
 
@@ -75,8 +74,8 @@ protected:
     void compressCppUncompress ( std::string message );
     void compressCppUncompress ( uint8_t* rawBuffer, size_t rawBufferSize );
     
-    void compressStreamUncompress ( std::string message );
-    void compressStreamUncompress ( uint8_t* rawBuffer, size_t rawBufferSize );
+/*  void compressStreamUncompress ( std::string message );
+    void compressStreamUncompress ( uint8_t* rawBuffer, size_t rawBufferSize );*/
     
 public:
 
@@ -87,11 +86,11 @@ public:
     void randomData();
     void whiteData();
     
-    void smallStringStream();
+/*    void smallStringStream();
     void largeStringStream();
     void veryLargeStringStream();
     void randomDataStream();
-    void whiteDataStream();
+    void whiteDataStream();*/
 
 };
 
@@ -138,7 +137,7 @@ void CppUnitLZW::compressCppUncompress ( uint8_t* rawBuffer, size_t rawBufferSiz
     decodedBuffer=0;
     
 }
-
+/*
 void CppUnitLZW::compressStreamUncompress ( uint8_t* rawBuffer, size_t rawBufferSize ) {
     std::cout << "RAW Buffer Size = " << rawBufferSize << std::endl;
     //std::cout << "RAW Buffer = " << std::endl << rawBuffer << std::endl << "End Of Buffer" << std::endl ;
@@ -191,9 +190,7 @@ void CppUnitLZW::compressStreamUncompress ( uint8_t* rawBuffer, size_t rawBuffer
     decodedBuffer=0;
     
 }
-
-
-
+*/
 
 void CppUnitLZW::compressCppUncompress ( std::string message ) {
     size_t rawBufferSize = message.length() +1;
@@ -204,6 +201,7 @@ void CppUnitLZW::compressCppUncompress ( std::string message ) {
     delete[] rawBuffer;
 }
 
+/*
 void CppUnitLZW::compressStreamUncompress(std::string message)
 {
     size_t rawBufferSize = message.length() +1;
@@ -212,7 +210,7 @@ void CppUnitLZW::compressStreamUncompress(std::string message)
 
     compressCppUncompress ( rawBuffer, rawBufferSize );
     delete[] rawBuffer;
-}
+}*/
 
 
 void CppUnitLZW::smallString() {
@@ -253,6 +251,7 @@ void CppUnitLZW::whiteData()
     delete[] rawBuffer;
 }
 
+/*
 void CppUnitLZW::smallStringStream() {
     compressStreamUncompress ( "LLLZW compression Algorithm implementation test" );
 }
@@ -290,3 +289,4 @@ void CppUnitLZW::whiteDataStream()
     compressStreamUncompress(rawBuffer,rawBufferSize);
     delete[] rawBuffer;
 }
+*/
