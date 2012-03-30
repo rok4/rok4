@@ -896,6 +896,10 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
 
 DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& version)
 {
+    if (service.compare("wms")!=0 ){
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
+    }
+    
     version=getParam ( "version" );
     if ( version=="" ){
         version = "1.3.0";
@@ -913,6 +917,9 @@ DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& ver
 
 DataStream* Request::getCapWMTSParam(ServicesConf& servicesConf, std::string& version)
 {
+    if (service.compare("wmts")!=0 ){
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
+    }
     version=getParam ( "version" );
     if ( version=="" ) {
         version=servicesConf.getServiceTypeVersion();
