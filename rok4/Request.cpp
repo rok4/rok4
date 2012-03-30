@@ -403,18 +403,18 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
                     format_options << ";";
                 }
                 format_options <<  pElemOut->Attribute("name") << ":"<< pElemOut->GetText();
-                
+
             }
             pElemOut =  pElemOut->NextSiblingElement();
         }
 
     }
-    
+
     // Handle output format options
     if (format_options.str().size() > 0) {
         parameters.insert ( std::pair<std::string, std::string> ( "format_options", format_options.str())  );
     }
-    
+
     //OPTIONAL
 
     //Exceptions
@@ -885,5 +885,41 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     }
     delete[] formatOptionChar;
     formatOptionChar=NULL;
-return NULL;
+    return NULL;
 }
+
+
+/**
+ * @brief Recuperation et verification des parametres d'une requete GetCapabilities
+ * @return message d'erreur en cas d'erreur (NULL sinon)
+ */
+
+DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& version)
+{
+    version=getParam ( "version" );
+    if ( version=="" ){
+        version = "1.3.0";
+        return NULL;
+    }
+    if ( version!="1.3.0" )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.3.0 disponible seulement))","wms" ));
+    return NULL;
+}
+
+/**
+ * @brief Recuperation et verification des parametres d'une requete GetCapabilities
+ * @return message d'erreur en cas d'erreur (NULL sinon)
+ */
+
+DataStream* Request::getCapWMTSParam(ServicesConf& servicesConf, std::string& version)
+{
+    version=getParam ( "version" );
+    if ( version=="" ) {
+        version=servicesConf.getServiceTypeVersion();
+        return NULL;
+    }
+    if ( version.compare(servicesConf.getServiceTypeVersion())!=0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.0.0 disponible seulement))","wmts" ) );
+    return NULL;
+}
+
