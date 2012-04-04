@@ -758,14 +758,24 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     std::string str_crs=getParam ( "crs" );
     if ( str_crs == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,"Parametre CRS absent.","wms" ) );
-    // Existence du CRS dans la liste de CRS du layer
+    // Existence du CRS dans la liste de CRS du layer TODO Implement GlobalCRS
     crs.setRequestCode ( str_crs );
+    bool crsNotFound = true;
     unsigned int k;
-    for ( k=0;k<layer->getWMSCRSList().size();k++ )
-        if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) )
+    for ( k=0;k<servicesConf.getGlobalCRSList()->size();k++ )
+        if ( crs.cmpRequestCode ( servicesConf.getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+            crsNotFound = false;
             break;
+        }
+    if (crsNotFound) {
+        for ( k=0;k<layer->getWMSCRSList().size();k++ )
+            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) ) {
+                crsNotFound = false;
+                break;
+            }
+    }
     // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
-    if ( k==layer->getWMSCRSList().size() )
+    if ( crsNotFound )
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,"CRS "+str_crs+" (equivalent PROJ4 "+crs.getProj4Code() +" ) inconnu pour le layer "+str_layer+".","wms" ) );
 
     // FORMAT
@@ -896,12 +906,12 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
 
 DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& version)
 {
-    if (service.compare("wms")!=0 ){
+    if (service.compare("wms")!=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
     }
-    
+
     version=getParam ( "version" );
-    if ( version=="" ){
+    if ( version=="" ) {
         version = "1.3.0";
         return NULL;
     }
@@ -917,7 +927,7 @@ DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& ver
 
 DataStream* Request::getCapWMTSParam(ServicesConf& servicesConf, std::string& version)
 {
-    if (service.compare("wmts")!=0 ){
+    if (service.compare("wmts")!=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
     }
     version=getParam ( "version" );
