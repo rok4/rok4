@@ -596,16 +596,21 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         return NULL;    
     }
     
+    double ymaxdst_save = ymax_dst;
+    
     // Coordonnees de l'image reechantillonnee en pixels
     xmin_dst/=resx_dst;
     xmin_dst=floor(xmin_dst+0.1);
+    
     ymin_dst/=resy_dst;
-        ymin_dst=floor(ymin_dst+0.1);
-    xmax_dst/=resx_dst;
-        xmax_dst=ceil(xmax_dst-0.1);
-    ymax_dst/=resy_dst;
-        ymax_dst=ceil(ymax_dst-0.1);
+    ymin_dst=floor(ymin_dst+0.1);
         
+    xmax_dst/=resx_dst;
+    xmax_dst=ceil(xmax_dst-0.1);
+        
+    ymax_dst/=resy_dst;
+    ymax_dst=ceil(ymax_dst-0.1);
+    
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
     int height_dst = int(ymax_dst-ymin_dst+0.1);
@@ -613,6 +618,30 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     xmax_dst*=resx_dst;
     ymin_dst*=resy_dst;
     ymax_dst*=resy_dst;
+    
+    /* Suite au arrondis, il se peut que l'image de destination finisse par dépasser les images source.
+     * Cela va logiquement générer une erreur (impossible de trouver de la donnée source.
+     * Pour éviter cela, et uniquement dans le cas où on déborde, on va rétrécir l'image de destination.
+     * On ne peut pas arrondir systématiquement vers une réduction de l'image car cela pourrait engendrer
+     * de lignes noires dans les images résultantes.
+     * Cela dit, l'ajout des mirroirs suffirait à éviter ce manque de données.
+     */
+    if (ymax_dst > ymax_src) {
+        ymax_dst -= resy_dst;
+        height_dst -= 1;
+    }    
+    if (ymin_dst < ymin_src) {
+        ymin_dst += resy_dst;
+        height_dst -= 1;
+    }    
+    if (xmax_dst > xmax_src) {
+        xmax_dst -= resx_dst;
+        width_dst -= 1;
+    }    
+    if (xmin_dst < xmin_src) {
+        xmin_dst += resx_dst;
+        width_dst -= 1;
+    } 
 
     double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
