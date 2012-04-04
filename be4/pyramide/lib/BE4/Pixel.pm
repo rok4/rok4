@@ -172,7 +172,9 @@ sub is_BitsPerSample {
     return FALSE if (! defined $bitspersample);
 
     foreach (@{$PIXEL{bitspersample}}) {
-        return TRUE if ($bitspersample eq $_);
+        if ($bitspersample eq $_) {
+            return TRUE;
+        }
     }
     ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
     return FALSE;
