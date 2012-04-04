@@ -85,7 +85,7 @@ END {}
 #    *   VERSION  => undef, # ie 1.3.0
 #    *   REQUEST  => undef, # ie getMap
 #    *   FORMAT   => undef, # ie image/png
-#    *   LAYER    => undef, # ie ORTHOPHOTO
+#    *   LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
 #
 
 #
@@ -103,7 +103,7 @@ sub new {
         VERSION  => undef, # ie 1.3.0
         REQUEST  => undef, # ie getMap
         FORMAT   => undef, # ie image/png
-        LAYER    => undef, # ie ORTHOPHOTO
+        LAYERS    => undef, # ie ORTHOPHOTO
     };
 
     bless($self, $class);
@@ -147,13 +147,21 @@ sub _init {
         ERROR("key/value required to 'wms_layer' !");
         return FALSE ;
     }
+    my @layers = split (/,/,$params->{wms_layer},-1);
+    foreach my $layer (@layers) {
+        if ($layer eq '') {
+            ERROR(sprintf "value for 'wms_layer' is not valid (%s) : it must be LAYER[,LAYER_N]+ !",$params->{wms_layer});
+            return FALSE ;
+        }
+        INFO(sprintf "Layer %s will be harvested !",$layer);
+    }
     
     # init. params    
-    $self->url(     $params->{wms_url});
+    $self->url($params->{wms_url});
     $self->version ($params->{wms_version});
-    $self->request( $params->{wms_request});
-    $self->format(  $params->{wms_format});
-    $self->layer(   $params->{wms_layer});
+    $self->request($params->{wms_request});
+    $self->format($params->{wms_format});
+    $self->layers($params->{wms_layer});
 
     return TRUE;
 }
@@ -164,7 +172,7 @@ sub _init {
 sub doRequestUrl {
     my $self = shift;
 
-    # ie "http://".$URL."?LAYERS=".$LAYER."
+    # ie "http://".$URL."?LAYERS=".$LAYERS."
     #  &SERVICE=WMS
     #  &VERSION=".$VERSION."
     #  &REQUEST=GetMap
@@ -187,7 +195,7 @@ sub doRequestUrl {
 
     my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLES=",
                         $self->url(),
-                        $self->layer(),
+                        $self->layers(),
                         $self->version(),
                         $self->request(),
                         $self->format(),
@@ -214,24 +222,24 @@ sub url {
 
 sub version {
     my $self = shift;
-    if (@_) { $self->{VERSION} = shift }
+    if (@_) { $self->{VERSION} = shift; }
     return $self->{VERSION};
 }
 
 sub request {
   my $self = shift;
-  if (@_) { $self->{REQUEST} = shift }
+  if (@_) { $self->{REQUEST} = shift; }
   return $self->{REQUEST};
 }
 sub format {
     my $self = shift;
-    if (@_) { $self->{FORMAT} = shift }
+    if (@_) { $self->{FORMAT} = shift; }
     return $self->{FORMAT};
 }
-sub layer {
+sub layers {
     my $self = shift;
-    if (@_) { $self->{LAYER} = shift }
-    return $self->{LAYER};
+    if (@_) { $self->{LAYERS} = shift; }
+    return $self->{LAYERS};
 }
 
 ################################################################################
@@ -248,9 +256,9 @@ sub getWMSFormat {
     my $self = shift;
     return $self->{FORMAT};
 }
-sub getWMSLayer {
+sub getWMSLayers {
     my $self = shift;
-    return $self->{LAYER};
+    return $self->{LAYERS};
 }
 sub getWMSServer {
     my $self = shift;

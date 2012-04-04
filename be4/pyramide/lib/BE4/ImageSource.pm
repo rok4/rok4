@@ -35,12 +35,15 @@
 
 package BE4::ImageSource;
 
-use strict;
+# use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
 
-use Geo::GDAL;
+use List::Util qw(min max);
+
+# My module
+use BE4::GeoImage;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -66,30 +69,6 @@ BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *    PATHFILENAME => undef,
-#    *    filename => undef,
-#    *    filepath => undef,
-#    *    xmin => undef,
-#    *    ymax => undef,
-#    *    xmax => undef,
-#    *    ymin => undef,
-#    *    xres => undef,
-#    *    yres => undef,
-#    *    pixelsize => undef,
-#    *    xcenter => undef,
-#    *    ycenter => undef,
-#    *    height  => undef,
-#    *    width   => undef,
-#
-
-#
 # Group: constructor
 #
 
@@ -100,22 +79,16 @@ sub new {
 
   my $class= ref($this) || $this;
   my $self = {
-    PATHFILENAME => undef,
+    baseLevel => undef, # bottom level using this harvesting
+    PATHIMG => undef, # path to images
+    PATHMTD => undef, # path to metadata
+    SRS     => undef, # 
     #
-    filename => undef,
-    filepath => undef,
-    xmin => undef,
-    ymax => undef,
-    xmax => undef,
-    ymin => undef,
-    xres => undef,
-    yres => undef,
-    pixelsize => undef,
-    xcenter => undef,
-    ycenter => undef,
-    height  => undef,
-    width   => undef,
-    
+    images  => [],    # list of images sources
+    #
+    resolution => undef,
+    #
+    pixel => undef, #Pixel object
   };
 
   bless($self, $class);
@@ -131,373 +104,333 @@ sub new {
 ################################################################################
 # privates init.
 sub _init {
+
     my $self   = shift;
-    my $param = shift;
+    my $params = shift;
 
     TRACE;
     
-    return FALSE if (! defined $param);
-    
-    if (! -f $param) {
-      ERROR ("File doesn't exist !");
-      return FALSE;
-    }
+    return FALSE if (! defined $params);
     
     # init. params    
-    $self->{PATHFILENAME}=$param;
+    $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
+    $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
+    $self->{SRS} = uc($params->{srs}) if (exists($params->{srs}));
     
-    #
-    $self->{filepath} = File::Basename::dirname($param);
-    $self->{filename} = File::Basename::basename($param);
+    if (defined ($self->{PATHIMG}) && ! -d $self->{PATHIMG}) {
+        ERROR ("Directory image doesn't exist !");
+        return FALSE;
+    }
     
+    if (defined ($self->{PATHMTD}) && ! -d $self->{PATHMTD}) {
+        ERROR ("Directory metadata doesn't exist !");
+        return FALSE;
+    }
+    
+    if (! defined ($self->{SRS})) {
+        ERROR ("SRS undefined !");
+        return FALSE;
+    }
+
+    if (! exists($params->{baseLevel})     || ! defined ($params->{baseLevel})) {
+        ERROR("key/value required to 'baseLevel' !");
+        return FALSE ;
+    }
+    $self->{baseLevel} = $params->{baseLevel};
+
+    return TRUE;
+
+}
+
+################################################################################
+# method: computeImageSource
+#   Load all image in a list of object BE4::ImageSource, determine the medium
+#   resolution of data, check components.
+
+sub computeImageSource {
+    my $self = shift;
+
+    TRACE;
+
+    my %resDict;
+
+    my $lstImagesSources = $self->{images}; # it's a ref !
+
+    my $badRefCtrl = 0;
+
+    my $search = $self->getListImages($self->{PATHIMG});
+    if (! defined $search) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
+
+    my @listSourcePath = @{$search->{images}};
+    if (! @listSourcePath) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
+
+    my $pixel = undef;
+
+    foreach my $filepath (@listSourcePath) {
+
+        my $objImageSource = BE4::ImageSource->new($filepath);
+
+        if (! defined $objImageSource) {
+            ERROR ("Can not load image source ('$filepath') !");
+            return FALSE;
+        }
+
+        # images reading and analysis
+        my @imageInfo = $objImageSource->computeInfo();
+        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
+        if (! @imageInfo) {
+            ERROR ("Can not read image info ('$filepath') !");
+            return FALSE;
+        }
+
+        if (! defined $pixel) {
+            # we have read the first image, components are empty. This first image will be the reference.
+            $pixel = BE4::Pixel->new({
+                bitspersample => $imageInfo[0],
+                photometric => $imageInfo[1],
+                sampleformat => $imageInfo[2],
+                samplesperpixel => $imageInfo[3]
+            });
+            if (! defined $pixel) {
+                ERROR ("Can not create Pixel object for DataSource !");
+                return FALSE;
+            }
+        } else {
+            # we have already values. We must have the same components for all images
+            if (! ($pixel->{bitspersample} eq $imageInfo[0] && $pixel->{photometric} eq $imageInfo[1] &&
+                    $pixel->{sampleformat} eq $imageInfo[2] && $pixel->{samplesperpixel} eq $imageInfo[3])) {
+                ERROR ("All images must have same components. This image ('$filepath') is different !");
+                return FALSE;
+            }
+        }
+
+        if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
+            $badRefCtrl++;
+        }
+        if ($badRefCtrl>1){
+            ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
+            return FALSE;
+        }
+
+        # FIXME :
+        #  - resolution resx == resy ?
+        #  - unique resolution for all image !
+        my $xRes = $objImageSource->getXres();
+        $resDict{$xRes} = 1;
+        $self->{resolution} = $xRes;
+        #
+        push @$lstImagesSources, $objImageSource;
+    }
+
+    $self->{pixel} = $pixel;
+
+    if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
+        ERROR ("Can not found image source in '$self->{PATHIMG}' !");
+        return FALSE;
+    }
+
+    # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
+    #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
+    # if (keys (%resDict) != 1) {
+    #   ERROR ("The resolution of image source is not unique !");
+    #   return FALSE;
+    # }
+
     return TRUE;
 }
 ################################################################################
-# public
-# Image parameters are checked (sample per pixel, bits per sample...) and return by the function. Datasource can
-# verify if all images own same components and the compatibility with be4's configuration.
+# method: exportImageSource
+#   Export all informations of image in a file
+#
+#   Format :
+#     filename, xmin, ymax, xmax, ymin, xres, yres
+#
+#   Parameter:
+#    file - filepath of the export
+#
+sub exportImageSource {
+  my $self = shift;
+  my $file = shift; # pathfilename !
+  
+  TRACE;
 
-sub computeInfo {
-    my $self = shift;
-
-    my $image = $self->{filename};
-
-    DEBUG(sprintf "compute '%s'", $image);
-
-    my $dataset;
-    eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
-    if ($@) {
-        ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return ();
-    }
-
-    my $driver = $dataset->GetDriver();
-    my $code   = $driver->{ShortName};
-    # FIXME : type of driver ?
-    if ($code !~ /(GTiff|GeoTIFF)/) {
-        ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
-        return ();
-    }
-
-    # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
-    #      besoin et qui semble poser des problèmes (version de gdalinfo?)
-
-    my $i = 0;
-
-    my $DataType       = undef;
-    my $Band           = undef;
-    my @Interpretation;
-
-    foreach my $objBand ($dataset->Bands()) {
-
-        # FIXME undefined !
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
-
-        # ie Float32,  GrayIndex,          , , .
-        # ie Byte,     (Red|Green|Blue)Band, , .
-        # ie Byte,     GrayIndex,          , , .
-        # ie UInt32,   GrayIndex,          , , .
-        # Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32, or CFloat64
-        # Undefined GrayIndex PaletteIndex RedBand GreenBand BlueBand AlphaBand HueBand SaturationBand LightnessBand CyanBand MagentaBand YellowBand BlackBand
-
-        push @Interpretation, lc $objBand->ColorInterpretation();
-
-        if (!defined $DataType) {
-            $DataType = lc $objBand->DataType();
-        } else {
-            if (! (lc $objBand->DataType() eq $DataType)) {
-                ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
-                return ();
-            }
-        }
-        
-        $i++;
-    }
-
-    $Band = $i;
-
-    my $bitspersample = undef;
-    my $photometric = undef;
-    my $sampleformat = undef;
-    my $samplesperpixel = undef;
-
-    if ($DataType eq "byte") {
-        $bitspersample = 8;
-        $sampleformat  = "uint";
-    }
-    else {
-        ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
-    }
-
-    if ($Band == 3) {
-        foreach (@Interpretation) {
-            last if ($_ !~ m/(red|green|blue)band/);
-        }
-        $photometric     = "rgb";
-        $samplesperpixel = 3;
-    }
-
-    if ($Band == 4) {
-        foreach (@Interpretation) {
-            last if ($_ !~ m/(red|green|blue|alpha)band/);
-        }
-        $photometric     = "rgb";
-        $samplesperpixel = 4;
-    }
-
-    if ($Band == 1 && $Interpretation[0] eq "grayindex") {
-        $photometric     = "gray";
-        $samplesperpixel = 1;
-    }
-
-    DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
-    $bitspersample, $photometric, $sampleformat, $samplesperpixel);
-
-    my $refgeo = $dataset->GetGeoTransform();
-    if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
-        ERROR ("Can not found parameters of image ('$image') !");
-        return ();
-    }
-
-    # forced formatting string !
-    my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
-
-    # FIXME : precision ?
-    $self->{xmin} = sprintf "%.8f", $xmin;
-    $self->{xmax} = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize};
-    $self->{ymin} = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize};
-    $self->{ymax} = sprintf "%.8f", $ymax;
-    $self->{xres} = sprintf "%.8f", $dx;      # $rx null ?
-    $self->{yres} = sprintf "%.8f", abs($ndy);# $ry null ?
-    $self->{xcenter}   = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
-    $self->{ycenter}   = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $self->{pixelsize} = sprintf "%.8f", $dx;
-    $self->{height} = $dataset->{RasterYSize};
-    $self->{width}  = $dataset->{RasterXSize};
-
-
-    #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-    #      $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
-    #      $self->{xres},$self->{yres},
-    #      $self->{xcenter},$self->{ycenter},
-    #      $self->{pixelsize},
-    #      $self->{height},$self->{width});
-    
-    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
-        ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return ();
-    }
-    
-    return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
+  my $lstImagesSources = $self->{images};
+  
+  if (! open (FILE, ">", $file)) {
+    ERROR ("Can not create file ('$file') !");
+    return FALSE;
+  }
+  
+  foreach my $objImage (@$lstImagesSources) {
+    # image xmin ymax xmax ymin resx resy
+    printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
+            # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
+            $objImage->{filename},
+            $objImage->{xmin},
+            $objImage->{ymax},
+            $objImage->{xmax},
+            $objImage->{ymin},
+            $objImage->{xres},
+            $objImage->{yres};
+  }
+  
+  close FILE;
+  
+  return TRUE;
 }
-
 ################################################################################
-
-sub getInfo {
-  my $self = shift;
-  
-  TRACE;
-  
-  return (
-    $self->{filename},
-    $self->{filepath},
-    $self->{xmin},
-    $self->{ymax},
-    $self->{xmax},
-    $self->{ymin},
-    $self->{xres},
-    $self->{yres},
-    $self->{pixelsize},
-    $self->{xcenter},
-    $self->{ycenter},
-    $self->{height},
-    $self->{width},
-  );
-  
-}
-sub getBbox {
+# method: computeBbox
+#   Bbox of data source
+#
+sub computeBbox {
   my $self = shift;
 
   TRACE;
+  
+  my $lstImagesSources = $self->{images};
   
   my @bbox;
+  
+  my $xmin = $lstImagesSources->[0]->{xmin};
+  my $xmax = $lstImagesSources->[0]->{xmax};
+  my $ymin = $lstImagesSources->[0]->{ymin};
+  my $ymax = $lstImagesSources->[0]->{ymax};
+  
+  foreach my $objImage (@$lstImagesSources) {
+    $xmin = min($xmin, $objImage->{xmin});
+    $xmax = max($xmax, $objImage->{xmax});
+    $ymin = min($ymin, $objImage->{ymin});
+    $ymax = max($ymax, $objImage->{ymax});
+  }
 
   # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($self->{xmin},$self->{ymax},$self->{xmax},$self->{ymin});
+  push @bbox, ($xmin,$ymax,$xmax,$ymin);
   
   return @bbox;
 }
+
+
 ################################################################################
-# get / set
-sub getXmin {
-  my $self = shift;
-  return $self->{xmin};
+# method: getListImages
+#   Get the list of all path data image (image tiff only !)
+#   
+sub getListImages {
+  my $self      = shift;
+  my $directory = shift;
+
+  TRACE();
+  
+  my $search = {
+    images => [],
+  };
+
+  if (! opendir (DIR, $directory)) {
+    ERROR("Can not open directory cache (%s) ?",$directory);
+    return undef;
+  }
+
+  my $newsearch;
+  
+  foreach my $entry (readdir DIR) {
+    
+    next if ($entry =~ m/^\.{1,2}$/);
+    
+    if ( -d File::Spec->catdir($directory, $entry)) {
+      TRACE(sprintf "DIR:%s\n",$entry);      
+      # recursif
+      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+    }
+
+    next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
+    
+    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
+  }
+  
+  return $search;
 }
-sub getYmin {
-  my $self = shift;
-  return $self->{ymin};
-}
-sub getXmax {
-  my $self = shift;
-  return $self->{xmax};
-}
-sub getYmax {
-  my $self = shift;
-  return $self->{ymax};
-}
-sub getXres {
-  my $self = shift;
-  return $self->{xres};  
-}
-sub getYres {
-  my $self = shift;
-  return $self->{yres};  
-}
-sub getName {
-  my $self = shift;
-  return $self->{filename}; 
-}
+
 ################################################################################
-# to_string methode
-sub to_string {
+# method: hasImages
+#   
+sub hasImages {
   my $self = shift;
   
-  TRACE;
-  
-  my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-          File::Spec->catfile($self->{filepath}, $self->{filename}),
-          $self->{xmin},
-          $self->{ymax},
-          $self->{xmax},
-          $self->{ymin},
-          $self->{xres},
-          $self->{yres},;
-  #DEBUG ($output);
-  return $output;
+  return FALSE if (! defined ($self->{PATHIMG}));
+  return TRUE;
 }
+
+#
+# Group: get/set
+#
+sub getResolution {
+  my $self = shift;
+  return $self->{resolution};  
+}
+################################################################################
+# method: getImages
+#   Get the list of all object data image (BE4::ImageSource)
+#
+sub getImages {
+  my $self = shift;
+  # copy !
+  my @images;
+  foreach (@{$self->{images}}) {
+    push @images, $_;
+  }
+  return @images; 
+}
+sub getSRS {
+  my $self = shift;
+  
+  return $self->{SRS};
+}
+
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
+=pod
 
 =head1 NAME
 
-  BE4::ImageSource - analyzes the features of the image.
+  BE4::ImageSource
 
 =head1 SYNOPSIS
 
   use BE4::ImageSource;
   
-  my $objImg = BE4::ImageSource->new($filepath);
-  if (! $objImg->computeInfo()) { # ERROR ! }
-  
-  my (
-    $filename,
-    $filepath,
-    $xmin,
-    $ymax,
-    $xmax,
-    $ymin,
-    $xres,
-    $yres,
-    $pixelsize,
-    $xcenter,
-    $ycenter,
-    $height,
-    $width
-    ) = $objImg->getInfo();
+  my $objImplData = BE4::ImageSource->new(baseLevel => 19,
+                                         harvesting => $objHarvesting,
+                                         size_image => [2048,2048]);
 
 =head1 DESCRIPTION
 
-* Constraint on the input formats of images
-
-  format tiff ...
-
-* Use the binding Perl of Gdal
-
-* Sample with gdalinfo
   
-  GDAL 1.7.2, released 2010/04/23
-  
-  ~$ gdalinfo  image.png
-  
-  Driver: PNG/Portable Network Graphics
-  Files: image.png
-  Size is 316, 261
-  Coordinate System is `'
-  Metadata:
-    Software=Shutter
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (    0.0,    0.0)
-  Lower Left  (    0.0,  261.0)
-  Upper Right (  316.0,    0.0)
-  Lower Right (  316.0,  261.0)
-  Center      (  158.0,  130.5)
-  Band 1 Block=316x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=316x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
-  
-
-  ~$ gdalinfo  image.tif
-  (...)
-  Metadata:
-    TIFFTAG_IMAGEDESCRIPTION=
-    TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
-    TIFFTAG_DATETIME=2007:03:15 11:17:17
-    TIFFTAG_XRESOLUTION=600
-    TIFFTAG_YRESOLUTION=600
-    TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  (...)
-  Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
-  Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
-  Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
-  Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
-  Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
-  
-  ~$ gdalinfo image.tif
-  
-  Driver: GTiff/GeoTIFF
-  Files: image.tif
-         image.tfw
-  Size is 5000, 5000
-  Coordinate System is `'
-  Origin = (937500.000000000000000,6541000.000000000000000)
-  Pixel Size = (0.100000000000000,-0.100000000000000)
-  Metadata:
-    TIFFTAG_XRESOLUTION=100
-    TIFFTAG_YRESOLUTION=100
-    TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (  937500.000, 6541000.000) 
-  Lower Left  (  937500.000, 6540500.000) 
-  Upper Right (  938000.000, 6541000.000) 
-  Lower Right (  938000.000, 6540500.000) 
-  Center      (  937750.000, 6540750.000) 
-  Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
-
 =head2 EXPORT
 
 None by default.
 
+=head1 LIMITATION & BUGS
+
+
 =head1 SEE ALSO
+
+  eg BE4::DataSource
+  eg BE4::HarvestSource
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,

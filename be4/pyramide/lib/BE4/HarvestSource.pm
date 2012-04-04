@@ -33,19 +33,17 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
-package BE4::DataSource;
+package BE4::HarvestSource;
 
-use strict;
+# use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use Data::Dumper;
+
 use List::Util qw(min max);
 
 # My module
-use BE4::ImageSource;
-use BE4::HarvestSource;
-use BE4::PropertiesLoader;
+use BE4::Harvesting;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -66,35 +64,24 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global
-my %SOURCE;
-
-################################################################################
 # Preloaded methods go here.
 BEGIN {}
-INIT {
-
-%SOURCE = (
-    type     => ['image','harvest']
-);
-
-}
+INIT {}
 END {}
 
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
+# Group: constructor
+#
 
+################################################################################
+# constructor
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
-    FILEPATH_DATACONF => undef, # path of data's configuration file
-    type => undef, # (image or harvest)
-    sources  => [],    # list of ImageSource or HarvestSource objects
-    SRS => undef,
-    bottomExtent => undef, # OGR::Geometry object, in the previous SRS
+    baseLevel => undef, # bottom level using this harvesting
+    harvesting => undef, # Harvesting object
+    size_image => [4096,4096], # images size which will be harvested
   };
 
   bless($self, $class);
@@ -104,9 +91,6 @@ sub new {
   # init. class
   return undef if (! $self->_init(@_));
   
-  # load. class
-  return undef if (! $self->_load());
-
   return $self;
 }
 
@@ -119,72 +103,39 @@ sub _init {
     TRACE;
     
     return FALSE if (! defined $params);
+    
+    ALWAYS(sprintf "harvestSource parameters : %s",Dumper($params)); #TEST#
 
-    ALWAYS(sprintf "paramètres de DataSource : %s",Dumper($params)); #TEST#
+    # parameters mandatoy !
+    if (! exists($params->{baseLevel})     || ! defined ($params->{baseLevel})) {
+        ERROR("key/value required to 'baseLevel' !");
+        return FALSE ;
+    }
+
+    if (! exists($params->{size_image}) || ! defined ($params->{size_image})) {
+        ERROR("key/value required to 'size_image' !");
+        return FALSE ;
+    }
+
+    my $objHarvest = BE4::Harvesting->new({
+        wms_layer => $params->{wms_layer},
+        wms_url => $params->{wms_url},
+        wms_version => $params->{wms_version},
+        wms_request => $params->{wms_request},
+        wms_format => $params->{wms_format}
+    });
+    if (! defined $objHarvest) {
+        ERROR("Cannot create Harvesting object !");
+        return FALSE ;
+    }
     
     # init. params    
-    $self->{FILEPATH_DATACONF} = $params->{filepath_conf} if (exists($params->{filepath_conf}));
-    
-    if (! -f $self->{FILEPATH_DATACONF}) {
-        ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$self->{FILEPATH_DATACONF});
-        return FALSE;
-    }
-
-    if (! exists($params->{type}) || ! defined ($params->{type})) {
-        ERROR("key/value required to 'type' !");
-        return FALSE ;
-    }
-    if (! $self->is_type($params->{type})) {
-        ERROR("Invalid data's type !");
-        return FALSE ;
-    }
-    $self->{type} = $params->{type};
+    $self->{baseLevel} = $params->{baseLevel};
+    $self->{harvesting} = $objHarvest;
+    $self->{size_image} = $params->{size_image};
 
     return TRUE;
 }
-
-################################################################################
-# privates load.
-sub _load {
-    my $self   = shift;
-
-    TRACE;
-
-    my $sourcesProperties = BE4::PropertiesLoader->new($self->{FILEPATH_DATACONF});
-    ALWAYS(sprintf "sourcesProperties : %s",Dumper($sourcesProperties->getAllProperties())); #TEST#
-
-    foreach my $level (keys $sourcesProperties->getAllProperties()) {
-        if ($self->{type} eq "harvest") {
-            ALWAYS(sprintf "harvestSource pour le niveau %s : %s",$level,Dumper($sourcesProperties{$level})); #TEST#
-        }
-        elsif ($self->{type} eq "image") {
-
-        }
-    }
-
-    return TRUE;
-}
-
-################################################################################
-# tests
-sub is_type {
-    my $self = shift;
-    my $type = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $type);
-
-    foreach (@{$SOURCE{type}}) {
-        return TRUE if ($type eq $_);
-    }
-    ERROR (sprintf "Unknown 'type' of data (%s) !",$type);
-    return FALSE;
-}
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
 
 
 1;
@@ -194,17 +145,17 @@ __END__
 
 =head1 NAME
 
-  BE4::DataSource - Managing data sources
+  BE4::HarvestSource
 
 =head1 SYNOPSIS
 
-  use BE4::DataSource;
+  use BE4::HarvestSource;
   
-  my $objImplData = BE4::DataSource->new(path_conf => $path,
-                                         type => image);
+  my $objHarvestSource = BE4::DataSource->new(baseLevel => 19,
+                                         harvesting => $objHarvesting,
+                                         size_image => [2048,2048]);
 
 =head1 DESCRIPTION
-
 
   
 =head2 EXPORT
@@ -213,16 +164,11 @@ None by default.
 
 =head1 LIMITATION & BUGS
 
-* Support data source multiple !
-
-* Does not implement the managing of metadata !
 
 =head1 SEE ALSO
 
-  eg BE4::HarvestSource
-    eg BE4::Harvesting
+  eg BE4::DataSource
   eg BE4::ImageSource
-    eg BE4::GeoImage
 
 =head1 AUTHOR
 

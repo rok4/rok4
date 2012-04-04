@@ -152,9 +152,8 @@ sub _init {
     # it's an object !
     if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
         ||
-        (! $self->{pyramid}->isNewPyramid() && (
-        $self->{pyramid}->getCompression() eq 'jpg')
-    )) {
+        (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))
+    ) {
 
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
 
