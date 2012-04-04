@@ -190,7 +190,7 @@ sub computeImageSource {
             # we have read the first image, components are empty. This first image will be the reference.
             if ($imageInfo[0] == 1) {
                 WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
-                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 3
+                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 8
                 $imageInfo[0] = 8;
             }
             $pixel = BE4::Pixel->new({
@@ -205,7 +205,7 @@ sub computeImageSource {
             }
         } else {
             if ($imageInfo[0] == 1) {
-                # bitspersample in the Pixel object is 3. we change artificially current value for 3
+                # bitspersample in the Pixel object is 3. we change artificially current value for 8
                 $imageInfo[0] = 8;
             }
             # we have already values. We must have the same components for all images

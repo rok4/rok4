@@ -160,6 +160,7 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
                 if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
                 if(strncmp(argv[i], "1",1) == 0) sampleperpixel = 1 ;
                 else if(strncmp(argv[i], "3",1) == 0) sampleperpixel = 3 ;
+                else if(strncmp(argv[i], "4",1) == 0) sampleperpixel = 4 ;
                 else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
                 break;
             case 'b': // bitspersample
