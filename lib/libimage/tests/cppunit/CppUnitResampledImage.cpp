@@ -98,13 +98,13 @@ protected:
 
   string name(int kernel_type) {
     switch(kernel_type) {
-      case Kernel::UNKNOWN: return "(Default) Lanczos 3";
-      case Kernel::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
-      case Kernel::LINEAR: return "Linear";
-      case Kernel::CUBIC: return "Cubic";
-      case Kernel::LANCZOS_2: return "Lanczos 2";
-      case Kernel::LANCZOS_3: return "Lanczos 3";
-      case Kernel::LANCZOS_4: return "Lanczos 4";
+      case Interpolation::UNKNOWN: return "(Default) Lanczos 3";
+      case Interpolation::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
+      case Interpolation::LINEAR: return "Linear";
+      case Interpolation::CUBIC: return "Cubic";
+      case Interpolation::LANCZOS_2: return "Lanczos 2";
+      case Interpolation::LANCZOS_3: return "Lanczos 3";
+      case Interpolation::LANCZOS_4: return "Lanczos 4";
     }
   }
 
@@ -117,7 +117,7 @@ protected:
     gettimeofday(&BEGIN, NULL);
     for(int i = 0; i < nb_iteration; i++) {
       Image* image = new EmptyImage(1300, 1000, channels, color);
-      ResampledImage* R = new ResampledImage(image, 800, 600, 50, 50, 1.5, 1.5, Kernel::KernelType(kernel_type));
+      ResampledImage* R = new ResampledImage(image, 800, 600, 50, 50, 1.5, 1.5, Interpolation::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
       delete R;
     }

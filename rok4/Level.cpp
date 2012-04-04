@@ -36,6 +36,7 @@
  */
 
 #include "Level.h"
+#include "Interpolation.h"
 #include "FileDataSource.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
@@ -110,14 +111,16 @@ void Level::setNoDataSource ( DataSource* source ) {
 /*
  * A REFAIRE
  */
-Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
     grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() );
 
     // Calcul de la taille du noyau
-    // TODO : type de noyau a parametrer
-    const Kernel& kk = Kernel::getInstance ( Kernel::LANCZOS_2 );
+    //Maintain previous Lanczos behaviour : Lanczos_2 for resampling and reprojecting
+    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_2;
+    
+    const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_2
     double ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / ( tm.getRes() *double ( width ) );
     double ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / ( tm.getRes() *double ( height ) );
     double bufx=kk.size ( ratio_x );
@@ -137,11 +140,11 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
     }
     image->setbbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
 
-    return new ReprojectedImage ( image, bbox, grid/*,Kernel::LINEAR*/ );
+    return new ReprojectedImage ( image, bbox, grid, interpolation );
 }
 
 
-Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, int& error ) {
+Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -164,8 +167,10 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
     // Rappel : les coordonnees de la bbox sont ici en pixels
     double ratio_x = ( bbox.xmax - bbox.xmin ) / width;
     double ratio_y = ( bbox.ymax - bbox.ymin ) / height;
-
-    const Kernel& kk = Kernel::getInstance ( Kernel::LANCZOS_3 );
+    
+    //Maintain previous Lanczos behaviour : Lanczos_3 for resampling only
+    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_3;
+    const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_3
 
     bbox_int.xmin = floor ( bbox.xmin - kk.size ( ratio_x ) );
     bbox_int.xmax = ceil ( bbox.xmax + kk.size ( ratio_x ) );
@@ -177,7 +182,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
         LOGGER_DEBUG("Image invalid !");
         return 0;
     }
-    return new ResampledImage ( imageout, width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y );
+    return new ResampledImage ( imageout, width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
 }
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {

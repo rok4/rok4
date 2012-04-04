@@ -78,6 +78,7 @@
 #include "ResampledImage.h"
 #include "ExtendedCompoundImage.h"
 #include "MirrorImage.h"
+#include "Interpolation.h"
 #include "math.h"
 
 #ifndef __max
@@ -116,11 +117,11 @@ int h2i(char s)
 }
 
 /**
-* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
+* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
 * Lecture des parametres de la ligne de commande
 */
 
-int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::KernelType& interpolation, int& nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
     char strnodata[10];
     
@@ -139,10 +140,10 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Kernel::Ker
                 break;
             case 'i': // interpolation
                 if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
-                if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Kernel::LANCZOS_3; // =4
-                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Kernel::NEAREST_NEIGHBOUR; // =0
-                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Kernel::CUBIC; // =2
-                else if(strncmp(argv[i], "linear",6) == 0) interpolation = Kernel::LINEAR; // =2
+                if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
+                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
+                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Interpolation::CUBIC; // =2
+                else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
                 else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
                 break;
             case 'n': // nodata
@@ -568,13 +569,13 @@ uint addMirrors(ExtendedCompoundImage* pECI)
 
 
 /**
-* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 * @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Kernel::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
     const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -583,8 +584,10 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
     // L'image reechantillonnee est limitee a l'image de sortie
-    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin()), xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax()),
-           ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin()), ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
+    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin());
+    double xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax());
+    double ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin());
+    double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
     if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
@@ -593,15 +596,21 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
         return NULL;    
     }
     
+    double ymaxdst_save = ymax_dst;
+    
     // Coordonnees de l'image reechantillonnee en pixels
     xmin_dst/=resx_dst;
     xmin_dst=floor(xmin_dst+0.1);
+    
     ymin_dst/=resy_dst;
-        ymin_dst=floor(ymin_dst+0.1);
+    ymin_dst=floor(ymin_dst+0.1);
+        
     xmax_dst/=resx_dst;
-        xmax_dst=ceil(xmax_dst-0.1);
+    xmax_dst=ceil(xmax_dst-0.1);
+        
     ymax_dst/=resy_dst;
-        ymax_dst=ceil(ymax_dst-0.1);
+    ymax_dst=ceil(ymax_dst-0.1);
+    
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
     int height_dst = int(ymax_dst-ymin_dst+0.1);
@@ -609,6 +618,30 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     xmax_dst*=resx_dst;
     ymin_dst*=resy_dst;
     ymax_dst*=resy_dst;
+    
+    /* Suite au arrondis, il se peut que l'image de destination finisse par dépasser les images source.
+     * Cela va logiquement générer une erreur (impossible de trouver de la donnée source.
+     * Pour éviter cela, et uniquement dans le cas où on déborde, on va rétrécir l'image de destination.
+     * On ne peut pas arrondir systématiquement vers une réduction de l'image car cela pourrait engendrer
+     * de lignes noires dans les images résultantes.
+     * Cela dit, l'ajout des mirroirs suffirait à éviter ce manque de données.
+     */
+    if (ymax_dst > ymax_src) {
+        ymax_dst -= resy_dst;
+        height_dst -= 1;
+    }    
+    if (ymin_dst < ymin_src) {
+        ymin_dst += resy_dst;
+        height_dst -= 1;
+    }    
+    if (xmax_dst > xmax_src) {
+        xmax_dst -= resx_dst;
+        width_dst -= 1;
+    }    
+    if (xmin_dst < xmin_src) {
+        xmin_dst += resx_dst;
+        width_dst -= 1;
+    } 
 
     double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
@@ -620,11 +653,12 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
     // Reechantillonage du masque
     resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    
     return pRImage;
 }
 
 /**
-* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, char* nodata, uint16_t sampleformat)
+* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, char* nodata, uint16_t sampleformat)
 * @brief Fusion des images
 * @param pImageOut : image de sortie
 * @param TabImageIn : tableau de vecteur d images superposables
@@ -633,7 +667,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Kernel::KernelType& interpolation, int nodata, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int nodata, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
@@ -663,11 +697,10 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            
             uint mirrors=addMirrors(pECI);
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
-
+            
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
             //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
@@ -677,8 +710,8 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
             ResampledImage* pResampledMask;
+            
             ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
-
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
@@ -712,7 +745,7 @@ int main(int argc, char **argv) {
     int nodata;
     uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
     int type=-1;
-    Kernel::KernelType interpolation;
+    Interpolation::KernelType interpolation;
 
     LibtiffImage* pImageOut ;
     std::vector<Image*> ImageIn;

@@ -38,7 +38,7 @@
 #ifndef FORMAT_H
 #define FORMAT_H
 #include <string>
-#include <string.h>
+
 
 //To declare a new format change the implementation too
 

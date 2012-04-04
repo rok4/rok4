@@ -203,7 +203,7 @@ sub computeInfo {
 
         push @Interpretation, lc $objBand->ColorInterpretation();
 
-        if (!defined $DataType) {
+        if (! defined $DataType) {
             $DataType = lc $objBand->DataType();
         } else {
             if (! (lc $objBand->DataType() eq $DataType)) {
@@ -246,13 +246,17 @@ sub computeInfo {
         $samplesperpixel = 4;
     }
 
-    if ($Band == 1 && $Interpretation[0] eq "grayindex") {
-        $photometric     = "gray";
-        $samplesperpixel = 1;
+    if ($Band == 1) {
+        if ($Interpretation[0] eq "grayindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+        }
+        if ($Interpretation[0] eq "paletteindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+            $bitspersample = 1;
+        }
     }
-
-    DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
-    $bitspersample, $photometric, $sampleformat, $samplesperpixel);
 
     my $refgeo = $dataset->GetGeoTransform();
     if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
@@ -288,6 +292,9 @@ sub computeInfo {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
         return ();
     }
+
+    DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
+    $bitspersample, $photometric, $sampleformat, $samplesperpixel);
     
     return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
     

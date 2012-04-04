@@ -93,6 +93,8 @@ class Logger {
 
 		inline static void setOutput(LogOutput output) {logOutput=output;}
 		inline static LogOutput& getOutput() {return logOutput;}
+		
+		static void stopLogger();
 };
 
 /**

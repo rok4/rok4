@@ -99,11 +99,12 @@ sub new {
     datasource => undef, # object DataSource !
     job_number => undef, # param value !
     # out
-    levels => {}, # level1 => { x1_y2 => [[objimage1],w1], x2_y2 => [[objimage2],w2], x3_y2 => [[objimage3],w3], ...}
-                  # level2 => { x1_y2 => [w,W], x2_y2 => [w',W'], ...}
+    levels => {}, # level1 => { x1_y2 => [[objimage1],w1,c1], x2_y2 => [[objimage2],w2,c2], x3_y2 => [[objimage3],w3,c3], ...}
+                  # level2 => { x1_y2 => [w,W,c], x2_y2 => [w',W',c'], ...}
                   # with objimage = Class ImageSource 
                   # with w = own node's weight  
                   # with W = accumulated weight (childs' weights sum)
+                  # with c = commands to generate this node (to write in a script)
     cutLevelId    => undef, # top level for the parallele processing
     bottomLevelId => undef, # first level under the source images resolution
     topLevelId    => undef, # top level of the pyramid (ie of its tileMatrixSet)
@@ -282,7 +283,7 @@ sub _load {
 # method: computeBBox
 #  Renvoie la bbox de l'imageSource en parametre dans le SRS de la pyramide.
 #------------------------------------------------------------------------------
-sub computeBBox(){
+sub computeBBox {
   my $self = shift;
   my $img = shift;
   my $ct = shift;
@@ -391,129 +392,8 @@ sub imgGroundSizeOfLevel(){
 }
 
 ####################################################################################################
-#                                    TREE WEIGHTER METHODS                                         #
+#                                         CUT LEVEL METHOD                                         #
 ####################################################################################################
-
-# method: weightBranch
-#  Parcourt l'arbre et détermine le poids de chaque noeud en fonction des commandes à réaliser
-#-------------------------------------------------------------------------------
-sub weightBranch {
-    my $self = shift;
-    my $node = shift;
-
-    TRACE;
-
-    my @childList = $self->getChilds($node);
-    if (scalar @childList == 0){
-        $self->weightBottomNode($node);
-        return TRUE;
-    }
-
-    my $accumulatedWeight = 0;
-
-    foreach my $n (@childList){
-        if (! $self->weightBranch($n)) {
-            return FALSE;
-        }
-        $accumulatedWeight += $self->getAccumulatedWeightOfNode($n);
-    }
-
-    if (! $self->weightAboveNode($node)) {
-        return FALSE
-    }
-
-    $self->setAccumulatedWeightOfNode($node,$accumulatedWeight);
-
-    return TRUE;
-
-}
-
-
-# method: weightBottomNode 
-#  Détermine le poids de chaque noeud du bas de l'arbre en fonction des commandes à réaliser :
-#       - mergeNtiff
-#       - wget
-#---------------------------------------------------------------------------------------------------
-sub weightBottomNode {
-    my $self = shift;
-    my $node = shift;
-
-    TRACE;
-
-    my $res  = "\n";
-
-    my $bgImgPath=undef;
-
-    if ((defined ($self->{datasource}) && 
-            $self->{datasource}->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
-    ||
-        (! $self->{pyramid}->isNewPyramid() &&
-            ($self->{pyramid}->getFormat()->getCompression() eq 'jpg'))
-    ) {
-
-        $self->updateWeightOfNode($node,WGET_W);
-
-    } else {
-        my $newImgDesc = $self->getImgDescOfNode($node);
-        if ( -f $newImgDesc->getFilePath() ){
-            if ($self->{pyramid}->getFormat()->getCompression() eq 'png') {
-                $self->updateWeightOfNode($node,CACHE2WORK_PNG_W);
-            } else {
-                $self->updateWeightOfNode($node,TIFFCP_W);
-            }
-        }
-
-        $self->updateWeightOfNode($node,MERGENTIFF_W);
-    }
-
-    $self->updateWeightOfNode($node,TIFF2TILE_W);
-
-    return TRUE;
-}
-
-# method: weightAboveNode
-#  Détermine le poids de chaque noeud ayant des fils en fonction des commandes à réaliser :
-#       - merge4tiff
-#       - wget
-#---------------------------------------------------------------------------------------------------
-sub weightAboveNode {
-    my $self = shift;
-    my $node = shift;
-
-    TRACE;
-
-    my $newImgDesc = $self->getImgDescOfNode($node);
-    my @childList = $self->getChilds($node);
-
-    if (scalar @childList != 4){
-
-        my $tm = $self->getTileMatrix($node->{level});
-        if (! defined $tm) {
-            ERROR(sprintf "Cannot load the Tile Matrix for the level %s",$node->{level});
-            return FALSE;
-        }
-
-        my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilePerWidth();
-        my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilePerHeight();
-
-        if (-f $newImgDesc->getFilePath()) {
-
-            if ($self->{pyramid}->getFormat()->getCompression() eq 'jpg' ||
-                $self->{pyramid}->getFormat()->getCompression() eq 'png') {
-                if (! $tooWide && ! $tooHigh) {
-                    $self->updateWeightOfNode($node,WGET_W);
-                }
-            } else {
-                $self->updateWeightOfNode($node,TIFFCP_W);
-            }
-        }
-    }
-
-    $self->updateWeightOfNode($node,MERGE4TIFF_W);
-    $self->updateWeightOfNode($node,TIFF2TILE_W);
-
-    return TRUE;
-}
 
 
 # method: shareNodesOnJobs
@@ -579,7 +459,8 @@ sub shareNodesOnJobs {
     if (! defined $cutLevelId) {
         # Nous sommes dans le cas où même le niveau du bas contient moins de noeuds qu'il y a de jobs.
         # Dans ce cas, on définit le cutLevel comme le niveau du bas.
-        INFO("The number of nodes in the bottomLevel is smaller than the number of jobs. Some one will be empty");
+        INFO(sprintf "The number of nodes in the bottomLevel (%s) is smaller than the number of jobs (%s). Some one will be empty",
+                scalar $self->getNodesOfLevel($self->{bottomLevelId}),$self->{job_number});
         $cutLevelId = $self->{bottomLevelId};
         my @levelNodeList = $self->getNodesOfLevel($cutLevelId);
         for (my $i = 0; $i < scalar @levelNodeList; $i++) {
@@ -656,7 +537,8 @@ sub sumArray {
     return $sum;
 }
 
-# method: oldSharing #TEST#
+# method: oldSharing
+#  fonction de test renvoyant l'ancienne distribution du travail sur les jobs
 #-------------------------------------------------------------------------------
 sub oldSharing {
     my $self = shift;
@@ -675,7 +557,9 @@ sub oldSharing {
     print "Ancienne répartition : @nodeRackWeight\n"; 
 }
 
-# method: statArray #TEST#
+# method: statArray
+#  fonction de test renvoyant des statistiques sur le tableau donné : moyenne
+#  et écart type.
 #-------------------------------------------------------------------------------
 sub statArray {
     my $self = shift;
@@ -880,6 +764,33 @@ sub getTileMatrix {
   return $self->{tmList}[$self->{levelIdx}->{$level}];
 }
 
+# method: setComputingCode
+#  Ajoute au noeud le code script pour le générer
+#------------------------------------------------------------------------------
+sub setComputingCode(){
+    my $self = shift;
+    my $node = shift;
+    my $code = shift;
+
+    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
+
+    $self->{levels}{$node->{level}}{$keyidx}[2] = $code;
+
+}
+
+# method: getComputingCode
+#  Revnvoie le code script du noeud
+#------------------------------------------------------------------------------
+sub getComputingCode(){
+    my $self = shift;
+    my $node = shift;
+
+    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
+
+    return $self->{levels}{$node->{level}}{$keyidx}[2];
+
+}
+
 # method: getAccumulatedWeightOfNode
 #  renvoie le poids cumulé du noeud
 #------------------------------------------------------------------------------
@@ -940,9 +851,9 @@ sub exportTree {
   my $file = shift; # filepath !
   
   # sur le bottomlevel, on a :
-  # { level1 => { x1_y2 => [[objimage1, objimage2, ...],w1],
-  #               x2_y2 => [[objimage2],w1],
-  #               x3_y2 => [[objimage3],w1], ...} }
+  # { level1 => { x1_y2 => [[objimage1, objimage2, ...],w1,c1],
+  #               x2_y2 => [[objimage2],w2,c2],
+  #               x3_y2 => [[objimage3],w3,c3], ...} }
   
   # on exporte dans un fichier la liste des indexes par images sources en projection :
   #  imagesource

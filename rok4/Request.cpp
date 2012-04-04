@@ -234,6 +234,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     std::string layers;
     std::string styles;
     std::string bbox;
+    std::stringstream format_options;
 
     parameters.insert ( std::pair<std::string, std::string> ( "service", "wms" ) );
     parameters.insert ( std::pair<std::string, std::string> ( "request", "getmap" ) );
@@ -393,11 +394,26 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
             if ( pElemOut->ValueStr().find ( "BGcolor" ) !=std::string::npos && pElemOut->GetText() ) {
 
                 parameters.insert ( std::pair<std::string, std::string> ( "bgcolor", pElemOut->GetText() ) );
+                pElemOut =  pElemOut->NextSiblingElement();
             }
+        }
+        while ( pElemOut ) {
+            if ( pElemOut->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElemOut->Attribute("name") && pElemOut->GetText() ) {
+                if (format_options.str().size()>0) {
+                    format_options << ";";
+                }
+                format_options <<  pElemOut->Attribute("name") << ":"<< pElemOut->GetText();
+
+            }
+            pElemOut =  pElemOut->NextSiblingElement();
         }
 
     }
 
+    // Handle output format options
+    if (format_options.str().size() > 0) {
+        parameters.insert ( std::pair<std::string, std::string> ( "format_options", format_options.str())  );
+    }
 
     //OPTIONAL
 
@@ -699,7 +715,9 @@ void stringSplit ( std::string str, std::string delim, std::vector<std::string> 
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style ) {
+DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer,
+                                   BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
+                                   Style*& style, std::map< std::string, std::string >& format_option ) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
@@ -740,14 +758,24 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     std::string str_crs=getParam ( "crs" );
     if ( str_crs == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,"Parametre CRS absent.","wms" ) );
-    // Existence du CRS dans la liste de CRS du layer
+    // Existence du CRS dans la liste de CRS du layer TODO Implement GlobalCRS
     crs.setRequestCode ( str_crs );
+    bool crsNotFound = true;
     unsigned int k;
-    for ( k=0;k<layer->getWMSCRSList().size();k++ )
-        if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) )
+    for ( k=0;k<servicesConf.getGlobalCRSList()->size();k++ )
+        if ( crs.cmpRequestCode ( servicesConf.getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+            crsNotFound = false;
             break;
+        }
+    if (crsNotFound) {
+        for ( k=0;k<layer->getWMSCRSList().size();k++ )
+            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) ) {
+                crsNotFound = false;
+                break;
+            }
+    }
     // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
-    if ( k==layer->getWMSCRSList().size() )
+    if ( crsNotFound )
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,"CRS "+str_crs+" (equivalent PROJ4 "+crs.getProj4Code() +" ) inconnu pour le layer "+str_layer+".","wms" ) );
 
     // FORMAT
@@ -847,5 +875,68 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     }
     if ( ! ( style ) )
         return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,"Le style "+styles+" n'est pas gere pour la couche "+str_layer,"wms" ) );
+
+    std::string formatOptionString= getParam("format_options").c_str();
+    char* formatOptionChar = new char[formatOptionString.size()+1];
+    memset(formatOptionChar,0,formatOptionString.size()+1);
+    memcpy(formatOptionChar,formatOptionString.c_str(),formatOptionString.size());
+
+    for ( int pos = 0; formatOptionChar[pos]; ) {
+        char* key = formatOptionChar + pos;
+        for ( ;formatOptionChar[pos] && formatOptionChar[pos] != ':' && formatOptionChar[pos] != ';'; pos++ ); // on trouve le premier "=", "&" ou 0
+        char* value = formatOptionChar + pos;
+        for ( ;formatOptionChar[pos] && formatOptionChar[pos] != ';'; pos++ ); // on trouve le suivant "&" ou 0
+        if ( *value == ':' ) *value++ = 0; // on met un 0 à la place du '=' entre key et value
+        if ( formatOptionChar[pos] ) formatOptionChar[pos++] = 0; // on met un 0 à la fin du char* value
+
+        toLowerCase ( key );
+        toLowerCase ( value );
+        format_option.insert ( std::pair<std::string, std::string> ( key, value ) );
+    }
+    delete[] formatOptionChar;
+    formatOptionChar=NULL;
     return NULL;
 }
+
+
+/**
+ * @brief Recuperation et verification des parametres d'une requete GetCapabilities
+ * @return message d'erreur en cas d'erreur (NULL sinon)
+ */
+
+DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& version)
+{
+    if (service.compare("wms")!=0 ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
+    }
+
+    version=getParam ( "version" );
+    if ( version=="" ) {
+        version = "1.3.0";
+        return NULL;
+    }
+    if ( version!="1.3.0" )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.3.0 disponible seulement))","wms" ));
+    return NULL;
+}
+
+/**
+ * @brief Recuperation et verification des parametres d'une requete GetCapabilities
+ * @return message d'erreur en cas d'erreur (NULL sinon)
+ */
+
+DataStream* Request::getCapWMTSParam(ServicesConf& servicesConf, std::string& version)
+{
+    if (service.compare("wmts")!=0 ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+service+" est inconnu pour ce serveur.","wmts" ) );
+    }
+    version=getParam ( "version" );
+    if ( version=="" ) {
+        version=servicesConf.getServiceTypeVersion();
+        return NULL;
+    }
+    if ( version.compare(servicesConf.getServiceTypeVersion())!=0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Valeur du parametre VERSION invalide (1.0.0 disponible seulement))","wmts" ) );
+    return NULL;
+}
+

@@ -39,8 +39,10 @@
 
 #include "Rok4Server.h"
 #include <iostream>
+#include <algorithm>
 
 #include "TiffEncoder.h"
+#include "TiffLZWEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
@@ -170,9 +172,45 @@ void Rok4Server::run() {
 }
 
 
+/**
+ * @vriedf test de la présence de paramName dans option
+ * @return true si présent
+ */
+bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return false;
+    }
+    return true;
+}
+
+
+/**
+ * @vriedf récupération du parametre paramName dans la requete
+ * @return la valeur du parametre si existant "" sinon
+ */
+std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return "";
+    }
+    return it->second;
+}
+
+
+
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
+
+    std::string version;
+    DataStream* errorResp = request->getCapWMSParam(servicesConf,version);
+    if ( errorResp ) {
+        LOGGER_ERROR ( "Probleme dans les parametres de la requete getCapabilities" );
+        return errorResp;
+    }
+
     /* concaténation des fragments invariant de capabilities en intercalant les
      * parties variables dépendantes de la requête */
+
     std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
     for ( int i=1; i < wmsCapaFrag.size()-1; i++ ) {
         capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
@@ -183,8 +221,16 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 }
 
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
+
+    std::string version;
+    DataStream* errorResp = request->getCapWMTSParam(servicesConf,version);
+    if ( errorResp ) {
+        LOGGER_ERROR ( "Probleme dans les parametres de la requete getCapabilities" );
+        return errorResp;
+    }
+
     /* concaténation des fragments invariant de capabilities en intercalant les
-     * parties variables dépendantes de la requête */
+      * parties variables dépendantes de la requête */
     std::string capa = "";
     for ( int i=0; i < wmtsCapaFrag.size()-1; i++ ) {
         capa = capa + wmtsCapaFrag[i] + request->scheme + request->hostName + request->path +"?";
@@ -207,9 +253,10 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     CRS crs;
     std::string format;
     Style* style=0;
+    std::map <std::string, std::string > format_option;
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format,style );
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format ,style, format_option );
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getMap" );
         return errorResp;
@@ -222,23 +269,26 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
     if ( image == 0 ) {
         switch (error) {
-            
-            case 1: {
-                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms" ) );
-            }
-            case 2: {
-                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox trop grande","wms" ) );
-            }
-            default : {
-                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms" ) );
-            }
+
+        case 1: {
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms" ) );
+        }
+        case 2: {
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox trop grande","wms" ) );
+        }
+        default : {
+            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms" ) );
+        }
         }
     }
-
     if ( format=="image/png" )
         return new PNGEncoder ( image,style->getPalette() );
-    else if ( format == "image/tiff" )
+    else if ( format == "image/tiff" ) { // Handle compression option
+        if ( getParam(format_option,"compression").compare("lzw")==0) {
+            return new TiffLZWEncoder( image );
+        }
         return new TiffEncoder ( image );
+    }
     else if ( format == "image/jpeg" )
         return new JPEGEncoder ( image );
     else if ( format == "image/x-bil;bits=32" )

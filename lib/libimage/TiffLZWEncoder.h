@@ -35,51 +35,30 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "Interpolation.h"
-#include <string.h>
+#ifndef _TIFFLZWENCODER_
+#define _TIFFLZWENCODER_
 
-namespace Interpolation {
-    
-const char *einterpolation_name[] = {
-    "UNKNOWN",
-    "nn",
-    "linear",
-    "bicubic",
-    "lanczos_2",
-    "lanczos_3",
-    "lanczos_4"
+#include "Data.h"
+#include "Image.h"
+
+class TiffLZWEncoder : public DataStream {
+	Image *image;
+  	int line;	// Ligne courante
+  	size_t rawBufferSize;
+  	uint8_t* rawBuffer;
+        size_t lzwBufferSize;
+        size_t lzwBufferPos;
+        uint8_t* lzwBuffer;
+
+  	public:
+  	TiffLZWEncoder(Image *image);
+  	~TiffLZWEncoder();
+  	size_t read(uint8_t *buffer, size_t size);
+	bool eof();
+	std::string getType() {return "image/tiff";}
+	int getHttpStatus() {return 200;}	
 };
 
-const int einterpolation_size = 6;
+#endif
 
 
-Interpolation::KernelType fromString(std::string strInterpolation)
-{
-    int i;
-    //handle be4 element : lanczos to lanczos_2
-    if (strInterpolation.compare("lanczos")==0){
-        strInterpolation.append("_2");
-    }
-    
-    for (i=einterpolation_size; i ; --i) {
-        if (strInterpolation.compare(einterpolation_name[i])==0)
-            break;
-    }
-    
-    return static_cast<Interpolation::KernelType>(i);
-}
-
-std::string toString(Interpolation::KernelType KT)
-{
-    return std::string(einterpolation_name[KT]);
-}
-
-std::string toBe4String(Interpolation::KernelType KT)
-{
-    if (KT >= Interpolation::LANCZOS_2) {
-        return std::string("lanczos");
-    }
-    return std::string(einterpolation_name[KT]);
-}
-
-}

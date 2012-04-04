@@ -98,13 +98,13 @@ protected:
 
   string name(int kernel_type) {
     switch(kernel_type) {
-      case Kernel::UNKNOWN: return "(Default) Lanczos 3";
-      case Kernel::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
-      case Kernel::LINEAR: return "Linear";
-      case Kernel::CUBIC: return "Cubic";
-      case Kernel::LANCZOS_2: return "Lanczos 2";
-      case Kernel::LANCZOS_3: return "Lanczos 3";
-      case Kernel::LANCZOS_4: return "Lanczos 4";
+      case Interpolation::UNKNOWN: return "(Default) Lanczos 3";
+      case Interpolation::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
+      case Interpolation::LINEAR: return "Linear";
+      case Interpolation::CUBIC: return "Cubic";
+      case Interpolation::LANCZOS_2: return "Lanczos 2";
+      case Interpolation::LANCZOS_3: return "Lanczos 3";
+      case Interpolation::LANCZOS_4: return "Lanczos 4";
     }
   }
 
@@ -130,7 +130,7 @@ protected:
 */
       image->setbbox( BoundingBox<double>(grid->bbox.xmin - 100, grid->bbox.ymin - 100, grid->bbox.xmax + 100, grid->bbox.ymax + 100));
             
-      ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Kernel::KernelType(kernel_type));
+      ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Interpolation::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
       delete R;
     }
