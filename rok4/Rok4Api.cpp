@@ -143,7 +143,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf->isInspire() ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf) ) {
         LOGGER_FATAL ( "Impossible de charger la conf des Layers/pyramides" );
         LOGGER_FATAL ( "Extinction du serveur ROK4" );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
