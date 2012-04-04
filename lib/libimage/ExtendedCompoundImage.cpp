@@ -50,7 +50,7 @@
 @fn _getline(T* buffer, int line)
 @brief Remplissage iteratif d'une ligne
 Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
-@param le numero de la ligne
+@param line le numero de la ligne
 @return le nombre d'octets de la ligne
 */
 

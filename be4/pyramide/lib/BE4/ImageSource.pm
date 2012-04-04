@@ -160,29 +160,29 @@ sub computeImageSource {
 
     my $search = $self->getListImages($self->{PATHIMG});
     if (! defined $search) {
-        ERROR ("Can not load data source !");
+        ERROR ("Can not load images !");
         return FALSE;
     }
 
-    my @listSourcePath = @{$search->{images}};
-    if (! @listSourcePath) {
-        ERROR ("Can not load data source !");
+    my @lstGeoImages = @{$search->{images}};
+    if (! @lstGeoImages) {
+        ERROR ("Can not load data images !");
         return FALSE;
     }
 
     my $pixel = undef;
 
-    foreach my $filepath (@listSourcePath) {
+    foreach my $filepath (@lstGeoImages) {
 
-        my $objImageSource = BE4::ImageSource->new($filepath);
+        my $objGeoImage = BE4::GeoImage->new($filepath);
 
-        if (! defined $objImageSource) {
+        if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
             return FALSE;
         }
 
         # images reading and analysis
-        my @imageInfo = $objImageSource->computeInfo();
+        my @imageInfo = $objGeoImage->computeInfo();
         #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
         if (! @imageInfo) {
             ERROR ("Can not read image info ('$filepath') !");
@@ -190,6 +190,11 @@ sub computeImageSource {
         }
 
         if (! defined $pixel) {
+            if ($imageInfo[0] == 1) {
+                WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
+                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 3
+                $imageInfo[0] = 8;
+            }
             # we have read the first image, components are empty. This first image will be the reference.
             $pixel = BE4::Pixel->new({
                 bitspersample => $imageInfo[0],
@@ -202,6 +207,10 @@ sub computeImageSource {
                 return FALSE;
             }
         } else {
+            if ($imageInfo[0] == 1) {
+                # bitspersample in the Pixel object is 3. we change artificially current value for 3
+                $imageInfo[0] = 8;
+            }
             # we have already values. We must have the same components for all images
             if (! ($pixel->{bitspersample} eq $imageInfo[0] && $pixel->{photometric} eq $imageInfo[1] &&
                     $pixel->{sampleformat} eq $imageInfo[2] && $pixel->{samplesperpixel} eq $imageInfo[3])) {
@@ -210,7 +219,7 @@ sub computeImageSource {
             }
         }
 
-        if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
+        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax == 0){
             $badRefCtrl++;
         }
         if ($badRefCtrl>1){
@@ -221,16 +230,16 @@ sub computeImageSource {
         # FIXME :
         #  - resolution resx == resy ?
         #  - unique resolution for all image !
-        my $xRes = $objImageSource->getXres();
+        my $xRes = $objGeoImage->getXres();
         $resDict{$xRes} = 1;
         $self->{resolution} = $xRes;
         #
-        push @$lstImagesSources, $objImageSource;
+        push @$lstImagesSources, $objGeoImage;
     }
 
     $self->{pixel} = $pixel;
 
-    if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
+    if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
         ERROR ("Can not found image source in '$self->{PATHIMG}' !");
         return FALSE;
     }
@@ -260,24 +269,24 @@ sub exportImageSource {
   
   TRACE;
 
-  my $lstImagesSources = $self->{images};
+  my $lstGeoImages = $self->{images};
   
   if (! open (FILE, ">", $file)) {
     ERROR ("Can not create file ('$file') !");
     return FALSE;
   }
   
-  foreach my $objImage (@$lstImagesSources) {
+  foreach my $objGeoImage (@$lstGeoImages) {
     # image xmin ymax xmax ymin resx resy
     printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
             # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
-            $objImage->{filename},
-            $objImage->{xmin},
-            $objImage->{ymax},
-            $objImage->{xmax},
-            $objImage->{ymin},
-            $objImage->{xres},
-            $objImage->{yres};
+            $objGeoImage->{filename},
+            $objGeoImage->{xmin},
+            $objGeoImage->{ymax},
+            $objGeoImage->{xmax},
+            $objGeoImage->{ymin},
+            $objGeoImage->{xres},
+            $objGeoImage->{yres};
   }
   
   close FILE;

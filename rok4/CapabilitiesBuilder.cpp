@@ -280,9 +280,10 @@ void Rok4Server::buildWMSCapabilities() {
         parentLayerEl->LinkEndChild ( buildTextNode ( "Title", "cache IGN" ) );
         // Abstract
         parentLayerEl->LinkEndChild ( buildTextNode ( "Abstract", "Cache IGN" ) );
-        // CRS
-        parentLayerEl->LinkEndChild ( buildTextNode ( "CRS", "CRS:84" ) );
-
+        // Global CRS 
+        for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
+            parentLayerEl->LinkEndChild ( buildTextNode ( "CRS", servicesConf.getGlobalCRSList()->at(i).getRequestCode() ) );
+        }
         // Child layers
         std::map<std::string, Layer*>::iterator it;
         for ( it=layerList.begin();it!=layerList.end();it++ ) {

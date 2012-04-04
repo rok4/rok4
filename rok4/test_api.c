@@ -141,11 +141,7 @@ void* processThread ( void* arg ) {
         c++;
         HttpRequest* request=rok4InitRequest ( query,host, script, "" );
 
-        if ( strcmp ( request->service,"wmts" ) !=0 ) {
-            fprintf ( stdout,"\tService %s non gere\n",request->service );
-            rok4DeleteRequest ( request );
-            continue;
-        }
+        
 
         // GetCapabilities
         if ( strcmp ( request->operationType,"getcapabilities" ) ==0 ) {
@@ -159,6 +155,8 @@ void* processThread ( void* arg ) {
             fclose ( C );
             rok4DeleteResponse ( capabilities );
         }
+        
+        
         // GetTile
         else if ( strcmp ( request->operationType,"gettile" ) ==0 ) {
             // TileReferences
@@ -194,6 +192,7 @@ void* processThread ( void* arg ) {
                 rok4FlushTileRef ( &tileRef );
             }
             free ( error );
+            
 
             // Tile
             HttpResponse* tile=rok4GetTile ( query, "localhost", "/target/bin/rok4","", server );

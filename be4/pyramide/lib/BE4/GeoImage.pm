@@ -246,9 +246,16 @@ sub computeInfo {
         $samplesperpixel = 4;
     }
 
-    if ($Band == 1 && $Interpretation[0] eq "grayindex") {
-        $photometric     = "gray";
-        $samplesperpixel = 1;
+    if ($Band == 1) {
+        if ($Interpretation[0] eq "grayindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+        }
+        if ($Interpretation[0] eq "paletteindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+            $bitspersample = 1;
+        }
     }
 
     DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",

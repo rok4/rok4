@@ -102,7 +102,6 @@ Image(width, height, image->channels, bbox), image(image) , left(lefttmp), top(t
 
 float* ResampledImage::resample_src_line(int line) {
     if(resampled_line_index[line % (Ky+4)] == line) return resampled_line[line % (Ky+4)];
-
     for(int i = 0; i < 4; i++)
         if(4*(line/4) + i < image->height)
             image->getline(src_line_buffer[i], 4*(line/4) + i);
@@ -128,6 +127,7 @@ float* ResampledImage::resample_src_line(int line) {
 int ResampledImage::getline(float* buffer, int line) {
     float weights[Ky];
     int nb_weights = Ky;
+    
     int ymin = K.weight(weights, nb_weights, top + line * ratio_y, ratio_y); // On calcule les coefficient d'interpolation
     mult(buffer, resample_src_line(ymin), weights[0], width*channels);
     for(int y = 1; y < nb_weights; y++) {

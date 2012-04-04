@@ -745,7 +745,7 @@ Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, 
 }
 
 //TODO avoid opening a pyramid file directly
-Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire ) {
+Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf ) {
     LOGGER_INFO ( "     Ajout du layer " << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -756,6 +756,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     fileNameChar=NULL;
     parentDirChar=NULL;
     LOGGER_INFO ( "           BaseDir Relative to : " << parentDir );
+
+    bool inspire = servicesConf->isInspire();
 
     std::string id;
     std::string title="";
@@ -967,9 +969,21 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             if ( !crs->isProj4Compatible() ) {
                 LOGGER_WARN ( "Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" );
                 delete crs;
+                crs = NULL;
             } else {
-                LOGGER_INFO ( "         Ajout du crs "<<str_crs );
-                WMSCRSList.push_back ( crs );
+                //Test if already define in Global CRS
+
+                for (unsigned int k=0;k<servicesConf->getGlobalCRSList()->size();k++ )
+                    if ( crs->cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+                        delete crs;
+                        crs = NULL;
+                        LOGGER_INFO ( "         CRS "<<str_crs << " already present in global CRS list" );
+                        break;
+                    }
+                if (crs) {
+                    LOGGER_INFO ( "         Adding CRS "<<str_crs );
+                    WMSCRSList.push_back ( crs );
+                }
             }
         }
     }
@@ -1006,7 +1020,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     } else {
         resamplingStr = pElem->GetText();
     }
-    
+
     resampling = Interpolation::fromString(resamplingStr);
 
     pElem=hRoot.FirstChild ( "pyramid" ).Element();
@@ -1071,13 +1085,13 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     return layer;
 }//buildLayer
 
-Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,bool inspire ) {
+Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( "Ne peut pas charger le fichier " << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,inspire );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
 bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv ) {
@@ -1280,6 +1294,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string electronicMailAddress="";
     //WMS
     std::vector<std::string> formatList;
+    std::vector<CRS> globalCRSList;
     //WMTS
     std::string serviceType="";
     std::string serviceTypeVersion="";
@@ -1391,7 +1406,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         LOGGER_ERROR ( servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]" );
         return false;
     }
-    
+
     pElem = hRoot.FirstChild ( "maxTileX" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileX=MAX_TILE_X;
@@ -1399,7 +1414,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         LOGGER_ERROR ( servicesConfigFile << "Le maxTileX est inexploitable:[" << pElem->GetText() << "]" );
         return NULL;
     }
-    
+
     pElem = hRoot.FirstChild ( "maxTileY" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileY=MAX_TILE_Y;
@@ -1407,7 +1422,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         LOGGER_ERROR ( servicesConfigFile << "Le maxTileY est inexploitable:[" << pElem->GetText() << "]" );
         return NULL;
     }
-    
+
     for ( pElem=hRoot.FirstChild ( "formatList" ).FirstChild ( "format" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "format" ) ) {
         if ( ! ( pElem->GetText() ) )
             continue;
@@ -1420,6 +1435,19 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             LOGGER_ERROR ( servicesConfigFile << "le format d'image [" << format << "] n'est pas un type MIME" );
         } else {
             formatList.push_back ( format );
+        }
+    }
+
+    //Global CRS List
+    for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
+        if ( ! ( pElem->GetText() ) )
+            continue;
+        std::string crsStr ( pElem->GetText() );
+        CRS crs(crsStr);
+        if ( !crs.isProj4Compatible() ) {
+            LOGGER_ERROR ( servicesConfigFile << "The CRS [" << crsStr << "] is not present in Proj4" );
+        } else {
+            globalCRSList.push_back ( crs );
         }
     }
 
@@ -1447,7 +1475,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
                 return false;
-            }else {
+            } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
         }
@@ -1457,12 +1485,12 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
                 return false;
-            }else {
+            } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
         }
     }
-    
+
     pElem=hRoot.FirstChild ( "metadataWMTS" ).Element();
     if ( pElem ) {
         pElem = pElem->FirstChildElement("url");
@@ -1473,7 +1501,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
                 return false;
-            }else {
+            } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
         }
@@ -1483,7 +1511,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
                 return false;
-            }else {
+            } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
         }
@@ -1494,7 +1522,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     MetadataURL mtdWMTS = MetadataURL("simple",metadataUrlWMTS,metadataMediaTypeWMTS);
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, maxWidth, maxHeight, maxTileX, maxTileY, formatList, serviceType, serviceTypeVersion,
+                                      accessConstraint, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, postMode, inspire );
@@ -1614,7 +1642,7 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
     return true;
 }
 
-bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, bool inspire ) {
+bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf ) {
     LOGGER_INFO ( "CHARGEMENT DES LAYERS" );
     // lister les fichier du répertoire layerDir
     std::vector<std::string> layerFiles;
@@ -1642,7 +1670,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // générer les Layers décrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, inspire );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {

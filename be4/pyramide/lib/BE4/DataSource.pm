@@ -42,6 +42,8 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
+use Data::Dumper;
+
 # My module
 use BE4::ImageSource;
 use BE4::HarvestSource;
@@ -150,12 +152,27 @@ sub _load {
 
     TRACE;
 
-    my $sourcesProperties = BE4::PropertiesLoader->new($self->{FILEPATH_DATACONF});
-    ALWAYS(sprintf "sourcesProperties : %s",Dumper($sourcesProperties->getAllProperties())); #TEST#
+    my $propLoader = BE4::PropertiesLoader->new($self->{FILEPATH_DATACONF});
 
-    foreach my $level (keys $sourcesProperties->getAllProperties()) {
+    if (! defined $propLoader) {
+        ERROR("Can not load sources' properties !");
+        return FALSE;
+    }
+
+    my $sourcesProperties = $propLoader->getAllProperties();
+
+    if (! defined $sourcesProperties) {
+        ERROR("All parameters properties of sources are empty !");
+        return FALSE;
+    }
+
+    my @sources = ();
+
+    foreach my $level (keys %{$sourcesProperties}) {
         if ($self->{type} eq "harvest") {
-            ALWAYS(sprintf "harvestSource pour le niveau %s : %s",$level,Dumper($sourcesProperties{$level})); #TEST#
+            my $harvestSource = BE4::HarvestSource->new(%{$sourcesProperties}->{$level}));
+            push @sources, 
+            ALWAYS(sprintf "harvestSource pour le niveau %s : %s",$level,Dumper(%{$sourcesProperties}->{$level})); #TEST#
         }
         elsif ($self->{type} eq "image") {
 

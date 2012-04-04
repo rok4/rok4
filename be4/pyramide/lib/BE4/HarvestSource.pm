@@ -98,7 +98,8 @@ sub new {
 # privates init.
 sub _init {
     my $self   = shift;
-    my $params = shift;
+    my $baseLevel = shift;
+    my $harvestParams = shift;
 
     TRACE;
     
@@ -107,7 +108,7 @@ sub _init {
     ALWAYS(sprintf "harvestSource parameters : %s",Dumper($params)); #TEST#
 
     # parameters mandatoy !
-    if (! exists($params->{baseLevel})     || ! defined ($params->{baseLevel})) {
+    if (! defined $baseLevel) {
         ERROR("key/value required to 'baseLevel' !");
         return FALSE ;
     }
