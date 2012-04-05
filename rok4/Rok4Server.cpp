@@ -68,23 +68,19 @@
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
-    int counter=0;
     if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
         LOGGER_FATAL ( "Le listener FCGI ne peut etre initialise" );
     }
 
     while ( server->isRunning() ) {
-        LOGGER_DEBUG ("Counter " << counter++ );
         std::string content;
         bool postRequest;
 
         int rc;
-        LOGGER_DEBUG ("Before Accept " );
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
             LOGGER_ERROR ( "FCGX_InitRequest renvoie le code d'erreur" << rc );
             break;
         }
-        LOGGER_DEBUG ("After Accept " );
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
         /*char **p;
         for (p = fcgxRequest.envp; *p; ++p) {
