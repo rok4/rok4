@@ -73,10 +73,9 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 
 Level::~Level()
 {
-    if (noDataSourceProxy )  {
-        noDataSourceProxy->releaseData();
-        delete noDataSourceProxy;
-    }
+
+    delete noDataSourceProxy;
+
 }
 
 void Level::setNoData(const std::string& file)

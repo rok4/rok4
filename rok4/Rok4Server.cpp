@@ -59,6 +59,7 @@
 #include "fcgiapp.h"
 #include <proj_api.h>
 #include <PaletteDataSource.h>
+#include <csignal>
 
 
 /**
@@ -67,21 +68,23 @@
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
-
-    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, 0 ) !=0 ) {
+    int counter=0;
+    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
         LOGGER_FATAL ( "Le listener FCGI ne peut etre initialise" );
     }
 
-    while ( true ) {
+    while ( server->isRunning() ) {
+        LOGGER_DEBUG ("Counter " << counter++ );
         std::string content;
         bool postRequest;
 
         int rc;
+        LOGGER_DEBUG ("Before Accept " );
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
             LOGGER_ERROR ( "FCGX_InitRequest renvoie le code d'erreur" << rc );
             break;
         }
-
+        LOGGER_DEBUG ("After Accept " );
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
         /*char **p;
         for (p = fcgxRequest.envp; *p; ++p) {
@@ -90,6 +93,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         Request* request;
 
+        
+        
         postRequest = ( server->servicesConf.isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
 
         if ( postRequest ) { // Post Request
@@ -100,12 +105,16 @@ void* Rok4Server::thread_loop ( void* arg ) {
             free ( contentBuffer );
             contentBuffer= NULL;
             LOGGER_DEBUG ( "Request Content :"<< std::endl << content );
-
+            
+            server->terminate();
+            
             request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
                                     content );
+            
+            
 
         } else { // Get Request
 
@@ -125,7 +134,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
     }
-
+    LOGGER_DEBUG("Extinction du thread");
     return 0;
 }
 
@@ -133,7 +142,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 * @brief Construction du serveur
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char *& projEnv) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ) {
+        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ), running(false) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );
     buildWMSCapabilities();
@@ -141,13 +150,15 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     buildWMTSCapabilities();
 }
 
-/*
- * Lancement des threads du serveur
- */
-void Rok4Server::run() {
+Rok4Server::~Rok4Server()
+{
+}
+
+void Rok4Server::initFCGI()
+{
     int init=FCGX_Init();
 
-// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+    // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
     // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
     // Utile
     //  * Pour faire du profiling (grof)
@@ -158,11 +169,19 @@ void Rok4Server::run() {
     // Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
     // Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
 
-    // sock = FCGX_OpenSocket(":1990", 50);
+    // sock = FCGX_OpenSocket(":9000", 0);
 
     // Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
     // Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
+}
 
+
+
+/*
+ * Lancement des threads du serveur
+ */
+void Rok4Server::run() {
+    running = true;
 
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
@@ -170,6 +189,18 @@ void Rok4Server::run() {
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
+
+void Rok4Server::terminate()
+{
+    running = false;
+    //FCGX_ShutdownPending();
+    // Terminate FCGI Thread
+    for ( int i = 0; i < threads.size(); i++ ){
+        pthread_kill(threads[i], SIGPIPE );
+    }
+    
+}
+
 
 
 /**

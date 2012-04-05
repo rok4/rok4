@@ -505,5 +505,6 @@ void rok4KillServer ( Rok4Server* server ) {
     free (server->getProjEnv());
     
     //Logger::stopLogger();
+    delete server;
 }
 
