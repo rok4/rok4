@@ -105,9 +105,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
             free ( contentBuffer );
             contentBuffer= NULL;
             LOGGER_DEBUG ( "Request Content :"<< std::endl << content );
-            
-            server->terminate();
-            
             request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
