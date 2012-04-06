@@ -345,12 +345,6 @@ sub _init {
         $params->{compressionoption} = 'none';
     }
     #
-    if (! exists($params->{pyr_level_bottom})) {
-        WARN ("Parameter 'pyr_level_bottom' has not been set. The default value is undef, then the min level will be calculated with source images resolution");
-        $params->{pyr_level_bottom} = undef;
-    }
-    $self->{pyr_level_bottom} = $params->{pyr_level_bottom};
-    #
     if (! exists($params->{pyr_level_top})) {
         WARN ("Parameter 'pyr_level_top' has not been set. The defaut value is the top of the TMS' !");
         $params->{pyr_level_top} = undef;
@@ -885,7 +879,7 @@ sub FindCacheNode {
 ####################################################################################################
 
 # method: calculateExtremLevels
-#  identify top and bottom level if they are not defined in parameters
+#  identify top and bottom level from parameters and data sources
 #---------------------------------------------------------------------------------------------------
 sub calculateExtremLevels {
     my $self = shift;
@@ -897,33 +891,6 @@ sub calculateExtremLevels {
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
-    }
-
-    # initialisation de la transfo de coord du srs des données initiales vers
-    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
-    my $ct = undef;  
-    if ($self->getTileMatrixSet()->getSRS() ne $self->getDataSource()->getSRS()){
-        my $srsini= new Geo::OSR::SpatialReference;
-        eval { $srsini->ImportFromProj4('+init='.$self->getDataSource()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsini->ImportFromProj4('+init='.lc($self->getDataSource()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$self->getDataSource()->getSRS());
-                return FALSE;
-            }
-        }
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$self->getTileMatrixSet()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($self->getTileMatrixSet()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$self->getTileMatrixSet()->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # Intitialisation du topLevel:
@@ -956,7 +923,7 @@ sub calculateExtremLevels {
     } else {
         my $projSrcRes = $self->computeSrcRes($ct);
         if ($projSrcRes < 0) {
-            ERROR("La resolution reprojetee est negative");
+            ERROR("Reprojected resolution is negative");
             return FALSE;
         }
 

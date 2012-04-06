@@ -81,8 +81,7 @@ sub new {
   my $self = {
     baseLevel => undef, # bottom level using this harvesting
     PATHIMG => undef, # path to images
-    PATHMTD => undef, # path to metadata
-    SRS     => undef, # 
+    PATHMTD => undef, # path to metadata, not implemented
     #
     images  => [],    # list of images sources
     #
@@ -97,6 +96,8 @@ sub new {
   
   # init. class
   return undef if (! $self->_init(@_));
+
+  return undef if (! $self->computeImageSource());
   
   return $self;
 }
@@ -106,19 +107,25 @@ sub new {
 sub _init {
 
     my $self   = shift;
-    my $params = shift;
+    my $baseLevel = shift;
+    my $imagesParams = shift;
 
     TRACE;
     
-    return FALSE if (! defined $params);
+    return FALSE if (! defined $imagesParams);
+
+    if (! defined $baseLevel) {
+        ERROR("key/value required to 'baseLevel' !");
+        return FALSE ;
+    }
+    $self->{baseLevel} = $baseLevel;
     
     # init. params    
-    $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
-    $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
-    $self->{SRS} = uc($params->{srs}) if (exists($params->{srs}));
+    $self->{PATHIMG} = $imagesParams->{path_image} if (exists($imagesParams->{path_image})); 
+    $self->{PATHMTD} = $imagesParams->{path_metadata} if (exists($imagesParams->{path_metadata}));
     
-    if (defined ($self->{PATHIMG}) && ! -d $self->{PATHIMG}) {
-        ERROR ("Directory image doesn't exist !");
+    if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
+        ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
         return FALSE;
     }
     
@@ -126,17 +133,6 @@ sub _init {
         ERROR ("Directory metadata doesn't exist !");
         return FALSE;
     }
-    
-    if (! defined ($self->{SRS})) {
-        ERROR ("SRS undefined !");
-        return FALSE;
-    }
-
-    if (! exists($params->{baseLevel})     || ! defined ($params->{baseLevel})) {
-        ERROR("key/value required to 'baseLevel' !");
-        return FALSE ;
-    }
-    $self->{baseLevel} = $params->{baseLevel};
 
     return TRUE;
 
@@ -148,31 +144,31 @@ sub _init {
 #   resolution of data, check components.
 
 sub computeImageSource {
-    my $self = shift;
+        my $self = shift;
 
     TRACE;
 
     my %resDict;
 
-    my $lstImagesSources = $self->{images}; # it's a ref !
+    my $lstGeoImages = $self->{images}; # it's a ref !
 
     my $badRefCtrl = 0;
 
     my $search = $self->getListImages($self->{PATHIMG});
     if (! defined $search) {
-        ERROR ("Can not load images !");
+        ERROR ("Can not load data source !");
         return FALSE;
     }
 
-    my @lstGeoImages = @{$search->{images}};
-    if (! @lstGeoImages) {
-        ERROR ("Can not load data images !");
+    my @listGeoImagePath = @{$search->{images}};
+    if (! @listGeoImagePath) {
+        ERROR ("Can not load data source !");
         return FALSE;
     }
 
     my $pixel = undef;
 
-    foreach my $filepath (@lstGeoImages) {
+    foreach my $filepath (@listGeoImagePath) {
 
         my $objGeoImage = BE4::GeoImage->new($filepath);
 
@@ -190,12 +186,12 @@ sub computeImageSource {
         }
 
         if (! defined $pixel) {
+            # we have read the first image, components are empty. This first image will be the reference.
             if ($imageInfo[0] == 1) {
                 WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
-                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 3
+                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 8
                 $imageInfo[0] = 8;
             }
-            # we have read the first image, components are empty. This first image will be the reference.
             $pixel = BE4::Pixel->new({
                 bitspersample => $imageInfo[0],
                 photometric => $imageInfo[1],
@@ -208,7 +204,7 @@ sub computeImageSource {
             }
         } else {
             if ($imageInfo[0] == 1) {
-                # bitspersample in the Pixel object is 3. we change artificially current value for 3
+                # bitspersample in the Pixel object is 3. we change artificially current value for 8
                 $imageInfo[0] = 8;
             }
             # we have already values. We must have the same components for all images
@@ -234,7 +230,7 @@ sub computeImageSource {
         $resDict{$xRes} = 1;
         $self->{resolution} = $xRes;
         #
-        push @$lstImagesSources, $objGeoImage;
+        push @$lstGeoImages, $objGeoImage;
     }
 
     $self->{pixel} = $pixel;
@@ -395,11 +391,7 @@ sub getImages {
   }
   return @images; 
 }
-sub getSRS {
-  my $self = shift;
-  
-  return $self->{SRS};
-}
+
 
 1;
 __END__

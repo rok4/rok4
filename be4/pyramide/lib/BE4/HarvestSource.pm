@@ -35,7 +35,7 @@
 
 package BE4::HarvestSource;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
@@ -81,13 +81,14 @@ sub new {
   my $self = {
     baseLevel => undef, # bottom level using this harvesting
     harvesting => undef, # Harvesting object
-    size_image => [4096,4096], # images size which will be harvested
+    image_width => 4096, # images size which will be harvested
+    image_height => 4096
   };
 
   bless($self, $class);
   
   TRACE;
-  
+
   # init. class
   return undef if (! $self->_init(@_));
   
@@ -103,9 +104,7 @@ sub _init {
 
     TRACE;
     
-    return FALSE if (! defined $params);
-    
-    ALWAYS(sprintf "harvestSource parameters : %s",Dumper($params)); #TEST#
+    return FALSE if (! defined $harvestParams);
 
     # parameters mandatoy !
     if (! defined $baseLevel) {
@@ -113,17 +112,21 @@ sub _init {
         return FALSE ;
     }
 
-    if (! exists($params->{size_image}) || ! defined ($params->{size_image})) {
-        ERROR("key/value required to 'size_image' !");
+    if (! exists($harvestParams->{image_width}) || ! defined ($harvestParams->{image_width})) {
+        ERROR("key/value required to 'image_width' !");
+        return FALSE ;
+    }
+    if (! exists($harvestParams->{image_height}) || ! defined ($harvestParams->{image_height})) {
+        ERROR("key/value required to 'image_height' !");
         return FALSE ;
     }
 
     my $objHarvest = BE4::Harvesting->new({
-        wms_layer => $params->{wms_layer},
-        wms_url => $params->{wms_url},
-        wms_version => $params->{wms_version},
-        wms_request => $params->{wms_request},
-        wms_format => $params->{wms_format}
+        wms_layer => $harvestParams->{wms_layer},
+        wms_url => $harvestParams->{wms_url},
+        wms_version => $harvestParams->{wms_version},
+        wms_request => $harvestParams->{wms_request},
+        wms_format => $harvestParams->{wms_format}
     });
     if (! defined $objHarvest) {
         ERROR("Cannot create Harvesting object !");
@@ -131,9 +134,10 @@ sub _init {
     }
     
     # init. params    
-    $self->{baseLevel} = $params->{baseLevel};
+    $self->{baseLevel} = $baseLevel;
     $self->{harvesting} = $objHarvest;
-    $self->{size_image} = $params->{size_image};
+    $self->{image_width} = $harvestParams->{image_width};
+    $self->{image_height} = $harvestParams->{image_height};
 
     return TRUE;
 }

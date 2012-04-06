@@ -43,6 +43,7 @@ use Data::Dumper;
 use List::Util qw(min max);
 
 use Data::Dumper;
+use Geo::GDAL;
 
 # My module
 use BE4::ImageSource;
@@ -77,7 +78,7 @@ BEGIN {}
 INIT {
 
 %SOURCE = (
-    type     => ['image','harvest']
+    type => ['image','harvest']
 );
 
 }
@@ -88,28 +89,28 @@ END {}
 ####################################################################################################
 
 sub new {
-  my $this = shift;
+    my $this = shift;
 
-  my $class= ref($this) || $this;
-  my $self = {
-    FILEPATH_DATACONF => undef, # path of data's configuration file
-    type => undef, # (image or harvest)
-    sources  => [],    # list of ImageSource or HarvestSource objects
-    SRS => undef,
-    bottomExtent => undef, # OGR::Geometry object, in the previous SRS
-  };
+    my $class= ref($this) || $this;
+    my $self = {
+        FILEPATH_DATACONF => undef, # path of data's configuration file
+        type => undef, # (image or harvest)
+        sources  => [],    # list of ImageSource or HarvestSource objects
+        SRS => undef,
+        bottomExtent => undef, # OGR::Geometry object, in the previous SRS
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  # load. class
-  return undef if (! $self->_load());
+    bless($self, $class);
 
-  return $self;
+    TRACE;
+
+    # init. class
+    return undef if (! $self->_init(@_));
+
+    # load. class
+    return undef if (! $self->_load());
+
+    return $self;
 }
 
 ################################################################################
@@ -121,16 +122,16 @@ sub _init {
     TRACE;
     
     return FALSE if (! defined $params);
-
-    ALWAYS(sprintf "paramètres de DataSource : %s",Dumper($params)); #TEST#
     
-    # init. params    
-    $self->{FILEPATH_DATACONF} = $params->{filepath_conf} if (exists($params->{filepath_conf}));
-    
-    if (! -f $self->{FILEPATH_DATACONF}) {
-        ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$self->{FILEPATH_DATACONF});
+    if (! exists($params->{filepath_conf}) || ! defined ($params->{filepath_conf})) {
+        ERROR("key/value required to 'filepath_conf' !");
+        return FALSE ;
+    }
+    if (! -f $params->{filepath_conf}) {
+        ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$params->{filepath_conf});
         return FALSE;
     }
+    $self->{FILEPATH_DATACONF} = $params->{filepath_conf};
 
     if (! exists($params->{type}) || ! defined ($params->{type})) {
         ERROR("key/value required to 'type' !");
@@ -166,18 +167,139 @@ sub _load {
         return FALSE;
     }
 
-    my @sources = ();
+    my $sources = $self->{sources};
 
-    foreach my $level (keys %{$sourcesProperties}) {
+    while( my ($k,$v) = each(%$sourcesProperties) ) {
+        if ($k eq "global") {
+            if (! $self->computeGlobalInfo($v)) {
+                ERROR("Cannot compute the global information");
+                return FALSE;
+            }
+            next;
+        }
+
         if ($self->{type} eq "harvest") {
-            my $harvestSource = BE4::HarvestSource->new(%{$sourcesProperties}->{$level}));
-            push @sources, 
-            ALWAYS(sprintf "harvestSource pour le niveau %s : %s",$level,Dumper(%{$sourcesProperties}->{$level})); #TEST#
+            my $harvestSource = BE4::HarvestSource->new($k,$v);
+            if (! defined $harvestSource) {
+                ERROR(sprintf "Cannot create an harvest source for the base level %s",$k);
+                return FALSE;
+            }
+            push @$sources, $harvestSource;
         }
         elsif ($self->{type} eq "image") {
-
+            my $imageSource = BE4::ImageSource->new($k,$v);
+            if (! defined $imageSource) {
+                ERROR(sprintf "Cannot create an image source for the base level %s",$k);
+                return FALSE;
+            }
+            push @$sources, $imageSource;
         }
     }
+
+    if (!defined $sources || ! scalar @$sources) {
+        ERROR ("No source !");
+        return FALSE;
+    }
+
+    
+
+    return TRUE;
+}
+
+
+
+####################################################################################################
+#                                              METHODS                                             #
+####################################################################################################
+
+# method: computeGlobalInfo
+# * read the srs, for the box or images
+# * read the box, 2 cases are possible :
+#       - box is a bbox, as xmin,ymin,xmax,ymax
+#       - box is a file path, file contains a complex polygon
+#   We generate a OGR Geometry
+#---------------------------------------------------------------------------------------------------
+sub computeGlobalInfo {
+    my $self = shift;
+    my $params = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $params);
+
+    # SRS
+    if (! exists($params->{srs}) || ! defined ($params->{srs})) {
+        ERROR("'srs' required in the sources configuration file (section 'global') !");
+        return FALSE ;
+    }
+    $self->{SRS} = $params->{srs};
+
+    # Bounding polygon
+    if (! exists($params->{box}) || ! defined ($params->{box})) {
+        ERROR("'box' required in the sources configuration file (section 'global') !");
+        return FALSE ;
+    }
+
+    my $wktextent;
+
+    my @limits = split (/,/,$params->{box},-1);
+
+    if (scalar @limits == 4) {
+        # user supplied a BBOX
+        if ($limits[0] !~ m/[+-]?\d+\.?\d*/ || $limits[1] !~ m/[+-]?\d+\.?\d*/ ||
+            $limits[2] !~ m/[+-]?\d+\.?\d*/ || $limits[3] !~ m/[+-]?\d+\.?\d*/ ) {
+            ERROR(sprintf "'box' value must contain only numbers : %s !",$params->{box});
+            return FALSE ;
+        }
+
+        my $xmin = $limits[0];
+        my $ymin = $limits[1];
+        my $xmax = $limits[2];
+        my $ymax = $limits[3];
+
+        if ($xmax <= $xmin || $ymax <= $ymin) {
+            ERROR(sprintf "'box' value is not logical for a bbox (max < min) : %s !",$params->{box});
+            return FALSE ;
+        }
+
+        $wktextent = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+            $xmin,$ymin,
+            $xmin,$ymax,
+            $xmax,$ymax,
+            $xmax,$ymin,
+            $xmin,$ymin;
+    }
+    elsif (scalar @limits == 1) {
+        # user supplied a file which contains bounding polygon
+        if (! -f $params->{box}) {
+            ERROR (sprintf "Shape file ('%s') doesn't exist !",$params->{box});
+            return FALSE;
+        }
+        
+        if (! open SHAPE, "<", $params->{box} ){
+            ERROR(sprintf "Cannot open the shape file %s.",$params->{box});
+            return FALSE;
+        }
+
+        $wktextent = '';
+        while( defined( my $line = <SHAPE> ) ) {
+            $wktextent .= $line;
+        }
+        close(SHAPE);
+    }
+
+    if (! defined $wktextent) {
+        ERROR(sprintf "Cannot define the bottom extent from the parameter 'box' => %s.",$params->{box});
+        return FALSE;
+    }
+    
+    my $bottomExtent = Geo::OGR::Geometry->create(WKT=>$wktextent);;
+    if (! defined $bottomExtent) {
+        ERROR(sprintf "Cannot create a Geometry from the string => %s.",$wktextent);
+        return FALSE;
+    }
+
+    $self->{bottomExtent} = $bottomExtent;
 
     return TRUE;
 }
@@ -200,8 +322,14 @@ sub is_type {
 }
 
 ####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
+#                                          GETTER/SETTER                                           #
 ####################################################################################################
+
+sub getSRS {
+  my $self = shift;
+  
+  return $self->{SRS};
+}
 
 
 1;
