@@ -141,6 +141,11 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     buildWMTSCapabilities();
 }
 
+Rok4Server::~Rok4Server()
+{
+
+}
+
 /*
  * Lancement des threads du serveur
  */

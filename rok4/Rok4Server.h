@@ -118,6 +118,7 @@ public:
     void run();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                  std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv );
+    ~Rok4Server ();
 
 };
 
