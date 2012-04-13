@@ -91,7 +91,7 @@ public:
         if (!decData && encData) {
             decData = Decoder::decode(encData, decSize);
             if (!decData) {
-                delete[] encData;
+                delete encData;
                 encData = 0;
             }
         }
