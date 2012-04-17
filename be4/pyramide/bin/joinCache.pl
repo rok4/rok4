@@ -148,7 +148,7 @@ sub main {
     printf STDERR "%s\n", $message;
     exit 2;
   }
-  
+
   # execution
   ALWAYS("> Execution");
   if (! main::doIt()) {
@@ -361,29 +361,60 @@ sub doIt {
         ERROR ("Can not load bboxes from the configuration file !");
         return FALSE;
     }
+
+    ##################
+    # load composition
+    ALWAYS(">>> Load composition ...");
+
+    if (! main::loadComposition($params->{composition})) {
+        ERROR ("Can not load composition from the configuration file !");
+        return FALSE;
+    }
+
+    return TRUE;
     
 }
 
 ################################################################################
 # function: loadPyramid
 #   
-#
 sub loadPyramid {
     TRACE();
 
     my $pyramid = $this{params}->{pyramid};
     ALWAYS(sprintf " Pyramid parameters : %s", Dumper($pyramid)); #TEST#
+
+    return TRUE;
 }
 
 ################################################################################
 # function: loadBboxes
 #   
-#
 sub loadBboxes {
     TRACE();
 
     my $bboxes = $this{params}->{bboxes};
-    ALWAYS(sprintf " Bboxes : %s", Dumper($bboxes)); #TEST#
+
+    while( my ($k,$v) = each(%$bboxes) ) {
+        ALWAYS(sprintf " Bbox ID : %s, limits : %s",$k,$v); #TEST#
+    }
+
+    return TRUE;
+}
+
+################################################################################
+# function: loadComposition
+#   
+sub loadComposition {
+    TRACE();
+
+    my $composition = $this{params}->{composition};
+
+    while( my ($k,$v) = each(%$composition) ) {
+        ALWAYS(sprintf " Level.bbox : %s, source : %s",$k,$v); #TEST#
+    }
+
+    return TRUE;
 }
 
 ################################################################################
@@ -450,11 +481,16 @@ image_dir      = IMAGE
 metadata_dir   = METADATA
 nodata_dir     = NODATA
 
-[bbox]
+[bboxes]
 WLD = -20037508.3,-20037508.3,20037508.3,20037508.3
 FXX = -518548.8,5107913.5,978393,6614964.6
 REU = 6140645.1,-2433358.9,6224420.1,-2349936.0
 GUF = -6137587.6,210200.4,-5667958.5,692618.0
+
+[ process ]
+path_shell  = /home/theo/TEST/BE4/SCRIPT
+path_temp   = /home/theo/TEST/BE4/TMP
+job_number  = 3
 
 [composition]
 
@@ -535,11 +571,11 @@ cf. FIXME and TODO file
 
 =head1 AUTHOR
 
-Jean-Philippe Bazonnais, E<lt>Jean-Philippe.Bazonnais@ign.frE<gt>
+Théo Satabin, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011 by SIEL/PZGG/Jean-Philippe Bazonnais - Institut Géographique National
+Copyright 2011 by SIEL/TLGE/Théo Satabin - Institut Géographique National
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
