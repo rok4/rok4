@@ -20,6 +20,7 @@ buildlib:
 
 buildbin: \
 ./bin/be4.pl \
+./bin/joinCache.pl \
 ./bin/export-tree.pl \
 ./bin/create-layer.pl
 	@(for p in $^ ; do \
