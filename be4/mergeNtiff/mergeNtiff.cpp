@@ -601,16 +601,16 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     
     // Coordonnees de l'image reechantillonnee en pixels
     xmin_dst/=resx_dst;
-    xmin_dst=floor(xmin_dst+0.1);
+    //xmin_dst=floor(xmin_dst+0.1);
     
     ymin_dst/=resy_dst;
-    ymin_dst=floor(ymin_dst+0.1);
+    //ymin_dst=floor(ymin_dst+0.1);
         
     xmax_dst/=resx_dst;
-    xmax_dst=ceil(xmax_dst-0.1);
+    //xmax_dst=ceil(xmax_dst-0.1);
         
     ymax_dst/=resy_dst;
-    ymax_dst=ceil(ymax_dst-0.1);
+    //ymax_dst=ceil(ymax_dst-0.1);
     
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
