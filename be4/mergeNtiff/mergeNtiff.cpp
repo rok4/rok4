@@ -591,7 +591,9 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
-    if (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax())
+    // Cela est important seulement si il n'y a pas de mirroirs, dans le cas contraire
+    // ce problème est géré par les mirroirs.
+    if (pECI->getmirrors() < 1 && (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax()))
     {
         LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
         return NULL;    
