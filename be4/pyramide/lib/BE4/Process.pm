@@ -318,6 +318,7 @@ sub computeBottomImage {
     my $code  = "\n";
 
     my $bgImgPath=undef;
+    my $bgImgName=undef;
   
 # FIXME (TOS) Ici, on fait appel au service WMS sans vérifier que la zone demandée n'est pas trop grande.
 # On considère que le niveau le plus bas de la pyramide que l'on est en train de construire n'est pas trop élevé.
@@ -340,9 +341,10 @@ sub computeBottomImage {
         # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
         # correspondant dans la nouvelle pyramide.
         if ( -f $newImgDesc->getFilePath() ){
-            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir(), "bgImg.tif");
+            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
+            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir(),$bgImgName);
             # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-            $code .= $self->cache2work($node, "bgImg.tif");
+            $code .= $self->cache2work($node, $bgImgName);
         }
 
         # On cree maintenant le fichier de config pour l'outil mergeNtiff
@@ -392,8 +394,8 @@ sub computeBottomImage {
     $code .= $self->work2cache($node);
 
     # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined($bgImgPath) ){
-        $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    if ( defined($bgImgName) ){
+        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
     }
 
     $self->{tree}->updateWeightOfNode($node,$weight);
@@ -434,6 +436,9 @@ sub computeAboveImage {
     my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
     my @childList = $self->{tree}->getChilds($node);
 
+    my $bgImgPath=undef;
+    my $bgImgName=undef;
+
     # A-t-on besoin de quelque chose en fond d'image?
     my $bg="";
     if (scalar @childList != 4){
@@ -458,7 +463,8 @@ sub computeAboveImage {
 
         if (-f $newImgDesc->getFilePath()) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-            my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
+            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
+            $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
             $bg="-b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
@@ -470,11 +476,11 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
-                    $code .= $self->wms2work($node, "bgImg.tif");
+                    $code .= $self->wms2work($node, $bgImgName);
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $code .= $self->cache2work($node, "bgImg.tif");
+                $code .= $self->cache2work($node, $bgImgName);
             }
         } else {
             # On a pas d'image alors on donne une couleur de nodata
@@ -499,8 +505,10 @@ sub computeAboveImage {
         $code .= "rm -f \${TMP_DIR}/$workName \n";
     }
 
-    # Si on a copié une image pour le fond, on en a plus besoin, on la supprime maintenant
-    $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    # Si on a copié une image pour le fond, on la supprime maintenant
+    if ( defined($bgImgName) ){
+        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
+    }
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
     $code .= $self->work2cache($node);
