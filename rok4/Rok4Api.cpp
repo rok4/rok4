@@ -185,6 +185,14 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     strcpy ( request->service,rok4Request->service.c_str() );
     request->operationType=new char[rok4Request->request.length() +1];
     strcpy ( request->operationType,rok4Request->request.c_str() );
+
+    std::map<std::string, std::string>::iterator it = rok4Request->params.find ( "nodataashttpstatus" );
+    if ( it == rok4Request->params.end() ) {
+        request->noDataAsHttpStatus = false;
+    } else {
+        request->noDataAsHttpStatus = true;
+    }
+
     delete rok4Request;
     return request;
 }
