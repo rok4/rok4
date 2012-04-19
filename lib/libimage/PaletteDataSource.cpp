@@ -76,9 +76,10 @@ PaletteDataSource::PaletteDataSource(DataSource *dataSource,bool transparent,con
 	
 }
 */
-PaletteDataSource::PaletteDataSource(DataSource *dataSource,Palette* mpalette) : dataSource(dataSource){
+PaletteDataSource::PaletteDataSource(DataSource *dataSource,Palette* mpalette) : dataSource(dataSource), fakePalette(false){
 	palette = mpalette;
-	if (! mpalette) {
+	if (! mpalette || dataSource->getType().compare("image/png")!=0 ){
+                fakePalette = true;
 		this->palette = new Palette();
  	}
 	if(palette->getPalettePNGSize()!=0){
@@ -124,6 +125,7 @@ PaletteDataSource::~PaletteDataSource()
 	delete dataSource;
 	if(data)
 		delete[] data;
+        if (fakePalette) delete palette;
 }
 
 

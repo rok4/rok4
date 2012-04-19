@@ -98,10 +98,13 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
     }
 }
 
-DataSource* Pyramid::getTile ( int x, int y, std::string tmId ) {
+DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
 
     std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
     if ( itLevel==levels.end() ) {
+        if (errorDataSource) { // NoData Error
+            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * errorDataSource );
+        }
         std::map<std::string, DataSource*>::const_iterator itNoDataSource=noDataSources.find ( tmId );
         if ( itNoDataSource!=noDataSources.end() )
             return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( itNoDataSource->second ) );
@@ -110,7 +113,7 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId ) {
             return 0;
         }
     }
-    return itLevel->second->getTile ( x, y );
+    return itLevel->second->getTile ( x, y, errorDataSource );
 }
 
 std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {

@@ -319,17 +319,18 @@ DataSource* Level::getEncodedNoDataTile() {
 
 
 
-DataSource* Level::getTile ( int x, int y ) {
+DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* source=getEncodedTile ( x, y );
+    DataSource* ndSource = (errorDataSource?errorDataSource:noDataSourceProxy);
     size_t size;
 
 	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( "GetTile Tiff" );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
-                return new DataSourceProxy(fullTiffDS,*noDataSourceProxy);
+                return new DataSourceProxy(fullTiffDS,*ndSource);
     }
 
-    return new DataSourceProxy ( source, *noDataSourceProxy );
+    return new DataSourceProxy ( source, *ndSource );
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {

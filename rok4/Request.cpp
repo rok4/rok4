@@ -223,6 +223,16 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         return;
     }
     parameters.insert ( std::pair<std::string, std::string> ( "tilecol", pElem->GetText() ) );
+    
+    pElem = pElem->NextSiblingElement();
+    // "VendorOption"
+        while ( pElem ) {
+            if ( pElem->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElem->Attribute("name") ) {
+                        LOGGER_DEBUG ( "VendorOption" );
+                parameters.insert ( std::pair<std::string, std::string> ( pElem->Attribute("name"), (pElem->GetText()?pElem->GetText():"true") ) );
+            }
+            pElem =  pElem->NextSiblingElement();
+        }
 
 }
 
@@ -397,6 +407,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
                 pElemOut =  pElemOut->NextSiblingElement();
             }
         }
+        // "VendorOption"
         while ( pElemOut ) {
             if ( pElemOut->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElemOut->Attribute("name") && pElemOut->GetText() ) {
                 if (format_options.str().size()>0) {
@@ -624,7 +635,7 @@ std::string Request::getParam ( std::string paramName ) {
 * @return message d'erreur en cas d'erreur (NULL sinon)
 */
 
-DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style ) {
+DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style, bool& noDataError ) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
@@ -692,6 +703,8 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     }
     if ( ! ( style ) )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le style "+styleName+" n'est pas gere pour la couche "+str_layer,"wmts" ) );
+    //Nodata Error
+    noDataError = hasParam("nodatahashttpstatus");
 
     return NULL;
 

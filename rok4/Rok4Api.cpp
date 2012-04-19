@@ -111,7 +111,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
         std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" );
-        loggerInitialised=true;
+        //loggerInitialised=true;
     } else {
         LOGGER_INFO ( "*** NOUVEAU CLIENT DU LOGGER ***" );
     }
@@ -250,7 +250,8 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     int x,y;
     Style* style =0;
     // Analyse de la requete
-    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style);
+    bool errorNoData;
+    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData);
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -317,8 +318,9 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     std::string tmId,format;
     int x,y;
     Style* style =0;
+    bool errorNoData;
     // Analyse de la requete
-    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style );
+    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style, errorNoData );
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -504,7 +506,7 @@ void rok4KillServer ( Rok4Server* server ) {
 
     free (server->getProjEnv());
     
-    //Logger::stopLogger();
+    Logger::stopLogger();
     delete server;
 }
 
