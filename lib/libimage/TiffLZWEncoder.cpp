@@ -176,5 +176,6 @@ bool TiffLZWEncoder::eof()
 
 TiffLZWEncoder::~TiffLZWEncoder()
 {
+    if (lzwBuffer) delete[] lzwBuffer;
     delete image;
 }
