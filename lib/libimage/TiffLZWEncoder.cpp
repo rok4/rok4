@@ -118,7 +118,7 @@ const uint8_t TIFF_HEADER_LZW_INT8_RGBA[128]  = { //FIXME
 
 TiffLZWEncoder::TiffLZWEncoder(Image* image): image(image), line(-1), rawBufferSize(0), lzwBufferSize(0),lzwBufferPos(0) , lzwBuffer(NULL), rawBuffer(NULL)
 {
-    
+
 }
 
 
@@ -156,13 +156,13 @@ size_t TiffLZWEncoder::read(uint8_t *buffer, size_t size_to_read) {
         offset = header_size;
         line = 0;
     }
-    
+
     if (size_to_read - offset > 0 ) { // il reste de la place
-        if (lzwBufferPos <= lzwBufferSize){ // il reste de la donnée
-             dataToCopy = std::min(size_to_read-offset, lzwBufferSize -lzwBufferPos);
-             memcpy(buffer+offset,lzwBuffer+lzwBufferPos,dataToCopy);
-             lzwBufferPos+=dataToCopy;
-             offset+=dataToCopy;
+        if (lzwBufferPos <= lzwBufferSize) { // il reste de la donnée
+            dataToCopy = std::min(size_to_read-offset, lzwBufferSize -lzwBufferPos);
+            memcpy(buffer+offset,lzwBuffer+lzwBufferPos,dataToCopy);
+            lzwBufferPos+=dataToCopy;
+            offset+=dataToCopy;
         }
     }
 
@@ -176,5 +176,6 @@ bool TiffLZWEncoder::eof()
 
 TiffLZWEncoder::~TiffLZWEncoder()
 {
+    if (lzwBuffer) delete[] lzwBuffer;
     delete image;
 }
