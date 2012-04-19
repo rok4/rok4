@@ -228,8 +228,10 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     // "VendorOption"
         while ( pElem ) {
             if ( pElem->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElem->Attribute("name") ) {
-                        LOGGER_DEBUG ( "VendorOption" );
-                parameters.insert ( std::pair<std::string, std::string> ( pElem->Attribute("name"), (pElem->GetText()?pElem->GetText():"true") ) );
+                LOGGER_DEBUG ( "VendorOption" );
+                std::string vendorOpt = pElem->Attribute("name");
+                std::transform(vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower);
+                parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, (pElem->GetText()?pElem->GetText():"true") ) );
             }
             pElem =  pElem->NextSiblingElement();
         }
@@ -704,7 +706,7 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     if ( ! ( style ) )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le style "+styleName+" n'est pas gere pour la couche "+str_layer,"wmts" ) );
     //Nodata Error
-    noDataError = hasParam("nodatahashttpstatus");
+    noDataError = hasParam("nodataashttpstatus");
 
     return NULL;
 
