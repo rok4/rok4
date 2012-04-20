@@ -43,20 +43,23 @@ use Getopt::Long;
 use Pod::Usage;
 
 use Data::Dumper;
-
+use Math::BigFloat;
+use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
 use Cwd;
 
 use Log::Log4perl qw(:easy);
+use XML::LibXML;
 
 # My search module
 use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::PropertiesLoader;
+use BE4::TileMatrixSet;
+use BE4::PyrImageSpec;
 
 # constantes
 use constant TRUE  => 1;
@@ -108,14 +111,25 @@ my %opts =
 #
 my %this =
 (
-    params     => {
-        logger        => undef,
-        pyramid       => undef,
-        bboxes        => undef,
-        composition   => undef,
-        process       => undef,
-    },
+
+    logger        => undef,
+    pyramid       => undef,
+    bboxes        => undef,
+    composition   => undef,
+    process       => undef,
+
+    sourceByLevel => {},
+    sourcePyramids => {},
+
+    doneTiles => {},
 );
+
+my %CONF = (
+    sections => ['pyramid','process','composition','logger','bboxes'],
+    merge_method => ['replace','multiply','add','transparency'],
+);
+
+
 
 #
 # Group: proc
@@ -126,45 +140,53 @@ my %this =
 #   main program
 #
 sub main {
-  printf("JoinCache : version [%s]\n",$VERSION);
-  # message
-  my $message = undef;
+    printf("JoinCache : version [%s]\n",$VERSION);
+    # message
+    my $message = undef;
 
-  $message = "BEGIN";
-  printf STDOUT "%s\n", $message;
-  
-  # initialization
-  ALWAYS("> Initialization");
-  if (! main::init()) {
-    $message = "ERROR INITIALIZATION !";
-    printf STDERR "%s\n", $message;
-    exit 1;
-  }
-  
-  # configuration
-  ALWAYS("> Configuration");
-  if (! main::config()) {
-    $message = "ERROR CONFIGURATION !";
-    printf STDERR "%s\n", $message;
-    exit 2;
-  }
+    $message = "BEGIN";
+    printf STDOUT "%s\n", $message;
 
-  # execution
-  ALWAYS("> Execution");
-  if (! main::doIt()) {
-    $message = "ERROR EXECUTION !";
-    printf STDERR "%s\n", $message;
-    exit 3;
-  }
-  
-  $message = "END";
-  printf STDOUT "%s\n", $message;
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::_init()) {
+        $message = "ERROR INITIALIZATION !";
+        printf STDERR "%s\n", $message;
+        exit 1;
+    }
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::_config()) {
+        $message = "ERROR CONFIGURATION !";
+        printf STDERR "%s\n", $message;
+        exit 2;
+    }
+
+    # execution
+    ALWAYS("> Validation");
+    if (! main::_validate()) {
+        $message = "ERROR VALIDATION !";
+        printf STDERR "%s\n", $message;
+        exit 3;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        $message = "ERROR EXECUTION !";
+        printf STDERR "%s\n", $message;
+        exit 4;
+    }
+
+    $message = "END";
+    printf STDOUT "%s\n", $message;
 }
 ################################################################################
 # function: init
 #   Check options and initialize the logger
 #  
-sub init {
+sub _init {
 
     ALWAYS(">>> Check Configuration ...");
 
@@ -222,65 +244,177 @@ sub init {
 
     return TRUE;
 }
-################################################################################
-# function: config
-#   Loading file properties
-#
-sub config {
-  
-  ALWAYS(">>> Load Properties ...");
 
-  my $fprop = $opts{properties};
-  
-  my $objProp = BE4::PropertiesLoader->new($fprop);
-  
-  if (! defined $objProp) {
-    ERROR("Can not load properties !");
-    return FALSE;
-  }
-  
-  my $refProp = $objProp->getAllProperties();
-  
-  if (! defined $refProp) {
-    ERROR("All parameters properties are empty !");
-    return FALSE;
-  }
-  
-  my $hashref;
-  foreach (keys %{$this{params}}) {
-    my $href = { map %$_, grep ref $_ eq 'HASH', ($this{params}->{$_}, $refProp->{$_}) };
-    $hashref->{$_} = $href;
-  }
+####################################################################################################
+#                                     CONFIGURATION LOADER                                         #
+####################################################################################################  
 
-  if (! defined $hashref) {
-    ERROR("Can not merge all parameters of properties !");
-    return FALSE;
-  }
+sub _config {
   
-  # save params properties
-  $this{params} = $hashref;
-  
-  if (! main::checkParams() ) {
-    ERROR("Can not check parameters of properties !");
-    return FALSE;
-  }
-  
-  return TRUE;
+    ALWAYS(">>> Load Properties ...");
+
+    my $fprop = $opts{properties};
+
+    if (! defined $fprop) {
+        ERROR ("The file path is required to read configuration !");
+        return FALSE;
+    }
+    
+    if (! -f $fprop) {
+        ERROR (sprintf "Configuration file doesn't exist : %s",$fprop);
+        return FALSE;
+    }
+
+    return FALSE if (! main::_read($fprop));
+    return FALSE if (! main::checkParams($fprop));
+
+    return TRUE;
+
 }
-################################################################################
-# function: chechParams
-#   Check parameters of properties
-#
+
+# method: _read
+#---------------------------------------------------------------------------------------------------
+sub _read {
+    my $filepath = shift;
+
+    TRACE;
+
+    if (! open CFGF, "<", $filepath ){
+        ERROR(sprintf "Impossible d'ouvrir le fichier de configuration %s.",$filepath);
+        return FALSE;
+    }
+
+    my $currentSection = undef;
+
+    while( defined( my $l = <CFGF> ) ) {
+        chomp $l;
+        $l =~ s/\s+//g; # we remove all spaces
+        $l =~ s/;\S*//; # we remove comments
+        
+        next if ($l eq '');
+
+        if ($l =~ m/^\[(\w*)\]$/) {
+            $l =~ s/[\[\]]//g;
+
+            if (! main::is_ConfSection($l)) {
+                ERROR ("Invalid section's name");
+                return FALSE;
+            }
+            $currentSection = $l;
+            next;
+        }
+
+        if (! defined $currentSection) {
+            ERROR (sprintf "A property must always be in a section (%s)",$l);
+            return FALSE;
+        }
+
+        my @prop = split(/=/,$l,-1);
+        if (scalar @prop != 2 || $prop[0] eq '' || $prop[1] eq '') {
+            ERROR (sprintf "A line is invalid (%s). Must be prop = val",$l);
+            return FALSE;   
+        }
+
+        if ($currentSection ne 'composition') {
+            if (exists $this{$currentSection}->{$prop[0]}) {
+                ERROR (sprintf "A property is defined twice in the configuration : section %s, parmaeter %s",
+                    $currentSection,$prop[0]);
+                return FALSE; 
+            }
+            $this{$currentSection}->{$prop[0]} = $prop[1];
+        } else {
+            if (! main::readComposition($prop[0],$prop[1])) {
+                ERROR (sprintf "Cannot read a composition !");
+                return FALSE;
+            }
+        }
+        
+    }
+
+    close CFGF;
+
+    return TRUE;
+}
+
+# method: readComposition
+#---------------------------------------------------------------------------------------------------
+sub readComposition {
+    my $prop = shift;
+    my $val = shift;
+
+    TRACE;
+
+    my ($levelId,$bboxId) = split(/\./,$prop,-1);
+
+    if ($levelId eq '' || $bboxId eq '') {
+        ERROR (sprintf "Cannot define a level id and a bbox id (%s). Must be levelId.bboxId",$prop);
+        return FALSE;
+    }
+
+    my @pyrs = split(/,/,$val,-1);
+
+    foreach my $pyr (@pyrs) {
+        if ($pyr eq '') {
+            ERROR (sprintf "Invalid list of pyramids (%s). Must be /path/pyr1.pyr,/path/pyr2.pyr",$val);
+            return FALSE;
+        }
+        if (! -f $pyr) {
+            ERROR (sprintf "A referenced pyramid's file doesn't exist : %s",$pyr);
+            return FALSE;
+        }
+
+        my $priority = 1;
+        if (exists $this{sourceByLevel}->{$levelId}) {
+            $this{sourceByLevel}->{$levelId} += 1;
+            $priority = $this{sourceByLevel}->{$levelId};
+        } else {
+            $this{sourceByLevel}->{$levelId} = 1;
+        }
+
+        $this{composition}->{$levelId}->{$priority} = {
+            bbox => $bboxId,
+            pyr => $pyr,
+        };
+
+        if (! exists $this{sourcePyramids}->{$pyr}) {
+            # we have a new source pyramid, but not yet information about
+            $this{sourcePyramids}->{$pyr} = undef;
+        }
+
+    }
+
+    return TRUE;
+
+}
+
+# method: is_ConfSection
+#---------------------------------------------------------------------------------------------------
+sub is_ConfSection {
+    my $section = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $section);
+
+    foreach (@{$CONF{sections}}) {
+        return TRUE if ($section eq $_);
+    }
+    ERROR (sprintf "Unknown 'section' (%s) !",$section);
+    return FALSE;
+}
+
+# method: readComposition
+#---------------------------------------------------------------------------------------------------
 sub checkParams {
 
     ###################
     # check parameters
 
-    my $pyramid      = $this{params}->{pyramid};        
-    my $logger       = $this{params}->{logger};         
-    my $composition  = $this{params}->{composition};    
-    my $bboxes       = $this{params}->{bboxes};         
-    my $process      = $this{params}->{process};    
+    my $pyramid      = $this{pyramid};        
+    my $logger       = $this{logger};         
+    my $composition  = $this{composition};    
+    my $bboxes       = $this{bboxes};         
+    my $process      = $this{process};    
 
     # pyramid
     if (! defined $pyramid) {
@@ -327,94 +461,584 @@ sub checkParams {
             layout => $layout,
         };
 
-        Log::Log4perl->easy_init(@args); 
+        Log::Log4perl->easy_init(@args);
     }
 
     return TRUE;
 }
 
 
-################################################################################
-# function: doIt
-#   Processing
-#
-sub doIt {
 
-    ###################
-    # link to parameters
-    my $params = $this{params};
-    
+####################################################################################################
+#                                       VALIDATION METHODS                                         #
+####################################################################################################  
+
+
+# method: _validate
+#---------------------------------------------------------------------------------------------------
+sub _validate {
+
+
     ##################
-    # load pyramid
-    ALWAYS(">>> Load pyramid's attributes ...");
 
-    if (! main::loadPyramid($params->{pyramid})) {
-        ERROR ("Can not load bboxes from the configuration file !");
+    ALWAYS(">>> Validate merge pyramid ...");
+
+    if (! main::validateMergedPyramid()) {
+        ERROR ("Merged pyramid is not valid !");
         return FALSE;
     }
-    
+
     ##################
     # load bounding boxes
-    ALWAYS(">>> Load bounding boxes ...");
+    ALWAYS(">>> Validate bounding boxes ...");
 
-    if (! main::loadBboxes($params->{pyramid})) {
-        ERROR ("Can not load bboxes from the configuration file !");
+    if (! main::validateBboxes()) {
+        ERROR ("Some bboxes are not valid !");
         return FALSE;
     }
+
+    DEBUG(sprintf "BBOXES : %s",Dumper($this{bboxes}));
 
     ##################
-    # load composition
-    ALWAYS(">>> Load composition ...");
 
-    if (! main::loadComposition($params->{composition})) {
-        ERROR ("Can not load composition from the configuration file !");
+    ALWAYS(">>> Validate source pyramids ...");
+
+    if (! main::validateSourcePyramids()) {
+        ERROR ("Some source pyramids are not valid !");
         return FALSE;
     }
+
+    # DEBUG(sprintf "SOURCE PYRAMIDS : %s",Dumper($this{sourcePyramids}));
+
+    ALWAYS(">>> Validate composition");
+    if (! main::validateComposition()) {
+        ERROR ("Cannot treat composition !");
+        return FALSE;
+    }
+
+    DEBUG(sprintf "COMPOSITION : %s",Dumper($this{composition}));
 
     return TRUE;
     
 }
 
-################################################################################
-# function: loadPyramid
-#   
-sub loadPyramid {
+# method: validateComposition
+#       - we control the levelId (have to be present in the TMS)
+#       - 
+#---------------------------------------------------------------------------------------------------
+sub validateComposition {
+
     TRACE();
 
-    my $pyramid = $this{params}->{pyramid};
-    ALWAYS(sprintf " Pyramid parameters : %s", Dumper($pyramid)); #TEST#
+    my $composition = $this{composition};
+    my $bboxes = $this{bboxes};
+    my $tms = $this{pyramid}->{tms};
 
-    return TRUE;
-}
+    while( my ($levelId,$sources) = each(%$composition) ) {
+        if (! defined $tms->getTileMatrix($levelId)) {
+            ERROR (sprintf "A level id (%s) from the configuration file is not in the TMS !",$levelId);
+            return FALSE;
+        }
 
-################################################################################
-# function: loadBboxes
-#   
-sub loadBboxes {
-    TRACE();
-
-    my $bboxes = $this{params}->{bboxes};
-
-    while( my ($k,$v) = each(%$bboxes) ) {
-        ALWAYS(sprintf " Bbox ID : %s, limits : %s",$k,$v); #TEST#
+        while( my ($priority,$source) = each(%$sources) ) {
+            if (! exists $bboxes->{$source->{bbox}}) {
+                ERROR (sprintf "A bbox id (%s) from the composition is not define in the 'bboxes' section !",
+                    $source->{bbox});
+                return FALSE;
+            }
+            # we replace .pyr path by the data directory for this level
+            if (! exists $this{sourcePyramids}->{$source->{pyr}}->{$levelId}) {
+                ERROR (sprintf "The pyramid '%s' is used for the level %s but has not it !",
+                    $source->{pyr},$levelId);
+                return FALSE;
+            }
+            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId};
+            my @bboxArray = main::calculateBbox($levelId,$source->{bbox});
+            $source->{bbox} = undef;
+            @{$source->{bbox}} = @bboxArray;
+        }
+    
     }
 
     return TRUE;
 }
 
-################################################################################
-# function: loadComposition
-#   
-sub loadComposition {
+# method: calculateBbox
+#  from a bbox ID and a level ID, calculate extrems index and return them
+#---------------------------------------------------------------------------------------------------
+sub calculateBbox {
+    my $levelId = shift;
+    my $bboxId = shift;
+
     TRACE();
 
-    my $composition = $this{params}->{composition};
+    my @bboxArray = @{$this{bboxes}->{$bboxId}} ;
 
-    while( my ($k,$v) = each(%$composition) ) {
-        ALWAYS(sprintf " Level.bbox : %s, source : %s",$k,$v); #TEST#
+    my $tm  = $this{pyramid}->{tms}->getTileMatrix($levelId);
+
+    my $Res = Math::BigFloat->new($tm->getResolution());
+    my $imgGroundWidth = $tm->getTileWidth() * $this{pyramid}->{tilesPerWidth} * $Res;
+    my $imgGroundHeight = $tm->getTileHeight() * $this{pyramid}->{tilesPerHeight} * $Res;
+
+    my $iMin=int(($bboxArray[0] - $tm->getTopLeftCornerX()) / $imgGroundWidth);   
+    my $iMax=int(($bboxArray[2] - $tm->getTopLeftCornerX()) / $imgGroundWidth);   
+    my $jMin=int(($tm->getTopLeftCornerY() - $bboxArray[3]) / $imgGroundHeight); 
+    my $jMax=int(($tm->getTopLeftCornerY() - $bboxArray[1]) / $imgGroundHeight);
+
+    $bboxArray[0] = $iMin;
+    $bboxArray[1] = $jMin;
+    $bboxArray[2] = $iMax;
+    $bboxArray[3] = $jMax;
+
+    return @bboxArray;
+
+    return TRUE;
+}
+
+# method: validateBboxes
+#  for each bbox, we parse string to store values in array and we control consistency (min < max)
+#---------------------------------------------------------------------------------------------------
+sub validateBboxes {
+    TRACE();
+
+    my $bboxes = $this{bboxes};
+
+    while( my ($bboxId,$bbox) = each(%$bboxes) ) {
+        if ($bbox !~ m/([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?)/) {
+            ERROR (sprintf "The bbox with id '%s' is not valid (%s).
+                Must be 'xmin,ymin,xmax,ymax', to decimal format.",$bboxId,$bbox);
+            return FALSE;
+        }
+
+        my @bboxArray = split(/,/,$bbox,-1);
+        if (!($bboxArray[0] < $bboxArray[2] && $bboxArray[1] < $bboxArray[3])) {
+            ERROR (sprintf "The bbox with id '%s' is not valid (%s). Max is not greater than min !",$bboxId,$bbox);
+            return FALSE;
+        }
+        
+        # we replace the string bbox by the array bbox
+        $bboxes->{$bboxId} = undef;
+        @{$bboxes->{$bboxId}} = @bboxArray;
     }
 
     return TRUE;
+}
+
+# method: validateMergedPyramid
+#---------------------------------------------------------------------------------------------------
+sub validateMergedPyramid {
+
+    TRACE();
+
+    ##################
+    # load TMS
+
+    if (!( exists $this{pyramid}->{tms_path} &&  exists $this{pyramid}->{tms_name})) {
+        ERROR ("TMS path information are missing in the configuration file !");
+        return FALSE;
+    }
+    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($this{pyramid}->{tms_path},$this{pyramid}->{tms_name}));
+
+    if (! defined $objTMS) {
+        ERROR (sprintf "Cannot load the TMS %s !",$this{pyramid}->{tms_name});
+        return FALSE;
+    }
+
+    $this{pyramid}->{tms} = $objTMS;
+
+    if (! exists $this{pyramid}->{merge_method}) {
+        ERROR ("'merge_method' must be given in the configuration file !");
+        return FALSE;
+    } elsif (! main::is_MergeMethod($this{pyramid}->{merge_method})) {
+        ERROR ("Invalid 'merge_method' !");
+        return FALSE;
+    }
+
+    return TRUE;
+
+}
+
+# method: is_MergeMethod
+#---------------------------------------------------------------------------------------------------
+sub is_MergeMethod {
+    my $mergeMethod = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $mergeMethod);
+
+    foreach (@{$CONF{merge_method}}) {
+        return TRUE if ($mergeMethod eq $_);
+    }
+    ERROR (sprintf "Unknown 'merge_method' (%s) !",$mergeMethod);
+    return FALSE;
+}
+
+# method: validateSourcePyramids
+#  for each pyramids, we control attributes : TMS, format... They must be the same for every one
+#---------------------------------------------------------------------------------------------------
+sub validateSourcePyramids {
+
+    TRACE();
+
+    my $tms;
+    my $format;
+    my $samplesperpixel;
+    my $dirDepth;
+    my $photometric;
+    my $tilesPerWidth;
+    my $tilesPerHeight;
+
+    foreach my $pyr (keys %{$this{sourcePyramids}}) {
+        my ($volume,$directories,$file) = File::Spec->splitpath($pyr);
+
+        # read xml pyramid
+        my $parser  = XML::LibXML->new();
+        my $xmltree =  eval { $parser->parse_file($pyr); };
+
+        if (! defined ($xmltree) || $@) {
+            ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
+            return FALSE;
+        }
+
+        my $root = $xmltree->getDocumentElement;
+
+        # FORMAT
+        my $tagformat = $root->findnodes('format')->to_literal;
+        if ($tagformat eq '') {
+            ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        # to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
+        if ($tagformat eq 'TIFF_INT8') {
+            WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
+            $tagformat = 'TIFF_RAW_INT8';
+        }
+        if ($tagformat eq 'TIFF_FLOAT32') {
+            WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
+            $tagformat = 'TIFF_RAW_FLOAT32';
+        }
+        if (defined $format && $tagformat ne $format) {
+            ERROR (sprintf "The format in the pyramid '%s' is different from %s (%s) !",$pyr,$format,$tagformat);
+            return FALSE;
+        }
+        $format = $tagformat if (! defined $format);
+        
+        # SAMPLES PER PIXEL
+        my $tagchannels = $root->findnodes('channels')->to_literal;
+        if ($tagchannels eq '') {
+            ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        if (defined $samplesperpixel && $tagchannels ne $samplesperpixel) {
+            ERROR (sprintf "The samples per pixel in the pyramid '%s' is different from %s (%s) !",
+                $pyr,$samplesperpixel,$tagchannels);
+            return FALSE;
+        }
+        $samplesperpixel = $tagchannels if (! defined $samplesperpixel);
+
+        # TMS
+        my $tagTMS = $root->findnodes('tileMatrixSet')->to_literal;
+        if ($tagTMS eq '') {
+            ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        if (defined $tms && $tagTMS ne $tms) {
+            ERROR (sprintf "The TMS in the pyramid '%s' is different from %s (%s) !",
+                $pyr,$tms,$tagTMS);
+            return FALSE;
+        }
+        $tms = $tagTMS if (! defined $tms);
+        if ($tms ne $this{pyramid}->{tms}->{name}) {
+            ERROR (sprintf "The TMS in the pyramid '%s' is different from the TMS in the configuration %s (%s) !",
+                $pyr,$this{pyramid}->{tms}->{name},$tms);
+            return FALSE;
+        }
+
+        # PHOTOMETRIC
+        my $tagphotometric = $root->findnodes('photometric')->to_literal;
+        if ($tagphotometric eq '') {
+            ERROR (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        if (defined $photometric && $tagphotometric ne $photometric) {
+            ERROR (sprintf "The samples per pixel in the pyramid '%s' is different from %s (%s) !",
+                $pyr,$photometric,$tagphotometric);
+            return FALSE;
+        }
+        $photometric = $tagphotometric if (! defined $photometric);
+
+        # LEVELS
+        my @levels = $root->getElementsByTagName('level');
+        
+        # read tilesPerWidth and tilesPerHeight, using a level
+        my $level = $levels[0];
+        my $tagtilesPerWidth = $level->findvalue('tilesPerWidth');
+        my $tagtilesPerHeight = $level->findvalue('tilesPerHeight');
+
+        if (defined $tilesPerHeight && 
+            ($tagtilesPerHeight ne $tilesPerHeight || $tagtilesPerWidth ne $tilesPerWidth)) {
+            ERROR (sprintf "The tile size in the pyramid '%s' is different from %s,%s (%s,%s) !",
+                $pyr,$tilesPerHeight,$tilesPerWidth,$tagtilesPerHeight,$tagtilesPerWidth);
+            return FALSE;
+        }
+        $tilesPerHeight = $tagtilesPerHeight if (! defined $tilesPerHeight);
+        $tilesPerWidth = $tagtilesPerWidth if (! defined $tilesPerWidth);
+
+        # read dirDepth, using a level
+        my $tagdepth = $level->findvalue('pathDepth');
+
+        if (defined $dirDepth && $tagdepth ne $dirDepth) {
+            ERROR (sprintf "The depth in the pyramid '%s' is different from %s (%s) !",$pyr,$dirDepth,$tagdepth);
+            return FALSE;
+        }
+        $dirDepth = $tagdepth if (! defined $dirDepth);
+
+        foreach my $v (@levels) {
+            my $levelId = $v->findvalue('tileMatrix');
+            my $baseDir = $v->findvalue('baseDir');
+            $this{sourcePyramids}->{$pyr}->{$levelId} = File::Spec->rel2abs($baseDir,$volume.$directories);
+        }
+
+    }
+
+    # we save merged pyramid's attributes
+    $this{pyramid}->{imgFormat} = $format;
+    $this{pyramid}->{samplesperpixel} = $samplesperpixel;
+    $this{pyramid}->{dirDepth} = $dirDepth;
+    $this{pyramid}->{photometric} = $photometric;
+    $this{pyramid}->{tilesPerWidth} = $tilesPerWidth;
+    $this{pyramid}->{tilesPerHeight} = $tilesPerHeight;
+
+    return TRUE;
+}
+
+
+
+####################################################################################################
+#                                        PROCESS METHODS                                           #
+####################################################################################################  
+
+# method: doIt
+#---------------------------------------------------------------------------------------------------
+sub doIt {
+
+    TRACE();
+
+    my $composition = $this{composition};
+    my $bboxes = $this{bboxes};
+    my $tms = $this{pyramid}->{tms};
+
+    while( my ($levelId,$sources) = each(%$composition) ) {
+        INFO(sprintf "Level %s",$levelId);
+        my $priority = 1;
+        while( exists $sources->{$priority}) {
+            DEBUG(sprintf "Priority %s",$priority);
+            my $source = $sources->{$priority};
+            $priority++;
+            my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
+
+            for (my $i = $imin; $i <= $imax; $i++) {
+                for (my $j = $jmin; $j <= $jmax; $j++) {
+                    if (exists $this{doneTiles}->{$i."_".$j}) {
+                        DEBUG(sprintf "Tile %s,%s already done",$i,$j); #TEST#
+                        next;
+                    }
+                    my $imagePath = main::getCacheNameOfImage($i,$j);
+                    my $sourceImage = $source->{pyr}.$imagePath;
+                    my $finaleImage = sprintf "%s/%s/%s/%s%s",
+                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
+                        $this{pyramid}->{image_dir},$levelId,$imagePath;
+                    if (! -f $sourceImage) {
+                        next;
+                    }
+                    my @images;
+                    if ($this{pyramid}->{merge_method} ne 'replace') {
+                        @images = main::searchTile($levelId,$priority,$i,$j,$imagePath);
+                    }
+
+                    unshift(@images,$sourceImage);
+
+                    if (! main::treatTile($levelId,$i,$j,$finaleImage,@images)) {
+                        ERROR(sprintf "Cannot treat the image %s",$finaleImage);
+                        return FALSE;                        
+                    }
+                }
+            }
+        }
+        delete $this{doneTiles};
+    }
+
+    return TRUE;
+
+}
+
+# method: searchTile
+#  search a tile in source pyramids which have not the priority
+#---------------------------------------------------------------------------------------------------
+sub searchTile {
+    my $levelId = shift;
+    my $priority = shift;
+    my $i = shift;
+    my $j = shift;
+    my $imagePath = shift;
+
+    TRACE();
+
+    my $sources = $this{composition}->{$levelId};
+    my @others;
+
+    while( exists $sources->{$priority}) {
+        my $source = $sources->{$priority};
+        $priority++;
+        my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
+
+        if ($i < $imin || $i > $imax || $j < $jmin || $j > $jmax) {
+            next;
+        }
+
+        my $sourceImage = $source->{pyr}.$imagePath;
+        if (-f $sourceImage) {
+            push @others, $sourceImage;
+        }
+    }  
+
+    return @others;
+  
+}
+
+# method: treatTile
+#       - we have only one source image for this tile : we create a symbolic link to this source
+#       - we have more sources : according to the merge method, we write necessary commands in the script
+#--------------------------------------------------------------------------------------------------------
+sub treatTile {
+    my $levelId = shift;
+    my $i = shift;
+    my $j = shift;
+    my $finaleImage = shift;
+    my @images = @_;
+
+    TRACE();
+
+    if (scalar @images == 1) {
+        INFO(sprintf "On crée un lien de %s vers %s",$finaleImage,$images[0]); #TEST#
+        return TRUE;
+    }
+
+    my $mergeMethod = $this{pyramid}->{merge_method};
+
+    if ($mergeMethod eq 'replace') {
+        ERROR(sprintf "Pas plusieurs source avec le mode remplacement (%s)",scalar @images); #TEST#
+        return FALSE;
+    }
+
+    if ($mergeMethod eq 'transparency') {
+        INFO(sprintf "Fusion avec transparence des images %s",Dumper(@images)); #TEST#
+    } elsif ($mergeMethod eq 'multiply') {
+        INFO(sprintf "Fusion avec multiplication des images %s",Dumper(@images)); #TEST#
+    } elsif ($mergeMethod eq 'add') {
+        INFO(sprintf "Fusion avec addition des images %s",Dumper(@images)); #TEST#
+    }
+
+    $this{doneTiles}->{$i."_".$j} = TRUE;
+
+    return TRUE;
+}
+
+# method: getCacheNameOfImage
+#  return the image path : /3E/42/01.tif
+#---------------------------------------------------------------------------------------------------
+sub getCacheNameOfImage {
+    my $i     = shift; # X idx !
+    my $j     = shift; # Y idx !
+
+    my $ib36 = main::encodeIntToB36($i);
+    my $jb36 = main::encodeIntToB36($j);
+
+    my @icut = split (//, $ib36);
+    my @jcut = split (//, $jb36);
+
+    if (scalar(@icut) != scalar(@jcut)) {
+        if (length ($ib36) > length ($jb36)) {
+            $jb36 = "0"x(length ($ib36) - length ($jb36)).$jb36;
+            @jcut = split (//, $jb36);
+        } else {
+            $ib36 = "0"x(length ($jb36) - length ($ib36)).$ib36;
+            @icut = split (//, $ib36);
+        }
+    }
+
+    my $padlength = $this{pyramid}->{dirDepth} + 1;
+    my $size      = scalar(@icut);
+    my $pos       = $size;
+    my @l;
+
+    for(my $i=0; $i<$padlength;$i++) {
+        $pos--;
+        push @l, $jcut[$pos];
+        push @l, $icut[$pos];
+        push @l, '/';
+    }
+
+    pop @l;
+
+    if ($size>$padlength) {
+        while ($pos) {
+            $pos--;
+            push @l, $jcut[$pos];
+            push @l, $icut[$pos];
+        }
+    }
+
+    my $imagePath = scalar reverse(@l);
+    my $imagePathName = join('.', $imagePath, 'tif');
+
+    return File::Spec->catfile('/'.$imagePathName); 
+}
+
+sub encodeIntToB36 {
+    my $number= shift; # idx !
+
+    my $padlength = $this{pyramid}->{dirDepth} + 1;
+
+    my $b36 = "";
+    $b36 = "000" if $number == 0;
+
+    while ( $number ) {
+        my $v = $number % 36;
+        if($v <= 9) {
+            $b36 .= $v;
+        } else {
+            $b36 .= chr(55 + $v); # Assume that 'A' is 65
+        }
+        $number = int $number / 36;
+    }
+
+    # fill with 0 !
+    $b36 = "0"x($padlength - length $b36).reverse($b36);
+
+    return $b36;
+}
+
+sub encodeB36toInt {
+    my $b36  = shift; # idx in base 36 !
+
+    my $padlength = $this{pyramid}->{dirDepth} + 1;
+
+    my $number = 0;
+    my $i = 0;
+    foreach(split //, reverse uc $b36) {
+        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
+        $number += $_ * (36 ** $i++);
+    }
+
+    # fill with 0 !
+    return "0"x($padlength - length $number).$number;
+    # return decode_base36($b36,$padlength);
 }
 
 ################################################################################
