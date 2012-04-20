@@ -697,11 +697,15 @@ sub cache2work {
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
         $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
+        my $dirName = $workName;
+        $dirName =~ s/\.tif//;
         my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
+        $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
+        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
 
-        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/\n%s", UNTILE, $workName, RESULT_TEST);
+        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
 
-        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s", $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
+        $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$dirName);
 
         return $cmd;
     } else {
