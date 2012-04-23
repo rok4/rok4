@@ -42,27 +42,26 @@ int Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
-    if(length < 2*Ks) {
+    if (length < 2*Ks) {
         xmin = ceil(x - length*0.5 + 1e-9);
     }
     double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
     double indf = (x - xmin) * step;          // index flottant dans le tableau coeff 
     
     int i = 0;
-    for(;indf >= 0; indf -= step) {
+    for (;indf >= 0; indf -= step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
         // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
     }
-    for(indf = -indf; indf < 1024. && i < length; indf += step) {
+    for (indf = -indf; indf < 1024. && i < length; indf += step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
     }
     length = i;
-    while(i--) W[i] /= sum;     // On normalise pour que la somme des poids fasse 1.
+    while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
     return xmin;
 }
-
 
 
 template<int s>
@@ -71,15 +70,17 @@ class Lanczos : public Kernel {
 
     private:
     double kernel_function(double d) {
-        if(d > s) return 0.;
-        else if(d == 0.) return 1.;
+        if (d > s) return 0.;
+        else if (d == 0.) return 1.;
         else {
             d *= 3.14159265358979323846;
             return (sin(d) / d) * (sin(d/s) / d * s);
         }
     }
 
-    Lanczos() : Kernel(s) {init();}
+    Lanczos() : Kernel(s) {
+        init();
+    }    
 };
 
 
@@ -87,10 +88,38 @@ class NearestNeighbour : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
-        if(d > 0.5) return 0.;
+        if (d > 0.5) return 0.;
         else return 1.;
     }
-    NearestNeighbour() : Kernel(0.6, true) {init();}
+    NearestNeighbour() : Kernel(0.6, true) {
+        init();
+    }
+    
+    int weight(float* W, int &length, double x, double ratio) const {
+        double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
+        double step = 1024. / Ks;
+        float xmin = x - Ks;
+        if (length < 2*Ks) {
+            float xmin = x - length*0.5 ;
+        }
+        double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
+        double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
+
+        int i = 0;
+        for (;indf >= 0; indf -= step) {
+            int ind = (int) indf;
+            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+            // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
+        }
+        for (indf = -indf; indf < 1024. && i < length; indf += step) {
+            int ind = (int) indf;
+            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+        }
+        length = i;
+        while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
+        return xmin;
+
+    };
 };
 
 
@@ -98,10 +127,12 @@ class Linear : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
-        if(d > 1) return 0.;
+        if (d > 1) return 0.;
         else return 1.-d;
     }
-    Linear() : Kernel(1.) {init();}
+    Linear() : Kernel(1.) {
+        init();
+    }
 };
 
 

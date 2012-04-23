@@ -50,7 +50,8 @@
  * Les rééchantillonages en 2D sont effectués en échantillonnant en 1D selon chaque dimension.
  */
 class Kernel {
-private:
+    friend class NearestNeighbour;
+    private:
 
     float coeff[1025];
 
@@ -129,7 +130,7 @@ public:
      * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
      * indiquer le nombre réel de coefficients écrits dans W.
      */
-    int weight(float* W, int &length, double x, double ratio) const;
+    virtual int weight(float* W, int &length, double x, double ratio) const;
 
 };
 
