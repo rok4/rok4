@@ -38,7 +38,7 @@
 #include <cmath>
 #include "Kernel.h"
 #include "Logger.h"
-int Kernel::weight(float* W, int &length, double x, double ratio) const {
+double Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
@@ -69,7 +69,7 @@ template<int s>
 class Lanczos : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
 
-private:
+    private:
     double kernel_function(double d) {
         if (d > s) return 0.;
         else if (d == 0.) return 1.;
@@ -87,7 +87,7 @@ private:
 
 class NearestNeighbour : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-private:
+    private:
     double kernel_function(double d) {
         if (d > 0.5) return 0.;
         else return 1.;
@@ -96,12 +96,12 @@ private:
         init();
     }
 
-    int weight(float* W, int &length, double x, double ratio) const {
+    double weight(float* W, int &length, double x, double ratio) const {
         double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
         double step = 1024. / Ks;
-        float xmin = x - Ks;
+        double xmin = x - Ks;
         if (length < 2*Ks) {
-            float xmin = x - length*0.5 ;
+            xmin = x - length*0.5 ;
         }
         double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
         double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
@@ -121,7 +121,6 @@ private:
         return xmin;
 
     };
-
 };
 
 
