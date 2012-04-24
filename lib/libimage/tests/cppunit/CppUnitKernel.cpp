@@ -85,8 +85,10 @@ protected:
 
       CPPUNIT_ASSERT(l <= l2);                   // On vérifie qu'il y a moins de coeff que place dans le tableau W
       CPPUNIT_ASSERT(xmin < x+1);
-      CPPUNIT_ASSERT(abs(nb_min - nb_max) <= 1); // On vérifie qu'il y a autant de coeff avant et apres x (à 1 près)
       CPPUNIT_ASSERT_DOUBLES_EQUAL(1., sum, 1e-6);
+      //WARNING NN fails this one
+      //if (kernelType == Interpolation::NEAREST_NEIGHBOUR) continue;
+      CPPUNIT_ASSERT(abs(nb_min - nb_max) <= 1); // On vérifie qu'il y a autant de coeff avant et apres x (à 1 près)
     }
   }
 
