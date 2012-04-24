@@ -64,6 +64,36 @@ BEGIN {}
 INIT {}
 END {}
 
+################################################################################
+# Global template Pyramid
+
+my $STRLEVELTMPLT = <<"TLEVEL";
+    <level>
+        <tileMatrix>__ID__</tileMatrix>
+        <baseDir>__DIRIMG__</baseDir>
+<!-- __MTD__ -->
+        <tilesPerWidth>__TILEW__</tilesPerWidth>
+        <tilesPerHeight>__TILEH__</tilesPerHeight>
+        <pathDepth>__DEPTH__</pathDepth>
+        <nodata>
+            <filePath>__NODATAPATH__</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>__MINROW__</minTileRow>
+            <maxTileRow>__MAXROW__</maxTileRow>
+            <minTileCol>__MINCOL__</minTileCol>
+            <maxTileCol>__MAXCOL__</maxTileCol>
+        </TMSLimits>
+    </level>
+<!-- __LEVELS__ -->
+TLEVEL
+
+my $STRLEVELTMPLTMORE = <<"TMTD";
+            <metadata type='INT32_DB_LZW'>
+                <baseDir>__DIRMTD__</baseDir>
+                <format>__FORMATMTD__</format>
+            </metadata>
+TMTD
 
 ################################################################################
 # sample: 
@@ -219,9 +249,58 @@ sub _init {
 ################################################################################
 # get
 sub getID {
-  my $self = shift;
-  return $self->{id};
+    my $self = shift;
+    return $self->{id};
 }
+
+sub getLevelToXML {
+    my $self = shift;
+
+    my $levelXML = $STRLEVELTMPLT;
+
+    my $id       = $self->{id};
+    $levelXML =~ s/__ID__/$id/;
+
+    my $dirimg   = $self->{dir_image};
+    $levelXML =~ s/__DIRIMG__/$dirimg/;
+
+    my $pathnd = $self->{dir_nodata}."/nd.tiff";
+    $levelXML =~ s/__NODATAPATH__/$pathnd/;
+
+    my $tilew    = $self->{size}->[0];
+    $levelXML =~ s/__TILEW__/$tilew/;
+    my $tileh    = $self->{size}->[1];
+    $levelXML =~ s/__TILEH__/$tileh/;
+
+    my $depth    =  $self->{dir_depth};
+    $levelXML =~ s/__DEPTH__/$depth/;
+
+    my $minrow   =  $self->{limit}->[0];
+    $levelXML =~ s/__MINROW__/$minrow/;
+    my $maxrow   =  $self->{limit}->[1];
+    $levelXML =~ s/__MAXROW__/$maxrow/;
+    my $mincol   =  $self->{limit}->[2];
+    $levelXML =~ s/__MINCOL__/$mincol/;
+    my $maxcol   =  $self->{limit}->[3];
+    $levelXML =~ s/__MAXCOL__/$maxcol/;
+
+    # metadata
+    if (defined $self->{dir_metadata}) {
+        $levelXML =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
+
+        my $dirmtd   = $self->{dir_metadata};
+        $levelXML =~ s/__DIRMTD__/$dirmtd/;
+
+        my $formatmtd = $self->{compress_metadata};
+        $levelXML  =~ s/__FORMATMTD__/$formatmtd/;
+    } else {
+        $levelXML =~ s/<!-- __MTD__ -->\n//;
+    }
+
+    return $levelXML;
+}
+
+
 1;
 __END__
 

@@ -60,6 +60,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4::TileMatrixSet;
 use BE4::PyrImageSpec;
+use BE4::Level;
 
 # constantes
 use constant TRUE  => 1;
@@ -120,6 +121,9 @@ my %this =
 
     sourceByLevel => {},
     sourcePyramids => {},
+
+    currentscript => [],
+    scripts => [],
 
     doneTiles => {},
 );
@@ -512,7 +516,7 @@ sub _validate {
 
     ALWAYS(">>> Validate composition");
     if (! main::validateComposition()) {
-        ERROR ("Cannot treat composition !");
+        ERROR ("Cannot validate composition !");
         return FALSE;
     }
 
@@ -829,31 +833,44 @@ sub doIt {
 
     TRACE();
 
+    main::initScripts();
+
     my $composition = $this{composition};
     my $bboxes = $this{bboxes};
     my $tms = $this{pyramid}->{tms};
 
     while( my ($levelId,$sources) = each(%$composition) ) {
         INFO(sprintf "Level %s",$levelId);
+
         my $priority = 1;
+        my $baseImage = sprintf "%s/%s/%s/%s",
+                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
+                        $this{pyramid}->{image_dir},$levelId;
+        my $baseNodata = sprintf "%s/%s/%s/%s",
+                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
+                        $this{pyramid}->{nodata_dir},$levelId;
+        my ($IMIN,$JMIN,$IMAX,$JMAX);
+
         while( exists $sources->{$priority}) {
-            DEBUG(sprintf "Priority %s",$priority);
             my $source = $sources->{$priority};
+            INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
             $priority++;
             my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
 
             for (my $i = $imin; $i <= $imax; $i++) {
                 for (my $j = $jmin; $j <= $jmax; $j++) {
                     if (exists $this{doneTiles}->{$i."_".$j}) {
-                        DEBUG(sprintf "Tile %s,%s already done",$i,$j); #TEST#
+                        DEBUG(sprintf "Tile %s,%s already done (with treatment)",$i,$j); #TEST#
                         next;
                     }
                     my $imagePath = main::getCacheNameOfImage($i,$j);
                     my $sourceImage = $source->{pyr}.$imagePath;
-                    my $finaleImage = sprintf "%s/%s/%s/%s%s",
-                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{image_dir},$levelId,$imagePath;
+                    my $finaleImage = $baseImage.$imagePath;
                     if (! -f $sourceImage) {
+                        next;
+                    }
+                    if (-f $finaleImage) {
+                        DEBUG(sprintf "Tile %s,%s already done (link)",$i,$j); #TEST#
                         next;
                     }
                     my @images;
@@ -867,9 +884,37 @@ sub doIt {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
+                    # we update extrems tiles
+                    if (! defined $IMIN || $i < $IMIN) {$IMIN = $i;}
+                    if (! defined $JMIN || $j < $JMIN) {$JMIN = $j;}
+                    if (! defined $IMAX || $i > $IMAX) {$IMAX = $i;}
+                    if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
                 }
             }
         }
+
+        my $levelOrder = $tms->getTileMatrixOrder($levelId);
+        my $objLevel = BE4::Level->new({
+            id                => $levelId,
+            order             => $levelOrder,
+            dir_image         => File::Spec->abs2rel($baseImage,$this{pyramid}->{pyr_desc_path}),
+            dir_nodata        => File::Spec->abs2rel($baseNodata,$this{pyramid}->{pyr_desc_path}),
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
+            size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
+            dir_depth         => $this{pyramid}->{dirDepth},
+            limit             => [$IMIN,$JMIN,$IMAX,$JMAX],
+            is_in_pyramid  => 0
+        });
+
+        if (! defined $objLevel) {
+            ERROR(sprintf "Can not create the pyramid Level object : '%s'", $levelId);
+            return FALSE;
+        }
+
+        $this{pyramid}->{levels}->{$levelId} = $objLevel;
+
         delete $this{doneTiles};
     }
 
@@ -925,8 +970,11 @@ sub treatTile {
     TRACE();
 
     if (scalar @images == 1) {
-        INFO(sprintf "On crée un lien de %s vers %s",$finaleImage,$images[0]); #TEST#
-        return TRUE;
+        if (! main::makeLink($finaleImage,$images[0])) {
+            ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]); #TEST#
+            return FALSE;
+        }
+        return TRUE
     }
 
     my $mergeMethod = $this{pyramid}->{merge_method};
@@ -948,6 +996,31 @@ sub treatTile {
 
     return TRUE;
 }
+
+# method: initScripts
+#--------------------------------------------------------------------------------------------------------
+sub initScripts {
+
+    for (my $i = 0; $i < $this{pyramid}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+
+        my $header = sprintf ("# Variables d'environnement\n");
+        $header   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
+        $header   .= sprintf ("TMP_DIR=\"%s\"\n",
+            File::Spec->catdir($this{process}->{path_temp},$this{pyramid}->{pyr_name},$scriptId));
+        $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->{pyr_data_path});
+        $header   .= "\n";
+
+        $header .= "# creation du repertoire de travail\n";
+        $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+        push @{$this{scripts}}, $header
+    }
+
+    $this{currentscript} = 0;
+
+}
+
 
 # method: getCacheNameOfImage
 #  return the image path : /3E/42/01.tif
@@ -1040,6 +1113,52 @@ sub encodeB36toInt {
     return "0"x($padlength - length $number).$number;
     # return decode_base36($b36,$padlength);
 }
+
+sub makeLink {
+    my $finaleImage = shift;
+    my $baseImage = shift;
+
+    TRACE();
+
+    #create folders
+    eval { mkpath(dirname($finaleImage),0,0751); };
+    if ($@) {
+        ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($finaleImage), $@);
+        return FALSE;
+    }
+
+    my $follow_relfile = undef;
+
+    if (-f $baseImage && ! -l $baseImage) {
+        $follow_relfile = File::Spec->abs2rel($baseImage,dirname($finaleImage));
+    }
+    elsif (-f $baseImage && -l $baseImage) {
+        my $linked   = File::Spec::Link->linked($baseImage);
+        my $realname = File::Spec::Link->full_resolve($linked);
+        $follow_relfile = File::Spec->abs2rel($realname, dirname($finaleImage));
+    } else {
+        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",basename($baseImage),dirname($baseImage));
+        return FALSE;  
+    }
+
+    if (! defined $follow_relfile) {
+        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
+                    basename($baseImage),
+                    dirname($baseImage));
+        return FALSE;
+    }
+
+    my $result = eval { symlink ($follow_relfile, $finaleImage); };
+    if (! $result) {
+        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
+                    $follow_relfile,$finaleImage,$!);
+        return FALSE;
+    }
+
+    return TRUE;
+
+}
+
 
 ################################################################################
 #
