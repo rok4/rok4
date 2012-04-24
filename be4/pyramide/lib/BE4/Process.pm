@@ -784,6 +784,7 @@ sub mergeNtiff {
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
     $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
     $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
+    $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
     $cmd .= sprintf ( " -t %s ", $dataType);
     $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());
     $cmd .= sprintf ( " -b %s ", $pyr->getBitsPerSample() );
