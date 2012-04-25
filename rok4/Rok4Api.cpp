@@ -111,7 +111,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
         std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
         LOGGER_INFO ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" );
-        //loggerInitialised=true;
+        loggerInitialised=true;
     } else {
         LOGGER_INFO ( "*** NOUVEAU CLIENT DU LOGGER ***" );
     }
