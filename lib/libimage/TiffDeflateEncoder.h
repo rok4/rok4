@@ -41,11 +41,10 @@
 #include "Data.h"
 #include "Image.h"
 #include <zlib.h>
+#include "TiffEncoder.h"
 
-class TiffDeflateEncoder : public DataStream {
+class TiffDeflateEncoder : public TiffEncoder {
 private:
-    Image *image;
-    int line;   // Ligne courante
     uint8_t* linebuffer;
 
     size_t deflateBufferSize;
@@ -60,12 +59,6 @@ public:
     ~TiffDeflateEncoder();
     size_t read(uint8_t *buffer, size_t size);
     bool eof();
-    std::string getType() {
-        return "image/tiff";
-    }
-    int getHttpStatus() {
-        return 200;
-    }
 };
 
 #endif

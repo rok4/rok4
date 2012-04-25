@@ -40,10 +40,10 @@
 
 #include "Data.h"
 #include "Image.h"
+#include "TiffEncoder.h"
 
-class TiffLZWEncoder : public DataStream {
-    Image *image;
-    int line;   // Ligne courante
+class TiffLZWEncoder : public TiffEncoder {
+protected:
     size_t rawBufferSize;
     uint8_t* rawBuffer;
     size_t lzwBufferSize;
@@ -55,12 +55,7 @@ public:
     ~TiffLZWEncoder();
     size_t read(uint8_t *buffer, size_t size);
     bool eof();
-    std::string getType() {
-        return "image/tiff";
-    }
-    int getHttpStatus() {
-        return 200;
-    }
+    
 };
 
 #endif

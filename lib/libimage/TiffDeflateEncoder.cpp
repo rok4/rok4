@@ -117,7 +117,7 @@ const uint8_t TIFF_HEADER_DEFLATE_INT8_RGBA[128]  = { //FIXME
 // 128
 
 
-TiffDeflateEncoder::TiffDeflateEncoder(Image* image): image(image), line(-1), deflateBufferSize(0),deflateBufferPos(0) , deflateBuffer(NULL)
+TiffDeflateEncoder::TiffDeflateEncoder(Image* image): deflateBufferSize(0),deflateBufferPos(0) , deflateBuffer(NULL), TiffEncoder(image)
 {
     zstream.zalloc = Z_NULL;
     zstream.zfree = Z_NULL;
@@ -182,7 +182,6 @@ TiffDeflateEncoder::~TiffDeflateEncoder()
 {
     if (linebuffer) delete[] linebuffer;
     if (deflateBuffer) delete[] deflateBuffer;
-    delete image;
 }
 
 bool TiffDeflateEncoder::encode() {

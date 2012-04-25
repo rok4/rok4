@@ -116,7 +116,7 @@ const uint8_t TIFF_HEADER_LZW_INT8_RGBA[128]  = { //FIXME
 // 128
 
 
-TiffLZWEncoder::TiffLZWEncoder(Image* image): image(image), line(-1), rawBufferSize(0), lzwBufferSize(0),lzwBufferPos(0) , lzwBuffer(NULL), rawBuffer(NULL)
+TiffLZWEncoder::TiffLZWEncoder(Image* image): rawBufferSize(0), lzwBufferSize(0),lzwBufferPos(0) , lzwBuffer(NULL), rawBuffer(NULL), TiffEncoder(image)
 {
 
 }
@@ -177,5 +177,4 @@ bool TiffLZWEncoder::eof()
 TiffLZWEncoder::~TiffLZWEncoder()
 {
     if (lzwBuffer) delete[] lzwBuffer;
-    delete image;
 }
