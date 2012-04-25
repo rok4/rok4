@@ -63,7 +63,8 @@ protected:
     float W[100];
     for(int i = 0; i < 1000; i++) {    
       
-      const Kernel &K = Kernel::getInstance(Interpolation::KernelType(i%6)); // Il y a 6 Noyaux défini dans KernelType
+      Interpolation::KernelType kT = Interpolation::KernelType((i%6)+1);
+      const Kernel &K = Kernel::getInstance(kT); // Il y a 6 Noyaux défini dans KernelType
 
 
       int l = 2 + rand() % 99;
@@ -87,7 +88,7 @@ protected:
       CPPUNIT_ASSERT(xmin < x+1);
       CPPUNIT_ASSERT_DOUBLES_EQUAL(1., sum, 1e-6);
       //WARNING NN fails this one
-      if (kernelType == Interpolation::NEAREST_NEIGHBOUR) continue;
+      if (kT == Interpolation::NEAREST_NEIGHBOUR) continue;
       CPPUNIT_ASSERT(abs(nb_min - nb_max) <= 1); // On vérifie qu'il y a autant de coeff avant et apres x (à 1 près)
     }
   }
