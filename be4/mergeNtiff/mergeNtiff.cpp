@@ -121,68 +121,72 @@ int h2i(char s)
 * Lecture des parametres de la ligne de commande
 */
 
-int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, bool& nowhite, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
 
     char strnodata[10];
     
-    if (argc != 17) {
+    if (argc != 17 && argc != 18) {
         LOGGER_ERROR(" Nombre de parametres incorrect");
         usage();
         return -1;
     }
 
     for(int i = 1; i < argc; i++) {
+        if(!strcmp(argv[i],"-nowhite")) {
+            nowhite = true;
+            continue;
+        }
         if(argv[i][0] == '-') {
             switch(argv[i][1]) {
-            case 'f': // fichier de liste des images source
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
-                strcpy(imageListFilename,argv[i]);
-                break;
-            case 'i': // interpolation
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
-                if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
-                else if(strncmp(argv[i], "nn",3) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
-                else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Interpolation::CUBIC; // =2
-                else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
-                else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
-                break;
-            case 'n': // nodata
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
-                strcpy(strnodata,argv[i]);
-                break;
-            case 't': // type
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
-                if(strncmp(argv[i], "image",5) == 0) type = 1 ;
-                else if(strncmp(argv[i], "mtd",3) == 0) type = 0 ;
-                else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
-                break;
-            case 's': // sampleperpixel
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
-                if(strncmp(argv[i], "1",1) == 0) sampleperpixel = 1 ;
-                else if(strncmp(argv[i], "3",1) == 0) sampleperpixel = 3 ;
-                else if(strncmp(argv[i], "4",1) == 0) sampleperpixel = 4 ;
-                else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
-                break;
-            case 'b': // bitspersample
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
-                if(strncmp(argv[i], "8",1) == 0) bitspersample = 8 ;
-                else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
-                else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
-                break;
-            case 'a': // sampleformat
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
-                if(strncmp(argv[i],"uint",4) == 0) sampleformat = SAMPLEFORMAT_UINT ;
-                else if(strncmp(argv[i],"float",5) == 0) sampleformat = SAMPLEFORMAT_IEEEFP ;
-                else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
-                break;
-            case 'p': // photometric
-                if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
-                if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
-                else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
-                else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
-                else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
-                break;
-            default: usage(); return -1;
+                case 'f': // fichier de liste des images source
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+                    strcpy(imageListFilename,argv[i]);
+                    break;
+                case 'i': // interpolation
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
+                    if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
+                    else if(strncmp(argv[i], "nn",3) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
+                    else if(strncmp(argv[i], "bicubic",9) == 0) interpolation = Interpolation::CUBIC; // =2
+                    else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
+                    else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
+                    break;
+                case 'n': // nodata
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
+                    strcpy(strnodata,argv[i]);
+                    break;
+                case 't': // type
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
+                    if(strncmp(argv[i], "image",5) == 0) type = 1 ;
+                    else if(strncmp(argv[i], "mtd",3) == 0) type = 0 ;
+                    else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
+                    break;
+                case 's': // sampleperpixel
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+                    if(strncmp(argv[i], "1",1) == 0) sampleperpixel = 1 ;
+                    else if(strncmp(argv[i], "3",1) == 0) sampleperpixel = 3 ;
+                    else if(strncmp(argv[i], "4",1) == 0) sampleperpixel = 4 ;
+                    else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+                    break;
+                case 'b': // bitspersample
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+                    if(strncmp(argv[i], "8",1) == 0) bitspersample = 8 ;
+                    else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
+                    else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+                    break;
+                case 'a': // sampleformat
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+                    if(strncmp(argv[i],"uint",4) == 0) sampleformat = SAMPLEFORMAT_UINT ;
+                    else if(strncmp(argv[i],"float",5) == 0) sampleformat = SAMPLEFORMAT_IEEEFP ;
+                    else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+                    break;
+                case 'p': // photometric
+                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+                    if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
+                    else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
+                    else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
+                    else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+                    break;
+                default: usage(); return -1;
             }
         }
     }
@@ -419,7 +423,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int nodata, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
 {
     if (TabImageIn.empty()) {
         LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
@@ -437,7 +441,7 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 
     extendedCompoundImageFactory ECImgfactory ;
     int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
-    ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,nodata,sampleformat,mirrors);
+    ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,nodata,sampleformat,mirrors,nowhite);
 
     return pECI ;
 }
@@ -591,7 +595,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
 
     // Exception : l'image d'entree n'intersecte pas l'image finale
-    // Cela est important seulement si il n'y a pas de mirroirs, dans le cas contraire
+    // Cela est important seulement si il n'y a pas de mirroirs, dans le cas contraire,
     // ce problème est géré par les mirroirs.
     if (pECI->getmirrors() < 1 && (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax()))
     {
@@ -670,7 +674,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int nodata, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int nodata, bool nowhite, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
@@ -680,7 +684,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
         // Mise en superposition du paquet d'images en 2 etapes
 
         // Etape 1 : Creation d'une image composite
-        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,sampleformat,0);
+        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,nowhite,sampleformat,0);
         ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
         if (pECI==NULL) {
@@ -702,7 +706,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
             uint mirrors=addMirrors(pECI);
 
-            ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,sampleformat,mirrors);
+            ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,nowhite,sampleformat,mirrors);
             
             // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
 
@@ -730,7 +734,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
-        pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,nodata,sampleformat,0))==NULL) {
+        pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,nodata,sampleformat,0,nowhite))==NULL) {
         LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
         return -1;
     }
@@ -746,6 +750,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 int main(int argc, char **argv) {
     char imageListFilename[256];
     int nodata;
+    bool nowhite = false;
     uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
     int type=-1;
     Interpolation::KernelType interpolation;
@@ -774,7 +779,7 @@ int main(int argc, char **argv) {
     logw.setf(std::ios::fixed,std::ios::floatfield);
 
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
+    if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
         LOGGER_ERROR("Echec lecture ligne de commande");
         sleep(1);
         return -1;
@@ -812,7 +817,7 @@ int main(int argc, char **argv) {
     }
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
-    if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,sampleformat) < 0){
+    if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,nowhite,sampleformat) < 0){
         LOGGER_ERROR("Echec fusion des paquets d images");
         sleep(1);
         return -1;
