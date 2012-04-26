@@ -61,7 +61,7 @@ protected:
 
 public:
     TiffLZWEncoder(Image *image): image(image), line(-1), rawBufferSize(0), lzwBufferSize(0),lzwBufferPos(0) , lzwBuffer(NULL), rawBuffer(NULL){}
-    ~TiffLZWEncoder(){if (lzwBuffer) delete[] lzwBuffer;}
+    ~TiffLZWEncoder(){if (lzwBuffer) delete[] lzwBuffer; delete image;}
     size_t read(uint8_t *buffer, size_t size){
     size_t offset = 0, header_size=TiffHeader::headerSize, linesize=image->width*image->channels, dataToCopy=0;
     if (!lzwBuffer) {

@@ -99,6 +99,7 @@ public:
     ~TiffDeflateEncoder() {
         if (linebuffer) delete[] linebuffer;
         if (deflateBuffer) delete[] deflateBuffer;
+        delete image;
     }
     size_t read(uint8_t *buffer, size_t size) {
         size_t offset = 0, header_size=TiffHeader::headerSize, linesize=image->width*image->channels, dataToCopy=0;
