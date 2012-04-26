@@ -7,7 +7,7 @@
 #    LZW_LIBRARY
 
 IF (USE_SYSTEM_LIB)
-  FIND_PATH(LZW_INCLUDE_DIR lzw_encoder.h 
+  FIND_PATH(LZW_INCLUDE_DIR lzwEncoder.h 
     /usr/local/include 
     /usr/include 
     c:/msys/local/include
@@ -20,7 +20,7 @@ IF (USE_SYSTEM_LIB)
     C:/dev/cpp/liblzw/src
     )
 ELSE (USE_SYSTEM_LIB)
-  FIND_PATH(LZW_INCLUDE_DIR NAMES lzw_encoder.h PATHS  
+  FIND_PATH(LZW_INCLUDE_DIR NAMES lzwEncoder.h PATHS  
     ${DEP_PATH}/include
     NO_DEFAULT_PATH
     NO_CMAKE_ENVIRONMENT_PATH

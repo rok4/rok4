@@ -35,27 +35,30 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _TIFFLZWENCODER_
-#define _TIFFLZWENCODER_
+#ifndef _TIFFDEFLATEENCODER_
+#define _TIFFDEFLATEENCODER_
 
 #include "Data.h"
 #include "Image.h"
+#include <zlib.h>
 #include "TiffEncoder.h"
 
-class TiffLZWEncoder : public TiffEncoder {
-protected:
-    size_t rawBufferSize;
-    uint8_t* rawBuffer;
-    size_t lzwBufferSize;
-    size_t lzwBufferPos;
-    uint8_t* lzwBuffer;
+class TiffDeflateEncoder : public TiffEncoder {
+private:
+    uint8_t* linebuffer;
+
+    size_t deflateBufferSize;
+    size_t deflateBufferPos;
+    uint8_t* deflateBuffer;
+
+    z_stream zstream;
+    bool encode();
 
 public:
-    TiffLZWEncoder(Image *image);
-    ~TiffLZWEncoder();
+    TiffDeflateEncoder(Image *image);
+    ~TiffDeflateEncoder();
     size_t read(uint8_t *buffer, size_t size);
     bool eof();
-    
 };
 
 #endif

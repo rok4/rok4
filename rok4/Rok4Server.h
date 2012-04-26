@@ -75,7 +75,9 @@ private:
     std::map<std::string, Style*> styleList;
     std::vector<std::string> wmsCapaFrag;  /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
     std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
-
+    
+    DataSource* notFoundError;
+    
     char* projEnv;
     
     static void* thread_loop ( void* arg );

@@ -340,6 +340,9 @@ sub _init {
     }
     $self->{imagesize} = $params->{imagesize};
     #
+    if (! exists($params->{nowhite})) {
+        $params->{nowhite} = 'false';
+    }
     if (! exists($params->{color})) {
         WARN ("Parameter 'color' (for nodata) has not been set. The default value will be used (consistent with the pixel's format");
         $params->{color} = undef;
@@ -422,7 +425,8 @@ sub _load {
             path_nodata      => $params->{path_nodata},
             pixel            => $self->getPixel(),
             imagesize        => $self->getImageSize(), 
-            color            => $params->{color}
+            color            => $params->{color},
+            nowhite          => $params->{nowhite}
     });
 
     if (! defined $objNodata) {

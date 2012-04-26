@@ -40,26 +40,27 @@
 #include "Rok4Server.h"
 #include <iostream>
 #include <algorithm>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <cstring>
+#include <proj_api.h>
+#include <csignal>
 
 #include "TiffEncoder.h"
 #include "TiffLZWEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
-#include <sstream>
-#include <vector>
-#include <map>
 #include "Message.h"
-#include <fstream>
-#include <cstring>
 #include "Logger.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
 #include "ServiceException.h"
 #include "fcgiapp.h"
-#include <proj_api.h>
-#include <PaletteDataSource.h>
-#include <csignal>
+#include "PaletteDataSource.h"
+#include "TiffDeflateEncoder.h"
 
 
 /**
@@ -135,7 +136,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 * @brief Construction du serveur
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char *& projEnv) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ), running(false) {
+        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ), running(false), notFoundError(NULL) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );
     buildWMSCapabilities();
@@ -145,6 +146,10 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
 
 Rok4Server::~Rok4Server()
 {
+    if (notFoundError) {
+        delete notFoundError;
+        notFoundError = NULL;
+    }
 }
 
 void Rok4Server::initFCGI()
@@ -311,6 +316,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         if ( getParam(format_option,"compression").compare("lzw")==0) {
             return new TiffLZWEncoder( image );
         }
+        if ( getParam(format_option,"compression").compare("deflate")==0) {
+            return new TiffDeflateEncoder( image );
+        }
         return new TiffEncoder ( image );
     }
     else if ( format == "image/jpeg" )
@@ -331,21 +339,30 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
     int tileCol,tileRow;
+    bool noDataError;
     Style* style=0;
 
     // Récupération des parametres de la requete
-    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style );
-
+    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
+    
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
         return errorResp;
     }
+    errorResp = NULL;
+    if (noDataError) {
+        if (!notFoundError) {
+            notFoundError = new SERDataSource ( new ServiceException("", HTTP_NOT_FOUND, "No data found", "wmts") );
+        }
+        errorResp = notFoundError;
+    }
+    
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {
-        tileSource= new PaletteDataSource ( L->gettile ( tileCol, tileRow, tileMatrix ),style->getPalette() );
+        tileSource= new PaletteDataSource ( L->gettile ( tileCol, tileRow, tileMatrix, errorResp ),style->getPalette() );
     } else {
-        tileSource= L->gettile ( tileCol, tileRow, tileMatrix );
+        tileSource= L->gettile ( tileCol, tileRow, tileMatrix , errorResp );
     }
 
 

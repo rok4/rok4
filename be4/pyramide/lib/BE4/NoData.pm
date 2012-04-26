@@ -79,6 +79,7 @@ sub new {
     imagesize       => '4096', # ie 4096 px by default !
     pixel           => undef, # Pixel object
     color           => undef, # ie FFFFFF by default !
+    nowhite         => FALSE, # false by default !
     # no interpolation for the tile image !
   };
 
@@ -105,18 +106,34 @@ sub _init {
     # init. params
     # All attributes have to be present in parameters and defined, except 'color' which could be undefined
 
+    if (! exists  $params->{nowhite} || ! defined  $params->{nowhite}) {
+        ERROR ("Parameter 'nowhite' required !");
+        return FALSE;
+    }
+    if (lc $params->{nowhite} eq 'true') {
+        $self->{nowhite} = TRUE;
+    }
+    elsif (lc $params->{nowhite} eq 'false') {
+        $self->{nowhite} = FALSE;
+    } else {
+        ERROR (sprintf "Parameter 'nowhite' is not valid (%s). Possible values are true or false !",$params->{nowhite});
+        return FALSE;
+    }
+
     if (! exists  $params->{imagesize} || ! defined  $params->{imagesize}) {
         ERROR ("Parameter 'imagesize' required !");
         return FALSE;
     }
     $self->{imagesize}      = $params->{imagesize};
-    #
+
+
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
     $self->{pixel}          = $params->{pixel};
-    #
+
+
     if (! exists  $params->{path_nodata} || ! defined  $params->{path_nodata}) {
         ERROR ("Parameter 'path_nodata' required !");
         return FALSE;
@@ -126,11 +143,13 @@ sub _init {
         return FALSE;
     }
     $self->{path_nodata}    = $params->{path_nodata};
-    #
+
+
     if (! exists  $params->{color}) {
         ERROR ("Parameter 'color' required !");
         return FALSE;
     }
+
 #   for nodata value, it has to be coherent with bitspersample/sampleformat :
 #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
 #       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
@@ -148,12 +167,12 @@ sub _init {
     } else {
         if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
             if (!($params->{color} =~ m/^[-+]?(\d)+$/)) {
-                ERROR ("Incorrect parameter nodata for a float32 pixel's format !");
+                ERROR (sprintf "Incorrect parameter nodata for a float32 pixel's format (%s) !",$params->{color});
                 return FALSE;
             }
         } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
             if (!($params->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR ("Incorrect parameter nodata for this int8 pixel's format !");
+                ERROR (sprintf "Incorrect parameter nodata for this int8 pixel's format (%s) !",$params->{color});
                 return FALSE;
             }
         } else {
