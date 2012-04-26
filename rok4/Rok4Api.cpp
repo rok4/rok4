@@ -379,8 +379,9 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
     TiffHeader* header = new TiffHeader;
     RawImage* rawImage=new RawImage ( width,height,channels,0 );
-    TiffEncoder tiffStream ( rawImage );
-    tiffStream.read ( header->data,128 );
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder(rawImage, TIFF_RAW_INT8);
+    tiffStream->read ( header->data,128 );
+    delete tiffStream;
     return header;
 }
 

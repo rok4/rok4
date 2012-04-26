@@ -40,17 +40,15 @@
 
 #include "Data.h"
 #include "Image.h"
+#include "format.h"
 
 class TiffEncoder : public DataStream {
-protected:
-    Image *image;
-    int line;   // Ligne courante
 
 public:
-    TiffEncoder(Image *image) : image(image), line(-1) {}
-    ~TiffEncoder();
-    virtual size_t read(uint8_t *buffer, size_t size);
-    virtual bool eof();
+    static DataStream* getTiffEncoder(Image* image, eformat_data format);
+    
+    virtual size_t read(uint8_t *buffer, size_t size) = 0;
+    virtual bool eof() = 0;
     std::string getType() {
         return "image/tiff";
     }

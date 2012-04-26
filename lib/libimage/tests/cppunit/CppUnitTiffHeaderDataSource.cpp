@@ -31,8 +31,8 @@ void CppUnitTiffHeaderDataSource::rawHeaderConformity() {
     int channels = 3;
 
     rawImage = new RawImage(width, height, channels, 0);
-    TiffEncoder tiffStream(rawImage);
-    tiffStream.read(TiffEncoderBuffer, pos);
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder(rawImage, TIFF_RAW_INT8);
+    tiffStream->read(TiffEncoderBuffer, pos);
     
     fullTiffDS = new TiffHeaderDataSource(0, TIFF_RAW_INT8, channels, width, height, width*height*channels);
     tiffHeaderBuffer = fullTiffDS->getData(tiffHeaderSize);
@@ -45,16 +45,17 @@ void CppUnitTiffHeaderDataSource::rawHeaderConformity() {
     pos = 128;
 
     memset(TiffEncoderBuffer, 0, pos);
-
+    
     delete fullTiffDS;
-
+    delete tiffStream;
+    
     width = 256;
     height = 256;
     channels = 1;
 
     rawImage = new RawImage(width, height, channels, 0);
-    TiffEncoder tiffStream2(rawImage);
-    tiffStream2.read(TiffEncoderBuffer, pos);
+    tiffStream = TiffEncoder::getTiffEncoder(rawImage, TIFF_RAW_INT8);
+    tiffStream->read(TiffEncoderBuffer, pos);
 
     fullTiffDS = new TiffHeaderDataSource(0, TIFF_RAW_INT8, channels, width, height, width*height*channels);
     tiffHeaderBuffer = fullTiffDS->getData(tiffHeaderSize);

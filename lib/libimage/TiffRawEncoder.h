@@ -35,29 +35,59 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "TiffEncoder.h"
+#ifndef _TIFFRAWENCODER_
+#define _TIFFRAWENCODER_
 
-#include "TiffRawEncoder.h"
-#include "TiffLZWEncoder.h"
-#include "TiffDeflateEncoder.h"
+#include "Data.h"
+#include "Image.h"
+#include "TiffHeader.h"
 
-DataStream* TiffEncoder::getTiffEncoder(Image* image, eformat_data format)
-{
-    switch (format) {
-    case TIFF_RAW_INT8 :
-        return new TiffRawEncoder<uint8_t>(image);
-    case TIFF_LZW_INT8 :
-        return new TiffLZWEncoder<uint8_t>(image);
-    case TIFF_DEFLATE_INT8 :
-        return new TiffDeflateEncoder<uint8_t>(image);
-    case TIFF_RAW_FLOAT32 :
-        return new TiffRawEncoder<float>(image);
-    case TIFF_LZW_FLOAT32 :
-        return new TiffLZWEncoder<float>(image);
-    case TIFF_DEFLATE_FLOAT32 :
-        return new TiffDeflateEncoder<float>(image);
-    default:
-        return NULL;
+#include <cstring>
+
+template <typename T>
+class TiffRawEncoder : public TiffEncoder {
+protected:
+    Image *image;
+    int line;   // Ligne courante
+
+public:
+    TiffRawEncoder(Image *image) : image(image), line(-1) {}
+    ~TiffRawEncoder() {
+        delete image;
     }
-}
+    virtual size_t read(uint8_t *buffer, size_t size) {
+        size_t offset = 0, header_size=TiffHeader::headerSize, linesize=image->width*image->channels;
+        if (line == -1) { // écrire le header tiff
+            if (image->channels==1)
+                if ( sizeof(T) == sizeof(float)) {
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_FLOAT32_GRAY, header_size);
+                } else {
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_GRAY, header_size);
+                }
+            else if (image->channels==3)
+                memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGB, header_size);
+            else if (image->channels==4)
+                memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGBA, header_size);
+            *((uint32_t*)(buffer+18))  = image->width;
+            *((uint32_t*)(buffer+30))  = image->height;
+            *((uint32_t*)(buffer+102)) = image->height;
+            *((uint32_t*)(buffer+114)) = image->height*linesize * sizeof(T) ;
+            offset = header_size;
+            line = 0;
+        }
+        linesize *= sizeof(T);
+        for (; line < image->height && offset + linesize <= size; line++) {
+            image->getline((T*)(buffer + offset), line);
+            offset += linesize;
+        }
+
+        return offset;
+    }
+    virtual bool eof() {
+        return (line>=image->height);
+    }
+};
+
+#endif
+
 

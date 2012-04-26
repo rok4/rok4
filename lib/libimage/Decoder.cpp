@@ -276,12 +276,85 @@ const uint8_t* LzwDecoder::decode(DataSource* source, size_t& size)
     // Initialisation du flux
     lzwDecoder decoder(12);
     uint8_t* raw_data = decoder.decode(encData,encSize,size);
-    
+
     if (!raw_data) return 0;
-    
+
     return raw_data;
 }
 
+
+/**
+ * Decodage de donnee DEFLATE
+ */
+const uint8_t* DeflateDecoder::decode(DataSource* source, size_t &size) {
+
+    size = 0;
+    if (!source) return 0;
+
+    size_t encSize;
+    const uint8_t* encData = source->getData(encSize);
+
+    if (!encData) return 0;
+
+    // Initialisation du flux
+    z_stream zstream;
+    zstream.zalloc = Z_NULL;
+    zstream.zfree = Z_NULL;
+    zstream.opaque = Z_NULL;
+    zstream.data_type = Z_BINARY;
+    int zinit;
+    if ( (zinit=inflateInit(&zstream)) != Z_OK)
+    {
+        if (zinit==Z_MEM_ERROR)
+            LOGGER_ERROR("Decompression DEFLATE : pas assez de memoire");
+        else if (zinit==Z_VERSION_ERROR)
+            LOGGER_ERROR("Decompression DEFLATE : versions de zlib incompatibles");
+        else if (zinit==Z_STREAM_ERROR)
+            LOGGER_ERROR("Decompression DEFLATE : parametres invalides");
+        else
+            LOGGER_ERROR("Decompression DEFLATE : echec");
+        return 0;
+    }
+    
+    size_t rawSize = encSize * 2;
+    uint8_t* raw_data = new uint8_t[rawSize];
+    
+    zstream.next_in = (uint8_t*)(encData);
+    zstream.avail_in = encSize;
+    zstream.next_out = (uint8_t*) (raw_data);
+    zstream.avail_out = rawSize;
+    // Decompression du flux
+    while ( zstream.avail_in != 0 ) {
+        if (int err = inflate(&zstream, Z_SYNC_FLUSH)) {
+            if (err == Z_STREAM_END && zstream.avail_in == 0) break; // fin du fichier OK.
+            if (zstream.avail_out == 0) { // Output buffer Full
+                uint8_t* tmp = new uint8_t[rawSize *2];
+                memcpy(tmp,raw_data,rawSize);
+                delete[] raw_data;
+                raw_data = tmp;
+                zstream.next_out = (uint8_t*) (raw_data + rawSize);
+                zstream.avail_out += rawSize;
+                rawSize *=2;
+            }
+            LOGGER_ERROR("Decompression DEFLATE : probleme deflate decompression " << err);
+            delete[] raw_data;
+            size = 0;
+            return 0;
+        }
+    }
+
+    // Destruction du flux
+    if (inflateEnd(&zstream)!=Z_OK) {
+        LOGGER_ERROR("Decompression DEFLATE : probleme de liberation du flux");
+        delete[] raw_data;
+        size = 0;
+        return 0;
+    }
+
+    size = rawSize - zstream.avail_out;
+
+    return raw_data;
+}
 
 
 int ImageDecoder::getDataline(uint8_t* buffer, int line) {

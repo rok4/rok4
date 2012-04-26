@@ -46,7 +46,9 @@ const char *eformat_name[] = {
         "TIFF_PNG_INT8",
         "TIFF_LZW_INT8",
         "TIFF_RAW_FLOAT32",
-        "TIFF_LZW_FLOAT32"
+        "TIFF_LZW_FLOAT32",
+        "TIFF_DEFLATE_INT8",
+        "TIFF_DEFLATE_FLOAT32"
 };
 
 const int eformat_size = 6;
@@ -59,6 +61,8 @@ const char *eformat_mime[] = {
 	"image/tiff",
 	"image/x-bil;bits=32",
 	"image/tiff"
+        "image/tiff"
+        "image/tiff"
 };
 
 
