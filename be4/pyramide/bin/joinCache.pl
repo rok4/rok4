@@ -59,7 +59,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4::TileMatrixSet;
-use BE4::PyrImageSpec;
+use BE4::Pixel;
 use BE4::Level;
 
 # constantes
@@ -130,10 +130,14 @@ my %this =
 
 my %CONF = (
     sections => ['pyramid','process','composition','logger','bboxes'],
-    merge_method => ['replace','multiply','add','transparency'],
+    merge_method => ['replace','transparency'],
+    compression => ['raw','jpg','png','lzw'],
 );
 
-
+my %SAMPLEFORMAT2CODE = (
+    uint => "INT",
+    float => "FLOAT"
+);
 
 #
 # Group: proc
@@ -181,6 +185,11 @@ sub main {
         $message = "ERROR EXECUTION !";
         printf STDERR "%s\n", $message;
         exit 4;
+    }
+
+    foreach my $code (@{$this{scripts}}) {
+        printf "---------- code -------------\n";
+        printf "%s\n", $code;
     }
 
     $message = "END";
@@ -407,6 +416,8 @@ sub is_ConfSection {
     return FALSE;
 }
 
+
+
 # method: readComposition
 #---------------------------------------------------------------------------------------------------
 sub checkParams {
@@ -512,7 +523,7 @@ sub _validate {
         return FALSE;
     }
 
-    # DEBUG(sprintf "SOURCE PYRAMIDS : %s",Dumper($this{sourcePyramids}));
+    DEBUG(sprintf "SOURCE PYRAMIDS : %s",Dumper($this{sourcePyramids}));
 
     ALWAYS(">>> Validate composition");
     if (! main::validateComposition()) {
@@ -556,6 +567,15 @@ sub validateComposition {
                     $source->{pyr},$levelId);
                 return FALSE;
             }
+
+            if (exists $this{sourcePyramids}->{$source->{pyr}}->{isCompatible}) {
+                $source->{isCompatible} = TRUE;
+            } else {
+                $source->{format} = $this{sourcePyramids}->{$source->{pyr}}->{format};
+                $source->{photometric} = $this{sourcePyramids}->{$source->{pyr}}->{photometric};
+                $source->{samplesperpixel} = $this{sourcePyramids}->{$source->{pyr}}->{samplesperpixel};
+            }
+
             $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId};
             my @bboxArray = main::calculateBbox($levelId,$source->{bbox});
             $source->{bbox} = undef;
@@ -646,6 +666,9 @@ sub validateMergedPyramid {
     if (! defined $objTMS) {
         ERROR (sprintf "Cannot load the TMS %s !",$this{pyramid}->{tms_name});
         return FALSE;
+    } else {
+        delete($this{pyramid}->{tms_path});
+        delete($this{pyramid}->{tms_name});
     }
 
     $this{pyramid}->{tms} = $objTMS;
@@ -657,6 +680,38 @@ sub validateMergedPyramid {
         ERROR ("Invalid 'merge_method' !");
         return FALSE;
     }
+
+    if (! exists $this{pyramid}->{compression}) {
+        ERROR ("'compression' must be given in the configuration file !");
+        return FALSE;
+    } elsif (! main::is_Compression($this{pyramid}->{compression})) {
+        ERROR ("Invalid 'compression' !");
+        return FALSE;
+    }
+
+    my $objPixel = BE4::Pixel->new({
+        photometric => $this{pyramid}->{photometric},
+        sampleformat => $this{pyramid}->{sampleformat},
+        bitspersample => $this{pyramid}->{bitspersample},
+        samplesperpixel => $this{pyramid}->{samplesperpixel}
+    });
+    if (! defined $objPixel) {
+        ERROR (sprintf "Cannot create the Pixel object !");
+        return FALSE;
+    } else {
+
+        # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
+        $this{pyramid}->{format} = sprintf "TIFF_%s_%s%s",
+            uc $this{pyramid}->{compression},
+            $SAMPLEFORMAT2CODE{$this{pyramid}->{sampleformat}},
+            $this{pyramid}->{bitspersample};
+
+        delete($this{pyramid}->{photometric});
+        delete($this{pyramid}->{sampleformat});
+        delete($this{pyramid}->{bitspersample});
+        delete($this{pyramid}->{samplesperpixel});
+    }
+    $this{pyramid}->{pixel} = $objPixel;
 
     return TRUE;
 
@@ -678,6 +733,22 @@ sub is_MergeMethod {
     return FALSE;
 }
 
+# method: is_Compression
+#---------------------------------------------------------------------------------------------------
+sub is_Compression {
+    my $compression = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $compression);
+
+    foreach (@{$CONF{compression}}) {
+        return TRUE if ($compression eq $_);
+    }
+    ERROR (sprintf "Unknown 'compression' (%s) !",$compression);
+    return FALSE;
+}
+
 # method: validateSourcePyramids
 #  for each pyramids, we control attributes : TMS, format... They must be the same for every one
 #---------------------------------------------------------------------------------------------------
@@ -686,10 +757,7 @@ sub validateSourcePyramids {
     TRACE();
 
     my $tms;
-    my $format;
-    my $samplesperpixel;
     my $dirDepth;
-    my $photometric;
     my $tilesPerWidth;
     my $tilesPerHeight;
 
@@ -723,11 +791,6 @@ sub validateSourcePyramids {
             WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
             $tagformat = 'TIFF_RAW_FLOAT32';
         }
-        if (defined $format && $tagformat ne $format) {
-            ERROR (sprintf "The format in the pyramid '%s' is different from %s (%s) !",$pyr,$format,$tagformat);
-            return FALSE;
-        }
-        $format = $tagformat if (! defined $format);
         
         # SAMPLES PER PIXEL
         my $tagchannels = $root->findnodes('channels')->to_literal;
@@ -736,12 +799,6 @@ sub validateSourcePyramids {
                 $pyr);
             return FALSE;
         }
-        if (defined $samplesperpixel && $tagchannels ne $samplesperpixel) {
-            ERROR (sprintf "The samples per pixel in the pyramid '%s' is different from %s (%s) !",
-                $pyr,$samplesperpixel,$tagchannels);
-            return FALSE;
-        }
-        $samplesperpixel = $tagchannels if (! defined $samplesperpixel);
 
         # TMS
         my $tagTMS = $root->findnodes('tileMatrixSet')->to_literal;
@@ -769,12 +826,6 @@ sub validateSourcePyramids {
                 $pyr);
             return FALSE;
         }
-        if (defined $photometric && $tagphotometric ne $photometric) {
-            ERROR (sprintf "The samples per pixel in the pyramid '%s' is different from %s (%s) !",
-                $pyr,$photometric,$tagphotometric);
-            return FALSE;
-        }
-        $photometric = $tagphotometric if (! defined $photometric);
 
         # LEVELS
         my @levels = $root->getElementsByTagName('level');
@@ -808,20 +859,34 @@ sub validateSourcePyramids {
             $this{sourcePyramids}->{$pyr}->{$levelId} = File::Spec->rel2abs($baseDir,$volume.$directories);
         }
 
+        if (main::is_Compatible($tagformat,$tagchannels)) {
+            $this{sourcePyramids}->{$pyr}->{isCompatible} = TRUE;
+        } else {
+            $this{sourcePyramids}->{$pyr}->{format} = $tagformat;
+            $this{sourcePyramids}->{$pyr}->{samplesperpixel} = $tagchannels;
+            $this{sourcePyramids}->{$pyr}->{photometric} = $tagphotometric;
+        }
+
     }
 
     # we save merged pyramid's attributes
-    $this{pyramid}->{imgFormat} = $format;
-    $this{pyramid}->{samplesperpixel} = $samplesperpixel;
     $this{pyramid}->{dirDepth} = $dirDepth;
-    $this{pyramid}->{photometric} = $photometric;
     $this{pyramid}->{tilesPerWidth} = $tilesPerWidth;
     $this{pyramid}->{tilesPerHeight} = $tilesPerHeight;
 
     return TRUE;
 }
 
+# method: is_Compatible
+#---------------------------------------------------------------------------------------------------
+sub is_Compatible {
+    my $format = shift;
+    my $samplesperpixel = shift;
 
+    TRACE;
+
+    return ($format eq $this{pyramid}->{format} && $samplesperpixel eq $this{pyramid}->{pixel}->{samplesperpixel});
+}
 
 ####################################################################################################
 #                                        PROCESS METHODS                                           #
@@ -860,19 +925,23 @@ sub doIt {
             for (my $i = $imin; $i <= $imax; $i++) {
                 for (my $j = $jmin; $j <= $jmax; $j++) {
                     if (exists $this{doneTiles}->{$i."_".$j}) {
-                        DEBUG(sprintf "Tile %s,%s already done (with treatment)",$i,$j); #TEST#
+                        #Tile already exists (created by a treatment)
                         next;
                     }
+
                     my $imagePath = main::getCacheNameOfImage($i,$j);
                     my $sourceImage = $source->{pyr}.$imagePath;
-                    my $finaleImage = $baseImage.$imagePath;
                     if (! -f $sourceImage) {
+                        # no data source
                         next;
                     }
+
+                    my $finaleImage = $baseImage.$imagePath;
                     if (-f $finaleImage) {
-                        DEBUG(sprintf "Tile %s,%s already done (link)",$i,$j); #TEST#
+                        #Tile already exists (it's a link)
                         next;
                     }
+
                     my @images;
                     if ($this{pyramid}->{merge_method} ne 'replace') {
                         @images = main::searchTile($levelId,$priority,$i,$j,$imagePath);
@@ -880,7 +949,7 @@ sub doIt {
 
                     unshift(@images,$sourceImage);
 
-                    if (! main::treatTile($levelId,$i,$j,$finaleImage,@images)) {
+                    if (! main::treatTile($i,$j,(exists $source->{isCompatible}),$finaleImage,@images)) {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
@@ -961,15 +1030,15 @@ sub searchTile {
 #       - we have more sources : according to the merge method, we write necessary commands in the script
 #--------------------------------------------------------------------------------------------------------
 sub treatTile {
-    my $levelId = shift;
     my $i = shift;
     my $j = shift;
+    my $isCompatible = shift;
     my $finaleImage = shift;
     my @images = @_;
 
     TRACE();
 
-    if (scalar @images == 1) {
+    if ($isCompatible && scalar @images == 1) {
         if (! main::makeLink($finaleImage,$images[0])) {
             ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]); #TEST#
             return FALSE;
@@ -977,19 +1046,17 @@ sub treatTile {
         return TRUE
     }
 
-    my $mergeMethod = $this{pyramid}->{merge_method};
-
-    if ($mergeMethod eq 'replace') {
-        ERROR(sprintf "Pas plusieurs source avec le mode remplacement (%s)",scalar @images); #TEST#
-        return FALSE;
+    if (! $isCompatible && scalar @images == 1) {
+        INFO(sprintf "Il n'y a qu'une image mais les pyramides ne sont pas compatibles"); #TEST#
+        $this{doneTiles}->{$i."_".$j} = TRUE;
+        return TRUE
     }
+
+    my $mergeMethod = $this{pyramid}->{merge_method};
 
     if ($mergeMethod eq 'transparency') {
         INFO(sprintf "Fusion avec transparence des images %s",Dumper(@images)); #TEST#
-    } elsif ($mergeMethod eq 'multiply') {
-        INFO(sprintf "Fusion avec multiplication des images %s",Dumper(@images)); #TEST#
-    } elsif ($mergeMethod eq 'add') {
-        INFO(sprintf "Fusion avec addition des images %s",Dumper(@images)); #TEST#
+        main::mergeWithTransparency($finaleImage,@images);
     }
 
     $this{doneTiles}->{$i."_".$j} = TRUE;
@@ -1001,7 +1068,7 @@ sub treatTile {
 #--------------------------------------------------------------------------------------------------------
 sub initScripts {
 
-    for (my $i = 0; $i < $this{pyramid}->{job_number}; $i++) {
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
         my $scriptId = sprintf "SCRIPT_%s",$i+1;
 
         my $header = sprintf ("# Variables d'environnement\n");
@@ -1018,6 +1085,73 @@ sub initScripts {
     }
 
     $this{currentscript} = 0;
+
+}
+
+sub mergeWithTransparency {
+    my $finaleImage = shift;
+    my @images = @_;
+
+    TRACE();
+
+    my $code = sprintf "convert -transparent \"#FFFFFF\" %s %s  +composite  \${TMP_DIR}/output.tif\n"
+        ,$images[scalar @images - 1],$images[scalar @images - 2];
+
+    for (my $i = scalar @images - 2; $i > 0; $i--) {
+        $code .= sprintf "convert -transparent \"#FFFFFF\" \${TMP_DIR}/output.tif %s  +composite  \${TMP_DIR}/output.tif\n"
+            ,$images[$i-1];
+    }
+
+    $this{scripts}[$this{currentscript}] .= $code;
+
+    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+    
+    return TRUE;
+
+}
+
+sub makeLink {
+    my $finaleImage = shift;
+    my $baseImage = shift;
+
+    TRACE();
+
+    #create folders
+    eval { mkpath(dirname($finaleImage),0,0751); };
+    if ($@) {
+        ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($finaleImage), $@);
+        return FALSE;
+    }
+
+    my $follow_relfile = undef;
+
+    if (-f $baseImage && ! -l $baseImage) {
+        $follow_relfile = File::Spec->abs2rel($baseImage,dirname($finaleImage));
+    }
+    elsif (-f $baseImage && -l $baseImage) {
+        my $linked   = File::Spec::Link->linked($baseImage);
+        my $realname = File::Spec::Link->full_resolve($linked);
+        $follow_relfile = File::Spec->abs2rel($realname, dirname($finaleImage));
+    } else {
+        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",basename($baseImage),dirname($baseImage));
+        return FALSE;  
+    }
+
+    if (! defined $follow_relfile) {
+        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
+                    basename($baseImage),
+                    dirname($baseImage));
+        return FALSE;
+    }
+
+    my $result = eval { symlink ($follow_relfile, $finaleImage); };
+    if (! $result) {
+        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
+                    $follow_relfile,$finaleImage,$!);
+        return FALSE;
+    }
+
+    return TRUE;
 
 }
 
@@ -1114,50 +1248,7 @@ sub encodeB36toInt {
     # return decode_base36($b36,$padlength);
 }
 
-sub makeLink {
-    my $finaleImage = shift;
-    my $baseImage = shift;
 
-    TRACE();
-
-    #create folders
-    eval { mkpath(dirname($finaleImage),0,0751); };
-    if ($@) {
-        ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($finaleImage), $@);
-        return FALSE;
-    }
-
-    my $follow_relfile = undef;
-
-    if (-f $baseImage && ! -l $baseImage) {
-        $follow_relfile = File::Spec->abs2rel($baseImage,dirname($finaleImage));
-    }
-    elsif (-f $baseImage && -l $baseImage) {
-        my $linked   = File::Spec::Link->linked($baseImage);
-        my $realname = File::Spec::Link->full_resolve($linked);
-        $follow_relfile = File::Spec->abs2rel($realname, dirname($finaleImage));
-    } else {
-        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",basename($baseImage),dirname($baseImage));
-        return FALSE;  
-    }
-
-    if (! defined $follow_relfile) {
-        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
-                    basename($baseImage),
-                    dirname($baseImage));
-        return FALSE;
-    }
-
-    my $result = eval { symlink ($follow_relfile, $finaleImage); };
-    if (! $result) {
-        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
-                    $follow_relfile,$finaleImage,$!);
-        return FALSE;
-    }
-
-    return TRUE;
-
-}
 
 
 ################################################################################
