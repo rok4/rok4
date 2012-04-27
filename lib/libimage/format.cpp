@@ -47,11 +47,11 @@ const char *eformat_name[] = {
         "TIFF_LZW_INT8",
         "TIFF_RAW_FLOAT32",
         "TIFF_LZW_FLOAT32",
-        "TIFF_DEFLATE_INT8",
-        "TIFF_DEFLATE_FLOAT32"
+        "TIFF_ZIP_INT8",
+        "TIFF_ZIP_FLOAT32"
 };
 
-const int eformat_size = 6;
+const int eformat_size = 8;
 
 const char *eformat_mime[] = {
 	"UNKNOWN",

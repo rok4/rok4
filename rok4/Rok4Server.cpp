@@ -316,26 +316,26 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         switch (pyrType) {
 
         case TIFF_RAW_FLOAT32 :
-        case TIFF_DEFLATE_FLOAT32 :
+        case TIFF_ZIP_FLOAT32 :
         case TIFF_LZW_FLOAT32 :
             if ( getParam(format_option,"compression").compare("lzw")==0) {
                 return TiffEncoder::getTiffEncoder(image, TIFF_LZW_FLOAT32);
             }
             if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_DEFLATE_FLOAT32);
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_FLOAT32);
             }
             if ( getParam(format_option,"compression").compare("raw")==0) {
                 return TiffEncoder::getTiffEncoder(image, TIFF_RAW_FLOAT32);
             }
             return TiffEncoder::getTiffEncoder(image, pyrType);
         case TIFF_RAW_INT8 :
-        case TIFF_DEFLATE_INT8 :
+        case TIFF_ZIP_INT8 :
         case TIFF_LZW_INT8 :
             if ( getParam(format_option,"compression").compare("lzw")==0) {
                 return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
             }
             if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_DEFLATE_INT8);
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
             }
             if ( getParam(format_option,"compression").compare("raw")==0) {
                 return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
@@ -346,7 +346,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
             }
             if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_DEFLATE_INT8);
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
             }
             return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
         }

@@ -48,7 +48,7 @@
 #include "tiffio.h"
 
 void usage() {
-    std::cerr << "createNodata -n nodata -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
+    std::cerr << "createNodata -n nodata -c [none/png/jpeg/lzw/deflate] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
 }
 
 void error(std::string message) {
@@ -105,6 +105,9 @@ int main(int argc, char* argv[]) {
                     }
                     else if(strncmp(argv[i], "lzw",3) == 0) {
                         compression = COMPRESSION_LZW;
+                    }
+                    else if(strncmp(argv[i], "zip",3) == 0) {
+                        compression = COMPRESSION_DEFLATE;
                     }
                     else {
                         compression = COMPRESSION_NONE;

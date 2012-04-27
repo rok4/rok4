@@ -81,7 +81,7 @@ protected:
 
         if (deflateEnd(&zstream)!= Z_OK) return false;
 
-        uint32_t length = deflateBufferSize - zstream.avail_out;   // taille des données écritres
+        uint32_t length = zstream.total_out;   // taille des données écritres
         deflateBufferSize = length;
         return true;
     }
@@ -120,14 +120,14 @@ public:
             // Ceci est du tiff avec une seule strip.
             if (image->channels==1)
                 if ( sizeof(T) == sizeof(float)) {
-                    memcpy(buffer, TiffHeader::TIFF_HEADER_DEFLATE_FLOAT32_GRAY, header_size);
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size);
                 } else {
-                    memcpy(buffer, TiffHeader::TIFF_HEADER_DEFLATE_INT8_GRAY, header_size);
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, header_size);
                 }
             else if (image->channels==3)
-                memcpy(buffer, TiffHeader::TIFF_HEADER_DEFLATE_INT8_RGB, header_size);
+                memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size);
             else if (image->channels==4)
-                memcpy(buffer, TiffHeader::TIFF_HEADER_DEFLATE_INT8_RGBA, header_size);
+                memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size);
             *((uint32_t*)(buffer+18))  = image->width;
             *((uint32_t*)(buffer+30))  = image->height;
             *((uint32_t*)(buffer+102)) = image->height;

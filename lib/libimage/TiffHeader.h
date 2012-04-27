@@ -196,7 +196,7 @@ static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[142]  = { //FIXME
 // 142
 
 
-static const uint8_t TIFF_HEADER_DEFLATE_FLOAT32_GRAY[142]  = {
+static const uint8_t TIFF_HEADER_ZIP_FLOAT32_GRAY[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -215,7 +215,7 @@ static const uint8_t TIFF_HEADER_DEFLATE_FLOAT32_GRAY[142]  = {
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
 
-static const uint8_t TIFF_HEADER_DEFLATE_INT8_GRAY[142]  = {
+static const uint8_t TIFF_HEADER_ZIP_INT8_GRAY[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -234,7 +234,7 @@ static const uint8_t TIFF_HEADER_DEFLATE_INT8_GRAY[142]  = {
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
 
-static const uint8_t TIFF_HEADER_DEFLATE_INT8_RGB[142]  = {
+static const uint8_t TIFF_HEADER_ZIP_INT8_RGB[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -253,7 +253,7 @@ static const uint8_t TIFF_HEADER_DEFLATE_INT8_RGB[142]  = {
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
 
-static const uint8_t TIFF_HEADER_DEFLATE_INT8_RGBA[142]  = { //FIXME
+static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[142]  = { //FIXME
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE

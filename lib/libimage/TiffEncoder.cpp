@@ -48,13 +48,13 @@ DataStream* TiffEncoder::getTiffEncoder(Image* image, eformat_data format)
         return new TiffRawEncoder<uint8_t>(image);
     case TIFF_LZW_INT8 :
         return new TiffLZWEncoder<uint8_t>(image);
-    case TIFF_DEFLATE_INT8 :
+    case TIFF_ZIP_INT8 :
         return new TiffDeflateEncoder<uint8_t>(image);
     case TIFF_RAW_FLOAT32 :
         return new TiffRawEncoder<float>(image);
     case TIFF_LZW_FLOAT32 :
         return new TiffLZWEncoder<float>(image);
-    case TIFF_DEFLATE_FLOAT32 :
+    case TIFF_ZIP_FLOAT32 :
         return new TiffDeflateEncoder<float>(image);
     default:
         return NULL;

@@ -49,18 +49,18 @@ TiffHeaderDataSource::TiffHeaderDataSource(DataSource* dataSource,
             memcpy(data, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, header_size);
         }
         break;
-    case TIFF_DEFLATE_INT8:
+    case TIFF_ZIP_INT8:
         if (channel == 1) {
-            LOGGER_DEBUG("TIFF_HEADER_DEFLATE_INT8_GRAY");
-            memcpy(data, TiffHeader::TIFF_HEADER_DEFLATE_INT8_GRAY, header_size);
+            LOGGER_DEBUG("TIFF_HEADER_ZIP_INT8_GRAY");
+            memcpy(data, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, header_size);
         }
         else if (channel == 3) {
-            LOGGER_DEBUG("TIFF_HEADER_DEFLATE_INT8_RGB");
-            memcpy(data, TiffHeader::TIFF_HEADER_DEFLATE_INT8_RGB, header_size);
+            LOGGER_DEBUG("TIFF_HEADER_ZIP_INT8_RGB");
+            memcpy(data, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size);
         }
         else if (channel == 4) {
-            LOGGER_DEBUG("TIFF_HEADER_DEFLATE_INT8_RGBA");
-            memcpy(data, TiffHeader::TIFF_HEADER_DEFLATE_INT8_RGBA, header_size);
+            LOGGER_DEBUG("TIFF_HEADER_ZIP_INT8_RGBA");
+            memcpy(data, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size);
         }
         break;
     case TIFF_RAW_FLOAT32:
@@ -74,10 +74,10 @@ TiffHeaderDataSource::TiffHeaderDataSource(DataSource* dataSource,
             LOGGER_DEBUG("TIFF_HEADER_LZW_FLOAT32_GRAY");
             memcpy(data, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, header_size);
         }
-    case TIFF_DEFLATE_FLOAT32:
+    case TIFF_ZIP_FLOAT32:
         if (channel == 1) {
             LOGGER_DEBUG("TIFF_HEADER_DEFLATE_FLOAT32_GRAY");
-            memcpy(data, TiffHeader::TIFF_HEADER_DEFLATE_FLOAT32_GRAY, header_size);
+            memcpy(data, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size);
         }
         break;
     }
