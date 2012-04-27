@@ -58,6 +58,8 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
             nodatastream = new JPEGEncoder( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
         } else if ( format==TIFF_PNG_INT8 ) {
             nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
+        } else if ( format==TIFF_RAW_FLOAT32 ) {
+            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
         } else {
             nodatastream = TiffEncoder::getTiffEncoder(new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ), format);
         }

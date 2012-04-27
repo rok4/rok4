@@ -335,6 +335,7 @@ const uint8_t* DeflateDecoder::decode(DataSource* source, size_t &size) {
                 zstream.next_out = (uint8_t*) (raw_data + rawSize);
                 zstream.avail_out += rawSize;
                 rawSize *=2;
+                continue;
             }
             LOGGER_ERROR("Decompression DEFLATE : probleme deflate decompression " << err);
             delete[] raw_data;
