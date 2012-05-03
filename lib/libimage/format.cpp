@@ -60,8 +60,8 @@ const char *eformat_mime[] = {
 	"image/png",
 	"image/tiff",
 	"image/x-bil;bits=32",
-	"image/tiff"
-        "image/tiff"
+	"image/tiff",
+        "image/tiff",
         "image/tiff"
 };
 
