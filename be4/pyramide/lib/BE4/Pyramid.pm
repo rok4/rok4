@@ -859,7 +859,7 @@ sub FindCacheNode {
       push @{$search->{cachetile}}, $_  foreach(@{$newsearch->{cachetile}});
       push @{$search->{cachedir}},  $_  foreach(@{$newsearch->{cachedir}});
     }
-    
+
     elsif( -f File::Spec->catfile($directory, $entry) &&
          ! -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "FIL:%s\n",$entry);
@@ -875,7 +875,8 @@ sub FindCacheNode {
     }
     
     else {
-        TRACE(sprintf "???:%s\n",$entry);
+        # FIXME : on fait le choix de ne pas mettre en erreur le traitement pour des liens cassés !
+        WARN(sprintf "This tile '%s' may be a broken link\n",$entry);
     }
     
   }
