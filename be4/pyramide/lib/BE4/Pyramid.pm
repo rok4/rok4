@@ -795,14 +795,21 @@ sub readCachePyramid {
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
+  # Find cache tiles ou directories
   my $searchitem = $self->FindCacheNode($dir);
   
   if (! defined $searchitem) {
-    ERROR("Can not find cache file or directory");
+    ERROR("An error on reading the cache structure !");
     return FALSE;
   }
 
   DEBUG(Dumper($searchitem));
+  
+  # Error, broken link !
+  if (scalar @{$searchitem->{cachebroken}}) {
+    ERROR("Some links are broken in directory cache !");
+    return FALSE;
+  }
   
   # Info, cache file of old cache !
   if (! scalar @{$searchitem->{cachetile}}) {
@@ -832,8 +839,9 @@ sub FindCacheNode {
   TRACE();
   
   my $search = {
-    cachedir  => [],
-    cachetile => [],
+    cachedir    => [],
+    cachetile   => [],
+    cachebroken => [],
   };
   
   my $pyr_datapath = $self->getPyrDataPath();
@@ -856,10 +864,12 @@ sub FindCacheNode {
       
       # recursif
       $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
-      push @{$search->{cachetile}}, $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},  $_  foreach(@{$newsearch->{cachedir}});
+      
+      push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
+      push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
+      push @{$search->{cachebroken}},  $_  foreach(@{$newsearch->{cachebroken}});
     }
-    
+
     elsif( -f File::Spec->catfile($directory, $entry) &&
          ! -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "FIL:%s\n",$entry);
@@ -875,7 +885,10 @@ sub FindCacheNode {
     }
     
     else {
-        TRACE(sprintf "???:%s\n",$entry);
+        # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
+        # ou liste exaustive des liens cassés ?
+        WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
+        push @{$search->{cachebroken}}, File::Spec->catfile($directory, $entry);
     }
     
   }
