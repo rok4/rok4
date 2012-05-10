@@ -65,13 +65,14 @@ use BE4::Level;
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
 
 # pas de bufferisation des sorties.
 $|=1;
 
 # version
 # my $VERSION = "@VERSION_TEXT@";
-my $VERSION = "0.0.1";
+my $VERSION = "0.1.0";
 
 #
 # Title: joinCache
@@ -187,10 +188,15 @@ sub main {
         exit 4;
     }
 
-    foreach my $code (@{$this{scripts}}) {
-        printf "---------- code -------------\n";
-        printf "%s\n", $code;
+    # writting
+    ALWAYS("> Ecriture des scripts");
+    if (! main::saveScripts()) {
+        $message = "ERROR EXECUTION !";
+        printf STDERR "%s\n", $message;
+        exit 4;
     }
+
+#DEBUG(sprintf "PYRAMIDS : %s",Dumper($this{pyramid}));
 
     $message = "END";
     printf STDOUT "%s\n", $message;
@@ -919,7 +925,6 @@ sub doIt {
         while( exists $sources->{$priority}) {
             my $source = $sources->{$priority};
             INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
-            $priority++;
             my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
 
             for (my $i = $imin; $i <= $imax; $i++) {
@@ -947,9 +952,7 @@ sub doIt {
                         @images = main::searchTile($levelId,$priority,$i,$j,$imagePath);
                     }
 
-                    unshift(@images,$sourceImage);
-
-                    if (! main::treatTile($i,$j,(exists $source->{isCompatible}),$finaleImage,@images)) {
+                    if (! main::treatTile($i,$j,$finaleImage,@images)) {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
@@ -960,6 +963,7 @@ sub doIt {
                     if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
                 }
             }
+            $priority++;
         }
 
         my $levelOrder = $tms->getTileMatrixOrder($levelId);
@@ -974,7 +978,7 @@ sub doIt {
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
             limit             => [$IMIN,$JMIN,$IMAX,$JMAX],
-            is_in_pyramid  => 0
+            is_in_pyramid     => 0
         });
 
         if (! defined $objLevel) {
@@ -1017,7 +1021,11 @@ sub searchTile {
 
         my $sourceImage = $source->{pyr}.$imagePath;
         if (-f $sourceImage) {
-            push @others, $sourceImage;
+            if (exists $source->{isCompatible}) {
+                push @others,{img => $sourceImage,isCompatible => TRUE};
+            } else {
+                push @others,{img => $sourceImage,format => $source->{format}};
+            }
         }
     }  
 
@@ -1026,28 +1034,29 @@ sub searchTile {
 }
 
 # method: treatTile
-#       - we have only one source image for this tile : we create a symbolic link to this source
+#       - we have only one source image for this tile : we create a symbolic link to this source if compatibility
 #       - we have more sources : according to the merge method, we write necessary commands in the script
 #--------------------------------------------------------------------------------------------------------
 sub treatTile {
     my $i = shift;
     my $j = shift;
-    my $isCompatible = shift;
     my $finaleImage = shift;
     my @images = @_;
 
     TRACE();
 
-    if ($isCompatible && scalar @images == 1) {
-        if (! main::makeLink($finaleImage,$images[0])) {
-            ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]); #TEST#
+    if (scalar @images == 1 && exists $images[0]{isCompatible}) {
+        INFO(sprintf "Je fais un lien : %s",$finaleImage); #TEST#
+        if (! main::makeLink($finaleImage,$images[0]{img})) {
+            ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]);
             return FALSE;
         }
         return TRUE
     }
 
-    if (! $isCompatible && scalar @images == 1) {
-        INFO(sprintf "Il n'y a qu'une image mais les pyramides ne sont pas compatibles"); #TEST#
+    if (scalar @images == 1) {
+        INFO(sprintf "Je transforme une image : %s",$finaleImage); #TEST#
+        main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
         $this{doneTiles}->{$i."_".$j} = TRUE;
         return TRUE
     }
@@ -1055,13 +1064,13 @@ sub treatTile {
     my $mergeMethod = $this{pyramid}->{merge_method};
 
     if ($mergeMethod eq 'transparency') {
-        INFO(sprintf "Fusion avec transparence des images %s",Dumper(@images)); #TEST#
+        INFO(sprintf "Je superpose pour créer : %s",$finaleImage); #TEST#
         main::mergeWithTransparency($finaleImage,@images);
+        $this{doneTiles}->{$i."_".$j} = TRUE;
+        return TRUE;
     }
 
-    $this{doneTiles}->{$i."_".$j} = TRUE;
-
-    return TRUE;
+    return FALSE;
 }
 
 # method: initScripts
@@ -1088,19 +1097,99 @@ sub initScripts {
 
 }
 
+# method: saveScripts
+#  ecrit tous les scripts dans les fichiers correspondant
+#-------------------------------------------------------------------------------
+sub saveScripts {
+
+    TRACE;
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+        if (! defined $scriptId) {
+            ERROR("No ScriptId to save the script ?");
+            return FALSE;
+        }
+
+        if (! defined $this{scripts}[$i]) {
+            ERROR("No code to pass into the script ?"); 
+            return FALSE;
+        }
+
+        my $scriptName     = join('.',$scriptId,'sh');
+        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
+
+        if (! -d dirname($this{process}->{path_shell})) {
+            my $dir = dirname($this{process}->{path_shell});
+            DEBUG (sprintf "Create the script directory'%s' !", $dir);
+            eval { mkpath([$dir],0,0751); };
+            if ($@) {
+                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
+                return FALSE;
+            }
+        }
+
+        if ( ! (open SCRIPT,">", $scriptFilePath)) {
+            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
+            return FALSE;
+        }
+
+
+        printf SCRIPT "%s", $this{scripts}[$i];
+        close SCRIPT;
+
+    }
+
+    return TRUE;
+}
+
 sub mergeWithTransparency {
     my $finaleImage = shift;
     my @images = @_;
 
     TRACE();
 
-    my $code = sprintf "convert -transparent \"#FFFFFF\" %s %s  +composite  \${TMP_DIR}/output.tif\n"
-        ,$images[scalar @images - 1],$images[scalar @images - 2];
+    my $code = '';
 
-    for (my $i = scalar @images - 2; $i > 0; $i--) {
-        $code .= sprintf "convert -transparent \"#FFFFFF\" \${TMP_DIR}/output.tif %s  +composite  \${TMP_DIR}/output.tif\n"
-            ,$images[$i-1];
+    # Pretreatment
+
+    for (my $i = 0; $i < scalar @images; $i++) {
+        if (exists $images[$i]{format} && $images[$i]{format} =~ m/PNG/) {
+            $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$images[$i]{img},RESULT_TEST;
+            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+            $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img%s.tif\n%s",$i,RESULT_TEST;
+        } else {
+            $code .= sprintf "tiff2rgba -c none %s \${TMP_DIR}/img%s.tif\n%s",$images[$i]{img},$i,RESULT_TEST;
+        }
     }
+
+    # Superposition
+    $code .= sprintf "overlayNtiff -transparent 255,255,255 -opaque 255,255,255 -channels %s -input ",
+        $this{pyramid}->{pixel}->{samplesperpixel};
+
+    for (my $i = scalar @images - 1; $i >= 0; $i--) {
+        $code .= sprintf "\${TMP_DIR}/img%s.tif ",$i;
+    }
+
+    $code .= " -output \${TMP_DIR}/result.tif \n";
+
+    my $compression = $this{pyramid}->{compression};
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $compression = ($compression eq 'jpg'?'jpeg':$compression);
+
+    # Final location writting
+    $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
+    $code .= sprintf "if [ ! -d \"%s\" ] ; then mkdir -p %s ; fi\n", dirname($finaleImage), dirname($finaleImage);
+
+    $code .= sprintf "tiff2tile \${TMP_DIR}/result.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
+        $compression,
+        $this{pyramid}->{pixel}->{photometric},
+        $this{pyramid}->{pixel}->{bitspersample},
+        $this{pyramid}->{pixel}->{samplesperpixel},
+        $finaleImage,RESULT_TEST;
+
+    # Cleaning
+    $code .= " rm -f \${TMP_DIR}/* \n\n";
 
     $this{scripts}[$this{currentscript}] .= $code;
 
@@ -1155,6 +1244,50 @@ sub makeLink {
 
 }
 
+sub transformImage {
+    my $finaleImage = shift;
+    my $baseImage = shift;
+    my $isPNG = shift;
+
+    TRACE();
+
+    my $code = '';
+
+    # Pretreatment
+
+    if ($isPNG) {
+        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$$baseImage,RESULT_TEST;
+        $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+        $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+    } else {
+        $code .= sprintf "tiff2rgba -c none %s \${TMP_DIR}/img.tif\n%s",$baseImage,RESULT_TEST;
+    }
+
+    my $compression = $this{pyramid}->{compression};
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $compression = ($compression eq 'jpg'?'jpeg':$compression);
+
+    # Final location writting
+    $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
+    $code .= sprintf "if [ ! -d \"%s\" ] ; then mkdir -p %s ; fi\n", dirname($finaleImage), dirname($finaleImage);
+
+    $code .= sprintf "tiff2tile \${TMP_DIR}/result.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
+        $compression,
+        $this{pyramid}->{pixel}->{photometric},
+        $this{pyramid}->{pixel}->{bitspersample},
+        $this{pyramid}->{pixel}->{samplesperpixel},
+        $finaleImage,RESULT_TEST;
+
+    # Cleaning
+    $code .= " rm -f \${TMP_DIR}/* \n\n";
+
+    $this{scripts}[$this{currentscript}] .= $code;
+
+    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+    
+    return TRUE;
+
+}
 
 # method: getCacheNameOfImage
 #  return the image path : /3E/42/01.tif
@@ -1287,18 +1420,6 @@ Resulting pyramid will have same attributes
 Bounding boxes' SRS have to be the TMS' one
 
 =head1 FILE CONFIGURATION
-
-* ALL PARAMS POSSIBLE :
- 
-  logger        => log_level
-  pyramid       =>  pyr_name, pyr_desc_path, pyr_data_path
-                    tms_name, tms_path
-                    image_dir, nodata_dir, metadata_dir
-  [ tilematrixset => tms_name,tms_path ]
-  [ nodata        => path_nodata, imagesize, color ]
-  [ tile          => bitspersample,sampleformat,compressionscheme,photometric,samplesperpixel,interpolation ]
-  [ compression   => type ]
-  process       => job_number, path_temp, path_shell, [ percentexpansion, percentprojection ]
 
 * SAMPLE OF FILE CONFIGURATION OF PYRAMID :
 

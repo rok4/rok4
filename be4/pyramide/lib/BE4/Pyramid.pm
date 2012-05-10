@@ -1246,7 +1246,7 @@ sub writeConfPyramid {
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
     foreach my $objLevel (values %levels){
-        $levelXML = $objLevel->getLevelToXML();
+        my $levelXML = $objLevel->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #

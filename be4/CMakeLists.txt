@@ -38,6 +38,7 @@ endif(UNITTEST)
 include(ROK4Dependencies)
 
 MESSAGE(STATUS "Building Be4 generation toolchain")
+add_subdirectory(overlayNtiff)
 add_subdirectory(mergeNtiff)
 add_subdirectory(merge4tiff)
 add_subdirectory(tiff2tile)
