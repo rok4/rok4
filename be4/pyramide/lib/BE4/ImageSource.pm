@@ -227,7 +227,7 @@ sub computeInfo {
         $sampleformat  = "uint";
     }
     else {
-        ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
+        ($sampleformat, $bitspersample) = ($DataType =~ m/([a-z]+)([0-9]{2})/);
     }
 
     if ($Band == 3) {

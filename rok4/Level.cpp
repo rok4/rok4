@@ -306,8 +306,10 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<JpegDecoder> ( encData );
     else if ( format==TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==TIFF_LZW_INT8 || TIFF_LZW_FLOAT32 )
+    else if ( format==TIFF_LZW_INT8 || format == TIFF_LZW_FLOAT32 )
         return new DataSourceDecoder<LzwDecoder> ( encData );
+    else if ( format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 )
+        return new DataSourceDecoder<DeflateDecoder> ( encData );
     LOGGER_ERROR ( "Type d'encodage inconnu : "<<format );
     return 0;
 }
@@ -336,7 +338,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
     LOGGER_DEBUG ( "GetTile Image" );
-    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32)
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32)
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
@@ -345,4 +347,5 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
                                                     tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
 }
+
 

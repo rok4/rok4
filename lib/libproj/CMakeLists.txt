@@ -38,7 +38,7 @@ set(CMAKE_C_FLAGS_SPECIFICBUILD "-O3")
 set(ENV{CFLAGS} "-O3")
 
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/src/configure)
-add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.8.0-svn20110802/* src)
+add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/proj-4.8.0/* src)
 
 add_custom_command(OUTPUT install/lib/libproj.a 
   COMMAND ./configure CFLAGS=-O3 CXXFLAGS=-O3 --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install 

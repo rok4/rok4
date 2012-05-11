@@ -40,25 +40,117 @@
 
 #include "Data.h"
 #include "Image.h"
+#include "TiffHeader.h"
 #include <zlib.h>
-#include "TiffEncoder.h"
+#include <iostream>
+#include <string.h> // Pour memcpy
+#include <algorithm>
 
+template <typename T>
 class TiffDeflateEncoder : public TiffEncoder {
-private:
-    uint8_t* linebuffer;
+protected:
+    Image *image;
+    int line;   // Ligne courante
+
+    T* linebuffer;
 
     size_t deflateBufferSize;
     size_t deflateBufferPos;
     uint8_t* deflateBuffer;
 
     z_stream zstream;
-    bool encode();
+    bool encode() {
+        int rawLine = 0;
+        zstream.next_out  = deflateBuffer;
+        zstream.avail_out = deflateBufferSize;
+
+        while (rawLine >= 0 && rawLine < image->height && zstream.avail_out > 0) { // compresser les données dans des chunck idat
+            if (zstream.avail_in == 0) {                                      // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
+                image->getline(linebuffer, rawLine++);
+                zstream.next_in  = (uint8_t*) (linebuffer);
+                zstream.avail_in = image->width * image->channels * sizeof(T);
+            }
+            if (deflate(&zstream, Z_NO_FLUSH) != Z_OK) return false;              // return 0 en cas d'erreur.
+        }
+
+        if (rawLine == image->height && zstream.avail_out > 6) { // plus d'entrée : il faut finaliser la compression
+            int r = deflate(&zstream, Z_FINISH);
+            if (r == Z_STREAM_END) rawLine++;                     // on indique que l'on a compressé fini en passant rawLine ) height+1
+            else if (r != Z_OK) return false;                      // une erreur
+        }
+
+        if (deflateEnd(&zstream)!= Z_OK) return false;
+
+        uint32_t length = zstream.total_out;   // taille des données écritres
+        deflateBufferSize = length;
+        return true;
+    }
 
 public:
-    TiffDeflateEncoder(Image *image);
-    ~TiffDeflateEncoder();
-    size_t read(uint8_t *buffer, size_t size);
-    bool eof();
+    TiffDeflateEncoder(Image *image): image(image), line(-1), deflateBufferSize(0),deflateBufferPos(0) , deflateBuffer(NULL) {
+        zstream.zalloc = Z_NULL;
+        zstream.zfree = Z_NULL;
+        zstream.opaque = Z_NULL;
+        zstream.data_type = Z_BINARY;
+        deflateInit(&zstream, 6); // taux de compression zlib
+        zstream.avail_in = 0;
+        linebuffer = new T[image->width * image->channels];
+    }
+    ~TiffDeflateEncoder() {
+        if (linebuffer) delete[] linebuffer;
+        if (deflateBuffer) delete[] deflateBuffer;
+        delete image;
+    }
+    size_t read(uint8_t *buffer, size_t size) {
+        size_t offset = 0, header_size=TiffHeader::headerSize, linesize=image->width*image->channels, dataToCopy=0;
+        if (!deflateBuffer) {
+            deflateBufferSize = linesize * image->height ;
+            deflateBuffer = new uint8_t[deflateBufferSize];
+            while (!encode()) {
+                deflateBufferSize *=2;
+                delete[] deflateBuffer;
+                deflateBuffer = new uint8_t[deflateBufferSize];
+            }
+        }
+
+        if (line == -1) {
+            // Si pas assez de place pour le header, ne rien écrire.
+            if (size < header_size) return 0;
+
+            // Ceci est du tiff avec une seule strip.
+            if (image->channels==1)
+                if ( sizeof(T) == sizeof(float)) {
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size);
+                } else {
+                    memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, header_size);
+                }
+            else if (image->channels==3)
+                memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size);
+            else if (image->channels==4)
+                memcpy(buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size);
+            *((uint32_t*)(buffer+18))  = image->width;
+            *((uint32_t*)(buffer+30))  = image->height;
+            *((uint32_t*)(buffer+102)) = image->height;
+            *((uint32_t*)(buffer+114)) = deflateBufferSize;
+            offset = header_size;
+            line = 0;
+        }
+
+        if (size - offset > 0 ) { // il reste de la place
+            if (deflateBufferPos <= deflateBufferSize) { // il reste de la donnée
+                dataToCopy = std::min(size-offset, deflateBufferSize -deflateBufferPos);
+                memcpy(buffer+offset,deflateBuffer+deflateBufferPos,dataToCopy);
+                deflateBufferPos+=dataToCopy;
+                offset+=dataToCopy;
+            }
+        }
+
+        return offset;
+    }
+
+    bool eof() {
+        return (deflateBufferPos>=deflateBufferSize);
+    }
 };
 
 #endif

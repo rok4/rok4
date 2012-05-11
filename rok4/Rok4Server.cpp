@@ -49,7 +49,6 @@
 #include <csignal>
 
 #include "TiffEncoder.h"
-#include "TiffLZWEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
@@ -60,7 +59,7 @@
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include "PaletteDataSource.h"
-#include "TiffDeflateEncoder.h"
+
 
 
 /**
@@ -90,8 +89,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         Request* request;
 
-        
-        
+
+
         postRequest = ( server->servicesConf.isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
 
         if ( postRequest ) { // Post Request
@@ -107,8 +106,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
                                     content );
-            
-            
+
+
 
         } else { // Get Request
 
@@ -193,10 +192,10 @@ void Rok4Server::terminate()
     running = false;
     //FCGX_ShutdownPending();
     // Terminate FCGI Thread
-    for ( int i = 0; i < threads.size(); i++ ){
+    for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill(threads[i], SIGPIPE );
     }
-    
+
 }
 
 
@@ -313,13 +312,44 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     if ( format=="image/png" )
         return new PNGEncoder ( image,style->getPalette() );
     else if ( format == "image/tiff" ) { // Handle compression option
-        if ( getParam(format_option,"compression").compare("lzw")==0) {
-            return new TiffLZWEncoder( image );
+        eformat_data pyrType = L->getDataPyramid()->getFormat();
+        switch (pyrType) {
+
+        case TIFF_RAW_FLOAT32 :
+        case TIFF_ZIP_FLOAT32 :
+        case TIFF_LZW_FLOAT32 :
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_FLOAT32);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_FLOAT32);
+            }
+            if ( getParam(format_option,"compression").compare("raw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_FLOAT32);
+            }
+            return TiffEncoder::getTiffEncoder(image, pyrType);
+        case TIFF_RAW_INT8 :
+        case TIFF_ZIP_INT8 :
+        case TIFF_LZW_INT8 :
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("raw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
+            }
+            return TiffEncoder::getTiffEncoder(image, pyrType);
+        default:
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            }
+            return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
         }
-        if ( getParam(format_option,"compression").compare("deflate")==0) {
-            return new TiffDeflateEncoder( image );
-        }
-        return new TiffEncoder ( image );
     }
     else if ( format == "image/jpeg" )
         return new JPEGEncoder ( image );
@@ -344,7 +374,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
 
     // Récupération des parametres de la requete
     DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
-    
+
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
         return errorResp;
@@ -356,7 +386,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         }
         errorResp = notFoundError;
     }
-    
+
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {

@@ -62,6 +62,7 @@ private:
     std::string best_level ( double resolution_x, double resolution_y );
     const eformat_data format; //format d'image des tuiles
     const int     channels;
+    DataStream* nodatastream;
 public:
     Level* getFirstLevel();
     TileMatrixSet getTms();

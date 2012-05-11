@@ -69,7 +69,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "@VERSION_TEXT@";
+my $VERSION = '@VERSION_TEXT@';
 
 #
 # Title: be4
