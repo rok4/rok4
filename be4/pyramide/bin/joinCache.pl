@@ -79,6 +79,22 @@ my $VERSION = "0.1.0";
 #
 # (see uml-global.png)
 #
+################################################################################
+# Global template Pyr
+
+my $STRPYRTMPLT   = <<"TPYR";
+<?xml version='1.0' encoding='US-ASCII'?>
+<Pyramid>
+    <tileMatrixSet>__TMSNAME__</tileMatrixSet>
+    <format>__FORMATIMG__</format>
+    <channels>__CHANNEL__</channels>
+    <nodataValue>__NODATAVALUE__</nodataValue>
+    <interpolation>__INTERPOLATION__</interpolation>
+    <photometric>__PHOTOMETRIC__</photometric>
+<!-- __LEVELS__ -->
+</Pyramid>
+TPYR
+
 
 ################################################################################
 
@@ -131,7 +147,7 @@ my %this =
 
 my %CONF = (
     sections => ['pyramid','process','composition','logger','bboxes'],
-    merge_method => ['replace','transparency'],
+    merge_method => ['replace','transparency','multiply'],
     compression => ['raw','jpg','png','lzw'],
 );
 
@@ -188,9 +204,17 @@ sub main {
         exit 4;
     }
 
-    # writting
+    # writting scripts
     ALWAYS("> Ecriture des scripts");
     if (! main::saveScripts()) {
+        $message = "ERROR EXECUTION !";
+        printf STDERR "%s\n", $message;
+        exit 4;
+    }
+
+    # writting pyramid's configuration file
+    ALWAYS("> Ecriture du fichier .pyr");
+    if (! main::writePyr()) {
         $message = "ERROR EXECUTION !";
         printf STDERR "%s\n", $message;
         exit 4;
@@ -705,7 +729,10 @@ sub validateMergedPyramid {
         ERROR (sprintf "Cannot create the Pixel object !");
         return FALSE;
     } else {
-
+        if ($this{pyramid}->{sampleformat} ne 'uint') {
+            ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
+            return FALSE;
+        }
         # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
         $this{pyramid}->{format} = sprintf "TIFF_%s_%s%s",
             uc $this{pyramid}->{compression},
@@ -941,6 +968,12 @@ sub doIt {
                         next;
                     }
 
+                    # we update extrems tiles
+                    if (! defined $IMIN || $i < $IMIN) {$IMIN = $i;}
+                    if (! defined $JMIN || $j < $JMIN) {$JMIN = $j;}
+                    if (! defined $IMAX || $i > $IMAX) {$IMAX = $i;}
+                    if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
+
                     my $finaleImage = $baseImage.$imagePath;
                     if (-f $finaleImage) {
                         #Tile already exists (it's a link)
@@ -956,11 +989,6 @@ sub doIt {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
-                    # we update extrems tiles
-                    if (! defined $IMIN || $i < $IMIN) {$IMIN = $i;}
-                    if (! defined $JMIN || $j < $JMIN) {$JMIN = $j;}
-                    if (! defined $IMAX || $i > $IMAX) {$IMAX = $i;}
-                    if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
                 }
             }
             $priority++;
@@ -977,7 +1005,7 @@ sub doIt {
             type_metadata     => undef,      # TODO !
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
-            limit             => [$IMIN,$JMIN,$IMAX,$JMAX],
+            limit             => [$JMIN,$JMAX,$IMIN,$IMAX],
             is_in_pyramid     => 0
         });
 
@@ -1046,7 +1074,7 @@ sub treatTile {
     TRACE();
 
     if (scalar @images == 1 && exists $images[0]{isCompatible}) {
-        INFO(sprintf "Je fais un lien : %s",$finaleImage); #TEST#
+        DEBUG(sprintf "Je fais un lien : %s",$finaleImage);
         if (! main::makeLink($finaleImage,$images[0]{img})) {
             ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]);
             return FALSE;
@@ -1055,22 +1083,20 @@ sub treatTile {
     }
 
     if (scalar @images == 1) {
-        INFO(sprintf "Je transforme une image : %s",$finaleImage); #TEST#
-        main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
+        DEBUG(sprintf "Je transforme une image : %s",$finaleImage);
+        main::mergeWithTransparency($finaleImage,@images);
+        #main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
         $this{doneTiles}->{$i."_".$j} = TRUE;
         return TRUE
     }
 
     my $mergeMethod = $this{pyramid}->{merge_method};
 
-    if ($mergeMethod eq 'transparency') {
-        INFO(sprintf "Je superpose pour créer : %s",$finaleImage); #TEST#
-        main::mergeWithTransparency($finaleImage,@images);
-        $this{doneTiles}->{$i."_".$j} = TRUE;
-        return TRUE;
-    }
+    DEBUG(sprintf "Je superpose pour créer : %s",$finaleImage);
+    main::mergeWithTransparency($finaleImage,@images);
+    $this{doneTiles}->{$i."_".$j} = TRUE;
+    return TRUE;
 
-    return FALSE;
 }
 
 # method: initScripts
@@ -1097,52 +1123,6 @@ sub initScripts {
 
 }
 
-# method: saveScripts
-#  ecrit tous les scripts dans les fichiers correspondant
-#-------------------------------------------------------------------------------
-sub saveScripts {
-
-    TRACE;
-
-    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
-        my $scriptId = sprintf "SCRIPT_%s",$i+1;
-        if (! defined $scriptId) {
-            ERROR("No ScriptId to save the script ?");
-            return FALSE;
-        }
-
-        if (! defined $this{scripts}[$i]) {
-            ERROR("No code to pass into the script ?"); 
-            return FALSE;
-        }
-
-        my $scriptName     = join('.',$scriptId,'sh');
-        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
-
-        if (! -d dirname($this{process}->{path_shell})) {
-            my $dir = dirname($this{process}->{path_shell});
-            DEBUG (sprintf "Create the script directory'%s' !", $dir);
-            eval { mkpath([$dir],0,0751); };
-            if ($@) {
-                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
-                return FALSE;
-            }
-        }
-
-        if ( ! (open SCRIPT,">", $scriptFilePath)) {
-            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
-            return FALSE;
-        }
-
-
-        printf SCRIPT "%s", $this{scripts}[$i];
-        close SCRIPT;
-
-    }
-
-    return TRUE;
-}
-
 sub mergeWithTransparency {
     my $finaleImage = shift;
     my @images = @_;
@@ -1164,7 +1144,8 @@ sub mergeWithTransparency {
     }
 
     # Superposition
-    $code .= sprintf "overlayNtiff -transparent 255,255,255 -opaque 255,255,255 -channels %s -input ",
+    $code .= sprintf "overlayNtiff -mode %s -transparent 255,255,255 -opaque 255,255,255 -channels %s -input ",
+        $this{pyramid}->{merge_method},
         $this{pyramid}->{pixel}->{samplesperpixel};
 
     for (my $i = scalar @images - 1; $i >= 0; $i--) {
@@ -1288,6 +1269,189 @@ sub transformImage {
     return TRUE;
 
 }
+
+####################################################################################################
+#                                        WRITTING METHODS                                          #
+####################################################################################################  
+
+# method: saveScripts
+#  ecrit tous les scripts dans les fichiers correspondant
+#-------------------------------------------------------------------------------
+sub saveScripts {
+
+    TRACE;
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+        if (! defined $scriptId) {
+            ERROR("No ScriptId to save the script ?");
+            return FALSE;
+        }
+
+        if (! defined $this{scripts}[$i]) {
+            ERROR("No code to pass into the script ?"); 
+            return FALSE;
+        }
+
+        my $scriptName     = join('.',$scriptId,'sh');
+        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
+
+        if (! -d dirname($this{process}->{path_shell})) {
+            my $dir = dirname($this{process}->{path_shell});
+            DEBUG (sprintf "Create the script directory'%s' !", $dir);
+            eval { mkpath([$dir],0,0751); };
+            if ($@) {
+                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
+                return FALSE;
+            }
+        }
+
+        if ( ! (open SCRIPT,">", $scriptFilePath)) {
+            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
+            return FALSE;
+        }
+
+
+        printf SCRIPT "%s", $this{scripts}[$i];
+        close SCRIPT;
+
+    }
+
+    return TRUE;
+}
+
+
+
+# method: writePyr
+#  ecrit le fichier .pyr
+#-------------------------------------------------------------------------------
+sub writePyr {
+
+    TRACE;
+    
+    # parsing template
+    my $parser = XML::LibXML->new();
+
+    my $doctpl = eval { $parser->parse_string($STRPYRTMPLT); };
+    if (!defined($doctpl) || $@) {
+        ERROR(sprintf "Can not parse template file of pyramid : %s !", $@);
+        return FALSE;
+    }
+    my $strpyrtmplt = $doctpl->toString(0);
+  
+    #
+    my $tmsname = $this{pyramid}->{tms}->getName();
+    $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
+    #
+    my $formatimg = $this{pyramid}->{format}; # ie TIFF_RAW_INT8 !
+    $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
+    #  
+    my $channel = $this{pyramid}->{pixel}->{samplesperpixel};
+    $strpyrtmplt =~ s/__CHANNEL__/$channel/;
+    #  
+    my $nodata = "FF"x($channel);
+    $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
+    #  
+    $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;
+    #  
+    my $photometric = "rgb";
+    $photometric = "gray" if ($channel == 1);
+    $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
+
+    foreach my $objLevel (values %{$this{pyramid}->{levels}}){
+        my $levelXML = $objLevel->getLevelToXML();
+        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
+        if (! main::writeNodata($objLevel,$nodata)) {
+            ERROR("Cannot write the nodata tile for the level\n");
+            return FALSE;
+        }
+    }
+    #
+    $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
+    $strpyrtmplt =~ s/^$//g;
+    $strpyrtmplt =~ s/^\n$//g;
+    #
+  
+    my $filepyramid = File::Spec->catfile($this{pyramid}->{pyr_desc_path},$this{pyramid}->{pyr_name}.".pyr");
+
+    if (-f $filepyramid) {
+        ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
+        return FALSE;
+    }
+    #
+    my $PYRAMID;
+
+    if (! open $PYRAMID, ">", $filepyramid) {
+        ERROR("");
+        return FALSE;
+    }
+    #
+    printf $PYRAMID "%s", $strpyrtmplt;
+    #
+    close $PYRAMID;
+
+    return TRUE;
+}
+
+
+# method: writeNodata
+#  ecrit les tuiles de nodata
+#-------------------------------------------------------------------------------
+sub writeNodata {
+
+    my $level = shift;
+    my $nodata = shift;
+
+    TRACE;
+    
+    my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
+    $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+        
+    my $nodatadir = dirname($nodataFilePath);
+
+    if (! -e $nodatadir) {
+        #create folders
+        eval { mkpath([$nodatadir],0,0751); };
+        if ($@) {
+            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
+            return FALSE;
+        }
+    }
+
+    my $tm  = $this{pyramid}->{tms}->getTileMatrix($level->getID);
+
+    my $sizex = $tm->getTileWidth();
+    my $sizey = $tm->getTileHeight();
+    my $compression = $this{pyramid}->{compression};
+  
+    # cas particulier de la commande createNodata :
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $compression = ($compression eq 'jpg'?'jpeg':$compression);
+    
+    my $cmd = sprintf ("createNodata -n %s",$nodata);
+    $cmd .= sprintf ( " -c %s", $compression);
+    $cmd .= sprintf ( " -p %s",$this{pyramid}->{pixel}->{photometric});
+    $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
+    $cmd .= sprintf ( " -b %s",$this{pyramid}->{pixel}->{bitspersample});
+    $cmd .= sprintf ( " -s %s",$this{pyramid}->{pixel}->{samplesperpixel});
+    $cmd .= sprintf ( " -a %s",$this{pyramid}->{pixel}->{sampleformat});
+    $cmd .= sprintf ( " %s", $nodataFilePath);
+    
+    if (! system($cmd) == 0) {
+        ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
+                        The command is incorrect : '%s'",
+                        $level->getID(),
+                        $cmd);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+####################################################################################################
+#                                             TOOLS                                                #
+####################################################################################################  
 
 # method: getCacheNameOfImage
 #  return the image path : /3E/42/01.tif
