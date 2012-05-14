@@ -1362,7 +1362,7 @@ sub writePyr {
         my $levelXML = $objLevel->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
         if (! main::writeNodata($objLevel,$nodata)) {
-            ERROR("Cannot write the nodata tile for the level\n");
+            ERROR(sprintf "Cannot write the nodata tile for the level %s",$objLevel->getID());
             return FALSE;
         }
     }
