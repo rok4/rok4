@@ -139,8 +139,8 @@ my %this =
     sourceByLevel => {},
     sourcePyramids => {},
 
-    currentscript => [],
-    scripts => [],
+    currentscript => 0,
+    streams => [],
 
     doneTiles => {},
 );
@@ -196,31 +196,37 @@ sub main {
         exit 3;
     }
 
+    # ouverture des flux
+    ALWAYS("> Open streams to scripts");
+    if (! main::openStreams()) {
+        $message = "ERROR OPEN STREAMS !";
+        printf STDERR "%s\n", $message;
+        exit 4;
+    }    
+
     # execution
     ALWAYS("> Execution");
     if (! main::doIt()) {
         $message = "ERROR EXECUTION !";
         printf STDERR "%s\n", $message;
-        exit 4;
+        exit 5;
     }
 
-    # writting scripts
-    ALWAYS("> Ecriture des scripts");
-    if (! main::saveScripts()) {
-        $message = "ERROR EXECUTION !";
+    # fermeture des flux
+    ALWAYS("> Close streams to scripts");
+    if (! main::closeStreams()) {
+        $message = "ERROR CLOSE STREAMS !";
         printf STDERR "%s\n", $message;
-        exit 4;
-    }
+        exit 6;
+    }  
 
     # writting pyramid's configuration file
-    ALWAYS("> Ecriture du fichier .pyr");
+    ALWAYS("> Write pyramid's descriptor");
     if (! main::writePyr()) {
-        $message = "ERROR EXECUTION !";
+        $message = "ERROR WRITE PYRAMID DESCRIPTOR !";
         printf STDERR "%s\n", $message;
-        exit 4;
+        exit 7;
     }
-
-#DEBUG(sprintf "PYRAMIDS : %s",Dumper($this{pyramid}));
 
     $message = "END";
     printf STDOUT "%s\n", $message;
@@ -323,7 +329,7 @@ sub _read {
     TRACE;
 
     if (! open CFGF, "<", $filepath ){
-        ERROR(sprintf "Impossible d'ouvrir le fichier de configuration %s.",$filepath);
+        ERROR(sprintf "Cannot open configurations' file %s.",$filepath);
         return FALSE;
     }
 
@@ -512,7 +518,82 @@ sub checkParams {
     return TRUE;
 }
 
+####################################################################################################
+#                                         STREAM METHODS                                           #
+####################################################################################################  
 
+sub openStreams {
+    TRACE;
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+
+        my $scriptName     = join('.',$scriptId,'sh');
+        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
+
+        if (! -d dirname($this{process}->{path_shell})) {
+            my $dir = dirname($this{process}->{path_shell});
+            DEBUG (sprintf "Create the script directory'%s' !", $dir);
+            eval { mkpath([$dir],0,0751); };
+            if ($@) {
+                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
+                return FALSE;
+            }
+        }
+    
+        DEBUG(sprintf "Open stream to %s",$scriptFilePath);
+        my $SCRIPT;
+        if ( ! (open $SCRIPT,">", $scriptFilePath)) {
+            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
+            return FALSE;
+        }
+
+        my $header = sprintf ("# Environment variables\n");
+        $header   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
+        $header   .= sprintf ("TMP_DIR=\"%s\"\n",
+            File::Spec->catdir($this{process}->{path_temp},$this{pyramid}->{pyr_name},$scriptId));
+        $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->{pyr_data_path});
+        $header   .= "\n";
+
+        $header .= "# Work directory creation\n";
+        $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+        printf $SCRIPT "%s", $header;
+
+        push @{$this{streams}},$SCRIPT;
+
+    }
+
+    return TRUE;
+
+}
+
+sub closeStreams {
+
+    TRACE;
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+        DEBUG(sprintf "Close stream %s",$scriptId);
+        close $this{streams}[$i];
+    }
+
+    return TRUE;
+
+}
+
+
+sub printInScript {
+    my $code = shift;
+
+    TRACE;
+
+    my $stream = $this{streams}[$this{currentscript}];
+    printf ($stream "%s", $code);
+
+    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+
+}
 
 ####################################################################################################
 #                                       VALIDATION METHODS                                         #
@@ -815,14 +896,10 @@ sub validateSourcePyramids {
                 $pyr);
             return FALSE;
         }
-        # to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-        if ($tagformat eq 'TIFF_INT8') {
-            WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-            $tagformat = 'TIFF_RAW_INT8';
-        }
-        if ($tagformat eq 'TIFF_FLOAT32') {
-            WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-            $tagformat = 'TIFF_RAW_FLOAT32';
+        # Format have to be 8-bits unsigned integer
+        if ($tagformat !~ m/_INT8/) {
+            ERROR("Use pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
+            return FALSE;
         }
         
         # SAMPLES PER PIXEL
@@ -930,8 +1007,6 @@ sub is_Compatible {
 sub doIt {
 
     TRACE();
-
-    main::initScripts();
 
     my $composition = $this{composition};
     my $bboxes = $this{bboxes};
@@ -1074,7 +1149,6 @@ sub treatTile {
     TRACE();
 
     if (scalar @images == 1 && exists $images[0]{isCompatible}) {
-        DEBUG(sprintf "Je fais un lien : %s",$finaleImage);
         if (! main::makeLink($finaleImage,$images[0]{img})) {
             ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]);
             return FALSE;
@@ -1083,7 +1157,6 @@ sub treatTile {
     }
 
     if (scalar @images == 1) {
-        DEBUG(sprintf "Je transforme une image : %s",$finaleImage);
         main::mergeWithTransparency($finaleImage,@images);
         #main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
         $this{doneTiles}->{$i."_".$j} = TRUE;
@@ -1092,34 +1165,9 @@ sub treatTile {
 
     my $mergeMethod = $this{pyramid}->{merge_method};
 
-    DEBUG(sprintf "Je superpose pour créer : %s",$finaleImage);
     main::mergeWithTransparency($finaleImage,@images);
     $this{doneTiles}->{$i."_".$j} = TRUE;
     return TRUE;
-
-}
-
-# method: initScripts
-#--------------------------------------------------------------------------------------------------------
-sub initScripts {
-
-    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
-        my $scriptId = sprintf "SCRIPT_%s",$i+1;
-
-        my $header = sprintf ("# Variables d'environnement\n");
-        $header   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
-        $header   .= sprintf ("TMP_DIR=\"%s\"\n",
-            File::Spec->catdir($this{process}->{path_temp},$this{pyramid}->{pyr_name},$scriptId));
-        $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->{pyr_data_path});
-        $header   .= "\n";
-
-        $header .= "# creation du repertoire de travail\n";
-        $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
-
-        push @{$this{scripts}}, $header
-    }
-
-    $this{currentscript} = 0;
 
 }
 
@@ -1130,6 +1178,9 @@ sub mergeWithTransparency {
     TRACE();
 
     my $code = '';
+
+    my $dataPath = $this{pyramid}->{pyr_data_path};
+    $finaleImage =~ s/$dataPath/\${PYR_DIR}/;
 
     # Pretreatment
 
@@ -1172,9 +1223,7 @@ sub mergeWithTransparency {
     # Cleaning
     $code .= " rm -f \${TMP_DIR}/* \n\n";
 
-    $this{scripts}[$this{currentscript}] .= $code;
-
-    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+    main::printInScript($code);
     
     return TRUE;
 
@@ -1262,9 +1311,7 @@ sub transformImage {
     # Cleaning
     $code .= " rm -f \${TMP_DIR}/* \n\n";
 
-    $this{scripts}[$this{currentscript}] .= $code;
-
-    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+    main::printInScript($code);
     
     return TRUE;
 
@@ -1273,53 +1320,6 @@ sub transformImage {
 ####################################################################################################
 #                                        WRITTING METHODS                                          #
 ####################################################################################################  
-
-# method: saveScripts
-#  ecrit tous les scripts dans les fichiers correspondant
-#-------------------------------------------------------------------------------
-sub saveScripts {
-
-    TRACE;
-
-    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
-        my $scriptId = sprintf "SCRIPT_%s",$i+1;
-        if (! defined $scriptId) {
-            ERROR("No ScriptId to save the script ?");
-            return FALSE;
-        }
-
-        if (! defined $this{scripts}[$i]) {
-            ERROR("No code to pass into the script ?"); 
-            return FALSE;
-        }
-
-        my $scriptName     = join('.',$scriptId,'sh');
-        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
-
-        if (! -d dirname($this{process}->{path_shell})) {
-            my $dir = dirname($this{process}->{path_shell});
-            DEBUG (sprintf "Create the script directory'%s' !", $dir);
-            eval { mkpath([$dir],0,0751); };
-            if ($@) {
-                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
-                return FALSE;
-            }
-        }
-
-        if ( ! (open SCRIPT,">", $scriptFilePath)) {
-            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
-            return FALSE;
-        }
-
-
-        printf SCRIPT "%s", $this{scripts}[$i];
-        close SCRIPT;
-
-    }
-
-    return TRUE;
-}
-
 
 
 # method: writePyr
@@ -1575,11 +1575,10 @@ END {}
 =head1 DESCRIPTION
 
 All used pyramids must have identical parameters :
-    - used TMS
-    - pixel's attributes : sample format, bits per sample, samples per pixel, photometric
-    - compression
+    - used TMS, sample format(uint), bits per sample(8)
+Resulting pyramid will have same attributes.
 
-Resulting pyramid will have same attributes
+Others parameters are free.
 
 Bounding boxes' SRS have to be the TMS' one
 
