@@ -75,6 +75,8 @@ std::string ServiceException::getCodeAsString ( ExceptionCode code ) {
         return "OperationNotSupported" ;
     case WMTS_TILE_OUT_OF_RANGE:
         return "TileOutOfRange" ;
+    case HTTP_NOT_FOUND:
+        return "Not Found" ;
     default:
         return "" ;
     }
@@ -101,6 +103,8 @@ int ServiceException::getCodeAsStatusCode ( ExceptionCode code ) {
         return 500 ;
     case OWS_OPERATION_NOT_SUPORTED:
         return 501 ;
+    case HTTP_NOT_FOUND:
+        return 404 ;
     default:
         return 200 ;
     }
@@ -112,6 +116,8 @@ std::string ServiceException::getStatusCodeAsReasonPhrase ( int statusCode ) {
         return "OK" ;
     case 400 :
         return "BadRequest" ;
+    case 404 :
+        return "Not Found" ;
     case 500 :
         return "Internal server error" ;
     case 501 :

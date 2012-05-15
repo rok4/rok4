@@ -46,6 +46,7 @@ class PaletteDataSource : public DataSource
 private:
 	DataSource* dataSource;
 	Palette* palette;
+        bool fakePalette;
 	//bool transparent;
 	//uint8_t PLTE[3*256+12];
 	size_t dataSize;

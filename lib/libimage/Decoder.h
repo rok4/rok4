@@ -58,6 +58,9 @@ struct LzwDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size);
 };
 
+struct DeflateDecoder {
+    static const uint8_t* decode(DataSource* encData, size_t &size);
+};
 
 struct InvalidDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size) {

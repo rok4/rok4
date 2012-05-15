@@ -41,6 +41,7 @@
 #include <ostream>
 #include <vector>
 #include "Accumulator.h"
+#include <unistd.h>
 
 typedef enum {
 	ROLLING_FILE = 0,

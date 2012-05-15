@@ -62,6 +62,7 @@ private:
     std::string best_level ( double resolution_x, double resolution_y );
     const eformat_data format; //format d'image des tuiles
     const int     channels;
+    DataStream* nodatastream;
 public:
     Level* getFirstLevel();
     TileMatrixSet getTms();
@@ -75,7 +76,7 @@ public:
         return channels;
     }
 
-    DataSource* getTile ( int x, int y, std::string tmId );
+    DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels );

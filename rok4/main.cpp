@@ -39,20 +39,47 @@
 #include "ConfLoader.h"
 #include <proj_api.h>
 #include "Rok4Api.h"
+#include <csignal>
+#include <bits/signum.h>
 
 /* Usage de la ligne de commande */
+
+Rok4Server* W;
+bool reload;
 
 void usage() {
     std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
 }
 
+void reloadConfig(int signum) {
+    reload = true;
+    W->terminate();
+}
+
+void shutdownServer(int signum) {
+    reload = false;
+    W->terminate();
+}
+
+
 /**
 * @brief main
 * @return -1 en cas d'erreur, 0 sinon
 */
-
 int main ( int argc, char** argv ) {
-
+    
+    bool firstStart = true;
+    reload = true;
+    
+    /* install Signal Handler for Conf Reloadind and Server Shutdown*/
+    struct sigaction sa;
+    sa.sa_handler = reloadConfig;
+    sigaction(SIGHUP, &sa,0 );
+    
+    sa.sa_handler = shutdownServer;
+    sigaction(SIGQUIT, &sa,0 );
+    
+    
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
     while ( getenv ( "SLEEP" ) != NULL && stopSleep == 0 ) {
@@ -80,14 +107,23 @@ int main ( int argc, char** argv ) {
     }
 
     // Demarrage du serveur
+    while (reload) {
+    reload = false;
     std::cout<< "Lancement du serveur rok4..."<<std::endl;
-    Rok4Server* W=rok4InitServer ( serverConfigFile.c_str() );
+    W=rok4InitServer ( serverConfigFile.c_str() );
+    if (firstStart) W->initFCGI();
+    firstStart = false;
     W->run();
 
     // Extinction du serveur
-    LOGGER_INFO ( "Extinction du serveur ROK4" );
-    //delete servicesConf;
+    if (reload) {
+        LOGGER_INFO ( "Rechargement de la configuration" );
+    } else {
+        LOGGER_INFO ( "Extinction du serveur ROK4" );
+    }
+    
     rok4KillServer ( W );
+    }
 
     return 0;
 }

@@ -73,7 +73,9 @@ Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth
 
 Level::~Level()
 {
+
     delete noDataSourceProxy;
+
 }
 
 void Level::setNoData(const std::string& file)
@@ -304,8 +306,10 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<JpegDecoder> ( encData );
     else if ( format==TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==TIFF_LZW_INT8 || TIFF_LZW_FLOAT32 )
+    else if ( format==TIFF_LZW_INT8 || format == TIFF_LZW_FLOAT32 )
         return new DataSourceDecoder<LzwDecoder> ( encData );
+    else if ( format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 )
+        return new DataSourceDecoder<DeflateDecoder> ( encData );
     LOGGER_ERROR ( "Type d'encodage inconnu : "<<format );
     return 0;
 }
@@ -317,23 +321,24 @@ DataSource* Level::getEncodedNoDataTile() {
 
 
 
-DataSource* Level::getTile ( int x, int y ) {
+DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* source=getEncodedTile ( x, y );
+    DataSource* ndSource = (errorDataSource?errorDataSource:noDataSourceProxy);
     size_t size;
 
 	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( "GetTile Tiff" );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
-                return new DataSourceProxy(fullTiffDS,*noDataSourceProxy);
+                return new DataSourceProxy(fullTiffDS,*ndSource);
     }
 
-    return new DataSourceProxy ( source, *noDataSourceProxy );
+    return new DataSourceProxy ( source, *ndSource );
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
     LOGGER_DEBUG ( "GetTile Image" );
-    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32)
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32)
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
@@ -342,4 +347,5 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
                                                     tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
 }
+
 

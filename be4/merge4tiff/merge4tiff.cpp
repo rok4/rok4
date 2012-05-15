@@ -260,7 +260,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
     float  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,nodata,sizeof(float)*nbsamples);
+    for (int i = 0; i < nbsamples ; i++) {
+        line_background[i] = nodata;
+    }
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;

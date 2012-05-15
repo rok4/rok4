@@ -62,8 +62,7 @@ protected:
 
     float W[100];
     for(int i = 0; i < 1000; i++) {    
-      
-      Interpolation::KernelType kT = Interpolation::KernelType((i%6)+1);
+      Interpolation::KernelType kT= Interpolation::KernelType((i%6)+1);
       const Kernel &K = Kernel::getInstance(kT); // Il y a 6 Noyaux défini dans KernelType
 
 
@@ -71,25 +70,28 @@ protected:
       int l2 = l;
       double x = 100 * double(rand()) / double(RAND_MAX);
       double ratio = 10 * double(rand()) / double(RAND_MAX);      
-      int xmin = K.weight(W, l, x, ratio);
+      double xmin = K.weight(W, l, x, ratio);
 
       double sum = 0;
       for(int i = 0; i < l; i++) sum += W[i];
-      int nb_min = ceil(x - xmin);
-      int nb_max = l - nb_min;
+      double nb_min;
+      if (kT == Interpolation::NEAREST_NEIGHBOUR) {
+          nb_min = x - xmin;
+      } else {
+        nb_min = ceil(x - xmin);
+      }
+      double nb_max = l - nb_min;
 
-/*
+
       cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << " | " ;
       for(int i = 0; i < l; i++) cerr << W[i] << " ";
       cerr << abs(nb_min - nb_max) << endl;
-*/
+
 
       CPPUNIT_ASSERT(l <= l2);                   // On vérifie qu'il y a moins de coeff que place dans le tableau W
       CPPUNIT_ASSERT(xmin < x+1);
-      CPPUNIT_ASSERT_DOUBLES_EQUAL(1., sum, 1e-6);
-      //WARNING NN fails this one
-      if (kT == Interpolation::NEAREST_NEIGHBOUR) continue;
       CPPUNIT_ASSERT(abs(nb_min - nb_max) <= 1); // On vérifie qu'il y a autant de coeff avant et apres x (à 1 près)
+      CPPUNIT_ASSERT_DOUBLES_EQUAL(1., sum, 1e-6);
     }
   }
 

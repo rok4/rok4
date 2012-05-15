@@ -1450,7 +1450,20 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             globalCRSList.push_back ( crs );
         }
     }
-
+    
+    //Add CRS:84 if not defined in services.config
+    {
+    bool crs84Found = false;
+        for ( int i =0 ; i < globalCRSList.size(); i++) {
+            if (globalCRSList.at(i).getRequestCode().compare("CRS:84")==0){
+                crs84Found = true;
+                break;
+            }
+        }
+        if (!crs84Found) {
+            globalCRSList.push_back(CRS("CRS:84"));
+        }
+    }
     pElem=hRoot.FirstChild ( "serviceType" ).Element();
     if ( pElem && pElem->GetText() ) serviceType = pElem->GetText();
     pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();

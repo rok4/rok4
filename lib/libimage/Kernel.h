@@ -51,7 +51,7 @@
  */
 class Kernel {
     friend class NearestNeighbour;
-    private:
+private:
 
     float coeff[1025];
 
@@ -93,7 +93,7 @@ protected:
      * Constructeur de la classe mère
      * Ne peux être appelé que par les constructeurs des classes filles.
      */
-    Kernel(double kernel_size, bool const_ratio = false) : kernel_size(kernel_size), const_ratio(const_ratio) {}
+     Kernel(double kernel_size, bool const_ratio = false) : kernel_size(kernel_size), const_ratio(const_ratio) {}
 
 public:
 
@@ -130,7 +130,7 @@ public:
      * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
      * indiquer le nombre réel de coefficients écrits dans W.
      */
-    virtual int weight(float* W, int &length, double x, double ratio) const;
+    virtual double weight(float* W, int &length, double x, double ratio) const;
 
 };
 
