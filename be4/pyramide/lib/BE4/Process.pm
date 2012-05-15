@@ -740,7 +740,6 @@ sub work2cache {
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
-  $compression = ($compression eq 'jpg'?'jpeg':$compression);
   
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le quadrillage des dalles et le numéro du node, 
