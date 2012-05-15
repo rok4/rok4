@@ -1192,7 +1192,6 @@ sub createNodata {
   
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->getNodataColor());
     $cmd .= sprintf ( " -c %s", $compression);

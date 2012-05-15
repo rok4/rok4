@@ -107,7 +107,7 @@ void parseCommandLine(int argc, char* argv[],
                       if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
                       else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
                       else if(strncmp(argv[i], "packbits",8) == 0) compression = COMPRESSION_PACKBITS;
-                      else if(strncmp(argv[i], "jpeg",4) == 0) compression = COMPRESSION_JPEG;
+                      else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
                       else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
                       else compression = COMPRESSION_NONE;
                       break;
@@ -260,7 +260,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
     float  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,nodata,sizeof(float)*nbsamples);
+    for (int i = 0; i < nbsamples ; i++) {
+        line_background[i] = nodata;
+    }
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;

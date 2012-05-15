@@ -71,7 +71,6 @@ use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne
 $|=1;
 
 # version
-# my $VERSION = "@VERSION_TEXT@";
 my $VERSION = "0.1.0";
 
 #
@@ -148,7 +147,7 @@ my %this =
 my %CONF = (
     sections => ['pyramid','process','composition','logger','bboxes'],
     merge_method => ['replace','transparency','multiply'],
-    compression => ['raw','jpg','png','lzw'],
+    compression => ['raw','jpg','png','lzw','zip'],
 );
 
 my %SAMPLEFORMAT2CODE = (
@@ -1207,7 +1206,6 @@ sub mergeWithTransparency {
 
     my $compression = $this{pyramid}->{compression};
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
 
     # Final location writting
     $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
@@ -1295,7 +1293,6 @@ sub transformImage {
 
     my $compression = $this{pyramid}->{compression};
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
 
     # Final location writting
     $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
@@ -1426,7 +1423,6 @@ sub writeNodata {
   
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("createNodata -n %s",$nodata);
     $cmd .= sprintf ( " -c %s", $compression);
