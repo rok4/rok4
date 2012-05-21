@@ -53,10 +53,12 @@
 #include <stdint.h>
 #include <iostream>
 #include <string.h>
+#include "../be4version.h"
 
 using namespace std;
 
 void usage() {
+    cerr << "removeFF version "<< BE4_VERSION << endl;
     cerr << endl << "usage: removeFF <input_file> <output_file>" << endl << endl;
     cerr << "remove 255 samples in pixels in the image" << endl;
 }

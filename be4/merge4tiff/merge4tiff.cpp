@@ -49,8 +49,10 @@
 #include <algorithm>
 #include <string.h>
 #include <stdint.h>
+#include "../be4version.h"
 
 void usage() {
+  std::cerr << "merge4tiff version "<< BE4_VERSION << std::endl;
   std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
   std::cerr << "-n : this integer point value in decimal is used only for DTM. (-99999 for example)"<< std::endl;
   std::cerr << "     For images (u_int8), the value is between 0 and 255 in hexadecimal (C9... for example, just first two characters are used)"<< std::endl;
