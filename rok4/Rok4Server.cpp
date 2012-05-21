@@ -134,8 +134,12 @@ void* Rok4Server::thread_loop ( void* arg ) {
 /**
 * @brief Construction du serveur
 */
-Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char *& projEnv) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ), running(false), notFoundError(NULL) {
+Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
+                         std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
+                         char *& projEnv, std::string socket, int backlog) :
+        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
+        styleList(styleList), projEnv(projEnv) , threads ( nbThread ), socket(socket), backlog(backlog),
+        running(false), notFoundError(NULL) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );
     buildWMSCapabilities();
@@ -154,22 +158,10 @@ Rok4Server::~Rok4Server()
 void Rok4Server::initFCGI()
 {
     int init=FCGX_Init();
-
-    // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
-    // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
-    // Utile
-    //  * Pour faire du profiling (grof)
-    //  * Pour lancer rok4 sur plusieurs serveurs distants
-    //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
-
-    // A décommenter pour utiliser valgrind
-    // Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
-    // Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
-
-    // sock = FCGX_OpenSocket(":9000", 0);
-
-    // Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
-    // Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
+    if (!socket.empty()) {
+        std::cout << "before socket opening" << std::endl;
+        sock = FCGX_OpenSocket(socket.c_str(), backlog);
+    }
 }
 
 

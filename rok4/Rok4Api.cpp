@@ -84,12 +84,12 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     // Initialisation des parametres techniques
     LogOutput logOutput;
-    int nbThread,logFilePeriod;
+    int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
     bool reprojectionCapability;
     char* projEnv;
-    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv ) ) {
+    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv, socket, backlog ) ) {
         std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
         return false;
     }
@@ -151,7 +151,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
-    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv);
+    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv, socket, backlog);
 }
 
 /**

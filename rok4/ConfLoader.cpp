@@ -36,6 +36,7 @@
  */
 
 #include <dirent.h>
+#include <cstdio>
 #include "ConfLoader.h"
 #include "Pyramid.h"
 #include "tinyxml.h"
@@ -1094,7 +1095,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1247,7 +1248,24 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
         return false;
     }
-
+    pElem=hRoot.FirstChild ( "serverPort" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<"Pas d'élément <serverPort> fonctionnement autonome impossible" <<std::endl;
+        socket = "";
+    } else {
+        std::cerr<<"Élément <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)" <<std::endl;
+        socket = pElem->GetText();
+    }
+    
+    pElem=hRoot.FirstChild ( "serverBackLog" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::clog<<"Pas d'élément <serverBackLog> valeur par défaut : 0" <<std::endl;
+        backlog = 0;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&backlog) )  {
+        std::cerr<<"Le logFilePeriod [" << pElem->GetText() <<"]  is not an integer."<<std::endl;
+        backlog = 0;
+    }
+    
     return true;
 }//parseTechnicalParam
 
@@ -1404,7 +1422,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         maxHeight=MAX_IMAGE_HEIGHT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxHeight ) ) {
         LOGGER_ERROR ( servicesConfigFile << "Le maxHeight est inexploitable:[" << pElem->GetText() << "]" );
-        return false;
+//         return NULL;
     }
 
     pElem = hRoot.FirstChild ( "maxTileX" ).Element();
@@ -1487,7 +1505,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         } else {
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
-                return false;
+                return NULL;
             } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
@@ -1497,7 +1515,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         } else {
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
-                return false;
+                return NULL;
             } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
@@ -1513,7 +1531,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         } else {
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
-                return false;
+                return NULL;
             } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
@@ -1523,7 +1541,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         } else {
             if (inspire) {
                 LOGGER_ERROR("Metadata element incorrect");
-                return false;
+                return NULL;
             } else {
                 LOGGER_INFO("Metadata element incorrect");
             }
@@ -1545,14 +1563,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability,
                                      std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
-                                     std::string &styleDir, char*& projEnv ) {
+                                     std::string &styleDir, char*& projEnv , std::string& socket, int& backlog) {
     std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir,projEnv );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir,projEnv, socket, backlog );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
