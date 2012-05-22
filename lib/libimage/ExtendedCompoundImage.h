@@ -76,10 +76,21 @@ private:
     uint mirrors;
 
     int nodata;
+    
+    /* Il existe des données source qui contiennent du nodata, de valeur nodata_src. Lors de la superposition, on ne veut pas
+     * le garder. Ce filtre augmantant le temps du mergeNtiff, on veut que ce soit en option :
+     *      - true : on retire le blanc
+     *      - false : comme avant
+     */
+    bool nowhite;
+    
     uint16_t sampleformat;
 
     template<typename T>
     int _getline(T* buffer, int line);
+
+    template<typename T>
+    bool isNodata(T* pixel);
 
 protected:
 
@@ -88,20 +99,22 @@ protected:
       * Les Image sont detruites ensuite en meme temps que l'objet
       * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
      */
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors) :
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
         Image(width, height, channels,bbox),
         images(images),
         nodata(nodata),
         sampleformat(sampleformat),
-        mirrors(mirrors) {}
+        mirrors(mirrors),
+        nowhite(nowhite) {}
 
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors) :
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
         Image(width, height, channels,bbox),
         images(images),
         masks(masks),
         nodata(nodata),
         sampleformat(sampleformat),
-        mirrors(mirrors) {}
+        mirrors(mirrors),
+        nowhite(nowhite) {}
 
 public:
     std::vector<Image*>* getimages() {return &images;}
@@ -133,9 +146,9 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 };
 
 /**

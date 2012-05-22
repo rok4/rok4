@@ -95,7 +95,7 @@ sub new {
     my $self = {
         FILEPATH_DATACONF => undef, # path of data's configuration file
         type => undef, # (image or harvest)
-        sources  => [],    # list of ImageSource or HarvestSource objects
+        sources  => {},    # hash of ImageSource or HarvestSource objects
         SRS => undef,
         bottomExtent => undef, # OGR::Geometry object, in the previous SRS
     };
@@ -168,6 +168,7 @@ sub _load {
     }
 
     my $sources = $self->{sources};
+    my $nbSources = 0;
 
     while( my ($k,$v) = each(%$sourcesProperties) ) {
         if ($k eq "global") {
@@ -179,29 +180,29 @@ sub _load {
         }
 
         if ($self->{type} eq "harvest") {
-            my $harvestSource = BE4::HarvestSource->new($k,$v);
+            my $harvestSource = BE4::HarvestSource->new($v);
             if (! defined $harvestSource) {
                 ERROR(sprintf "Cannot create an harvest source for the base level %s",$k);
                 return FALSE;
             }
-            push @$sources, $harvestSource;
+            $sources->{$k} = $harvestSource;
+            $nbSources++;
         }
         elsif ($self->{type} eq "image") {
-            my $imageSource = BE4::ImageSource->new($k,$v);
+            my $imageSource = BE4::ImageSource->new($v);
             if (! defined $imageSource) {
                 ERROR(sprintf "Cannot create an image source for the base level %s",$k);
                 return FALSE;
             }
-            push @$sources, $imageSource;
+            $sources->{$k} = $imageSource;
+            $nbSources++;
         }
     }
 
-    if (!defined $sources || ! scalar @$sources) {
+    if (!defined $sources || $nbSources == 0) {
         ERROR ("No source !");
         return FALSE;
     }
-
-    
 
     return TRUE;
 }
@@ -327,7 +328,6 @@ sub is_type {
 
 sub getSRS {
   my $self = shift;
-  
   return $self->{SRS};
 }
 

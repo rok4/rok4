@@ -362,6 +362,9 @@ sub _init {
     }
     $self->{imagesize} = $params->{imagesize};
     #
+    if (! exists($params->{nowhite})) {
+        $params->{nowhite} = 'false';
+    }
     if (! exists($params->{color})) {
         WARN ("Parameter 'color' (for nodata) has not been set. The default value will be used (consistent with the pixel's format");
         $params->{color} = undef;
@@ -444,7 +447,8 @@ sub _load {
             path_nodata      => $params->{path_nodata},
             pixel            => $self->getPixel(),
             imagesize        => $self->getImageSize(), 
-            color            => $params->{color}
+            color            => $params->{color},
+            nowhite          => $params->{nowhite}
     });
 
     if (! defined $objNodata) {
@@ -531,6 +535,12 @@ sub _fillFromPyramid {
     my $filepyramid = File::Spec->catfile($self->getPyrDescPathOld(),$self->getPyrFileOld());
     if (! $self->readConfPyramid($filepyramid,$params)) {
         ERROR (sprintf "Can not read the XML file Pyramid : %s !", $filepyramid);
+        return FALSE;
+    }
+
+    # identify bottom and top levels
+    if (! $self->calculateExtremLevels()) {
+        ERROR(sprintf "Impossible to calculate top and bottom levels");
         return FALSE;
     }
 
@@ -661,13 +671,7 @@ sub readConfPyramid {
         return FALSE;
     }
     $params->{samplesperpixel} = $tagsamplesperpixel;
-    
 
-    # identify bottom and top levels
-    if (! $self->calculateExtremLevels()) {
-        ERROR(sprintf "Impossible to calculate top and bottom levels");
-        return FALSE;
-    }
 
     # create PyrImageSpec object !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
@@ -732,20 +736,19 @@ sub readConfPyramid {
                                            );
         #
         my $levelOrder = $self->getLevelOrder($tagtm);
-        my $objLevel = BE4::Level->new(
-            {
-                id                => $tagtm,
-                order             => $levelOrder,
-                dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-                dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
-                dir_metadata      => undef,      # TODO !
-                compress_metadata => undef,      # TODO !
-                type_metadata     => undef,      # TODO !
-                size              => [$tagsize[0],$tagsize[1]],
-                dir_depth         => $tagdirdepth,
-                limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
-                is_in_pyramid  => 0
-            });
+        my $objLevel = BE4::Level->new({
+            id                => $tagtm,
+            order             => $levelOrder,
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
+            size              => [$tagsize[0],$tagsize[1]],
+            dir_depth         => $tagdirdepth,
+            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+            is_in_pyramid  => 0
+        });
             
 
         if (! defined $objLevel) {
@@ -785,14 +788,21 @@ sub readCachePyramid {
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
+  # Find cache tiles ou directories
   my $searchitem = $self->FindCacheNode($dir);
   
   if (! defined $searchitem) {
-    ERROR("Can not find cache file or directory");
+    ERROR("An error on reading the cache structure !");
     return FALSE;
   }
 
   DEBUG(Dumper($searchitem));
+  
+  # Error, broken link !
+  if (scalar @{$searchitem->{cachebroken}}) {
+    ERROR("Some links are broken in directory cache !");
+    return FALSE;
+  }
   
   # Info, cache file of old cache !
   if (! scalar @{$searchitem->{cachetile}}) {
@@ -822,8 +832,9 @@ sub FindCacheNode {
   TRACE();
   
   my $search = {
-    cachedir  => [],
-    cachetile => [],
+    cachedir    => [],
+    cachetile   => [],
+    cachebroken => [],
   };
   
   my $pyr_datapath = $self->getPyrDataPath();
@@ -846,10 +857,12 @@ sub FindCacheNode {
       
       # recursif
       $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
-      push @{$search->{cachetile}}, $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},  $_  foreach(@{$newsearch->{cachedir}});
+      
+      push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
+      push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
+      push @{$search->{cachebroken}},  $_  foreach(@{$newsearch->{cachebroken}});
     }
-    
+
     elsif( -f File::Spec->catfile($directory, $entry) &&
          ! -l File::Spec->catfile($directory, $entry)) {
       TRACE(sprintf "FIL:%s\n",$entry);
@@ -865,7 +878,10 @@ sub FindCacheNode {
     }
     
     else {
-        TRACE(sprintf "???:%s\n",$entry);
+        # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
+        # ou liste exaustive des liens cassés ?
+        WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
+        push @{$search->{cachebroken}}, File::Spec->catfile($directory, $entry);
     }
     
   }
@@ -891,6 +907,35 @@ sub calculateExtremLevels {
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
+    }
+
+    # initialisation de la transfo de coord du srs des données initiales vers
+    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
+    my $ct = undef;  
+    if ($self->getTileMatrixSet()->getSRS() ne $self->getDataSource()->getSRS()){
+        my $srsini= new Geo::OSR::SpatialReference;
+        eval { $srsini->ImportFromProj4('+init='.$self->getDataSource()->getSRS().' +wktext'); };
+        if ($@) {
+            eval { $srsini->ImportFromProj4('+init='.lc($self->getDataSource()->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",
+                    $self->getDataSource()->getSRS());
+                return FALSE;
+            }
+        }
+        my $srsfin= new Geo::OSR::SpatialReference;
+        eval { $srsfin->ImportFromProj4('+init='.$self->getTileMatrixSet()->getSRS().' +wktext'); };
+        if ($@) {
+            eval { $srsfin->ImportFromProj4('+init='.lc($self->getTileMatrixSet()->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
+                    $self->getTileMatrixSet()->getSRS());
+                return FALSE;
+            }
+        }
+        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # Intitialisation du topLevel:
@@ -1170,7 +1215,6 @@ sub createNodata {
   
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->getNodataColor());
     $cmd .= sprintf ( " -c %s", $compression);

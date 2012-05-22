@@ -46,6 +46,9 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+uint8_t white[4] = {255,255,255,255};
+uint8_t nodataAverage = 254;
+
 /**
 @fn _getline(T* buffer, int line)
 @brief Remplissage iteratif d'une ligne
@@ -81,8 +84,19 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         T* buffer_t = new T[images[i]->width*images[i]->channels];
         LOGGER_DEBUG(i<<" "<<line<<" "<<images[i]->y2l(y));
         images[i]->getline(buffer_t,images[i]->y2l(y));
+
         if (masks.empty()) {
-            memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
+            if (nowhite && sizeof(T) == 1) {
+                // Dans le cas de canaux entier, on veut éviter de prendre en compte les pixels blanc, on va donc les filter
+                for (int j = 0; j < (c1-c0); j++) {
+                    if (! isNodata(&buffer_t[(c2+j)*channels])) {
+                        // Ce pixel n'est pas de nodata, on peut le stocker dans le buffer
+                        memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],channels);
+                    }
+                }
+            } else {
+                memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
+            }
         } else {
             
             int j;
@@ -91,7 +105,12 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             masks[i]->getline(buffer_m,masks[i]->y2l(y));
             for (j=0;j<c1-c0;j++) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
-                    memcpy(&buffer[(c0+j)*channels],&buffer_t[c2*channels+j*channels],sizeof(T)*channels);
+
+                    if (nowhite && sizeof(T) == 1 && isNodata(&buffer_t[(c2+j)*channels])) {
+                        continue;
+                    }
+
+                    memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],sizeof(T)*channels);
                 }
             }
             
@@ -100,6 +119,15 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         delete [] buffer_t;
     }
     return width*channels*sizeof(T);
+}
+
+template <typename T>
+bool ExtendedCompoundImage::isNodata(T* pixel) {
+    int average = 0;
+    for (int i = 0; i<channels; i++) {
+        average += pixel[i];
+    }
+    return (average/channels > nodataAverage);
 }
 
 /** Implementation de getline pour les uint8_t */
@@ -128,7 +156,8 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  std::vector<Image*>& images, 
                                                                                  int nodata, 
                                                                                  uint16_t sampleformat, 
-                                                                                 uint mirrors)
+                                                                                 uint mirrors,
+                                                                                 bool nowhite = false)
 {
     uint i;
 
@@ -149,13 +178,13 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
         }
     }
 
-    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors,nowhite);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
 {
     // TODO : controler que les images et les masques sont superposables a l'image
-    return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors);
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors,nowhite);
 }
 
 /**
@@ -167,8 +196,8 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
   memset(buffer,0,width*channels);
-  // Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
-  for (uint i=0; i < ECI->getimages()->size()-ECI->getmirrors(); i++){
+  // Rappel de l'hypothese : les miroirs sont rangés en premier parmi les images de l'ECI
+  for (uint i = ECI->getmirrors(); i < ECI->getimages()->size(); i++){
 
     // On ecarte les images qui ne se trouvent pas sur la ligne
     // On evite de comparer des coordonnees terrain (comparaison de flottants)

@@ -44,7 +44,7 @@
 #include "TiffWhiteManager.h"
 
 void usage() {
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
+    std::cerr << "usage : tiff2tile input_file -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
     std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
 }
 
@@ -73,12 +73,15 @@ int main(int argc, char **argv) {
                         compression = COMPRESSION_PNG;
                         if(argv[i][3] == ':') quality = atoi(argv[i]+4);
                     }
-                    else if(strncmp(argv[i], "jpeg",4) == 0) {
+                    else if(strncmp(argv[i], "jpg",3) == 0) {
                         compression = COMPRESSION_JPEG;
                         if(argv[i][4] == ':') quality = atoi(argv[i]+5);
                     }
                     else if(strncmp(argv[i], "lzw",3) == 0) {
                         compression = COMPRESSION_LZW;
+                    }
+                    else if(strncmp(argv[i], "zip",3) == 0) {
+                        compression = COMPRESSION_DEFLATE;
                     }
                     else {
                         compression = COMPRESSION_NONE;

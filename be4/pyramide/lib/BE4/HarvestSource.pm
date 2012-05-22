@@ -79,7 +79,6 @@ sub new {
 
   my $class= ref($this) || $this;
   my $self = {
-    baseLevel => undef, # bottom level using this harvesting
     harvesting => undef, # Harvesting object
     image_width => 4096, # images size which will be harvested
     image_height => 4096
@@ -99,7 +98,6 @@ sub new {
 # privates init.
 sub _init {
     my $self   = shift;
-    my $baseLevel = shift;
     my $harvestParams = shift;
 
     TRACE;
@@ -107,10 +105,6 @@ sub _init {
     return FALSE if (! defined $harvestParams);
 
     # parameters mandatoy !
-    if (! defined $baseLevel) {
-        ERROR("key/value required to 'baseLevel' !");
-        return FALSE ;
-    }
 
     if (! exists($harvestParams->{image_width}) || ! defined ($harvestParams->{image_width})) {
         ERROR("key/value required to 'image_width' !");
@@ -134,7 +128,6 @@ sub _init {
     }
     
     # init. params    
-    $self->{baseLevel} = $baseLevel;
     $self->{harvesting} = $objHarvest;
     $self->{image_width} = $harvestParams->{image_width};
     $self->{image_height} = $harvestParams->{image_height};
@@ -155,10 +148,6 @@ __END__
 =head1 SYNOPSIS
 
   use BE4::HarvestSource;
-  
-  my $objHarvestSource = BE4::DataSource->new(baseLevel => 19,
-                                         harvesting => $objHarvesting,
-                                         size_image => [2048,2048]);
 
 =head1 DESCRIPTION
 

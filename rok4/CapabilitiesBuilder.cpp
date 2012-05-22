@@ -44,6 +44,8 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include "TileMatrixSet.h"
+#include "Pyramid.h"
 
 /**
  * Conversion de int en std::string.
@@ -469,6 +471,9 @@ void Rok4Server::buildWMSCapabilities() {
 void Rok4Server::buildWMTSCapabilities() {
     // std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
+    
+    std::map<std::string,TileMatrixSet> usedTMSList;
+    
     TiXmlDocument doc;
     TiXmlDeclaration * decl = new TiXmlDeclaration ( "1.0", "UTF-8", "" );
     doc.LinkEndChild ( decl );
@@ -736,6 +741,7 @@ void Rok4Server::buildWMTSCapabilities() {
          *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
         TiXmlElement * tmsLinkEl = new TiXmlElement ( "TileMatrixSetLink" );
         tmsLinkEl->LinkEndChild ( buildTextNode ( "TileMatrixSet",layer->getDataPyramid()->getTms().getId() ) );
+        usedTMSList.insert(std::pair<std::string,TileMatrixSet>(layer->getDataPyramid()->getTms().getId() , layer->getDataPyramid()->getTms() ));
         //tileMatrixSetLimits
         TiXmlElement * tmsLimitsEl = new TiXmlElement ( "TileMatrixSetLimits" );
 
@@ -763,13 +769,15 @@ void Rok4Server::buildWMTSCapabilities() {
 
     // TileMatrixSet
     //--------------------------------------------------------
-    std::map<std::string,TileMatrixSet*>::iterator itTms ( tmsList.begin() ), itTmsEnd ( tmsList.end() );
+    std::map<std::string,TileMatrixSet>::iterator itTms ( usedTMSList.begin() ), itTmsEnd ( usedTMSList.end() );
     for ( ;itTms!=itTmsEnd;++itTms ) {
+
+        TileMatrixSet tms = itTms->second;
+
         TiXmlElement * tmsEl=new TiXmlElement ( "TileMatrixSet" );
-        TileMatrixSet* tms = itTms->second;
-        tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms->getId() ) );
-        tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms->getCrs().getRequestCode() ) );
-        std::map<std::string, TileMatrix>* tmList = tms->getTmList();
+        tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms.getId() ) );
+        tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms.getCrs().getRequestCode() ) );
+        std::map<std::string, TileMatrix>* tmList = tms.getTmList();
 
         // TileMatrix
         std::map<std::string, TileMatrix>::iterator itTm ( tmList->begin() ), itTmEnd ( tmList->end() );
@@ -777,8 +785,8 @@ void Rok4Server::buildWMTSCapabilities() {
             TileMatrix tm =itTm->second;
             TiXmlElement * tmEl=new TiXmlElement ( "TileMatrix" );
             tmEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tm.getId() ) );
-            tmEl->LinkEndChild ( buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm.getRes() *tms->getCrs().getMetersPerUnit() ) /0.00028 ) ) );
-            if ( tms->getCrs().isLongLat() ) {
+            tmEl->LinkEndChild ( buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm.getRes() *tms.getCrs().getMetersPerUnit() ) /0.00028 ) ) );
+            if ( tms.getCrs().isLongLat() ) {
                 tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",numToStr ( tm.getY0() ) + " " + numToStr ( tm.getX0() ) ) );
             } else {
                 tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",numToStr ( tm.getX0() ) + " " + numToStr ( tm.getY0() ) ) );

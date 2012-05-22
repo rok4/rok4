@@ -83,7 +83,7 @@ private:
 public:
     std::string getId();
 
-    DataSource* gettile ( int x, int y, std::string tmId );
+    DataSource* gettile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
 
     std::string              getAbstract()   const {

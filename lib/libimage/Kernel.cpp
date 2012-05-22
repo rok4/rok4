@@ -1,24 +1,24 @@
 /*
  * Copyright © (2011) Institut national de l'information
- *                    géographique et forestière 
- * 
+ *                    géographique et forestière
+ *
  * Géoportail SAV <geop_services@geoportail.fr>
- * 
+ *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
- * 
+ *
  * This software is governed by the CeCILL-C license under French law and
- * abiding by the rules of distribution of free software.  You can  use, 
+ * abiding by the rules of distribution of free software.  You can  use,
  * modify and/ or redistribute the software under the terms of the CeCILL-C
  * license as circulated by CEA, CNRS and INRIA at the following URL
- * "http://www.cecill.info". 
- * 
+ * "http://www.cecill.info".
+ *
  * As a counterpart to the access to the source code and  rights to copy,
  * modify and redistribute granted by the license, users are provided only
  * with a limited warranty  and the software's author,  the holder of the
  * economic rights,  and the successive licensors  have only  limited
- * liability. 
- * 
+ * liability.
+ *
  * In this respect, the user's attention is drawn to the risks associated
  * with loading,  using,  modifying and/or developing or reproducing the
  * software by the user in light of its specific status of free software,
@@ -26,40 +26,40 @@
  * therefore means  that it is reserved for developers  and  experienced
  * professionals having in-depth computer knowledge. Users are therefore
  * encouraged to load and test the software's suitability as regards their
- * requirements in conditions enabling the security of their systems and/or 
- * data to be ensured and,  more generally, to use and operate it in the 
- * same conditions as regards security. 
- * 
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
  * The fact that you are presently reading this means that you have had
- * 
+ *
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 #include <cmath>
 #include "Kernel.h"
 #include "Logger.h"
-int Kernel::weight(float* W, int &length, double x, double ratio) const {
+double Kernel::weight(float* W, int &length, double x, double ratio) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
-    if(length < 2*Ks) {
+    if (length < 2*Ks) {
         xmin = ceil(x - length*0.5 + 1e-9);
     }
     double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
-    double indf = (x - xmin) * step;          // index flottant dans le tableau coeff 
-    
+    double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
+
     int i = 0;
-    for(;indf >= 0; indf -= step) {
+    for (;indf >= 0; indf -= step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
         // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
     }
-    for(indf = -indf; indf < 1024. && i < length; indf += step) {
+    for (indf = -indf; indf < 1024. && i < length; indf += step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
     }
     length = i;
-    while(i--) W[i] /= sum;     // On normalise pour que la somme des poids fasse 1.
+    while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
     return xmin;
 }
 
@@ -71,15 +71,17 @@ class Lanczos : public Kernel {
 
     private:
     double kernel_function(double d) {
-        if(d > s) return 0.;
-        else if(d == 0.) return 1.;
+        if (d > s) return 0.;
+        else if (d == 0.) return 1.;
         else {
             d *= 3.14159265358979323846;
             return (sin(d) / d) * (sin(d/s) / d * s);
         }
     }
 
-    Lanczos() : Kernel(s) {init();}
+    Lanczos() : Kernel(s) {
+        init();
+    }
 };
 
 
@@ -87,58 +89,90 @@ class NearestNeighbour : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
     double kernel_function(double d) {
-        if(d > 0.5) return 0.;
+        if (d > 0.5) return 0.;
         else return 1.;
     }
-    NearestNeighbour() : Kernel(0.6, true) {init();}
+    NearestNeighbour() : Kernel(0.6, true) {
+        init();
+    }
+
+    double weight(float* W, int &length, double x, double ratio) const {
+        double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
+        double step = 1024. / Ks;
+        double xmin = x - Ks;
+        if (length < 2*Ks) {
+            xmin = x - length*0.5 ;
+        }
+        double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
+        double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
+
+        int i = 0;
+        for (;indf >= 0; indf -= step) {
+            int ind = (int) indf;
+            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+            // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
+        }
+        for (indf = -indf; indf < 1024. && i < length; indf += step) {
+            int ind = (int) indf;
+            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+        }
+        length = i;
+        while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
+        return xmin;
+
+    };
 };
 
 
 class Linear : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-    private:
+private:
     double kernel_function(double d) {
-        if(d > 1) return 0.;
+        if (d > 1) return 0.;
         else return 1.-d;
     }
-    Linear() : Kernel(1.) {init();}
+    Linear() : Kernel(1.) {
+        init();
+    }
 };
 
 
- /*
-  * Pris dans Image Magick
-  *
-    Cubic Filters using B,C determined values:
+/*
+ * Pris dans Image Magick
+ *
+   Cubic Filters using B,C determined values:
 
-    Catmull-Rom         B= 0  C=1/2   Cublic Interpolation Function
+   Catmull-Rom         B= 0  C=1/2   Cublic Interpolation Function
 
-    Coefficents are determined from B,C values
-       P0 = (  6 - 2*B       )/6     = 1
-       P1 =         0                = 0
-       P2 = (-18 +12*B + 6*C )/6     = -5/2
-       P3 = ( 12 - 9*B - 6*C )/6     = 3/2
-       Q0 = (      8*B +24*C )/6     = 2
-       Q1 = (    -12*B -48*C )/6     = -4
-       Q2 = (      6*B +30*C )/6     = 5/2
-       Q3 = (    - 1*B - 6*C )/6     = -1/2
+   Coefficents are determined from B,C values
+      P0 = (  6 - 2*B       )/6     = 1
+      P1 =         0                = 0
+      P2 = (-18 +12*B + 6*C )/6     = -5/2
+      P3 = ( 12 - 9*B - 6*C )/6     = 3/2
+      Q0 = (      8*B +24*C )/6     = 2
+      Q1 = (    -12*B -48*C )/6     = -4
+      Q2 = (      6*B +30*C )/6     = 5/2
+      Q3 = (    - 1*B - 6*C )/6     = -1/2
 
-    Which is used to define the filter...
-       P0 + P1*x + P2*x^2 + P3*x^3      0 <= x < 1
-       Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x <= 2
+   Which is used to define the filter...
+      P0 + P1*x + P2*x^2 + P3*x^3      0 <= x < 1
+      Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x <= 2
 
-    Which ensures function is continuous in value and derivative (slope).
-  */
+   Which ensures function is continuous in value and derivative (slope).
+ */
 
 
 class CatRom : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-    private:
+private:
     double kernel_function(double d) {
-    if(d > 2) return 0.;
-        else if(d > 1) return 2. + d*(-4. + d*(2.5 - 0.5*d));
+        if (d > 2) return 0.;
+        else if (d > 1) return 2. + d*(-4. + d*(2.5 - 0.5*d));
         else return 1. + d*d*(1.5*d - 2.5);
     }
-    CatRom() : Kernel(2.) {init();}
+    CatRom() : Kernel(2.) {
+        init();
+    }
 };
 
 
@@ -151,13 +185,25 @@ const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
     static Lanczos<3> lanczos_3;
     static Lanczos<4> lanczos_4;
 
-    switch(T) {
-        case Interpolation::NEAREST_NEIGHBOUR: return nearest_neighbour; break;
-        case Interpolation::LINEAR: return linear; break;
-        case Interpolation::CUBIC: return catrom; break;
-        case Interpolation::LANCZOS_2: return lanczos_2; break;
-        case Interpolation::LANCZOS_3: return lanczos_3; break;
-        case Interpolation::LANCZOS_4: return lanczos_4; break;
+    switch (T) {
+    case Interpolation::NEAREST_NEIGHBOUR:
+        return nearest_neighbour;
+        break;
+    case Interpolation::LINEAR:
+        return linear;
+        break;
+    case Interpolation::CUBIC:
+        return catrom;
+        break;
+    case Interpolation::LANCZOS_2:
+        return lanczos_2;
+        break;
+    case Interpolation::LANCZOS_3:
+        return lanczos_3;
+        break;
+    case Interpolation::LANCZOS_4:
+        return lanczos_4;
+        break;
     }
     return lanczos_3;
 }

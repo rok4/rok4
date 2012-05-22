@@ -126,7 +126,7 @@ sub merge4tiff {
   options:\n
   \t -g gamma (float)\n
   \t -n nodata alti (float)\n
-  \t -c compression (none|zip|packbits|jpeg|lzw) default is none\n
+  \t -c compression (none|zip|packbits|jpg|lzw) default is none\n
   \t -r rowsperstrip (int)");
   
   return $command;
@@ -137,7 +137,7 @@ sub tiff2tile {
   
   my $command = undef;
   
-  ERROR ("usage : tiff2tile input_file -c [none/png/jpeg] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file");
+  ERROR ("usage : tiff2tile input_file -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file");
   
   return $command;
 }

@@ -152,8 +152,9 @@ sub _init {
     # it's an object !
     if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
         ||
-        (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))
-    ) {
+        (! $self->{pyramid}->isNewPyramid() && (
+        $self->{pyramid}->getCompression() eq 'jpg')
+    )) {
 
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
 
@@ -317,6 +318,7 @@ sub computeBottomImage {
     my $code  = "\n";
 
     my $bgImgPath=undef;
+    my $bgImgName=undef;
   
 # FIXME (TOS) Ici, on fait appel au service WMS sans vérifier que la zone demandée n'est pas trop grande.
 # On considère que le niveau le plus bas de la pyramide que l'on est en train de construire n'est pas trop élevé.
@@ -339,9 +341,10 @@ sub computeBottomImage {
         # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
         # correspondant dans la nouvelle pyramide.
         if ( -f $newImgDesc->getFilePath() ){
-            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir(), "bgImg.tif");
+            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
+            $bgImgPath = File::Spec->catfile($self->getScriptTmpDir(),$bgImgName);
             # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-            $code .= $self->cache2work($node, "bgImg.tif");
+            $code .= $self->cache2work($node, $bgImgName);
         }
 
         # On cree maintenant le fichier de config pour l'outil mergeNtiff
@@ -391,8 +394,8 @@ sub computeBottomImage {
     $code .= $self->work2cache($node);
 
     # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined($bgImgPath) ){
-        $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    if ( defined($bgImgName) ){
+        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
     }
 
     $self->{tree}->updateWeightOfNode($node,$weight);
@@ -433,6 +436,9 @@ sub computeAboveImage {
     my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
     my @childList = $self->{tree}->getChilds($node);
 
+    my $bgImgPath=undef;
+    my $bgImgName=undef;
+
     # A-t-on besoin de quelque chose en fond d'image?
     my $bg="";
     if (scalar @childList != 4){
@@ -457,7 +463,8 @@ sub computeAboveImage {
 
         if (-f $newImgDesc->getFilePath()) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-            my $bgImgPath = File::Spec->catfile('${TMP_DIR}', "bgImg.tif");
+            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
+            $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
             $bg="-b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
@@ -469,11 +476,11 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
-                    $code .= $self->wms2work($node, "bgImg.tif");
+                    $code .= $self->wms2work($node, $bgImgName);
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $code .= $self->cache2work($node, "bgImg.tif");
+                $code .= $self->cache2work($node, $bgImgName);
             }
         } else {
             # On a pas d'image alors on donne une couleur de nodata
@@ -498,8 +505,10 @@ sub computeAboveImage {
         $code .= "rm -f \${TMP_DIR}/$workName \n";
     }
 
-    # Si on a copié une image pour le fond, on en a plus besoin, on la supprime maintenant
-    $code.= "rm -f \${TMP_DIR}/bgImg.tif \n"; 
+    # Si on a copié une image pour le fond, on la supprime maintenant
+    if ( defined($bgImgName) ){
+        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
+    }
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
     $code .= $self->work2cache($node);
@@ -688,11 +697,20 @@ sub cache2work {
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
         $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
+        my $dirName = $workName;
+        $dirName =~ s/\.tif//;
         my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
+        $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
+        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
+        
+        if ($self->{pyramid}->getSamplesPerPixel() == 4) {
+            # Option supplémentaire pour conserver le canal alpha
+            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
+        } else {
+            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
+        }
 
-        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/\n%s", UNTILE, $workName, RESULT_TEST);
-
-        $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s", $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
+        $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$dirName);
 
         return $cmd;
     } else {
@@ -722,7 +740,6 @@ sub work2cache {
   
   # cas particulier de la commande tiff2tile :
   $compression = ($compression eq 'raw'?'none':$compression);
-  $compression = ($compression eq 'jpg'?'jpeg':$compression);
   
   # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
   # complémentaire comme le quadrillage des dalles et le numéro du node, 
@@ -771,6 +788,7 @@ sub mergeNtiff {
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
     $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
     $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
+    $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
     $cmd .= sprintf ( " -t %s ", $dataType);
     $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());
     $cmd .= sprintf ( " -b %s ", $pyr->getBitsPerSample() );

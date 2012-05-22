@@ -69,7 +69,7 @@ use constant FALSE => 0;
 $|=1;
 
 # version
-my $VERSION = "@VERSION_TEXT@";
+my $VERSION = "All-moisson : 0.5.0";
 
 #
 # Title: be4
@@ -377,6 +377,12 @@ sub checkParams {
     return FALSE;
   }
   
+  # datasource
+  if (! defined $datasource) {
+    ERROR ("Parameters Datasource can not be null !");
+    return FALSE;
+  }
+
   # logger
   if (defined $logger) {
     
@@ -418,8 +424,6 @@ sub checkParams {
   $pyramid = { map %$_, grep ref $_ eq 'HASH', ($nodata,      $pyramid) };
   
   #
-  if (! defined $datasource) {}
-  #
   if (! defined $harvesting) {}
   #
   if (! defined $process) {}
@@ -450,30 +454,17 @@ sub doIt {
     ###################
     # load data source
     
-    if (main::HasDataSource()) {
-    
-        ALWAYS(">>> Load Data Source ...");
+    ALWAYS(">>> Load Data Source ...");
 
-        $objData = BE4::DataSource->new($params->{datasource});
-        
-        if (! defined $objData) {
-            ERROR ("Can not load the data source !");
-            return FALSE;
-        }
-        
-        # load an image descriptor of data source
-        ALWAYS(">>> Compute Data Source image ...");
-        
-        if (! $objData->hasImages() || ! $objData->computeImageSource()) {
-            ERROR ("Can not compute the list of data image !");
-            return FALSE;
-        }
-        
-        # TODO : Metadata
-        #        not implemented !
-        
-        DEBUG (sprintf "DATASOURCE (dump) = %s", Dumper($objData));
+    $objData = BE4::DataSource->new($params->{datasource});
+    
+    if (! defined $objData) {
+        ERROR ("Can not load data source !");
+        return FALSE;
     }
+    
+    DEBUG(sprintf "DATASOURCE (dump) = %s", Dumper($objData));
+
   
     ##################
     # create a pyramid
@@ -486,14 +477,14 @@ sub doIt {
         ERROR ("Can not load Pyramid !");
         return FALSE;
     }
+
+    return TRUE; #TEST
   
-    # we cannot write the pyramid descriptor and cache now. We need data's limits and top/bottom levels 
+    # we cannot write the pyramid descriptor and cache now. We need data's limits
     # which are calculated in the Process creation
   
     #######################
     # create process script
-    
-    return TRUE if ! main::HasDataSource();
     
     ALWAYS(">>> Load Process ...");
   
@@ -557,21 +548,9 @@ sub doIt {
 }
 
 #
-# Group: get/set
-#
-#   None
-
-#
 # Group: functions 
 #
 
-sub HasDataSource {
-  
-  TRACE();
-  
-  my $datasource = $this{params}->{datasource};
-  return ! IsEmpty($datasource->{path_image});
-}
 sub IsEmpty {
 
   my $value = shift;

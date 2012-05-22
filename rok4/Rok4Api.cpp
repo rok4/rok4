@@ -185,6 +185,14 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     strcpy ( request->service,rok4Request->service.c_str() );
     request->operationType=new char[rok4Request->request.length() +1];
     strcpy ( request->operationType,rok4Request->request.c_str() );
+
+    std::map<std::string, std::string>::iterator it = rok4Request->params.find ( "nodataashttpstatus" );
+    if ( it == rok4Request->params.end() ) {
+        request->noDataAsHttpStatus = false;
+    } else {
+        request->noDataAsHttpStatus = true;
+    }
+
     delete rok4Request;
     return request;
 }
@@ -250,7 +258,8 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     int x,y;
     Style* style =0;
     // Analyse de la requete
-    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style);
+    bool errorNoData;
+    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData);
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -317,8 +326,9 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     std::string tmId,format;
     int x,y;
     Style* style =0;
+    bool errorNoData;
     // Analyse de la requete
-    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style );
+    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style, errorNoData );
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -369,8 +379,9 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
     TiffHeader* header = new TiffHeader;
     RawImage* rawImage=new RawImage ( width,height,channels,0 );
-    TiffEncoder tiffStream ( rawImage );
-    tiffStream.read ( header->data,128 );
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder(rawImage, TIFF_RAW_INT8);
+    tiffStream->read ( header->data,128 );
+    delete tiffStream;
     return header;
 }
 
@@ -504,6 +515,7 @@ void rok4KillServer ( Rok4Server* server ) {
 
     free (server->getProjEnv());
     
-    //Logger::stopLogger();
+    Logger::stopLogger();
+    delete server;
 }
 

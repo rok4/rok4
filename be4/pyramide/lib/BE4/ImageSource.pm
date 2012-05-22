@@ -79,7 +79,6 @@ sub new {
 
   my $class= ref($this) || $this;
   my $self = {
-    baseLevel => undef, # bottom level using this harvesting
     PATHIMG => undef, # path to images
     PATHMTD => undef, # path to metadata, not implemented
     #
@@ -107,18 +106,11 @@ sub new {
 sub _init {
 
     my $self   = shift;
-    my $baseLevel = shift;
     my $imagesParams = shift;
 
     TRACE;
     
     return FALSE if (! defined $imagesParams);
-
-    if (! defined $baseLevel) {
-        ERROR("key/value required to 'baseLevel' !");
-        return FALSE ;
-    }
-    $self->{baseLevel} = $baseLevel;
     
     # init. params    
     $self->{PATHIMG} = $imagesParams->{path_image} if (exists($imagesParams->{path_image})); 
@@ -405,10 +397,6 @@ __END__
 =head1 SYNOPSIS
 
   use BE4::ImageSource;
-  
-  my $objImplData = BE4::ImageSource->new(baseLevel => 19,
-                                         harvesting => $objHarvesting,
-                                         size_image => [2048,2048]);
 
 =head1 DESCRIPTION
 

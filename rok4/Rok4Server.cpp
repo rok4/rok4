@@ -40,25 +40,26 @@
 #include "Rok4Server.h"
 #include <iostream>
 #include <algorithm>
-
-#include "TiffEncoder.h"
-#include "TiffLZWEncoder.h"
-#include "PNGEncoder.h"
-#include "JPEGEncoder.h"
-#include "BilEncoder.h"
 #include <sstream>
 #include <vector>
 #include <map>
-#include "Message.h"
 #include <fstream>
 #include <cstring>
+#include <proj_api.h>
+#include <csignal>
+
+#include "TiffEncoder.h"
+#include "PNGEncoder.h"
+#include "JPEGEncoder.h"
+#include "BilEncoder.h"
+#include "Message.h"
 #include "Logger.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
 #include "ServiceException.h"
 #include "fcgiapp.h"
-#include <proj_api.h>
-#include <PaletteDataSource.h>
+#include "PaletteDataSource.h"
+
 
 
 /**
@@ -67,12 +68,11 @@
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
-
-    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, 0 ) !=0 ) {
+    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
         LOGGER_FATAL ( "Le listener FCGI ne peut etre initialise" );
     }
 
-    while ( true ) {
+    while ( server->isRunning() ) {
         std::string content;
         bool postRequest;
 
@@ -81,7 +81,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
             LOGGER_ERROR ( "FCGX_InitRequest renvoie le code d'erreur" << rc );
             break;
         }
-
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
         /*char **p;
         for (p = fcgxRequest.envp; *p; ++p) {
@@ -89,6 +88,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
         }*/
 
         Request* request;
+
+
 
         postRequest = ( server->servicesConf.isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
 
@@ -100,12 +101,13 @@ void* Rok4Server::thread_loop ( void* arg ) {
             free ( contentBuffer );
             contentBuffer= NULL;
             LOGGER_DEBUG ( "Request Content :"<< std::endl << content );
-
             request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
                                     content );
+
+
 
         } else { // Get Request
 
@@ -125,7 +127,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
     }
-
+    LOGGER_DEBUG("Extinction du thread");
     return 0;
 }
 
@@ -133,7 +135,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 * @brief Construction du serveur
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char *& projEnv) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ) {
+        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),styleList(styleList), projEnv(projEnv) , threads ( nbThread ), running(false), notFoundError(NULL) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );
     buildWMSCapabilities();
@@ -141,13 +143,19 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     buildWMTSCapabilities();
 }
 
-/*
- * Lancement des threads du serveur
- */
-void Rok4Server::run() {
+Rok4Server::~Rok4Server()
+{
+    if (notFoundError) {
+        delete notFoundError;
+        notFoundError = NULL;
+    }
+}
+
+void Rok4Server::initFCGI()
+{
     int init=FCGX_Init();
 
-// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
+    // Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
     // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
     // Utile
     //  * Pour faire du profiling (grof)
@@ -158,11 +166,19 @@ void Rok4Server::run() {
     // Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
     // Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
 
-    // sock = FCGX_OpenSocket(":1990", 50);
+    // sock = FCGX_OpenSocket(":9000", 0);
 
     // Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
     // Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
+}
 
+
+
+/*
+ * Lancement des threads du serveur
+ */
+void Rok4Server::run() {
+    running = true;
 
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
@@ -170,6 +186,18 @@ void Rok4Server::run() {
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
+
+void Rok4Server::terminate()
+{
+    running = false;
+    //FCGX_ShutdownPending();
+    // Terminate FCGI Thread
+    for ( int i = 0; i < threads.size(); i++ ) {
+        pthread_kill(threads[i], SIGPIPE );
+    }
+
+}
+
 
 
 /**
@@ -284,10 +312,44 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     if ( format=="image/png" )
         return new PNGEncoder ( image,style->getPalette() );
     else if ( format == "image/tiff" ) { // Handle compression option
-        if ( getParam(format_option,"compression").compare("lzw")==0) {
-            return new TiffLZWEncoder( image );
+        eformat_data pyrType = L->getDataPyramid()->getFormat();
+        switch (pyrType) {
+
+        case TIFF_RAW_FLOAT32 :
+        case TIFF_ZIP_FLOAT32 :
+        case TIFF_LZW_FLOAT32 :
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_FLOAT32);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_FLOAT32);
+            }
+            if ( getParam(format_option,"compression").compare("raw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_FLOAT32);
+            }
+            return TiffEncoder::getTiffEncoder(image, pyrType);
+        case TIFF_RAW_INT8 :
+        case TIFF_ZIP_INT8 :
+        case TIFF_LZW_INT8 :
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("raw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
+            }
+            return TiffEncoder::getTiffEncoder(image, pyrType);
+        default:
+            if ( getParam(format_option,"compression").compare("lzw")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            }
+            if ( getParam(format_option,"compression").compare("deflate")==0) {
+                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            }
+            return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
         }
-        return new TiffEncoder ( image );
     }
     else if ( format == "image/jpeg" )
         return new JPEGEncoder ( image );
@@ -307,21 +369,30 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
     int tileCol,tileRow;
+    bool noDataError;
     Style* style=0;
 
     // Récupération des parametres de la requete
-    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style );
+    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
 
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
         return errorResp;
     }
+    errorResp = NULL;
+    if (noDataError) {
+        if (!notFoundError) {
+            notFoundError = new SERDataSource ( new ServiceException("", HTTP_NOT_FOUND, "No data found", "wmts") );
+        }
+        errorResp = notFoundError;
+    }
+
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {
-        tileSource= new PaletteDataSource ( L->gettile ( tileCol, tileRow, tileMatrix ),style->getPalette() );
+        tileSource= new PaletteDataSource ( L->gettile ( tileCol, tileRow, tileMatrix, errorResp ),style->getPalette() );
     } else {
-        tileSource= L->gettile ( tileCol, tileRow, tileMatrix );
+        tileSource= L->gettile ( tileCol, tileRow, tileMatrix , errorResp );
     }
 
 
