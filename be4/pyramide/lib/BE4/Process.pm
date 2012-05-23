@@ -70,6 +70,53 @@ use constant WGET_W => 35;
 use constant TIFF2TILE_W => 0;
 use constant TIFFCP_W => 0;
 
+# bash functions
+my $BASHFUNCTIONS   = <<'FUNCTIONS';
+function_wget () {
+  local img_dst=$1
+  local url=$2
+  local count=0; local wait_delay=60
+  while :
+  do
+    let count=count+1
+    wget --no-verbose -O $img_dst $url 
+    if tiffck $img_dst ; then break ; fi
+    echo "Failure $count : wait for $wait_delay s"
+    sleep $wait_delay
+    let wait_delay=wait_delay*2
+    if [ 3600 -lt $wait_delay ] ; then 
+      let wait_delay=3600
+    fi
+  done
+}
+
+function_existDirFile () {
+  local dir=$1
+  local file=$2
+  if [ -r $file ] ; then rm -f $file ; fi
+  if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+}
+
+function_tiffcpPNG () {
+  local img_src=$1
+  local workdir=$2
+  cp $img_src $workdir.tif
+  mkdir $workdir
+  untile $workdir.tif $workdir/
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  montage -geometry 256x256 -tile 16x16 $workdir/*.png -depth 8 -define tiff:rows-per-strip=4096  $workdir.tif
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  rm -rf $workdir/
+}
+
+function_mNt () {
+  local config=$1
+  local type=$1
+  mergeNtiff -f $config __opt__ -i __i__ -n __n__ -t $type -s __s__ -b __b__ -p __p__ -a __a__
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+FUNCTIONS
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -209,6 +256,8 @@ sub computeWholeTree {
     my $self = shift;
 
     TRACE;
+
+    $self->configureFunctions();
 
     # initialisation du script final
     my $pyrName = $self->{pyramid}->getPyrName();
@@ -661,21 +710,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd="";
-
-  $cmd .= "count=0; wait_delay=60\n";
-  $cmd .= "while :\n";
-  $cmd .= "do\n";
-  $cmd .= "  let count=count+1\n";
-  $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
-  $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-  $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
-  $cmd .= "  sleep \$wait_delay\n";
-  $cmd .= "  let wait_delay=wait_delay*2\n";
-  $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
-  $cmd .= "    let wait_delay=3600\n";
-  $cmd .= "  fi\n";
-  $cmd .= "done\n";
+  my $cmd=sprintf "function_wget \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
   
   return $cmd;
 }
@@ -747,8 +782,7 @@ sub work2cache {
   DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
-  my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);
-  $cmd   .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
+  my $cmd = sprintf ("function_existDirFile \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
   $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
   $cmd   .= sprintf ("-c %s ",    $compression);
   
@@ -870,6 +904,38 @@ sub getScriptTmpDir {
   #return File::Spec->catdir($self->{path_temp}, $pyrName, "\${SCRIPT_ID}/");
   # ie .../TMP/PYRNAME/SCRIPT_X/
 }
+# method: configureFunctions
+#  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
+#  dalles noData.
+#-------------------------------------------------------------------------------
+sub configureFunctions {
+    my $self = shift;
+
+    TRACE;
+
+    my $pyr = $self->{pyramid};
+
+    my $ip = $pyr->getInterpolation();
+    $BASHFUNCTIONS =~ s/__i__/$ip/;
+    my $spp = $pyr->getSamplesPerPixel();
+    $BASHFUNCTIONS =~ s/__s__/$spp/;
+    my $bps = $pyr->getBitsPerSample();
+    $BASHFUNCTIONS =~ s/__b__/$bps/;
+    my $ph = $pyr->getPhotometric();
+    $BASHFUNCTIONS =~ s/__p__/$ph/;
+    my $sf = $pyr->getSampleFormat();
+    $BASHFUNCTIONS =~ s/__a__/$sf/;
+
+    if ($self->{nodata}->{nowhite}) {
+        $BASHFUNCTIONS =~ s/__opt__/-nowhite/;
+    } else {
+        $BASHFUNCTIONS =~ s/ __opt__//;
+    }
+
+    my $nd = $self->{nodata}->getColor();
+    $BASHFUNCTIONS =~ s/__n__/$nd/;
+
+}
 
 # method: prepareScript
 #  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
@@ -891,8 +957,11 @@ sub prepareScript {
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
-    $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
-    $code   .= "\n";
+    $code   .= sprintf ("NODATA_DIR=\"%s\"\n\n", $self->{nodata}->getPath());
+
+    # écriture des fonctions des scripts:
+    $code .= "# fonctions de factorisation\n";
+    $code .= $BASHFUNCTIONS;
 
     # creation du répertoire de travail:
     $code .= "# creation du repertoire de travail\n";
