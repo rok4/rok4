@@ -63,8 +63,18 @@ private:
     const eformat_data format; //format d'image des tuiles
     const int     channels;
     DataStream* nodatastream;
+    Level* highestLevel;
+    Level* lowestLevel;
 public:
+    
     Level* getFirstLevel();
+    Level* getHighestLevel(){
+        return highestLevel;
+    }
+    Level* getLowestLevel(){
+        return lowestLevel;
+    }
+    
     TileMatrixSet getTms();
     std::map<std::string, Level*>& getLevels() {
         return levels;

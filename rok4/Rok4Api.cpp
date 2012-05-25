@@ -51,8 +51,12 @@
 #include "TiffHeaderDataSource.h"
 #include "Palette.h"
 #include <cstdlib>
-#include <PNGEncoder.h>
-#include <Decoder.h>
+#include "PNGEncoder.h"
+#include "Decoder.h"
+#include "Pyramid.h"
+#include "TileMatrixSet.h"
+#include "TileMatrix.h"
+#include <cfloat>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -91,7 +95,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv, socket, backlog ) ) {
         std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
-        return false;
+        return NULL;
     }
     if ( !loggerInitialised ) {
         Logger::setOutput ( logOutput );
@@ -103,7 +107,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
             acc = new StreamAccumulator();
         }
         // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-        for ( int i=0;i<=logLevel;i++ )
+        for ( int i=0; i<=logLevel; i++ )
             Logger::setAccumulator ( ( LogLevel ) i, acc );
         std::ostream &log = LOGGER ( DEBUG );
         log.precision ( 8 );
@@ -143,7 +147,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf ) ) {
         LOGGER_FATAL ( "Impossible de charger la conf des Layers/pyramides" );
         LOGGER_FATAL ( "Extinction du serveur ROK4" );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -151,7 +155,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
-    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv, socket, backlog);
+    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv, socket, backlog );
 }
 
 /**
@@ -259,7 +263,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     Style* style =0;
     // Analyse de la requete
     bool errorNoData;
-    DataSource* errorResp = request->getTileParam(server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData);
+    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData );
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
@@ -270,8 +274,11 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     // References de la tuile
     std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find ( tmId );
-    if ( itLevel==layer->getDataPyramid()->getLevels().end() )
+    if ( itLevel==layer->getDataPyramid()->getLevels().end() ) {
+        //Should not occurs.
+        delete request;
         return 0;
+    }
     Level* level=layer->getDataPyramid()->getLevels().find ( tmId )->second;
     int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );
 
@@ -282,19 +289,19 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->filename=new char[imageFilePath.length() +1];
     strcpy ( tileRef->filename,imageFilePath.c_str() );
 
-    tileRef->type=new char[mimeType.length()+1];
-    strcpy(tileRef->type,mimeType.c_str());
+    tileRef->type=new char[mimeType.length() +1];
+    strcpy ( tileRef->type,mimeType.c_str() );
 
     tileRef->width=level->getTm().getTileW();
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
 
-    format = format::toString(layer->getDataPyramid()->getFormat());
-    tileRef->format= new char[format.length()+1];
-    strcpy(tileRef->format, format.c_str());
+    format = format::toString ( layer->getDataPyramid()->getFormat() );
+    tileRef->format= new char[format.length() +1];
+    strcpy ( tileRef->format, format.c_str() );
 
     //Palette uniquement PNG pour le moment
-    if (mimeType == "image/png") {
+    if ( mimeType == "image/png" ) {
         palette->size = style->getPalette()->getPalettePNGSize();
         palette->data = style->getPalette()->getPalettePNG();
     } else {
@@ -338,10 +345,23 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     }
 
     // References de la tuile
+    Level* level;
     std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find ( tmId );
-    if ( itLevel==layer->getDataPyramid()->getLevels().end() )
-        return 0;
-    Level* level=layer->getDataPyramid()->getLevels().find ( tmId )->second;
+    if ( itLevel==layer->getDataPyramid()->getLevels().end() ) {
+        //Pick the nearest available level for NoData
+        std::map<std::string, TileMatrix>::iterator itTM;
+        double askedRes;
+
+        itTM = layer->getDataPyramid()->getTms().getTmList()->find ( tmId );
+        if ( itTM==layer->getDataPyramid()->getTms().getTmList()->end() ) {
+            //return the lowest Level available
+            level = layer->getDataPyramid()->getLowestLevel();
+        }
+        askedRes = itTM->second.getRes();
+        level = ( askedRes > layer->getDataPyramid()->getLowestLevel()->getRes() ? layer->getDataPyramid()->getHighestLevel() : layer->getDataPyramid()->getLowestLevel() );
+    } else {
+        level = layer->getDataPyramid()->getLevels().find ( tmId )->second;
+    }
 
     tileRef->posoff=2048;
     tileRef->possize=2048+4;
@@ -357,7 +377,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
 
-    //Palette uniquement PNG pour le moment
+//Palette uniquement PNG pour le moment
     if ( format == "image/png" ) {
         palette->size = style->getPalette()->getPalettePNGSize();
         palette->data = style->getPalette()->getPalettePNG();
@@ -379,7 +399,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
     TiffHeader* header = new TiffHeader;
     RawImage* rawImage=new RawImage ( width,height,channels,0 );
-    DataStream* tiffStream = TiffEncoder::getTiffEncoder(rawImage, TIFF_RAW_INT8);
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder ( rawImage, TIFF_RAW_INT8 );
     tiffStream->read ( header->data,128 );
     delete tiffStream;
     return header;
@@ -389,14 +409,13 @@ TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
 * @brief Construction d'un en-tete TIFF
 */
 
-TiffHeader* rok4GetTiffHeaderFormat(int width, int height, int channels, char* format, uint32_t possize)
-{
+TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char* format, uint32_t possize ) {
     TiffHeader* header = new TiffHeader;
     size_t tiffHeaderSize;
     const uint8_t* tiffHeader;
-    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(0,format::fromString(format),channels,width,height,possize);
-    tiffHeader = fullTiffDS->getData(tiffHeaderSize);
-    memcpy(header->data,tiffHeader,tiffHeaderSize);
+    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,format::fromString ( format ),channels,width,height,possize );
+    tiffHeader = fullTiffDS->getData ( tiffHeaderSize );
+    memcpy ( header->data,tiffHeader,tiffHeaderSize );
 }
 
 
@@ -506,15 +525,15 @@ void rok4KillServer ( Rok4Server* server ) {
         delete ( *iTms ).second;
 
     std::map<std::string, Style*>::iterator iStyle;
-    for ( iStyle = server->getStyleList().begin(); iStyle != server->getStyleList().end(); iStyle++)
-        delete ( *iStyle).second;
+    for ( iStyle = server->getStyleList().begin(); iStyle != server->getStyleList().end(); iStyle++ )
+        delete ( *iStyle ).second;
 
     std::map<std::string, Layer*>::iterator iLayer;
     for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
         delete ( *iLayer ).second;
 
-    free (server->getProjEnv());
-    
+    free ( server->getProjEnv() );
+
     Logger::stopLogger();
     delete server;
 }
