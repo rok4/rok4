@@ -35,7 +35,7 @@
 
 package BE4::Process;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);

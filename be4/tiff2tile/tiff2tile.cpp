@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     if (crop) {
         TiffWhiteManager TWM(input,input,true,true);
         if (! TWM.treatWhite()) {
-            std::cerr << "Unbale to treat white pixels in this image : " << input << std::endl;
+            std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
             exit(2);
         }
     }

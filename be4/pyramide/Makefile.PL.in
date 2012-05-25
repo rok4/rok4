@@ -9,6 +9,7 @@ WriteMakefile(
         DISTNAME    => "Be4-Pyramid",
         # install to INSTALL_BASE/bin
         EXE_FILES   => ['bin/be4.pl',
+			'bin/joinCache.pl',
                         'bin/export-tree.pl',
                         'bin/create-layer.pl'],
         # install modules to INSTALL_BASE/lib/perl5
