@@ -45,6 +45,7 @@
 #include <iomanip>
 #include <stdint.h>
 #include <sstream>
+#include "../be4version.h"
 
 #define STRIP_OFFSETS      273
 #define ROWS_PER_STRIP     278
@@ -61,6 +62,7 @@ struct Entry {
 int main(int argc, char **argv) {
   // controle de la ligne de commande
   if (argc == 1){
+    std::cout << "untile version "<< BE4_VERSION << std::endl;
     std::cout << std::endl << "untile: get tiles out of the tiff" << std::endl; 
     std::cout << "usage: until <filename> [-c <colomn> -r <row> -s <suffix>] !! options are not implemented yet !!" << std::endl << std::endl; 
     std::cout << "Kind of prototype..." << std::endl; 

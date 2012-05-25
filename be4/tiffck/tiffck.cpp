@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <stdint.h>
+#include "../be4version.h"
 
 #define STRIP_OFFSETS      273
 #define ROWS_PER_STRIP     278
@@ -54,6 +55,7 @@ struct Entry {
 int main(int argc, char **argv) {
   // controle de la ligne de commande
   if (argc == 1){
+    std::cout << "tiffck version "<< BE4_VERSION << std::endl;
     std::cout << std::endl << "tiffck: check tiff image size" << std::endl; 
     std::cout << "usage: tiffck <filename>" << std::endl << std::endl; 
     std::cout << "Kind of prototype..." << std::endl; 

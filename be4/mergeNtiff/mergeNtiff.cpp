@@ -80,6 +80,7 @@
 #include "MirrorImage.h"
 #include "Interpolation.h"
 #include "math.h"
+#include "../be4version.h"
 
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
@@ -95,6 +96,7 @@
 */
 
 void usage() {
+    LOGGER_INFO("mergeNtiff version "<< BE4_VERSION);
     LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
     LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }

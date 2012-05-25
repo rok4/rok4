@@ -45,7 +45,7 @@ endif(DEBUG_BUILD)
 
 
 ########################################
-#définition des fichiers sources
+# #définition des fichiers sources
 
 set(${PROJECT_NAME}_SRCS createNodata.cpp )
 

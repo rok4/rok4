@@ -69,6 +69,7 @@
 #include "Logger.h"
 #include "LibtiffImage.h"
 #include "math.h"
+#include "../be4version.h"
 
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
@@ -85,6 +86,7 @@
 * Usage de la ligne de commande
 */
 void usage() {
+    LOGGER_INFO("overlayNtiff version "<< BE4_VERSION);
     LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4"
         "-input source1.tif source2.tif source3.tif -output result.tif\n"
         "-mode : transparency/multiply\n"

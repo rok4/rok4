@@ -66,7 +66,8 @@ private:
     ResponseSender S;
     
     volatile bool running;
-    
+    std::string socket;
+    int backlog;
     int sock;
 
     ServicesConf servicesConf;
@@ -124,7 +125,7 @@ public:
     bool isRunning() { return running ;}
     void terminate();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv, std::string socket, int backlog);
     virtual ~Rok4Server ();
 
 };

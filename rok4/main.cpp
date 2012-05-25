@@ -79,6 +79,10 @@ int main ( int argc, char** argv ) {
     sa.sa_handler = shutdownServer;
     sigaction(SIGQUIT, &sa,0 );
     
+    // Apache mod_fastcgi compatibility
+    sa.sa_handler = shutdownServer;
+    sigaction(SIGUSR1, &sa,0 );
+    
     
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;

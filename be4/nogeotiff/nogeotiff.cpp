@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <stdint.h>
+#include "../be4version.h"
 
 #define STRIP_OFFSETS      273
 #define ROWS_PER_STRIP     278
@@ -59,6 +60,7 @@ struct Entry {
 int main(int argc, char **argv) {
   // controle de la ligne de commande
   if (argc == 1){
+    std::cout << "nogeotiff version "<< BE4_VERSION << std::endl;
     std::cout << std::endl << "nogeotiff: delete geotiff tag" << std::endl; 
     std::cout << "usage: nogeotiff <filename>" << std::endl << std::endl; 
     std::cout << "Kind of a prototype..." << std::endl; 
