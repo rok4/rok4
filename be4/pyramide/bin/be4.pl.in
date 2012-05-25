@@ -523,7 +523,7 @@ sub doIt {
 
     ALWAYS(">>> Write Configuration Pyramid ...");
 
-    if (FALSE) {#! $objPyramid->writeConfPyramid()) {
+    if (! $objPyramid->writeConfPyramid()) {
         ERROR ("Can not write Pyramid File !");
         return FALSE;
     }

@@ -35,7 +35,7 @@
 
 package BE4::Process;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
@@ -55,6 +55,7 @@ use BE4::Harvesting;
 # booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
+
 # commands
 use constant RESULT_TEST      => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
 use constant CACHE_2_WORK_PRG => "tiffcp -s";
@@ -72,7 +73,8 @@ use constant TIFFCP_W => 0;
 
 # bash functions
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
-function_wget () {
+
+Wms2work () {
   local img_dst=$1
   local url=$2
   local count=0; local wait_delay=60
@@ -90,29 +92,44 @@ function_wget () {
   done
 }
 
-function_existDirFile () {
+TestFileDir () {
   local dir=$1
   local file=$2
   if [ -r $file ] ; then rm -f $file ; fi
   if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 }
 
-function_tiffcpPNG () {
-  local img_src=$1
-  local workdir=$2
-  cp $img_src $workdir.tif
-  mkdir $workdir
-  untile $workdir.tif $workdir/
-  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  montage -geometry 256x256 -tile 16x16 $workdir/*.png -depth 8 -define tiff:rows-per-strip=4096  $workdir.tif
-  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  rm -rf $workdir/
+Cache2work () {
+  local imgSrc=$1
+  local workName=$2
+  local png=$3
+
+  if [ $png ] ; then
+    cp $imgSrc $workdir.tif
+    mkdir $workdir
+    untile $workdir.tif $workdir/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage -geometry 256x256 -tile 16x16 $workdir/*.png -depth __d__ __opt_png_ -define tiff:rows-per-strip=4096 $workdir.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf $workdir/
+  else
+    tiffcp -r __r__ $imgSrc $workName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
 }
 
-function_mNt () {
+MergeNtiff () {
   local config=$1
-  local type=$1
-  mergeNtiff -f $config __opt__ -i __i__ -n __n__ -t $type -s __s__ -b __b__ -p __p__ -a __a__
+  local type=$2
+  mergeNtiff -f $config __opt_mNt_ -i __i__ -n __n__ -t $type -s __s__ -b __b__ -p __p__ -a __a__
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+Merge4tiff () {
+  local config=$1
+  local type=$2
+  merge4tiff -g __g__ $bg $imgsSrc $imgDst
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -710,7 +727,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd=sprintf "function_wget \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
+  my $cmd=sprintf "wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
   
   return $cmd;
 }
@@ -734,24 +751,14 @@ sub cache2work {
         $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
         my $dirName = $workName;
         $dirName =~ s/\.tif//;
-        my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
-        $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
-        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
-        
-        if ($self->{pyramid}->getSamplesPerPixel() == 4) {
-            # Option supplémentaire pour conserver le canal alpha
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        } else {
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        }
 
-        $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$dirName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
 
         return $cmd;
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
         $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
-        my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$workName);
         return $cmd;
     }
 }
@@ -782,7 +789,7 @@ sub work2cache {
   DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
-  my $cmd = sprintf ("function_existDirFile \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
+  my $cmd = sprintf ("TestFileDir \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
   $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
   $cmd   .= sprintf ("-c %s ",    $compression);
   
@@ -819,16 +826,7 @@ sub mergeNtiff {
   #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
   # TODO pour les métadonnées ce sera 0
 
-  my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
-    $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
-    $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
-    $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
-    $cmd .= sprintf ( " -t %s ", $dataType);
-    $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());
-    $cmd .= sprintf ( " -b %s ", $pyr->getBitsPerSample() );
-    $cmd .= sprintf ( " -p %s ", $pyr->getPhotometric() );
-    $cmd .= sprintf ( " -a %s\n",$pyr->getSampleFormat());
-    $cmd .= sprintf ("%s" ,RESULT_TEST);
+  my $cmd = sprintf ("MergeNtiff %s %s",$confFile,$dataType);
   return $cmd;
 }
 
@@ -915,6 +913,8 @@ sub configureFunctions {
 
     my $pyr = $self->{pyramid};
 
+    # congigure mergeNtiff
+
     my $ip = $pyr->getInterpolation();
     $BASHFUNCTIONS =~ s/__i__/$ip/;
     my $spp = $pyr->getSamplesPerPixel();
@@ -927,13 +927,30 @@ sub configureFunctions {
     $BASHFUNCTIONS =~ s/__a__/$sf/;
 
     if ($self->{nodata}->{nowhite}) {
-        $BASHFUNCTIONS =~ s/__opt__/-nowhite/;
+        $BASHFUNCTIONS =~ s/__opt_mNt_/-nowhite/;
     } else {
-        $BASHFUNCTIONS =~ s/ __opt__//;
+        $BASHFUNCTIONS =~ s/ __opt_mNt_//;
     }
 
     my $nd = $self->{nodata}->getColor();
     $BASHFUNCTIONS =~ s/__n__/$nd/;
+
+    # congigure untile+montage
+    $BASHFUNCTIONS =~ s/__d__/$bps/;
+    if ($spp == 4) {
+        $BASHFUNCTIONS =~ s/__opt_png_/-background none/;
+    } else {
+        $BASHFUNCTIONS =~ s/ __opt_png_//;
+    }
+
+    # congigure tiffcp
+    my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $imgS = $imgSize[1];
+    $BASHFUNCTIONS =~ s/__r__/$imgS/;
+
+    # congigure merge4tiff
+    my $gamma = $pyr->getGamma();
+    $BASHFUNCTIONS =~ s/__g__/$gamma/;
 
 }
 
