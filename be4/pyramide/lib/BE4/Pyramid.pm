@@ -1257,8 +1257,9 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    foreach my $objLevel (values %levels){
-        my $levelXML = $objLevel->getLevelToXML();
+    for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
+        # we write levels in pyramid's descriptor form the top to the bottom
+        my $levelXML = $self->{levels}->{$self->getTileMatrixSet()->getTileMatrixID($i)}->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
