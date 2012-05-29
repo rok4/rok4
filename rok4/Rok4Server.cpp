@@ -159,7 +159,7 @@ void Rok4Server::initFCGI()
 {
     int init=FCGX_Init();
     if (!socket.empty()) {
-        std::cout << "before socket opening" << std::endl;
+        std::cout << "Listening on " << socket << std::endl;
         sock = FCGX_OpenSocket(socket.c_str(), backlog);
     }
 }

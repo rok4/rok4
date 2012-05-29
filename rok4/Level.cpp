@@ -75,6 +75,8 @@ Level::~Level()
 {
 
     delete noDataSourceProxy;
+    if (noDataSource) 
+        delete noDataSource;
 
 }
 
