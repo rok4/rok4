@@ -109,27 +109,27 @@ Cache2work () {
     mkdir $workdir
     untile $workdir.tif $workdir/
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage -geometry 256x256 -tile 16x16 $workdir/*.png -depth __d__ __opt_png_ -define tiff:rows-per-strip=4096 $workdir.tif
+    montage -geometry 256x256 -tile 16x16 $workdir/*.png __montage__ -define tiff:rows-per-strip=4096 $workdir.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -rf $workdir/
   else
-    tiffcp -r __r__ $imgSrc $workName
+    tiffcp __tcp__ $imgSrc $workName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
 
 }
 
-MergeNtiff () {
-  local config=$1
-  local type=$2
-  mergeNtiff -f $config __opt_mNt_ -i __i__ -n __n__ -t $type -s __s__ -b __b__ -p __p__ -a __a__
+Work2cache () {
+  local work=$1
+  local cache=$2
+  tiff2tile $work __t2t__  $cache
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
-Merge4tiff () {
-  local config=$1
-  local type=$2
-  merge4tiff -g __g__ $bg $imgsSrc $imgDst
+MergeNtiff () {
+  local type=$1
+  local config=$2
+  mergeNtiff -f $config -t $type __mNt__
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -790,20 +790,7 @@ sub work2cache {
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("TestFileDir \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
-  $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
-  $cmd   .= sprintf ("-c %s ",    $compression);
-  
-  if ($compressionoption eq 'crop') {
-    $cmd   .= sprintf ("-crop ");
-  }
-
-  $cmd   .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
-  $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
-  $cmd   .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
-  $cmd   .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
-  $cmd   .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
-  $cmd   .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
-  $cmd   .= sprintf ("%s", RESULT_TEST);
+  $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
 
   return $cmd;
 }
@@ -826,7 +813,7 @@ sub mergeNtiff {
   #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
   # TODO pour les métadonnées ce sera 0
 
-  my $cmd = sprintf ("MergeNtiff %s %s",$confFile,$dataType);
+  my $cmd = sprintf ("MergeNtiff %s %s\n",$dataType,$confFile);
   return $cmd;
 }
 
@@ -914,43 +901,65 @@ sub configureFunctions {
     my $pyr = $self->{pyramid};
 
     # congigure mergeNtiff
+    my $conf_mNt = "";
 
     my $ip = $pyr->getInterpolation();
-    $BASHFUNCTIONS =~ s/__i__/$ip/;
+    $conf_mNt .= "-i $ip ";
     my $spp = $pyr->getSamplesPerPixel();
-    $BASHFUNCTIONS =~ s/__s__/$spp/;
+    $conf_mNt .= "-s $spp ";
     my $bps = $pyr->getBitsPerSample();
-    $BASHFUNCTIONS =~ s/__b__/$bps/;
+    $conf_mNt .= "-b $bps ";
     my $ph = $pyr->getPhotometric();
-    $BASHFUNCTIONS =~ s/__p__/$ph/;
+    $conf_mNt .= "-p $ph ";
     my $sf = $pyr->getSampleFormat();
-    $BASHFUNCTIONS =~ s/__a__/$sf/;
+    $conf_mNt .= "-a $sf ";
 
     if ($self->{nodata}->{nowhite}) {
-        $BASHFUNCTIONS =~ s/__opt_mNt_/-nowhite/;
-    } else {
-        $BASHFUNCTIONS =~ s/ __opt_mNt_//;
+        $conf_mNt .= "-nowhite ";
     }
 
     my $nd = $self->{nodata}->getColor();
-    $BASHFUNCTIONS =~ s/__n__/$nd/;
+    $conf_mNt .= "-n $nd ";
 
-    # congigure untile+montage
-    $BASHFUNCTIONS =~ s/__d__/$bps/;
+    $BASHFUNCTIONS =~ s/__mNt__/$conf_mNt/;
+
+    # congigure montage
+    my $conf_montage = "";
+
+    $conf_montage .= "-d $bps ";
     if ($spp == 4) {
-        $BASHFUNCTIONS =~ s/__opt_png_/-background none/;
-    } else {
-        $BASHFUNCTIONS =~ s/ __opt_png_//;
+        $conf_montage .= "-background none ";
     }
 
+    $BASHFUNCTIONS =~ s/__montage__/$conf_montage/;
+
     # congigure tiffcp
+    my $conf_tcp = "";
+
     my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
     my $imgS = $imgSize[1];
-    $BASHFUNCTIONS =~ s/__r__/$imgS/;
+    $conf_tcp .= "-r $imgS ";
 
-    # congigure merge4tiff
-    my $gamma = $pyr->getGamma();
-    $BASHFUNCTIONS =~ s/__g__/$gamma/;
+    $BASHFUNCTIONS =~ s/__tcp__/$conf_tcp/;
+
+    # congigure tiff2tile
+    my $conf_t2t = "";
+
+    my $compression = $pyr->getCompression();
+    my $compressionoption = $pyr->getCompressionOption();
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $conf_t2t .= "-c $compression ";
+    if ($pyr->getCompressionOption() eq 'crop') {
+        $conf_t2t .= "-crop ";
+    }
+
+    $conf_t2t .= "-p $ph ";
+    $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet()->getTileWidth(),$pyr->getTileMatrixSet()->getTileHeight();
+    $conf_t2t .= "-b $bps ";
+    $conf_t2t .= "-a $sf ";
+    $conf_t2t .= "-s $spp ";
+
+    $BASHFUNCTIONS =~ s/__t2t__/$conf_t2t/;
 
 }
 
@@ -1056,13 +1065,9 @@ sub collectWorkImage(){
     my $code = '';
 
     my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $self->workNameOfNode($node));
-    #my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', DIR , $self->workNameOfNode($node));
     if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
         $code   = sprintf ("rm -f %s\n", $source);
     }
-    #else {
-    #    $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
-    #}
 
     return $code;
 }
