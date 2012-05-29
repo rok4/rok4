@@ -121,7 +121,24 @@ public:
 
     char* getProjEnv() { return projEnv;}
     void run();
+    /**
+     * Initialize the FastCGI Socket 
+     */
     void initFCGI();
+    
+    /**
+     * Get the internal FastCGI socket representation, usefull for configuration reloading.
+     * @return the internal FastCGI socket representation
+     */
+    int getFCGISocket() {return sock;}
+    
+    /**
+     * Set the internal FastCGI socket representation, usefull for configuration reloading
+     * @param sockFCGI the internal FastCGI socket representation
+     */
+    void setFCGISocket(int sockFCGI) {sock = sockFCGI;}
+    
+    
     bool isRunning() { return running ;}
     void terminate();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,

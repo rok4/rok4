@@ -69,6 +69,7 @@ void shutdownServer(int signum) {
 int main ( int argc, char** argv ) {
     
     bool firstStart = true;
+    int sock = 0;
     reload = true;
     
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
@@ -115,13 +116,19 @@ int main ( int argc, char** argv ) {
     reload = false;
     std::cout<< "Lancement du serveur rok4..."<<std::endl;
     W=rok4InitServer ( serverConfigFile.c_str() );
-    if (firstStart) W->initFCGI();
-    firstStart = false;
+    if (firstStart) {
+        W->initFCGI();
+        firstStart = false;
+    } else {
+        W->setFCGISocket(sock);
+    }
+    
     W->run();
 
     // Extinction du serveur
     if (reload) {
         LOGGER_INFO ( "Rechargement de la configuration" );
+        sock = W->getFCGISocket();
     } else {
         LOGGER_INFO ( "Extinction du serveur ROK4" );
     }
