@@ -307,7 +307,7 @@ void Rok4Server::buildWMSCapabilities() {
             }
             // CRS
             for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                childLayerEl->LinkEndChild ( buildTextNode ( "CRS", childLayer->getWMSCRSList() [i]->getRequestCode() ) );
+                childLayerEl->LinkEndChild ( buildTextNode ( "CRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
             }
             // GeographicBoundingBox
             TiXmlElement * gbbEl = new TiXmlElement ( "EX_GeographicBoundingBox" );
@@ -330,9 +330,9 @@ void Rok4Server::buildWMSCapabilities() {
             // BoundingBox
             if ( servicesConf.isInspire() ) {
                 for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    BoundingBox<double> bbox = childLayer->getWMSCRSList() [i]->boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                    BoundingBox<double> bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
-                    bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i]->getRequestCode() );
+                    bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i].getRequestCode() );
                     int floatprecision = GetDecimalPlaces ( bbox.xmin );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );

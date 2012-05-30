@@ -114,7 +114,7 @@ int main ( int argc, char** argv ) {
     // Demarrage du serveur
     while ( reload ) {
         reload = false;
-        std::cout<< "Lancement du serveur rok4..."<<std::endl;
+        std::cout<< "Lancement du serveur rok4 ["<< getpid()<<"]" <<std::endl;
         W=rok4InitServer ( serverConfigFile.c_str() );
         if ( firstStart ) {
             W->initFCGI();
