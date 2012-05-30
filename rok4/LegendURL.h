@@ -50,6 +50,8 @@ private:
 public:
     LegendURL ( std::string format, std::string href,int width, int height, double minScaleDenominator, double maxScaleDenominator );
     LegendURL ( const LegendURL &origLUrl );
+    LegendURL& operator= ( LegendURL const & other);
+    
     bool operator== ( const LegendURL& other ) const;
     bool operator!= ( const LegendURL& other ) const;
     inline int getWidth() {

@@ -532,6 +532,7 @@ void rok4KillServer ( Rok4Server* server ) {
     for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
         delete ( *iLayer ).second;
 
+    pj_clear_initcache();
     free ( server->getProjEnv() );
 
     Logger::stopLogger();

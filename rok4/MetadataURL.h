@@ -46,6 +46,7 @@ private:
 public:
     MetadataURL ( std::string format, std::string href, std::string type );
     MetadataURL ( const MetadataURL & origMtdUrl );
+    MetadataURL& operator= (MetadataURL const& other);
     inline std::string getType() {
         return type;
     }

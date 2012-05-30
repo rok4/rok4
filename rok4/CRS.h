@@ -54,6 +54,8 @@ public:
     CRS();
     CRS ( std::string crs_code );
     CRS ( const CRS& crs );
+    CRS& operator= (CRS const& other);
+    
     void buildProj4Code();
     bool isProj4Compatible();
     bool isLongLat();
