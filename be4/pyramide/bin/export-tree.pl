@@ -152,16 +152,6 @@ $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_nodata,      $param
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tile,        $params_pyramid) };
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tms,         $params_pyramid) };
 
-## PYRAMID
-ALWAYS("- Loading pyramid ...");
-
-my $objPyramid  = BE4::Pyramid->new($params_pyramid);
-
-if(! defined $objPyramid) {
-    ERROR("Erreur de configuration de la pyramide !");
-    exit -3;
-}
-
 ## DATASOURCE
 ALWAYS("- Loading datasource ...");
 
@@ -180,6 +170,15 @@ if (! $objDataSrc->computeImageSource()) {
 my ($xmin,$ymax,$xmax,$ymin) = $objDataSrc->computeBbox();
 INFO(sprintf "BBOX : %s %s %s %s\n", $xmin,$ymax,$xmax,$ymin);
 
+## PYRAMID
+ALWAYS("- Loading pyramid ...");
+
+my $objPyramid  = BE4::Pyramid->new($params_pyramid, $objDataSrc);
+
+if(! defined $objPyramid) {
+    ERROR("Erreur de configuration de la pyramide !");
+    exit -3;
+}
 
 ## TREE
 ALWAYS("- Loading tree ...");

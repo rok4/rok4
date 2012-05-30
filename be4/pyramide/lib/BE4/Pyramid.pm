@@ -452,6 +452,8 @@ sub _fillToPyramid {
     my $self  = shift;
     my $params = shift;
 
+    TRACE();
+    
     # create PyrImageSpec !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
         bitspersample => $params->{bitspersample},
@@ -763,7 +765,7 @@ sub readCachePyramid {
   my $self     = shift;
   my $cachedir = shift; # old cache directory by default !
   
-  TRACE;
+  TRACE("Reading cache of pyramid...");
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
@@ -808,7 +810,7 @@ sub FindCacheNode {
   my $self      = shift;
   my $directory = shift;
 
-  TRACE();
+  TRACE(sprintf "Searching node in %s\n", $directory);
   
   my $search = {
     cachedir    => [],
@@ -879,10 +881,14 @@ sub FindCacheNode {
 sub calculateExtremLevels {
     my $self = shift;
 
+    TRACE();
+
     # tilematrix list sort by resolution
     my @tmList = $self->getTileMatrixSet()->getTileMatrixByArray();
 
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    TRACE("sort by ID...");
+    
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
@@ -982,6 +988,8 @@ sub calculateExtremLevels {
 sub createLevels {
     my $self = shift;
 
+    TRACE();
+    
     my $objTMS = $self->getTileMatrixSet();
 
     if (! defined $objTMS) {
@@ -1123,7 +1131,9 @@ sub computeSrcRes(){
 sub updateLimits {
     my $self = shift;
     my ($xMin, $yMin, $xMax, $yMax) = @_;
-  
+
+    TRACE();
+    
     if (! defined $self->{dataLimits}->{xmin} || $xMin < $self->{dataLimits}->{xmin}) {$self->{dataLimits}->{xmin} = $xMin;}
     if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
     if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
@@ -1136,6 +1146,8 @@ sub updateLimits {
 #---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
     my $self = shift;
+
+    TRACE();
     
     if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
         ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
@@ -1185,6 +1197,8 @@ sub calculateTMLimits {
 sub createNodata {
     my $self = shift;
     my $nodataFilePath = shift;
+    
+    TRACE();
     
     my $sizex = int($self->getImageSize()) / int($self->getTilePerWidth());
     my $sizey = int($self->getImageSize()) / int($self->getTilePerHeight());
@@ -1345,12 +1359,11 @@ sub writeCachePyramid {
 
     # create new cache directory
     my @newdirs;
-    my @olddirs = @{$self->{cache_dir}};
 
     if ($self->isNewPyramid()) {
-        @newdirs = @olddirs;
+        @newdirs = @{$self->{cache_dir}};
     } else {
-        @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
+        @newdirs = map ({ &$substring($_) } @{$self->{cache_dir}}); # list cache modified !
     }
 
     # Now, @newdir contains :
@@ -1842,7 +1855,7 @@ sub _IDXtoX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   my $x = ($idx * $rx * $sx) + $xo ;
 
@@ -1881,7 +1894,7 @@ sub _XtoIDX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
 
