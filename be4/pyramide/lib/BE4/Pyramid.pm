@@ -1365,7 +1365,7 @@ sub writeCachePyramid {
 
     foreach my $absdir (@newdirs) {
         #create folders
-        eval { mkpath([$absdir],0,0751); };
+        eval { mkpath([$absdir]); };
         if ($@) {
             ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
             return FALSE;
@@ -1467,7 +1467,7 @@ sub writeCachePyramid {
 
             if (! -e $nodatadir) {
                 #create folders
-                eval { mkpath([$nodatadir],0,0751); };
+                eval { mkpath([$nodatadir]); };
                 if ($@) {
                     ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
                     return FALSE;

@@ -351,7 +351,7 @@ sub computeBottomImage {
         my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
         if (! -d $confDirPath) {
             DEBUG (sprintf "create dir mergeNtiff");
-            eval { mkpath([$confDirPath],0,0751); };
+            eval { mkpath([$confDirPath]); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
                 return FALSE;
@@ -927,7 +927,7 @@ sub saveScript {
     if (! -d dirname($scriptFilePath)) {
         my $dir = dirname($scriptFilePath);
         DEBUG (sprintf "Create the script directory'%s' !", $dir);
-        eval { mkpath([$dir],0,0751); };
+        eval { mkpath([$dir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
             return FALSE;
