@@ -155,6 +155,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
+    Logger::stopLogger();
     return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv, socket, backlog );
 }
 
@@ -535,7 +536,24 @@ void rok4KillServer ( Rok4Server* server ) {
     pj_clear_initcache();
     free ( server->getProjEnv() );
 
-    Logger::stopLogger();
     delete server;
+}
+
+/**
+ * @brief Extinction du Logger
+ */
+void rok4KillLogger() {
+    loggerInitialised = false;
+    Accumulator* acc = NULL;
+    for ( int i=0; i<= nbLogLevel ; i++ )
+        if (Logger::getAccumulator( (LogLevel) i )) {
+            acc = Logger::getAccumulator( (LogLevel) i );
+            break;
+        }
+    Logger::stopLogger();
+    if (acc) {
+        delete acc;
+    }
+    
 }
 

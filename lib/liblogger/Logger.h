@@ -95,6 +95,11 @@ class Logger {
 		inline static void setOutput(LogOutput output) {logOutput=output;}
 		inline static LogOutput& getOutput() {return logOutput;}
 		
+		/**
+                 * Arrête le logger dans le thread courant.
+                 * 
+                 * L'accumulateur doit être libéré après l'arrêt de tous les threads.
+                 */
 		static void stopLogger();
 };
 
