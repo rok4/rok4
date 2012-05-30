@@ -703,7 +703,7 @@ sub cache2work {
         $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
         
-        if ($self->{pyramid}->getSamplesPerPixel() == 4) {
+        if (int($self->{pyramid}->getSamplesPerPixel()) == 4) {
             # Option supplémentaire pour conserver le canal alpha
             $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
         } else {
