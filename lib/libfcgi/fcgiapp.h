@@ -144,6 +144,19 @@ DLLAPI int FCGX_Init(void);
 /*
  *----------------------------------------------------------------------
  *
+ * FCGX_Close --
+ *
+ *      Free memory . Call in multi-threaded apps
+ *
+ *      Returns 0 upon success.
+ *
+ *----------------------------------------------------------------------
+ */
+DLLAPI int FCGX_Close(void);
+
+/*
+ *----------------------------------------------------------------------
+ *
  * FCGX_OpenSocket --
  *
  *	Create a FastCGI listen socket.
@@ -158,6 +171,21 @@ DLLAPI int FCGX_Init(void);
  *----------------------------------------------------------------------
  */
 DLLAPI int FCGX_OpenSocket(const char *path, int backlog);
+
+/*
+ *----------------------------------------------------------------------
+ *
+ * FCGX_CloseSocket --
+ *
+ *      Close a FastCGI listen socket.
+ *
+ *      sock is a file descriptor returned by FCGX_OpenSocket() or 0 (default).
+ *
+ *  Returns 0 or -1 on error.
+ *
+ *----------------------------------------------------------------------
+ */
+DLLAPI int FCGX_CloseSocket(int sock);
 
 /*
  *----------------------------------------------------------------------

@@ -69,6 +69,8 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
         }
         if ( nodatastream ) {
             noDataSource = new BufferedDataSource ( *nodatastream );
+            delete nodatastream;
+            nodatastream = NULL;
         } else {
             LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
         }

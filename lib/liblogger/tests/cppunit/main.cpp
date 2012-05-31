@@ -84,10 +84,11 @@ main( int argc, char* argv[] )
   //XML Output
   std::ofstream xmlFileOut("cpptestresults.xml");
   CPPUNIT_NS::XmlOutputter xmlOut(&result, xmlFileOut);
-  XmlTimedTestOutputterHook *xmlTimeHook = new XmlTimedTestOutputterHook(&ttlistener);
+
+  XmlTimedTestOutputterHook *xmlTimeHook = new   XmlTimedTestOutputterHook(&ttlistener);
   xmlOut.addHook(xmlTimeHook);
   xmlOut.write();
-  
+  delete xmlTimeHook;
   return result.wasSuccessful() ? 0 : 1;
 }
 

@@ -784,7 +784,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         }
     if (crsNotFound) {
         for ( k=0;k<layer->getWMSCRSList().size();k++ )
-            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) ) {
+            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k ).getRequestCode() ) ) {
                 crsNotFound = false;
                 break;
             }

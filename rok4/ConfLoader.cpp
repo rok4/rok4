@@ -768,7 +768,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     std::vector<Style*> styles;
     double minRes;
     double maxRes;
-    std::vector<CRS*> WMSCRSList;
+    std::vector<CRS> WMSCRSList;
     bool opaque;
     std::string authority="";
     std::string resamplingStr="";
@@ -966,22 +966,21 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                 continue;
             std::string str_crs ( pElem->GetTextStr() );
             // On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-            CRS* crs = new CRS ( str_crs );
-            if ( !crs->isProj4Compatible() ) {
+            CRS crs( str_crs );
+            bool crsOk=true;
+            if ( !crs.isProj4Compatible() ) {
                 LOGGER_WARN ( "Le CRS "<<str_crs<<" n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" );
-                delete crs;
-                crs = NULL;
+                crsOk = false;
             } else {
                 //Test if already define in Global CRS
 
                 for (unsigned int k=0;k<servicesConf->getGlobalCRSList()->size();k++ )
-                    if ( crs->cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
-                        delete crs;
-                        crs = NULL;
+                    if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+                        crsOk = false;
                         LOGGER_INFO ( "         CRS "<<str_crs << " already present in global CRS list" );
                         break;
                     }
-                if (crs) {
+                if (crsOk) {
                     LOGGER_INFO ( "         Adding CRS "<<str_crs );
                     WMSCRSList.push_back ( crs );
                 }
@@ -1095,7 +1094,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv, std::string& socket, int& backlog ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1238,16 +1237,14 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             free ( pwdBuff );
         }
     }
-    projEnv = ( char* ) malloc ( 8+2+PATH_MAX );
-    memset ( projEnv,'\0',8+2+PATH_MAX );
-    strcat ( projEnv,"PROJ_LIB=" );
-    strcat ( projEnv,projDir.c_str() );
-    std::cerr << projEnv << std::endl;
-
-    if ( putenv ( projEnv ) !=0 ) {
+    
+    if ( setenv("PROJ_LIB",projDir.c_str(),1) !=0 ) {
         std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
         return false;
     }
+    std::clog << "Env : PROJ_LIB = " << getenv("PROJ_LIB") << std::endl;
+    
+    
     pElem=hRoot.FirstChild ( "serverPort" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<"Pas d'élément <serverPort> fonctionnement autonome impossible" <<std::endl;
@@ -1563,14 +1560,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability,
                                      std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
-                                     std::string &styleDir, char*& projEnv , std::string& socket, int& backlog) {
+                                     std::string &styleDir, std::string& socket, int& backlog) {
     std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir,projEnv, socket, backlog );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {

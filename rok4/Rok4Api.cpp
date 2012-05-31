@@ -64,6 +64,8 @@
 */
 
 static bool loggerInitialised = false;
+//Keep the servicesConf for deletion
+static ServicesConf* sc = NULL;
 
 HttpResponse* initResponseFromSource ( DataSource* source ) {
     HttpResponse* response=new HttpResponse;
@@ -91,9 +93,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
     bool reprojectionCapability;
-    char* projEnv;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv, socket, backlog ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
         std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -121,8 +122,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Construction des parametres de service
-    ServicesConf* servicesConf=ConfLoader::buildServicesConf ( strServicesConfigFile );
-    if ( servicesConf==NULL ) {
+    sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
+    if ( sc==NULL ) {
         LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf "<<strServicesConfigFile );
         LOGGER_FATAL ( "Extinction du serveur ROK4" );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -138,7 +139,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
     //Chargement des styles
     std::map<std::string, Style*> styleList;
-    if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, servicesConf->isInspire() ) ) {
+    if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
         LOGGER_FATAL ( "Impossible de charger la conf des Styles" );
         LOGGER_FATAL ( "Extinction du serveur ROK4" );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -147,7 +148,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,servicesConf ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
         LOGGER_FATAL ( "Impossible de charger la conf des Layers/pyramides" );
         LOGGER_FATAL ( "Extinction du serveur ROK4" );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -155,7 +156,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Instanciation du serveur
-    return new Rok4Server ( nbThread, *servicesConf, layerList, tmsList, styleList, projEnv, socket, backlog );
+    Logger::stopLogger();
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog );
 }
 
 /**
@@ -532,10 +534,29 @@ void rok4KillServer ( Rok4Server* server ) {
     for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
         delete ( *iLayer ).second;
 
+    //Clear proj4 cache
     pj_clear_initcache();
-    free ( server->getProjEnv() );
-
-    Logger::stopLogger();
+    
+    delete sc;
     delete server;
+    sc = NULL;
+}
+
+/**
+ * @brief Extinction du Logger
+ */
+void rok4KillLogger() {
+    loggerInitialised = false;
+    Accumulator* acc = NULL;
+    for ( int i=0; i<= nbLogLevel ; i++ )
+        if (Logger::getAccumulator( (LogLevel) i )) {
+            acc = Logger::getAccumulator( (LogLevel) i );
+            break;
+        }
+    Logger::stopLogger();
+    if (acc) {
+        delete acc;
+    }
+    
 }
 

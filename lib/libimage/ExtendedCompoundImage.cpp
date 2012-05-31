@@ -127,7 +127,7 @@ bool ExtendedCompoundImage::isNodata(T* pixel) {
     for (int i = 0; i<channels; i++) {
         average += pixel[i];
     }
-    return (average/channels > nodataAverage);
+    return ((float)average/channels > (float)nodataAverage);
 }
 
 /** Implementation de getline pour les uint8_t */
