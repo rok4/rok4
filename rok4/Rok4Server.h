@@ -79,8 +79,6 @@ private:
     
     DataSource* notFoundError;
     
-    char* projEnv;
-    
     static void* thread_loop ( void* arg );
 
     int GetDecimalPlaces ( double number );
@@ -119,7 +117,6 @@ public:
     DataSource* getTile ( Request* request );
     DataStream* WMTSGetCapabilities ( Request* request );
 
-    char* getProjEnv() { return projEnv;}
     void run();
     /**
      * Initialize the FastCGI Socket 
@@ -147,7 +144,7 @@ public:
     bool isRunning() { return running ;}
     void terminate();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv, std::string socket, int backlog);
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog);
     virtual ~Rok4Server ();
 
 };

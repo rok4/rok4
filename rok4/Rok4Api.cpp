@@ -93,9 +93,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
     bool reprojectionCapability;
-    char* projEnv;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, projEnv, socket, backlog ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
         std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -158,7 +157,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, projEnv, socket, backlog );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog );
 }
 
 /**
@@ -537,7 +536,6 @@ void rok4KillServer ( Rok4Server* server ) {
 
     //Clear proj4 cache
     pj_clear_initcache();
-    free ( server->getProjEnv() );
     
     delete sc;
     delete server;

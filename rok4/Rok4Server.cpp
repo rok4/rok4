@@ -140,9 +140,9 @@ void* Rok4Server::thread_loop ( void* arg ) {
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         char *& projEnv, std::string socket, int backlog ) :
+                         std::string socket, int backlog ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
-    styleList ( styleList ), projEnv ( projEnv ) , threads ( nbThread ), socket ( socket ), backlog ( backlog ),
+    styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
     running ( false ), notFoundError ( NULL ) {
 
     LOGGER_DEBUG ( "Build WMS Capabilities" );

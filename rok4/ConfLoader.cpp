@@ -1094,7 +1094,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv, std::string& socket, int& backlog ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1237,16 +1237,14 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             free ( pwdBuff );
         }
     }
-    projEnv = ( char* ) malloc ( 8+2+PATH_MAX );
-    memset ( projEnv,'\0',8+2+PATH_MAX );
-    strcat ( projEnv,"PROJ_LIB=" );
-    strcat ( projEnv,projDir.c_str() );
-    std::cerr << projEnv << std::endl;
-
-    if ( putenv ( projEnv ) !=0 ) {
+    
+    if ( setenv("PROJ_LIB",projDir.c_str(),1) !=0 ) {
         std::cerr<<"ERREUR FATALE : Impossible de définir le chemin pour proj "<< projDir<<std::endl;
         return false;
     }
+    std::clog << "Env : PROJ_LIB = " << getenv("PROJ_LIB") << std::endl;
+    
+    
     pElem=hRoot.FirstChild ( "serverPort" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<"Pas d'élément <serverPort> fonctionnement autonome impossible" <<std::endl;
@@ -1562,14 +1560,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability,
                                      std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
-                                     std::string &styleDir, char*& projEnv , std::string& socket, int& backlog) {
+                                     std::string &styleDir, std::string& socket, int& backlog) {
     std::cout<<"Chargement des parametres techniques depuis "<<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<"Ne peut pas charger le fichier " << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir,projEnv, socket, backlog );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
