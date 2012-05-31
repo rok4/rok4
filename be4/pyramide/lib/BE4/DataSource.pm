@@ -337,7 +337,7 @@ sub getListImages {
   };
 
   if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directory cache (%s) ?",$directory);
+    ERROR(sprintf "Can not open directory cache (%s) ?",$directory);
     return undef;
   }
 
