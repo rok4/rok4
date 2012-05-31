@@ -52,11 +52,13 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
+#include "../be4version.h"
 
 using namespace std;
 
 void usage() {
-    cerr << endl << "usage: removeWhite <input_file> <output_file>" << endl << endl;
+    cerr << "removeWhite version "<< BE4_VERSION << endl;
+    cerr << endl << "Usage: removeWhite <input_file> <output_file>" << endl << endl;
     cerr << "remove white pixels in the image but not pixels which touch edges (nodata)" << endl;
 }
 

@@ -46,6 +46,15 @@ ResourceLocator::ResourceLocator ( const ResourceLocator& origRL ) {
     href = origRL.href;
 }
 
+ResourceLocator& ResourceLocator::operator= ( const ResourceLocator& other ) {
+    if (this != &other) {
+        this->format = other.format;
+        this->href = other.href;
+    }
+    return *this;
+}
+
+
 bool ResourceLocator::operator== ( const ResourceLocator& other ) const {
     return ( ( this->format.compare ( other.format ) == 0 )
              && ( this->href.compare ( other.href ) == 0 ) );

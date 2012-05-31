@@ -161,7 +161,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No Layer" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "layer", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "layer", pElem->GetTextStr() ) );
 
     //Style
     pElem = pElem->NextSiblingElement();
@@ -170,7 +170,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No Style" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "style", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "style", pElem->GetTextStr() ) );
 
     //Format
     pElem = pElem->NextSiblingElement();
@@ -179,7 +179,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No Format" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "format", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "format", pElem->GetTextStr() ) );
 
     //DimensionNameValue name="NAME" OPTIONAL
     pElem = pElem->NextSiblingElement();
@@ -189,7 +189,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             LOGGER_DEBUG ( "No Name attribute" );
             continue;
         } else {
-            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, pElem->GetText() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, pElem->GetTextStr() ) );
         }
         pElem = pElem->NextSiblingElement();
     }
@@ -199,7 +199,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No TileMatrixSet" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", pElem->GetTextStr() ) );
 
     //TileMatrix
     pElem = pElem->NextSiblingElement();
@@ -207,7 +207,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No TileMatrix" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", pElem->GetTextStr() ) );
 
     //TileRow
     pElem = pElem->NextSiblingElement();
@@ -215,14 +215,14 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( "No TileRow" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", pElem->GetTextStr() ) );
     //TileCol
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileCol" ) ==std::string::npos && !pElem->GetText() ) {
         LOGGER_DEBUG ( "No TileCol" );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", pElem->GetTextStr() ) );
     
     pElem = pElem->NextSiblingElement();
     // "VendorOption"
@@ -231,7 +231,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
                 LOGGER_DEBUG ( "VendorOption" );
                 std::string vendorOpt = pElem->Attribute("name");
                 std::transform(vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower);
-                parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, (pElem->GetText()?pElem->GetText():"true") ) );
+                parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, (pElem->GetText()?pElem->GetTextStr():"true") ) );
             }
             pElem =  pElem->NextSiblingElement();
         }
@@ -325,7 +325,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
         return;
     }
 
-    parameters.insert ( std::pair<std::string, std::string> ( "crs", pElem->GetText() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "crs", pElem->GetTextStr() ) );
 
     //BoundingBox
 
@@ -434,7 +434,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     pElem = pElem->NextSiblingElement();
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Exceptions" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", pElem->GetText() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", pElem->GetTextStr() ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -442,7 +442,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     //Time
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Time" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "time", pElem->GetText() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "time", pElem->GetTextStr() ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -461,20 +461,20 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
                 if ( !pElem && pElem->ValueStr().find ( "Min" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetText() );
+                elevation.append ( pElem->GetTextStr() );
                 elevation.append ( "/" );
                 pElem = pElem->NextSiblingElement();
                 if ( !pElem && pElem->ValueStr().find ( "Max" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetText() );
+                elevation.append ( pElem->GetTextStr() );
 
             } else if ( pElem->ValueStr().find ( "Value" ) !=std::string::npos ) {
                 while ( pElem && pElem->GetText() ) {
                     if ( elevation.size() >0 ) {
                         elevation.append ( "," );
                     }
-                    elevation.append ( pElem->GetText() );
+                    elevation.append ( pElem->GetTextStr() );
                     pElem = pElem->NextSiblingElement ( pElem->ValueStr() );
                 }
             }
@@ -784,7 +784,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         }
     if (crsNotFound) {
         for ( k=0;k<layer->getWMSCRSList().size();k++ )
-            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k )->getRequestCode() ) ) {
+            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k ).getRequestCode() ) ) {
                 crsNotFound = false;
                 break;
             }

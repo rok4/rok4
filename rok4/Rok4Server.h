@@ -66,7 +66,8 @@ private:
     ResponseSender S;
     
     volatile bool running;
-    
+    std::string socket;
+    int backlog;
     int sock;
 
     ServicesConf servicesConf;
@@ -77,8 +78,6 @@ private:
     std::vector<std::string> wmtsCapaFrag; /// liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
     
     DataSource* notFoundError;
-    
-    char* projEnv;
     
     static void* thread_loop ( void* arg );
 
@@ -118,13 +117,34 @@ public:
     DataSource* getTile ( Request* request );
     DataStream* WMTSGetCapabilities ( Request* request );
 
-    char* getProjEnv() { return projEnv;}
     void run();
+    /**
+     * Initialize the FastCGI Socket 
+     */
     void initFCGI();
+
+    /**
+     * Destroy the FastCGI Socket 
+     */
+    void killFCGI();
+    
+    /**
+     * Get the internal FastCGI socket representation, usefull for configuration reloading.
+     * @return the internal FastCGI socket representation
+     */
+    int getFCGISocket() {return sock;}
+    
+    /**
+     * Set the internal FastCGI socket representation, usefull for configuration reloading
+     * @param sockFCGI the internal FastCGI socket representation
+     */
+    void setFCGISocket(int sockFCGI) {sock = sockFCGI;}
+    
+    
     bool isRunning() { return running ;}
     void terminate();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, char*& projEnv );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog);
     virtual ~Rok4Server ();
 
 };

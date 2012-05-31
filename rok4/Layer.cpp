@@ -53,10 +53,12 @@ std::string Layer::getId() {
 }
 
 Layer::~Layer() {
-    while (!(WMSCRSList.empty())){
-        CRS* tmp = WMSCRSList.back();
+    
+    /*for (int i = 0 ; i < WMSCRSList.size() ; i++) {
+        CRS* tmp = WMSCRSList.at(i);
         delete tmp;
-        WMSCRSList.pop_back();
     }
+    WMSCRSList.clear();*/
+    
     delete dataPyramid;
 }

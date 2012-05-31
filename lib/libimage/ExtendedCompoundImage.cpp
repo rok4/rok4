@@ -127,7 +127,7 @@ bool ExtendedCompoundImage::isNodata(T* pixel) {
     for (int i = 0; i<channels; i++) {
         average += pixel[i];
     }
-    return (average/channels > nodataAverage);
+    return ((float)average/channels > (float)nodataAverage);
 }
 
 /** Implementation de getline pour les uint8_t */
@@ -196,8 +196,8 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
   memset(buffer,0,width*channels);
-  // Rappel de l'hypothese : les miroirs sont ranges en dernier parmi les images de l ECI
-  for (uint i=0; i < ECI->getimages()->size()-ECI->getmirrors(); i++){
+  // Rappel de l'hypothese : les miroirs sont rangés en premier parmi les images de l'ECI
+  for (uint i = ECI->getmirrors(); i < ECI->getimages()->size(); i++){
 
     // On ecarte les images qui ne se trouvent pas sur la ligne
     // On evite de comparer des coordonnees terrain (comparaison de flottants)

@@ -58,13 +58,23 @@ class Pyramid {
 private:
     std::map<std::string, Level*> levels;
     const TileMatrixSet tms;
-    std::map<std::string, DataSource*> noDataSources;
+//    std::map<std::string, DataSource*> noDataSources;
     std::string best_level ( double resolution_x, double resolution_y );
     const eformat_data format; //format d'image des tuiles
     const int     channels;
-    DataStream* nodatastream;
+//    DataStream* nodatastream;
+    Level* highestLevel;
+    Level* lowestLevel;
 public:
+    
     Level* getFirstLevel();
+    Level* getHighestLevel(){
+        return highestLevel;
+    }
+    Level* getLowestLevel(){
+        return lowestLevel;
+    }
+    
     TileMatrixSet getTms();
     std::map<std::string, Level*>& getLevels() {
         return levels;

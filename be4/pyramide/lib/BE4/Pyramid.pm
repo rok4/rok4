@@ -144,34 +144,6 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
-my $STRLEVELTMPLT = <<"TLEVEL";
-    <level>
-        <tileMatrix>__ID__</tileMatrix>
-        <baseDir>__DIRIMG__</baseDir>
-<!-- __MTD__ -->
-        <tilesPerWidth>__TILEW__</tilesPerWidth>
-        <tilesPerHeight>__TILEH__</tilesPerHeight>
-        <pathDepth>__DEPTH__</pathDepth>
-        <nodata>
-            <filePath>__NODATAPATH__</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>__MINROW__</minTileRow>
-            <maxTileRow>__MAXROW__</maxTileRow>
-            <minTileCol>__MINCOL__</minTileCol>
-            <maxTileCol>__MAXCOL__</maxTileCol>
-        </TMSLimits>
-    </level>
-<!-- __LEVELS__ -->
-TLEVEL
-
-my $STRLEVELTMPLTMORE = <<"TMTD";
-            <metadata type='INT32_DB_LZW'>
-                <baseDir>__DIRMTD__</baseDir>
-                <format>__FORMATMTD__</format>
-            </metadata>
-TMTD
-
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -1220,7 +1192,6 @@ sub createNodata {
   
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->getNodataColor());
     $cmd .= sprintf ( " -c %s", $compression);
@@ -1286,51 +1257,14 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    foreach my $objLevel (values %levels){
+    ERROR(sprintf "Order top %s bottom %s ", $topLevelOrder,$bottomLevelOrder);
 
-        # image
-        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
-        
-        my $id       = $objLevel->{id};
-        $strpyrtmplt =~ s/__ID__/$id/;
-    
-        my $dirimg   = $objLevel->{dir_image};
-        $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
-        
-        my $dirnd   = $objLevel->{dir_nodata};
-        my $pathnd = $dirnd."/nd.tiff";
-        $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
-        
-        my $tilew    = $objLevel->{size}->[0];
-        $strpyrtmplt =~ s/__TILEW__/$tilew/;
-        my $tileh    = $objLevel->{size}->[1];
-        $strpyrtmplt =~ s/__TILEH__/$tileh/;
-        
-        my $depth    =  $objLevel->{dir_depth};
-        $strpyrtmplt =~ s/__DEPTH__/$depth/;
-        
-        my $minrow   =  $objLevel->{limit}->[0];
-        $strpyrtmplt =~ s/__MINROW__/$minrow/;
-        my $maxrow   =  $objLevel->{limit}->[1];
-        $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
-        my $mincol   =  $objLevel->{limit}->[2];
-        $strpyrtmplt =~ s/__MINCOL__/$mincol/;
-        my $maxcol   =  $objLevel->{limit}->[3];
-        $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
-    
-        # metadata
-        if (defined $objLevel->{dir_metadata}) {
-
-            $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
-
-            my $dirmtd   = $objLevel->{dir_metadata};
-            $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
-
-            my $formatmtd = $objLevel->{compress_metadata};
-            $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
-        }
-        $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
-        
+    for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
+        # we write levels in pyramid's descriptor from the top to the bottom
+        my $ID = $self->getLevelID($i);
+        ERROR(sprintf "Order %s ID %s ", $i,$ID);
+        my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
+        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
@@ -1435,7 +1369,7 @@ sub writeCachePyramid {
 
     foreach my $absdir (@newdirs) {
         #create folders
-        eval { mkpath([$absdir],0,0751); };
+        eval { mkpath([$absdir]); };
         if ($@) {
             ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
             return FALSE;
@@ -1537,7 +1471,7 @@ sub writeCachePyramid {
 
             if (! -e $nodatadir) {
                 #create folders
-                eval { mkpath([$nodatadir],0,0751); };
+                eval { mkpath([$nodatadir]); };
                 if ($@) {
                     ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
                     return FALSE;
@@ -1726,12 +1660,20 @@ sub getLevels {
 # method: getLevelOrder
 #  return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)
-#   - NumberOfTM (top level, biggest resolution).
+#   - NumberOfTM-1 (top level, biggest resolution).
 #---------------------------------------------------------------------------------
 sub getLevelOrder {
     my $self = shift;
     my $ID = shift;
     return $self->getTileMatrixSet()->getTileMatrixOrder($ID);
+}
+# method: getLevelID
+#  return the tile matrix ID from the order.
+#---------------------------------------------------------------------------------
+sub getLevelID {
+    my $self = shift;
+    my $order = shift;
+    return $self->getTileMatrixSet()->getTileMatrixID($order);
 }
 
 sub getBottomLevel {

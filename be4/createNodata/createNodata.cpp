@@ -46,9 +46,11 @@
 #include <iostream>
 #include <string.h>
 #include "tiffio.h"
+#include "../be4version.h"
 
 void usage() {
-    std::cerr << "createNodata -n nodata -c [none/png/jpeg/lzw/deflate] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
+    std::cerr << "createNodata version "<< BE4_VERSION << std::endl;
+    std::cerr << "createNodata -n nodata -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
 }
 
 void error(std::string message) {
@@ -99,7 +101,7 @@ int main(int argc, char* argv[]) {
                         compression = COMPRESSION_PNG;
                         if(argv[i][3] == ':') quality = atoi(argv[i]+4);
                     }
-                    else if(strncmp(argv[i], "jpeg",4) == 0) {
+                    else if(strncmp(argv[i], "jpg",3) == 0) {
                         compression = COMPRESSION_JPEG;
                         if(argv[i][4] == ':') quality = atoi(argv[i]+5);
                     }

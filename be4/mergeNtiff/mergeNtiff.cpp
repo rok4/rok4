@@ -80,6 +80,7 @@
 #include "MirrorImage.h"
 #include "Interpolation.h"
 #include "math.h"
+#include "../be4version.h"
 
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
@@ -95,6 +96,7 @@
 */
 
 void usage() {
+    LOGGER_INFO("mergeNtiff version "<< BE4_VERSION);
     LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
     LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }
@@ -328,7 +330,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
     *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
-    if (*ppImageOut==NULL){
+    if (*ppImageOut==NULL) {
         LOGGER_ERROR("Impossible de creer " << filename);
         return -1;
     }
@@ -447,128 +449,39 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 }
 
 /** 
-* @fn uint addMirrors(ExtendedCompoundImage* pECI)
+* @fn int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 * @brief Ajout de miroirs a une ExtendedCompoundImage
-* L'image en entree doit etre composee d'un assemblage regulier d'images (de type CompoundImage)
+* On ajoute à chaque image de l'ECI 4 images au bord (un buffer miroir d'une largeur égale à celle nécessaire
+* à l'interpolation
 * Objectif : mettre des miroirs la ou il n'y a pas d'images afin d'eviter des effets de bord en cas de reechantillonnage
 * @param pECI : l'image à completer
 * @return : le nombre de miroirs ajoutes
 */
 
-uint addMirrors(ExtendedCompoundImage* pECI)
+int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
     uint mirrors=0;
 
-    int w=pECI->getimages()->at(0)->width;
-    int h=pECI->getimages()->at(0)->height;
-    double resx=pECI->getimages()->at(0)->getresx();
-    double resy=pECI->getimages()->at(0)->getresy();
-    double epsilon_x = resx / 100.;
-    double epsilon_y = resy / 100.;
-
-    int i,j;
-    double intpart;
-    
-    for (i=1;i<pECI->getimages()->size();i++) {    
-        if (abs(pECI->getimages()->at(i)->getresx() - resx) > epsilon_x
-        || abs(pECI->getimages()->at(i)->getresy() - resy) > epsilon_y
-        || pECI->getimages()->at(i)->width != w
-        || pECI->getimages()->at(i)->height != h
-        || abs(modf(pECI->getimages()->at(i)->getxmin() - pECI->getxmin()/(w*resx),&intpart)) > epsilon_x
-        || abs(modf(pECI->getimages()->at(i)->getymax() - pECI->getymax()/(h*resy),&intpart)) > epsilon_y) {
-            LOGGER_WARN("Image composite irreguliere : impossible d'ajouter des miroirs");
-            return 0;
-        }
-    }
-
-    int nx=(int)floor((pECI->getxmax()-pECI->getxmin())/(w*resx) + 0.5); // taille de l'ECI en nombre d'images en x 
-    int ny=(int)floor((pECI->getymax()-pECI->getymin())/(h*resy) + 0.5); // taille de l'ECI en nombre d'images en y 
-    int n=pECI->getimages()->size();
-
-    LOGGER_DEBUG("xmin:"<<pECI->getxmin() << " xmax:" << pECI->getxmax() << " w:" << w << " nx:" << nx);
-    LOGGER_DEBUG("ymin:"<<pECI->getymin() << " ymax:" << pECI->getymax() << " h:" << h << " ny:" << ny);
-    
-    unsigned int k,l;
-    Image *pI0,*pI1,*pI2,*pI3;
-    double xmin,ymax;
     mirrorImageFactory MIFactory;
-
-    for (i=-1; i < nx+1; i++) {
-        for (j=-1; j < ny+1; j++){
-            LOGGER_DEBUG("I:"<<i<<" J:"<<j);
-
-            if ( (i==-1 && j==-1) || (i==-1 && j==ny) || (i==nx && j==-1) || (i==nx && j==ny) ) {continue;}
-            /* NV: On ne fait pas de miroirs dans les angles. Je me demande si ca ne pose pas un probleme au final */
-
-            for (k=0;k<n;k++){
-                if ((fabs(pECI->getimages()->at(k)->getxmin() - (pECI->getxmin()+i*w*resx)) < epsilon_x)
-                && (fabs(pECI->getimages()->at(k)->getymax() - (pECI->getymax()-j*h*resy)) < epsilon_y)) {
-                    LOGGER_DEBUG("k:"<<k<<" xmin:"<<pECI->getimages()->at(k)->getxmin() << " ymax:"<<pECI->getimages()->at(k)->getymax());
-                    break;
-                }
-            }
-
-            /* k==n implique qu'on a pas d'image dans le ECI à la position i,j*/
-            if (k==n){
-                LOGGER_DEBUG("=> CALCUL DE MIROIR");
-
-                // Image 0
-                pI0=NULL;
-                xmin=pECI->getxmin()+(i-1)*w*resx;
-                ymax=pECI->getymax()-j*h*resy;
-                for (l=0;l<n;l++) {
-                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax) < epsilon_y) {
-                        break;
-                    }
-                }
-                if (l<n) {pI0=pECI->getimages()->at(l);}
-                
-                // Image 1
-                pI1=NULL;
-                xmin=pECI->getxmin()+i*w*resx;
-                ymax=pECI->getymax()-(j-1)*h*resy;
-                for (l=0;l<n;l++) {
-                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
-                        break;
-                    }
-                }
-                if (l<n) {pI1=pECI->getimages()->at(l);}
-                
-                // Image 2
-                pI2=NULL;
-                xmin=pECI->getxmin()+(i+1)*w*resx;
-                ymax=pECI->getymax()-j*h*resy;
-                for (l=0;l<n;l++) {
-                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
-                        break;
-                    }
-                }
-                if (l<n) {pI2=pECI->getimages()->at(l);}
-                
-                // Image 3
-                pI3=NULL;
-                xmin=pECI->getxmin()+i*w*resx;
-                ymax=pECI->getymax()-(j+1)*h*resy;
-                for (l=0;l<n;l++) {
-                    if (abs(pECI->getimages()->at(l)->getxmin() - xmin) < epsilon_x && abs(pECI->getimages()->at(l)->getymax()-ymax)<epsilon_y) {
-                        break;
-                    }
-                }
-                if (l<n) {pI3=pECI->getimages()->at(l);}
-
-                MirrorImage* mirror=MIFactory.createMirrorImage(pI0,pI1,pI2,pI3);
-
-                if (mirror!=NULL){
-                    pECI->getimages()->push_back(mirror);
-                    //LOGGER_DEBUG("Ajout miroir "<<i<<"/"<<nx<<"     "<<j<<"/"<<ny);
-                    //LOGGER_DEBUG(mirrors);
-                    mirrors++;
-                }
-            }
-        }
-    }
     
-    //LOGGER_DEBUG(mirrors);
+    int nbImagesSrc = pECI->getimages()->size();
+    
+    int i = 0;
+    while (i<pECI->getimages()->size()) {
+        for (int j=0; j<4; j++) {
+            MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),j,mirrorSize);
+            if (mirror == NULL){
+                LOGGER_ERROR("Unable to calculate mirrors");
+                return -1;
+            }
+            //pECI->getimages()->push_back(mirror);
+            pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
+            mirrors++;
+            i++;
+        }
+        i++;
+    }
+
     return mirrors;
 }
 
@@ -593,15 +506,6 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax());
     double ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin());
     double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
-
-    // Exception : l'image d'entree n'intersecte pas l'image finale
-    // Cela est important seulement si il n'y a pas de mirroirs, dans le cas contraire,
-    // ce problème est géré par les mirroirs.
-    if (pECI->getmirrors() < 1 && (xmax_src-K.size(ratio_x)*resx_src<pImageOut->getxmin() || xmin_src+K.size(ratio_x)*resx_src>pImageOut->getxmax() || ymax_src-K.size(ratio_y)*resy_src<pImageOut->getymin() || ymin_src+K.size(ratio_y)*resy_src>pImageOut->getymax()))
-    {
-        LOGGER_WARN("Un paquet d'images (homogenes en résolutions et phase) est situe entierement a l'exterieur de l image finale");
-        return NULL;    
-    }
     
     double ymaxdst_save = ymax_dst;
     
@@ -631,7 +535,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
      * Pour éviter cela, et uniquement dans le cas où on déborde, on va rétrécir l'image de destination.
      * On ne peut pas arrondir systématiquement vers une réduction de l'image car cela pourrait engendrer
      * de lignes noires dans les images résultantes.
-     * Cela dit, l'ajout des mirroirs suffirait à éviter ce manque de données.
+     * Cela dit, l'ajout des miroirs suffirait à éviter ce manque de données.
      */
     if (ymax_dst > ymax_src) {
         ymax_dst -= resy_dst;
@@ -680,6 +584,10 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
     std::vector<Image*> pOverlayedImage;
     std::vector<Image*> pMask;
     
+    const Kernel& K = Kernel::getInstance(interpolation);
+
+    double resx_dst=pImageOut->getresx();
+    
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
         // Mise en superposition du paquet d'images en 2 etapes
 
@@ -704,15 +612,17 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            uint mirrors=addMirrors(pECI);
+            int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
+            int mirrors=addMirrors(pECI,mirrorSize);
+            if (mirrors < 0){
+                LOGGER_ERROR("Unable to add mirrors");
+                return -1;
+            }
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,nowhite,sampleformat,mirrors);
             
-            // LOGGER_DEBUG(mirrors<<" "<<pECI_withMirrors->getmirrors()<<" "<<pECI_withMirrors->getimages()->size());
-
             //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             //saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
-            //return -1;
 
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 

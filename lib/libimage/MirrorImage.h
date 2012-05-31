@@ -40,7 +40,7 @@
 
 /**
 * @file MirrorImage.h
-* @brief Image obetnue par effet mirroir a partir de 4 images voisines
+* @brief Image obtenue par effet miroir d'une image et de sa position par rapport à celle-ci
 * @author IGN France - Geoportail
 */
 
@@ -59,26 +59,24 @@
 * Cropper cette bande n'est pas une bonne solution, car si on veut reconstituer la dalle d'origine (cas classique des dalles de BDOrtho),
 * cette bande sera soit blanche (nodata) soit remplie a partir de pixels issus d'autres images plus anciennes
 * solution retenue : generer localement de la fausse information par effet miroir qui aura pour effet de combler cette bande avec une effet visuel correct
-* Contrainte : images correctement disposees, de meme caracteristiques geometriques (Cf. les CompoundImage)
 */
 
-/*
-                     _______________
-                    |               |
-                    |               |
-                    |   Image1      |        
-                    |               |        
-     _______________|_______________|_______________
-    |               |               |               |
-    |               |               |               |
-    | Image0        |   Mirror      |   Image2      |
-    |               |               |               |
-    |_______________|_______________|_______________|
-                    |               |
-                    |               |
-                    |   Image3      |               
-                    |               |               
-                    |_______________|
+/*   mirrorSize
+    <---------> 
+     ________________________________________
+    |                                        |  /\
+    |             position 0                 |  |   mirrorSize
+    |________________________________________|  V
+    |         |                    |         |  
+    |         |                    |         |  
+    | position|                    |position |  
+    |   3     |   Image source     |    1    |  
+    |         |                    |         |  
+    |         |                    |         |  
+    |_________|____________________|_________|  
+    |                                        |  
+    |             position 2                 |  
+    |________________________________________|  
 
 
 */
@@ -87,12 +85,13 @@ class MirrorImage : public Image {
     friend class mirrorImageFactory;
 
     private:
-    // Contient obligatoirement 4 images (NULL si une image contient du nodata)
-    std::vector<Image*> images;
+    Image* image;
+    int position;
+    uint mirrorSize;
 
     protected:
     /** Constructeur */
-    MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images);
+    MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize);
 
     public:
 
@@ -108,7 +107,7 @@ class MirrorImage : public Image {
 
 class mirrorImageFactory {
     public:
-    MirrorImage* createMirrorImage(Image* pImage0, Image* pImage1, Image* pImage2, Image* pImage3);
+    MirrorImage* createMirrorImage(Image* pImageSrc, int position,uint mirrorSize);
 };
 
 #endif
