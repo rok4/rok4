@@ -1257,9 +1257,13 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
+    ERROR(sprintf "Order top %s bottom %s ", $topLevelOrder,$bottomLevelOrder);
+
     for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
-        # we write levels in pyramid's descriptor form the top to the bottom
-        my $levelXML = $self->{levels}->{$self->getTileMatrixSet()->getTileMatrixID($i)}->getLevelToXML();
+        # we write levels in pyramid's descriptor from the top to the bottom
+        my $ID = $self->getLevelID($i);
+        ERROR(sprintf "Order %s ID %s ", $i,$ID);
+        my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
@@ -1656,12 +1660,20 @@ sub getLevels {
 # method: getLevelOrder
 #  return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)
-#   - NumberOfTM (top level, biggest resolution).
+#   - NumberOfTM-1 (top level, biggest resolution).
 #---------------------------------------------------------------------------------
 sub getLevelOrder {
     my $self = shift;
     my $ID = shift;
     return $self->getTileMatrixSet()->getTileMatrixOrder($ID);
+}
+# method: getLevelID
+#  return the tile matrix ID from the order.
+#---------------------------------------------------------------------------------
+sub getLevelID {
+    my $self = shift;
+    my $order = shift;
+    return $self->getTileMatrixSet()->getTileMatrixID($order);
 }
 
 sub getBottomLevel {

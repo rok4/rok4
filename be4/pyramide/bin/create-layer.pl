@@ -201,8 +201,8 @@ my @lstsrs;
 push @lstsrs, $srs; # Toujour en 1er !!!
 push @lstsrs, "CR:84";
 push @lstsrs, "IGNF:WGS84G";
-push @lstsrs, "epsg:3857";
-push @lstsrs, "epsg:4258";
+push @lstsrs, "EPSG:3857";
+push @lstsrs, "EPSG:4258";
 
 # TODO informatif...
 my $minres=$objPyramid->getTileMatrixSet()->getFirstTileMatrix()->getResolution();
