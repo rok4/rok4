@@ -74,6 +74,8 @@ int main ( int argc, char** argv ) {
 
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
     sa.sa_handler = reloadConfig;
     sigaction ( SIGHUP, &sa,0 );
 
@@ -83,7 +85,7 @@ int main ( int argc, char** argv ) {
     // Apache mod_fastcgi compatibility
     sa.sa_handler = shutdownServer;
     sigaction ( SIGUSR1, &sa,0 );
-
+    
 
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
@@ -131,7 +133,7 @@ int main ( int argc, char** argv ) {
             sock = W->getFCGISocket();
         } else {
             LOGGER_INFO ( "Extinction du serveur ROK4" );
-          
+            W->killFCGI();
         }
 
         rok4KillServer ( W );

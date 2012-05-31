@@ -125,6 +125,11 @@ public:
      * Initialize the FastCGI Socket 
      */
     void initFCGI();
+
+    /**
+     * Destroy the FastCGI Socket 
+     */
+    void killFCGI();
     
     /**
      * Get the internal FastCGI socket representation, usefull for configuration reloading.

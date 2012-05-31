@@ -166,6 +166,11 @@ void Rok4Server::initFCGI() {
     }
 }
 
+void Rok4Server::killFCGI() {
+    FCGX_CloseSocket(sock);
+    FCGX_Close();
+}
+
 
 
 /*
