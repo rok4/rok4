@@ -45,6 +45,8 @@ private:
 public:
     ResourceLocator ( std::string format, std::string href );
     ResourceLocator ( const ResourceLocator &origRL );
+    ResourceLocator& operator= (ResourceLocator const& other);
+    
     inline const std::string getFormat() const {
         return format;
     }

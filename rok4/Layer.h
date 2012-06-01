@@ -72,7 +72,7 @@ private:
     std::vector<Style*> styles;
     double minRes;
     double maxRes;
-    std::vector<CRS*> WMSCRSList;
+    std::vector<CRS> WMSCRSList;
     bool opaque;
     std::string authority;
     Interpolation::KernelType resampling;
@@ -116,7 +116,7 @@ public:
     std::string              getTitle()      const {
         return title;
     }
-    std::vector<CRS*> getWMSCRSList() const {
+    std::vector<CRS> getWMSCRSList() const {
         return WMSCRSList;
     }
     GeographicBoundingBoxWMS getGeographicBoundingBox() const {
@@ -132,7 +132,7 @@ public:
     Layer ( std::string id, std::string title, std::string abstract,
             std::vector<std::string> & keyWords, Pyramid*& dataPyramid,
             std::vector<Style*> & styles, double minRes, double maxRes,
-            std::vector<CRS*> & WMSCRSList, bool opaque, std::string authority,
+            std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
             :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),

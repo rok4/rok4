@@ -431,8 +431,6 @@ int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 
     mirrorImageFactory MIFactory;
     
-    int nbImagesSrc = pECI->getimages()->size();
-    
     int i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
@@ -579,8 +577,14 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             pMask.push_back(mask);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
-            int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
-            int mirrors=addMirrors(pECI,mirrorSize);
+            int mirrorSize = 0;
+            int mirrors=0;
+            
+            if (sampleformat != SAMPLEFORMAT_IEEEFP) {
+                mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
+                mirrors=addMirrors(pECI,mirrorSize);                
+            }
+            
             if (mirrors < 0){
                 LOGGER_ERROR("Unable to add mirrors");
                 return -1;
