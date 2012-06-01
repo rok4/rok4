@@ -64,7 +64,28 @@ use constant FALSE => 0;
 ################################################################################
 # Preloaded methods go here.
 BEGIN {}
-INIT {}
+INIT {
+
+%HEX2DEC = (
+    0 => 0,
+    1 => 1,
+    2 => 2,
+    3 => 3,
+    4 => 4,
+    5 => 5,
+    6 => 6,
+    7 => 7,
+    8 => 8,
+    9 => 9,
+    A => 10,
+    B => 11,
+    C => 12,
+    D => 13,
+    E => 14,
+    F => 15,
+);
+
+}
 END {}
 
 ################################################################################
@@ -124,14 +145,14 @@ sub _init {
         ERROR ("Parameter 'imagesize' required !");
         return FALSE;
     }
-    $self->{imagesize}      = $params->{imagesize};
+    $self->{imagesize} = $params->{imagesize};
 
 
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
-    $self->{pixel}          = $params->{pixel};
+    $self->{pixel} = $params->{pixel};
 
 
     if (! exists  $params->{path_nodata} || ! defined  $params->{path_nodata}) {
@@ -142,7 +163,7 @@ sub _init {
         ERROR ("Directory doesn't exist !");
         return FALSE;
     }
-    $self->{path_nodata}    = $params->{path_nodata};
+    $self->{path_nodata} = $params->{path_nodata};
 
 
     if (! exists  $params->{color}) {
@@ -152,32 +173,64 @@ sub _init {
 
 #   for nodata value, it has to be coherent with bitspersample/sampleformat :
 #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
-#       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
+#       - 8/uint -> a uint in decimal format (255 for example)
     if (! defined ($params->{color})) {
         if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
             WARN ("Parameter 'nodata.color' has not been set. The default value is -99999");
             $params->{color} = '-99999';
+            $params->{color} .= ',-99999'x($self->{pixel}->{samplesperpixel}-1);
         } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            WARN ("Parameter 'nodata.color' has not been set. The default value is FFFFFF");
-            $params->{color} = 'FFFFFF';
+            WARN ("Parameter 'nodata.color' has not been set. The default value is 255");
+            $params->{color} = '255';
+            $params->{color} .= ',255'x($self->{pixel}->{samplesperpixel}-1);
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
         }
     } else {
-        if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
-            if (!($params->{color} =~ m/^[-+]?(\d)+$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for a float32 pixel's format (%s) !",$params->{color});
+
+        if (int($self->{pixel}->{bitspersample}) == 8 &&
+             $self->{pixel}->{sampleformat} eq 'uint' &&
+             $params->{color} =~ m/^[0-9A-F]{2,}$/) {
+            # nodata is supplied in hexadecimal format, we convert it
+            my $valueDec = $self->hex2dec($params->{color});
+            if ($valueDec == -1) {
+                ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Impossible to convert",
+                    $params->{color});
                 return FALSE;
             }
-        } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            if (!($params->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for this int8 pixel's format (%s) !",$params->{color});
-                return FALSE;
-            }
-        } else {
-            ERROR ("sampleformat/bitspersample not supported !");
+            WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
+                $params->{color});
+            $params->{color} = $valueDec;
+        }
+
+        $params->{color} =~ s/ //;
+        my @nodata = split(/,/,$params->{color},-1);
+        if (scalar @nodata != int($self->{pixel}->{samplesperpixel})) {
+            ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), seperated by ',' !",
+                $params->{color},$self->{pixel}->{samplesperpixel});
             return FALSE;
+        }
+
+        foreach $value (@nodata) {
+            if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
+                if ( $value !~ m/^[-+]?[0-9]+$/ ) {
+                    ERROR (sprintf "Incorrect value for nodata for a float32 pixel's format (%s) !",$value);
+                    return FALSE;
+                }
+            } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
+                if ( $value !~ m/^[0-9]+$/ ) {
+                    ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's in decimal format '%s' !",$value);
+                    return FALSE;
+                }
+                if ( $value > 255 ) {
+                    ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's format %s : greater than 255 !",$value);
+                    return FALSE;
+                }
+            } else {
+                ERROR ("sampleformat/bitspersample not supported !");
+                return FALSE;
+            }
         }
     }
     
@@ -191,93 +244,18 @@ sub getColor {
   my $self = shift;
   return $self->{color};
 }
-sub getFile {
-  my $self = shift;
-  my $imagefile = join(".", $self->getName(), "tif");
-  return $imagefile;
-}
-sub getPath {
-  my $self = shift;
-  
-  my $path = File::Spec->catdir($self->{path_nodata}, $self->{imagesize});
-  
-  return $path;
-}
-sub getName {
-  my $self = shift;
-  
-  my $imagename = join("_",
-                    "nodata",
-                    $self->{sampleformat}.$self->{bitspersample},
-                    $self->{photometric},
-                    $self->{samplesperpixel},
-                    $self->{color},
-                  );
-  
-  return $imagename;
-}
+
 ################################################################################
 # public method
-sub createImageNoData {
+
+sub hex2dec {
   my $self = shift;
+  my $hex = shift;
   
-  # TODO : create on runtime a tile image !
   return TRUE;
 }
-################################################################################
-# static method
-sub getImageNoData {
-  my $clazz= shift;
-  return undef if (!$clazz->isa(__PACKAGE__));
-  
-  my $args = shift;
-  
-  if (ref($args) ne "HASH") {
-    ERROR ("Parameters in a HASH structure required !");
-    return undef;
-  }
-  
-  TRACE;
-  
-  my $imagename = undef;
-  
-  # optional !
-  #if (! exists  ($args->{imagesize})) {
-  #  ERROR ("Parameter 'imagesize' required !");
-  #  return undef;
-  #}
-  if (! exists  ($args->{bitspersample})) {
-    ERROR ("Parameter 'bitspersample' required !");
-    return undef;
-  }
-  if (! exists  ($args->{samplesperpixel})) {
-    ERROR ("Parameter 'samplesperpixel' required !");
-    return undef;
-  }
-  if (! exists  ($args->{sampleformat})) {
-    ERROR ("Parameter 'sampleformat' required !");
-    return undef;
-  }
-  if (! exists  ($args->{photometric})) {
-    ERROR ("Parameter 'photometric' required !");
-    return undef;
-  }
-  if (! exists  ($args->{color})) {
-    ERROR ("Parameter 'color' required !");
-    return undef;
-  }
-  
-  $imagename = join("_",
-                    "nodata",
-                    $args->{sampleformat}.$args->{bitspersample},
-                    $args->{photometric},
-                    $args->{samplesperpixel},
-                    $args->{color},
-                  );
-  $imagename .= ".tif";
-  
-  return $imagename;
-}
+
+
 1;
 __END__
 
@@ -285,9 +263,15 @@ __END__
 
 =head1 NAME
 
+ BE4::NoData - components of nodata
+
 =head1 SYNOPSIS
+  
+
+        nowhite           => [TRUE,FALSE],
 
 =head1 DESCRIPTION
+
 
 =head2 EXPORT
 
@@ -295,13 +279,15 @@ None by default.
 
 =head1 SEE ALSO
 
+ BE4::Pixel
+
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,

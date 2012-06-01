@@ -46,8 +46,7 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-uint8_t white[4] = {255,255,255,255};
-uint8_t nodataAverage = 254;
+uint8_t whiteMark = 254;
 
 /**
 @fn _getline(T* buffer, int line)
@@ -61,7 +60,9 @@ template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
     int i;
 
-    for (i=0;i<width*channels;i++) {buffer[i]=(T)nodata;}
+    for (i=0;i<width*channels;i++) {
+        buffer[i]=(T)nodata[i%channels];
+    }
     
     double y=l2y(line);
     
@@ -89,7 +90,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             if (nowhite && sizeof(T) == 1) {
                 // Dans le cas de canaux entier, on veut éviter de prendre en compte les pixels blanc, on va donc les filter
                 for (int j = 0; j < (c1-c0); j++) {
-                    if (! isNodata(&buffer_t[(c2+j)*channels])) {
+                    if (! isWhite(&buffer_t[(c2+j)*channels])) {
                         // Ce pixel n'est pas de nodata, on peut le stocker dans le buffer
                         memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],channels);
                     }
@@ -106,7 +107,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             for (j=0;j<c1-c0;j++) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
 
-                    if (nowhite && sizeof(T) == 1 && isNodata(&buffer_t[(c2+j)*channels])) {
+                    if (nowhite && sizeof(T) == 1 && isWhite(&buffer_t[(c2+j)*channels])) {
                         continue;
                     }
 
@@ -122,12 +123,12 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
 }
 
 template <typename T>
-bool ExtendedCompoundImage::isNodata(T* pixel) {
+bool ExtendedCompoundImage::isWhite(T* pixel) {
     int average = 0;
     for (int i = 0; i<channels; i++) {
         average += pixel[i];
     }
-    return (average/channels > nodataAverage);
+    return ((float)average/channels > (float)whiteMark);
 }
 
 /** Implementation de getline pour les uint8_t */
@@ -154,7 +155,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  int channels, 
                                                                                  BoundingBox<double> bbox, 
                                                                                  std::vector<Image*>& images, 
-                                                                                 int nodata, 
+                                                                                 int* nodata, 
                                                                                  uint16_t sampleformat, 
                                                                                  uint mirrors,
                                                                                  bool nowhite = false)
@@ -181,7 +182,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
     return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors,nowhite);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int* nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
 {
     // TODO : controler que les images et les masques sont superposables a l'image
     return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors,nowhite);

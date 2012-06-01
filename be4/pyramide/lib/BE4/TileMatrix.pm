@@ -61,19 +61,17 @@ use constant FALSE => 0;
 ################################################################################
 # Preloaded methods go here.
 
-#
-# Group: Preloaded methods
-#
+# Group: Preloaded
 
-#
 # function: get/set in init()
-#
-#   get/set with field, ID Resolution TileWidth TileHeight MatrixWidth MatrixHeight
-#
+#   Getters-setters with field, ID Resolution TileWidth TileHeight MatrixWidth MatrixHeight
 
 BEGIN {}
 INIT {
-  # getter/setter except "topleftcornerx topleftcornery" because of the precision !
+
+  # Group: getter - setter
+
+  # except "topleftcornerx topleftcornery" because of the precision !
   foreach my $i (qw(ID Resolution TileWidth TileHeight MatrixWidth MatrixHeight)) {
     my $field = $i;
     
@@ -94,41 +92,12 @@ INIT {
 }
 END {}
 
-################################################################################
-# sample :
-# 
-#    <id>0</id>
-#    <resolution>0.703125</resolution>
-#    <topLeftCornerX>-180</topLeftCornerX>
-#    <topLeftCornerY>90</topLeftCornerY>
-#    <tileWidth>256</tileWidth>
-#    <tileHeight>256</tileHeight>
-#    <matrixWidth>2</matrixWidth>
-#    <matrixHeight>1</matrixHeight>
-# 
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *    id             => undef,
-#    *    resolution     => undef,
-#    *    topleftcornerx => undef,
-#    *    topleftcornery => undef,
-#    *    tilewidth      => undef, # ie 256 by default ?
-#    *    tileheight     => undef, # ie 256 by default ?
-#    *    matrixwidth    => undef,
-#    *    matrixheight   => undef,
-
-#
 # Group: constructor
-#
 
-################################################################################
-# constructor
 sub new {
   my $this = shift;
 
@@ -157,8 +126,7 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -190,8 +158,13 @@ sub _init {
     
     return TRUE;
 }
-################################################################################
-# get/set
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getTopLeftCornerX {
     my $self = shift;
     TRACE ("getTopLeftCornerX");
@@ -243,60 +216,71 @@ __END__
 
 =head1 NAME
 
-  BE4::TileMatrix - one level of a TileMatrixSet.
+    BE4::TileMatrix - one level of a TileMatrixSet.
 
 =head1 SYNOPSIS
 
-  use BE4::TileMatrix;
-  
-  my $params = {
-    id             => 0,
-    resolution     => 1,
-    topleftcornerx => 0.0000000000000002,
-    topleftcornery => 100,
-    tilewidth      => 256,
-    tileheight     => 256,
-    matrixwidth    => 1,
-    matrixheight   => 1,
-  };
+    use BE4::TileMatrix;
 
-  my $objH = BE4::TileMatrix->new($params);
-  
-  $objH->setResolution(2);  # 2
-  $objH->setTopLeftCornerX(100); # 100
-  $objH->setTileWidth() # not enough arguments to setTileWidth, stopped !
-  
-  $objH->to_string();
-  ...
+    my $objTM = BE4::TileMatrix->new({
+        id => 12,
+        resolution     => 1,
+        topleftcornerx => 625600,
+        topleftcornery => 6660000,
+        tilewidth      => 256, 
+        tileheight     => 256,
+        matrixwidth    => 24,
+        matrixheight   => 12,
+    });
 
 =head1 DESCRIPTION
 
+    A TileMatrix object
+
+        * id             
+        * resolution     
+        * topleftcornerx 
+        * topleftcornery 
+        * tilewidth
+        * tileheight 
+        * matrixwidth    
+        * matrixheight
+
+    A TileMatrix in XML format
+
+        <id>0</id>
+        <resolution>0.703125</resolution>
+        <topLeftCornerX>-180</topLeftCornerX>
+        <topLeftCornerY>90</topLeftCornerY>
+        <tileWidth>256</tileWidth>
+        <tileHeight>256</tileHeight>
+        <matrixWidth>2</matrixWidth>
+        <matrixHeight>1</matrixHeight>  
+
 =head1 LIMITATIONS AND BUGS
 
- No test on the type value !
- Limit of precision to X and Y : 10 decimal !
+    No test on the type value !
+    Limit of precision to X and Y : 10 decimal !
 
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
-  eg package module following :
- 
-  BE4::TileMatrix
+    BE4::TileMatrix
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+    Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify
+    it under the same terms as Perl itself, either Perl version 5.10.1 or,
+    at your option, any later version of Perl 5 you may have available.
 
 =cut
 

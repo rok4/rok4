@@ -148,6 +148,8 @@ TPYR
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
 
+# Group: constructor
+
 sub new {
     my $this = shift;
     my $params = shift;
@@ -446,6 +448,7 @@ sub _load {
 ####################################################################################################
 
 # method: _fillToPyramid
+# Fill pyramid's attributes from configuration. Used to create a new pyramid.
 #---------------------------------------------------------------------------------------------------
 
 sub _fillToPyramid { 
@@ -503,6 +506,7 @@ sub _fillToPyramid {
 ####################################################################################################
 
 # method: _fillFromPyramid
+# Fill pyramid's attributes from a pyramid's descriptor. Used to create a pyramid from an older.
 #---------------------------------------------------------------------------------------------------
 sub _fillFromPyramid {
     my $self  = shift;
@@ -533,6 +537,7 @@ sub _fillFromPyramid {
 }
 
 # method: readConfPyramid
+# Read a pyramid's descriptor (XML file, '.pyr').
 #---------------------------------------------------------------------------------------------------
 sub readConfPyramid {
     my $self   = shift;
@@ -758,6 +763,7 @@ sub readConfPyramid {
 }
 
 # method: readCachePyramid
+# Browse pyramid's directories to list files already existing.
 #---------------------------------------------------------------------------------------------------
 sub readCachePyramid {
   my $self     = shift;
@@ -768,7 +774,7 @@ sub readCachePyramid {
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
   # Find cache tiles ou directories
-  my $searchitem = $self->FindCacheNode($dir);
+  my $searchitem = $self->findCacheNode($dir);
   
   if (! defined $searchitem) {
     ERROR("An error on reading the cache structure !");
@@ -802,9 +808,9 @@ sub readCachePyramid {
   return TRUE;
 }
 
-# method: FindCacheNode
+# method: findCacheNode
 #---------------------------------------------------------------------------------------------------
-sub FindCacheNode {
+sub findCacheNode {
   my $self      = shift;
   my $directory = shift;
 
@@ -835,7 +841,7 @@ sub FindCacheNode {
       push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
       
       # recursif
-      $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
+      $newsearch = $self->findCacheNode(File::Spec->catdir($directory, $entry));
       
       push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
       push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
@@ -873,8 +879,10 @@ sub FindCacheNode {
 #                              FUNCTIONS FOR LEVELS AND LIMITS                                     #
 ####################################################################################################
 
+# Group: levels methods
+
 # method: calculateExtremLevels
-#  identify top and bottom level if they are not defined in parameters
+#  Identify top and bottom level if they are not defined in parameters.
 #---------------------------------------------------------------------------------------------------
 sub calculateExtremLevels {
     my $self = shift;
@@ -976,8 +984,8 @@ sub calculateExtremLevels {
 }
 
 # method: createLevels
-#  create all objects Level between the top and the bottom levels for the new pyramid
-#  If there are an old pyramid, levels already exist. We don't create twice the same level
+#  Create all objects Level between the top and the bottom levels for the new pyramid.
+#  If there are an old pyramid, levels already exist. We don't create twice the same level.
 #---------------------------------------------------------------------------------------------------
 sub createLevels {
     my $self = shift;
@@ -1070,9 +1078,8 @@ sub createLevels {
 
 
 # method: computeSrcRes
-#  Retourne la meilleure résolution des images source. Ceci implique une 
-#  reprojection dans le cas où le SRS des images source n'est pas le même 
-#  que celui de la pyramide.
+#  Return best resolution from input data.
+#  If SRS are different (between input data and final pyramid), it need a reprojection.
 #------------------------------------------------------------------------------
 sub computeSrcRes(){
     my $self = shift;
@@ -1118,7 +1125,7 @@ sub computeSrcRes(){
 }
 
 # method: updateLimits
-#  compare old corners' coordinates with the news and update values.
+#  Compare old corners' coordinates with the news and update values.
 #---------------------------------------------------------------------------------------------------------------
 sub updateLimits {
     my $self = shift;
@@ -1131,7 +1138,7 @@ sub updateLimits {
 }
 
 # method: calculateTMLimits
-#  calculate tile limits for each level of the pyramid. It use the resolution and corners' coordinates. If values
+#  Calculate tile limits for each level of the pyramid. It use the resolution and corners' coordinates. If values
 #  already exists, we take account of.
 #---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
@@ -1179,8 +1186,10 @@ sub calculateTMLimits {
 #                              FUNCTIONS FOR WRITING PYRAMID'S ELEMENTS                            #
 ####################################################################################################
 
+# Group: writting methods
+
 # method: createNodata
-#  create command to create a nodata tile with same parameters as images.
+#  Create command to create a nodata tile with same parameters as images.
 #---------------------------------------------------------------------------------------------------
 sub createNodata {
     my $self = shift;
@@ -1209,7 +1218,7 @@ sub createNodata {
 
 
 # method: writeConfPyramid
-#  Manipulate the Configuration File Pyramid /* in/out */
+#  Manipulate the Configuration File Pyramid
 #---------------------------------------------------------------------------------------------------
 sub writeConfPyramid {
     my $self    = shift;
@@ -1296,7 +1305,7 @@ sub writeConfPyramid {
 
 
 # method: writeCachePyramid
-#  Manipulate the Directory Structure Cache (DSC) /* in/out */
+#  Manipulate the Directory Structure Cache (DSC) 
 #---------------------------------------------------------------------------------------------------
 sub writeCachePyramid {
     my $self = shift;
@@ -1365,7 +1374,7 @@ sub writeCachePyramid {
 
     foreach my $absdir (@newdirs) {
         #create folders
-        eval { mkpath([$absdir],0,0751); };
+        eval { mkpath([$absdir],0,0755); };
         if ($@) {
             ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
             return FALSE;
@@ -1467,7 +1476,7 @@ sub writeCachePyramid {
 
             if (! -e $nodatadir) {
                 #create folders
-                eval { mkpath([$nodatadir],0,0751); };
+                eval { mkpath([$nodatadir],0,0755); };
                 if ($@) {
                     ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
                     return FALSE;
@@ -1477,8 +1486,7 @@ sub writeCachePyramid {
             my $createNodataCommand = $self->createNodata($nodataFilePath);
             
             if (! system($createNodataCommand) == 0) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
-                                The command is incorrect : '%s'",
+                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\nThe command is incorrect : '%s'",
                                 $objLevel->getID(),
                                 $createNodataCommand);
                 return FALSE;
@@ -1494,6 +1502,8 @@ sub writeCachePyramid {
 ####################################################################################################
 #                                       GETTERS / SETTERS                                          #
 ####################################################################################################
+
+# Group: getters - setters
 
 # New pyramid
 sub getPyrFile {
@@ -1522,6 +1532,12 @@ sub getPyrDataPath {
 }
 
 # Old pyramid
+
+sub isNewPyramid {
+    my $self = shift;
+    return $self->{isnewpyramid};
+}
+
 sub getPyrFileOld {
     my $self = shift;
     my $file = $self->{old_pyramid}->{name};
@@ -1654,7 +1670,7 @@ sub getLevels {
     return %{$self->{levels}};
 }
 # method: getLevelOrder
-#  return the tile matrix order from the ID :  
+#  Return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)
 #   - NumberOfTM (top level, biggest resolution).
 #---------------------------------------------------------------------------------
@@ -1716,8 +1732,9 @@ sub getTilePerHeight {
     return $self->{image_height};
 }
 
-# retourne le chemin du fichier de la dalle à partir de la racine de l'arbo de
-# la pyramide.
+# method: getCacheNameOfImage
+# Return the relative filepath of the tile from the pyramid's root.
+# Parameters : level, tile's coordinates (i,j), type of data (image, metadata).
 # ex: IMAGES/3e/42/01.tif
 # ex: METADATA/3e/42/01.tif
 sub getCacheNameOfImage {
@@ -1780,7 +1797,9 @@ sub getCacheNameOfImage {
   return File::Spec->catfile($typeDir, $level, $imagePathName); 
 }
 
-# retourne le chemin absolu du fichier de la dalle en paramètre.
+# method : getCachePathOfImage
+# Return the absolute filepath of the tile.
+# Parameters : level, tile's coordinates (i,j), type of data (image, metadata).
 # ex: /mnt/data/PYRAMIDS/ORTHO/IMAGES/34/31/0a.tif
 sub getCachePathOfImage {
     my $self  = shift;
@@ -1794,36 +1813,13 @@ sub getCachePathOfImage {
     return File::Spec->catfile($self->getPyrDataPath(), $self->getPyrName(), $imageName); 
 }
 
-# ref alias to getCacheNameOfImage !
-sub getCacheImageName {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
 
-    return $self->getCacheNameOfImage($level, $x, $y, $type);
-}
-
-# ref alias to getCachePathOfImage !
-sub getCacheImagePath {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
-
-    return  $self->getCachePathOfImage($level, $x, $y, $type);
-}
-
-sub isNewPyramid {
-    my $self = shift;
-    return $self->{isnewpyramid};
-}
 
 ####################################################################################################
 #                                   COORDINATES MANIPULATION                                       #
 ####################################################################################################
+
+# Group: coordinates manipulation
 
 sub _IDXtoX {
   my $self  = shift;
@@ -1963,6 +1959,7 @@ __END__
 =head1 SYNOPSIS
 
  use BE4::Pyramid;
+ my $objPyramid  = BE4::Pyramid->new($params_options,$objDataSrc);
  
  # 1. a pyramid configured from an existing another
  

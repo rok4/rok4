@@ -66,13 +66,6 @@ my $VERSION = "0.0.1";
 # booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
-# commands' weights
-use constant MERGE4TIFF_W => 1;
-use constant MERGENTIFF_W => 4;
-use constant CACHE2WORK_PNG_W => 3;
-use constant WGET_W => 35;
-use constant TIFF2TILE_W => 0;
-use constant TIFFCP_W => 0;
 
 #-------------------------------------------------------------------------------
 # Global
@@ -83,12 +76,14 @@ BEGIN {}
 INIT {}
 END {}
 
+
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
 
-#-------------------------------------------------------------------------------
-# constructor
+# Group: constructor
+
+# method: new
 sub new {
   my $this = shift;
 
@@ -126,9 +121,8 @@ sub new {
   return $self;
 }
 
-# method: _init.
-#  Define the number of level
-#  get source images.
+# method: _init
+#  Define the number of level, get source images.
 #-------------------------------------------------------------------------------
 sub _init {
   my $self = shift;
@@ -162,8 +156,8 @@ sub _init {
 
 
 # method: _load
-#  Build Tree by intersecting src images with le lower level images of the pyramid
-#  getting parents upward to the top level of the pyramid.
+#  Build Tree by intersecting src images with le lower level images of the pyramid.
+#  Getting parents upward to the top level of the pyramid.
 #---------------------------------------------------------------------------------------------------
 sub _load {
     my $self = shift;
@@ -275,13 +269,16 @@ sub _load {
     return TRUE;
 }
 
+
+
 ####################################################################################################
 #                                         PUBLIC METHODS                                           #
 ####################################################################################################
 
+# Group: public method
 
 # method: computeBBox
-#  Renvoie la bbox de l'imageSource en parametre dans le SRS de la pyramide.
+#  Return the input image bbox in final pyramid's SRS
 #------------------------------------------------------------------------------
 sub computeBBox {
   my $self = shift;
@@ -371,7 +368,7 @@ sub computeBBox {
 }
 
 # method: imgGroundSizeOfLevel
-# Calcule les dimensions terrain (en unité du srs) des dalles du niveau en paramètre.
+#  Calculate terrain size (in SRS's units) of a tile, for the supplied level.
 #------------------------------------------------------------------------------
 sub imgGroundSizeOfLevel(){
   my $self = shift;
@@ -392,14 +389,14 @@ sub imgGroundSizeOfLevel(){
 }
 
 ####################################################################################################
-#                                         CUT LEVEL METHOD                                         #
+#                                         CUT LEVEL METHODS                                        #
 ####################################################################################################
 
+# Group: cut level methods
 
 # method: shareNodesOnJobs
-#  Détermine le cutLevel afin que la répartition sur les différents scripts et le temps d'exécution
-#  de ceux-ci soient, a priori, optimaux.
-#  Création du tableau de répartition des noeuds sur les jobs
+#  Determine the cutLevel to optimize sharing into scripts and execution time.
+#  Return the distribution array.
 #-------------------------------------------------------------------------------
 sub shareNodesOnJobs {
     my $self = shift;
@@ -477,8 +474,10 @@ sub shareNodesOnJobs {
 #                                            ARRAY TOOLS                                           #
 ####################################################################################################
 
+# Group: array tools
+
 # method: minArrayIndex
-#  Renvoie l'indice de l'élément le plus petit du tableau
+#  Return index of the smaller element in a array
 #-------------------------------------------------------------------------------
 sub minArrayIndex {
     my $self = shift;
@@ -500,7 +499,7 @@ sub minArrayIndex {
 }
 
 # method: maxArrayValue
-#  Renvoie la valeur maximale du tableau
+#  Return the greater value in a array
 #-------------------------------------------------------------------------------
 sub maxArrayValue {
     my $self = shift;
@@ -520,7 +519,7 @@ sub maxArrayValue {
 }
 
 # method: sumArray
-#  Renvoie la somme des élément du tableau tableau
+#  Return array's elements' sum
 #-------------------------------------------------------------------------------
 sub sumArray {
     my $self = shift;
@@ -537,59 +536,39 @@ sub sumArray {
     return $sum;
 }
 
-# method: oldSharing
-#  fonction de test renvoyant l'ancienne distribution du travail sur les jobs
-#-------------------------------------------------------------------------------
-sub oldSharing {
-    my $self = shift;
-    my @nodes = @_;
-
-    TRACE;
-
-    my @nodeRackWeight;
-    my $nodeCounter=0;
-
-    foreach my $node (@nodes){
-        $nodeRackWeight[$nodeCounter % $self->{job_number}] += $self->getAccumulatedWeightOfNode($node);
-        $nodeCounter++;
-    }
-
-    print "Ancienne répartition : @nodeRackWeight\n"; 
-}
-
-# method: statArray
-#  fonction de test renvoyant des statistiques sur le tableau donné : moyenne
-#  et écart type.
-#-------------------------------------------------------------------------------
-sub statArray {
-    my $self = shift;
-    my @array = @_;
-
-    TRACE;
-
-    my $moyenne = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $moyenne += $array[$i];
-    }
-
-    $moyenne /= scalar @array;
-    my $variance = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $variance += ($array[$i]-$moyenne) * ($array[$i]-$moyenne);
-    }
-    $variance /= scalar @array;
-    my $ecarttype = sqrt($variance);
-    print "Moyenne : $moyenne, écart type : $ecarttype\n"; 
-}
-
 ####################################################################################################
 #                                         GETTERS / SETTERS                                        #
 ####################################################################################################
 
+# Group: getters - setters
+
+# method: getCutLevelId
+sub getCutLevelId {
+  my $self = shift;
+  return $self->{cutLevelId};
+}
+# method: getTopLevelId
+sub getTopLevelId {
+  my $self = shift;
+  return $self->{topLevelId};
+}
+# method: getComputingCode
+sub getComputingCode {
+    my $self = shift;
+    my $node = shift;
+    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
+    return $self->{levels}{$node->{level}}{$keyidx}[2];
+}
+# method: getAccumulatedWeightOfNode
+sub getAccumulatedWeightOfNode {
+    my $self = shift;
+    my $node = shift;
+    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
+    return $self->{levels}{$node->{level}}{$keyidx}[1];
+}
+
 # method: getImgDescOfNode
-#  Retourne la description d'une image identifiée par node.
+#  Return image's description from a node (level + i + j)
 #------------------------------------------------------------------------------
 sub getImgDescOfNode {
   my $self = shift;
@@ -615,11 +594,7 @@ sub getImgDescOfNode {
 }
 
 # method: getImgDescOfBottomNode
-#  Renvoie les descripteurs des images source impliquées dans la mise à jour de la
-#  dalle désignée par le noeud en parametre.
-#  Le niveau de ce noeud doit etre bottomLevel.
-#  Cette fonction n'est appelée que si les images sources sont dans la même
-#  projetion que la pyramide.
+#  Return input images' descriptions used to generate the supplied bottom level node.
 #------------------------------------------------------------------------------
 sub getImgDescOfBottomNode(){
   my $self = shift;
@@ -631,10 +606,8 @@ sub getImgDescOfBottomNode(){
 }
 
 # method: getWeightOfBottomNode
-#  Renvoie le poids de la dalle désignée par le noeud en parametre.
-#  Le niveau de ce noeud doit etre bottomLevel.
+#  Return weight of the supplied bottom level node
 #------------------------------------------------------------------------------
-
 sub getWeightOfBottomNode(){
   my $self = shift;
   my $node = shift;
@@ -645,7 +618,7 @@ sub getWeightOfBottomNode(){
 }
 
 # method: isInTree
-#  Indique si le noeud en paramêtre appartient à l'arbre.
+#  Return the node's content in the tree, undef if the node does not exist.
 #------------------------------------------------------------------------------
 sub isInTree(){
   my $self = shift;
@@ -655,8 +628,7 @@ sub isInTree(){
 }
 
 # method: getPossibleChilds
-#  Renvoie la liste des 4 noeuds enfants possibles, ou une liste vide si on est 
-#  sur une feuille.
+#  Return an array of the four possible childs from a node, an empty array if the node is a leaf
 #------------------------------------------------------------------------------
 sub getPossibleChilds(){
   my $self = shift;
@@ -681,8 +653,7 @@ sub getPossibleChilds(){
 }
 
 # method: getChilds
-#  Renvoie les noeuds enfant du noeud passé en paramêtre.
-#  Le noeud est un hash(level,x,y)
+#  Return an array of the real (in the tree) childs from a node, an empty array if the node is a leaf
 #------------------------------------------------------------------------------
 sub getChilds(){
   my $self = shift;
@@ -697,16 +668,8 @@ sub getChilds(){
   return @res
 }
 
-# method: getCutLevelId
-#  Renvoie l'id du cutLevel
-#------------------------------------------------------------------------------
-sub getCutLevelId(){
-  my $self = shift;
-  return $self->{cutLevelId};
-}
-
 # method: getNodesOfLevel
-#  Renvoie les noeuds du niveau en parametre.
+#  Return all nodes of the supplied level
 #------------------------------------------------------------------------------
 sub getNodesOfLevel(){
   my $self = shift;
@@ -727,12 +690,9 @@ sub getNodesOfLevel(){
 
   return @nodes;
 }
-sub getTopLevelId {
-  my $self = shift;
-  return $self->{topLevelId};
-}
+
 # method: getNodesOfTopLevel
-#  Renvoie les noeuds du niveau le plus haut: topLevel.
+#  Return all nodes of the top level
 #------------------------------------------------------------------------------
 sub getNodesOfTopLevel(){
   my $self = shift;
@@ -740,7 +700,7 @@ sub getNodesOfTopLevel(){
 }
 
 # method: getNodesOfCutLevel
-#  Renvoie les noeuds du niveau cutLevel
+#  Return all nodes of the cut level
 #------------------------------------------------------------------------------
 sub getNodesOfCutLevel(){
     my $self = shift;
@@ -748,7 +708,7 @@ sub getNodesOfCutLevel(){
 }
 
 # method: getTileMatrix
-#  return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
+#  Return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
 #  order (integer).
 #---------------------------------------------------------------------------------------------------------------
 sub getTileMatrix {
@@ -765,7 +725,7 @@ sub getTileMatrix {
 }
 
 # method: setComputingCode
-#  Ajoute au noeud le code script pour le générer
+#  Add to the node the code to generate it
 #------------------------------------------------------------------------------
 sub setComputingCode(){
     my $self = shift;
@@ -778,34 +738,8 @@ sub setComputingCode(){
 
 }
 
-# method: getComputingCode
-#  Revnvoie le code script du noeud
-#------------------------------------------------------------------------------
-sub getComputingCode(){
-    my $self = shift;
-    my $node = shift;
-
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-
-    return $self->{levels}{$node->{level}}{$keyidx}[2];
-
-}
-
-# method: getAccumulatedWeightOfNode
-#  renvoie le poids cumulé du noeud
-#------------------------------------------------------------------------------
-sub getAccumulatedWeightOfNode(){
-    my $self = shift;
-    my $node = shift;
-
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-
-    return $self->{levels}{$node->{level}}{$keyidx}[1];
-
-}
-
 # method: updateWeightOfNode
-#  Ajoute au poids propre du noeud le poids passé en paramètre
+#  Add to the node's weight the supplied weight
 #------------------------------------------------------------------------------
 sub updateWeightOfNode(){
     my $self = shift;
@@ -822,8 +756,7 @@ sub updateWeightOfNode(){
 }
 
 # method: setAccumulatedWeightOfNode
-#  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
-#  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
+#  Calculate the accumulated weight. It's the node's weight added to the supplied weight (childs' weights' sum).
 #------------------------------------------------------------------------------
 sub setAccumulatedWeightOfNode(){
     my $self = shift;
@@ -839,8 +772,10 @@ sub setAccumulatedWeightOfNode(){
 }
 
 ####################################################################################################
-#                                         EXPORT METHODS                                           #
+#                                           OTHERS                                                 #
 ####################################################################################################
+
+# Group: others
 
 # method: exportTree
 #  Export dans un fichier texte de l'arbre complet.

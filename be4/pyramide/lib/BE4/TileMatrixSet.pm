@@ -69,26 +69,29 @@ BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *     PATHFILENAME => undef,
-#    *     name     => undef,
-#    *     filename => undef,
-#    *     filepath => undef,
-#    *     srs        => undef, # ie proj4 !
-#    *     tilematrix => {},
-
-#
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+# Group: variable
+
+# variable: $self
+
+#    *        PATHFILENAME => undef,
+#    *        name     => undef,
+#    *        filename => undef,
+#    *        filepath => undef,
+#    *        levelIdx => undef, # hash to associate TM's id with order (in ascending resolution order)
+#    *        leveltop => undef,
+#    *        resworst => undef,
+#    *        levelbottom => undef,
+#    *        resbest  => undef,
+#    *        srs        => undef, # srs is casted in uppercase
+#    *        tilematrix => {},
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
@@ -122,8 +125,6 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self     = shift;
     my $pathfile = shift;
@@ -151,8 +152,6 @@ sub _init {
     return TRUE;
 }
 
-################################################################################
-# privates method
 sub _load {
   my $self = shift;
   
@@ -182,15 +181,15 @@ sub _load {
     }
     
     my $obj = BE4::TileMatrix->new({
-                        id => $k,
-                        resolution     => $v->{resolution},
-                        topleftcornerx => $v->{topLeftCornerX},
-                        topleftcornery => $v->{topLeftCornerY},
-                        tilewidth      => $v->{tileWidth}, 
-                        tileheight     => $v->{tileHeight},
-                        matrixwidth    => $v->{matrixWidth},
-                        matrixheight   => $v->{matrixHeight},
-                          });
+        id => $k,
+        resolution     => $v->{resolution},
+        topleftcornerx => $v->{topLeftCornerX},
+        topleftcornery => $v->{topLeftCornerY},
+        tilewidth      => $v->{tileWidth}, 
+        tileheight     => $v->{tileHeight},
+        matrixwidth    => $v->{matrixWidth},
+        matrixheight   => $v->{matrixHeight},
+    });
  
     return FALSE if (! defined $obj);
    
@@ -224,8 +223,13 @@ sub _load {
 
   return TRUE;
 }
-################################################################################
-# get
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getSRS {
   my $self = shift;
   return $self->{srs};
@@ -242,7 +246,6 @@ sub getFile {
   my $self = shift;
   return $self->{filename};
 }
-# TileWidth TileHeight
 sub getTileWidth {
   my $self = shift;
   # size of tile in pixel !
@@ -253,11 +256,9 @@ sub getTileHeight {
   # size of tile in pixel !
   return $self->{tilematrix}->{$self->{levelbottom}}->{tileheight};
 }
-################################################################################
-# public method to TileMatrix
 
 # method: getTileMatrixByArray
-#  return the tile matrix array in the ascending resolution order.
+#  Return the tile matrix array in the ascending resolution order.
 #---------------------------------------------------------------------------------------------------------------
 sub getTileMatrixByArray {
     my $self = shift;
@@ -272,7 +273,7 @@ sub getTileMatrixByArray {
 }
 
 # method: getTileMatrix
-#  return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
+#  Return the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution 
 #  order (integer).
 #---------------------------------------------------------------------------------------------------------------
 sub getTileMatrix {
@@ -290,7 +291,7 @@ sub getTileMatrix {
 }
 
 # method: getCountTileMatrix
-#  return the count of tile matrix in the TMS
+#  Return the count of tile matrix in the TMS.
 #---------------------------------------------------------------------------------------------------------------
 sub getCountTileMatrix {
   my $self = shift;
@@ -303,7 +304,7 @@ sub getCountTileMatrix {
 }
 
 # method: getBottomTileMatrix
-#  return the bottom tile matrix ID, with the smallest resolution and the order '0'.
+#  Return the bottom tile matrix ID, with the smallest resolution and the order '0'.
 #---------------------------------------------------------------------------------
 sub getBottomTileMatrix {
     my $self = shift;
@@ -315,7 +316,7 @@ sub getBottomTileMatrix {
 }
 
 # method: getTopTileMatrix
-#  return the top tile matrix ID, with the biggest resolution and the order 'NumberOfTM'.
+#  Return the top tile matrix ID, with the biggest resolution and the order 'NumberOfTM'.
 #---------------------------------------------------------------------------------
 sub getTopTileMatrix {
     my $self = shift;
@@ -326,8 +327,8 @@ sub getTopTileMatrix {
 }
 
 # method: getTileMatrixID
-#  return the tile matrix ID from the ascending resolution order (integer) :  
-#   - 0 (bottom level, smallest resolution)
+#  Return the tile matrix ID from the ascending resolution order (integer) :  
+#   - 0 (bottom level, smallest resolution).
 #   - NumberOfTM (top level, biggest resolution).
 #  Hash levelIdx is used.
 #---------------------------------------------------------------------------------
@@ -345,8 +346,8 @@ sub getTileMatrixID {
 }
 
 # method: getTileMatrixOrder
-#  return the tile matrix order from the ID :  
-#   - 0 (bottom level, smallest resolution)
+#  Return the tile matrix order from the ID :  
+#   - 0 (bottom level, smallest resolution).
 #   - NumberOfTM (top level, biggest resolution).
 #  Hash levelIdx is used.
 #---------------------------------------------------------------------------------
@@ -363,8 +364,12 @@ sub getTileMatrixOrder {
     }
 }
 
-################################################################################
-# to_string method
+####################################################################################################
+#                                           OTHERS                                                 #
+####################################################################################################
+
+# Group: others
+
 sub to_string {
     my $self = shift;
 
@@ -389,7 +394,6 @@ __END__
 =head1 NAME
 
   BE4::TileMatrixSet - load a file tilematrixset.
-  You can fix a min or/an a max level to extract tilematrixset.
 
 =head1 SYNOPSIS
 
@@ -418,28 +422,25 @@ __END__
 
 =head1 DESCRIPTION
 
-=head2 EXPORT
+    A TileMatrixSet object
 
-None by default.
+        * PATHFILENAME
+        * name
+        * filename
+        * filepath
+        * srs
+        * tilematrix (an hash of TileMatrix objects)
 
-=head1 SAMPLE
+    A TileMatrixSet in XML format, in a file (.tms)
 
-* Sample Pyramid file (.pyr) :
-
-  eg SEE ASLO
-
-* Sample TMS file (.tms) :
-
-  [LAMB93_50cm_TEST]
-  
-  <tileMatrixSet>
-	<crs>IGNF:LAMB93</crs>
-	<tileMatrix>
-		<id>0</id>
-		(...)
-	</tileMatrix>
-	(...)
-	<tileMatrix>
+        <tileMatrixSet>
+            <crs>IGNF:LAMB93</crs>
+            <tileMatrix>
+                <id>0</id>
+                (...)
+            </tileMatrix>
+                (...)
+            <tileMatrix>
                 <id>17</id>
                 <resolution>1</resolution>
                 <topLeftCornerX> 0 </topLeftCornerX>
@@ -448,8 +449,8 @@ None by default.
                 <tileHeight>256</tileHeight>
                 <matrixWidth>5040</matrixWidth>
                 <matrixHeight>42040</matrixHeight>
-        </tileMatrix>
-	<tileMatrix>
+            </tileMatrix>
+            <tileMatrix>
                 <id>18</id>
                 <resolution>0.5</resolution>
                 <topLeftCornerX> 0 </topLeftCornerX>
@@ -458,38 +459,33 @@ None by default.
                 <tileHeight>256</tileHeight>
                 <matrixWidth>10080</matrixWidth>
                 <matrixHeight>84081</matrixHeight>
-        </tileMatrix>
-  </tileMatrixSet>
+            </tileMatrix>
+        </tileMatrixSet>
 
-* Sample LAYER file (.lay) :
+=head2 EXPORT
 
-  eg SEE ASLO
+    None by default.
 
 =head1 LIMITATIONS AND BUGS
 
- File name of tms must be with extension : tms or TMS !
- All levels must be continuous and unique !
- All levels are sorted by id !
- id level must be a numeric !
+    File name of tms must be with extension : tms or TMS !
+    All levels must be continuous and unique !
+    All levels are sorted by id !
 
 =head1 SEE ALSO
 
-  eg package module following :
- 
-  BE4::Layer (?)
-  BE4::Pyramid and BE4::Level
-  BE4::TileMatrix
+    BE4::TileMatrix
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+    Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify
+    it under the same terms as Perl itself, either Perl version 5.10.1 or,
+    at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -82,30 +82,6 @@ INIT {
 }
 END {}
 
-# constructor: new
-
-#    params = {
-#        formatCode => TIFF_RAW_INT8,
-#               OU
-#        compression => raw,
-#        sampleformat => uint,
-#        bitspersample => 8,
-#
-#        samplesperpixel => 3,
-#        photometric => rgb,
-#        compressionoption => none,
-#        interpolation => bicubic,
-#        gamma  => 1
-#    }
-#
-#    variable: $self
-#
-#       * pixel (Pixel object)
-#       * compression
-#       * compressionoption
-#       * interpolation
-#       * gamma
-#       * formatCode
 
 
 #---------------------------------------------------------------------------------------------------
@@ -378,3 +354,80 @@ sub decodeFormat {
 
 1;
 __END__
+
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+ BE4::PyrImageSpec - components of pyramid's images
+
+=head1 SYNOPSIS
+  
+    use BE4::PyrImageSpec;
+
+    # create a PyrImageSpec object
+
+    my $pyrImgSpec = BE4::PyrImageSpec->new({
+        bitspersample => 32,
+        sampleformat => float,
+        photometric => gray,
+        samplesperpixel => 1,
+        interpolation => nn,
+        compression => lzw,
+        compressionoption => none,
+        gamma => 1.0,
+    });
+
+        OR
+
+    my $pyrImgSpec = BE4::PyrImageSpec->new({
+        formatCode => TIFF_LZW_FLOAT32,
+        photometric => gray,
+        samplesperpixel => 1,
+        interpolation => nn,
+        compressionoption => none,
+        gamma => 1.0,
+    });
+
+=head1 DESCRIPTION
+
+    A PyrImageSpec object :
+
+        * pixel (Pixel object)
+        * compression
+        * compressionoption
+        * interpolation
+        * gamma
+        * formatCode
+
+    Possible values :
+
+        interpolation => ['nn','bicubic','linear','lanczos'],
+        compression => ['raw','jpg','png','lzw','zip'],
+        compressionoption => ['none','crop']
+
+ 
+    compression is use for the program 'tiff2tile'.
+    formatCode is written in the pyramid file, and it is useful for 'Rok4' !
+
+=head2 EXPORT
+
+None by default.
+
+=head1 SEE ALSO
+
+ BE4::Pixel
+
+=head1 AUTHOR
+
+Satabin Théo, E<lt>tsatabin@E<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.10.1 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut

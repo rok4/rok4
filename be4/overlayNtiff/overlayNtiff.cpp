@@ -196,7 +196,7 @@ int parseCommandLine(int argc, char** argv) {
     }
     transparent[0] = value;
     for(int i = 1; i < 3; i++) {
-        charValue = strtok (NULL, " ,.-");
+        charValue = strtok (NULL, ",");
         if(charValue == NULL) {
             LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
             return -1;
@@ -223,7 +223,7 @@ int parseCommandLine(int argc, char** argv) {
     }
     opaque[0] = value;
     for(int i = 1; i < 3; i++) {
-        charValue = strtok (NULL, " ,.-");
+        charValue = strtok (NULL, ",");
         if(charValue == NULL) {
             LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
             return -1;

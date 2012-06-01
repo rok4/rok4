@@ -162,16 +162,6 @@ $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_nodata,      $param
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tile,        $params_pyramid) };
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tms,         $params_pyramid) };
 
-## PYRAMID
-ALWAYS("- Loading pyramid ...");
-
-my $objPyramid  = BE4::Pyramid->new($params_pyramid);
-
-if(! defined $objPyramid) {
-    ERROR("Erreur de configuration de la pyramide !");
-    exit -3;
-}
-
 ## DATASOURCE
 ALWAYS("- Loading datasource ...");
 
@@ -190,6 +180,17 @@ if (! $objDataSrc->computeImageSource()) {
 my ($xmin,$ymax,$xmax,$ymin) = $objDataSrc->computeBbox();
 INFO(sprintf "BBOX : %s %s %s %s\n", $xmin,$ymax,$xmax,$ymin);
 
+
+## PYRAMID
+ALWAYS("- Loading pyramid ...");
+
+my $objPyramid  = BE4::Pyramid->new($params_pyramid,$objDataSrc);
+
+if(! defined $objPyramid) {
+    ERROR("Erreur de configuration de la pyramide !");
+    exit -3;
+}
+
 ## LAYER
 ALWAYS("- Loading layer ...");
 
@@ -205,12 +206,13 @@ push @lstsrs, "epsg:3857";
 push @lstsrs, "epsg:4258";
 
 # TODO informatif...
-my $minres=$objPyramid->getTileMatrixSet()->getFirstTileMatrix()->getResolution();
-my $maxres=$objPyramid->getTileMatrixSet()->getLastTileMatrix()->getResolution();
+my $minres=$objPyramid->getTileMatrixSet()->{resworst};
+my $maxres=$objPyramid->getTileMatrixSet()->{resbest};
 
 # TODO informatif...
 my @keyword;
-push @keyword, $objPyramid->getFormat()->getCompression();
+push @keyword, $objPyramid->getCompression();
+push @keyword, $objPyramid->getInterpolation();
 push @keyword, $objPyramid->getPyrName();
 push @keyword, $objPyramid->getTmsName();
 push @keyword, $srs;
@@ -241,22 +243,21 @@ my $bg= $ct->TransformPoint($xmin,$ymin);
 my $hd= $ct->TransformPoint($xmax,$ymax);
 
 my $params = {
-            title            => $objPyramid->getPyrName(),
-            abstract         => undef,      # TODO
-            keywordlist      => \@keyword,
-            style            => $MYSTYLE,
-            minres           => $minres,
-            maxres           => $maxres,
-            opaque           => $MYOPAQUE, 
-            authority        => $auth,
-            srslist          => \@lstsrs,
-            resampling       => $MYSAMPLE,
-            geo_bbox         => [$bg->[0],$bg->[1],$hd->[0],$hd->[1]],
-            proj             => $srs,
-            proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
-            pyramid          => File::Spec->catfile($objPyramid->getPyrDescPath(),
-                                                    $objPyramid->getPyrFile()),
-    };
+    title            => $objPyramid->getPyrName(),
+    abstract         => "Couche utilisant le descripteur de pyramide ".$objPyramid->getPyrName().".pyr",
+    keywordlist      => \@keyword,
+    style            => $MYSTYLE,
+    minres           => $minres,
+    maxres           => $maxres,
+    opaque           => $MYOPAQUE, 
+    authority        => $auth,
+    srslist          => \@lstsrs,
+    resampling       => $MYSAMPLE,
+    geo_bbox         => [$bg->[0],$bg->[1],$hd->[0],$hd->[1]],
+    proj             => $srs,
+    proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
+    pyramid          => File::Spec->catfile($objPyramid->getPyrDescPath(),$objPyramid->getPyrFile()),
+};
     
 my $objLayer = new BE4::Layer($params);
 
@@ -280,8 +281,7 @@ else {
   $pathlayer = cwd();
 }
 
-my $filelayer = File::Spec->catfile($pathlayer,
-                                   join("_","layer",$objPyramid->getPyrName()));
+my $filelayer = File::Spec->catfile($pathlayer,$objPyramid->getPyrName());
 
 if (! open (FILE, ">", $filelayer.".lay")) {
     ERROR(sprintf "Erreur de creation du fichier layer (%s) !", $!);

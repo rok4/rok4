@@ -102,30 +102,11 @@ void usage() {
 }
 
 /**
-*@fn int h2i(char s)
-* Hexadecimal -> int
-*/
-
-int h2i(char s)
-{
-        if('0' <= s && s <= '9')
-                return (s - '0');
-        if('a' <= s && s <= 'f')
-                return (s - 'a' + 10);
-        if('A' <= s && s <= 'F')
-                return (10 + s - 'A');
-        else
-                return -1; /* invalid input! */
-}
-
-/**
 * @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
 * Lecture des parametres de la ligne de commande
 */
 
-int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, bool& nowhite, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
-
-    char strnodata[10];
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, char* strnodata, bool& nowhite, int& type, uint16_t& samplesperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
     
     if (argc != 17 && argc != 18) {
         LOGGER_ERROR(" Nombre de parametres incorrect");
@@ -164,9 +145,9 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
                     break;
                 case 's': // sampleperpixel
                     if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
-                    if(strncmp(argv[i], "1",1) == 0) sampleperpixel = 1 ;
-                    else if(strncmp(argv[i], "3",1) == 0) sampleperpixel = 3 ;
-                    else if(strncmp(argv[i], "4",1) == 0) sampleperpixel = 4 ;
+                    if(strncmp(argv[i], "1",1) == 0) samplesperpixel = 1 ;
+                    else if(strncmp(argv[i], "3",1) == 0) samplesperpixel = 3 ;
+                    else if(strncmp(argv[i], "4",1) == 0) samplesperpixel = 4 ;
                     else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
                     break;
                 case 'b': // bitspersample
@@ -195,22 +176,8 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
 
     LOGGER_DEBUG("mergeNtiff -f " << imageListFilename);
     
-//  Nodata interpretation
-    if (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) {
-        nodata = atoi(strnodata);
-        if (nodata == 0 && strcmp(strnodata,"0")!=0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for float samples,a integer in decimal format is expected");
-            return -1;
-        }
-    } else if (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) {
-        int a1 = h2i(strnodata[0]);
-        int a0 = h2i(strnodata[1]);
-        if (a1 < 0 || a0 < 0) {
-            LOGGER_ERROR("Invalid parameter in -n argument for integer samples");
-            return -1;
-        } 
-        nodata = 16*a1+a0;
-    } else {
+    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) || 
+            (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
         LOGGER_ERROR("sampleformat/bitspersample not supported");
         return -1;
     }
@@ -425,7 +392,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int* nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
 {
     if (TabImageIn.empty()) {
         LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
@@ -578,7 +545,7 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int nodata, bool nowhite, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int* nodata, bool nowhite, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
@@ -659,9 +626,9 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
 int main(int argc, char **argv) {
     char imageListFilename[256];
-    int nodata;
+    char strnodata[256];
     bool nowhite = false;
-    uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
+    uint16_t samplesperpixel, bitspersample, sampleformat, photometric;
     int type=-1;
     Interpolation::KernelType interpolation;
 
@@ -671,14 +638,14 @@ int main(int argc, char **argv) {
     ExtendedCompoundImage* pECImage;
 
     /* Initialisation des Loggers */
-        Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
+    Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
 
-        Accumulator* acc = new StreamAccumulator();
-        //Logger::setAccumulator(DEBUG, acc);
-        Logger::setAccumulator(INFO , acc);
-        Logger::setAccumulator(WARN , acc);
-        Logger::setAccumulator(ERROR, acc);
-        Logger::setAccumulator(FATAL, acc);
+    Accumulator* acc = new StreamAccumulator();
+    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(INFO , acc);
+    Logger::setAccumulator(WARN , acc);
+    Logger::setAccumulator(ERROR, acc);
+    Logger::setAccumulator(FATAL, acc);
 
     std::ostream &logd = LOGGER(DEBUG);
           logd.precision(16);
@@ -687,12 +654,32 @@ int main(int argc, char **argv) {
     std::ostream &logw = LOGGER(WARN);
     logw.precision(16);
     logw.setf(std::ios::fixed,std::ios::floatfield);
-
+    
+    LOGGER_DEBUG("Parse");
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
+    if (parseCommandLine(argc,argv,imageListFilename,interpolation,strnodata,nowhite,type,
+        samplesperpixel,bitspersample,sampleformat,photometric)<0 ){
         LOGGER_ERROR("Echec lecture ligne de commande");
         sleep(1);
         return -1;
+    }
+    
+    LOGGER_DEBUG("Nodata interpretation");
+    int nodata[samplesperpixel];
+    
+    char* charValue = strtok(strnodata,",");
+    if(charValue == NULL) {
+        LOGGER_ERROR("Error with option -n : a value for nodata is missing");
+        return -1;
+    }
+    nodata[0] = atoi(charValue);
+    for(int i = 1; i < samplesperpixel; i++) {
+        charValue = strtok (NULL, ",");
+        if(charValue == NULL) {
+            LOGGER_ERROR("Error with option -n : a value for nodata is missing");
+            return -1;
+        }
+        nodata[i] = atoi(charValue);
     }
 
     // TODO : gérer le type mtd !!
@@ -704,12 +691,11 @@ int main(int argc, char **argv) {
 
     LOGGER_DEBUG("Load");
     // Chargement des images
-    if (loadImages(imageListFilename,&pImageOut,&ImageIn,sampleperpixel,bitspersample,photometric)<0){
+    if (loadImages(imageListFilename,&pImageOut,&ImageIn,samplesperpixel,bitspersample,photometric)<0){
         LOGGER_ERROR("Echec chargement des images"); 
         sleep(1);
         return -1;
     }
-
 
     LOGGER_DEBUG("Check");
     // Controle des images

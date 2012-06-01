@@ -351,7 +351,7 @@ sub computeBottomImage {
         my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
         if (! -d $confDirPath) {
             DEBUG (sprintf "create dir mergeNtiff");
-            eval { mkpath([$confDirPath],0,0751); };
+            eval { mkpath([$confDirPath],0,0755); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
                 return FALSE;
@@ -439,8 +439,8 @@ sub computeAboveImage {
     my $bgImgPath=undef;
     my $bgImgName=undef;
 
-    # A-t-on besoin de quelque chose en fond d'image?
-    my $bg="";
+    # A-t-on besoin de quelque chose en fond d'image ? On renseigne de toute manière la couleur de nodata
+    my $bg='-n ' . $self->{nodata}->getColor();
     if (scalar @childList != 4){
 
         # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
@@ -465,14 +465,12 @@ sub computeAboveImage {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
             $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
             $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
-            $bg="-b $bgImgPath";
+            $bg.=" -b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
-                    # On ne peut pas avoir d'image alors on donne une couleur de nodata
-                    $bg='-n ' . $self->{nodata}->getColor();
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
@@ -482,9 +480,6 @@ sub computeAboveImage {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $code .= $self->cache2work($node, $bgImgName);
             }
-        } else {
-            # On a pas d'image alors on donne une couleur de nodata
-            $bg='-n ' . $self->{nodata}->getColor();
         }
     }
 
@@ -703,7 +698,7 @@ sub cache2work {
         $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
         
-        if ($self->{pyramid}->getSamplesPerPixel() == 4) {
+        if (int($self->{pyramid}->getSamplesPerPixel()) == 4) {
             # Option supplémentaire pour conserver le canal alpha
             $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
         } else {
@@ -891,7 +886,6 @@ sub prepareScript {
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
-    $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
     $code   .= "\n";
 
     # creation du répertoire de travail:
@@ -927,7 +921,7 @@ sub saveScript {
     if (! -d dirname($scriptFilePath)) {
         my $dir = dirname($scriptFilePath);
         DEBUG (sprintf "Create the script directory'%s' !", $dir);
-        eval { mkpath([$dir],0,0751); };
+        eval { mkpath([$dir],0,0755); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
             return FALSE;

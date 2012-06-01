@@ -68,8 +68,8 @@ my $STRLYRTMPLT   = <<"TLYR";
     <title>__TITLE__</title>
     <abstract>__ABSTRACT__</abstract>
     <keywordList>
-        <!-- __KEYWORDS__ -->
-    </keywordList>
+    <!-- __KEYWORDS__ -->
+</keywordList>
     <style>__STYLE__</style>
     <EX_GeographicBoundingBox>
         <westBoundLongitude>__W__</westBoundLongitude>
@@ -78,8 +78,8 @@ my $STRLYRTMPLT   = <<"TLYR";
         <northBoundLatitude>__N__</northBoundLatitude>
     </EX_GeographicBoundingBox>
     <WMSCRSList>
-        <!-- __SRSS__ -->
-    </WMSCRSList>
+    <!-- __SRSS__ -->
+</WMSCRSList>
     <boundingBox CRS="__SRS__" minx="__MINX__" miny="__MINY__" maxx="__MAXX__" maxy="__MAXY__"/>
     <opaque>__OPAQUE__</opaque>
     <authority>__AUTHORITY__</authority>

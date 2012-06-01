@@ -533,7 +533,7 @@ sub openStreams {
         if (! -d dirname($this{process}->{path_shell})) {
             my $dir = dirname($this{process}->{path_shell});
             DEBUG (sprintf "Create the script directory'%s' !", $dir);
-            eval { mkpath([$dir],0,0751); };
+            eval { mkpath([$dir],0,0755); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
                 return FALSE;
@@ -1234,7 +1234,7 @@ sub makeLink {
     TRACE();
 
     #create folders
-    eval { mkpath(dirname($finaleImage),0,0751); };
+    eval { mkpath(dirname($finaleImage),0,0755); };
     if ($@) {
         ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($finaleImage), $@);
         return FALSE;
@@ -1408,7 +1408,7 @@ sub writeNodata {
 
     if (! -e $nodatadir) {
         #create folders
-        eval { mkpath([$nodatadir],0,0751); };
+        eval { mkpath([$nodatadir],0,0755); };
         if ($@) {
             ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
             return FALSE;

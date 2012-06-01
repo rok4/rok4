@@ -78,22 +78,13 @@ INIT {
 }
 END {}
 
-################################################################################
-# Group: variable
-#
 
-#
-# variable: $self
-#
-#    * photometric
-#    * sampleformat
-#    * bitspersample
-#    * samplesperpixel
-#
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
 
-################################################################################
 # Group: constructor
-#
+
 sub new {
     my $this = shift;
     my $params = shift;
@@ -124,7 +115,7 @@ sub new {
         ERROR ("'samplesperpixel' is undefined or not valid !");
         return undef;
     }
-    $self->{samplesperpixel} = $samplesperpixel;
+    $self->{samplesperpixel} = int($samplesperpixel);
 
     my $photometric = $params->{photometric};
     if (! defined $photometric || ! $self->is_Photometric($photometric)) {
@@ -138,7 +129,7 @@ sub new {
         ERROR ("'bitspersample' is undefined or not valid !");
         return undef;
     }
-    $self->{bitspersample} = $bitspersample;
+    $self->{bitspersample} = int($bitspersample);
 
 
     return $self;
@@ -210,9 +201,13 @@ sub is_SamplesPerPixel {
     return FALSE;
 }
 
-################################################################################
-# Group: get
-#
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getPhotometric {
     my $self = shift;
     return $self->{photometric};
@@ -241,28 +236,35 @@ __END__
 
 =head1 NAME
 
- BE4::Pixel - components of a pixel in output images
+ BE4::Pixel - components of a pixel in image
 
 =head1 SYNOPSIS
   
-  my $objC = BE4::Pixel->new("rgb","uint",8);
-  
-
-
-  # mode static 
-  my @info = BE4::Format->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
+    # Pixel object creation
+    my $objPixel = BE4::Pixel->new({
+        photometric => rgb,
+        sampleformat => uint,
+        bitspersample => 8,
+        samplesperpixel => 3
+    });
 
 =head1 DESCRIPTION
 
-  Format {
-      compression       => raw/jpg/png/lzw (floatraw is deprecated, use raw instead)
-      sampleformat      => uint/float
-      bitspersample     => 8/32
-      code              => TIFF_RAW_INT8 for example
-  }
- 
-  'compression' is use for the program 'tiff2tile'.
-  'code' is written in the pyramid file, and it is useful for 'Rok4' !
+    A Pixel object
+
+        * photometric
+        * sampleformat
+        * bitspersample
+        * samplesperpixel
+
+    Possible values :
+
+        bitspersample     => [8,32],
+        sampleformat      => ['uint','float'],
+        photometric       => ['rgb','gray','mask'],
+        samplesperpixel   => [1,3,4],
+
+
 
 =head2 EXPORT
 

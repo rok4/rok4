@@ -51,14 +51,14 @@
 #include <stdint.h>
 #include "../be4version.h"
 
-int epsilon = 0.01; // pour comparer les valeurs avec celle de nodata
 
 void usage() {
   std::cerr << "merge4tiff version "<< BE4_VERSION << std::endl;
   std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
-  std::cerr << "-n : this integer point value in decimal is used only for DTM. (-99999 for example)"<< std::endl;
-  std::cerr << "     For images (u_int8), the value is between 0 and 255 in hexadecimal (C9... for example, just first two characters are used)"<< std::endl;
-  std::cerr << "-b : the background image is mandatory for images" << std::endl;
+  std::cerr << "-n : one integer per samples, separated by comma, in decimal format, mandatory. Examples :"<< std::endl;
+  std::cerr << "       - for images (u_int8) : 255,255,0"<< std::endl;
+  std::cerr << "       - for DTM (float) : -99999"<< std::endl;
+  std::cerr << "-b : the background image, optional" << std::endl;
   std::cerr << "-g : default gamma is 1.0 (have no effect)" << std::endl;
   std::cerr << "-c : compression should not be used in be4 context" << std::endl;
   std::cerr << "-r : should not be used in be4 context" << std::endl;
@@ -74,16 +74,20 @@ void error(std::string message) {
     exit(1);
 }
 
+double gammaM4t;
+char* strnodata;
+float* nodataFloat;
+int epsilon = 0.01; // pour comparer les valeurs avec celle de nodata
+uint8_t* nodataUInt8;
+uint32_t width,height,rowsperstrip;
+uint16_t compression,bitspersample,samplesperpixel,sampleformat,photometric,planarconfig;
+
 void parseCommandLine(int argc, char* argv[],
-        double& gamma,
-        char*& strnodata,
-        uint16_t& compression,
-        uint32_t& rowsperstrip,
         char*& backgroundImage,
         char** inputImages,
         char*& outputImage)
 {
-    gamma = 1.;
+    gammaM4t = 1.;
     strnodata = 0;
     compression = -1;
     rowsperstrip = -1;
@@ -91,91 +95,78 @@ void parseCommandLine(int argc, char* argv[],
     for (int i=0;i<4;i++) inputImages[i] = 0;
     outputImage = 0;
 
-      for(int i = 1; i < argc; i++) {
-            if(argv[i][0] == '-') {
-              switch(argv[i][1]) {
-                case 'g': 
-                      if(++i == argc) error("missing parameter in -g argument");
-                      gamma = atof(argv[i]);
-                if (gamma<=0.) error("invalid parameter in -g argument");
-                      break;
-                case 'n': 
-                    if(++i == argc) error("missing parameter in -n argument");
+    for(int i = 1; i < argc; i++) {
+        if(argv[i][0] == '-') {
+            switch(argv[i][1]) {
+                case 'g': // gamma
+                    if(++i == argc) error("Missing parameter in -g argument");
+                    gammaM4t = atof(argv[i]);
+                    if (gammaM4t <= 0.) error("invalid parameter in -g argument");
+                    break;
+                case 'n': // nodata
+                    if(++i == argc) error("Missing parameter in -n argument");
                     strnodata = argv[i];
                     break;
-                case 'h':
-                      usage();
-                      exit(0);
+                case 'h': // help
+                    usage();
+                    exit(0);
                 case 'c': // compression
-                      if(++i == argc) error("Error in -c option");
-                      if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
-                      else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
-                      else if(strncmp(argv[i], "packbits",8) == 0) compression = COMPRESSION_PACKBITS;
-                      else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
-                      else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
-                      else compression = COMPRESSION_NONE;
-                      break;
-                case 'r':
-                      if(++i == argc) error("missing parameter in -r argument");
-                      rowsperstrip = atoi(argv[i]);
-                      break;
-            case 'b':
-                if(++i == argc) error("missing parameter in -b argument");
-                backgroundImage = argv[i];
-                break;
-            case 'i':
-                if(++i == argc) error("missing parameter in -i argument");
-                switch(argv[i-1][2]){
-                    case '1':
-                        inputImages[0]=argv[i];
-                        break;
-                    case '2':
-                        inputImages[1]=argv[i];
-                        break;
-                    case '3':
-                        inputImages[2]=argv[i];
-                        break;
-                    case '4':
-                        inputImages[3]=argv[i];
-                        break;
-                    default:
+                    if(++i == argc) error("Error in -c option");
+                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
+                    else if(strncmp(argv[i], "packbits",8) == 0) compression = COMPRESSION_PACKBITS;
+                    else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
+                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
+                    else compression = COMPRESSION_NONE;
                     break;
-                }
-                break;
-                  }
+                case 'r':
+                    if(++i == argc) error("Missing parameter in -r argument");
+                    rowsperstrip = atoi(argv[i]);
+                    break;
+                case 'b': // background image
+                    if(++i == argc) error("Missing parameter in -b argument");
+                    backgroundImage = argv[i];
+                    break;
+                case 'i': // images to merge
+                    if(++i == argc) error("Missing parameter in -i argument");
+                    switch(argv[i-1][2]){
+                        case '1':
+                            inputImages[0]=argv[i];
+                            break;
+                        case '2':
+                            inputImages[1]=argv[i];
+                            break;
+                        case '3':
+                            inputImages[2]=argv[i];
+                            break;
+                        case '4':
+                            inputImages[3]=argv[i];
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    error("Unknown option");
             }
-        else
-            outputImage=argv[i];
-      }
+        } else {
+            if (outputImage!=0) error ("ONE output file");
+            outputImage = argv[i];
+        }
+    }
+    if (strnodata == 0) {
+        error ("Missing nodata value");
+    }
+    if (outputImage==0) error ("Missing output file");
 
-    if (outputImage==0) error ("missing output file");
-  /* FIXME: NV: je commente ce test tant qu'une gestion correcte du paramètre -n n'est pas implémentée
-  if  ( (inputImages[0]==0||inputImages[1]==0||inputImages[2]==0||inputImages[3]==0) && (backgroundImage==0 && nodata==0.))
-        error("missing input data");
-  */
 }
 
 
-void checkImages(
-        uint32_t& width,
-        uint32_t& height,
-        uint32_t& rowsperstrip,
-        uint16_t& bitspersample,
-        uint16_t& sampleperpixel,
-        uint16_t& sampleformat,
-        uint16_t& photometric,
-        uint16_t& compression,
-        uint16_t& planarconfig,
-        char* backgroundImage,
-        char** inputImages,
-        char* outputImage,
-        TIFF* INPUT[2][2],
-        TIFF*& BACKGROUND,
-        TIFF*& OUTPUT
-        ){
-
+void checkImages(char* backgroundImage,char** inputImages,char* outputImage,
+                 TIFF* INPUT[2][2],TIFF*& BACKGROUND,TIFF*& OUTPUT)
+{    
     uint32_t _width,_height,_rowsperstrip;
-    uint16_t _bitspersample,_sampleperpixel,_sampleformat,_photometric,_compression,_planarconfig;     
+    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_compression,_planarconfig;     
     width=0;    
 
     for(int i = 0; i < 4; i++) {
@@ -183,47 +174,45 @@ void checkImages(
             INPUT[i/2][i%2] = 0;
             continue;
         }
-            TIFF *input = TIFFOpen(inputImages[i], "r");
-            if(input == NULL) error("Unable to open input file: " + std::string(inputImages[i]));
-            INPUT[i/2][i%2] = input;
+        TIFF *input = TIFFOpen(inputImages[i], "r");
+        if(input == NULL) error("Unable to open input file: " + std::string(inputImages[i]));
+        INPUT[i/2][i%2] = input;
 
-            if(width == 0) { // read the parameters of the first input file
-                  if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &width)                   ||
-                  ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &height)                     ||
-                  ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
-                  ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
-                  ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &photometric)                ||
-                  ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
-                  ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel))
-                    error("Error reading input file: " + std::string(inputImages[i]));
-                    
-                if(compression == (uint16)(-1)) TIFFGetField(input, TIFFTAG_COMPRESSION, &compression);
-                if(rowsperstrip == (uint32)(-1)) TIFFGetField(input, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
-                if(planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
-                if (width%2!=0 || height%2) error ("Sorry : only even dimensions for input images are supported");
-            }
-        
-            else { // check if the others input files have compatible parameters      
-                  uint32 _width, _height;
-                  uint16 _bitspersample, _sampleperpixel, _photometric, _planarconfig, _sampleformat;
-                  if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &_width)                        ||
-                      ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &_height)                      ||
-                      ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
-                      ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &_planarconfig)      ||
-                      ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &_sampleperpixel) ||
-                      ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &_photometric)                 ||
-                      ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
-                        error("Error reading file " + std::string(inputImages[i]));
+        if(width == 0) { // read the parameters of the first input file
+              if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &width)                   ||
+              ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &height)                     ||
+              ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
+              ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &photometric)                ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
+                error("Error reading input file: " + std::string(inputImages[i]));
+                
+            if(compression == (uint16)(-1)) TIFFGetField(input, TIFFTAG_COMPRESSION, &compression);
+            if(rowsperstrip == (uint32)(-1)) TIFFGetField(input, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
+            if(planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
+            if (width%2!=0 || height%2) error ("Sorry : only even dimensions for input images are supported");
+        }
+    
+        else { // check if the others input files have compatible parameters
+            if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &_width)                        ||
+              ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &_height)                      ||
+              ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &_planarconfig)      ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
+              ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &_photometric)                 ||
+              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
+                error("Error reading file " + std::string(inputImages[i]));
 
-                if(_width != width || _height != height || _bitspersample != bitspersample 
-                    || _planarconfig != planarconfig || _photometric != photometric || _sampleperpixel != sampleperpixel) 
-                    error("Error : all input files must have the same parameters (width, height, etc...)");
-            }
+            if(_width != width || _height != height || _bitspersample != bitspersample 
+                || _planarconfig != planarconfig || _photometric != photometric || _samplesperpixel != samplesperpixel) 
+                error("Error : all input files must have the same parameters (width, height, etc...)");
+        }
     }
 
     BACKGROUND=0;
 
-    if (inputImages[0]&&inputImages[1]&&inputImages[2]&&inputImages[3])
+    if (inputImages[0] && inputImages[1] && inputImages[2] && inputImages[3])
         backgroundImage=0;
 
     if (backgroundImage){
@@ -233,31 +222,41 @@ void checkImages(
             ! TIFFGetField(BACKGROUND, TIFFTAG_IMAGELENGTH, &_height)                      ||
             ! TIFFGetField(BACKGROUND, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
             ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_PLANARCONFIG, &_planarconfig)      ||
-            ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_SAMPLESPERPIXEL, &_sampleperpixel) ||
+            ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
             ! TIFFGetField(BACKGROUND, TIFFTAG_PHOTOMETRIC, &_photometric)                 ||
             ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
                     error("Error reading file " + std::string(backgroundImage));
-        if(_width != width || _height != height || _bitspersample != bitspersample
-                    || _planarconfig != planarconfig || _photometric != photometric || _sampleperpixel != sampleperpixel)
-                        error("Error : all input files must have the same parameters (width, height, etc...)");
+        if(_width != width || _height != height || _bitspersample != bitspersample || _planarconfig != planarconfig
+            || _photometric != photometric || _samplesperpixel != samplesperpixel)
+                error("Error : all input files must have the same parameters (width, height, etc...)");
     }
 
-      OUTPUT = TIFFOpen(outputImage, "w");
+    OUTPUT = TIFFOpen(outputImage, "w");
     if(OUTPUT == NULL) error("Unable to open output file: " + std::string(outputImage));
-      if(! TIFFSetField(OUTPUT, TIFFTAG_IMAGEWIDTH, width)               ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_IMAGELENGTH, height)             ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel) ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_PHOTOMETRIC, photometric)        ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_PLANARCONFIG, planarconfig)      ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_COMPRESSION, compression)        ||
-             ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLEFORMAT, sampleformat))
-            error("Error writting output file: " + std::string(outputImage));     
+    if(! TIFFSetField(OUTPUT, TIFFTAG_IMAGEWIDTH, width)               ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_IMAGELENGTH, height)             ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_PHOTOMETRIC, photometric)        ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_PLANARCONFIG, planarconfig)      ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_COMPRESSION, compression)        ||
+         ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLEFORMAT, sampleformat))
+        error("Error writting output file: " + std::string(outputImage));     
 }
 
-int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
-    int nbsamples = width * sampleperpixel;
+bool isData(float* pixel) {
+    
+    for (int i = 0; i<samplesperpixel; i++) {
+        if (pixel[i] < nodataFloat[i] - epsilon || pixel[i] > nodataFloat[i] + epsilon) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+    int nbsamples = width * samplesperpixel;
     float  line_background[nbsamples];
     float  line1[2*nbsamples];
     float  line2[2*nbsamples];
@@ -265,7 +264,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
     int left,right;
     
     for (int i = 0; i < nbsamples ; i++) {
-        line_background[i] = nodata;
+        line_background[i] = nodataFloat[i%samplesperpixel];
     }
 
     for(int y = 0; y < 2; y++){
@@ -277,8 +276,8 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
             }
             
             for (int i = 0; i<2*nbsamples; i++) {
-                line1[i] = nodata;
-                line2[i] = nodata;
+                line1[i] = nodataFloat[i%samplesperpixel];
+                line2[i] = nodataFloat[i%samplesperpixel];
             }
 
             if (INPUT[y][0])
@@ -292,29 +291,28 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
             
             memcpy(line_out,line_background,sizeof(float)*nbsamples);
 
-            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel) {
-
-                for(int j = sampleperpixel; j > 0 ; j--, pos_in++) {
-                    float data[4];
-                    int nbData = 0;
-                    if (line1[pos_in] < nodata-epsilon || line1[pos_in] > nodata+epsilon) data[nbData++]=line1[pos_in];
-                    if (line1[pos_in + sampleperpixel] < nodata-epsilon || line1[pos_in + sampleperpixel] > nodata+epsilon)
-                        data[nbData++]=line1[pos_in + sampleperpixel];
-                    if (line2[pos_in] < nodata-epsilon || line2[pos_in] > nodata+epsilon) data[nbData++]=line2[pos_in];
-                    if (line2[pos_in + sampleperpixel] < nodata-epsilon || line2[pos_in + sampleperpixel] > nodata+epsilon)
-                        data[nbData++]=line2[pos_in + sampleperpixel];
-
-
-                    if (nbData>1) {
+            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += 2*samplesperpixel) {
+                // we eliminate nodata pixels
+                float* data[4];
+                int nbData = 0;
+                if ( isData(&line1[pos_in]) ) data[nbData++]=&line1[pos_in];
+                if ( isData(&line1[pos_in + samplesperpixel]) ) data[nbData++]=&line1[pos_in + samplesperpixel];
+                if ( isData(&line2[pos_in]) ) data[nbData++]=&line2[pos_in];
+                if ( isData(&line2[pos_in + samplesperpixel]) ) data[nbData++]=&line2[pos_in + samplesperpixel];
+                    
+                if (nbData>1) {
+                    // we have 2 or more data pixels to calculate the data pixel
+                    for (int s = 0; s < samplesperpixel ; s++) {
                         float value = 0.;
-                        for (int i=0; i<nbData; i++) {value += data[i];}
-                            
+                        for (int p = 0; p < nbData; p++) {
+                            value += data[p][s];
+                        }
                         line_out[pos_out] = value/(float)nbData;
                         pos_out++;
-                    }else {
-                        line_out[pos_out] = nodata;
-                        pos_out++;
                     }
+                }else {
+                    // we have just 1 or no data pixel : result is a nodata pixel
+                    memcpy(&line_out[pos_out],nodataFloat,samplesperpixel*sizeof(float));
                 }
             }
             
@@ -328,32 +326,36 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
     return 0;
 };
 
-int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double gamma, int nodata, TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
+
+
+int merge4uint8(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
     
     uint8 MERGE[1024];
-    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gamma) * 255.);
+    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
 
-    int nbsamples = width * sampleperpixel;
+    int nbsamples = width * samplesperpixel;
     uint8  line_background[nbsamples];
     uint8  line1[2*nbsamples];
     uint8  line2[2*nbsamples];
     uint8  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,nodata,nbsamples);
+    for (int i = 0; i < nbsamples ; i++) {
+        line_background[i] = nodataUInt8[i%samplesperpixel];
+    }
 
-      for(int y = 0; y < 2; y++){
+    for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
         if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
-            for(uint32 h = 0; h < height/2; h++) {
+        for(uint32 h = 0; h < height/2; h++) {
             if (BACKGROUND)
-                if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
-                
+            if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+
             for (int i = 0; i<2*nbsamples; i++) {
-                line1[i] = nodata;
-                line2[i] = nodata;
+                line1[i] = nodataUInt8[i%samplesperpixel];
+                line2[i] = nodataUInt8[i%samplesperpixel];
             }
-            
+
             if (INPUT[y][0])
                 if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
             if (INPUT[y][1])
@@ -362,46 +364,30 @@ int merge4uint8(uint32_t width, uint32_t height, uint16_t sampleperpixel,double 
                 if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
             if (INPUT[y][1])
                 if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
-            
+
             memcpy(line_out,line_background,nbsamples);
 
-            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += sampleperpixel)
-                for(int j = sampleperpixel; j--; pos_in++) 
-                    line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + sampleperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + sampleperpixel])];
+            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += samplesperpixel)
+                for(int j = samplesperpixel; j--; pos_in++) 
+                    line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + samplesperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + samplesperpixel])];
 
             if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
         }
     }
+    
     if (BACKGROUND) TIFFClose(BACKGROUND);
-    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
-    TIFFClose(OUTPUT);
+    
+    for(int i = 0; i < 2; i++)
+        for(int j = 0; j < 2; j++)
+            if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
+                TIFFClose(OUTPUT);
+            
     return 0;
 }
 
 
-/**
-*@fn int h2i(char s)
-* Hexadecimal -> int
-*/
-
-int h2i(char s)
-{
-    if('0' <= s && s <= '9')
-        return (s - '0');
-    if('a' <= s && s <= 'f')
-        return (s - 'a' + 10);
-    if('A' <= s && s <= 'F')
-        return (10 + s - 'A');
-    else
-        return -1; /* invalid input! */
-}
-
 int main(int argc, char* argv[]) {
-    double gamma;
-    char* strnodata;
-    int nodata;
-    uint32_t width,height,rowsperstrip;
-    uint16_t compression,bitspersample,sampleperpixel,sampleformat,photometric,planarconfig;
+
     char* backgroundImage;
     char* inputImages[4];
     char* outputImage;
@@ -409,34 +395,41 @@ int main(int argc, char* argv[]) {
     TIFF* BACKGROUND;
     TIFF* OUTPUT;
 
-    parseCommandLine(argc, argv, gamma,strnodata,compression,rowsperstrip,backgroundImage,inputImages,outputImage);
+    parseCommandLine(argc, argv,backgroundImage,inputImages,outputImage);
     
-    checkImages(width,height,rowsperstrip,bitspersample,sampleperpixel,sampleformat,photometric,
-                compression,planarconfig,backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
-                
+    checkImages(backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
+    
+    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) || 
+        (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
+        error("sampleformat/bitspersample not supported");
+    }
+    
+    // Nodata interpretation
+    int nodata[samplesperpixel];
+    char* charValue = strtok(strnodata,",");
+    if(charValue == NULL) {
+        error("Error with option -n : a value for nodata is missing");
+    }
+    nodata[0] = atoi(charValue);
+    for(int i = 1; i < samplesperpixel; i++) {
+        charValue = strtok (NULL, ",");
+        if(charValue == NULL) {
+            error("Error with option -n : a value for nodata is missing");
+        }
+        nodata[i] = atoi(charValue);
+    }
+    
     // Cas MNT
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
-        if (strnodata != 0) {
-            nodata = atoi(strnodata);
-            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid parameter in -n argument for a float samples image");
-        } else {
-            nodata = -99999;
-        }
-        return merge4float32(width,height,sampleperpixel,(float) nodata,BACKGROUND,INPUT,OUTPUT);
+        nodataFloat = new float[samplesperpixel];
+        for(int i = 0; i < samplesperpixel; i++) nodataFloat[i] = (float) nodata[i];
+        return merge4float32(BACKGROUND,INPUT,OUTPUT);
     }
     // Cas images
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
-        if (strnodata != 0) {
-            int a1 = h2i(strnodata[0]);
-            int a0 = h2i(strnodata[1]);
-            if (a1 < 0 || a0 < 0) error("invalid parameter in -n argument for integer samples image");
-            nodata = 16*a1+a0;
-        } else {
-            nodata = 255;
-        }
-        return merge4uint8(width,height,sampleperpixel,gamma,nodata,BACKGROUND,INPUT,OUTPUT);
+        nodataUInt8 = new uint8_t[samplesperpixel];
+        for(int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodata[i];
+        return merge4uint8(BACKGROUND,INPUT,OUTPUT);
     }
-    else
-        error("sampleformat/bitspersample not supported");
 }
 
