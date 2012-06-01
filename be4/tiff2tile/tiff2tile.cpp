@@ -86,9 +86,8 @@ int main(int argc, char **argv) {
                         compression = COMPRESSION_DEFLATE;
                     }
                     else {
-                        compression = COMPRESSION_NONE;
-                        std::cerr << "Warning : unknown compression ("<< argv[i] 
-                            <<"), no compression will be used" << std::endl;
+                        std::cerr << "Error : unknown compression ("<< argv[i] <<")." << std::endl;
+                        exit(2);
                     }
                     break;
                 case 'p': // photometric
