@@ -76,7 +76,7 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[154]  = {
     21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
-    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
     83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
@@ -191,7 +191,7 @@ static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[154]  = {
     21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
-    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
     83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
@@ -268,7 +268,7 @@ static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[154]  = {
     21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
-    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
     83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
