@@ -71,7 +71,7 @@ private:
 
     // Certaines images peuvent etre des miroirs (MirrorImage)
     // Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage
-    // Hypothese : ces images sont stockees en dernier
+    // Hypothese : ces images sont stockees en premier
     // A partir du nombre total de miroirs, on peut donc determiner si une image est un miroir ou non
     uint mirrors;
 
@@ -119,6 +119,7 @@ protected:
 public:
     std::vector<Image*>* getimages() {return &images;}
     uint getmirrors() {return mirrors;}
+    uint16_t getSampleformat() {return sampleformat;}
 
     /** Implementation de getline pour les uint8_t */
     int getline(uint8_t* buffer, int line);

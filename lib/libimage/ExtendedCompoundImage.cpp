@@ -99,17 +99,20 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             }
         } else {
             
-            int j;
             uint8_t* buffer_m = new uint8_t[masks[i]->width];
 
             masks[i]->getline(buffer_m,masks[i]->y2l(y));
-            for (j=0;j<c1-c0;j++) {
+            for (int j=0;j<c1-c0;j++) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
-
+                    if (c2+j >= images[i]->width) {
+                        // On dépasse la largeur de l'image courante (arrondis). On passe.
+                        continue;
+                    }
+                    
                     if (nowhite && sizeof(T) == 1 && isNodata(&buffer_t[(c2+j)*channels])) {
                         continue;
                     }
-
+                    
                     memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],sizeof(T)*channels);
                 }
             }
@@ -138,13 +141,14 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
 {
     if (sampleformat==1){     //uint8_t
         uint8_t* buffer_t = new uint8_t[width*channels];
-            getline(buffer_t,line);
-            convert(buffer,buffer_t,width*channels);
-            delete [] buffer_t;
-            return width*channels;
+        getline(buffer_t,line);
+        convert(buffer,buffer_t,width*channels);
+        delete [] buffer_t;
+        return width*channels;
     }
-    else            //float
+    else {           //float
         return _getline(buffer, line);
+    }
 }
 
 #define epsilon 0.001
