@@ -597,6 +597,11 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()), nodata,nowhite,sampleformat,mirrors);
             
+            if (pECI_withMirrors==NULL) {
+                LOGGER_ERROR("Impossible d'assembler images et miroirs");
+                return -1;
+            }
+            
             /*TEST*//*
             if (sampleformat == SAMPLEFORMAT_IEEEFP) {
                 saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK);         
