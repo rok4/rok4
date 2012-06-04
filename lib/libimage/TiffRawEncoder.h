@@ -56,7 +56,7 @@ public:
         delete image;
     }
     virtual size_t read(uint8_t *buffer, size_t size) {
-        size_t offset = 0, header_size=TiffHeader::headerSize, linesize=image->width*image->channels;
+        size_t offset = 0, header_size=TiffHeader::headerSize(image->channels), linesize=image->width*image->channels;
         if (line == -1) { // écrire le header tiff
             if (image->channels==1)
                 if ( sizeof(T) == sizeof(float)) {
