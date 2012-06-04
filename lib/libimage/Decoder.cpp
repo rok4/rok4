@@ -210,11 +210,22 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
 //      TODO if(encData[24] != 8) ERROR
 
     switch (encData[25]) {
-    case 0:
+    case 0: // Gray
         channels = 1;
         break;
-    case 2:
+    case 2: //RGB
         channels = 3;
+        break;
+    case 3: // Palette 
+        channels = 0; //ERROR
+        return 0;
+        break;
+    case 4: // Gray + Alpha
+        channels = 2; //ERROR
+        return 0;
+        break;
+    case 6: //RGBA
+        channels = 4;
         break;
     default:; // TODO ERROR;
     }

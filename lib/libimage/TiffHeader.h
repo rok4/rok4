@@ -37,10 +37,13 @@
 
 #ifndef _TIFFHEADER_
 #define _TIFFHEADER_
-
+#include "format.h"
 namespace TiffHeader {
 
-static const size_t headerSize = 142;
+static const size_t headerSize(int channel) {
+    if (channel == 4) return 154;
+    else return 142;
+}
 
 static const uint8_t TIFF_HEADER_RAW_INT8_RGB[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
@@ -60,24 +63,25 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGB[142]  = {
     8, 0,   8, 0,   8, 0,   8, 0
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
-static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[142]  = { //FIXME
+static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[154]  = { 
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
     0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
     1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
-    2, 1,   3, 0,   3, 0, 0, 0,   134,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8
+    2, 1,   3, 0,   4, 0, 0, 0,   146,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8,8
     3, 1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 1 (pas de compression)
     6, 1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 2 (RGB)
-    17,1,   4, 0,   1 ,0, 0, 0,   142,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 142
-    21,1,   3, 0,   1, 0, 0, 0,   3, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 3
+    17,1,   4, 0,   1 ,0, 0, 0,   154,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 154
+    21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
-    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 3, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 3
-    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| SAMPLEFORMAT    (339)| SHORT (3) | 1      | 1 (Int8)
-    0, 0, 0, 0,                                    // 130| fin de l'IFD
+    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
+    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
+    0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
-};                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
-// 142
+};                         // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
+// 154
 
 static const uint8_t TIFF_HEADER_RAW_INT8_GRAY[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
@@ -116,8 +120,6 @@ static const uint8_t TIFF_HEADER_RAW_FLOAT32_GRAY[142]  = {
     8, 0,   8, 0,   8, 0,   8, 0
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
-
-
 
 static const uint8_t TIFF_HEADER_LZW_FLOAT32_GRAY[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
@@ -176,25 +178,25 @@ static const uint8_t TIFF_HEADER_LZW_INT8_RGB[142]  = {
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
 
-static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[142]  = { //FIXME
+static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[154]  = { 
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
     0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
     1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
-    2, 1,   3, 0,   3, 0, 0, 0,   134,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8
+    2, 1,   3, 0,   4, 0, 0, 0,   146,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8,8
     3, 1,   3, 0,   1, 0, 0, 0,   5, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 5 (LZW)
     6, 1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 2 (RGB)
-    17,1,   4, 0,   1 ,0, 0, 0,   142,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 142
-    21,1,   3, 0,   1, 0, 0, 0,   3, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 3
+    17,1,   4, 0,   1 ,0, 0, 0,   154,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 154
+    21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
-    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 3, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 3
-    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
-    0, 0, 0, 0,                                    // 130| fin de l'IFD
+    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
+    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
+    0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
-};                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
-// 142
-
+};                         // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
+// 154
 
 static const uint8_t TIFF_HEADER_ZIP_FLOAT32_GRAY[142]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
@@ -253,23 +255,24 @@ static const uint8_t TIFF_HEADER_ZIP_INT8_RGB[142]  = {
 };                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
 // 142
 
-static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[142]  = { //FIXME
+static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[154]  = { 
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     10, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
     0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
     1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
-    2, 1,   3, 0,   3, 0, 0, 0,   134,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8
+    2, 1,   3, 0,   4, 0, 0, 0,   146,0,0, 0,      // 34 | BITSPERSAMPLE   (258)| SHORT (3) | 3      | pointeur vers un bloc mémoire 8,8,8,8
     3, 1,   3, 0,   1, 0, 0, 0,   8, 0, 0, 0,      // 46 | COMPRESSION     (259)| SHORT (3) | 1      | 8 (AdobeDEFLATE)
     6, 1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 58 | PHOTOMETRIC     (262)| SHORT (3) | 1      | 2 (RGB)
-    17,1,   4, 0,   1 ,0, 0, 0,   142,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 142
-    21,1,   3, 0,   1, 0, 0, 0,   3, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 3
+    17,1,   4, 0,   1 ,0, 0, 0,   154,0,0, 0,      // 70 | STRIPOFFSETS    (273)| LONG  (4) | 16     | 154
+    21,1,   3, 0,   1, 0, 0, 0,   4, 0, 0, 0,      // 82 | SAMPLESPERPIXEL (277)| SHORT (3) | 1      | 4
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
-    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 3, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 3
-    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
-    0, 0, 0, 0,                                    // 130| fin de l'IFD
+    23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
+    82,1,   3, 0,   1, 0, 0, 0,   2, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 2 (UNASSALPHA)
+    83,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 130| SAMPLEFORMAT    (339)| SHORT (3) |        | 1 (Int8)
+    0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0
-};                         // 134| 4x 8 sur 16 bits (pointés par les samplesperpixels)
-// 142
+};                         // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
+// 154
 }
 #endif
