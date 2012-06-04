@@ -57,6 +57,9 @@ use BE4::NoData;
 use BE4::PyrImageSpec;
 use BE4::Pixel;
 
+# maintenance
+use Devel::Size qw(size total_size);
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -769,8 +772,18 @@ sub readCachePyramid {
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
+  
   # Find cache tiles ou directories
-  my $searchitem = $self->FindCacheNode($dir);
+  my $searchitem = {
+    cachedir    => [],
+    cachetile   => [],
+    cachebroken => [],
+  };
+  
+  if (! $self->FindCacheNode($dir, $searchitem)) {
+    ERROR("An error on searching into the cache structure !");
+    return FALSE;
+  }
   
   if (! defined $searchitem) {
     ERROR("An error on reading the cache structure !");
@@ -795,6 +808,8 @@ sub readCachePyramid {
     return FALSE;
   }
   
+  DEBUG(sprintf "total cache size (list) : %s", total_size($searchitem));
+  
   my @tiles = sort(@{$searchitem->{cachetile}});
   my @dirs  = sort(@{$searchitem->{cachedir}});
   
@@ -809,66 +824,54 @@ sub readCachePyramid {
 sub FindCacheNode {
   my $self      = shift;
   my $directory = shift;
+  my $search    = shift;
 
   TRACE(sprintf "Searching node in %s\n", $directory);
-  
-  my $search = {
-    cachedir    => [],
-    cachetile   => [],
-    cachebroken => [],
-  };
   
   my $pyr_datapath = $self->getPyrDataPath();
 
   if (! opendir (DIR, $directory)) {
     ERROR("Can not open directory cache (%s) ?",$directory);
-    return undef;
+    return FALSE;
   }
-
-  my $newsearch;
   
   foreach my $entry (readdir DIR) {
     
     next if ($entry =~ m/^\.{1,2}$/);
     
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);
-      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
-      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
+    my $pathentry = File::Spec->catfile($directory, $entry);
+    
+    if ( -d $pathentry) {
+      TRACE(sprintf "DIR:%s\n",$pathentry);
+      push @{$search->{cachedir}}, $pathentry;
       
       # recursif
-      $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
-      
-      push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
-      push @{$search->{cachebroken}},  $_  foreach(@{$newsearch->{cachebroken}});
+      if (! $self->FindCacheNode($pathentry, $search)) {
+        ERROR("Can not search in directory cache (%s) ?",$pathentry);
+        return FALSE;
+      }
     }
 
-    elsif( -f File::Spec->catfile($directory, $entry) &&
-         ! -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "FIL:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif( -f $pathentry &&
+         ! -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
-    elsif (  -f File::Spec->catfile($directory, $entry) &&
-             -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "LIK:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif (  -f $pathentry &&
+             -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
     else {
         # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
         # ou liste exaustive des liens cassés ?
         WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
-        push @{$search->{cachebroken}}, File::Spec->catfile($directory, $entry);
+        push @{$search->{cachebroken}}, $pathentry;
     }
-    
   }
-  
-  return $search;
-  
+  return TRUE;
 }
 
 ####################################################################################################
