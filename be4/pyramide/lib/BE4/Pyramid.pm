@@ -1257,12 +1257,9 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    ERROR(sprintf "Order top %s bottom %s ", $topLevelOrder,$bottomLevelOrder);
-
     for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
         my $ID = $self->getLevelID($i);
-        ERROR(sprintf "Order %s ID %s ", $i,$ID);
         my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }

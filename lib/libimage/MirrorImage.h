@@ -88,13 +88,17 @@ class MirrorImage : public Image {
     Image* image;
     int position;
     uint mirrorSize;
-
+    uint16_t sampleformat;
+    
     protected:
     /** Constructeur */
-    MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize);
+    MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize);
 
     public:
-
+        
+    template<typename T>
+    int _getline(T* buffer, int line);
+        
     /** D */
     int getline(uint8_t* buffer, int line);
 
@@ -107,7 +111,7 @@ class MirrorImage : public Image {
 
 class mirrorImageFactory {
     public:
-    MirrorImage* createMirrorImage(Image* pImageSrc, int position,uint mirrorSize);
+    MirrorImage* createMirrorImage(Image* pImageSrc, uint16_t sampleformat, int position,uint mirrorSize);
 };
 
 #endif
