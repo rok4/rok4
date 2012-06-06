@@ -87,7 +87,7 @@
 */
 void usage() {
     LOGGER_INFO("overlayNtiff version "<< BE4_VERSION);
-    LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4"
+    LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4 "
         "-input source1.tif source2.tif source3.tif -output result.tif\n"
         "-mode : transparency/multiply\n"
         "-transparent : color which will be considered to be transparent\n"
@@ -103,6 +103,7 @@ void usage() {
 */
 void error(std::string message) {
     LOGGER_ERROR(message);
+    usage();
     exit(1);
 }
 
@@ -161,8 +162,7 @@ int parseCommandLine(int argc, char** argv) {
             continue;
         }
         else {
-            usage();
-            return -1;
+            error("Unknown option : " + std::string(argv[i]));
         }
     }
     

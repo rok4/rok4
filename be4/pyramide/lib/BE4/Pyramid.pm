@@ -57,6 +57,9 @@ use BE4::NoData;
 use BE4::PyrImageSpec;
 use BE4::Pixel;
 
+# maintenance
+use Devel::Size qw(size total_size);
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -463,6 +466,8 @@ sub _fillToPyramid {
     my $self  = shift;
     my $params = shift;
 
+    TRACE();
+    
     # create PyrImageSpec !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
         bitspersample => $params->{bitspersample},
@@ -777,12 +782,22 @@ sub readCachePyramid {
   my $self     = shift;
   my $cachedir = shift; # old cache directory by default !
   
-  TRACE;
+  TRACE("Reading cache of pyramid...");
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
+  
   # Find cache tiles ou directories
-  my $searchitem = $self->findCacheNode($dir);
+  my $searchitem = {
+    cachedir    => [],
+    cachetile   => [],
+    cachebroken => [],
+  };
+  
+  if (! $self->FindCacheNode($dir, $searchitem)) {
+    ERROR("An error on searching into the cache structure !");
+    return FALSE;
+  }
   
   if (! defined $searchitem) {
     ERROR("An error on reading the cache structure !");
@@ -807,6 +822,8 @@ sub readCachePyramid {
     return FALSE;
   }
   
+  DEBUG(sprintf "total cache size (list) : %s", total_size($searchitem));
+  
   my @tiles = sort(@{$searchitem->{cachetile}});
   my @dirs  = sort(@{$searchitem->{cachedir}});
   
@@ -816,72 +833,60 @@ sub readCachePyramid {
   return TRUE;
 }
 
-# method: findCacheNode
+# method: FindCacheNode
 #  Recursive method to browse directories and list files
 #---------------------------------------------------------------------------------------------------
-sub findCacheNode {
+sub FindCacheNode {
   my $self      = shift;
   my $directory = shift;
+  my $search    = shift;
 
-  TRACE();
-  
-  my $search = {
-    cachedir    => [],
-    cachetile   => [],
-    cachebroken => [],
-  };
+  TRACE(sprintf "Searching node in %s\n", $directory);
   
   my $pyr_datapath = $self->getPyrDataPath();
 
   if (! opendir (DIR, $directory)) {
     ERROR("Can not open directory cache (%s) ?",$directory);
-    return undef;
+    return FALSE;
   }
-
-  my $newsearch;
   
   foreach my $entry (readdir DIR) {
     
     next if ($entry =~ m/^\.{1,2}$/);
     
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);
-      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
-      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
+    my $pathentry = File::Spec->catfile($directory, $entry);
+    
+    if ( -d $pathentry) {
+      TRACE(sprintf "DIR:%s\n",$pathentry);
+      push @{$search->{cachedir}}, $pathentry;
       
       # recursif
-      $newsearch = $self->findCacheNode(File::Spec->catdir($directory, $entry));
-      
-      push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
-      push @{$search->{cachebroken}},  $_  foreach(@{$newsearch->{cachebroken}});
+      if (! $self->FindCacheNode($pathentry, $search)) {
+        ERROR("Can not search in directory cache (%s) ?",$pathentry);
+        return FALSE;
+      }
     }
 
-    elsif( -f File::Spec->catfile($directory, $entry) &&
-         ! -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "FIL:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif( -f $pathentry &&
+         ! -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
-    elsif (  -f File::Spec->catfile($directory, $entry) &&
-             -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "LIK:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif (  -f $pathentry &&
+             -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
     else {
         # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
         # ou liste exaustive des liens cassés ?
         WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
-        push @{$search->{cachebroken}}, File::Spec->catfile($directory, $entry);
+        push @{$search->{cachebroken}}, $pathentry;
     }
-    
   }
-  
-  return $search;
-  
+  return TRUE;
 }
 
 ####################################################################################################
@@ -896,10 +901,14 @@ sub findCacheNode {
 sub calculateExtremLevels {
     my $self = shift;
 
+    TRACE();
+
     # tilematrix list sort by resolution
     my @tmList = $self->getTileMatrixSet()->getTileMatrixByArray();
 
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    TRACE("sort by ID...");
+    
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
@@ -999,6 +1008,8 @@ sub calculateExtremLevels {
 sub createLevels {
     my $self = shift;
 
+    TRACE();
+    
     my $objTMS = $self->getTileMatrixSet();
 
     if (! defined $objTMS) {
@@ -1139,7 +1150,9 @@ sub computeSrcRes(){
 sub updateLimits {
     my $self = shift;
     my ($xMin, $yMin, $xMax, $yMax) = @_;
-  
+
+    TRACE();
+    
     if (! defined $self->{dataLimits}->{xmin} || $xMin < $self->{dataLimits}->{xmin}) {$self->{dataLimits}->{xmin} = $xMin;}
     if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
     if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
@@ -1152,6 +1165,8 @@ sub updateLimits {
 #---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
     my $self = shift;
+
+    TRACE();
     
     if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
         ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
@@ -1203,6 +1218,8 @@ sub calculateTMLimits {
 sub createNodata {
     my $self = shift;
     my $nodataFilePath = shift;
+    
+    TRACE();
     
     my $sizex = int($self->getImageSize()) / int($self->getTilePerWidth());
     my $sizey = int($self->getImageSize()) / int($self->getTilePerHeight());
@@ -1275,12 +1292,9 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    ERROR(sprintf "Order top %s bottom %s ", $topLevelOrder,$bottomLevelOrder);
-
     for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
         my $ID = $self->getLevelID($i);
-        ERROR(sprintf "Order %s ID %s ", $i,$ID);
         my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
@@ -1367,12 +1381,11 @@ sub writeCachePyramid {
 
     # create new cache directory
     my @newdirs;
-    my @olddirs = @{$self->{cache_dir}};
 
     if ($self->isNewPyramid()) {
-        @newdirs = @olddirs;
+        @newdirs = @{$self->{cache_dir}};
     } else {
-        @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
+        @newdirs = map ({ &$substring($_) } @{$self->{cache_dir}}); # list cache modified !
     }
 
     # Now, @newdir contains :
@@ -1859,7 +1872,7 @@ sub _IDXtoX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   my $x = ($idx * $rx * $sx) + $xo ;
 
@@ -1898,7 +1911,7 @@ sub _XtoIDX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
 

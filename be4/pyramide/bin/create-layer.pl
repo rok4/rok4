@@ -93,10 +93,10 @@ sub init {
             "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
             "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
             #
-            "properties=s"  => \$MYCONF,
-            "resampling=s"  => \$MYSAMPLE,
-            "style=s"       => \$MYSTYLE,
-            "opaque!"       => \$MYOPAQUE,
+            "properties|conf=s"  => \$MYCONF,
+            "resampling|r=s"     => \$MYSAMPLE,
+            "style|s=s"          => \$MYSTYLE,
+            "opaque!"            => \$MYOPAQUE,
             
     ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
   
@@ -169,27 +169,27 @@ my $objDataSrc = BE4::DataSource->new($params_data);
 
 if(! defined $objDataSrc) {
     ERROR("Erreur de configuration des données sources !");
-    exit -4;
+    exit -3;
 }
 
 if (! $objDataSrc->computeImageSource()) {
     ERROR("Erreur de calcul sur données sources !");
-    exit -44;
+    exit -33;
 }
 
 my ($xmin,$ymax,$xmax,$ymin) = $objDataSrc->computeBbox();
 INFO(sprintf "BBOX : %s %s %s %s\n", $xmin,$ymax,$xmax,$ymin);
 
-
 ## PYRAMID
 ALWAYS("- Loading pyramid ...");
 
-my $objPyramid  = BE4::Pyramid->new($params_pyramid,$objDataSrc);
+my $objPyramid  = BE4::Pyramid->new($params_pyramid, $objDataSrc);
 
 if(! defined $objPyramid) {
     ERROR("Erreur de configuration de la pyramide !");
-    exit -3;
+    exit -4;
 }
+
 
 ## LAYER
 ALWAYS("- Loading layer ...");
@@ -211,7 +211,7 @@ my $maxres=$objPyramid->getTileMatrixSet()->{resbest};
 
 # TODO informatif...
 my @keyword;
-push @keyword, $objPyramid->getCompression();
+push @keyword, $objPyramid->getCode();
 push @keyword, $objPyramid->getInterpolation();
 push @keyword, $objPyramid->getPyrName();
 push @keyword, $objPyramid->getTmsName();
@@ -307,7 +307,9 @@ END {}
 
   ORIENTÉ MAINTENANCE !
   perl create-layer.pl --properties=path
-                      [--resampling="" --opaque --style=""  ] 
+                      [--resampling="" --opaque --style=""  ]
+  perl create-layer.pl --conf=path
+                      [--r="" --opaque --s=""  ] 
 
 =head1 DESCRIPTION
 
@@ -339,13 +341,13 @@ END {}
 
 =item B<--version>
 
-=item B<--properties=path>
+=item B<--properties|conf=path>
 
-=item B<--resampling="value">
+=item B<--resampling|r="value">
 
 Optionnel, par defaut resampling = "lanczos_4".
 
-=item B<--style="value">
+=item B<--style|s="value">
 
 Optionnel, par defaut style = "normal".
 

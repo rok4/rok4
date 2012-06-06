@@ -81,6 +81,8 @@ my $STRLYRTMPLT   = <<"TLYR";
     <!-- __SRSS__ -->
 </WMSCRSList>
     <boundingBox CRS="__SRS__" minx="__MINX__" miny="__MINY__" maxx="__MAXX__" maxy="__MAXY__"/>
+    <minRes>__MINRES__</minRes>
+    <maxRes>__MAXRES__</maxRes>
     <opaque>__OPAQUE__</opaque>
     <authority>__AUTHORITY__</authority>
     <resampling>__RESAMPLING__</resampling>
@@ -113,8 +115,8 @@ sub new {
         abstract         => "",          # by default (optional) !
         keywordlist      => [],          # by default (optional) !
         style            => "normal",    # by default !
-        minres           => 0.5,         # by default !
-        maxres           => 1,           # by default !
+        minres           => 0.0,         # by default !
+        maxres           => 0.0,           # by default !
         opaque           => 1,           # by default !
         authority        => "IGNF",      # by default !
         srslist          => [],          # manadatory !
