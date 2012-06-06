@@ -83,54 +83,46 @@ INIT {}
 END {}
 
 ################################################################################
-# properties :
-#
-#    [ pyramid ]
-#
-#    pyr_desc_path      =
-#    pyr_desc_path_old  =
-#    pyr_data_path      =
-#    pyr_data_path_old  =
-#    ; pyr_schema_path = 
-#    ; pyr_schema_name =
-#    
-#    pyr_level_bottom =
-#    pyr_level_top    =
-#    pyr_name_old     =
-#    pyr_name_new     =
-#
-#    ; eg section [ tilematrixset ]
-#    tms_name     =  
-#    tms_path     =
-#    ; tms_schema_path = 
-#    ; tms_schema_name =
-#
-#    image_width  = 
-#    image_height =
-#
-#    ; eg section [ pyrImageSpec ]
-#    compression  =
-#    compressionoption  =
-#    gamma        =
-#    bitspersample       = 
-#    sampleformat        = 
-#    photometric         = 
-#    samplesperpixel     =
-#    interpolation       = 
-#    
-#    dir_depth    =
-#    dir_image    = IMAGE
-#    dir_nodata    = NODATA
-#    dir_metadata = METADATA
-#
-#    ; eg section [ nodata ]
-#    path_nodata =
-#    imagesize   =
-#    color       =
+=begin nd
+Group: variable
 
-################################################################################
-# Global template Pyr
+variable: $self
+    * new_pyramid => { 
+        name      => undef, # string name
+        desc_path     => undef, # path
+        data_path     => undef, # path
+    },
+    * isnewpyramid => 1,     # new pyramid by default !
+    * old_pyramid => { 
+        name      => undef, # string name
+        desc_path     => undef, # path
+        data_path     => undef, # path
+    },
+    * pyr_level_bottom  => undef, string
+    * pyr_level_top     => undef, string
+    * dir_depth    => undef, # number
+    * dir_image    => undef, # dir name
+    * dir_nodata   => undef, # dir name
+    * dir_metadata => undef, # dir name
+    * image_width  => undef, # number
+    * image_height => undef, # number
+    * imagesize    => undef, # number ie 4096 px by default !
+    * pyrImgSpec => undef,   # it's an object !
+    * datasource => undef,   # it's an object !
+    * tms        => undef,   # it's an object !
+    * nodata     => undef,   # it's an object !
+    * levels     => {},      # it's a hash of object level !
+    * cache_tile => [],      # ie tile image to link  !
+    * cache_dir  => [],      # ie dir to search !
+    * dataLimits => {      # data's limits, in the pyramid's SRS
+        xmin => undef,
+        ymin => undef,
+        xmax => undef,
+        ymax => undef,
+    },
+=cut
 
+# variable: $STRPYRTMPLT
 my $STRPYRTMPLT   = <<"TPYR";
 <?xml version='1.0' encoding='US-ASCII'?>
 <Pyramid>
@@ -148,8 +140,23 @@ TPYR
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
 
-# Group: constructor
+# Group: pouet
 
+=begin nd
+   Function: new
+
+   Multiplies two integers.
+
+   Parameters:
+      x - The first integer.
+      y - The second integer.
+
+   Returns:
+      The two integers multiplied together.
+
+   See Also:
+      <_init>
+=cut
 sub new {
     my $this = shift;
     my $params = shift;
@@ -178,8 +185,8 @@ sub new {
             data_path     => undef, # path
         },
 
-        pyr_level_bottom  => undef, # number
-        pyr_level_top     => undef, # number
+        pyr_level_bottom  => undef, # string
+        pyr_level_top     => undef, # string
         #
         dir_depth    => undef, # number
         dir_image    => undef, # dir name
@@ -220,14 +227,13 @@ sub new {
     return $self;
 }
 
-################################################################################
-# privates init.
-# on détecte les paramètres manquant,on remplit certains attribut de l'objet Pyramid, on met les valeurs par défaut
-# les objets attribut sont créés dans _load.
+=begin nd
+method: _init
+Detect missing parameters, put default values
 
-# TODO
-#  - no test for path and type (string, number, ...) !
-
+TODO :
+  - no test for path and type (string, number, ...) !
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -405,6 +411,8 @@ sub _init {
     return TRUE;
 }
 
+# method: _load
+#---------------------------------------------------------------------------------------------------
 sub _load {
     my $self = shift;
     my $params = shift;
@@ -809,6 +817,7 @@ sub readCachePyramid {
 }
 
 # method: findCacheNode
+#  Recursive method to browse directories and list files
 #---------------------------------------------------------------------------------------------------
 sub findCacheNode {
   my $self      = shift;
@@ -1218,7 +1227,7 @@ sub createNodata {
 
 
 # method: writeConfPyramid
-#  Manipulate the Configuration File Pyramid
+#  Write the XML file : Configuration File Pyramid (.pyr).
 #---------------------------------------------------------------------------------------------------
 sub writeConfPyramid {
     my $self    = shift;
@@ -1309,7 +1318,7 @@ sub writeConfPyramid {
 
 
 # method: writeCachePyramid
-#  Manipulate the Directory Structure Cache (DSC) 
+#  Write the Directory Structure Cache (DSC) : directories, symbolic links and nodata's tiles.
 #---------------------------------------------------------------------------------------------------
 sub writeCachePyramid {
     my $self = shift;
@@ -1967,6 +1976,8 @@ __END__
 # Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
+
+    BE4::Pyramid - all components about the final pyramid
 
 =head1 SYNOPSIS
 

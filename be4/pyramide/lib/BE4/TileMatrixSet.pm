@@ -70,21 +70,25 @@ INIT {}
 END {}
 
 ################################################################################
+#
 # Group: variable
+#
 
+#
 # variable: $self
-
-#    *        PATHFILENAME => undef,
-#    *        name     => undef,
-#    *        filename => undef,
-#    *        filepath => undef,
-#    *        levelIdx => undef, # hash to associate TM's id with order (in ascending resolution order)
-#    *        leveltop => undef,
-#    *        resworst => undef,
-#    *        levelbottom => undef,
-#    *        resbest  => undef,
-#    *        srs        => undef, # srs is casted in uppercase
-#    *        tilematrix => {},
+#
+#    * PATHFILENAME => undef,
+#    * name     => undef,
+#    * filename => undef,
+#    * filepath => undef,
+#    * levelIdx => undef, # hash to associate TM's id with order (in ascending resolution order)
+#    * leveltop => undef,
+#    * resworst => undef,
+#    * levelbottom => undef,
+#    * resbest  => undef,
+#    * srs        => undef, # srs is casted in uppercase
+#    * tilematrix => {},
+#
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -400,25 +404,8 @@ __END__
   use BE4::TileMatrixSet;
   
   my $filepath = "./t/data/tms/LAMB93_50cm_TEST.tms";
-  my $objT = BE4::TileMatrixSet->new($filepath);
+  my $objTMS = BE4::TileMatrixSet->new($filepath);
 
-  scalar (@{$objT->getTileMatrix()};  # ie 19
-  $objT->getTileMatrix(12);           # object TileMatrix with level id = 12
-  $objT->getSRS();                    # ie 'IGNF:LAMB93'
-  $objT->getName();                   # ie 'LAMB93_50cm_TEST'
-  $objT->getFile();                   # ie 'LAMB93_50cm_TEST.tms'
-  $objT->getPath();                   # ie './t/data/tms/'
-  
-  my $i = ($objT->getBottomTileMatrix())->getID();
-  while(defined (my $objTm = $objT->getNextTileMatrixID($i))) {
-    printf "%s\n", $objTm->to_string();
-    $i = $self->getNextTileMatrixID($i)
-  }
-  ...
-  
-  $objT = BE4::TileMatrixSet->new($filepath);
-  $objT->getBottomTileMatrix(); (best resolution)
-  $objT->getTopTileMatrix(); (worst resolution)
 
 =head1 DESCRIPTION
 

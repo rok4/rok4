@@ -48,6 +48,15 @@ my $VERSION = "0.0.1";
 # My module
 use BE4::Pixel;
 
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
@@ -82,20 +91,36 @@ INIT {
 }
 END {}
 
+################################################################################
+=begin nd
+Group: variable
 
+variable: $self
+    * pixel    => undef, (Pixel object)
+    * compression => undef,
+    * compressionoption => undef,
+    * interpolation => undef,
+    * gamma  => undef, 
+    * formatCode  => undef
+=cut
 
-#---------------------------------------------------------------------------------------------------
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
     my $this = shift;
     my $params = shift;
     
     my $class= ref($this) || $this;
     my $self = {
-        pixel    => undef, # object Pixel !
-        compression => undef, # param value !
-        compressionoption => undef, # param value !
-        interpolation => undef, # param value !
-        gamma  => undef, # param value !
+        pixel    => undef,
+        compression => undef,
+        compressionoption => undef,
+        interpolation => undef,
+        gamma  => undef,
         formatCode  => undef
     };
 
@@ -113,8 +138,7 @@ sub new {
 
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -212,9 +236,11 @@ sub _init {
     return TRUE;
 }
 
-################################################################################
-# Group: control methods
-#
+####################################################################################################
+#                                            TESTS                                                 #
+####################################################################################################
+
+# Group: tests
 
 sub is_Compression {
     my $self = shift;
@@ -277,21 +303,28 @@ sub is_Interpolation {
     return FALSE;
 }
 
-################################################################################
-# Group: code manager methods
-#
+####################################################################################################
+#                                       CODE MANAGER                                               #
+####################################################################################################
 
-# codes handled by rok4 are :
-#     - TIFF_INT8 (deprecated, use TIFF_RAW_INT8 instead)
-#     - TIFF_RAW_INT8
-#     - TIFF_JPG_INT8
-#     - TIFF_LZW_INT8
-#     - TIFF_PNG_INT8
+# Group: code manager
 
-#     - TIFF_FLOAT32 (deprecated, use TIFF_RAW_FLOAT32 instead)
-#     - TIFF_RAW_FLOAT32
-#     - TIFF_LZW_FLOAT32
+=begin nd
+method: decodeFormat
+Extract the sample format, bits per sample and compression from the format code
 
+Codes handled by rok4 are :
+    - TIFF_INT8 (deprecated, use TIFF_RAW_INT8 instead)
+    - TIFF_RAW_INT8
+    - TIFF_JPG_INT8
+    - TIFF_LZW_INT8
+    - TIFF_PNG_INT8
+    - TIFF_ZIP_INT8
+
+    - TIFF_FLOAT32 (deprecated, use TIFF_RAW_FLOAT32 instead)
+    - TIFF_RAW_FLOAT32
+    - TIFF_LZW_FLOAT32
+=cut
 sub decodeFormat {
     my $self = shift;
     my $formatCode = shift;

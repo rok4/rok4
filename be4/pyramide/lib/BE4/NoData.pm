@@ -189,18 +189,19 @@ sub _init {
         }
     } else {
 
-        if (int($self->{pixel}->{bitspersample}) == 8 &&
-             $self->{pixel}->{sampleformat} eq 'uint' &&
+        if (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint' &&
              $params->{color} =~ m/^[0-9A-F]{2,}$/) {
+
+            WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
+                $params->{color});
             # nodata is supplied in hexadecimal format, we convert it
             my $valueDec = $self->hex2dec($params->{color});
-            if ($valueDec == -1) {
+            if (! defined $valueDec) {
                 ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Impossible to convert",
                     $params->{color});
                 return FALSE;
             }
-            WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
-                $params->{color});
+            WARN (sprintf "Nodata value in hexadecimal format have been converted : %s ",$valueDec);
             $params->{color} = $valueDec;
         }
 
@@ -241,18 +242,40 @@ sub _init {
 ################################################################################
 # get /set
 sub getColor {
-  my $self = shift;
-  return $self->{color};
+    my $self = shift;
+    return $self->{color};
 }
 
 ################################################################################
 # public method
 
 sub hex2dec {
-  my $self = shift;
-  my $hex = shift;
-  
-  return TRUE;
+    my $self = shift;
+    my $hex = shift;
+
+    if (length($hex) % 2 != 0) {
+        ERROR ("Length of an hexadecimal nodata must be even");
+        return undef;
+    }
+
+    my $dec = "";
+
+    my $i = 0;
+    while ($i < length($hex)) {
+        $dec .= "," if ($i > 1);
+
+        if (! (exists $HEX2DEC{substr($hex,$i,1)} &&  exists $HEX2DEC{substr($hex,$i+1,1)}) ) {
+            ERROR ("A character in not valid in the hexadecimal value of nodata");
+            return undef;
+        }
+        my $b1 = $HEX2DEC{substr($hex,$i,1)};
+        my $b0 = $HEX2DEC{substr($hex,$i+1,1)};
+        $dec .= $b0 + 16*$b1;
+
+        $i += 2;
+    }
+
+    return $dec;
 }
 
 

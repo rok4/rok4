@@ -266,7 +266,7 @@ int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
     for (int i = 0; i < nbsamples ; i++) {
         line_background[i] = nodataFloat[i%samplesperpixel];
     }
-
+    
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
         if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
@@ -287,10 +287,10 @@ int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
             if (INPUT[y][0])
                 if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
             if (INPUT[y][1])
-                if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
-            
+                if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");  
+                
             memcpy(line_out,line_background,sizeof(float)*nbsamples);
-
+            
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += 2*samplesperpixel) {
                 // we eliminate nodata pixels
                 float* data[4];
@@ -313,6 +313,7 @@ int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
                 }else {
                     // we have just 1 or no data pixel : result is a nodata pixel
                     memcpy(&line_out[pos_out],nodataFloat,samplesperpixel*sizeof(float));
+                    pos_out += samplesperpixel;
                 }
             }
             

@@ -92,6 +92,24 @@ INIT {
 }
 END {}
 
+################################################################################
+#
+# Group: variable
+#
+
+#
+# variable: $self
+#
+#    * id             => undef,
+#    * resolution     => undef,
+#    * topleftcornerx => undef,
+#    * topleftcornery => undef,
+#    * tilewidth      => undef, # ie 256 by default ?
+#    * tileheight     => undef, # ie 256 by default ?
+#    * matrixwidth    => undef,
+#    * matrixheight   => undef,
+#
+
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -268,7 +286,6 @@ __END__
 
 =head1 SEE ALSO
 
-    BE4::TileMatrix
 
 =head1 AUTHOR
 

@@ -76,6 +76,34 @@ BEGIN {}
 INIT {}
 END {}
 
+################################################################################
+=begin nd
+Group: variable
+
+variable: $self
+    * pyramid    => undef, # object Pyramid !
+    * datasource => undef, # object DataSource !
+    * job_number => undef, # param value !
+
+    * levels => {},
+|   level1 => {
+|      x1_y2 => [[objimage1],w1,c1],
+|      x2_y2 => [[objimage2],w2,c2],
+|      x3_y2 => [[objimage3],w3,c3], ...}
+|   level2 => { 
+|      x1_y2 => [w,W,c],
+|      x2_y2 => [w',W',c'], ...}
+|objimage = ImageSource object
+|w = own node's weight  
+|W = accumulated weight (childs' weights sum)
+|c = commands to generate this node (to write in a script)
+
+    * cutLevelId    => undef, # top level for the parallele processing
+    * bottomLevelId => undef, # first level under the source images resolution
+    * topLevelId    => undef, # top level of the pyramid (ie of its tileMatrixSet)
+    * levelIdx      => undef, # hash linking level ID (string) to order in ascending resolution (number)
+    * tmList        => [],    # TM array in ascending resolution order
+=cut
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -83,28 +111,22 @@ END {}
 
 # Group: constructor
 
-# method: new
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
     # in
-    pyramid    => undef, # object Pyramid !
-    datasource => undef, # object DataSource !
-    job_number => undef, # param value !
+    pyramid    => undef,
+    datasource => undef,
+    job_number => undef,
     # out
-    levels => {}, # level1 => { x1_y2 => [[objimage1],w1,c1], x2_y2 => [[objimage2],w2,c2], x3_y2 => [[objimage3],w3,c3], ...}
-                  # level2 => { x1_y2 => [w,W,c], x2_y2 => [w',W',c'], ...}
-                  # with objimage = Class ImageSource 
-                  # with w = own node's weight  
-                  # with W = accumulated weight (childs' weights sum)
-                  # with c = commands to generate this node (to write in a script)
-    cutLevelId    => undef, # top level for the parallele processing
-    bottomLevelId => undef, # first level under the source images resolution
-    topLevelId    => undef, # top level of the pyramid (ie of its tileMatrixSet)
-    levelIdx      => undef, # hash associant les id de level à leur indice dans le tableau du TMS
-    tmList        => [],    # tableau des tm de la pyramide dans l'ordre croissant de taille de pixel   
+    levels => {},
+    cutLevelId    => undef,
+    bottomLevelId => undef,
+    topLevelId    => undef,
+    levelIdx      => undef,
+    tmList        => [],
   };
 
   bless($self, $class);
@@ -121,9 +143,10 @@ sub new {
   return $self;
 }
 
-# method: _init
-#  Define the number of level, get source images.
-#-------------------------------------------------------------------------------
+=begin nd
+method: _init
+Define the number of level, get source images.
+=cut
 sub _init {
   my $self = shift;
   my $objSrc  = shift;
@@ -154,11 +177,12 @@ sub _init {
   return TRUE;
 }
 
+=begin nd
+method: _load
+Build Tree by intersecting src images with le lower level images of the pyramid.
 
-# method: _load
-#  Build Tree by intersecting src images with le lower level images of the pyramid.
-#  Getting parents upward to the top level of the pyramid.
-#---------------------------------------------------------------------------------------------------
+Getting parents upward to the top level of the pyramid.
+=cut
 sub _load {
     my $self = shift;
 
@@ -275,11 +299,13 @@ sub _load {
 #                                         PUBLIC METHODS                                           #
 ####################################################################################################
 
-# Group: public method
+# Group: public methods
 
-# method: computeBBox
-#  Return the input image bbox in final pyramid's SRS
-#------------------------------------------------------------------------------
+=begin nd
+method: computeBBox
+Return the input image bbox in final pyramid's SRS
+=cut
+
 sub computeBBox {
   my $self = shift;
   my $img = shift;
@@ -298,7 +324,6 @@ sub computeBBox {
         $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
     return %BBox;
   }
-  
   # TODO:
   # Dans le cas où le SRS de la pyramide n'est pas le SRS natif des données, il faut reprojeter la bbox.
   # 1. L'algo trivial consiste à reprojeter les coins et prendre une marge de 20%.
@@ -367,9 +392,10 @@ sub computeBBox {
   return %BBox;
 }
 
-# method: imgGroundSizeOfLevel
-#  Calculate terrain size (in SRS's units) of a tile, for the supplied level.
-#------------------------------------------------------------------------------
+=begin nd
+method: imgGroundSizeOfLevel
+Calculate terrain size (in SRS's units) of a tile, for the supplied level.
+=cut
 sub imgGroundSizeOfLevel(){
   my $self = shift;
   my $levelId = shift;
@@ -394,10 +420,12 @@ sub imgGroundSizeOfLevel(){
 
 # Group: cut level methods
 
-# method: shareNodesOnJobs
-#  Determine the cutLevel to optimize sharing into scripts and execution time.
-#  Return the distribution array.
-#-------------------------------------------------------------------------------
+=begin nd
+method: shareNodesOnJobs
+Determine the cutLevel to optimize sharing into scripts and execution time.
+
+Return the distribution array.
+=cut
 sub shareNodesOnJobs {
     my $self = shift;
 
@@ -476,9 +504,10 @@ sub shareNodesOnJobs {
 
 # Group: array tools
 
-# method: minArrayIndex
-#  Return index of the smaller element in a array
-#-------------------------------------------------------------------------------
+=begin nd
+method: minArrayIndex
+Return index of the smaller element in a array
+=cut
 sub minArrayIndex {
     my $self = shift;
     my @array = @_;
@@ -520,7 +549,7 @@ sub maxArrayValue {
 
 # method: sumArray
 #  Return array's elements' sum
-#-------------------------------------------------------------------------------
+#
 sub sumArray {
     my $self = shift;
     my @array = @_;
@@ -542,11 +571,13 @@ sub sumArray {
 
 # Group: getters - setters
 
-# method: getCutLevelId
+
 sub getCutLevelId {
   my $self = shift;
   return $self->{cutLevelId};
 }
+
+
 # method: getTopLevelId
 sub getTopLevelId {
   my $self = shift;
@@ -887,3 +918,67 @@ sub exportTree {
 
 1;
 __END__
+
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+    BE4::Tree - reprentation of the final pyramid : tile = node
+
+=head1 SYNOPSIS
+
+    use BE4::Tree;
+  
+    # Tree object creation
+    my $objTree = = BE4::Tree->new(
+        $objDataSource,
+        $objPyramid,
+        $job_number
+    );
+
+=head1 DESCRIPTION
+
+    A Tree object
+
+        * pyramid (Pyramid object)
+        * datasource (Datasource object)
+        * job_number
+
+        * levels :  {   level1 => { x1_y2 => [[objimage1],w1,c1],
+                                    x2_y2 => [[objimage2],w2,c2],
+                                    x3_y2 => [[objimage3],w3,c3], ...}
+                        level2 => { x1_y2 => [w,W,c], x2_y2 => [w',W',c'], ...}
+                        with objimage = ImageSource object
+                        with w = own node's weight  
+                        with W = accumulated weight (own weight add to childs' weights sum)
+                        with c = commands to generate this node (to write in a script)
+                    }
+        * cutLevelId
+        * bottomLevelId
+        * topLevelId
+        * levelIdx
+        * tmList (Array of TileMatrix object, in ascending resolution order)
+
+=head2 EXPORT
+
+    None by default.
+
+=head1 SEE ALSO
+
+    BE4::Pyramid
+    BE4::Datasource
+    BE4::TileMatrix
+
+=head1 AUTHOR
+
+    Satabin Théo, E<lt>tsatabin@E<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+    Copyright (C) 2011 by Satabin Théo
+
+    This library is free software; you can redistribute it and/or modify
+    it under the same terms as Perl itself, either Perl version 5.10.1 or,
+    at your option, any later version of Perl 5 you may have available.
+
+=cut
