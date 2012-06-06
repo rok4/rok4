@@ -57,9 +57,6 @@ use BE4::NoData;
 use BE4::PyrImageSpec;
 use BE4::Pixel;
 
-# maintenance
-use Devel::Size qw(size total_size);
-
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -821,8 +818,6 @@ sub readCachePyramid {
     ERROR("No directory found in directory cache ?");
     return FALSE;
   }
-  
-  DEBUG(sprintf "total cache size (list) : %s", total_size($searchitem));
   
   my @tiles = sort(@{$searchitem->{cachetile}});
   my @dirs  = sort(@{$searchitem->{cachedir}});
