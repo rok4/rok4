@@ -47,18 +47,26 @@
 Rok4Server* W;
 bool reload;
 
+volatile sig_atomic_t block_signal;
+
 void usage() {
     std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
 }
 
 void reloadConfig ( int signum ) {
-    reload = true;
-    W->terminate();
+    if (!block_signal) {
+        block_signal++;
+        reload = true;
+        W->terminate();
+    }
 }
 
 void shutdownServer ( int signum ) {
-    reload = false;
-    W->terminate();
+    if (!block_signal) {
+        block_signal++;
+        reload = false;
+        W->terminate();
+    }
 }
 
 
@@ -71,6 +79,7 @@ int main ( int argc, char** argv ) {
     bool firstStart = true;
     int sock = 0;
     reload = true;
+    block_signal = 1;
 
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
@@ -124,7 +133,10 @@ int main ( int argc, char** argv ) {
         } else {
             W->setFCGISocket ( sock );
         }
-
+        
+        // Remove Event Lock
+        block_signal = 0;
+        
         W->run();
 
         // Extinction du serveur
