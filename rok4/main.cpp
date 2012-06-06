@@ -41,29 +41,51 @@
 #include "Rok4Api.h"
 #include <csignal>
 #include <bits/signum.h>
+#include <sys/time.h>
 
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
 bool reload;
 
-volatile sig_atomic_t block_signal;
+// Minimum time between two signal to be defered.
+// Earlier signal would be ignored. 
+// in microseconds
+static const double signal_defering_min_time = 1000000LL;
+
+volatile sig_atomic_t signal_pending;
+volatile sig_atomic_t defer_signal;
+volatile timeval signal_timestamp;
+
 
 void usage() {
     std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
 }
 
 void reloadConfig ( int signum ) {
-    if (!block_signal) {
-        block_signal++;
+    if (defer_signal) {
+        timeval now;
+        gettimeofday(&now, NULL);
+        double delta = (now.tv_sec - signal_timestamp.tv_sec)*1000000LL + (now.tv_usec - signal_timestamp.tv_usec);
+        if ( delta > signal_defering_min_time){
+            signal_pending = signum;
+        }
+    } else {
+        defer_signal++;
+        timeval begin;
+        gettimeofday(&begin, NULL);
+        signal_timestamp.tv_sec = begin.tv_sec;
+        signal_timestamp.tv_usec = begin.tv_usec;
         reload = true;
         W->terminate();
     }
 }
 
 void shutdownServer ( int signum ) {
-    if (!block_signal) {
-        block_signal++;
+    if (defer_signal) {
+         // Do nothing because rok4 is going to shutdown...
+    } else {
+        defer_signal++;
         reload = false;
         W->terminate();
     }
@@ -79,7 +101,7 @@ int main ( int argc, char** argv ) {
     bool firstStart = true;
     int sock = 0;
     reload = true;
-    block_signal = 1;
+    defer_signal = 1;
 
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
@@ -135,8 +157,10 @@ int main ( int argc, char** argv ) {
         }
         
         // Remove Event Lock
-        block_signal = 0;
+        defer_signal--;
         
+        if (defer_signal == 0 && signal_pending != 0)
+         raise (signal_pending);
         W->run();
 
         // Extinction du serveur
