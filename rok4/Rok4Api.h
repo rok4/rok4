@@ -64,7 +64,7 @@ typedef void Rok4Server;
         char* scriptName;
         char* service;
         char* operationType;
-        bool  noDataAsHttpStatus;
+        int  noDataAsHttpStatus;
     } HttpRequest;
 
     typedef struct {
