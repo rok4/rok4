@@ -218,6 +218,8 @@ sub _load {
   my @tmList = $self->getTileMatrixByArray();
 
   # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+  TRACE("sort by ID...");
+  
   for (my $i=0; $i < scalar @tmList; $i++){
     $self->{levelIdx}{$tmList[$i]->getID()} = $i;
   }
@@ -262,6 +264,8 @@ sub getTileHeight {
 sub getTileMatrixByArray {
     my $self = shift;
 
+    TRACE("sort by Resolution...");
+    
     my @levels;
 
     foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tilematrix}})) {

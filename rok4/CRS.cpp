@@ -113,6 +113,15 @@ CRS::CRS ( const CRS& crs ) {
     proj4Code=crs.proj4Code;
 }
 
+CRS& CRS::operator= ( const CRS& other ) {
+    if (this != &other) {
+        this->proj4Code = other.proj4Code;
+        this->requestCode = other.requestCode;
+    }
+    return *this;
+}
+
+
 /*
 * Determine a partir du code du CRS passe dans la requete le code Proj4 correspondant
 */

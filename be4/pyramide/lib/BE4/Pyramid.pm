@@ -144,34 +144,6 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
-my $STRLEVELTMPLT = <<"TLEVEL";
-    <level>
-        <tileMatrix>__ID__</tileMatrix>
-        <baseDir>__DIRIMG__</baseDir>
-<!-- __MTD__ -->
-        <tilesPerWidth>__TILEW__</tilesPerWidth>
-        <tilesPerHeight>__TILEH__</tilesPerHeight>
-        <pathDepth>__DEPTH__</pathDepth>
-        <nodata>
-            <filePath>__NODATAPATH__</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>__MINROW__</minTileRow>
-            <maxTileRow>__MAXROW__</maxTileRow>
-            <minTileCol>__MINCOL__</minTileCol>
-            <maxTileCol>__MAXCOL__</maxTileCol>
-        </TMSLimits>
-    </level>
-<!-- __LEVELS__ -->
-TLEVEL
-
-my $STRLEVELTMPLTMORE = <<"TMTD";
-            <metadata type='INT32_DB_LZW'>
-                <baseDir>__DIRMTD__</baseDir>
-                <format>__FORMATMTD__</format>
-            </metadata>
-TMTD
-
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -345,6 +317,12 @@ sub _init {
         $params->{compressionoption} = 'none';
     }
     #
+    if (! exists($params->{pyr_level_bottom})) {
+        WARN ("Parameter 'pyr_level_bottom' has not been set. The default value is undef, then the min level will be calculated with source images resolution");
+        $params->{pyr_level_bottom} = undef;
+    }
+    $self->{pyr_level_bottom} = $params->{pyr_level_bottom};
+    #
     if (! exists($params->{pyr_level_top})) {
         WARN ("Parameter 'pyr_level_top' has not been set. The defaut value is the top of the TMS' !");
         $params->{pyr_level_top} = undef;
@@ -474,6 +452,8 @@ sub _fillToPyramid {
     my $self  = shift;
     my $params = shift;
 
+    TRACE();
+    
     # create PyrImageSpec !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
         bitspersample => $params->{bitspersample},
@@ -535,12 +515,6 @@ sub _fillFromPyramid {
     my $filepyramid = File::Spec->catfile($self->getPyrDescPathOld(),$self->getPyrFileOld());
     if (! $self->readConfPyramid($filepyramid,$params)) {
         ERROR (sprintf "Can not read the XML file Pyramid : %s !", $filepyramid);
-        return FALSE;
-    }
-
-    # identify bottom and top levels
-    if (! $self->calculateExtremLevels()) {
-        ERROR(sprintf "Impossible to calculate top and bottom levels");
         return FALSE;
     }
 
@@ -671,7 +645,13 @@ sub readConfPyramid {
         return FALSE;
     }
     $params->{samplesperpixel} = $tagsamplesperpixel;
+    
 
+    # identify bottom and top levels
+    if (! $self->calculateExtremLevels()) {
+        ERROR(sprintf "Impossible to calculate top and bottom levels");
+        return FALSE;
+    }
 
     # create PyrImageSpec object !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
@@ -736,19 +716,20 @@ sub readConfPyramid {
                                            );
         #
         my $levelOrder = $self->getLevelOrder($tagtm);
-        my $objLevel = BE4::Level->new({
-            id                => $tagtm,
-            order             => $levelOrder,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
-            dir_metadata      => undef,      # TODO !
-            compress_metadata => undef,      # TODO !
-            type_metadata     => undef,      # TODO !
-            size              => [$tagsize[0],$tagsize[1]],
-            dir_depth         => $tagdirdepth,
-            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
-            is_in_pyramid  => 0
-        });
+        my $objLevel = BE4::Level->new(
+            {
+                id                => $tagtm,
+                order             => $levelOrder,
+                dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+                dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
+                dir_metadata      => undef,      # TODO !
+                compress_metadata => undef,      # TODO !
+                type_metadata     => undef,      # TODO !
+                size              => [$tagsize[0],$tagsize[1]],
+                dir_depth         => $tagdirdepth,
+                limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+                is_in_pyramid  => 0
+            });
             
 
         if (! defined $objLevel) {
@@ -784,12 +765,22 @@ sub readCachePyramid {
   my $self     = shift;
   my $cachedir = shift; # old cache directory by default !
   
-  TRACE;
+  TRACE("Reading cache of pyramid...");
   
   # Node IMAGE
   my $dir = File::Spec->catdir($cachedir);
+  
   # Find cache tiles ou directories
-  my $searchitem = $self->FindCacheNode($dir);
+  my $searchitem = {
+    cachedir    => [],
+    cachetile   => [],
+    cachebroken => [],
+  };
+  
+  if (! $self->FindCacheNode($dir, $searchitem)) {
+    ERROR("An error on searching into the cache structure !");
+    return FALSE;
+  }
   
   if (! defined $searchitem) {
     ERROR("An error on reading the cache structure !");
@@ -828,66 +819,54 @@ sub readCachePyramid {
 sub FindCacheNode {
   my $self      = shift;
   my $directory = shift;
+  my $search    = shift;
 
-  TRACE();
-  
-  my $search = {
-    cachedir    => [],
-    cachetile   => [],
-    cachebroken => [],
-  };
+  TRACE(sprintf "Searching node in %s\n", $directory);
   
   my $pyr_datapath = $self->getPyrDataPath();
 
   if (! opendir (DIR, $directory)) {
     ERROR("Can not open directory cache (%s) ?",$directory);
-    return undef;
+    return FALSE;
   }
-
-  my $newsearch;
   
   foreach my $entry (readdir DIR) {
     
     next if ($entry =~ m/^\.{1,2}$/);
     
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);
-      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
-      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
+    my $pathentry = File::Spec->catfile($directory, $entry);
+    
+    if ( -d $pathentry) {
+      TRACE(sprintf "DIR:%s\n",$pathentry);
+      push @{$search->{cachedir}}, $pathentry;
       
       # recursif
-      $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
-      
-      push @{$search->{cachetile}},    $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},     $_  foreach(@{$newsearch->{cachedir}});
-      push @{$search->{cachebroken}},  $_  foreach(@{$newsearch->{cachebroken}});
+      if (! $self->FindCacheNode($pathentry, $search)) {
+        ERROR("Can not search in directory cache (%s) ?",$pathentry);
+        return FALSE;
+      }
     }
 
-    elsif( -f File::Spec->catfile($directory, $entry) &&
-         ! -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "FIL:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif( -f $pathentry &&
+         ! -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
-    elsif (  -f File::Spec->catfile($directory, $entry) &&
-             -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "LIK:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
+    elsif (  -f $pathentry &&
+             -l $pathentry) {
+      TRACE(sprintf "%s\n",$pathentry);
+      push @{$search->{cachetile}}, $pathentry;
     }
     
     else {
         # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
         # ou liste exaustive des liens cassés ?
         WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
-        push @{$search->{cachebroken}}, File::Spec->catfile($directory, $entry);
+        push @{$search->{cachebroken}}, $pathentry;
     }
-    
   }
-  
-  return $search;
-  
+  return TRUE;
 }
 
 ####################################################################################################
@@ -895,18 +874,49 @@ sub FindCacheNode {
 ####################################################################################################
 
 # method: calculateExtremLevels
-#  identify top and bottom level from parameters and data sources
+#  identify top and bottom level if they are not defined in parameters
 #---------------------------------------------------------------------------------------------------
 sub calculateExtremLevels {
     my $self = shift;
+
+    TRACE();
 
     # tilematrix list sort by resolution
     my @tmList = $self->getTileMatrixSet()->getTileMatrixByArray();
 
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    TRACE("sort by ID...");
+    
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
+    }
+
+    # initialisation de la transfo de coord du srs des données initiales vers
+    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
+    my $ct = undef;  
+    if ($self->getTileMatrixSet()->getSRS() ne $self->getDataSource()->getSRS()){
+        my $srsini= new Geo::OSR::SpatialReference;
+        eval { $srsini->ImportFromProj4('+init='.$self->getDataSource()->getSRS().' +wktext'); };
+        if ($@) {
+            eval { $srsini->ImportFromProj4('+init='.lc($self->getDataSource()->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$self->getDataSource()->getSRS());
+                return FALSE;
+            }
+        }
+        my $srsfin= new Geo::OSR::SpatialReference;
+        eval { $srsfin->ImportFromProj4('+init='.$self->getTileMatrixSet()->getSRS().' +wktext'); };
+        if ($@) {
+            eval { $srsfin->ImportFromProj4('+init='.lc($self->getTileMatrixSet()->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$self->getTileMatrixSet()->getSRS());
+                return FALSE;
+            }
+        }
+        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # Intitialisation du topLevel:
@@ -937,8 +947,19 @@ sub calculateExtremLevels {
             return FALSE;
         }
     } else {
-        ERROR("The bottom level must be defined in configuration !");
-        return FALSE;
+        my $projSrcRes = $self->computeSrcRes($ct);
+        if ($projSrcRes < 0) {
+            ERROR("La resolution reprojetee est negative");
+            return FALSE;
+        }
+
+        $bottomlevel = $tmList[0]->getID(); 
+        foreach my $tm (@tmList){
+            next if ($tm->getResolution() * 0.95  > $projSrcRes);
+            $bottomlevel = $tm->getID();
+        }
+
+        $self->setBottomLevel($bottomlevel);
     }
 
     my $topOrder = $self->getLevelOrder($self->getTopLevel());
@@ -965,6 +986,8 @@ sub calculateExtremLevels {
 sub createLevels {
     my $self = shift;
 
+    TRACE();
+    
     my $objTMS = $self->getTileMatrixSet();
 
     if (! defined $objTMS) {
@@ -1106,7 +1129,9 @@ sub computeSrcRes(){
 sub updateLimits {
     my $self = shift;
     my ($xMin, $yMin, $xMax, $yMax) = @_;
-  
+
+    TRACE();
+    
     if (! defined $self->{dataLimits}->{xmin} || $xMin < $self->{dataLimits}->{xmin}) {$self->{dataLimits}->{xmin} = $xMin;}
     if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
     if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
@@ -1119,6 +1144,8 @@ sub updateLimits {
 #---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
     my $self = shift;
+
+    TRACE();
     
     if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
         ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
@@ -1168,6 +1195,8 @@ sub calculateTMLimits {
 sub createNodata {
     my $self = shift;
     my $nodataFilePath = shift;
+    
+    TRACE();
     
     my $sizex = int($self->getImageSize()) / int($self->getTilePerWidth());
     my $sizey = int($self->getImageSize()) / int($self->getTilePerHeight());
@@ -1240,51 +1269,11 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    foreach my $objLevel (values %levels){
-
-        # image
-        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
-        
-        my $id       = $objLevel->{id};
-        $strpyrtmplt =~ s/__ID__/$id/;
-    
-        my $dirimg   = $objLevel->{dir_image};
-        $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
-        
-        my $dirnd   = $objLevel->{dir_nodata};
-        my $pathnd = $dirnd."/nd.tiff";
-        $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
-        
-        my $tilew    = $objLevel->{size}->[0];
-        $strpyrtmplt =~ s/__TILEW__/$tilew/;
-        my $tileh    = $objLevel->{size}->[1];
-        $strpyrtmplt =~ s/__TILEH__/$tileh/;
-        
-        my $depth    =  $objLevel->{dir_depth};
-        $strpyrtmplt =~ s/__DEPTH__/$depth/;
-        
-        my $minrow   =  $objLevel->{limit}->[0];
-        $strpyrtmplt =~ s/__MINROW__/$minrow/;
-        my $maxrow   =  $objLevel->{limit}->[1];
-        $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
-        my $mincol   =  $objLevel->{limit}->[2];
-        $strpyrtmplt =~ s/__MINCOL__/$mincol/;
-        my $maxcol   =  $objLevel->{limit}->[3];
-        $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
-    
-        # metadata
-        if (defined $objLevel->{dir_metadata}) {
-
-            $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
-
-            my $dirmtd   = $objLevel->{dir_metadata};
-            $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
-
-            my $formatmtd = $objLevel->{compress_metadata};
-            $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
-        }
-        $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
-        
+    for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
+        # we write levels in pyramid's descriptor from the top to the bottom
+        my $ID = $self->getLevelID($i);
+        my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
+        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
@@ -1369,12 +1358,11 @@ sub writeCachePyramid {
 
     # create new cache directory
     my @newdirs;
-    my @olddirs = @{$self->{cache_dir}};
 
     if ($self->isNewPyramid()) {
-        @newdirs = @olddirs;
+        @newdirs = @{$self->{cache_dir}};
     } else {
-        @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
+        @newdirs = map ({ &$substring($_) } @{$self->{cache_dir}}); # list cache modified !
     }
 
     # Now, @newdir contains :
@@ -1389,7 +1377,7 @@ sub writeCachePyramid {
 
     foreach my $absdir (@newdirs) {
         #create folders
-        eval { mkpath([$absdir],0,0751); };
+        eval { mkpath([$absdir]); };
         if ($@) {
             ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
             return FALSE;
@@ -1477,7 +1465,7 @@ sub writeCachePyramid {
 
     foreach my $objLevel (values %levels){
 
-        my $levelOrder = $objLevel->{order};
+        my $levelOrder = $self->getLevelOrder($objLevel->{id});
         
         if (! $objLevel->{is_in_pyramid}) {next;}
 
@@ -1491,7 +1479,7 @@ sub writeCachePyramid {
 
             if (! -e $nodatadir) {
                 #create folders
-                eval { mkpath([$nodatadir],0,0751); };
+                eval { mkpath([$nodatadir]); };
                 if ($@) {
                     ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
                     return FALSE;
@@ -1680,12 +1668,20 @@ sub getLevels {
 # method: getLevelOrder
 #  return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)
-#   - NumberOfTM (top level, biggest resolution).
+#   - NumberOfTM-1 (top level, biggest resolution).
 #---------------------------------------------------------------------------------
 sub getLevelOrder {
     my $self = shift;
     my $ID = shift;
     return $self->getTileMatrixSet()->getTileMatrixOrder($ID);
+}
+# method: getLevelID
+#  return the tile matrix ID from the order.
+#---------------------------------------------------------------------------------
+sub getLevelID {
+    my $self = shift;
+    my $order = shift;
+    return $self->getTileMatrixSet()->getTileMatrixID($order);
 }
 
 sub getBottomLevel {
@@ -1866,7 +1862,7 @@ sub _IDXtoX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   my $x = ($idx * $rx * $sx) + $xo ;
 
@@ -1905,7 +1901,7 @@ sub _XtoIDX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
 

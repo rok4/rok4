@@ -41,24 +41,54 @@
 #include "Rok4Api.h"
 #include <csignal>
 #include <bits/signum.h>
+#include <sys/time.h>
 
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
 bool reload;
 
+// Minimum time between two signal to be defered.
+// Earlier signal would be ignored. 
+// in microseconds
+static const double signal_defering_min_time = 1000000LL;
+
+volatile sig_atomic_t signal_pending;
+volatile sig_atomic_t defer_signal;
+volatile timeval signal_timestamp;
+
+
 void usage() {
     std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
 }
 
-void reloadConfig(int signum) {
-    reload = true;
-    W->terminate();
+void reloadConfig ( int signum ) {
+    if (defer_signal) {
+        timeval now;
+        gettimeofday(&now, NULL);
+        double delta = (now.tv_sec - signal_timestamp.tv_sec)*1000000LL + (now.tv_usec - signal_timestamp.tv_usec);
+        if ( delta > signal_defering_min_time){
+            signal_pending = signum;
+        }
+    } else {
+        defer_signal++;
+        timeval begin;
+        gettimeofday(&begin, NULL);
+        signal_timestamp.tv_sec = begin.tv_sec;
+        signal_timestamp.tv_usec = begin.tv_usec;
+        reload = true;
+        W->terminate();
+    }
 }
 
-void shutdownServer(int signum) {
-    reload = false;
-    W->terminate();
+void shutdownServer ( int signum ) {
+    if (defer_signal) {
+         // Do nothing because rok4 is going to shutdown...
+    } else {
+        defer_signal++;
+        reload = false;
+        W->terminate();
+    }
 }
 
 
@@ -67,19 +97,27 @@ void shutdownServer(int signum) {
 * @return -1 en cas d'erreur, 0 sinon
 */
 int main ( int argc, char** argv ) {
-    
+
     bool firstStart = true;
+    int sock = 0;
     reload = true;
-    
+    defer_signal = 1;
+
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
     sa.sa_handler = reloadConfig;
-    sigaction(SIGHUP, &sa,0 );
-    
+    sigaction ( SIGHUP, &sa,0 );
+
     sa.sa_handler = shutdownServer;
-    sigaction(SIGQUIT, &sa,0 );
+    sigaction ( SIGQUIT, &sa,0 );
+
+    // Apache mod_fastcgi compatibility
+    sa.sa_handler = shutdownServer;
+    sigaction ( SIGUSR1, &sa,0 );
     
-    
+
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
     while ( getenv ( "SLEEP" ) != NULL && stopSleep == 0 ) {
@@ -107,24 +145,37 @@ int main ( int argc, char** argv ) {
     }
 
     // Demarrage du serveur
-    while (reload) {
-    reload = false;
-    std::cout<< "Lancement du serveur rok4..."<<std::endl;
-    W=rok4InitServer ( serverConfigFile.c_str() );
-    if (firstStart) W->initFCGI();
-    firstStart = false;
-    W->run();
+    while ( reload ) {
+        reload = false;
+        std::cout<< "Lancement du serveur rok4 ["<< getpid()<<"]" <<std::endl;
+        W=rok4InitServer ( serverConfigFile.c_str() );
+        if ( firstStart ) {
+            W->initFCGI();
+            firstStart = false;
+        } else {
+            W->setFCGISocket ( sock );
+        }
+        
+        // Remove Event Lock
+        defer_signal--;
+        
+        if (defer_signal == 0 && signal_pending != 0)
+         raise (signal_pending);
+        W->run();
 
-    // Extinction du serveur
-    if (reload) {
-        LOGGER_INFO ( "Rechargement de la configuration" );
-    } else {
-        LOGGER_INFO ( "Extinction du serveur ROK4" );
-    }
-    
-    rok4KillServer ( W );
-    }
+        // Extinction du serveur
+        if ( reload ) {
+            LOGGER_INFO ( "Rechargement de la configuration" );
+            sock = W->getFCGISocket();
+        } else {
+            LOGGER_INFO ( "Extinction du serveur ROK4" );
+            W->killFCGI();
+        }
 
+        rok4KillServer ( W );
+
+    }
+    rok4KillLogger();
     return 0;
 }
 

@@ -64,7 +64,7 @@ typedef void Rok4Server;
         char* scriptName;
         char* service;
         char* operationType;
-        bool  noDataAsHttpStatus;
+        int  noDataAsHttpStatus;
     } HttpRequest;
 
     typedef struct {
@@ -123,6 +123,7 @@ typedef void Rok4Server;
     void rok4DeleteTilePalette ( TilePalette* palette );
 
     void rok4KillServer ( Rok4Server* server );
+    void rok4KillLogger ();
 
 #ifdef __cplusplus
 }

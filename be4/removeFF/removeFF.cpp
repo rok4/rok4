@@ -53,10 +53,12 @@
 #include <stdint.h>
 #include <iostream>
 #include <string.h>
+#include "../be4version.h"
 
 using namespace std;
 
 void usage() {
+    cerr << "removeFF version "<< BE4_VERSION << endl;
     cerr << endl << "usage: removeFF <input_file> <output_file>" << endl << endl;
     cerr << "remove 255 samples in pixels in the image" << endl;
 }
@@ -68,6 +70,7 @@ void error(string message) {
 }
 
 TIFF *TIFF_FILE = 0;
+TIFF *TIFF_FILE_W = 0;
 
 uint8_t *IM ;
 
@@ -107,20 +110,19 @@ int main(int argc, char* argv[]) {
     for(int h = 0; h < height; h++) 
         if(TIFFReadScanline(TIFF_FILE, IM + width*sampleperpixel*h, h) == -1) 
             error("Unable to read data");
-    
-    TIFFClose(TIFF_FILE);
 
-    TIFF_FILE = TIFFOpen(output_file, "w");
-    if(!TIFF_FILE) error("Unable to open file for writting: " + string(output_file));
-    if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel) ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, photometric)        ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig)      ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_COMPRESSION, compression)        ||
-        (nb_extrasamples && ! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES, nb_extrasamples, extrasamples)))
+    TIFF_FILE_W = TIFFOpen(output_file, "w");
+    
+    if(!TIFF_FILE_W) error("Unable to open file for writting: " + string(output_file));
+    if( ! TIFFSetField(TIFF_FILE_W, TIFFTAG_IMAGEWIDTH, width)               ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_IMAGELENGTH, height)             ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_SAMPLESPERPIXEL, sampleperpixel) ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_PHOTOMETRIC, photometric)        ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_PLANARCONFIG, planarconfig)      ||
+        ! TIFFSetField(TIFF_FILE_W, TIFFTAG_COMPRESSION, compression)        ||
+        (nb_extrasamples && ! TIFFSetField(TIFF_FILE_W, TIFFTAG_EXTRASAMPLES, nb_extrasamples, extrasamples)))
             error("Error writting file: " +  string(output_file));
     
     uint8_t *LINE = new uint8_t[width * sampleperpixel];
@@ -134,10 +136,12 @@ int main(int argc, char* argv[]) {
                 LINE[h*width+w] == 254;
             }
         }
-        if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + string(output_file));
+        if(TIFFWriteScanline(TIFF_FILE_W, LINE, h) == -1) error("Unable to write line to " + string(output_file));
     }
 
+    
     TIFFClose(TIFF_FILE);
+    TIFFClose(TIFF_FILE_W);
     delete[] IM;
     delete[] LINE;
     return 0;

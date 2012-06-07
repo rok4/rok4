@@ -124,7 +124,7 @@ sub new {
         ERROR ("'samplesperpixel' is undefined or not valid !");
         return undef;
     }
-    $self->{samplesperpixel} = $samplesperpixel;
+    $self->{samplesperpixel} = int($samplesperpixel);
 
     my $photometric = $params->{photometric};
     if (! defined $photometric || ! $self->is_Photometric($photometric)) {
@@ -138,7 +138,7 @@ sub new {
         ERROR ("'bitspersample' is undefined or not valid !");
         return undef;
     }
-    $self->{bitspersample} = $bitspersample;
+    $self->{bitspersample} = int($bitspersample);
 
 
     return $self;

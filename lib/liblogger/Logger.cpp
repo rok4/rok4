@@ -72,6 +72,7 @@ int logbuffer::sync() {
 Accumulator* Logger::accumulator[nbLogLevel] = {0};
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 static pthread_key_t logger_key[nbLogLevel];
+
 static void init_key() {
     for (int i = 0; i < nbLogLevel; i++) pthread_key_create(&logger_key[i], 0);
 }
@@ -108,21 +109,19 @@ std::ostream& Logger::getLogger(LogLevel level) {
     char date[64];
     tm *now = localtime(&tim.tv_sec);
     sprintf(date, "%04d/%02d/%02d %02d:%02d:%02d.%06d\t", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec, (int) (tim.tv_usec));
-    *L << date << LogLevelText[level] << '\t';
+    *L << date << (LogLevelText[level]) << "\t";
     return *L;
 }
 
 void Logger::stopLogger()
 {
-    /*for ( int i = 0 ; i <= nbLogLevel ; i++ ) {
-        Logger::setAccumulator ( ( LogLevel ) i, NULL );
-    }*/
     for ( int i = 0 ; i <= nbLogLevel ; i++ ) {
         std::ostream *L = (std::ostream*) pthread_getspecific(logger_key[( LogLevel ) i]);
-        if (L != 0);
-        delete L;
-        pthread_setspecific(logger_key[( LogLevel ) i], (void*) NULL);
+        if (L != 0) {
+            delete (logbuffer*) L->rdbuf(); // Delete the logbuffer associated with the outputstream
+            delete L;
+            pthread_setspecific(logger_key[( LogLevel ) i], (void*) NULL);
+        }
     }
-
 }
 

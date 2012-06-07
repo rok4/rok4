@@ -35,7 +35,7 @@
 
 package BE4::Process;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
@@ -250,8 +250,10 @@ sub computeWholeTree {
                 INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
                 $scriptCode .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
                 $scriptCode .= $self->writeBranchCode($node);
+                # NOTE : pas d'image à collecter car non séparation par script du dossier temporaire, de travail
+                # A rétablir si possible
                 # on récupère l'image de travail finale pour le job de fin.
-                $finishScriptCode .= $self->collectWorkImage($node);
+                # $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
             }
         }
         if (! $self->saveScript($scriptCode,$scriptId)) {
@@ -351,7 +353,7 @@ sub computeBottomImage {
         my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
         if (! -d $confDirPath) {
             DEBUG (sprintf "create dir mergeNtiff");
-            eval { mkpath([$confDirPath],0,0751); };
+            eval { mkpath([$confDirPath]); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
                 return FALSE;
@@ -598,8 +600,8 @@ sub writeTopCodes {
     TRACE;
 
     if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
-        INFO("Final script will be empty (except temporary files deletion)");
-        return "echo \"Final script have nothing to do, except to delete temporary images made by other scripts.\" \n";
+        INFO("Final script will be empty");
+        return "echo \"Final script have nothing to do.\" \n";
     }
 
     my $code = '';
@@ -703,7 +705,7 @@ sub cache2work {
         $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
         
-        if ($self->{pyramid}->getSamplesPerPixel() == 4) {
+        if (int($self->{pyramid}->getSamplesPerPixel()) == 4) {
             # Option supplémentaire pour conserver le canal alpha
             $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
         } else {
@@ -748,21 +750,27 @@ sub work2cache {
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
   my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);
-  $cmd   .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
-  $cmd   .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
-  $cmd   .= sprintf ("-c %s ",    $compression);
+  $cmd .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
+  $cmd .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
+  $cmd .= sprintf ("-c %s ",    $compression);
   
   if ($compressionoption eq 'crop') {
-    $cmd   .= sprintf ("-crop ");
+    $cmd .= sprintf ("-crop ");
   }
 
-  $cmd   .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
-  $cmd   .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
-  $cmd   .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
-  $cmd   .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
-  $cmd   .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
-  $cmd   .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
-  $cmd   .= sprintf ("%s", RESULT_TEST);
+  $cmd .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
+  $cmd .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
+  $cmd .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
+  $cmd .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
+  $cmd .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
+  $cmd .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
+  $cmd .= sprintf ("%s", RESULT_TEST);
+
+  # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
+
+  if ($node->{level} eq $self->{tree}->{topLevelId}) {
+    $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
+  }
 
   return $cmd;
 }
@@ -927,7 +935,7 @@ sub saveScript {
     if (! -d dirname($scriptFilePath)) {
         my $dir = dirname($scriptFilePath);
         DEBUG (sprintf "Create the script directory'%s' !", $dir);
-        eval { mkpath([$dir],0,0751); };
+        eval { mkpath([$dir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
             return FALSE;
@@ -959,26 +967,18 @@ sub saveScript {
 #  scripts de calcul du bas de la pyramide, pour les copier dans le répertoire
 #  temporaire du script final.
 #  NOTE
-#  le code commenté permettra de rétablir un tri des fichiers temporaires dans différents dossiers
-#--------------------------------------------------------------------------------------------------
+#  Pas utilisé pour le moment
+#--------------------------------------------------------------------------------------------
 sub collectWorkImage(){
-    my $self = shift;
-    my $node = shift;
+  my $self = shift;
+  my ($node, $scriptId, $finishId) = @_;
+  
+  TRACE;
+  
+  my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+  my $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
 
-    TRACE;
-
-    my $code = '';
-
-    my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $self->workNameOfNode($node));
-    #my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', DIR , $self->workNameOfNode($node));
-    if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
-        $code   = sprintf ("rm -f %s\n", $source);
-    }
-    #else {
-    #    $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
-    #}
-
-    return $code;
+  return $code;
 }
 
 
