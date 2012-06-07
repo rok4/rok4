@@ -114,23 +114,22 @@ TMTD
 #        </TMSLimits>
 # 
 ################################################################################
+=begin nd
+Group: variable
 
-# Group: variable
-
-# variable: $self
-
-#    *          id                => undef,
-#    *          order             => undef,
-#    *          dir_image         => undef,
-#    *          dir_nodata        => undef,
-#    *          dir_metadata      => undef,  # NOT IMPLEMENTED !
-#    *          compress_metadata => undef,  # NOT IMPLEMENTED !
-#    *          type_metadata     => undef,  # NOT IMPLEMENTED !
-#    *          size              => [],    # number w/h !
-#    *          dir_depth         => 0,     # ie 2
-#    *          limit             => []     # dim bbox Row/Col !!!
-#    *          is_in_pyramid     => undef,
-#
+variable: $self
+    * id                => undef,
+    * order             => undef,
+    * dir_image         => undef,
+    * dir_nodata        => undef,
+    * dir_metadata      => undef,  # NOT IMPLEMENTED !
+    * compress_metadata => undef,  # NOT IMPLEMENTED !
+    * type_metadata     => undef,  # NOT IMPLEMENTED !
+    * size              => [],    # number w/h !
+    * dir_depth         => 0,     # ie 2
+    * limit             => []     # dim bbox Row/Col !!!
+    * is_in_pyramid     => undef,
+=cut
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -305,27 +304,27 @@ __END__
 
 =head1 NAME
 
-  BE4::Level -
+    BE4::Level - components of a pyramid's level
 
 =head1 SYNOPSIS
 
-  use BE4::Level;
-  
-  my $params = {
-            id                => 1024,
-            order             => 12,
-            dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
-            dir_nodata        => undef,
-            dir_metadata      => undef,
-            compress_metadata => undef,
-            type_metadata     => undef,
-            size              => [ 4, 4],
-            dir_depth         => 2,
-            limit             => [1, 1000000, 1, 1000000] 
-            is_in_pyramid     => 1
+    use BE4::Level;
+
+    my $params = {
+        id                => 1024,
+        order             => 12,
+        dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
+        dir_nodata        => undef,
+        dir_metadata      => undef,
+        compress_metadata => undef,
+        type_metadata     => undef,
+        size              => [ 4, 4],
+        dir_depth         => 2,
+        limit             => [1, 1000000, 1, 1000000] 
+        is_in_pyramid     => 1
     };
-    
-  my $objLevel = BE4::Level->new($params);
+
+    my $objLevel = BE4::Level->new($params);
 
 =head1 DESCRIPTION
 

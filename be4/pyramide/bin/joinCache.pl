@@ -1347,7 +1347,7 @@ sub writePyr {
     my $channel = $this{pyramid}->{pixel}->{samplesperpixel};
     $strpyrtmplt =~ s/__CHANNEL__/$channel/;
     #  
-    my $nodata = "FF"x($channel);
+    my $nodata = "255".(",255"x($channel-1));
     $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
     #  
     $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;

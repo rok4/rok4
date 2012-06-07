@@ -77,7 +77,7 @@ use constant FALSE => 0;
 use constant CREATE_NODATA     => "createNodata";
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
@@ -309,9 +309,6 @@ sub _init {
     $self->{dir_depth} = $params->{dir_depth}
         || ( ERROR ("Parameter 'dir_depth' is required!") && return FALSE );
     #
-    exists $params->{path_nodata}
-        || ( ERROR ("Parameter to 'path_nodata' is required!") && return FALSE );
-    #
     
     # this option are optional !
     #
@@ -401,7 +398,6 @@ sub _init {
     $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
     #
     # TODO path !
-    if (! -d $params->{path_nodata}) {}
     if (! -d $self->{new_pyramid}->{desc_path}) {}
     if (! -d $self->{old_pyramid}->{desc_path}) {}
     if (! -d $params->{tms_path}) {}
@@ -432,7 +428,6 @@ sub _load {
 
     # create NoData !
     my $objNodata = BE4::NoData->new({
-            path_nodata      => $params->{path_nodata},
             pixel            => $self->getPixel(),
             imagesize        => $self->getImageSize(), 
             color            => $params->{color},
@@ -2008,7 +2003,6 @@ __END__
     dir_nodata    => "NODATA",
     dir_metadata => "METADATA",
     #
-    path_nodata   => "./t/data/nodata/",
     imagesize     => "1024",
     color         => "FFFFFF, ----> present in the file .pyr
     #
@@ -2045,7 +2039,6 @@ __END__
     image_width  => "16", 
     image_height => "16",
     # 
-    path_nodata   => "./t/data/nodata/",
     imagesize     => "1024",
     color         => "FFFFFF",
     #
@@ -2086,7 +2079,6 @@ To create a new pyramid, you must fill all parameters following :
     tms_name      =
     tms_path      = 
     # 
-    path_nodata   =
     imagesize     => by default, it's '4096' !
     color         => by default, it's 'FFFFFF' !
     # 
@@ -2112,7 +2104,6 @@ To create a new pyramid, you must fill all parameters following :
     #
     tms_path      = 
     # 
-    path_nodata   =
     imagesize     => by default, it's '4096' !
     color         => by default, it's 'FFFFFF' !
     # 

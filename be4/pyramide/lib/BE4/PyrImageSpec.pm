@@ -35,17 +35,12 @@
 
 package BE4::PyrImageSpec;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use Data::Dumper;
 
-# version
-my $VERSION = "0.0.1";
-
-# My module
 use BE4::Pixel;
 
 require Exporter;
@@ -57,7 +52,8 @@ our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
-# constantes
+################################################################################
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -68,7 +64,7 @@ my %CODE2SAMPLEFORMAT;
 my %SAMPLEFORMAT2CODE;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
@@ -392,7 +388,7 @@ __END__
 
 =head1 NAME
 
- BE4::PyrImageSpec - components of pyramid's images
+    BE4::PyrImageSpec - components of pyramid's images
 
 =head1 SYNOPSIS
   
@@ -440,27 +436,26 @@ __END__
         compressionoption => ['none','crop']
 
  
-    compression is use for the program 'tiff2tile'.
-    formatCode is written in the pyramid file, and it is useful for 'Rok4' !
+    'compression' is use for the program 'tiff2tile'.
+    'formatCode' is written in the pyramid file, and it is useful for 'Rok4' !
 
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
- BE4::Pixel
+    BE4::Pixel
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

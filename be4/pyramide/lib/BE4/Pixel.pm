@@ -41,6 +41,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use BE4::Layer;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -51,20 +53,16 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global
+# global
 my %PIXEL;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
@@ -77,7 +75,6 @@ INIT {
 
 }
 END {}
-
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -135,9 +132,11 @@ sub new {
     return $self;
 }
 
-################################################################################
-# Group: public methods
-#
+####################################################################################################
+#                                            TESTS                                                 #
+####################################################################################################
+
+# Group: tests
 
 sub is_SampleFormat {
     my $self = shift;
@@ -236,7 +235,7 @@ __END__
 
 =head1 NAME
 
- BE4::Pixel - components of a pixel in image
+    BE4::Pixel - components of a pixel in image
 
 =head1 SYNOPSIS
   
@@ -264,24 +263,21 @@ __END__
         photometric       => ['rgb','gray','mask'],
         samplesperpixel   => [1,3,4],
 
-
-
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

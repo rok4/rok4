@@ -35,10 +35,12 @@
 
 package BE4::NoData;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+
+use BE4::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -50,23 +52,20 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
 # Global
+my %HEX2DEC;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
-%HEX2DEC = (
+my %HEX2DEC = (
     0 => 0,
     1 => 1,
     2 => 2,
@@ -89,17 +88,31 @@ INIT {
 END {}
 
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * imagesize       => '4096',
+    * pixel           => undef, # Pixel object
+    * color           => undef, # 255 (uint) or -99999 (float) per sample by default
+    * nowhite         => FALSE,
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
-    path_nodata     => undef,
     #
     imagesize       => '4096', # ie 4096 px by default !
     pixel           => undef, # Pixel object
-    color           => undef, # ie FFFFFF by default !
+    color           => undef,
     nowhite         => FALSE, # false by default !
     # no interpolation for the tile image !
   };
@@ -114,8 +127,7 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self = shift;
     my $params = shift;
@@ -154,18 +166,6 @@ sub _init {
     }
     $self->{pixel} = $params->{pixel};
 
-
-    if (! exists  $params->{path_nodata} || ! defined  $params->{path_nodata}) {
-        ERROR ("Parameter 'path_nodata' required !");
-        return FALSE;
-    }
-    if (! -d $params->{path_nodata}) {
-        ERROR ("Directory doesn't exist !");
-        return FALSE;
-    }
-    $self->{path_nodata} = $params->{path_nodata};
-
-
     if (! exists  $params->{color}) {
         ERROR ("Parameter 'color' required !");
         return FALSE;
@@ -195,7 +195,7 @@ sub _init {
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{color});
             # nodata is supplied in hexadecimal format, we convert it
-            my $valueDec = $self->hex2dec($params->{color});
+            my $valueDec = $self->hexToDec($params->{color});
             if (! defined $valueDec) {
                 ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Impossible to convert",
                     $params->{color});
@@ -213,7 +213,7 @@ sub _init {
             return FALSE;
         }
 
-        foreach $value (@nodata) {
+        foreach my $value (@nodata) {
             if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
                 if ( $value !~ m/^[-+]?[0-9]+$/ ) {
                     ERROR (sprintf "Incorrect value for nodata for a float32 pixel's format (%s) !",$value);
@@ -239,17 +239,32 @@ sub _init {
     
     return TRUE;
 }
-################################################################################
-# get /set
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getColor {
     my $self = shift;
     return $self->{color};
 }
 
-################################################################################
-# public method
+####################################################################################################
+#                                       PUBLIC METHODS                                             #
+####################################################################################################
 
-sub hex2dec {
+# Group: public methods
+
+=begin nd
+method: hexToDec
+
+From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are seperated by comma. Input string must have an even length (one sample <=> 2character).
+
+Example : hexToDec("7BFF0300") = "123,255,3,0"
+=cut
+sub hexToDec {
     my $self = shift;
     my $hex = shift;
 
@@ -264,7 +279,7 @@ sub hex2dec {
     while ($i < length($hex)) {
         $dec .= "," if ($i > 1);
 
-        if (! (exists $HEX2DEC{substr($hex,$i,1)} &&  exists $HEX2DEC{substr($hex,$i+1,1)}) ) {
+        if (! (exists $HEX2DEC{substr($hex,$i,1)} && exists $HEX2DEC{substr($hex,$i+1,1)}) ) {
             ERROR ("A character in not valid in the hexadecimal value of nodata");
             return undef;
         }
@@ -278,7 +293,6 @@ sub hex2dec {
     return $dec;
 }
 
-
 1;
 __END__
 
@@ -286,34 +300,54 @@ __END__
 
 =head1 NAME
 
- BE4::NoData - components of nodata
+    BE4::NoData - components of nodata
 
 =head1 SYNOPSIS
-  
+    
+    use BE4::NoData;
 
-        nowhite           => [TRUE,FALSE],
+    # NoData object creation
+    my $objNodata = BE4::NoData->new({
+            pixel            => objPixel,
+            imagesize        => 4096, 
+            color            => "0,255,123",
+            nowhite          => TRUE
+    });
 
 =head1 DESCRIPTION
 
+    A NoData object :
+
+        * pixel (Pixel object)
+        * imagesize
+        * color
+        * nowhite
+
+    The boolean nowhite will be used in mergeNtiff. If it's TRUE, when images are stacked, white pixel are ignored.
+    As this treatment is longer and often useless , default value is FALSE.
+
+    The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    Example : 
+        - "255,255,255" (white) for images whithout alpha sample
+        - "-99999" for a DTM
 
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
- BE4::Pixel
+    BE4::Pixel
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
