@@ -52,56 +52,50 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *    PATHFILENAME => undef,
-#    *    filename => undef,
-#    *    filepath => undef,
-#    *    xmin => undef,
-#    *    ymax => undef,
-#    *    xmax => undef,
-#    *    ymin => undef,
-#    *    xres => undef,
-#    *    yres => undef,
-#    *    pixelsize => undef,
-#    *    xcenter => undef,
-#    *    ycenter => undef,
-#    *    height  => undef,
-#    *    width   => undef,
-#
-
-#
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * PATHFILENAME => undef,
+    * filename => undef,
+    * filepath => undef,
+    * xmin => undef,
+    * ymax => undef,
+    * xmax => undef,
+    * ymin => undef,
+    * xres => undef,
+    * yres => undef,
+    * pixelsize => undef,
+    * xcenter => undef,
+    * ycenter => undef,
+    * height  => undef,
+    * width   => undef,
+=cut
+
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
     PATHFILENAME => undef,
-    #
     filename => undef,
     filepath => undef,
     xmin => undef,
@@ -115,7 +109,6 @@ sub new {
     ycenter => undef,
     height  => undef,
     width   => undef,
-    
   };
 
   bless($self, $class);
@@ -128,8 +121,7 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self   = shift;
     my $param = shift;
@@ -152,11 +144,19 @@ sub _init {
     
     return TRUE;
 }
-################################################################################
-# public
-# Image parameters are checked (sample per pixel, bits per sample...) and return by the function. Datasource can
-# verify if all images own same components and the compatibility with be4's configuration.
 
+####################################################################################################
+#                                       COMPUTING METHODS                                          #
+####################################################################################################
+
+# Group: computing methods
+
+=begin nd
+    method: computeInfo
+
+    Image parameters are checked (sample per pixel, bits per sample...) and return by the function. Datasource can
+    verify if all images own same components and the compatibility with be4's configuration.
+=cut
 sub computeInfo {
     my $self = shift;
 
@@ -178,9 +178,6 @@ sub computeInfo {
         ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
         return ();
     }
-
-    # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
-    #      besoin et qui semble poser des problèmes (version de gdalinfo?)
 
     my $i = 0;
 
@@ -283,14 +280,14 @@ sub computeInfo {
     $self->{height} = $dataset->{RasterYSize};
     $self->{width}  = $dataset->{RasterXSize};
 
-
-    #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-    #      $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
-    #      $self->{xres},$self->{yres},
-    #      $self->{xcenter},$self->{ycenter},
-    #      $self->{pixelsize},
-    #      $self->{height},$self->{width});
-    
+=begin
+    DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
+        $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
+        $self->{xres},$self->{yres},
+        $self->{xcenter},$self->{ycenter},
+        $self->{pixelsize},
+        $self->{height},$self->{width});
+=cut
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
         return ();
@@ -300,7 +297,11 @@ sub computeInfo {
     
 }
 
-################################################################################
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
 
 sub getInfo {
   my $self = shift;
@@ -331,13 +332,11 @@ sub getBbox {
   
   my @bbox;
 
-  # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($self->{xmin},$self->{ymax},$self->{xmax},$self->{ymin});
+  push @bbox, ($self->{xmin},$self->{ymin},$self->{xmax},$self->{ymax});
   
   return @bbox;
 }
-################################################################################
-# get / set
+
 sub getXmin {
   my $self = shift;
   return $self->{xmin};
@@ -366,24 +365,35 @@ sub getName {
   my $self = shift;
   return $self->{filename}; 
 }
-################################################################################
-# to_string methode
+
+####################################################################################################
+#                                         EXPORT METHOD                                            #
+####################################################################################################
+
+# Group: export methods
+
+=begin nd
+    method: to_string
+
+    Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
+=cut
 sub to_string {
-  my $self = shift;
-  
-  TRACE;
-  
-  my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-          File::Spec->catfile($self->{filepath}, $self->{filename}),
-          $self->{xmin},
-          $self->{ymax},
-          $self->{xmax},
-          $self->{ymin},
-          $self->{xres},
-          $self->{yres},;
-  #DEBUG ($output);
-  return $output;
+    my $self = shift;
+
+    TRACE;
+
+    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+    File::Spec->catfile($self->{filepath}, $self->{filename}),
+        $self->{xmin},
+        $self->{ymax},
+        $self->{xmax},
+        $self->{ymin},
+        $self->{xres},
+        $self->{yres},;
+
+    return $output;
 }
+
 1;
 __END__
 
@@ -391,123 +401,138 @@ __END__
 
 =head1 NAME
 
-  BE4::GeoImage - analyzes the features of the image.
+    BE4::GeoImage - analyzes the features of the image.
 
 =head1 SYNOPSIS
 
-  use BE4::GeoImage;
-  
-  my $objImg = BE4::GeoImage->new($filepath);
-  if (! $objImg->computeInfo()) { # ERROR ! }
-  
-  my (
-    $filename,
-    $filepath,
-    $xmin,
-    $ymax,
-    $xmax,
-    $ymin,
-    $xres,
-    $yres,
-    $pixelsize,
-    $xcenter,
-    $ycenter,
-    $height,
-    $width
-    ) = $objImg->getInfo();
+    use BE4::GeoImage;
+    
+    # GeoImage object creation
+    my $objGeoImage = BE4::GeoImage->new("/home/ign/DATA/XXXXX_YYYYY.tif");
+
+    # GeoImage information getter
+    my (
+        $filename,
+        $filepath,
+        $xmin,
+        $ymax,
+        $xmax,
+        $ymin,
+        $xres,
+        $yres,
+        $pixelsize,
+        $xcenter,
+        $ycenter,
+        $height,
+        $width
+    ) = $objGeoImage->getInfo();
 
 =head1 DESCRIPTION
 
-* Constraint on the input formats of images
+    A GeoImage object
 
-  format tiff ...
+        * PATHFILENAME : complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
+        * filename : just the image name (XXXXX_YYYYY.tif)
+        * filepath : the directory which contain the image (/home/ign/DATA)
+        * xmin
+        * ymax
+        * xmax
+        * ymin
+        * xres
+        * yres
+        * pixelsize
+        * xcenter
+        * ycenter
+        * height 
+        * width  
 
-* Use the binding Perl of Gdal
+    * Constraint on the input formats of images : format tiff
 
-* Sample with gdalinfo
-  
-  GDAL 1.7.2, released 2010/04/23
-  
-  ~$ gdalinfo  image.png
-  
-  Driver: PNG/Portable Network Graphics
-  Files: image.png
-  Size is 316, 261
-  Coordinate System is `'
-  Metadata:
-    Software=Shutter
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (    0.0,    0.0)
-  Lower Left  (    0.0,  261.0)
-  Upper Right (  316.0,    0.0)
-  Lower Right (  316.0,  261.0)
-  Center      (  158.0,  130.5)
-  Band 1 Block=316x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=316x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
-  
+    * Use the binding Perl of Gdal
 
-  ~$ gdalinfo  image.tif
-  (...)
-  Metadata:
-    TIFFTAG_IMAGEDESCRIPTION=
-    TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
-    TIFFTAG_DATETIME=2007:03:15 11:17:17
-    TIFFTAG_XRESOLUTION=600
-    TIFFTAG_YRESOLUTION=600
-    TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  (...)
-  Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
-  Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
-  Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
-  Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
-  Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
+    * Sample with gdalinfo
   
-  ~$ gdalinfo image.tif
-  
-  Driver: GTiff/GeoTIFF
-  Files: image.tif
-         image.tfw
-  Size is 5000, 5000
-  Coordinate System is `'
-  Origin = (937500.000000000000000,6541000.000000000000000)
-  Pixel Size = (0.100000000000000,-0.100000000000000)
-  Metadata:
-    TIFFTAG_XRESOLUTION=100
-    TIFFTAG_YRESOLUTION=100
-    TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (  937500.000, 6541000.000) 
-  Lower Left  (  937500.000, 6540500.000) 
-  Upper Right (  938000.000, 6541000.000) 
-  Lower Right (  938000.000, 6540500.000) 
-  Center      (  937750.000, 6540750.000) 
-  Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
+        GDAL 1.7.2, released 2010/04/23
+
+        ~$ gdalinfo  image.png
+
+        Driver: PNG/Portable Network Graphics
+        Files: image.png
+        Size is 316, 261
+        Coordinate System is `'
+        Metadata:
+        Software=Shutter
+        Image Structure Metadata:
+        INTERLEAVE=PIXEL
+        Corner Coordinates:
+        Upper Left  (    0.0,    0.0)
+        Lower Left  (    0.0,  261.0)
+        Upper Right (  316.0,    0.0)
+        Lower Right (  316.0,  261.0)
+        Center      (  158.0,  130.5)
+        Band 1 Block=316x1 Type=Byte, ColorInterp=Red
+        Band 2 Block=316x1 Type=Byte, ColorInterp=Green
+        Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
+
+
+        ~$ gdalinfo  image.tif
+        (...)
+        Metadata:
+        TIFFTAG_IMAGEDESCRIPTION=
+        TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
+        TIFFTAG_DATETIME=2007:03:15 11:17:17
+        TIFFTAG_XRESOLUTION=600
+        TIFFTAG_YRESOLUTION=600
+        TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
+        Image Structure Metadata:
+        INTERLEAVE=PIXEL
+        (...)
+        Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
+        Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
+        Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
+        Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
+        Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
+
+        ~$ gdalinfo image.tif
+
+        Driver: GTiff/GeoTIFF
+        Files: image.tif
+             image.tfw
+        Size is 5000, 5000
+        Coordinate System is `'
+        Origin = (937500.000000000000000,6541000.000000000000000)
+        Pixel Size = (0.100000000000000,-0.100000000000000)
+        Metadata:
+        TIFFTAG_XRESOLUTION=100
+        TIFFTAG_YRESOLUTION=100
+        TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
+        Image Structure Metadata:
+        INTERLEAVE=PIXEL
+        Corner Coordinates:
+        Upper Left  (  937500.000, 6541000.000) 
+        Lower Left  (  937500.000, 6540500.000) 
+        Upper Right (  938000.000, 6541000.000) 
+        Lower Right (  938000.000, 6540500.000) 
+        Center      (  937750.000, 6540750.000) 
+        Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
+        Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
+        Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
 
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

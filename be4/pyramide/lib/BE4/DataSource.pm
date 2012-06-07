@@ -60,11 +60,7 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -73,7 +69,7 @@ use constant FALSE => 0;
 my %SOURCE;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
@@ -84,20 +80,35 @@ INIT {
 }
 END {}
 
+################################################################################
+=begin nd
+Group: variable
+
+variable: $self
+    * FILEPATH_DATACONF => undef, # path of data's configuration file
+    * type => undef, # (image or harvest)
+    * sources  => {}, # hash of ImageSource or HarvestSource objects
+    * SRS => undef,
+    * bottomExtent => undef, # OGR::Geometry object, in the previous SRS
+=cut
+
+
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
+
+# Group: constructor
 
 sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
     my $self = {
-        FILEPATH_DATACONF => undef, # path of data's configuration file
-        type => undef, # (image or harvest)
-        sources  => {},    # hash of ImageSource or HarvestSource objects
+        FILEPATH_DATACONF => undef,
+        type => undef,
+        sources  => {},
         SRS => undef,
-        bottomExtent => undef, # OGR::Geometry object, in the previous SRS
+        bottomExtent => undef,
     };
 
     bless($self, $class);
@@ -113,8 +124,7 @@ sub new {
     return $self;
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -146,8 +156,7 @@ sub _init {
     return TRUE;
 }
 
-################################################################################
-# privates load.
+
 sub _load {
     my $self   = shift;
 
@@ -169,13 +178,13 @@ sub _load {
 
     my $sources = $self->{sources};
     my $nbSources = 0;
+    my $globalSection = undef;
 
     while( my ($k,$v) = each(%$sourcesProperties) ) {
+
         if ($k eq "global") {
-            if (! $self->computeGlobalInfo($v)) {
-                ERROR("Cannot compute the global information");
-                return FALSE;
-            }
+            # Global informations are used later
+            $globalSection = $v;
             next;
         }
 
@@ -199,27 +208,42 @@ sub _load {
         }
     }
 
-    if (!defined $sources || $nbSources == 0) {
+    if ($nbSources == 0) {
         ERROR ("No source !");
         return FALSE;
+    }
+
+    # we load now global informations
+    if (! defined $globalSection) {
+        ERROR("Global section is required (SRS, bbox...)");
+        return FALSE;
+    } else {
+        if (! $self->computeGlobalInfo($globalSection)) {
+            ERROR("Cannot compute the global information");
+            return FALSE;
+        }
     }
 
     return TRUE;
 }
 
-
-
 ####################################################################################################
-#                                              METHODS                                             #
+#                                       PUBLIC METHODS                                             #
 ####################################################################################################
 
-# method: computeGlobalInfo
-# * read the srs, for the box or images
-# * read the box, 2 cases are possible :
-#       - box is a bbox, as xmin,ymin,xmax,ymax
-#       - box is a file path, file contains a complex polygon
-#   We generate a OGR Geometry
-#---------------------------------------------------------------------------------------------------
+# Group: public methods
+
+=begin nd
+    method: computeGlobalInfo
+
+    Read the srs, for the box or images
+
+    Read the box, 2 cases are possible :
+        - box is a bbox, as xmin,ymin,xmax,ymax
+        - box is a file path, file contains a complex polygon
+
+    We generate a OGR Geometry
+=cut
 sub computeGlobalInfo {
     my $self = shift;
     my $params = shift;
@@ -234,6 +258,22 @@ sub computeGlobalInfo {
         return FALSE ;
     }
     $self->{SRS} = $params->{srs};
+
+    # Bounding polygon
+    if ($self->{type} eq "image") {
+        # If we are real images for source, bbox will be calculated from them.
+        my ($xmin,$ymin,$xmax,$ymax);
+
+        foreach my $ImgSrc (values %{$self->{sources}}) {
+            my @BBOX = $ImgSrc->computeBbox();
+            $xmin = $BBOX[0] if (! defined $xmin || $xmin < $BBOX[0]);
+            $ymin = $BBOX[1] if (! defined $ymin || $xmin < $BBOX[1]);
+            $xmax = $BBOX[2] if (! defined $xmax || $xmin > $BBOX[2]);
+            $ymax = $BBOX[3] if (! defined $ymax || $xmin > $BBOX[3]);
+        }
+        
+        $params->{box} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
+    }    
 
     # Bounding polygon
     if (! exists($params->{box}) || ! defined ($params->{box})) {
@@ -263,7 +303,7 @@ sub computeGlobalInfo {
             return FALSE ;
         }
 
-        $wktextent = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+        $wktextent = sprintf "POLYGON ((%s %s,%s %s,%s %s,%s %s,%s %s))",
             $xmin,$ymin,
             $xmin,$ymax,
             $xmax,$ymax,
@@ -287,14 +327,23 @@ sub computeGlobalInfo {
             $wktextent .= $line;
         }
         close(SHAPE);
+    } else {
+        ERROR(sprintf "The value for 'box' is not valid (must be a BBOX or a file with a WKT shape) : %s.",$params->{box});
+        return FALSE;
     }
 
     if (! defined $wktextent) {
         ERROR(sprintf "Cannot define the bottom extent from the parameter 'box' => %s.",$params->{box});
         return FALSE;
     }
-    
-    my $bottomExtent = Geo::OGR::Geometry->create(WKT=>$wktextent);;
+
+    my $bottomExtent;
+
+    eval { $bottomExtent = Geo::OGR::Geometry->create(WKT=>$wktextent); };
+    if ($@) {
+        ERROR(sprintf "Error for Geo::OGR::Geometry->create : %s",$@);
+    }
+
     if (! defined $bottomExtent) {
         ERROR(sprintf "Cannot create a Geometry from the string => %s.",$wktextent);
         return FALSE;
@@ -323,8 +372,10 @@ sub is_type {
 }
 
 ####################################################################################################
-#                                          GETTER/SETTER                                           #
+#                                       GETTERS / SETTERS                                          #
 ####################################################################################################
+
+# Group: getters - setters
 
 sub getSRS {
   my $self = shift;
@@ -335,22 +386,34 @@ sub getSRS {
 1;
 __END__
 
-=pod
 
 =head1 NAME
 
-  BE4::DataSource - Managing data sources
+    BE4::DataSource - Managing data sources
 
 =head1 SYNOPSIS
 
-  use BE4::DataSource;
-  
-  my $objImplData = BE4::DataSource->new(path_conf => $path,
-                                         type => image);
+    use BE4::DataSource;
+
+    # DataSource object creation
+    my $objDataSource = BE4::DataSource->new({
+        path_conf => "/home/ign/images.source",
+        type => "image"
+    });
 
 =head1 DESCRIPTION
 
+    A DataSource object
 
+        * FILEPATH_DATACONF
+        * type : type of sources
+        * sources : an hash of ImageSource or HarvestSource objects
+        * SRS : SRS of the bottom extent (and GeoImage objects)
+        * bottomExtent : an OGR geometry
+
+    Possible values :
+
+        type => ["harvest","image"]
   
 =head2 EXPORT
 
@@ -358,27 +421,22 @@ None by default.
 
 =head1 LIMITATION & BUGS
 
-* Support data source multiple !
-
-* Does not implement the managing of metadata !
+    Does not implement the managing of metadata !
 
 =head1 SEE ALSO
 
-  eg BE4::HarvestSource
-    eg BE4::Harvesting
-  eg BE4::ImageSource
-    eg BE4::GeoImage
+    BE4::HarvestSource
+    BE4::ImageSource
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

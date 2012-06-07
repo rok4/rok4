@@ -875,7 +875,7 @@ sub exportTree {
   
   my $srsini   = $refdata->getSRS();
   my $resini   = $refdata->getResolution();
-  my @bboxini  = $refdata->computeBbox(); # (Upper Left, Lower Right) !
+  my @bboxini  = $refdata->computeBbox();
   
   my $srsfinal  = $refpyr->getTileMatrixSet()->getSRS();
   my $resfinal  = $refpyr->getTileMatrixSet()->getTileMatrix($idLevel)->getResolution();
@@ -914,7 +914,7 @@ sub exportTree {
   printf FILE "=> Data Source :\n";
   printf FILE "   - resolution [%s]\n", $resini;
   printf FILE "   - srs        [%s]\n", $srsini;
-  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[3], $bboxini[2], $bboxini[1];
+  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[1], $bboxini[2], $bboxini[3];
   printf FILE "----------------------------------------------------\n";
   printf FILE "=> Index (level n° %s):\n", $idLevel;
   printf FILE "   - resolution [%s]\n", $resfinal;

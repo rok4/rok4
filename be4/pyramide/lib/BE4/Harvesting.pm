@@ -52,58 +52,44 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-#    [ harvesting ]
-#    ; wms_url     =
-#    ; wms_version =
-#    ; wms_request =
-#    ; wms_format  =
-#    ; wms_layer =
 
-################################################################################
-# Preloaded methods go here.
 BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *   URL      => undef, # ie url of rok4 !
-#    *   VERSION  => undef, # ie 1.3.0
-#    *   REQUEST  => undef, # ie getMap
-#    *   FORMAT   => undef, # ie image/png
-#    *   LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
-#
-
-#
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * URL      => undef, # ie url of rok4 !
+    * VERSION  => undef, # ie 1.3.0
+    * REQUEST  => undef, # ie getMap
+    * FORMAT   => undef, # ie image/png
+    * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
     my $self = {
-        URL      => undef, # ie url of rok4 !
-        VERSION  => undef, # ie 1.3.0
-        REQUEST  => undef, # ie getMap
-        FORMAT   => undef, # ie image/png
-        LAYERS    => undef, # ie ORTHOPHOTO
+        URL      => undef,
+        VERSION  => undef,
+        REQUEST  => undef,
+        FORMAT   => undef,
+        LAYERS    => undef,
     };
 
     bless($self, $class);
@@ -267,52 +253,53 @@ sub getWMSServer {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::Harvesting - Declare service WMS
+    BE4::Harvesting - Declare service WMS
 
 =head1 SYNOPSIS
 
-  use BE4::Harvesting;
-  
-  my $params = {
-    wms_url     => "deuchars.ign.fr/rok4/bin/rok4",
-    wms_version => "1.3.0",
-    wms_request => "GetMap",
-    wms_format  => "image/tiff",
-    wms_layer   => "test",
-  };
+    use BE4::Harvesting;
 
-  my $objH = BE4::Harvesting->new($params);
-  
-  if (! defined $objH) { ERROR !}
-  
-  my $url  = $objH->doRequestUrl(srs=> "WGS84", bbox => [0,0,500,500], imagesize => [100,100]);
-  # ie
-  # "http://".$URL."?LAYERS=".$LAYER."&SERVICE=WMS&VERSION=".$VERSION."&REQUEST=GetMap&FORMAT=image/tiff
-  # &CRS=".$srs."&BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."&WIDTH=".$image_width."&HEIGHT=".$image_height.";
-  
+    # Harvesting object creation
+    my $objHarvesting = BE4::Harvesting->new({
+        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
+        wms_url     => "http://localhost/wmts/rok4",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff"
+    });
+
+    my $url = $objHarvesting->doRequestUrl(srs=> "WGS84", bbox => [0,0,500,500], imagesize => [100,100]);
+    # ie
+    # "http://".$URL."?LAYERS=".$LAYER."&SERVICE=WMS&VERSION=".$VERSION."&REQUEST=GetMap&FORMAT=image/tiff
+    # &CRS=".$srs."&BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."&WIDTH=".$image_width."&HEIGHT=".$image_height.";
 
 =head1 DESCRIPTION
 
+    A Harvesting object
+
+        * URL : url of rok4
+        * VERSION : 1.3.0 for WMS
+        * REQUEST : getMap
+        * FORMAT : image/png, image/tiff
+        * LAYERS
+
 =head2 EXPORT
 
-None by default.
+    None by default.
 
 =head1 SEE ALSO
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

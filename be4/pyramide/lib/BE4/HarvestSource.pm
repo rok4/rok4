@@ -39,10 +39,8 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use List::Util qw(min max);
 
-# My module
 use BE4::Harvesting;
 
 require Exporter;
@@ -55,32 +53,39 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * harvesting => undef, # Harvesting object
+    * image_width => 4096, # images size which will be harvested
+    * image_height => 4096
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
-    harvesting => undef, # Harvesting object
-    image_width => 4096, # images size which will be harvested
+    harvesting => undef,
+    image_width => 4096,
     image_height => 4096
   };
 
@@ -94,8 +99,7 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
+
 sub _init {
     my $self   = shift;
     my $harvestParams = shift;
@@ -139,41 +143,51 @@ sub _init {
 1;
 __END__
 
-=pod
 
 =head1 NAME
 
-  BE4::HarvestSource
+    BE4::HarvestSource
 
 =head1 SYNOPSIS
 
-  use BE4::HarvestSource;
+    use BE4::HarvestSource;
+
+    # HarvestSource object creation
+    my $objHarvestSource = BE4::HarvestSource->new({
+        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
+        wms_url     => "http://localhost/wmts/rok4",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff",
+        image_width => 2048,
+        image_height => 2048
+    });
 
 =head1 DESCRIPTION
 
-  
+    A HarvestSource object
+
+        * harvesting : Harvesting object
+        * image_width : max width of downloaded images
+        * image_height : max height of downloaded images
+
 =head2 EXPORT
 
-None by default.
-
-=head1 LIMITATION & BUGS
-
+    None by default.
 
 =head1 SEE ALSO
 
-  eg BE4::DataSource
-  eg BE4::ImageSource
+    BE4::Harvesting
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

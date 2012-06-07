@@ -909,35 +909,6 @@ sub calculateExtremLevels {
         $levelIdx->{$tmList[$i]->getID()} = $i;
     }
 
-    # initialisation de la transfo de coord du srs des données initiales vers
-    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
-    my $ct = undef;  
-    if ($self->getTileMatrixSet()->getSRS() ne $self->getDataSource()->getSRS()){
-        my $srsini= new Geo::OSR::SpatialReference;
-        eval { $srsini->ImportFromProj4('+init='.$self->getDataSource()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsini->ImportFromProj4('+init='.lc($self->getDataSource()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",
-                    $self->getDataSource()->getSRS());
-                return FALSE;
-            }
-        }
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$self->getTileMatrixSet()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($self->getTileMatrixSet()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
-                    $self->getTileMatrixSet()->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
-    }
-
     # Intitialisation du topLevel:
     #  - En priorité celui fourni en paramètre
     #  - Par defaut, c'est le plus haut niveau du TMS, 
@@ -966,19 +937,8 @@ sub calculateExtremLevels {
             return FALSE;
         }
     } else {
-        my $projSrcRes = $self->computeSrcRes($ct);
-        if ($projSrcRes < 0) {
-            ERROR("Reprojected resolution is negative");
-            return FALSE;
-        }
-
-        $bottomlevel = $tmList[0]->getID(); 
-        foreach my $tm (@tmList){
-            next if ($tm->getResolution() * 0.95  > $projSrcRes);
-            $bottomlevel = $tm->getID();
-        }
-
-        $self->setBottomLevel($bottomlevel);
+        ERROR("The bottom level must be defined in configuration !");
+        return FALSE;
     }
 
     my $topOrder = $self->getLevelOrder($self->getTopLevel());

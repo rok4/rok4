@@ -35,14 +35,12 @@
 
 package BE4::ImageSource;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use List::Util qw(min max);
 
-# My module
 use BE4::GeoImage;
 
 require Exporter;
@@ -55,38 +53,50 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * PATHIMG => undef, # path to images
+    * PATHMTD => undef, # path to metadata, not implemented
+    * images  => [], # list of images sources
+    * bestResX => undef,
+    * bestResY => undef,
+    * pixel => undef, #Pixel object
+=cut
+
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
   my $self = {
-    PATHIMG => undef, # path to images
-    PATHMTD => undef, # path to metadata, not implemented
+    PATHIMG => undef,
+    PATHMTD => undef,
     #
-    images  => [],    # list of images sources
+    images  => [],
     #
-    resolution => undef,
+    bestResX => undef,
+    bestResY => undef,
     #
-    pixel => undef, #Pixel object
+    pixel => undef,
   };
 
   bless($self, $class);
@@ -101,8 +111,6 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
 
     my $self   = shift;
@@ -130,21 +138,25 @@ sub _init {
 
 }
 
-################################################################################
-# method: computeImageSource
-#   Load all image in a list of object BE4::ImageSource, determine the medium
-#   resolution of data, check components.
+####################################################################################################
+#                                        IMAGES TREATMENTS                                         #
+####################################################################################################
 
+# Group: images treatments
+
+
+=begin nd
+    method: computeImageSource
+
+    Load all image in a list of object BE4::ImageSource, determine the medium
+    resolution of data, check components.
+=cut
 sub computeImageSource {
         my $self = shift;
 
     TRACE;
 
-    my %resDict;
-
-    my $lstGeoImages = $self->{images}; # it's a ref !
-
-    my $badRefCtrl = 0;
+    my $lstGeoImages = $self->{images};
 
     my $search = $self->getListImages($self->{PATHIMG});
     if (! defined $search) {
@@ -158,7 +170,10 @@ sub computeImageSource {
         return FALSE;
     }
 
+    my $badRefCtrl = 0;
     my $pixel = undef;
+    my $bestResX = undef;
+    my $bestResY = undef;
 
     foreach my $filepath (@listGeoImagePath) {
 
@@ -215,108 +230,32 @@ sub computeImageSource {
             return FALSE;
         }
 
-        # FIXME :
-        #  - resolution resx == resy ?
-        #  - unique resolution for all image !
         my $xRes = $objGeoImage->getXres();
-        $resDict{$xRes} = 1;
-        $self->{resolution} = $xRes;
-        #
+        my $yRes = $objGeoImage->getYres();
+
+        $bestResX = $xRes if (! defined $bestResX || $xRes < $bestResX);
+        $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
+
         push @$lstGeoImages, $objGeoImage;
     }
 
     $self->{pixel} = $pixel;
+    $self->{bestResX} = $bestResX;
+    $self->{bestResY} = $bestResY;
 
     if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
         ERROR ("Can not found image source in '$self->{PATHIMG}' !");
         return FALSE;
     }
 
-    # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
-    #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
-    # if (keys (%resDict) != 1) {
-    #   ERROR ("The resolution of image source is not unique !");
-    #   return FALSE;
-    # }
-
     return TRUE;
 }
-################################################################################
-# method: exportImageSource
-#   Export all informations of image in a file
-#
-#   Format :
-#     filename, xmin, ymax, xmax, ymin, xres, yres
-#
-#   Parameter:
-#    file - filepath of the export
-#
-sub exportImageSource {
-  my $self = shift;
-  my $file = shift; # pathfilename !
-  
-  TRACE;
 
-  my $lstGeoImages = $self->{images};
-  
-  if (! open (FILE, ">", $file)) {
-    ERROR ("Can not create file ('$file') !");
-    return FALSE;
-  }
-  
-  foreach my $objGeoImage (@$lstGeoImages) {
-    # image xmin ymax xmax ymin resx resy
-    printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
-            # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
-            $objGeoImage->{filename},
-            $objGeoImage->{xmin},
-            $objGeoImage->{ymax},
-            $objGeoImage->{xmax},
-            $objGeoImage->{ymin},
-            $objGeoImage->{xres},
-            $objGeoImage->{yres};
-  }
-  
-  close FILE;
-  
-  return TRUE;
-}
-################################################################################
-# method: computeBbox
-#   Bbox of data source
-#
-sub computeBbox {
-  my $self = shift;
+=begin nd
+    method: getListImages
 
-  TRACE;
-  
-  my $lstImagesSources = $self->{images};
-  
-  my @bbox;
-  
-  my $xmin = $lstImagesSources->[0]->{xmin};
-  my $xmax = $lstImagesSources->[0]->{xmax};
-  my $ymin = $lstImagesSources->[0]->{ymin};
-  my $ymax = $lstImagesSources->[0]->{ymax};
-  
-  foreach my $objImage (@$lstImagesSources) {
-    $xmin = min($xmin, $objImage->{xmin});
-    $xmax = max($xmax, $objImage->{xmax});
-    $ymin = min($ymin, $objImage->{ymin});
-    $ymax = max($ymax, $objImage->{ymax});
-  }
-
-  # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($xmin,$ymax,$xmax,$ymin);
-  
-  return @bbox;
-}
-
-
-################################################################################
-# method: getListImages
-#   Get the list of all path data image (image tiff only !)
-#   
+    Get the list of all path data image (image tiff only !)
+=cut  
 sub getListImages {
   my $self      = shift;
   my $directory = shift;
@@ -353,9 +292,43 @@ sub getListImages {
   return $search;
 }
 
-################################################################################
-# method: hasImages
-#   
+=begin nd
+    method: computeBbox
+
+    Bbox of data source
+=cut
+sub computeBbox {
+    my $self = shift;
+
+    TRACE;
+
+    my $lstImagesSources = $self->{images};
+
+    my @bbox;
+
+    my $xmin = $lstImagesSources->[0]->{xmin};
+    my $xmax = $lstImagesSources->[0]->{xmax};
+    my $ymin = $lstImagesSources->[0]->{ymin};
+    my $ymax = $lstImagesSources->[0]->{ymax};
+
+    foreach my $objImage (@$lstImagesSources) {
+        $xmin = min($xmin, $objImage->{xmin});
+        $xmax = max($xmax, $objImage->{xmax});
+        $ymin = min($ymin, $objImage->{ymin});
+        $ymax = max($ymax, $objImage->{ymax});
+    }
+
+    push @bbox, ($xmin,$ymin,$xmax,$ymax);
+
+    return @bbox;
+}
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+ 
 sub hasImages {
   my $self = shift;
   
@@ -363,17 +336,11 @@ sub hasImages {
   return TRUE;
 }
 
-#
-# Group: get/set
-#
 sub getResolution {
   my $self = shift;
   return $self->{resolution};  
 }
-################################################################################
-# method: getImages
-#   Get the list of all object data image (BE4::ImageSource)
-#
+
 sub getImages {
   my $self = shift;
   # copy !
@@ -385,44 +352,98 @@ sub getImages {
 }
 
 
+####################################################################################################
+#                                        EXPORT METHOD                                             #
+####################################################################################################
+
+# Group: export method
+
+=begin nd
+    method: exportImageSource
+
+    Export all informations of image in a file.
+
+    Format : filename, xmin, ymax, xmax, ymin, xres, yres
+
+    Parameter: file - filepath of the export
+=cut
+sub exportImageSource {
+  my $self = shift;
+  my $file = shift; # pathfilename !
+  
+  TRACE;
+
+  my $lstGeoImages = $self->{images};
+  
+  if (! open (FILE, ">", $file)) {
+    ERROR ("Can not create file ('$file') !");
+    return FALSE;
+  }
+  
+  foreach my $objGeoImage (@$lstGeoImages) {
+    # image xmin ymax xmax ymin resx resy
+    printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
+            # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
+            $objGeoImage->{filename},
+            $objGeoImage->{xmin},
+            $objGeoImage->{ymax},
+            $objGeoImage->{xmax},
+            $objGeoImage->{ymin},
+            $objGeoImage->{xres},
+            $objGeoImage->{yres};
+  }
+  
+  close FILE;
+  
+  return TRUE;
+}
+
 1;
 __END__
 
-=pod
-
 =head1 NAME
 
-  BE4::ImageSource
+    BE4::ImageSource - information about a source made up of georeferenced images
 
 =head1 SYNOPSIS
 
-  use BE4::ImageSource;
+    use BE4::ImageSource;
+  
+    # ImageSource object creation
+    my $objImageSource = BE4::XXX->new({
+        path_image => "/home/ign/DATA",
+        path_metadata=> "/home/ign/METADATA",
+    });
 
 =head1 DESCRIPTION
 
-  
+    A ImageSource object
+
+        * PATHIMG : directory which contains images
+        * PATHMTD : directory which contains metadata (not yet implemented)
+        * images : array of GeoImage objects
+        * bestResX
+        * bestResY
+        * pixel : Pixel object
+
 =head2 EXPORT
 
-None by default.
-
-=head1 LIMITATION & BUGS
-
+    None by default.
 
 =head1 SEE ALSO
 
-  eg BE4::DataSource
-  eg BE4::HarvestSource
+    BE4::GeoImage
+    BE4::Pixel
 
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Satabin Théo
+    Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
