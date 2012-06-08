@@ -312,7 +312,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
                         line_out[pos_out] = value/(float)nbData;
                         pos_out++;
                     }else {
-                        line_out[pos_out] = nodata;
+                        // on n'a pas assez de données, on laisse donc la valeur de fond (nodata ou image de fond)
                         pos_out++;
                     }
                 }

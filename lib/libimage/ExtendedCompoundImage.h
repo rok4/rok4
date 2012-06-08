@@ -89,8 +89,8 @@ private:
     template<typename T>
     int _getline(T* buffer, int line);
 
-    template<typename T>
-    bool isNodata(T* pixel);
+    bool isNodata(uint8_t* pixel);
+    bool isNodata(float* pixel);
 
 protected:
 
