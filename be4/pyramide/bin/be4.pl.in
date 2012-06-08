@@ -478,7 +478,6 @@ sub doIt {
         return FALSE;
     }
 
-    return TRUE; #TEST
   
     # we cannot write the pyramid descriptor and cache now. We need data's limits
     # which are calculated in the Process creation
@@ -489,15 +488,18 @@ sub doIt {
     ALWAYS(">>> Load Process ...");
   
     $objProcess = BE4::Process->new(
-                      $params->{process},
-                      $params->{harvesting},
-                      $objPyramid
-                    );
+        $params->{process},
+        $params->{harvesting},
+        $objPyramid
+    );
   
     if (! defined $objProcess) {
         ERROR ("Can not prepare process !");
         return FALSE;
     }
+
+
+    return TRUE; #TEST#
 
     ##################
     # write the pyramid cache

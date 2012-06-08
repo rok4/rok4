@@ -77,60 +77,7 @@ use constant FALSE => 0;
 use constant CREATE_NODATA     => "createNodata";
 
 ################################################################################
-# Preloaded methods go here.
-BEGIN {}
-INIT {}
-END {}
-
-################################################################################
-# properties :
-#
-#    [ pyramid ]
-#
-#    pyr_desc_path      =
-#    pyr_desc_path_old  =
-#    pyr_data_path      =
-#    pyr_data_path_old  =
-#    ; pyr_schema_path = 
-#    ; pyr_schema_name =
-#    
-#    pyr_level_bottom =
-#    pyr_level_top    =
-#    pyr_name_old     =
-#    pyr_name_new     =
-#
-#    ; eg section [ tilematrixset ]
-#    tms_name     =  
-#    tms_path     =
-#    ; tms_schema_path = 
-#    ; tms_schema_name =
-#
-#    image_width  = 
-#    image_height =
-#
-#    ; eg section [ pyrImageSpec ]
-#    compression  =
-#    compressionoption  =
-#    gamma        =
-#    bitspersample       = 
-#    sampleformat        = 
-#    photometric         = 
-#    samplesperpixel     =
-#    interpolation       = 
-#    
-#    dir_depth    =
-#    dir_image    = IMAGE
-#    dir_nodata    = NODATA
-#    dir_metadata = METADATA
-#
-#    ; eg section [ nodata ]
-#    path_nodata =
-#    imagesize   =
-#    color       =
-
-################################################################################
-# Global template Pyr
-
+# Global
 my $STRPYRTMPLT   = <<"TPYR";
 <?xml version='1.0' encoding='US-ASCII'?>
 <Pyramid>
@@ -144,9 +91,57 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
+################################################################################
+
+BEGIN {}
+INIT {}
+END {}
+
+################################################################################
+=begin nd
+Group: variable
+
+variable: $self
+    * new_pyramid => { 
+        name      => undef, # string name
+        desc_path     => undef, # path
+        data_path     => undef, # path
+    },
+    * isnewpyramid => 1,     # new pyramid by default !
+    * old_pyramid => { 
+        name      => undef, # string name
+        desc_path     => undef, # path
+        data_path     => undef, # path
+    },
+    * pyr_level_bottom  => undef, string
+    * pyr_level_top     => undef, string
+    * dir_depth    => undef, # number
+    * dir_image    => undef, # dir name
+    * dir_nodata   => undef, # dir name
+    * dir_metadata => undef, # dir name
+    * image_width  => undef, # number
+    * image_height => undef, # number
+    * imagesize    => undef, # number ie 4096 px by default !
+    * pyrImgSpec => undef,   # it's an object !
+    * datasource => undef,   # it's an object !
+    * tms        => undef,   # it's an object !
+    * nodata     => undef,   # it's an object !
+    * levels     => {},      # it's a hash of object level !
+    * cache_tile => [],      # ie tile image to link  !
+    * cache_dir  => [],      # ie dir to search !
+    * dataLimits => {      # data's limits, in the pyramid's SRS
+        xmin => undef,
+        ymin => undef,
+        xmax => undef,
+        ymax => undef,
+    },
+=cut
+
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
+
+# Group: constructor
 
 sub new {
     my $this = shift;
@@ -317,11 +312,9 @@ sub _init {
         $params->{compressionoption} = 'none';
     }
     #
-    if (! exists($params->{pyr_level_bottom})) {
-        WARN ("Parameter 'pyr_level_bottom' has not been set. The default value is undef, then the min level will be calculated with source images resolution");
-        $params->{pyr_level_bottom} = undef;
+    if (exists($params->{pyr_level_bottom})) {
+        WARN ("Parameter 'pyr_level_bottom' has been set. Values in sources configuration are used !");
     }
-    $self->{pyr_level_bottom} = $params->{pyr_level_bottom};
     #
     if (! exists($params->{pyr_level_top})) {
         WARN ("Parameter 'pyr_level_top' has not been set. The defaut value is the top of the TMS' !");
@@ -881,98 +874,51 @@ sub calculateExtremLevels {
 
     TRACE();
 
-    # tilematrix list sort by resolution
-    my @tmList = $self->getTileMatrixSet()->getTileMatrixByArray();
-
-    # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-    TRACE("sort by ID...");
-    
-    my $levelIdx;
-    for (my $i=0; $i < scalar @tmList; $i++){
-        $levelIdx->{$tmList[$i]->getID()} = $i;
-    }
-
-    # initialisation de la transfo de coord du srs des données initiales vers
-    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
-    my $ct = undef;  
-    if ($self->getTileMatrixSet()->getSRS() ne $self->getDataSource()->getSRS()){
-        my $srsini= new Geo::OSR::SpatialReference;
-        eval { $srsini->ImportFromProj4('+init='.$self->getDataSource()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsini->ImportFromProj4('+init='.lc($self->getDataSource()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",$self->getDataSource()->getSRS());
-                return FALSE;
-            }
-        }
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$self->getTileMatrixSet()->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($self->getTileMatrixSet()->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",$self->getTileMatrixSet()->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
-    }
-
     # Intitialisation du topLevel:
     #  - En priorité celui fourni en paramètre
     #  - Par defaut, c'est le plus haut niveau du TMS, 
-    my $toplevel = $self->getTopLevel();
-
-    if (defined $toplevel) {
-        if (! exists $levelIdx->{$toplevel}) {
-            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$toplevel);
+    my $toplevelID = $self->getTopLevel();
+    my $toplevelOrder = undef;
+    if (defined $toplevelID) {
+        $toplevelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($toplevelID);
+        if (! defined $toplevelOrder) {
+            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$toplevelID);
             return FALSE;
         }
     } else {
-        $self->setTopLevel($self->getTileMatrixSet()->{leveltop});
+        $toplevelID = $self->getTileMatrixSet()->{leveltop};
+        $toplevelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($toplevelID);
+        $self->setTopLevel($toplevelID);
     }
 
     # Intitialisation du bottomLevel:
-    #  - En priorité celui fourni en paramètre
-    #  - Par defaut, le niveau de base du calcul est le premier niveau dont la résolution
-    #  (réduite de 5%) est meilleure que celle des données sources.
-    #  S'il n'y a pas de niveau dont la résolution est meilleure, on prend le niveau
-    #  le plus bas de la pyramide.
-    my $bottomlevel = $self->getBottomLevel();
-    
-    if (defined $bottomlevel) {
-        if (! exists $levelIdx->{$bottomlevel}) {
-            ERROR(sprintf "The bottom level defined in configuration ('%s') does not exist in the TMS !",$bottomlevel);
-            return FALSE;
-        }
-    } else {
-        my $projSrcRes = $self->computeSrcRes($ct);
-        if ($projSrcRes < 0) {
-            ERROR("La resolution reprojetee est negative");
+    #  - celui fournit dans la configuration des sources : le niveau le plus bas de toutes les sources
+    #  - on vérifie la cohérence des niveaux défini dans la configuration des sources avec le niveau du haut
+    my $bottomlevelID = undef;
+    my $bottomlevelOrder = undef;
+    foreach my $levelID (keys %{$self->{datasource}->{sources}}) {
+        my $levelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($levelID);
+        if (! defined $levelOrder) {
+            ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
+                $levelID);
             return FALSE;
         }
 
-        $bottomlevel = $tmList[0]->getID(); 
-        foreach my $tm (@tmList){
-            next if ($tm->getResolution() * 0.95  > $projSrcRes);
-            $bottomlevel = $tm->getID();
+        if ($toplevelOrder < $levelOrder) {
+            ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$levelID,$self->getTopLevel());
+            return FALSE;
         }
-
-        $self->setBottomLevel($bottomlevel);
+        
+        if (! defined $bottomlevelOrder || $levelOrder < $bottomlevelOrder) {
+            $bottomlevelID = $levelID;
+            $bottomlevelOrder = $levelOrder;
+        }
     }
 
-    my $topOrder = $self->getLevelOrder($self->getTopLevel());
-    my $bottomOrder = $self->getLevelOrder($self->getBottomLevel());
+    $self->setBottomLevel($bottomlevelID);
 
-    if ($topOrder < $bottomOrder) {
-        ERROR(sprintf "Top (%s) and bottom (%s) levels are not coherent : top resolution is better than bottom resolution !",
-            $self->getTopLevel(),$self->getBottomLevel());
-        return FALSE;
-    }
-
-    if ($topOrder == $bottomOrder) {
-        ALWAYS(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$self->getBottomLevel());
+    if ($toplevelOrder == $bottomlevelOrder) {
+        ALWAYS(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$bottomlevelID);
     }
 
     return TRUE;
@@ -1074,54 +1020,6 @@ sub createLevels {
     return TRUE;
 }
 
-
-# method: computeSrcRes
-#  Retourne la meilleure résolution des images source. Ceci implique une 
-#  reprojection dans le cas où le SRS des images source n'est pas le même 
-#  que celui de la pyramide.
-#------------------------------------------------------------------------------
-sub computeSrcRes(){
-    my $self = shift;
-    my $ct = shift;
-
-    TRACE();
-
-    my $srcRes = $self->getDataSource()->getResolution();
-    if (!defined($ct)){
-        return $srcRes;
-    }
-    my @imgs = $self->getDataSource()->getImages();
-    my $res = 50000000.0;  # un pixel plus gros que la Terre en m ou en deg.
-    foreach my $img (@imgs){
-        # FIXME: il faut absoluement tester les erreurs ici:
-        #        les transformations WGS84G (PlanetObserver) vers PM ne sont pas possible au delà de 85.05°.
-
-        my $p1 = 0;
-        eval { $p1 = $ct->TransformPoint($img->getXmin(),$img->getYmin()); };
-        if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmin(),$img->getYmin());
-            return -1;
-        }
-
-        my $p2 = 0;
-        eval { $p2 = $ct->TransformPoint($img->getXmax(),$img->getYmax()); };
-        if ($@) {
-            ERROR($@);
-            ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$img->getXmax(),$img->getYmax());
-            return -1;
-        }
-
-        # JPB : FIXME attention au erreur d'arrondi avec les divisions 
-        my $xRes = $srcRes * (@{$p2}[0]-@{$p1}[0]) / ($img->getXmax()-$img->getXmin());
-        my $yRes = $srcRes * (@{$p2}[1]-@{$p1}[1]) / ($img->getYmax()-$img->getYmin());
-
-        $res=$xRes if $xRes < $res;
-        $res=$yRes if $yRes < $res;
-    }
-
-    return $res;
-}
 
 # method: updateLimits
 #  compare old corners' coordinates with the news and update values.
@@ -1812,28 +1710,6 @@ sub getCachePathOfImage {
     my $imageName = $self->getCacheNameOfImage($level, $x, $y, $type);
 
     return File::Spec->catfile($self->getPyrDataPath(), $self->getPyrName(), $imageName); 
-}
-
-# ref alias to getCacheNameOfImage !
-sub getCacheImageName {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
-
-    return $self->getCacheNameOfImage($level, $x, $y, $type);
-}
-
-# ref alias to getCachePathOfImage !
-sub getCacheImagePath {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
-
-    return  $self->getCachePathOfImage($level, $x, $y, $type);
 }
 
 sub isNewPyramid {

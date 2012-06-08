@@ -90,6 +90,7 @@ variable: $self
     * sources  => {}, # hash of ImageSource or HarvestSource objects
     * SRS => undef,
     * bottomExtent => undef, # OGR::Geometry object, in the previous SRS
+    * bottomBbox => [], # Bbox of bottomExtent [xmin,ymin,xmax,ymax]
 =cut
 
 
@@ -109,6 +110,7 @@ sub new {
         sources  => {},
         SRS => undef,
         bottomExtent => undef,
+        bottomBbox => []
     };
 
     bless($self, $class);
@@ -337,7 +339,7 @@ sub computeGlobalInfo {
         return FALSE;
     }
 
-    my $bottomExtent;
+    my $bottomExtent = undef;
 
     eval { $bottomExtent = Geo::OGR::Geometry->create(WKT=>$wktextent); };
     if ($@) {
@@ -345,11 +347,20 @@ sub computeGlobalInfo {
     }
 
     if (! defined $bottomExtent) {
-        ERROR(sprintf "Cannot create a Geometry from the string => %s.",$wktextent);
+        ERROR(sprintf "Cannot create a Geometry from the string : %s.",$wktextent);
         return FALSE;
     }
 
     $self->{bottomExtent} = $bottomExtent;
+
+    my $bboxref = $bottomExtent->GetEnvelope();
+    my ($xmin,$xmax,$ymin,$ymax) = ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+    if (! defined $xmin) {
+        ERROR("Cannot calculate bottomBbox");
+        return FALSE;
+    }
+    $self->{bottomBbox} = [$xmin,$ymin,$xmax,$ymax];
+    ALWAYS(sprintf "MIN %s,%s MAX %s,%s",$xmin,$ymin,$xmax,$ymax); #TEST#
 
     return TRUE;
 }
@@ -378,10 +389,14 @@ sub is_type {
 # Group: getters - setters
 
 sub getSRS {
-  my $self = shift;
-  return $self->{SRS};
+    my $self = shift;
+    return $self->{SRS};
 }
 
+sub getType {
+    my $self = shift;
+    return $self->{type};
+}
 
 1;
 __END__
@@ -410,18 +425,63 @@ __END__
         * sources : an hash of ImageSource or HarvestSource objects
         * SRS : SRS of the bottom extent (and GeoImage objects)
         * bottomExtent : an OGR geometry
+        * bottomBbox : Bbox of bottomExtent [xmin,ymin,xmax,ymax]
 
     Possible values :
 
         type => ["harvest","image"]
-  
-=head2 EXPORT
 
-None by default.
+=head1 FILE CONFIGURATION
+
+    In the be4 configuration
+
+        [ datasource ]
+        type                = image
+        filepath_conf       = /home/theo/TEST/BE4/SOURCE/images.source
+
+    In the source configuration (.source)
+        
+        type 'image'
+
+            [ global ]
+            srs = IGNF:LAMB93
+
+            [ 19 ]
+            path_image = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
+
+            [ 14 ]
+            path_image = /home/theo/DONNEES/BDORTHO_PARIS-EST_2011_L93/
+
+        type 'harvest'
+
+            [ global ]
+            srs = IGNF:LAMB93
+            box = 123,45,137,159
+                    or
+            box = /home/theo/TEST/BE4/SHAPE/Polygon.txt
+
+            [ 19 ]
+            wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
+            wms_url     = http://localhost/wmts/rok4
+            wms_version = 1.3.0
+            wms_request = getMap
+            wms_format  = image/tiff
+            image_width = 2048
+            image_height = 2048
+
+            [ 14 ]
+            wms_layer   = ORTHO_RAW_LAMB93_PARIS_EST
+            wms_url     = http://localhost/wmts/rok4
+            wms_version = 1.3.0
+            wms_request = getMap
+            wms_format  = image/tiff
+            image_width = 4096
+            image_height = 4096
+
 
 =head1 LIMITATION & BUGS
 
-    Does not implement the managing of metadata !
+    Metadata managing not yet implemented.
 
 =head1 SEE ALSO
 

@@ -39,19 +39,24 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-# version
-my $VERSION = "0.0.1";
-
-# My module
 use BE4::Tree;
 use BE4::Harvesting;
 
-# constantes
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
+################################################################################
+# Constantes
 # booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
@@ -70,30 +75,50 @@ use constant WGET_W => 35;
 use constant TIFF2TILE_W => 0;
 use constant TIFFCP_W => 0;
 
+################################################################################
+
+BEGIN {}
+INIT {}
+END {}
+
+################################################################################
+=begin nd
+Group: variable
+
+variable: $self
+    * pyramid    => undef, # Pyramid object
+    * nodata => undef, # NoData object
+    * harvesting => undef, # Harvesting object
+    * trees => [], # array of Tree objects
+    * job_number => undef,
+    * scripts => [],    # list of script
+    * path_temp  => undef,
+    * path_shell => undef,
+=cut
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
 
-# constructor: new
-#---------------------------------------------------------------------------------------------------
+# Group: constructor
+
 sub new {
     my $this = shift;
     
     my $class= ref($this) || $this;
     my $self = {
         # in
-        pyramid    => undef, # object Pyramid !
+        pyramid    => undef,
         #
-        job_number => undef, # param value !
-        path_temp  => undef, # param value !
-        path_shell => undef, # param value !
+        job_number => undef,
+        path_temp  => undef,
+        path_shell => undef,
         # 
-        tree       => undef, # object Tree !
-        nodata     => undef, # object NoData !
-        harvesting => undef, # object Harvesting !
+        trees       => [],
+        nodata     => undef,
+        harvesting => undef,
         # out
-        scripts    => [],    # list of script
+        scripts    => [],
     };
     bless($self, $class);
 
@@ -104,7 +129,6 @@ sub new {
     return $self;
 }
 
-# privates init.
 sub _init {
     my ($self, $params_process, $params_harvest, $pyr) = @_;
 
@@ -146,16 +170,10 @@ sub _init {
         return FALSE;
     }
 
-    # FIXME :
-    #    use case with only a transformation proj or compression without data ?
-
-    # it's an object !
-    if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
-        ||
-        (! $self->{pyramid}->isNewPyramid() && (
-        $self->{pyramid}->getCompression() eq 'jpg')
-    )) {
-
+    if ($self->{pyramid}->getDataSource()->getType() eq 'image' &&
+        (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()) ||
+        (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))))
+    {
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
 
         if (! defined $self->{harvesting}) {
@@ -166,12 +184,10 @@ sub _init {
         DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
     }
 
-    # FIXME :
-    #    use case with only a transformation proj or compression without data ?
+    my $dataSource = $self->{pyramid}->getDataSource();
+    my $TMS = $self->{pyramid}->getTileMatrixSet();
 
-    #  it's an object !
-    
-    $self->{tree} = BE4::Tree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
+    push @{$self->{trees}},BE4::Tree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
 
     if (! defined $self->{tree}) {
         ERROR("Can not create Tree object !");
@@ -187,6 +203,8 @@ sub _init {
 ####################################################################################################
 #                                  GENERAL COMPUTING METHOD                                        #
 ####################################################################################################
+
+# Group: general computing method
 
 # method: computeWholeTree
 #  Crée tous les script permettant de calculer les images de la pyramide.
@@ -204,7 +222,7 @@ sub _init {
 #         temps total de génération de la pyramide.
 #       - Les commande étant déjà écrites, il ne reste plus qu'à parcourir l'arbre et concaténer
 #         les bouts de code, et les écrire dans les scripts.
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 sub computeWholeTree {
     my $self = shift;
 
@@ -286,6 +304,8 @@ sub computeWholeTree {
 #                                  COMPUTING/WEIGHTER METHOD                                       #
 ####################################################################################################
 
+# Group: computing / weighter method
+
 # method: computeBottomImage 
 #  Construction de l'image du bas de la pyramide désignée par 'node'.
 #  On détermine le poids et le code correspondant à la génération de l'image du bas
@@ -308,7 +328,6 @@ sub computeWholeTree {
 # TODO:
 #  Dans le cas du PNG qui ne dégrade pas les images, on utilise untile+montage. Il faudrait écrire
 #  un outil améliorant cette tâche.
-#
 #---------------------------------------------------------------------------------------------------
 sub computeBottomImage {
     my $self = shift;
@@ -523,7 +542,7 @@ sub computeAboveImage {
 
 # method: computeBranch
 #  On détermine le poids et le code correspondant à la génération de toute les images d'une branche
-#--------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 sub computeBranch {
     my $self = shift;
     my $node = shift;
@@ -565,9 +584,11 @@ sub computeBranch {
 #                                          WRITER METHODS                                          #
 ####################################################################################################
 
+# Group: writer methods
+
 # method: writeBranchCode
 #  On assemble les bouts de code de chaque noeud de l'arbre, en partant du noeud passé en paramètre
-#--------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 sub writeBranchCode {
     my $self = shift;
     my $node = shift;
@@ -593,7 +614,7 @@ sub writeBranchCode {
 
 # method: writeTopCodes
 #  On assemble les bouts de code de tous les noeuds du haut de l'arbre, jusqu'au cutLevel
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 sub writeTopCodes {
     my $self = shift;
 
@@ -615,7 +636,7 @@ sub writeTopCodes {
 
 # method: writeTopCode
 #  On assemble les bouts de code d'un noeud du haut de l'arbre, jusqu'au cutLevel
-#--------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 sub writeTopCode {
     my $self = shift;
     my $node = shift;
@@ -638,6 +659,8 @@ sub writeTopCode {
 ####################################################################################################
 #                                      COMMANDS METHODS                                            #
 ####################################################################################################
+
+# Group: commands methods
 
 # method: wms2work
 #  Récupère par wget l'image correspondant à 'node', et l'enregistre dans le répertoire de travail sous
@@ -856,6 +879,8 @@ sub workNameOfNode {
 #                                        PUBLIC METHODS                                            #
 ####################################################################################################
 
+# Group: public methods
+
 # method: getRootTmpDir
 #  Retourne le répertoire de travail de la pyramide
 #-------------------------------------------------------------------------------
@@ -880,9 +905,8 @@ sub getScriptTmpDir {
 }
 
 # method: prepareScript
-#  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
-#  dalles noData.
-#-------------------------------------------------------------------------------
+#  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des dalles noData.
+#-------------------------------------------------------------------------------------------------
 sub prepareScript {
     my $self = shift;
     my $scriptId = shift;
@@ -986,7 +1010,7 @@ sub collectWorkImage(){
 # method: processScript
 #  Execution des scripts les uns apres les autres.
 #  (Orienté maintenance)
-#
+#--------------------------------------------------------------------------------------------
 sub processScript {
   my $self = shift;
   
@@ -1018,5 +1042,66 @@ sub processScript {
   
   return TRUE;
 }
+
 1;
 __END__
+
+# Below is stub documentation for your module. You'd better edit it!
+
+=head1 NAME
+
+    BE4::Process - compose scripts to generate the cache
+
+=head1 SYNOPSIS
+
+    use BE4::Process;
+  
+    # Process object creation
+    my $objProcess = BE4::Process->new(
+        $params->{process},
+        $harvestingParams,
+        $objPyramid
+    );
+
+    # Scripts generation
+    if (! $objProcess->computeWholeTree()) {
+        ERROR ("Can not compute process !");
+        return FALSE;
+    }
+
+=head1 DESCRIPTION
+
+    A Process object
+
+        * pyramid : Pyramid object
+        * nodata : NoData object
+        * harvesting : Harvesting object
+        * trees : array of Tree objects
+        * job_number : work will be shared between job_number scripts, and a SCRIPT_FINISHER
+        * scripts : array which contains scripts' names
+        * path_temp : work directory, for temporary files
+        * path_shell : be4 execution directory
+
+
+=head1 LIMITATION & BUGS
+
+
+=head1 SEE ALSO
+    
+    BE4::Tree
+    BE4::NoData
+    BE4::Pyramid
+    BE4::Harvesting
+
+=head1 AUTHOR
+
+    Satabin Théo, E<lt>tsatabin@E<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+    Copyright (C) 2011 by Satabin Théo
+
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
+    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut
