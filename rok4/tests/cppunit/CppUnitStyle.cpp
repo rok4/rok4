@@ -123,11 +123,11 @@ void CppUnitStyle::setUp() {
 
     palette0 = new Palette();
 
-    srand ( time ( NULL ) );
+    /*srand ( time ( NULL ) );
     for ( int i = 0 ; i < 255; ++i ) {
         colours.push_back ( Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) );
     }
-    palette1 = new Palette ( colours );
+    palette1 = new Palette ( colours );*/
 
 
 }
