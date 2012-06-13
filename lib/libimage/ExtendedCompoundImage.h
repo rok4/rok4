@@ -100,7 +100,7 @@ protected:
       * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
      */
     ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
-        Image(width, height, channels,bbox),
+        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         nodata(nodata),
         sampleformat(sampleformat),
@@ -108,7 +108,7 @@ protected:
         nowhite(nowhite) {}
 
     ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
-        Image(width, height, channels,bbox),
+        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         masks(masks),
         nodata(nodata),
@@ -167,7 +167,7 @@ private:
 public:
     /** Constructeur */
     ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
-        Image(ECI->width, ECI->height, 1,ECI->getbbox()),
+        Image(ECI->width, ECI->height, ECI->getresx(), ECI->getresy(), 1,ECI->getbbox()),
         ECI(ECI) {}
 
     /** Implementation de getline pour les uint8_t */
