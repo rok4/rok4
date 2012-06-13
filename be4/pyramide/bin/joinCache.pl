@@ -530,8 +530,8 @@ sub openStreams {
         my $scriptName     = join('.',$scriptId,'sh');
         my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
 
-        if (! -d dirname($this{process}->{path_shell})) {
-            my $dir = dirname($this{process}->{path_shell});
+        if (! -d dirname($scriptFilePath)) {
+            my $dir = dirname($scriptFilePath);
             DEBUG (sprintf "Create the script directory'%s' !", $dir);
             eval { mkpath([$dir]); };
             if ($@) {
@@ -1407,7 +1407,7 @@ sub writeNodata {
         
     my $nodatadir = dirname($nodataFilePath);
 
-    if (! -e $nodatadir) {
+    if (! -d $nodatadir) {
         #create folders
         eval { mkpath([$nodatadir]); };
         if ($@) {
@@ -1435,8 +1435,7 @@ sub writeNodata {
     $cmd .= sprintf ( " %s", $nodataFilePath);
     
     if (! system($cmd) == 0) {
-        ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
-                        The command is incorrect : '%s'",
+        ERROR (sprintf "Impossible to create the nodata tile for the level %i !\nThe command is incorrect : '%s'",
                         $level->getID(),
                         $cmd);
         return FALSE;

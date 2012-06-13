@@ -166,12 +166,15 @@ sub _init {
     $self->{nodata} = $self->{pyramid}->getNodata();
 
     if (! defined $self->{nodata} || ref ($self->{nodata}) ne "BE4::NoData") {
-        ERROR("Can not load NoData Tile !");
+        ERROR("Can not load NoData object !");
         return FALSE;
     }
 
-    if ($self->{pyramid}->getDataSource()->getType() eq 'image' &&
-        (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS()) ||
+    my $dataSource = $self->{pyramid}->getDataSource();
+    my $TMS = $self->{pyramid}->getTileMatrixSet();
+
+    if ($dataSource->getType() eq 'image' &&
+        (($dataSource->getSRS() ne $TMS->getSRS()) ||
         (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))))
     {
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
@@ -184,8 +187,7 @@ sub _init {
         DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
     }
 
-    my $dataSource = $self->{pyramid}->getDataSource();
-    my $TMS = $self->{pyramid}->getTileMatrixSet();
+    
 
     push @{$self->{trees}},BE4::Tree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
 
