@@ -247,8 +247,9 @@ sub getFile {
 # TileWidth TileHeight
 sub getTileWidth {
   my $self = shift;
+  my $levelID = shift;
   # size of tile in pixel !
-  return $self->{tilematrix}->{$self->{levelbottom}}->{tilewidth};
+  return $self->{tilematrix}->{$levelID}->{tilewidth};
 }
 sub getTileHeight {
   my $self = shift;
@@ -285,7 +286,6 @@ sub getTileMatrix {
   
   if (! defined $level) {
     return undef;
-    #return $self->{tilematrix};
   }
   
   return undef if (! exists($self->{tilematrix}->{$level}));

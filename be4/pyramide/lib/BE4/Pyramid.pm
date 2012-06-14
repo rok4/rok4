@@ -74,7 +74,6 @@ my $VERSION = "0.0.1";
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant CREATE_NODATA     => "createNodata";
 
 ################################################################################
 # Global
@@ -121,7 +120,6 @@ variable: $self
     * dir_metadata => undef, # dir name
     * image_width  => undef, # number
     * image_height => undef, # number
-    * imagesize    => undef, # number ie 4096 px by default !
     * pyrImgSpec => undef,   # it's an object !
     * datasource => undef,   # it's an object !
     * tms        => undef,   # it's an object !
@@ -180,8 +178,6 @@ sub new {
         dir_metadata => undef, # dir name
         image_width  => undef, # number
         image_height => undef, # number
-        #
-        imagesize    => undef, # number ie 4096 px by default !
 
         # OUT
         pyrImgSpec => undef,   # it's an object !
@@ -296,9 +292,6 @@ sub _init {
     $self->{dir_depth} = $params->{dir_depth}
         || ( ERROR ("Parameter 'dir_depth' is required!") && return FALSE );
     #
-    exists $params->{path_nodata}
-        || ( ERROR ("Parameter to 'path_nodata' is required!") && return FALSE );
-    #
     
     # this option are optional !
     #
@@ -322,16 +315,6 @@ sub _init {
     }
     $self->{pyr_level_top} = $params->{pyr_level_top};
     
-    # 
-    # you can choice this option with value by default !
-    #
-    # NV: FIXME: il ne doit pas etre possible de definir une taille differente de celle des dalles du cache.
-    #            il ne faut donc pas que ce soit un parametre.
-    if (! exists($params->{imagesize})) {
-        WARN ("Parameter 'nodata.imagesize' has not been set. The default value is 4096 px");
-        $params->{imagesize} = '4096';
-    }
-    $self->{imagesize} = $params->{imagesize};
     #
     if (! exists($params->{nowhite})) {
         $params->{nowhite} = 'false';
@@ -386,7 +369,6 @@ sub _init {
     $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
     #
     # TODO path !
-    if (! -d $params->{path_nodata}) {}
     if (! -d $self->{new_pyramid}->{desc_path}) {}
     if (! -d $self->{old_pyramid}->{desc_path}) {}
     if (! -d $params->{tms_path}) {}
@@ -415,9 +397,7 @@ sub _load {
 
     # create NoData !
     my $objNodata = BE4::NoData->new({
-            path_nodata      => $params->{path_nodata},
             pixel            => $self->getPixel(),
-            imagesize        => $self->getImageSize(), 
             color            => $params->{color},
             nowhite          => $params->{nowhite}
     });
@@ -671,15 +651,13 @@ sub readConfPyramid {
     my @directories = File::Spec->splitdir($level->findvalue('baseDir'));
     # <baseDir> : rel_datapath_from_desc/dir_image/level
     #                                       -2      -1
-    my $dir_image = $directories[scalar(@directories)-2];
-    $self->{dir_image} = $dir_image;
+    $self->{dir_image} = $directories[scalar(@directories)-2];
     
     # read nodata directory name in the old pyramid, using a level
     @directories = File::Spec->splitdir($level->findvalue('nodata/filePath'));
     # <filePath> : rel_datapath_from_desc/dir_nodata/level/nd.tiff
     #                                        -3       -2     -1
-    my $dir_nodata = $directories[scalar(@directories)-3];
-    $self->{dir_nodata} = $dir_nodata;
+    $self->{dir_nodata} = $directories[scalar(@directories)-3];
 
     foreach my $v (@levels) {
 
@@ -709,20 +687,19 @@ sub readConfPyramid {
                                            );
         #
         my $levelOrder = $self->getLevelOrder($tagtm);
-        my $objLevel = BE4::Level->new(
-            {
-                id                => $tagtm,
-                order             => $levelOrder,
-                dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-                dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
-                dir_metadata      => undef,      # TODO !
-                compress_metadata => undef,      # TODO !
-                type_metadata     => undef,      # TODO !
-                size              => [$tagsize[0],$tagsize[1]],
-                dir_depth         => $tagdirdepth,
-                limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
-                is_in_pyramid  => 0
-            });
+        my $objLevel = BE4::Level->new({
+            id                => $tagtm,
+            order             => $levelOrder,
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
+            size              => [$tagsize[0],$tagsize[1]],
+            dir_depth         => $tagdirdepth,
+            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+            is_in_pyramid  => 0
+        });
             
 
         if (! defined $objLevel) {
@@ -732,7 +709,7 @@ sub readConfPyramid {
 
         $self->{levels}->{$tagtm} = $objLevel;
 
-        # fill parameters if not ... !
+        # fill parameters image width and height : the same for each level
         $self->{image_width}  = $tagsize[0];
         $self->{image_height} = $tagsize[1];
     }
@@ -1087,37 +1064,6 @@ sub calculateTMLimits {
 #                              FUNCTIONS FOR WRITING PYRAMID'S ELEMENTS                            #
 ####################################################################################################
 
-# method: createNodata
-#  create command to create a nodata tile with same parameters as images.
-#---------------------------------------------------------------------------------------------------
-sub createNodata {
-    my $self = shift;
-    my $nodataFilePath = shift;
-    
-    TRACE();
-    
-    my $sizex = int($self->getImageSize()) / int($self->getTilePerWidth());
-    my $sizey = int($self->getImageSize()) / int($self->getTilePerHeight());
-    my $compression = $self->getCompression();
-  
-    # cas particulier de la commande createNodata :
-    $compression = ($compression eq 'raw'?'none':$compression);
-    
-    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->getNodataColor());
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s", $self->getPhotometric());
-    $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
-    $cmd .= sprintf ( " -b %s", $self->getBitsPerSample());
-    $cmd .= sprintf ( " -s %s", $self->getSamplesPerPixel());
-    $cmd .= sprintf ( " -a %s", $self->getSampleFormat());
-    $cmd .= sprintf ( " %s", $nodataFilePath);
-
-    return $cmd;
-    
-}
-
-
-
 # method: writeConfPyramid
 #  Manipulate the Configuration File Pyramid /* in/out */
 #---------------------------------------------------------------------------------------------------
@@ -1372,27 +1318,15 @@ sub writeCachePyramid {
         $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
         
         if (! -e $nodataFilePath) {
-            
-            my $nodatadir = dirname($nodataFilePath);
 
-            if (! -e $nodatadir) {
-                #create folders
-                eval { mkpath([$nodatadir]); };
-                if ($@) {
-                    ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
-                    return FALSE;
-                }
-            }
+            my $width = $self->getTileMatrixSet()->getTileWidth($objLevel->{id});
+            my $height = $self->getTileMatrixSet()->getTileHeight($objLevel->{id});
 
-            my $createNodataCommand = $self->createNodata($nodataFilePath);
-            
-            if (! system($createNodataCommand) == 0) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
-                                The command is incorrect : '%s'",
-                                $objLevel->getID(),
-                                $createNodataCommand);
+            if (! $self->{nodata}->createNodata($nodataFilePath,$width,$height,$self->getCompression())) {
+                ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
                 return FALSE;
-            }
+            }            
+
         }
    
     }
@@ -1604,26 +1538,24 @@ sub setTopLevel {
     $self->{pyr_level_top} = $TopLevel;
 }
 
-# Image's size
-sub getImageSize {
-    my $self = shift;
-    # size of cache image in pixel !
-    return $self->{imagesize} ;
-}
+
 sub getCacheImageSize {
     my $self = shift;
-    # size of cache image in pixel !
-    return ($self->getCacheImageWidth(), $self->getCacheImageHeight());
+    my $level = shift;
+    # size of cache image in pixel for a defined level !
+    return ($self->getCacheImageWidth($level), $self->getCacheImageHeight($level));
 }
 sub getCacheImageWidth {
     my $self = shift;
-    # size of cache image in pixel !
-    return $self->getTilePerWidth() * $self->getTileMatrixSet()->getTileWidth();
+    my $level = shift;
+    # width of cache image in pixel for a defined level !
+    return $self->getTilePerWidth() * $self->getTileMatrixSet()->getTileWidth($level);
 }
 sub getCacheImageHeight {
     my $self = shift;
-    # size of cache image in pixel !
-    return $self->getTilePerHeight() * $self->getTileMatrixSet()->getTileHeight();
+    my $level = shift;
+    # height of cache image in pixel for a defined level !
+    return $self->getTilePerHeight() * $self->getTileMatrixSet()->getTileHeight($level);
 }
 sub getTilePerWidth {
     my $self = shift;
@@ -1738,7 +1670,7 @@ sub _IDXtoX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWidth();
+  my $sx  = $self->getCacheImageWidth($level);
   
   my $x = ($idx * $rx * $sx) + $xo ;
 
@@ -1753,7 +1685,7 @@ sub _IDXtoY {
   
   my $yo  = $tm->getTopLeftCornerY();
   my $ry  = $tm->getResolution();
-  my $sy  = $self->getCacheImageHeight();
+  my $sy  = $self->getCacheImageHeight($level);
   
   my $y = $yo - ($idx * $ry * $sy);
   
@@ -1777,7 +1709,7 @@ sub _XtoIDX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWidth();
+  my $sx  = $self->getCacheImageWidth($level);
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
 
@@ -1794,7 +1726,7 @@ sub _YtoIDX {
   
   my $yo  = $tm->getTopLeftCornerY();
   my $ry  = $tm->getResolution();
-  my $sy  = $self->getCacheImageHeight();
+  my $sy  = $self->getCacheImageHeight($level);
   
   $idx = int(($yo - $y) / ($ry * $sy)) ;
   
@@ -1876,7 +1808,6 @@ __END__
     dir_nodata    => "NODATA",
     dir_metadata => "METADATA",
     #
-    path_nodata   => "./t/data/nodata/",
     imagesize     => "1024",
     color         => "FFFFFF, ----> present in the file .pyr
     #
@@ -1913,7 +1844,6 @@ __END__
     image_width  => "16", 
     image_height => "16",
     # 
-    path_nodata   => "./t/data/nodata/",
     imagesize     => "1024",
     color         => "FFFFFF",
     #
@@ -1954,7 +1884,6 @@ To create a new pyramid, you must fill all parameters following :
     tms_name      =
     tms_path      = 
     # 
-    path_nodata   =
     imagesize     => by default, it's '4096' !
     color         => by default, it's 'FFFFFF' !
     # 
@@ -1980,7 +1909,6 @@ To create a new pyramid, you must fill all parameters following :
     #
     tms_path      = 
     # 
-    path_nodata   =
     imagesize     => by default, it's '4096' !
     color         => by default, it's 'FFFFFF' !
     # 

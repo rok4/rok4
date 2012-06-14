@@ -72,6 +72,8 @@ variable: $self
     * REQUEST  => undef, # ie getMap
     * FORMAT   => undef, # ie image/png
     * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
+    * image_width => 4096, # images size which will be harvested
+    * image_height => 4096
 =cut
 
 ####################################################################################################
@@ -90,6 +92,8 @@ sub new {
         REQUEST  => undef,
         FORMAT   => undef,
         LAYERS    => undef,
+        image_width => 4096,
+        image_height => 4096
     };
 
     bless($self, $class);
@@ -112,7 +116,15 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    # parameters mandatoy !
+    if (! exists($params->{image_width}) || ! defined ($params->{image_width})) {
+        ERROR("key/value required to 'image_width' !");
+        return FALSE ;
+    }
+    if (! exists($params->{image_height}) || ! defined ($params->{image_height})) {
+        ERROR("key/value required to 'image_height' !");
+        return FALSE ;
+    }
+
     if (! exists($params->{wms_url})     || ! defined ($params->{wms_url})) {
         ERROR("key/value required to 'wms_url' !");
         return FALSE ;
@@ -148,6 +160,8 @@ sub _init {
     $self->request($params->{wms_request});
     $self->format($params->{wms_format});
     $self->layers($params->{wms_layer});
+    $self->{image_width} = $params->{image_width};
+    $self->{image_height} = $params->{image_height};
 
     return TRUE;
 }
@@ -225,6 +239,16 @@ sub format {
 sub layers {
     my $self = shift;
     if (@_) { $self->{LAYERS} = shift; }
+    return $self->{LAYERS};
+}
+
+sub image_size {
+    my $self = shift;
+    my $width = shift;
+    my $height = shift;
+
+
+
     return $self->{LAYERS};
 }
 

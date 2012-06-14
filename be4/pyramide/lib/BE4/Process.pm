@@ -495,7 +495,7 @@ sub computeAboveImage {
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
                     # On ne peut pas avoir d'image alors on donne une couleur de nodata
-                    $bg='-n ' . $self->{nodata}->getColor();
+                    $bg='-n ' . $self->{nodata}->getValue();
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
@@ -507,7 +507,7 @@ sub computeAboveImage {
             }
         } else {
             # On a pas d'image alors on donne une couleur de nodata
-            $bg='-n ' . $self->{nodata}->getColor();
+            $bg='-n ' . $self->{nodata}->getValue();
         }
     }
 
@@ -761,7 +761,7 @@ sub work2cache {
   my $workImgName  = $self->workNameOfNode($node);
   my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
   
-  my $tms = $self->{pyramid}->getTileMatrixSet();
+  my $tm = $self->{pyramid}->getTileMatrixSet()->getTileMatrix($node->{level});
   my $compression = $self->{pyramid}->getCompression();
   my $compressionoption = $self->{pyramid}->getCompressionOption();
   
@@ -784,7 +784,7 @@ sub work2cache {
   }
 
   $cmd .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
-  $cmd .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
+  $cmd .= sprintf ("-t %s %s ", $tm->getTileWidth(), $tm->getTileHeight());
   $cmd .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
   $cmd .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
   $cmd .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
@@ -820,7 +820,7 @@ sub mergeNtiff {
 
   my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
     $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
-    $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
+    $cmd .= sprintf ( " -n %s ", $self->{nodata}->getValue() );
     $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
     $cmd .= sprintf ( " -t %s ", $dataType);
     $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());

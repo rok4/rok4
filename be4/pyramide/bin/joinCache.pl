@@ -60,6 +60,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4::TileMatrixSet;
 use BE4::Pixel;
+use BE4::NoData;
 use BE4::Level;
 
 # constantes
@@ -1321,7 +1322,7 @@ sub transformImage {
 
 
 # method: writePyr
-#  ecrit le fichier .pyr
+#  ecrit le fichier .pyr and the nodata tiles
 #-------------------------------------------------------------------------------
 sub writePyr {
 
@@ -1346,9 +1347,16 @@ sub writePyr {
     #  
     my $channel = $this{pyramid}->{pixel}->{samplesperpixel};
     $strpyrtmplt =~ s/__CHANNEL__/$channel/;
-    #  
-    my $nodata = "FF"x($channel);
-    $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
+    # 
+
+    my $nodata = BE4::NoData->new({
+        value => undef, #default value will be set.
+        pixel => $this{pyramid}->{pixel},
+        nowhite => "false"
+    )}
+
+    my $nodataValue = $nodata->getValue();
+    $strpyrtmplt =~ s/__NODATAVALUE__/$nodataValue/;
     #  
     $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;
     #  
@@ -1357,10 +1365,19 @@ sub writePyr {
     $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
 
     foreach my $objLevel (values %{$this{pyramid}->{levels}}){
+        # write each level in XML format in the pyramid's descriptor
         my $levelXML = $objLevel->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
-        if (! main::writeNodata($objLevel,$nodata)) {
-            ERROR(sprintf "Cannot write the nodata tile for the level %s",$objLevel->getID());
+
+        # create the nodata tile for each level
+        my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
+        $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+
+        my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->getID);
+        my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->getID);
+
+        if (! $self->{nodata}->createNodata($nodataFilePath,$width,$height,$self->getCompression())) {
+            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
             return FALSE;
         }
     }
@@ -1387,59 +1404,6 @@ sub writePyr {
     printf $PYRAMID "%s", $strpyrtmplt;
     #
     close $PYRAMID;
-
-    return TRUE;
-}
-
-
-# method: writeNodata
-#  ecrit les tuiles de nodata
-#-------------------------------------------------------------------------------
-sub writeNodata {
-
-    my $level = shift;
-    my $nodata = shift;
-
-    TRACE;
-    
-    my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
-    $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
-        
-    my $nodatadir = dirname($nodataFilePath);
-
-    if (! -d $nodatadir) {
-        #create folders
-        eval { mkpath([$nodatadir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
-            return FALSE;
-        }
-    }
-
-    my $tm  = $this{pyramid}->{tms}->getTileMatrix($level->getID);
-
-    my $sizex = $tm->getTileWidth();
-    my $sizey = $tm->getTileHeight();
-    my $compression = $this{pyramid}->{compression};
-  
-    # cas particulier de la commande createNodata :
-    $compression = ($compression eq 'raw'?'none':$compression);
-    
-    my $cmd = sprintf ("createNodata -n %s",$nodata);
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s",$this{pyramid}->{pixel}->{photometric});
-    $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
-    $cmd .= sprintf ( " -b %s",$this{pyramid}->{pixel}->{bitspersample});
-    $cmd .= sprintf ( " -s %s",$this{pyramid}->{pixel}->{samplesperpixel});
-    $cmd .= sprintf ( " -a %s",$this{pyramid}->{pixel}->{sampleformat});
-    $cmd .= sprintf ( " %s", $nodataFilePath);
-    
-    if (! system($cmd) == 0) {
-        ERROR (sprintf "Impossible to create the nodata tile for the level %i !\nThe command is incorrect : '%s'",
-                        $level->getID(),
-                        $cmd);
-        return FALSE;
-    }
 
     return TRUE;
 }

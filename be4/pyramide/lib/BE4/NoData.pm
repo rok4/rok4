@@ -57,6 +57,7 @@ our $VERSION = '0.0.1';
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+use constant CREATE_NODATA     => "createNodata";
 
 ################################################################################
 # Global
@@ -74,13 +75,9 @@ sub new {
 
   my $class= ref($this) || $this;
   my $self = {
-    path_nodata     => undef,
-    #
-    imagesize       => '4096', # ie 4096 px by default !
     pixel           => undef, # Pixel object
-    color           => undef, # ie FFFFFF by default !
-    nowhite         => FALSE, # false by default !
-    # no interpolation for the tile image !
+    value           => undef, # FFFFFF or -99999 by default !
+    nowhite         => undef, # FALSE by default
   };
 
   bless($self, $class);
@@ -104,7 +101,7 @@ sub _init {
     return FALSE if (! defined $params);
     
     # init. params
-    # All attributes have to be present in parameters and defined, except 'color' which could be undefined
+    # All attributes have to be present in parameters and defined, except 'value' which could be undefined
 
     if (! exists  $params->{nowhite} || ! defined  $params->{nowhite}) {
         ERROR ("Parameter 'nowhite' required !");
@@ -120,59 +117,40 @@ sub _init {
         return FALSE;
     }
 
-    if (! exists  $params->{imagesize} || ! defined  $params->{imagesize}) {
-        ERROR ("Parameter 'imagesize' required !");
-        return FALSE;
-    }
-    $self->{imagesize}      = $params->{imagesize};
-
-
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
-    $self->{pixel}          = $params->{pixel};
+    $self->{pixel} = $params->{pixel};
 
-
-    if (! exists  $params->{path_nodata} || ! defined  $params->{path_nodata}) {
-        ERROR ("Parameter 'path_nodata' required !");
-        return FALSE;
-    }
-    if (! -d $params->{path_nodata}) {
-        ERROR ("Directory doesn't exist !");
-        return FALSE;
-    }
-    $self->{path_nodata}    = $params->{path_nodata};
-
-
-    if (! exists  $params->{color}) {
-        ERROR ("Parameter 'color' required !");
+    if (! exists  $params->{value}) {
+        ERROR ("Parameter 'value' required !");
         return FALSE;
     }
 
 #   for nodata value, it has to be coherent with bitspersample/sampleformat :
 #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
 #       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
-    if (! defined ($params->{color})) {
+    if (! exists $params->{value} || ! defined ($params->{value})) {
         if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
-            WARN ("Parameter 'nodata.color' has not been set. The default value is -99999");
-            $params->{color} = '-99999';
+            WARN ("Parameter 'nodata value' has not been set. The default value is -99999");
+            $params->{value} = '-99999';
         } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            WARN ("Parameter 'nodata.color' has not been set. The default value is FFFFFF");
-            $params->{color} = 'FFFFFF';
+            WARN ("Parameter 'nodata value' has not been set. The default value is FFFFFF");
+            $params->{value} = 'FF'x($self->{pixel}->{samplesperpixel});
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
         }
     } else {
         if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
-            if (!($params->{color} =~ m/^[-+]?(\d)+$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for a float32 pixel's format (%s) !",$params->{color});
+            if (!($params->{value} =~ m/^[-+]?(\d)+$/)) {
+                ERROR (sprintf "Incorrect parameter nodata for a float32 pixel's format (%s) !",$params->{value});
                 return FALSE;
             }
         } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            if (!($params->{color}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for this int8 pixel's format (%s) !",$params->{color});
+            if (!($params->{value}=~m/^[A-Fa-f0-9]{2,}$/)) {
+                ERROR (sprintf "Incorrect parameter nodata for this int8 pixel's format (%s) !",$params->{value});
                 return FALSE;
             }
         } else {
@@ -181,103 +159,65 @@ sub _init {
         }
     }
     
-    $self->{color} = $params->{color};
+    $self->{value} = $params->{value};
     
     return TRUE;
 }
 ################################################################################
 # get /set
-sub getColor {
+sub getValue {
   my $self = shift;
-  return $self->{color};
+  return $self->{value};
 }
-sub getFile {
-  my $self = shift;
-  my $imagefile = join(".", $self->getName(), "tif");
-  return $imagefile;
-}
-sub getPath {
-  my $self = shift;
-  
-  my $path = File::Spec->catdir($self->{path_nodata}, $self->{imagesize});
-  
-  return $path;
-}
-sub getName {
-  my $self = shift;
-  
-  my $imagename = join("_",
-                    "nodata",
-                    $self->{sampleformat}.$self->{bitspersample},
-                    $self->{photometric},
-                    $self->{samplesperpixel},
-                    $self->{color},
-                  );
-  
-  return $imagename;
-}
+
 ################################################################################
 # public method
-sub createImageNoData {
-  my $self = shift;
+
+# method: createNodata
+#  create a nodata tile.
+#---------------------------------------------------------------------------------------------------
+sub createNodata {
+    my $self = shift;
+    my $nodataFilePath = shift;
+    my $width = shift;
+    my $height = shift;
+    my $compression = shift;
+    
+    TRACE();
   
-  # TODO : create on runtime a tile image !
-  return TRUE;
+    # cas particulier de la commande createNodata :
+    $compression = ($compression eq 'raw'?'none':$compression);
+    
+    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{value});
+    $cmd .= sprintf ( " -c %s", $compression);
+    $cmd .= sprintf ( " -p %s", $self->{pixel}->{photometric});
+    $cmd .= sprintf ( " -t %s %s",$width,$height);
+    $cmd .= sprintf ( " -b %s", $self->{pixel}->{bitspersample});
+    $cmd .= sprintf ( " -s %s", $self->{pixel}->{samplesperpixel});
+    $cmd .= sprintf ( " -a %s", $self->{pixel}->{sampleformat});
+    $cmd .= sprintf ( " %s", $nodataFilePath);
+
+    my $nodatadir = dirname($nodataFilePath);
+
+    if (! -d $nodatadir) {
+        #create folders
+        eval { mkpath([$nodatadir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
+            return FALSE;
+        }
+    }
+    
+    if (! system($createNodataCommand) == 0) {
+        ERROR (sprintf "The command to create a nodata tile is incorrect : '%s'",$cmd);
+        return FALSE;
+    }
+
+    return TRUE;
+    
 }
-################################################################################
-# static method
-sub getImageNoData {
-  my $clazz= shift;
-  return undef if (!$clazz->isa(__PACKAGE__));
-  
-  my $args = shift;
-  
-  if (ref($args) ne "HASH") {
-    ERROR ("Parameters in a HASH structure required !");
-    return undef;
-  }
-  
-  TRACE;
-  
-  my $imagename = undef;
-  
-  # optional !
-  #if (! exists  ($args->{imagesize})) {
-  #  ERROR ("Parameter 'imagesize' required !");
-  #  return undef;
-  #}
-  if (! exists  ($args->{bitspersample})) {
-    ERROR ("Parameter 'bitspersample' required !");
-    return undef;
-  }
-  if (! exists  ($args->{samplesperpixel})) {
-    ERROR ("Parameter 'samplesperpixel' required !");
-    return undef;
-  }
-  if (! exists  ($args->{sampleformat})) {
-    ERROR ("Parameter 'sampleformat' required !");
-    return undef;
-  }
-  if (! exists  ($args->{photometric})) {
-    ERROR ("Parameter 'photometric' required !");
-    return undef;
-  }
-  if (! exists  ($args->{color})) {
-    ERROR ("Parameter 'color' required !");
-    return undef;
-  }
-  
-  $imagename = join("_",
-                    "nodata",
-                    $args->{sampleformat}.$args->{bitspersample},
-                    $args->{photometric},
-                    $args->{samplesperpixel},
-                    $args->{color},
-                  );
-  $imagename .= ".tif";
-  
-  return $imagename;
-}
+
+
 1;
 __END__
 

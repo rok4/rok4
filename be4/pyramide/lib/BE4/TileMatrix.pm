@@ -138,8 +138,8 @@ sub new {
     resolution     => undef,
     topleftcornerx => undef,
     topleftcornery => undef,
-    tilewidth      => undef, # ie 256 by default ?
-    tileheight     => undef, # ie 256 by default ?
+    tilewidth      => undef, # often 256
+    tileheight     => undef, # often 256
     matrixwidth    => undef,
     matrixheight   => undef,
   };
