@@ -51,7 +51,8 @@ public:
     uint8_t b;
     int a;
     ~Colour();
-
+    bool operator==(const Colour& other) const;
+    bool operator!=(const Colour& other) const;
 };
 
 

@@ -50,6 +50,23 @@ Colour::~Colour() {
 
 }
 
+bool Colour::operator== ( const Colour& other ) const {
+    if ( this->r != other.r )
+        return false;
+    if ( this->g != other.g )
+        return false;
+    if ( this->b != other.b )
+        return false;
+    if ( this->a != other.a )
+        return false;
+    return true;
+}
+
+bool Colour::operator!= ( const Colour& other ) const {
+    return ! ( *this == other );
+}
+
+
 
 Palette::Palette() : pngPaletteInitialised ( false ), rgbContinuous ( false ), alphaContinuous ( false ) {
     pngPaletteSize = 0;
@@ -94,7 +111,7 @@ void Palette::buildPalettePNG() {
         LOGGER_DEBUG ( "Palette PNG OK" );
         std::vector<Colour> colours;
         for ( int k = 0; k < 256 ; ++k ) {
-            Colour tmp = getColour(k);
+            Colour tmp = getColour ( k );
             colours.push_back ( Colour ( tmp.r,tmp.g,tmp.b, ( tmp.a==-1? ( 255-k ) :tmp.a ) ) );
         }
         int numberColor = colours.size();
@@ -191,13 +208,30 @@ Palette& Palette::operator= ( const Palette& pal ) {
 }
 
 bool Palette::operator== ( const Palette& other ) const {
-    bool equal = true;
-    if ( this->pngPaletteSize != other.pngPaletteSize )
-        return false;
-    for ( size_t pos = this->pngPaletteSize -1; pos && equal; --pos ) {
-        equal = ( * ( this->pngPalette+pos ) == * ( other.pngPalette+pos ) );
+    if ( this->pngPalette && other.pngPalette ) {
+        if ( this->pngPaletteSize != other.pngPaletteSize )
+            return false;
+        for ( size_t pos = this->pngPaletteSize -1; pos; --pos ) {
+            if ( ! ( * ( this->pngPalette+pos ) == * ( other.pngPalette+pos ) ) )
+                return false;
+
+
+        }
     }
-    return equal;
+    if ( this->coloursMap.size() != other.coloursMap.size() )
+        return false;
+    std::map<double,Colour>::const_iterator i,j;
+    for ( i = this->coloursMap.begin(), j = other.coloursMap.begin(); i != this->coloursMap.end(); ++i, ++j ) {
+        if ( i->first == j->first ) {
+            if ( i->second != j->second ) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool Palette::operator!= ( const Palette& other ) const {

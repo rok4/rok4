@@ -82,7 +82,7 @@ protected:
     //Emtpy Palette
     Palette* palette0;
     //Effective Palette
-    std::vector<Colour> colours;
+    std::map<double,Colour> colours;
     Palette* palette1;
 
 
@@ -123,12 +123,12 @@ void CppUnitStyle::setUp() {
 
     palette0 = new Palette();
 
-    /*srand ( time ( NULL ) );
+    srand ( time ( NULL ) );
     for ( int i = 0 ; i < 255; ++i ) {
-        colours.push_back ( Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) );
+        colours.insert (std::pair<double,Colour>(i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ));
     }
-    palette1 = new Palette ( colours );*/
-
+    palette1 = new Palette ( colours,false,false );
+    palette1->buildPalettePNG();
 
 }
 
