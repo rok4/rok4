@@ -39,6 +39,7 @@
 #define PALETTE_H
 #include <stdint.h>
 #include <vector>
+#include <map>
 #include <stddef.h>
 
 class Colour {
@@ -50,7 +51,8 @@ public:
     uint8_t b;
     int a;
     ~Colour();
-
+    bool operator==(const Colour& other) const;
+    bool operator!=(const Colour& other) const;
 };
 
 
@@ -60,6 +62,11 @@ class Palette
 private:
     size_t pngPaletteSize;
     uint8_t* pngPalette;
+    bool pngPaletteInitialised;
+    std::map<double,Colour> coloursMap;
+    bool rgbContinuous;
+    bool alphaContinuous;
+    
 public:
     /**
      *
@@ -69,16 +76,24 @@ public:
     Palette();
     Palette(size_t pngPaletteSize, uint8_t* pngPalette);
     Palette(const Palette& pal);
-    Palette(const std::vector< Colour >& mcolours);
+    //Palette(const std::vector< Colour >& mcolours);
+    
+    Palette(const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous );
+    
     Palette & operator=(const Palette& pal);
     bool operator==(const Palette& other) const;
     bool operator!=(const Palette& other) const;
     virtual ~Palette();
-    size_t getPalettePNGSize() {
-        return pngPaletteSize;
-    }
+    size_t getPalettePNGSize();
+    
+    void buildPalettePNG();
+    
     uint8_t* getPalettePNG();
-
+    std::map<double,Colour>* getColoursMap() {return &coloursMap;}
+    bool isRGBContinuous(){return rgbContinuous;}
+    bool isAlphaContinuous(){return alphaContinuous;}
+    Colour getColour(double index);
+    
 };
 
 

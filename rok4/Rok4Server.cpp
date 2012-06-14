@@ -53,6 +53,7 @@
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
 #include "Message.h"
+#include "StyledImage.h"
 #include "Logger.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
@@ -167,7 +168,7 @@ void Rok4Server::initFCGI() {
 }
 
 void Rok4Server::killFCGI() {
-    FCGX_CloseSocket(sock);
+    FCGX_CloseSocket ( sock );
     FCGX_Close();
 }
 
@@ -308,10 +309,58 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         }
         }
     }
-    if ( format=="image/png" )
+
+    eformat_data pyrType = L->getDataPyramid()->getFormat();
+
+    if ( format=="image/png" ) {
+        if ( servicesConf.isFullStyleCapable() ) {
+            switch ( pyrType ) {
+
+            case TIFF_RAW_FLOAT32 :
+            case TIFF_ZIP_FLOAT32 :
+            case TIFF_LZW_FLOAT32 :
+                image = new StyledImage ( image, 4, style->getPalette() );
+                return new PNGEncoder ( image, NULL );
+            }
+        }
         return new PNGEncoder ( image,style->getPalette() );
-    else if ( format == "image/tiff" ) { // Handle compression option
-        eformat_data pyrType = L->getDataPyramid()->getFormat();
+    } else if ( format == "image/tiff" ) { // Handle compression option
+
+
+        if (servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+            image = new StyledImage ( image, 4, style->getPalette() );
+            switch ( pyrType ) {
+
+            case TIFF_RAW_FLOAT32 :
+                pyrType = TIFF_RAW_INT8;
+            case TIFF_ZIP_FLOAT32 :
+                pyrType = TIFF_ZIP_INT8;
+            case TIFF_LZW_FLOAT32 :
+                pyrType = TIFF_LZW_INT8;
+            case TIFF_RAW_INT8 :
+            case TIFF_ZIP_INT8 :
+            case TIFF_LZW_INT8 :
+                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+                }
+                return TiffEncoder::getTiffEncoder ( image, pyrType );
+            default:
+                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+                }
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+            }
+        }
+
         switch ( pyrType ) {
 
         case TIFF_RAW_FLOAT32 :
@@ -349,9 +398,12 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             }
             return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
         }
-    } else if ( format == "image/jpeg" )
+    } else if ( format == "image/jpeg" ) {
+        if (servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+            image = new StyledImage ( image, 3, style->getPalette() );
+        }
         return new JPEGEncoder ( image );
-    else if ( format == "image/x-bil;bits=32" )
+    } else if ( format == "image/x-bil;bits=32" )
         return new BilEncoder ( image );
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms" ) );

@@ -1619,45 +1619,46 @@ Bounding boxes' SRS have to be the TMS' one
 
 * SAMPLE OF FILE CONFIGURATION OF PYRAMID :
 
+;Commentaires
+
 [logger]
 log_level      = INFO
 
 [pyramid]
 pyr_name       = PYR_TEST
-pyr_desc_path  = /home/theo/TEST/BE4/PYRAMIDS
-pyr_data_path  = /home/theo/TEST/BE4/PYRAMIDS
+pyr_desc_path  = /home/theo/TEST/JoinCache
+pyr_data_path  = /home/theo/TEST/JoinCache
+
 tms_path       = /home/theo/TEST/BE4/TMS
-tms_name       = PM.tms
+tms_name       = LAMB93_10cm.tms
+
 image_dir      = IMAGE
 metadata_dir   = METADATA
 nodata_dir     = NODATA
 
+compression = jpg
+samplesperpixel = 3
+photometric = rgb
+bitspersample = 8
+sampleformat = uint
+
+merge_method   = multiply 
+
 [bboxes]
-WLD = -20037508.3,-20037508.3,20037508.3,20037508.3
-FXX = -518548.8,5107913.5,978393,6614964.6
-REU = 6140645.1,-2433358.9,6224420.1,-2349936.0
-GUF = -6137587.6,210200.4,-5667958.5,692618.0
+PARIS = 535286,6747049,771666,6976667
 
 [ process ]
-path_shell  = /home/theo/TEST/BE4/SCRIPT
+path_shell  = /home/theo/TEST/JoinCache      ;Commentaires
 path_temp   = /home/theo/TEST/BE4/TMP
-job_number  = 3
+job_number  = 4
 
-[composition]
+[composition]  
 
-merge_method = replace   
+16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
 
-0.WLD = /FILER/DESC_PATH/MONDE12F.pyr
-
-1.WLD = /FILER/DESC_PATH/MONDE12F.pyr
-
-2.FXX = /FILER/DESC_PATH/SCAN25.pyr
-2.REU = /FILER/DESC_PATH/SCAN25.pyr
-2.GUF = /FILER/DESC_PATH/SCANREG.pyr
-
-3.FXX = /FILER/DESC_PATH/ROUTE.pyr; /FILER/DESC_PATH/BATIMENT.pyr 
-3.REU = /FILER/DESC_PATH/SCAN25.pyr
-3.GUF = /FILER/DESC_PATH/SCANREG.pyr
+19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
 
 =head1 OPTIONS
 

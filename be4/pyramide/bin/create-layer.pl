@@ -93,10 +93,10 @@ sub init {
             "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
             "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
             #
-            "properties=s"  => \$MYCONF,
-            "resampling=s"  => \$MYSAMPLE,
-            "style=s"       => \$MYSTYLE,
-            "opaque!"       => \$MYOPAQUE,
+            "properties|conf=s"  => \$MYCONF,
+            "resampling|r=s"     => \$MYSAMPLE,
+            "style|s=s"          => \$MYSTYLE,
+            "opaque!"            => \$MYOPAQUE,
             
     ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
   
@@ -162,16 +162,6 @@ $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_nodata,      $param
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tile,        $params_pyramid) };
 $params_pyramid = { map %$_, grep ref $_ eq 'HASH', ($params_tms,         $params_pyramid) };
 
-## PYRAMID
-ALWAYS("- Loading pyramid ...");
-
-my $objPyramid  = BE4::Pyramid->new($params_pyramid);
-
-if(! defined $objPyramid) {
-    ERROR("Erreur de configuration de la pyramide !");
-    exit -3;
-}
-
 ## DATASOURCE
 ALWAYS("- Loading datasource ...");
 
@@ -179,16 +169,26 @@ my $objDataSrc = BE4::DataSource->new($params_data);
 
 if(! defined $objDataSrc) {
     ERROR("Erreur de configuration des données sources !");
-    exit -4;
+    exit -3;
 }
 
 if (! $objDataSrc->computeImageSource()) {
     ERROR("Erreur de calcul sur données sources !");
-    exit -44;
+    exit -33;
 }
 
 my ($xmin,$ymax,$xmax,$ymin) = $objDataSrc->computeBbox();
 INFO(sprintf "BBOX : %s %s %s %s\n", $xmin,$ymax,$xmax,$ymin);
+
+## PYRAMID
+ALWAYS("- Loading pyramid ...");
+
+my $objPyramid  = BE4::Pyramid->new($params_pyramid, $objDataSrc);
+
+if(! defined $objPyramid) {
+    ERROR("Erreur de configuration de la pyramide !");
+    exit -4;
+}
 
 ## LAYER
 ALWAYS("- Loading layer ...");
@@ -205,12 +205,13 @@ push @lstsrs, "EPSG:3857";
 push @lstsrs, "EPSG:4258";
 
 # TODO informatif...
-my $minres=$objPyramid->getTileMatrixSet()->getFirstTileMatrix()->getResolution();
-my $maxres=$objPyramid->getTileMatrixSet()->getLastTileMatrix()->getResolution();
+my $tms = $objPyramid->getTileMatrixSet();
+my $minres=$tms->getBottomTileMatrix()->getResolution();
+my $maxres=$tms->getTopTileMatrix()->getResolution();
 
 # TODO informatif...
 my @keyword;
-push @keyword, $objPyramid->getFormat()->getCompression();
+push @keyword, $objPyramid->getCode();
 push @keyword, $objPyramid->getPyrName();
 push @keyword, $objPyramid->getTmsName();
 push @keyword, $srs;
@@ -307,7 +308,9 @@ END {}
 
   ORIENTÉ MAINTENANCE !
   perl create-layer.pl --properties=path
-                      [--resampling="" --opaque --style=""  ] 
+                      [--resampling="" --opaque --style=""  ]
+  perl create-layer.pl --conf=path
+                      [--r="" --opaque --s=""  ] 
 
 =head1 DESCRIPTION
 
@@ -339,13 +342,13 @@ END {}
 
 =item B<--version>
 
-=item B<--properties=path>
+=item B<--properties|conf=path>
 
-=item B<--resampling="value">
+=item B<--resampling|r="value">
 
 Optionnel, par defaut resampling = "lanczos_4".
 
-=item B<--style="value">
+=item B<--style|s="value">
 
 Optionnel, par defaut style = "normal".
 

@@ -441,10 +441,12 @@ sub computeAboveImage {
     my $bgImgPath=undef;
     my $bgImgName=undef;
 
-    # A-t-on besoin de quelque chose en fond d'image?
-    my $bg="";
-    if (scalar @childList != 4){
+    # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
+    # si on a l'option nowhite
+    my $bg='-n ' . $self->{nodata}->getColor();
 
+
+    if (scalar @childList != 4 || $self->{nodata}->{nowhite}) {
         # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
         # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
         # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
@@ -467,14 +469,12 @@ sub computeAboveImage {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
             $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
             $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
-            $bg="-b $bgImgPath";
+            $bg.=" -b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
-                    # On ne peut pas avoir d'image alors on donne une couleur de nodata
-                    $bg='-n ' . $self->{nodata}->getColor();
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
@@ -484,16 +484,13 @@ sub computeAboveImage {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $code .= $self->cache2work($node, $bgImgName);
             }
-        } else {
-            # On a pas d'image alors on donne une couleur de nodata
-            $bg='-n ' . $self->{nodata}->getColor();
         }
     }
 
     # Maintenant on constitue la liste des images à passer à merge4tiff.
     my $childImgParam=''; 
     my $imgCount=0;
-    foreach my $childNode ($self->{tree}->getPossibleChilds($node)){
+    foreach my $childNode ($self->{tree}->getPossibleChilds($node)) {
         $imgCount++;
         if ($self->{tree}->isInTree($childNode)){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)

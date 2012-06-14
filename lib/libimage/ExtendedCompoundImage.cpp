@@ -47,7 +47,8 @@
 #endif
 
 uint8_t white[4] = {255,255,255,255};
-uint8_t nodataAverage = 254;
+uint8_t uintNodataAverage = 254;
+float floatNodataLimit = -80000;
 
 /**
 @fn _getline(T* buffer, int line)
@@ -86,12 +87,13 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         images[i]->getline(buffer_t,images[i]->y2l(y));
 
         if (masks.empty()) {
-            if (nowhite && sizeof(T) == 1) {
+            if (nowhite) {
                 // Dans le cas de canaux entier, on veut éviter de prendre en compte les pixels blanc, on va donc les filter
+                // Dans le cas d'un canal flottant, on veut éviter de prendre en compte les valeurs inférieures à un seuil (en dur dans le code)
                 for (int j = 0; j < (c1-c0); j++) {
                     if (! isNodata(&buffer_t[(c2+j)*channels])) {
                         // Ce pixel n'est pas de nodata, on peut le stocker dans le buffer
-                        memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],channels);
+                        memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],channels*sizeof(T));
                     }
                 }
             } else {
@@ -109,7 +111,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         continue;
                     }
                     
-                    if (nowhite && sizeof(T) == 1 && isNodata(&buffer_t[(c2+j)*channels])) {
+                    if (nowhite && isNodata(&buffer_t[(c2+j)*channels])) {
                         continue;
                     }
                     
@@ -124,13 +126,17 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
     return width*channels*sizeof(T);
 }
 
-template <typename T>
-bool ExtendedCompoundImage::isNodata(T* pixel) {
+bool ExtendedCompoundImage::isNodata(uint8_t* pixel) {
     int average = 0;
     for (int i = 0; i<channels; i++) {
         average += pixel[i];
     }
-    return ((float)average/channels > (float)nodataAverage);
+    return ((float)average/channels > (float)uintNodataAverage);
+}
+
+bool ExtendedCompoundImage::isNodata(float* pixel) {
+    if (channels > 1) return false;
+    return (pixel[0] < floatNodataLimit);
 }
 
 /** Implementation de getline pour les uint8_t */

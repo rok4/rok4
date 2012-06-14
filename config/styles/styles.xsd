@@ -26,18 +26,20 @@
 				<xs:complexType>
 					<xs:complexContent>
 					<!-- valeur maximale des pixel de données -->
-					<xs:attribute name="maxValue" type="xs:nonNegativeInteger" use="required"/>
+					<xs:attribute name="maxValue" type="xs:decimal" use="required"/>
+                                        <xs:attribute name="rgbContinuous" type="xs:boolean" default="false"/>
+                                        <xs:attribute name="alphaContinuous" type="xs:boolean" default="false"/>
 					<xs:sequence>
 						<!-- Couleur à appliquer pour les pixel de valeur "value" jusqu'au pixel de valeur "value"-1 de la couleur suivante -->
 						<xs:element name="colour" minOccurs="1" maxOccurs="unbounded">
 							<xs:complexType>
 								<xs:complexContent>
-								<xs:attribute name="value" type="xs:nonNegativeInteger" default="0"/>
+								<xs:attribute name="value" type="xs:decimal" default="0"/>
 								<xs:sequence>
 									<xs:element name="red" type="xs:unsignedByte"/>
 									<xs:element name="green" type="xs:unsignedByte"/>
 									<xs:element name="blue" type="xs:unsignedByte"/>
-									<!-- Si négatif alors dégradé alpha : alpha = value -->
+                                                                        <!-- DEPRECATED Si négatif alors dégradé alpha : alpha = value remplacé par l'attribut alphaContinuous -->
 									<xs:element name="alpha" type="xs:alphachannel" default="0"/>
 								</xs:sequence>
 								</xs:complexContent>
@@ -51,6 +53,7 @@
 		</xs:complexType>
 	</xs:element>
 	
+        <!--DEPRECATED-->
 	<xs:simpleType name="alphachannel">
 		<xs:restriction base="xs:integer">
 			 <xs:minInclusive value="-1"/>

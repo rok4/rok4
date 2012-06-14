@@ -285,17 +285,16 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 * Lecture d une ligne du fichier de la liste d images source
 */
 
-int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
+int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height, double* resx, double* resy)
 {
     std::string str;
     std::getline(file,str);
-    double resx, resy;
     int nb;
 
-    if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
+    if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) ==7) {
         // Arrondi a la valeur entiere la plus proche
-        *width = lround((bbox->xmax - bbox->xmin)/resx);    
-        *height = lround((bbox->ymax - bbox->ymin)/resy);
+        *width = lround((bbox->xmax - bbox->xmin)/(*resx));    
+        *height = lround((bbox->ymax - bbox->ymin)/(*resy));
     }
 
     return nb;
@@ -311,6 +310,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
     char filename[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     BoundingBox<double> bbox(0.,0.,0.,0.);
     int width, height;
+    double resx, resy;
     libtiffImageFactory factory;
 
     // Ouverture du fichier texte listant les images
@@ -323,12 +323,12 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
     }
 
     // Lecture et creation de l image de sortie
-    if (readFileLine(file,filename,&bbox,&width,&height)<0){
+    if (readFileLine(file,filename,&bbox,&width,&height,&resx,&resy)<0){
         LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0");
         return -1;
     }
 
-    *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
+    *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height,resx, resy, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
     if (*ppImageOut==NULL) {
         LOGGER_ERROR("Impossible de creer " << filename);
@@ -337,8 +337,8 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
     // Lecture et creation des images source
     int nb=0,i;
-    while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7){
-        LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
+    while ((nb=readFileLine(file,filename,&bbox,&width,&height,&resx,&resy))==7){
+        LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox, resx, resy);
         if (pImage==NULL){
             LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
             return -1;
@@ -467,12 +467,13 @@ int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
     int i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
+            
             MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),pECI->getSampleformat(),j,mirrorSize);
             if (mirror == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors");
                 return -1;
             }
-            //pECI->getimages()->push_back(mirror);
+            
             pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
             mirrors++;
             i++;
@@ -532,11 +533,11 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 
     BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
     // Reechantillonnage
-    ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
     // saveImage(pRImage,nom,1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK);
     // Reechantillonage du masque
-    resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    resampledMask = new ResampledImage( mask, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
     
     return pRImage;
 }
