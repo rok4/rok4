@@ -779,21 +779,21 @@ sub work2cache {
 #  compose la commande qui fusionne des images (mergeNtiff).
 #---------------------------------------------------------------------------------------------------
 sub mergeNtiff {
-  my $self = shift;
-  my $confFile = shift;
-  my $dataType = shift; # param. are image or mtd to mergeNtiff script !
-  
-  TRACE;
-  
-  $dataType = 'image' if (  defined $dataType && $dataType eq 'data');
-  $dataType = 'image' if (! defined $dataType);
-  $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
-  
-  my $pyr = $self->{pyramid};
-  #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
-  # TODO pour les métadonnées ce sera 0
+    my $self = shift;
+    my $confFile = shift;
+    my $dataType = shift; # param. are image or mtd to mergeNtiff script !
 
-  my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
+    TRACE;
+
+    $dataType = 'image' if (  defined $dataType && $dataType eq 'data');
+    $dataType = 'image' if (! defined $dataType);
+    $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
+
+    my $pyr = $self->{pyramid};
+    #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
+    # TODO pour les métadonnées ce sera 0
+
+    my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
     $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
     $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
     $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
@@ -803,7 +803,10 @@ sub mergeNtiff {
     $cmd .= sprintf ( " -p %s ", $pyr->getPhotometric() );
     $cmd .= sprintf ( " -a %s\n",$pyr->getSampleFormat());
     $cmd .= sprintf ("%s" ,RESULT_TEST);
-  return $cmd;
+
+    $cmd .= sprintf ("rm -f %s\n" ,$confFile);
+
+    return $cmd;
 }
 
 # method:merge4tiff
