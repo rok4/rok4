@@ -143,11 +143,16 @@ class Image {
             return true;
         } 
         
-        /** Constructeur */
+        /** Constructeurs */
+        Image(int width, int height, double resx, double resy, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
+            width(width), height(height), resx(resx), resy(resy), channels(channels), bbox(bbox) {
+            }
+            
         Image(int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
             width(width), height(height), channels(channels), bbox(bbox) {
-                computeResxy();
+                    computeResxy();
             }
+            
         /** 
          * Retourne une ligne en entier 8 bits. 
          * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des entiers 8 bits

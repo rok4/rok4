@@ -78,12 +78,13 @@ END {}
 Group: variable
 
 variable: $self
-    * FILEPATH_DATACONF => undef, # path of data's configuration file
-    * type => undef, # (image or harvest)
-    * sources  => {}, # hash of ImageSource or HarvestSource objects
-    * SRS => undef,
-    * bottomExtent => undef, # OGR::Geometry object, in the previous SRS
-    * bottomBbox => [], # Bbox of bottomExtent [xmin,ymin,xmax,ymax]
+    * levelID => undef,
+    * levelOrder => undef,
+    * srs => undef,
+    * extent => undef,# OGR::Geometry object, in the previous SRS
+    * bbox => undef, # array of limits of the previous extent
+    * imageSource => undef, # an ImageSource object (can be undefined)
+    * harvesting => undef # an Harvesting object (can be undefined)
 =cut
 
 

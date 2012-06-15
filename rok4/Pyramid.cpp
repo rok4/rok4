@@ -151,7 +151,7 @@ TileMatrixSet Pyramid::getTms() {
 Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
-    if ( tms.getCrs() ==dst_crs ) {
+    if ( tms.getCrs() == dst_crs ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {

@@ -64,13 +64,13 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         LOGGER_ERROR("Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)");
         return NULL;
     }
-    
+
     if (position == 0){
         // TOP
         xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
         xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymax();
-        ymax=pImageSrc->getymax()+mirrorSize*pImageSrc->getresy();
+        ymin=pImageSrc->getymax();        
+        ymax=pImageSrc->getymax()+pImageSrc->getresy()*mirrorSize;        
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,0,mirrorSize);
     }
@@ -87,7 +87,7 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         // BOTTOM
         xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
         xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymin()-mirrorSize*pImageSrc->getresy();
+        ymin=pImageSrc->getymin()-pImageSrc->getresy()*mirrorSize;
         ymax=pImageSrc->getymin();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,2,mirrorSize);
@@ -104,7 +104,7 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
 
 }
 
-MirrorImage::MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat)
+MirrorImage::MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getresx(),image->getresy(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat)
 {
 }
 

@@ -121,7 +121,7 @@ variable: $self
     * image_width  => undef, # number
     * image_height => undef, # number
     * pyrImgSpec => undef,   # it's an object !
-    * datasource => undef,   # it's an object !
+    * datasources => [],   # it's an array of DataSource objects !
     * tms        => undef,   # it's an object !
     * nodata     => undef,   # it's an object !
     * levels     => {},      # it's a hash of object level !
@@ -144,7 +144,7 @@ variable: $self
 sub new {
     my $this = shift;
     my $params = shift;
-    my $datasource = shift;
+    my $datasources = shift;
 
     my $class= ref($this) || $this;
     my $self = {
@@ -181,7 +181,7 @@ sub new {
 
         # OUT
         pyrImgSpec => undef,   # it's an object !
-        datasource => undef,   # it's an object !
+        datasources => [],   # it's an object !
         tms        => undef,   # it's an object !
         nodata     => undef,   # it's an object !
         levels     => {},      # it's a hash of object level !
@@ -201,7 +201,7 @@ sub new {
     TRACE;
 
     # init. parameters
-    return undef if (! $self->_init($params,$datasource));
+    return undef if (! $self->_init($params,$datasources));
 
     # a new pyramid or from existing pyramid !
     return undef if (! $self->_load($params));
@@ -220,7 +220,7 @@ sub new {
 sub _init {
     my $self   = shift;
     my $params = shift;
-    my $datasource = shift;
+    my $datasources = shift;
 
     TRACE;
 
@@ -229,11 +229,11 @@ sub _init {
         return FALSE;
     }
 
-    if (! defined $datasource ) {
-        ERROR ("Datasource required (null) !");
+    if (scalar $datasources ) {
+        ERROR ("Datasources required (null) !");
         return FALSE;
     }
-    $self->{datasource} = $datasource;
+    $self->{datasources} = $datasources;
     
     # init. params .
     $self->{isnewpyramid} = 0 if (defined $params->{pyr_name_old});
@@ -395,11 +395,23 @@ sub _load {
         return FALSE if (! $self->_fillFromPyramid($params));
     }
 
+    # identify bottom and top levels
+    if (! $self->calculateExtremLevels()) {
+        ERROR(sprintf "Impossible to calculate top and bottom levels");
+        return FALSE;
+    }
+
+    # we create all levels between the top and the bottom levels
+    if (! $self->createLevels()) {
+        ERROR(sprintf "Cannot create levels !");
+        return FALSE;
+    }
+
     # create NoData !
     my $objNodata = BE4::NoData->new({
-            pixel            => $self->getPixel(),
-            color            => $params->{color},
-            nowhite          => $params->{nowhite}
+        pixel            => $self->getPixel(),
+        value            => $params->{color},
+        nowhite          => $params->{nowhite}
     });
 
     if (! defined $objNodata) {
@@ -457,18 +469,6 @@ sub _fillToPyramid {
     
     $self->{tms} = $objTMS;
     DEBUG (sprintf "TMS = %s", Dumper($objTMS));
-    
-    # identify top and bottom levels
-    if (! $self->calculateExtremLevels()) {
-        ERROR(sprintf "Impossible to calculate top and bottom levels");
-        return FALSE;
-    }
-
-    # we create all levels between the top and the bottom levels
-    if (! $self->createLevels()) {
-        ERROR(sprintf "Cannot create levels !");
-        return FALSE;
-    }
 
     return TRUE;
 }
@@ -495,12 +495,6 @@ sub _fillFromPyramid {
 
     if (! $self->readCachePyramid($cachepyramid)) {
         ERROR (sprintf "Can not read the Directory Cache Pyramid : %s !", $cachepyramid);
-        return FALSE;
-    }
-
-    # we create all levels between the top and the bottom levels
-    if (! $self->createLevels()) {
-        ERROR(sprintf "Cannot create levels !");
         return FALSE;
     }
 
@@ -619,12 +613,6 @@ sub readConfPyramid {
     }
     $params->{samplesperpixel} = $tagsamplesperpixel;
     
-
-    # identify bottom and top levels
-    if (! $self->calculateExtremLevels()) {
-        ERROR(sprintf "Impossible to calculate top and bottom levels");
-        return FALSE;
-    }
 
     # create PyrImageSpec object !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
@@ -873,8 +861,9 @@ sub calculateExtremLevels {
     #  - on vérifie la cohérence des niveaux défini dans la configuration des sources avec le niveau du haut
     my $bottomlevelID = undef;
     my $bottomlevelOrder = undef;
-    foreach my $levelID (keys %{$self->{datasource}->{sources}}) {
-        my $levelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($levelID);
+
+    foreach my $datasource (@{$self->{datasources}}) {
+        my $levelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($datasource->{levelID});
         if (! defined $levelOrder) {
             ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
                 $levelID);
@@ -885,6 +874,8 @@ sub calculateExtremLevels {
             ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$levelID,$self->getTopLevel());
             return FALSE;
         }
+
+        $datasource->{levelOrder} = $levelOrder;
         
         if (! defined $bottomlevelOrder || $levelOrder < $bottomlevelOrder) {
             $bottomlevelID = $levelID;
@@ -985,8 +976,12 @@ sub createLevels {
         }
 
         $self->{levels}->{$tmID} = $objLevel;
-        # push dir to create : directories for nodata and images.
-        push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+
+        if ($self->{isnewpyramid}) {
+            # push dir to create : directories for nodata and images.
+            # if we have an old pyramid, directories are already in cache_dir
+            push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+        }
     }
 
     if (! scalar (%{$self->{levels}})) {
