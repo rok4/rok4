@@ -92,8 +92,8 @@ sub new {
         REQUEST  => undef,
         FORMAT   => undef,
         LAYERS    => undef,
-        image_width => 4096,
-        image_height => 4096
+        image_width => undef,
+        image_height => undef
     };
 
     bless($self, $class);
@@ -116,39 +116,39 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    if (! exists($params->{image_width}) || ! defined ($params->{image_width})) {
-        ERROR("key/value required to 'image_width' !");
-        return FALSE ;
+    if (exists($params->{image_width}) && defined ($params->{image_width})) {
+        $self->{image_width} = $params->{image_width};
     }
-    if (! exists($params->{image_height}) || ! defined ($params->{image_height})) {
-        ERROR("key/value required to 'image_height' !");
-        return FALSE ;
+    if (exists($params->{image_height}) && defined ($params->{image_height})) {
+        $self->{image_height} = $params->{image_height};
     }
 
-    if (! exists($params->{wms_url})     || ! defined ($params->{wms_url})) {
-        ERROR("key/value required to 'wms_url' !");
+    if (! exists($params->{wms_url}) || ! defined ($params->{wms_url})) {
+        ERROR("Parameter 'wms_url' is required !");
         return FALSE ;
     }
     if (! exists($params->{wms_version}) || ! defined ($params->{wms_version})) {
-        ERROR("key/value required to 'wms_version' !");
+        ERROR("Parameter 'wms_version' is required !");
         return FALSE ;
     }
     if (! exists($params->{wms_request}) || ! defined ($params->{wms_request})) {
-        ERROR("key/value required to 'wms_request' !");
+        ERROR("Parameter 'wms_request' is required !");
         return FALSE ;
     }
-    if (! exists($params->{wms_format})  || ! defined ($params->{wms_format})) {
-        ERROR("key/value required to 'wms_format' !");
+    if (! exists($params->{wms_format}) || ! defined ($params->{wms_format})) {
+        ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
-    if (! exists($params->{wms_layer})   || ! defined ($params->{wms_layer})) {
-        ERROR("key/value required to 'wms_layer' !");
+    if (! exists($params->{wms_layer}) || ! defined ($params->{wms_layer})) {
+        ERROR("Parameter 'wms_layer' is required !");
         return FALSE ;
     }
+
+    $params->{wms_layer} =~ s/ //;
     my @layers = split (/,/,$params->{wms_layer},-1);
     foreach my $layer (@layers) {
         if ($layer eq '') {
-            ERROR(sprintf "value for 'wms_layer' is not valid (%s) : it must be LAYER[,LAYER_N]+ !",$params->{wms_layer});
+            ERROR(sprintf "Value for 'wms_layer' is not valid (%s) : it must be LAYER[{,LAYER_N}] !",$params->{wms_layer});
             return FALSE ;
         }
         INFO(sprintf "Layer %s will be harvested !",$layer);
@@ -160,8 +160,6 @@ sub _init {
     $self->request($params->{wms_request});
     $self->format($params->{wms_format});
     $self->layers($params->{wms_layer});
-    $self->{image_width} = $params->{image_width};
-    $self->{image_height} = $params->{image_height};
 
     return TRUE;
 }
@@ -213,8 +211,8 @@ sub url {
     my $self = shift;
     if (@_) {
         my $string = shift;
-        $string =~ s/^http:\/\///; # ...
-        $string =~ s/\?$//;        # ...
+        $string =~ s/^http:\/\///;
+        $string =~ s/\?$//;
         $self->{URL} = $string;
     }
     return $self->{URL};
@@ -239,16 +237,6 @@ sub format {
 sub layers {
     my $self = shift;
     if (@_) { $self->{LAYERS} = shift; }
-    return $self->{LAYERS};
-}
-
-sub image_size {
-    my $self = shift;
-    my $width = shift;
-    my $height = shift;
-
-
-
     return $self->{LAYERS};
 }
 

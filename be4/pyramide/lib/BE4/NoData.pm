@@ -35,10 +35,14 @@
 
 package BE4::NoData;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use File::Spec::Link;
+use File::Basename;
+use File::Spec;
+use File::Path;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -208,7 +212,7 @@ sub createNodata {
         }
     }
     
-    if (! system($createNodataCommand) == 0) {
+    if (! system($cmd) == 0) {
         ERROR (sprintf "The command to create a nodata tile is incorrect : '%s'",$cmd);
         return FALSE;
     }

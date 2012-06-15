@@ -59,6 +59,7 @@ use lib "$Bin/../lib/perl5";
 use BE4::PropertiesLoader;
 use BE4::Pyramid;
 use BE4::DataSource;
+use BE4::DataSourceLoader;
 use BE4::Process;
 
 # constantes
@@ -448,7 +449,8 @@ sub doIt {
     # objects to implemented
     
     my $objPyramid     = undef;
-    my $objData        = undef;
+    my $objDSL = undef;
+    my $objDataSources = undef;
     my $objProcess     = undef;
 
     ###################
@@ -456,28 +458,34 @@ sub doIt {
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objData = BE4::DataSource->new($params->{datasource});
+    $objDSL = BE4::DataSourceLoader->new($params->{datasource});
+    if (! defined $objDSL) {
+        ERROR ("Cannot load data sources !");
+        return FALSE;
+    }
+
+    $objDataSources = $objDSL->{sources};
     
-    if (! defined $objData) {
-        ERROR ("Can not load data source !");
+    if (scalar $objDataSources == 0) {
+        ERROR ("No data source !");
         return FALSE;
     }
     
-    DEBUG(sprintf "DATASOURCE (dump) = %s", Dumper($objData));
-
+    DEBUG(sprintf "DATASOURCE (dump) = %s", Dumper($objDataSources));
   
     ##################
     # create a pyramid
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objData);
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDataSources);
     
     if (! defined $objPyramid) {
         ERROR ("Can not load Pyramid !");
         return FALSE;
     }
 
+    return TRUE;
   
     # we cannot write the pyramid descriptor and cache now. We need data's limits
     # which are calculated in the Process creation
@@ -489,7 +497,6 @@ sub doIt {
   
     $objProcess = BE4::Process->new(
         $params->{process},
-        $params->{harvesting},
         $objPyramid
     );
   

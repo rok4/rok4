@@ -1157,21 +1157,22 @@ sub treatTile {
     }
 
     if (scalar @images == 1) {
-        main::mergeWithTransparency($finaleImage,@images);
-        #main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
+        # We have just one source image, but it is not compatible with the final cache
+        # We need to transform it.
+        main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
         $this{doneTiles}->{$i."_".$j} = TRUE;
         return TRUE
     }
 
     my $mergeMethod = $this{pyramid}->{merge_method};
 
-    main::mergeWithTransparency($finaleImage,@images);
+    main::mergeImages($finaleImage,@images);
     $this{doneTiles}->{$i."_".$j} = TRUE;
     return TRUE;
 
 }
 
-sub mergeWithTransparency {
+sub mergeImages {
     my $finaleImage = shift;
     my @images = @_;
 
@@ -1286,7 +1287,7 @@ sub transformImage {
     # Pretreatment
 
     if ($isPNG) {
-        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$$baseImage,RESULT_TEST;
+        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$baseImage,RESULT_TEST;
         $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
         $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
     } else {
@@ -1353,7 +1354,7 @@ sub writePyr {
         value => undef, #default value will be set.
         pixel => $this{pyramid}->{pixel},
         nowhite => "false"
-    )}
+    });
 
     my $nodataValue = $nodata->getValue();
     $strpyrtmplt =~ s/__NODATAVALUE__/$nodataValue/;
@@ -1370,13 +1371,13 @@ sub writePyr {
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
 
         # create the nodata tile for each level
-        my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
+        my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata},$this{pyramid}->{pyr_desc_path});
         $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
 
         my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->getID);
         my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->getID);
 
-        if (! $self->{nodata}->createNodata($nodataFilePath,$width,$height,$self->getCompression())) {
+        if (! $nodata->createNodata($nodataFilePath,$width,$height,$this{pyramid}->{compression})) {
             ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
             return FALSE;
         }
