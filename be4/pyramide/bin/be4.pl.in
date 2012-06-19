@@ -471,7 +471,7 @@ sub doIt {
         return FALSE;
     }
     
-    DEBUG(sprintf "DATASOURCE (dump) = %s", Dumper($objDataSources));
+    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDataSources));
   
     ##################
     # create a pyramid
@@ -485,7 +485,7 @@ sub doIt {
         return FALSE;
     }
 
-    return TRUE;
+    DEBUG(sprintf "PYRAMID (dump) = %s", Dumper($objPyramid)); #TEST#
   
     # we cannot write the pyramid descriptor and cache now. We need data's limits
     # which are calculated in the Process creation
@@ -505,9 +505,6 @@ sub doIt {
         return FALSE;
     }
 
-
-    return TRUE; #TEST#
-
     ##################
     # write the pyramid cache
     
@@ -517,6 +514,7 @@ sub doIt {
         ERROR ("Can not write Pyramid Cache !");
         return FALSE;
     }
+    
     
     ##################
     # write the pyramid descriptor
@@ -530,6 +528,7 @@ sub doIt {
   
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
+    
     ##################
     # compute process
     
@@ -542,6 +541,7 @@ sub doIt {
       
     DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
     
+    return TRUE; #TEST#
 
     #######################
     # execute process script

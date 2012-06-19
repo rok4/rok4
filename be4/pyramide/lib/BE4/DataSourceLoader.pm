@@ -181,16 +181,15 @@ __END__
 
 =head1 NAME
 
-    BE4::DataSource - Managing data sources
+    BE4::DataSourceLoader - Load and validate data sources
 
 =head1 SYNOPSIS
 
-    use BE4::DataSource;
+    use BE4::DataSourceLoader
 
-    # DataSource object creation
+    # DataSourceLoader object creation
     my $objDataSource = BE4::DataSource->new({
-        path_conf => "/home/ign/images.source",
-        type => "image"
+        filepath_conf => "/home/IGN/CONF/source.txt",
     });
 
 =head1 DESCRIPTION
@@ -198,62 +197,42 @@ __END__
     A DataSource object
 
         * FILEPATH_DATACONF
-        * type : type of sources
-        * sources : an hash of ImageSource or HarvestSource objects
-        * SRS : SRS of the bottom extent (and GeoImage objects)
-        * bottomExtent : an OGR geometry
-        * bottomBbox : Bbox of bottomExtent [xmin,ymin,xmax,ymax]
-
-    Possible values :
-
-        type => ["harvest","image"]
+        * sources : an array of DataSource objects
 
 =head1 FILE CONFIGURATION
 
-    In the be4 configuration
+    In the be4 configuration, section datasource (multidata.conf)
 
         [ datasource ]
-        type                = image
-        filepath_conf       = /home/theo/TEST/BE4/SOURCE/images.source
+        filepath_conf       = /home/IGN/CONF/source.txt
 
-    In the source configuration (.source)
-        
-        type 'image'
+    In the source configuration (source.txt)
 
-            [ global ]
-            srs = IGNF:LAMB93
+        [ 19 ]
 
-            [ 19 ]
-            path_image = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
+        srs                 = IGNF:LAMB93
+        path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
 
-            [ 14 ]
-            path_image = /home/theo/DONNEES/BDORTHO_PARIS-EST_2011_L93/
+        wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
+        wms_url     = http://localhost/wmts/rok4
+        wms_version = 1.3.0
+        wms_request = getMap
+        wms_format  = image/tiff
+        image_width = 2048
+        image_height = 2048
 
-        type 'harvest'
+        [ 14 ]
 
-            [ global ]
-            srs = IGNF:LAMB93
-            box = 123,45,137,159
-                    or
-            box = /home/theo/TEST/BE4/SHAPE/Polygon.txt
+        srs = IGNF:WGS84G
+        extent = /home/IGN/SHAPE/Polygon.txt
 
-            [ 19 ]
-            wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
-            wms_url     = http://localhost/wmts/rok4
-            wms_version = 1.3.0
-            wms_request = getMap
-            wms_format  = image/tiff
-            image_width = 2048
-            image_height = 2048
-
-            [ 14 ]
-            wms_layer   = ORTHO_RAW_LAMB93_PARIS_EST
-            wms_url     = http://localhost/wmts/rok4
-            wms_version = 1.3.0
-            wms_request = getMap
-            wms_format  = image/tiff
-            image_width = 4096
-            image_height = 4096
+        wms_layer   = ORTHO_RAW_LAMB93_D075-O
+        wms_url     = http://localhost/wmts/rok4
+        wms_version = 1.3.0
+        wms_request = getMap
+        wms_format  = image/tiff
+        image_width = 4096
+        image_height = 4096
 
 
 =head1 LIMITATION & BUGS

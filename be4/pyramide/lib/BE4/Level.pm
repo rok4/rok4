@@ -131,7 +131,7 @@ TMTD
 #    *          type_metadata     => undef,  # NOT IMPLEMENTED !
 #    *          size              => [],    # number w/h !
 #    *          dir_depth         => 0,     # ie 2
-#    *          limit             => []     # dim bbox Row/Col !!!
+#    *          limit             => []     # dim bbox [jmin,jmax,imin,imax] !!!
 #    *          is_in_pyramid     => undef,
 #
 
@@ -156,7 +156,7 @@ sub new {
         type_metadata     => undef,  # NOT IMPLEMENTED !
         size              => [],    # number w/h !
         dir_depth         => 0,     # ie 2
-        limit             => []     # dim bbox Row/Col !!!
+        limit             => [undef,undef,undef,undef]     # dim bbox [jmin,jmax,imin,imax] !!!
   };
 
   bless($self, $class);
@@ -267,21 +267,21 @@ sub getLevelToXML {
     my $pathnd = $self->{dir_nodata}."/nd.tiff";
     $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
-    my $tilew    = $self->{size}->[0];
+    my $tilew    = $self->{size}[0];
     $levelXML =~ s/__TILEW__/$tilew/;
-    my $tileh    = $self->{size}->[1];
+    my $tileh    = $self->{size}[1];
     $levelXML =~ s/__TILEH__/$tileh/;
 
     my $depth    =  $self->{dir_depth};
     $levelXML =~ s/__DEPTH__/$depth/;
 
-    my $minrow   =  $self->{limit}->[0];
+    my $minrow   =  $self->{limit}[0];
     $levelXML =~ s/__MINROW__/$minrow/;
-    my $maxrow   =  $self->{limit}->[1];
+    my $maxrow   =  $self->{limit}[1];
     $levelXML =~ s/__MAXROW__/$maxrow/;
-    my $mincol   =  $self->{limit}->[2];
+    my $mincol   =  $self->{limit}[2];
     $levelXML =~ s/__MINCOL__/$mincol/;
-    my $maxcol   =  $self->{limit}->[3];
+    my $maxcol   =  $self->{limit}[3];
     $levelXML =~ s/__MAXCOL__/$maxcol/;
 
     # metadata

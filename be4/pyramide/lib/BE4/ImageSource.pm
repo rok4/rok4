@@ -211,7 +211,7 @@ sub computeImageSource {
             }
         } else {
             if ($imageInfo[0] == 1) {
-                # bitspersample in the Pixel object is 3. we change artificially current value for 8
+                # bitspersample in the Pixel object is 1. we change artificially current value for 8
                 $imageInfo[0] = 8;
             }
             # we have already values. We must have the same components for all images

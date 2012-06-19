@@ -102,8 +102,10 @@ sub new {
     my $class= ref($this) || $this;
     my $self = {
         # Global information
-        levelID => undef,
-        levelOrder => undef,
+        bottomLevelID => undef,
+        bottomLevelOrder => undef,
+        topLevelID => undef,
+        topLevelOrder => undef,
         bbox => undef,
         extent => undef,
         srs => undef,
@@ -139,7 +141,7 @@ sub _load {
         ERROR("A data source have to be defined with a level !");
         return FALSE;
     }
-    $self->{levelID} = $level;
+    $self->{bottomLevelID} = $level;
 
     if (! exists $params->{srs} || ! defined $params->{srs}) {
         ERROR("A data source have to be defined with the 'srs' parameter !");
@@ -185,6 +187,11 @@ sub _load {
     }
     $self->{harvesting} = $harvesting;
     
+    if (! defined $harvesting && ! defined $imagesource) {
+        ERROR("A data source must have a ImageSource OR a Harvesting !");
+        return FALSE;
+    }
+    
     return TRUE;
 }
 
@@ -197,13 +204,13 @@ sub _load {
 =begin nd
     method: computeGlobalInfo
 
-    Read the srs, for the box or images
+    Read the srs, for the box or images.
 
-    Read the box, 2 cases are possible :
-        - box is a bbox, as xmin,ymin,xmax,ymax
-        - box is a file path, file contains a complex polygon
+    Read the extent, 2 cases are possible :
+        - extent is a bbox, as xmin,ymin,xmax,ymax
+        - extent is a file path, file contains a complex polygon
 
-    We generate a OGR Geometry
+    We generate an OGR Geometry
 =cut
 sub computeGlobalInfo {
     my $self = shift;
@@ -293,7 +300,8 @@ sub computeGlobalInfo {
 
     eval { $self->{extent} = Geo::OGR::Geometry->create(GML=>$GMLextent); };
     if ($@) {
-        ERROR(sprintf "Error for Geo::OGR::Geometry->create : %s",$@);
+        ERROR(sprintf "GML geometry (%s) is not valid : %s",$GMLextent,$@);
+        return FALSE;
     }
 
     if (! defined $self->{extent}) {
@@ -309,10 +317,8 @@ sub computeGlobalInfo {
     }
     $self->{bbox} = [$xmin,$ymin,$xmax,$ymax];
 
-    ALWAYS(sprintf "BBOX : %s",Dumper($self->{bbox})); #TEST#
-    ALWAYS(sprintf "SRS : %s",$self->{srs}); #TEST#
-
     return TRUE;
+
 }
 
 
@@ -327,6 +333,21 @@ sub getSRS {
     return $self->{srs};
 }
 
+sub getImages {
+    my $self = shift;
+    return $self->{imageSource}->getImages;
+}
+
+sub hasImages {
+    my $self = shift;
+    return (defined $self->{imageSource});
+}
+
+sub hasHarvesting {
+    my $self = shift;
+    return (defined $self->{harvesting});
+}
+
 
 1;
 __END__
@@ -334,7 +355,7 @@ __END__
 
 =head1 NAME
 
-    BE4::DataSource - Managing data sources
+    BE4::DataSource - Managing a data source
 
 =head1 SYNOPSIS
 
@@ -348,18 +369,31 @@ __END__
 
 =head1 DESCRIPTION
 
+        srs                 = IGNF:LAMB93
+        path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
+
+        wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
+        wms_url     = http://localhost/wmts/rok4
+        wms_version = 1.3.0
+        wms_request = getMap
+        wms_format  = image/tiff
+        image_width = 2048
+        image_height = 2048
+
     A DataSource object
 
-        * FILEPATH_DATACONF
-        * type : type of sources
-        * sources : an hash of ImageSource or HarvestSource objects
-        * SRS : SRS of the bottom extent (and GeoImage objects)
-        * bottomExtent : an OGR geometry
-        * bottomBbox : Bbox of bottomExtent [xmin,ymin,xmax,ymax]
+        * levelID : ID (in TMS) of the base à level, fromwhich this datasource is used
+        * levelOrder : order (integer) of the base à level, fromwhich this datasource is used
+        * srs : SRS of the bottom extent (and ImageSource objects if exists)
+        * extent : an OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
+        * bbox : bbox of extent, an array [xmin,ymin,xmax,ymax]
+        * imageSource : can be undefined, 
+        * harvesting : can be undefined, used to complete imageSource if exist
 
-    Possible values :
+    Three cases :
 
-        type => ["harvest","image"]
+        * we have no 'real' data (no ImageSource), and we use a WMS service (Harvesting) to calculate the pyramid.
+        * we have no 'real' data (no ImageSource), and we use a WMS service (Harvesting) to calculate the pyramid.
 
 =head1 FILE CONFIGURATION
 

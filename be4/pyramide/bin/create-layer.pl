@@ -206,8 +206,8 @@ push @lstsrs, "EPSG:4258";
 
 # TODO informatif...
 my $tms = $objPyramid->getTileMatrixSet();
-my $minres=$tms->getBottomTileMatrix()->getResolution();
-my $maxres=$tms->getTopTileMatrix()->getResolution();
+my $minres=$tms->getTileMatrix($objPyramid->getTopLevelID())->getResolution();
+my $maxres=$tms->getTileMatrix($objPyramid->getBottomLevelID())->getResolution();
 
 # TODO informatif...
 my @keyword;

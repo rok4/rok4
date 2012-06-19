@@ -48,6 +48,15 @@ my $VERSION = "0.0.1";
 # My module
 use BE4::Pixel;
 
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;

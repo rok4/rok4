@@ -39,7 +39,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
+use Geo::OSR;
 use Geo::GDAL;
 
 require Exporter;
@@ -295,6 +295,96 @@ sub computeInfo {
     
     return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
     
+}
+
+=begin nd
+method: computeBBox
+Return the input image bbox in final pyramid's SRS
+=cut
+
+sub computeBBox {
+  my $self = shift;
+  my $ct = shift;
+  
+  TRACE;
+  
+  my %BBox = ();
+
+  if (!defined($ct)){
+    $BBox{xMin} = Math::BigFloat->new($self->getXmin());
+    $BBox{yMin} = Math::BigFloat->new($self->getYmin());
+    $BBox{xMax} = Math::BigFloat->new($self->getXmax());
+    $BBox{yMax} = Math::BigFloat->new($self->getYmax());
+    DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $self->getName(),
+        $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+    return %BBox;
+  }
+  # TODO:
+  # Dans le cas où le SRS de la pyramide n'est pas le SRS natif des données, il faut reprojeter la bbox.
+  # 1. L'algo trivial consiste à reprojeter les coins et prendre une marge de 20%.
+  #    C'est rapide et simple mais comment on justifie les 20% ?
+  
+  # 2. on fait une densification fixe (ex: 5 pts par coté) et on prend une marge beaucoup plus petite.
+  #    Ca reste relativement simple, mais on ne sait toujours pas quoi prendre comme marge.
+  
+  # 3. on fait une densification itérative avec calcul d'un majorant de l'erreur et on arrête quand on 
+  #    a une erreur de moins d'un pixel. Puis on prend une marge d'un pixel. Cette fois ça peut prendre 
+  #    du temps et l'algo commence à être compliqué.
+
+  # methode 2.  
+  # my ($xmin,$ymin,$xmax,$ymax);
+  my $step = 7;
+  my $dx= ($self->getXmax() - $self->getXmin())/(1.0*$step);
+  my $dy= ($self->getYmax() - $self->getYmin())/(1.0*$step);
+  my @polygon= ();
+  for my $i (@{[0..$step-1]}) {
+    push @polygon, [$self->getXmin()+$i*$dx, $self->getYmin()];
+  }
+  for my $i (@{[0..$step-1]}) {
+    push @polygon, [$self->getXmax(), $self->getYmin()+$i*$dy];
+  }
+  for my $i (@{[0..$step-1]}) {
+    push @polygon, [$self->getXmax()-$i*$dx, $self->getYmax()];
+  }
+  for my $i (@{[0..$step-1]}) {
+    push @polygon, [$self->getXmin(), $self->getYmax()-$i*$dy];
+  }
+
+  my ($xmin_reproj, $ymin_reproj, $xmax_reproj, $ymax_reproj);
+  for my $i (@{[0..$#polygon]}) {
+    # FIXME: il faut absoluement tester les erreurs ici:
+    #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
+
+    my $p = 0;
+    eval { $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]); };
+    if ($@) {
+        ERROR($@);
+        ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
+        return [0,0,0,0];
+    }
+
+    if ($i==0) {
+      $xmin_reproj= $xmax_reproj= @{$p}[0];
+      $ymin_reproj= $ymax_reproj= @{$p}[1];
+    } else {
+      $xmin_reproj= @{$p}[0] if @{$p}[0] < $xmin_reproj;
+      $ymin_reproj= @{$p}[1] if @{$p}[1] < $ymin_reproj;
+      $xmax_reproj= @{$p}[0] if @{$p}[0] > $xmax_reproj;
+      $ymax_reproj= @{$p}[1] if @{$p}[1] > $ymax_reproj;
+    }
+  }
+
+  my $margeX = ($xmax_reproj - $xmin_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
+  my $margeY = ($ymax_reproj - $ymax_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
+
+  $BBox{xMin} = Math::BigFloat->new($xmin_reproj - $margeX);
+  $BBox{yMin} = Math::BigFloat->new($ymin_reproj - $margeY);
+  $BBox{xMax} = Math::BigFloat->new($xmax_reproj + $margeX);
+  $BBox{yMax} = Math::BigFloat->new($ymax_reproj + $margeY);
+  
+  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $self->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+  
+  return %BBox;
 }
 
 ####################################################################################################

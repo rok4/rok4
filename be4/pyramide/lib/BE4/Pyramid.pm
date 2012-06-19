@@ -229,7 +229,7 @@ sub _init {
         return FALSE;
     }
 
-    if (scalar $datasources ) {
+    if (! scalar $datasources ) {
         ERROR ("Datasources required (null) !");
         return FALSE;
     }
@@ -398,6 +398,12 @@ sub _load {
     # identify bottom and top levels
     if (! $self->calculateExtremLevels()) {
         ERROR(sprintf "Impossible to calculate top and bottom levels");
+        return FALSE;
+    }
+    
+    # identify bottom and top levels for each data sources
+    if (! $self->updateDatasources()) {
+        ERROR(sprintf "Impossible to update data sources");
         return FALSE;
     }
 
@@ -842,7 +848,7 @@ sub calculateExtremLevels {
     # Intitialisation du topLevel:
     #  - En priorité celui fourni en paramètre
     #  - Par defaut, c'est le plus haut niveau du TMS, 
-    my $toplevelID = $self->getTopLevel();
+    my $toplevelID = $self->{pyr_level_top};
     my $toplevelOrder = undef;
     if (defined $toplevelID) {
         $toplevelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($toplevelID);
@@ -863,7 +869,8 @@ sub calculateExtremLevels {
     my $bottomlevelOrder = undef;
 
     foreach my $datasource (@{$self->{datasources}}) {
-        my $levelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($datasource->{levelID});
+        my $levelID = $datasource->{bottomLevelID};
+        my $levelOrder = $self->getTileMatrixSet()->getTileMatrixOrder($levelID);
         if (! defined $levelOrder) {
             ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
                 $levelID);
@@ -871,11 +878,11 @@ sub calculateExtremLevels {
         }
 
         if ($toplevelOrder < $levelOrder) {
-            ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$levelID,$self->getTopLevel());
+            ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$levelID,$self->{pyr_level_top});
             return FALSE;
         }
 
-        $datasource->{levelOrder} = $levelOrder;
+        $datasource->{bottomLevelOrder} = $levelOrder;
         
         if (! defined $bottomlevelOrder || $levelOrder < $bottomlevelOrder) {
             $bottomlevelID = $levelID;
@@ -893,8 +900,35 @@ sub calculateExtremLevels {
     
 }
 
+# method: updateDatasources
+#  For each datasource, we store the order and the ID of the higher level which use this datasource.
+#  The base level (from which datasource is used) is already known.
+#---------------------------------------------------------------------------------------------------------------
+sub updateDatasources {
+    my $self = shift;
+
+    TRACE();
+    
+    @{$self->{datasources}} = sort {$a->{bottomLevelOrder} <=> $b->{bottomLevelOrder}} ( @{$self->{datasources}});
+
+    my $i = 0;
+    
+    while ( $i < scalar @{$self->{datasources}} -1) {
+        my $topLevelOrder = $self->{datasources}[$i+1]->{bottomLevelOrder} - 1;
+        $self->{datasources}[$i]->{topLevelOrder} = $topLevelOrder;
+        $self->{datasources}[$i]{topLevelID} = $self->getLevelID($topLevelOrder);
+        $i++;
+    }
+    
+    my $topLevelID = $self->{pyr_level_top};
+    $self->{datasources}[$i]->{topLevelID} = $topLevelID;
+    $self->{datasources}[$i]->{topLevelOrder} = $self->getLevelOrder($topLevelID);
+    
+    return TRUE;
+}
+
 # method: createLevels
-#  create all objects Level between the top and the bottom levels for the new pyramid
+#  Create all objects Level between the top and the bottom levels for the new pyramid
 #  If there are an old pyramid, levels already exist. We don't create twice the same level
 #---------------------------------------------------------------------------------------------------
 sub createLevels {
@@ -909,8 +943,8 @@ sub createLevels {
         return FALSE;
     }
 
-    my $topOrder = $self->getLevelOrder($self->getTopLevel());
-    my $bottomOrder = $self->getLevelOrder($self->getBottomLevel());
+    my $topOrder = $self->getLevelOrder($self->{pyr_level_top});
+    my $bottomOrder = $self->getLevelOrder($self->{pyr_level_bottom});
 
     # load all level
     for (my $i = $bottomOrder; $i<=$topOrder; $i++) {
@@ -951,9 +985,6 @@ sub createLevels {
             $tmID
         );
 
-        # FIXME :
-        #   compute tms limit in row/col from TMS ?
-
         # params to level
         my $params = {
             id                => $tmID,
@@ -992,68 +1023,22 @@ sub createLevels {
     return TRUE;
 }
 
-
 # method: updateLimits
-#  compare old corners' coordinates with the news and update values.
+#  Compare old extrems rows/columns of the given level with the news and update values.
 #---------------------------------------------------------------------------------------------------------------
 sub updateLimits {
     my $self = shift;
-    my ($xMin, $yMin, $xMax, $yMax) = @_;
+    my ($levelID,$i,$j) = @_;
 
     TRACE();
     
-    if (! defined $self->{dataLimits}->{xmin} || $xMin < $self->{dataLimits}->{xmin}) {$self->{dataLimits}->{xmin} = $xMin;}
-    if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
-    if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
-    if (! defined $self->{dataLimits}->{ymax} || $yMax > $self->{dataLimits}->{ymax}) {$self->{dataLimits}->{ymax} = $yMax;}
+    my $objLevel = $self->getLevel($levelID);
+    if (! defined $objLevel->{limit}[0] || $j < $objLevel->{limit}[0]) {$objLevel->{limit}[0] = $j;}
+    if (! defined $objLevel->{limit}[1] || $j > $objLevel->{limit}[1]) {$objLevel->{limit}[1] = $j;}
+    if (! defined $objLevel->{limit}[2] || $i < $objLevel->{limit}[2]) {$objLevel->{limit}[2] = $i;}
+    if (! defined $objLevel->{limit}[3] || $i > $objLevel->{limit}[3]) {$objLevel->{limit}[3] = $i;}
 }
 
-# method: calculateTMLimits
-#  calculate tile limits for each level of the pyramid. It use the resolution and corners' coordinates. If values
-#  already exists, we take account of.
-#---------------------------------------------------------------------------------------------------------------
-sub calculateTMLimits {
-    my $self = shift;
-
-    TRACE();
-    
-    if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
-        ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
-    {
-        ERROR("Can not calculate TM limits, limit coordinates are not defined !");
-        return FALSE;
-    }
-    
-    my %levels = $self->getLevels();
-    foreach my $objLevel (values %levels){
-        if ($objLevel->{is_in_pyramid} == 0) {
-            # This level is just present in the old pyramid. Limits are not update
-            next;
-        }
-
-        # we need resolution for this level
-        my $TM = $self->getTileMatrixSet()->getTileMatrix($objLevel->getID());
-        
-        my $resolution = Math::BigFloat->new($TM->getResolution());
-        my $width = $resolution*$TM->getTileWidth();
-        my $height = $resolution*$TM->getTileHeight();
-        
-        my $iMin=int(($self->{dataLimits}->{xmin} - $TM->getTopLeftCornerX()) / $width);   
-        my $iMax=int(($self->{dataLimits}->{xmax} - $TM->getTopLeftCornerX()) / $width);   
-        my $jMin=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymax}) / $height); 
-        my $jMax=int(($TM->getTopLeftCornerY() - $self->{dataLimits}->{ymin}) / $height);
-        
-        # we store this values, taking account of the old values.
-        
-        if (! defined $objLevel->{limit}->[0] || $jMin < $objLevel->{limit}->[0]) {$objLevel->{limit}->[0] = $jMin;}
-        if (! defined $objLevel->{limit}->[1] || $jMax > $objLevel->{limit}->[1]) {$objLevel->{limit}->[1] = $jMax;}
-        if (! defined $objLevel->{limit}->[2] || $iMin < $objLevel->{limit}->[2]) {$objLevel->{limit}->[2] = $iMin;}
-        if (! defined $objLevel->{limit}->[3] || $iMax > $objLevel->{limit}->[3]) {$objLevel->{limit}->[3] = $iMax;}
-        
-    }
-    
-    return TRUE;
-}
 
 ####################################################################################################
 #                              FUNCTIONS FOR WRITING PYRAMID'S ELEMENTS                            #
@@ -1067,12 +1052,6 @@ sub writeConfPyramid {
     my $filepyramid = shift; # Can be null !
 
     TRACE;
-
-    # to write TM limits in the pyramid descriptor
-    if (! $self->calculateTMLimits()) {
-        ERROR ("Can not calculate TM limits !");
-        return FALSE;
-    }
     
     # parsing template
     my $parser = XML::LibXML->new();
@@ -1094,7 +1073,7 @@ sub writeConfPyramid {
     my $channel = $self->getSamplesPerPixel();
     $strpyrtmplt =~ s/__CHANNEL__/$channel/;
     #  
-    my $nodata = $self->getNodataColor();
+    my $nodata = $self->{nodata}->getValue();
     $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
     #  
     my $interpolation = $self->getInterpolation();
@@ -1105,8 +1084,8 @@ sub writeConfPyramid {
 
     my %levels = $self->getLevels();
 
-    my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
-    my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
+    my $topLevelOrder = $self->getLevelOrder($self->{pyr_level_top});
+    my $bottomLevelOrder = $self->getLevelOrder($self->{pyr_level_bottom});
 
     for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
@@ -1128,7 +1107,7 @@ sub writeConfPyramid {
 
     if (-f $filepyramid) {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
-        return FALSE;
+        #return FALSE;#TEST#
     }
     #
     my $PYRAMID;
@@ -1299,8 +1278,8 @@ sub writeCachePyramid {
 
     my %levels = $self->getLevels();
 
-    my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
-    my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
+    my $topLevelOrder = $self->getLevelOrder($self->{pyr_level_top});
+    my $bottomLevelOrder = $self->getLevelOrder($self->{pyr_level_bottom});
 
     foreach my $objLevel (values %levels){
 
@@ -1482,12 +1461,18 @@ sub getNodataColor {
 }
 
 # Datasource
-sub getDataSource {
+sub getDataSources {
     my $self = shift;
-    return $self->{datasource};
+    return $self->{datasources};
 }
 
 # Levels
+sub getLevel {
+    my $self = shift;
+    my $levelID = shift;
+    return $self->{levels}->{$levelID};
+}
+
 sub getLevels {
     my $self = shift;
     return %{$self->{levels}};
@@ -1509,16 +1494,6 @@ sub getLevelID {
     my $self = shift;
     my $order = shift;
     return $self->getTileMatrixSet()->getTileMatrixID($order);
-}
-
-sub getBottomLevel {
-    my $self = shift;
-    return $self->{pyr_level_bottom};
-}
-
-sub getTopLevel {
-    my $self = shift;
-    return $self->{pyr_level_top};
 }
 
 sub setBottomLevel {

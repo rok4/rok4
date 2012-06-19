@@ -306,29 +306,6 @@ sub getCountTileMatrix {
   return $count;
 }
 
-# method: getBottomTileMatrix
-#  return the bottom tile matrix ID, with the smallest resolution and the order '0'.
-#---------------------------------------------------------------------------------
-sub getBottomTileMatrix {
-    my $self = shift;
-
-    TRACE;
-
-    # FIXME : variable POSIX to put correctly !
-    return $self->{tilematrix}->{$self->{levelbottom}};
-}
-
-# method: getTopTileMatrix
-#  return the top tile matrix ID, with the biggest resolution and the order 'NumberOfTM'.
-#---------------------------------------------------------------------------------
-sub getTopTileMatrix {
-    my $self = shift;
-
-    TRACE;
-
-    return $self->{tilematrix}->{$self->{leveltop}};
-}
-
 # method: getTileMatrixID
 #  return the tile matrix ID from the ascending resolution order (integer) :  
 #   - 0 (bottom level, smallest resolution)
@@ -417,8 +394,6 @@ __END__
   ...
   
   $objT = BE4::TileMatrixSet->new($filepath);
-  $objT->getBottomTileMatrix(); (best resolution)
-  $objT->getTopTileMatrix(); (worst resolution)
 
 =head1 DESCRIPTION
 
