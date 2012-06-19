@@ -460,28 +460,29 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 
 int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    uint mirrors=0;
+    uint nbMirrors=0;
 
     mirrorImageFactory MIFactory;
-    
+    std::vector< Image*>  mirrors;
+
     int i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
-            
+
             MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),pECI->getSampleformat(),j,mirrorSize);
             if (mirror == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors");
                 return -1;
             }
-            
-            pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
-            mirrors++;
-            i++;
+            mirrors.push_back(mirror);
+            nbMirrors++;
         }
         i++;
     }
 
-    return mirrors;
+    pECI->getimages()->insert(pECI->getimages()->begin(),mirrors.begin(),mirrors.end());
+
+    return nbMirrors;
 }
 
 
