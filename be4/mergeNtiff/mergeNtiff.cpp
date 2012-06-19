@@ -433,7 +433,7 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
     }
 
     // Rectangle englobant des images d entree
-    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
+    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12;
     for (unsigned int j=0;j<TabImageIn.size();j++) {
         if (TabImageIn.at(j)->getxmin()<xmin)  xmin=TabImageIn.at(j)->getxmin();
         if (TabImageIn.at(j)->getymin()<ymin)  ymin=TabImageIn.at(j)->getymin();
@@ -460,9 +460,10 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 
 int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    uint mirrors=0;
+    uint nbMirrors=0;
 
     mirrorImageFactory MIFactory;
+    std::vector< Image*>  mirrors;
     
     int i = 0;
     while (i<pECI->getimages()->size()) {
@@ -473,15 +474,15 @@ int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
                 LOGGER_ERROR("Unable to calculate mirrors");
                 return -1;
             }
-            
-            pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
-            mirrors++;
-            i++;
+            mirrors.push_back(mirror);
+            nbMirrors++;
         }
         i++;
     }
 
-    return mirrors;
+    pECI->getimages()->insert(pECI->getimages()->begin(),mirrors.begin(),mirrors.end());
+
+    return nbMirrors;
 }
 
 
