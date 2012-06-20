@@ -1508,7 +1508,6 @@ sub setTopLevel {
     $self->{pyr_level_top} = $TopLevel;
 }
 
-
 sub getCacheImageSize {
     my $self = shift;
     my $level = shift;
@@ -1527,6 +1526,18 @@ sub getCacheImageHeight {
     # height of cache image in pixel for a defined level !
     return $self->getTilePerHeight() * $self->getTileMatrixSet()->getTileHeight($level);
 }
+
+sub getTileWidth {
+    my $self = shift;
+    my $level = shift;
+    return $self->getTileMatrixSet()->getTileWidth($level);
+}
+sub getTileHeight {
+    my $self = shift;
+    my $level = shift;
+    return $self->getTileMatrixSet()->getTileHeight($level);
+}
+
 sub getTilePerWidth {
     my $self = shift;
     return $self->{image_width};

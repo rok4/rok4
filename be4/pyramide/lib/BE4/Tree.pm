@@ -38,10 +38,10 @@ package BE4::Tree;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Math::BigFloat;
 use Geo::OSR;
 use Geo::OGR;
+use Data::Dumper;
 
 use BE4::DataSource;
 use BE4::ImageDesc;
@@ -230,7 +230,7 @@ sub _load {
         return FALSE;
     }
 
-    DEBUG(sprintf "N. Tile Cache to the bottom level : %d",scalar keys(%{$self->{levels}{$self->{bottomLevelID}}}));
+    INFO(sprintf "N. Tile Cache to the bottom level : %d",scalar keys(%{$self->{levels}{$self->{bottomLevelID}}}));
 
     # Calcul des branches à partir des feuilles et de leur poids:
     for (my $i = $src->{bottomLevelOrder}; $i <= $src->{topLevelOrder}; $i++){
@@ -259,10 +259,10 @@ sub _load {
 
 
 ####################################################################################################
-#                                         PUBLIC METHODS                                           #
+#                                     BOTTOM LEVEL METHODS                                         #
 ####################################################################################################
 
-# Group: public methods
+# Group: bottom level methods
 
 =begin nd
 method: identifyBottomTiles
@@ -299,18 +299,25 @@ sub identifyBottomTiles {
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
                     my $idxkey = sprintf "%s_%s", $i, $j;
-                    push (@{$self->{levels}{$self->{bottomLevelID}}{$idxkey}[0]},$objImg);
+                    if ($datasource->hasHarvesting()) {
+                        # we use WMS service to generate this leaf
+                        $self->{levels}{$self->{bottomLevelID}}{$idxkey}[0] = 0;
+                        # { level1 => { x1_y2 => [0,w1],
+                        #               x2_y2 => [0,w2],
+                        #               x3_y2 => [0,w3], ...} }
+                    } else {
+                        # we use images to generate this leaf
+                        push (@{$self->{levels}{$self->{bottomLevelID}}{$idxkey}[0]},$objImg);
+                        # { level1 => { x1_y2 => [[list objimage1],w1],
+                        #               x2_y2 => [[list objimage2],w2],
+                        #               x3_y2 => [[list objimage3],w3], ...} }
+                    }
                     $self->{levels}{$self->{bottomLevelID}}{$idxkey}[1] = 0;
-                    
-                    # { level1 => { x1_y2 => [[list objimage1],w1],
-                    #               x2_y2 => [[list objimage2],w2],
-                    #               x3_y2 => [[list objimage3],w3], ...} }
                 }
             }
         }
     } else {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-
         my $convertExtent = $datasource->{extent}->Clone();
         eval { $convertExtent->Transform($ct); };
         if ($@) { 
@@ -342,12 +349,12 @@ sub identifyBottomTiles {
                 my $OGRtile = Geo::OGR::Geometry->create(GML=>$GMLtile);
                 if ($OGRtile->Intersect($convertExtent)){
                     my $idxkey = sprintf "%s_%s", $i, $j;
-                    $self->{levels}{$self->{bottomLevelID}}{$idxkey}[0] = $datasource->{harvesting};
+                    $self->{levels}{$self->{bottomLevelID}}{$idxkey}[0] = 0;
                     $self->{levels}{$self->{bottomLevelID}}{$idxkey}[1] = 0;
                     
-                    # { level1 => { x1_y2 => [harvesting,w1],
-                    #               x2_y2 => [harvesting,w2],
-                    #               x3_y2 => [harvesting,w3], ...} }
+                    # { level1 => { x1_y2 => [0,w1],
+                    #               x2_y2 => [0,w2],
+                    #               x3_y2 => [0,w3], ...} }
                 }
             }
         }
@@ -391,6 +398,7 @@ Return the distribution array.
 =cut
 sub shareNodesOnJobs {
     my $self = shift;
+    my ($nodeRack,$weights) = @_;
 
     TRACE;
 
@@ -398,6 +406,7 @@ sub shareNodesOnJobs {
     my $optimalWeight = undef;
     my $cutLevelID = undef;
     my @jobsSharing = undef;
+    my @jobsWeights = undef;
 
     # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel
     my $wholeTreeWeight = 0;
@@ -406,59 +415,64 @@ sub shareNodesOnJobs {
         $wholeTreeWeight += $self->getAccumulatedWeightOfNode($node);
     }
 
-    for (my $i = $self->getBottomLevelOrder(); $i >= $self->getTopLevelOrder(); $i--){
+    for (my $i = $self->getTopLevelOrder(); $i >= $self->getBottomLevelOrder(); $i--){
         my $levelID = $tms->getTileMatrixID($i);
         my @levelNodeList = $self->getNodesOfLevel($levelID);
         
-        if (scalar @levelNodeList < $self->{job_number}) {
+        if ($levelID ne $self->{bottomLevelID} && scalar @levelNodeList < $self->{job_number}) {
             next;
         }
-
+        
         @levelNodeList =
             sort {$self->getAccumulatedWeightOfNode($b) <=> $self->getAccumulatedWeightOfNode($a)} @levelNodeList;
 
-        my @JOBSWEIGHT;
-        my @JOBS;
-        for (my $j = 0; $j < $self->{job_number}; $j++) {
-            push @JOBSWEIGHT, 0;
+            
+        my @TMP_WEIGHTS;
+        
+        for (my $j = 0; $j <= $self->{job_number}; $j++) {
+            # On initialise les poids avec ceux des jobs
+            $TMP_WEIGHTS[$j] = $weights->[$j];
         }
         
+        my $finisherWeight = $wholeTreeWeight;
+        my @TMP_JOBS;
+        
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $indexMin = $self->minArrayIndex(@JOBSWEIGHT);
-            $JOBSWEIGHT[$indexMin] += $self->getAccumulatedWeightOfNode($levelNodeList[$j]);
-            push (@{$JOBS[$indexMin]}, $levelNodeList[$j]);
+            my $indexMin = $self->minArrayIndex(1,@TMP_WEIGHTS);
+            my $nodeWeight = $self->getAccumulatedWeightOfNode($levelNodeList[$j]);
+            $TMP_WEIGHTS[$indexMin] += $nodeWeight;
+            $finisherWeight -= $nodeWeight;
+            push @{$TMP_JOBS[$indexMin-1]}, $levelNodeList[$j];
         }
+        
         
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
-        my $finisherWeight = $wholeTreeWeight - $self->sumArray(@JOBSWEIGHT);
-        my $worstWeight = $self->maxArrayValue(@JOBSWEIGHT) + $finisherWeight;
+        $TMP_WEIGHTS[0] += $finisherWeight;
+        my $worstWeight = $self->maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
 
         # on compare ce pire des cas avec celui obtenu jusqu'ici. S'il est plus petit, on garde ce niveau comme
         # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
         if (! defined $optimalWeight || $worstWeight < $optimalWeight) {
             $optimalWeight = $worstWeight;
             $cutLevelID = $levelID;
-            @jobsSharing = @JOBS;
+            @jobsSharing = @TMP_JOBS;            
+            @jobsWeights = @TMP_WEIGHTS;
             DEBUG (sprintf "New cutLevel found : %s (worstWeight : %s)",$levelID,$optimalWeight);
         }
 
     }
 
-    if (! defined $cutLevelID) {
-        # Nous sommes dans le cas où même le niveau du bas contient moins de noeuds qu'il y a de jobs.
-        # Dans ce cas, on définit le cutLevel comme le niveau du bas.
-        INFO(sprintf "The number of nodes in the bottomLevel (%s) is smaller than the number of jobs (%s). Some one will be empty",scalar $self->getNodesOfLevel($self->{bottomLevelID}),$self->{job_number});
-        $cutLevelID = $self->{bottomLevelID};
-        my @levelNodeList = $self->getNodesOfLevel($cutLevelID);
-        for (my $i = 0; $i < scalar @levelNodeList; $i++) {
-            push (@{$jobsSharing[$i]}, $levelNodeList[$i]);
-        }
-    }
-
     $self->{cutLevelID} = $cutLevelID;
+    
+    # We store results in array references
+    for (my $i = 0; $i < $self->{job_number}; $i++) {
+        $nodeRack->[$i] = $jobsSharing[$i];
+        $weights->[$i] = $jobsWeights[$i];
+    }
+    # Weights' array is longer
+    $weights->[$self->{job_number}] = $jobsWeights[$self->{job_number}];
 
-    return @jobsSharing;
 }
 
 ####################################################################################################
@@ -469,18 +483,19 @@ sub shareNodesOnJobs {
 
 =begin nd
 method: minArrayIndex
-Return index of the smaller element in a array
+Return index of the smaller element in a array, begining with the element 'first'
 =cut
 sub minArrayIndex {
     my $self = shift;
+    my $first = shift;
     my @array = @_;
-
+    
     TRACE;
 
     my $min = undef;
     my $minIndex = undef;
 
-    for (my $i = 0; $i < scalar @array; $i++){
+    for (my $i = $first; $i < scalar @array; $i++){
         if (! defined $minIndex || $min > $array[$i]) {
             $min = $array[$i];
             $minIndex = $i;
@@ -491,41 +506,24 @@ sub minArrayIndex {
 }
 
 # method: maxArrayValue
-#  Return the greater value in a array
+#  Return the greater value in a array, begining with the element 'first'
 #-------------------------------------------------------------------------------
 sub maxArrayValue {
     my $self = shift;
+    my $first = shift;
     my @array = @_;
 
     TRACE;
 
     my $max = undef;
 
-    for (my $i = 0; $i < scalar @array; $i++){
+    for (my $i = $first; $i < scalar @array; $i++){
         if (! defined $max || $max < $array[$i]) {
             $max = $array[$i];
         }
     }
 
     return $max;
-}
-
-# method: sumArray
-#  Return array's elements' sum
-#
-sub sumArray {
-    my $self = shift;
-    my @array = @_;
-
-    TRACE;
-
-    my $sum = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $sum += $array[$i];
-    }
-
-    return $sum;
 }
 
 ####################################################################################################
@@ -635,25 +633,25 @@ sub isInTree(){
 #  Return an array of the four possible childs from a node, an empty array if the node is a leaf
 #------------------------------------------------------------------------------
 sub getPossibleChilds(){
-  my $self = shift;
-  my $node = shift;
-  
-  my @res;
-  if ($self->{levelIdx}{$node->{level}} <= $self->{levelIdx}{$self->{bottomLevelID}}) {
-    return @res;
-  }
-
-  my $lowerLevelID = ($self->{tmList}[$self->{levelIdx}{$node->{level}}-1])->getID();
-  for (my $i=0; $i<=1; $i++){
-    for (my $j=0; $j<=1; $j++){
-      my $childNode = {level => $lowerLevelID, x => $node->{x}*2+$j, y => $node->{y}*2+$i};
-      push(@res, $childNode);
-      DEBUG(sprintf "Possible Child for %s_%s_%s (level_idx) : %s_%s_%s",
+    my $self = shift;
+    my $node = shift;
+    
+    my @res;
+    if ($node->{level} eq $self->{bottomLevelID}) {
+        return @res;
+    }
+    
+    my $lowerLevelID = $self->{tms}->getBelowTileMatrixID($node->{level});
+    for (my $i=0; $i<=1; $i++){
+        for (my $j=0; $j<=1; $j++){
+            my $childNode = {level => $lowerLevelID, x => $node->{x}*2+$j, y => $node->{y}*2+$i};
+            push(@res, $childNode);
+            DEBUG(sprintf "Possible Child for %s_%s_%s (level_idx) : %s_%s_%s",
             $node->{level}, $node->{x},  $node->{y},
             $childNode->{level}, $childNode->{x},  $childNode->{y});
+        }
     }
-  }
-  return @res;
+    return @res;
 }
 
 # method: getChilds

@@ -325,6 +325,23 @@ sub getTileMatrixID {
     return undef;
 }
 
+# method: getBelowTileMatrixID
+#  Return the tile matrix ID below the given tile matrix (ID)
+#   - 0 (bottom level, smallest resolution)
+#   - NumberOfTM (top level, biggest resolution).
+#  Hash levelIdx is used.
+#---------------------------------------------------------------------------------
+sub getBelowTileMatrixID {
+    my $self = shift;
+    my $ID= shift; 
+
+    TRACE;
+    
+    return undef if (! exists $self->{levelIdx}->{$ID});
+    my $order = $self->{levelIdx}->{$ID};
+    return $self->getTileMatrixOrder($order-1);
+}
+
 # method: getTileMatrixOrder
 #  return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)

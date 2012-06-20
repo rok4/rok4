@@ -534,7 +534,7 @@ sub doIt {
     
     ALWAYS(">>> Compute Process ...");
     
-    if (! $objProcess->computeWholeTree()) {
+    if (! $objProcess->computeTrees()) {
         ERROR ("Can not compute process !");
         return FALSE;
     }

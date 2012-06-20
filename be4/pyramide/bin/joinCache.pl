@@ -650,7 +650,6 @@ sub _validate {
 
 # method: validateComposition
 #       - we control the levelId (have to be present in the TMS)
-#       - 
 #---------------------------------------------------------------------------------------------------
 sub validateComposition {
 

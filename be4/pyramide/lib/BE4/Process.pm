@@ -89,7 +89,6 @@ Group: variable
 variable: $self
     * pyramid    => undef, # Pyramid object
     * nodata => undef, # NoData object
-    * harvesting => undef, # Harvesting object
     * trees => [], # array of Tree objects
     * job_number => undef,
     * path_temp  => undef,
@@ -116,12 +115,11 @@ sub new {
         # 
         trees       => [],
         nodata      => undef,
-        harvesting  => undef,
         # out
-        scriptsID   => [],
-        currentTree => 0,
+        scripts   => [],
         codes       => [],
-        weight      => [],
+        weights     => [],
+        currentTree => 0,
     };
     bless($self, $class);
 
@@ -177,17 +175,27 @@ sub _init {
     my $TMS = $self->{pyramid}->getTileMatrixSet();
 
     foreach my $datasource (@{$dataSources}) {
-        if ($datasource->hasImages() && ! $datasource->hasHarvesting() &&
-            (($datasource->getSRS() ne $TMS->getSRS()) ||
-            (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))))
-        {
-            ERROR ("We need a WMS service to harvest in this case (Reprojection with image source, or update of JPEG cache");
-            return FALSE;
+        
+        if ($datasource->hasImages()) {
+            
+            if (($datasource->getSRS() ne $TMS->getSRS()) ||
+                (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))) {
+                
+                if (! $datasource->hasHarvesting()) {
+                    ERROR ("We need a WMS service to harvest in this case (Reprojection with image source, or update of JPEG cache");
+                    return FALSE;
+                }
+                
+            } else {
+                $datasource->removeHarvesting();
+            }
         }
+        
+        # Now, if datasource contains a WMS service, we have to use it
         
         my $tree = BE4::Tree->new($datasource, $self->{pyramid}, $self->{job_number});
         if (! defined $tree) {
-            ERROR(sprintf "Can not create a Tree object for datasource with level %s !",
+            ERROR(sprintf "Can not create a Tree object for datasource with bottom level %s !",
                   $datasource->{bottomLevelID});
             return FALSE;
         }
@@ -231,7 +239,7 @@ sub computeTrees {
         push @{$self->{weights}},0;
     }
     
-    while ($self->{currentTree} < scalar $self->{trees}) {
+    while ($self->{currentTree} < scalar @{$self->{trees}}) {
         if (! $self->computeWholeTree()) {
             ERROR(sprintf "Cannot compute tree number %s",$self->{currentTree});
             return FALSE;
@@ -266,7 +274,9 @@ sub computeWholeTree {
     TRACE;
 
     my $pyrName = $self->{pyramid}->getPyrName();
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
+    
+    INFO (sprintf "Tree : %s", $self->{currentTree});
     
     # Pondération de l'arbre en fonction des opérations à réaliser
     # et création du code script (ajoter aux noeuds de l'arbre)
@@ -281,12 +291,16 @@ sub computeWholeTree {
     # Détermination du cutLevel optimal et répartition des noeuds sur les jobs,
     # en tenant compte du fait qu'ils peuvent déjà contenir du travail, du fait
     # de la pluralité des arbres à traiter.
-    my @nodeRack = $tree->shareNodesOnJobs($self->{weights});
+    
+    my @nodeRack;
+    
+    $tree->shareNodesOnJobs(\@nodeRack,\@{$self->{weights}});
+    
     if (! scalar @nodeRack) {
         ERROR("Cut Level Node List is empty !");
         return FALSE;
     }
-    INFO (sprintf "CutLevel : %s", $tree->{cutLevelId});
+    INFO (sprintf "CutLevel : %s", $tree->{cutLevelID});
 
     # écriture des scripts
     for (my $scriptCount = 1; $scriptCount <= $self->{job_number}; $scriptCount++){
@@ -297,7 +311,7 @@ sub computeWholeTree {
         } else {
             foreach my $node (@{$nodeRack[$scriptCount-1]}){
                 INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
-                $self->{codes}[$scriptCount] .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y};
+                $self->{codes}[$scriptCount] .= sprintf "\necho \"PYRAMIDE:%s SOURCE:%s  LEVEL:%s X:%s Y:%s\"", $pyrName, $self->{currentTree}, $node->{level} ,$node->{x}, $node->{y};
                 $self->{codes}[$scriptCount] .= $self->writeBranchCode($node);
                 # NOTE : pas d'image à collecter car non séparation par script du dossier temporaire, de travail
                 # A rétablir si possible
@@ -312,7 +326,7 @@ sub computeWholeTree {
     $self->{codes}[0] .= $self->writeTopCodes();
 
     if (! defined $self->{codes}[0]) {
-        ERROR("Script finisher unedfined !");
+        ERROR("Script finisher undefined !");
         return FALSE;
     }
 
@@ -354,7 +368,7 @@ sub computeBottomImage {
 
     TRACE;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     my $weight  = 0;
     my $code  = "\n";
 
@@ -366,10 +380,8 @@ sub computeBottomImage {
 # A terme, il faudra vérifier cette zone et ne demander que les tuiles contenant des données, et reconstruire une
 # image entière à partir de là (en ajoutant sur place des tuiles de nodata pour compléter).
 
-    if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
-    ||
-    (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg')))
-    {
+    if ($tree->{datasource}->hasHarvesting) {
+        # Datasource has a WMS service : we have to use it
         $code .= $self->wms2work($node,$self->workNameOfNode($node));
         $tree->updateWeightOfNode($node,WGET_W);
     } else {
@@ -472,7 +484,7 @@ sub computeAboveImage {
 
     TRACE;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     my $code = "\n";
     my $weight = 0;
     my $newImgDesc = $tree->getImgDescOfNode($node);
@@ -496,7 +508,7 @@ sub computeAboveImage {
         # tuilage il y a) est la même entre le cache moissonné et la pyramide en cours d'écriture.
         # On a à l'heure actuelle du 16 sur 16 sur toute les pyramides et pas de JPEG 2000. 
 
-        my $tm = $tree->getTileMatrix($node->{level});
+        my $tm = $tree->{tms}->getTileMatrix($node->{level});
         if (! defined $tm) {
             ERROR(sprintf "Cannot load the Tile Matrix for the level %s",$node->{level});
             return undef;
@@ -538,6 +550,7 @@ sub computeAboveImage {
         }
     }
     $code .= $self->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), $bg, $childImgParam);
+    $weight += MERGE4TIFF_W;
 
     # Suppression des images de travail dont on a plus besoin.
     foreach my $node (@childList){
@@ -566,7 +579,7 @@ sub computeBranch {
     my $self = shift;
     my $node = shift;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     my $weight = 0;
 
     TRACE;
@@ -615,7 +628,7 @@ sub writeBranchCode {
 
     TRACE;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     my $code = '';
     my @childList = $tree->getChilds($node);
 
@@ -641,9 +654,9 @@ sub writeTopCodes {
 
     TRACE;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     
-    if ($tree->getTopLevelId() eq $tree->getCutLevelId()){
+    if ($tree->getTopLevelID() eq $tree->getCutLevelID()){
         INFO("Final script will be empty");
         return "echo \"Final script have nothing to do.\" \n";
     }
@@ -666,10 +679,10 @@ sub writeTopCode {
 
     TRACE;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     
     # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
-    return '' if ($node->{level} eq $self->{tree}->getCutLevelId());
+    return '' if ($node->{level} eq $tree->getCutLevelID());
 
     my $code = '';
     my @childList = $tree->getChilds($node);
@@ -699,33 +712,69 @@ sub wms2work {
     
     TRACE;
     
-    my $imgDesc = $self->{tree}->getImgDescOfNode($node);
-    my @imgSize = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $tree = $self->{trees}[$self->{currentTree}];
+    
+    my $imgDesc = $tree->getImgDescOfNode($node);
+    my @imgSize = $self->{pyramid}->getCacheImageSize($node->{level}); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet();
-    my $url     = $self->{harvesting}->doRequestUrl(
+    
+    my @requests = $tree->{datasource}->{harvesting}->doRequestUrl(
         srs      => $tms->getSRS(),
-        bbox     => [$imgDesc->{xMin},
-                     $imgDesc->{yMin},
-                     $imgDesc->{xMax},
-                     $imgDesc->{yMax}],
+        bbox     => [$imgDesc->{xMin},$imgDesc->{yMin},$imgDesc->{xMax},$imgDesc->{yMax}],
         imagesize => [$imgSize[0], $imgSize[1]]
     );
   
     my $cmd="";
     
-    $cmd .= "count=0; wait_delay=60\n";
-    $cmd .= "while :\n";
-    $cmd .= "do\n";
-    $cmd .= "  let count=count+1\n";
-    $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
-    $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-    $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
-    $cmd .= "  sleep \$wait_delay\n";
-    $cmd .= "  let wait_delay=wait_delay*2\n";
-    $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
-    $cmd .= "    let wait_delay=3600\n";
-    $cmd .= "  fi\n";
-    $cmd .= "done\n";
+    my $nodeName = sprintf "%s_%s_%s",$node->{level},$node->{x},$node->{y};
+    
+    if (scalar @requests == 0) {
+        ERROR("Cannot harvest image for node $nodeName");
+        exit 4;
+    }
+    
+    if (scalar @requests > 1) {
+        $cmd .= sprintf "mkdir \${TMP_DIR}/%s\n",$nodeName;
+    }
+    
+    for (my $i = 0; $i < scalar @requests; $i++) {
+        my $partFileName = $fileName;
+        
+        if (scalar @requests > 1) {
+            my $suffix = sprintf "_%02d",$i;
+            $partFileName =~ s/\.tif/$suffix\.tif/;
+            $partFileName = "$nodeName/".$partFileName;
+        }
+        
+        $cmd .= "count=0; wait_delay=60\n";
+        $cmd .= "while :\n";
+        $cmd .= "do\n";
+        $cmd .= "  let count=count+1\n";
+        $cmd .= sprintf "  wget --no-verbose -O \${TMP_DIR}/%s \"%s\" \n",$partFileName,$requests[$i];
+        $cmd .= "  if tiffck \${TMP_DIR}/$partFileName ; then break ; fi\n";
+        $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
+        $cmd .= "  sleep \$wait_delay\n";
+        $cmd .= "  let wait_delay=wait_delay*2\n";
+        $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
+        $cmd .= "    let wait_delay=3600\n";
+        $cmd .= "  fi\n";
+        $cmd .= "done\n";
+    }
+    
+    if (scalar @requests > 1) {
+        my $width = $tree->{datasource}->{harvesting}->{image_width};
+        my $height = $tree->{datasource}->{harvesting}->{image_height};
+        $cmd .=  sprintf "montage -geometry %sx%s -tile %sx%s \${TMP_DIR}/%s/*.tif -depth %s",
+            $width,$height,$imgSize[0]/$width,$imgSize[1]/$height,
+            $nodeName,$self->{pyramid}->getBitsPerSample();
+            
+        $cmd .=  " -background none" if (int($self->{pyramid}->getSamplesPerPixel()) == 4);
+        
+        $cmd .=  sprintf " -define tiff:rows-per-strip=%s  \${TMP_DIR}/%s\n%s",
+            $self->{pyramid}->getCacheImageWidth($node->{level}),$fileName, RESULT_TEST;
+
+        $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$nodeName);
+    }
     
     return $cmd;
 }
@@ -736,8 +785,8 @@ sub wms2work {
 sub cache2work {
     my ($self, $node, $workName) = @_;
 
-    my $tree = $self->{tree}[$self->{currentTree}];
-    my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $tree = $self->{trees}[$self->{currentTree}];
+    my @imgSize   = $self->{pyramid}->getCacheImageSize($node->{level}); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
 
     INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
@@ -754,12 +803,15 @@ sub cache2work {
         $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
         $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
         
-        if (int($self->{pyramid}->getSamplesPerPixel()) == 4) {
-            # Option supplémentaire pour conserver le canal alpha
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        } else {
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        }
+        $cmd .=  sprintf "montage -geometry %sx%s -tile %sx%s \${TMP_DIR}/%s/*.png -depth %s",
+            $self->{pyramid}->getTileWidth(),$self->{pyramid}->getTileHeight(),
+            $self->{pyramid}->getTilePerWidth(),$self->{pyramid}->getTilePerHeight(),
+            $dirName,$self->{pyramid}->getBitsPerSample();
+            
+        $cmd .=  " -background none" if (int($self->{pyramid}->getSamplesPerPixel()) == 4);
+        
+        $cmd .=  sprintf " -define tiff:rows-per-strip=%s  \${TMP_DIR}/%s\n%s",
+            $self->{pyramid}->getCacheImageWidth($node->{level}),$workName, RESULT_TEST;
 
         $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$dirName);
 
@@ -782,7 +834,7 @@ sub work2cache {
     my $self = shift;
     my $node = shift;
   
-    my $tree = $self->{tree}[$self->{currentTree}];
+    my $tree = $self->{trees}[$self->{currentTree}];
     my $workImgName  = $self->workNameOfNode($node);
     my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
     
@@ -818,7 +870,7 @@ sub work2cache {
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
     
-    if ($node->{level} eq $tree->{topLevelId}) {
+    if ($node->{level} eq $tree->{topLevelID}) {
         $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
     }
     
@@ -953,7 +1005,6 @@ sub prepareScript {
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
-    $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
     $code   .= "\n";
 
     # creation du répertoire de travail:

@@ -116,13 +116,23 @@ sub _init {
     
     return FALSE if (! defined $params);
     
+    # 'image_width' and 'image_height' are optionnal, but if one is defined, the other must be defined
     if (exists($params->{image_width}) && defined ($params->{image_width})) {
         $self->{image_width} = $params->{image_width};
-    }
-    if (exists($params->{image_height}) && defined ($params->{image_height})) {
-        $self->{image_height} = $params->{image_height};
+        if (exists($params->{image_height}) && defined ($params->{image_height})) {
+            $self->{image_height} = $params->{image_height};
+        } else {
+            ERROR("If parameter 'image_width' is defined, parameter 'image_height' must be defined !");
+            return FALSE ;
+        }
+    } else {
+        if (exists($params->{image_height}) && defined ($params->{image_height})) {
+            ERROR("If parameter 'image_height' is defined, parameter 'image_width' must be defined !");
+            return FALSE ;
+        }
     }
 
+    # Other parameters are mandatory
     if (! exists($params->{wms_url}) || ! defined ($params->{wms_url})) {
         ERROR("Parameter 'wms_url' is required !");
         return FALSE ;
@@ -190,18 +200,42 @@ sub doRequestUrl {
 
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
     my ($image_width, $image_height) = @{$imagesize};
+    
+    if (defined $self->{image_width} && 
+        ($self->{image_width} < $image_width && $image_width % $self->{image_width} != 0) ||
+        ($self->{image_height} < $image_height && $image_height % $self->{image_height} != 0))
+    {
+        ERROR(sprintf "Harvesting size is not compatible with the image's size in the request.");
+        return ();;
+    }
+    
+    # Size in harvested image of the asked image
+    my $imagePerWidth = int($image_width/$self->{image_width});
+    my $imagePerHeight = int($image_height/$self->{image_height});
+    
+    # Ground size of an harvested image
+    my $groundHeight = ($xmax-$xmin)/$imagePerHeight;
+    my $groundWidth = ($ymax-$ymin)/$imagePerWidth;
+    
+    my @requests;
 
-    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLES=",
-                        $self->url(),
-                        $self->layers(),
-                        $self->version(),
-                        $self->request(),
-                        $self->format(),
-                        $srs,
-                        $xmin, $ymin, $xmax, $ymax,
-                        $image_width, $image_height);
+    for (my $i = 0; $i < $imagePerHeight; $i++) {
+        for (my $j = 0; $j < $imagePerHeight; $j++) {
+            my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLES=",
+                    $self->url(),
+                    $self->layers(),
+                    $self->version(),
+                    $self->request(),
+                    $self->format(),
+                    $srs,
+                    $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
+                    $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight,
+                    $self->{image_width}, $self->{image_height});
+            push @requests,$url;
+        }
+    }
 
-    return $url;
+    return @requests;
 }
 
 ################################################################################

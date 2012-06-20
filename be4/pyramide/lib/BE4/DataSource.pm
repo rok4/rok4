@@ -348,6 +348,11 @@ sub hasHarvesting {
     return (defined $self->{harvesting});
 }
 
+sub removeHarvesting {
+    my $self = shift;
+    $self->{harvesting} = undef;
+}
+
 
 1;
 __END__

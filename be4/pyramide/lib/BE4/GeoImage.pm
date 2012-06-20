@@ -268,15 +268,15 @@ sub computeInfo {
     my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
 
     # FIXME : precision ?
-    $self->{xmin} = sprintf "%.8f", $xmin;
-    $self->{xmax} = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize};
-    $self->{ymin} = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize};
-    $self->{ymax} = sprintf "%.8f", $ymax;
-    $self->{xres} = sprintf "%.8f", $dx;      # $rx null ?
-    $self->{yres} = sprintf "%.8f", abs($ndy);# $ry null ?
-    $self->{xcenter}   = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
-    $self->{ycenter}   = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $self->{pixelsize} = sprintf "%.8f", $dx;
+    $self->{xmin} = sprintf "%.12f", $xmin;
+    $self->{xmax} = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize};
+    $self->{ymin} = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize};
+    $self->{ymax} = sprintf "%.12f", $ymax;
+    $self->{xres} = sprintf "%.12f", $dx;      # $rx null ?
+    $self->{yres} = sprintf "%.12f", abs($ndy);# $ry null ?
+    $self->{xcenter}   = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
+    $self->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
+    $self->{pixelsize} = sprintf "%.12f", $dx;
     $self->{height} = $dataset->{RasterYSize};
     $self->{width}  = $dataset->{RasterXSize};
 
