@@ -108,6 +108,8 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                 if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
                     if (c2+j >= images[i]->width) {
                         // On dépasse la largeur de l'image courante (arrondis). On passe.
+                        // Une sortie pour vérifier si ce cas se représente malgré les corrections
+                        LOGGER_ERROR("ExtendedCompoundImage : test de dépassement de ligne");
                         continue;
                     }
                     
