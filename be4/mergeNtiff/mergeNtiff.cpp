@@ -615,7 +615,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             ResampledImage* pResampledMask;
             
-            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, pECI->getbbox(), interpolation, mask, pResampledMask);
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
