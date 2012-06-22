@@ -73,9 +73,8 @@ variable: $self
     * images  => [], # list of images sources
     * bestResX => undef,
     * bestResY => undef,
-    * pixel => undef, #Pixel object
+    * pixel => undef, # Pixel object
 =cut
-
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -144,12 +143,10 @@ sub _init {
 
 # Group: images treatments
 
-
 =begin nd
     method: computeImageSource
 
-    Load all image in a list of object BE4::ImageSource, determine the medium
-    resolution of data, check components.
+    Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
 =cut
 sub computeImageSource {
         my $self = shift;
@@ -295,7 +292,7 @@ sub getListImages {
 =begin nd
     method: computeBbox
 
-    Bbox of data source
+    Calculate extrem limits of images, in the source SRS.
 =cut
 sub computeBbox {
     my $self = shift;
@@ -443,7 +440,6 @@ __END__
 
     Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
-    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

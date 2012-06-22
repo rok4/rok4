@@ -64,10 +64,6 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global
-my %SOURCE;
-
-################################################################################
 
 BEGIN {}
 INIT {}
@@ -174,7 +170,6 @@ sub _load {
     return TRUE;
 }
 
-
 1;
 __END__
 
@@ -194,7 +189,7 @@ __END__
 
 =head1 DESCRIPTION
 
-    A DataSource object
+    A DataSourceLoader object
 
         * FILEPATH_DATACONF
         * sources : an array of DataSource objects
@@ -241,8 +236,7 @@ __END__
 
 =head1 SEE ALSO
 
-    BE4::HarvestSource
-    BE4::ImageSource
+    BE4::DataSource
 
 =head1 AUTHOR
 
@@ -252,7 +246,6 @@ __END__
 
     Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
-    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

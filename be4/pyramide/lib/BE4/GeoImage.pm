@@ -154,7 +154,7 @@ sub _init {
 =begin nd
     method: computeInfo
 
-    Image parameters are checked (sample per pixel, bits per sample...) and return by the function. Datasource can
+    Image parameters are checked (sample per pixel, bits per sample...) and return by the function. ImageSource can
     verify if all images own same components and the compatibility with be4's configuration.
 =cut
 sub computeInfo {
@@ -298,10 +298,16 @@ sub computeInfo {
 }
 
 =begin nd
-method: computeBBox
-Return the input image bbox in final pyramid's SRS
+    method: computeBBox
+    
+        Not just convert corners, but 7 points on each side, to determine reprojected bbox 
+    
+    Parameters:
+        ct - a Geo::OSR::CoordinateTransformation object, to convert bbox .
+    
+    Returns:
+        Image bbox in final pyramid's SRS as an hash { xMin => 1, yMin => 10, xMax => 4, yMax => 15 }
 =cut
-
 sub computeBBox {
   my $self = shift;
   my $ct = shift;
@@ -491,7 +497,7 @@ __END__
 
 =head1 NAME
 
-    BE4::GeoImage - analyzes the features of the image.
+    BE4::GeoImage - Describe a georeferenced image and allows to know its components.
 
 =head1 SYNOPSIS
 
@@ -612,8 +618,6 @@ __END__
 
     None by default.
 
-=head1 SEE ALSO
-
 =head1 AUTHOR
 
     Satabin Théo, E<lt>tsatabin@E<gt>
@@ -622,7 +626,6 @@ __END__
 
     Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
-    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

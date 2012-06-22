@@ -64,10 +64,6 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global
-my %SOURCE;
-
-################################################################################
 
 BEGIN {}
 INIT {}
@@ -78,12 +74,17 @@ END {}
 Group: variable
 
 variable: $self
-    * levelID => undef,
-    * levelOrder => undef,
-    * srs => undef,
-    * extent => undef,# OGR::Geometry object, in the previous SRS
+    * bottomLevelID => undef, # this datasource will be used between bottomLevel and topLevel
+    * bottomLevelOrder => undef,
+    * topLevelID => undef,
+    * topLevelOrder => undef,
+    
     * bbox => undef, # array of limits of the previous extent
+    * extent => undef, # OGR::Geometry object, in the previous SRS
+    * srs => undef,
+
     * imageSource => undef, # an ImageSource object (can be undefined)
+
     * harvesting => undef # an Harvesting object (can be undefined)
 =cut
 
@@ -366,87 +367,68 @@ __END__
 
     use BE4::DataSource;
 
-    # DataSource object creation
-    my $objDataSource = BE4::DataSource->new({
-        path_conf => "/home/ign/images.source",
-        type => "image"
-    });
+    # DataSource object creation : 3 cases
+    
+    # Real Data and no harvesting : native SRS and lossless compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+        }
+    );
+    
+    # No Data, just harvesting
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => IGNF:WGS84G,
+            extent => /home/ign/SHAPE/GMLPolygon.txt,
+            
+            wms_layer => "ORTHO_XXX",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format => "image/tiff",
+            image_width => 1024,
+            image_height => 1024
+        }
+    );
+    
+    # Real Data and no harvesting : native SRS and lossless compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+            wms_layer => "ORTHO_XXX",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format => "image/tiff",
+            image_width => 1024,
+            image_height => 1024
+        }
+    );
 
 =head1 DESCRIPTION
 
-        srs                 = IGNF:LAMB93
-        path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
-
-        wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
-        wms_url     = http://localhost/wmts/rok4
-        wms_version = 1.3.0
-        wms_request = getMap
-        wms_format  = image/tiff
-        image_width = 2048
-        image_height = 2048
-
     A DataSource object
-
-        * levelID : ID (in TMS) of the base à level, fromwhich this datasource is used
-        * levelOrder : order (integer) of the base à level, fromwhich this datasource is used
-        * srs : SRS of the bottom extent (and ImageSource objects if exists)
-        * extent : an OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
-        * bbox : bbox of extent, an array [xmin,ymin,xmax,ymax]
-        * imageSource : can be undefined, 
-        * harvesting : can be undefined, used to complete imageSource if exist
-
-    Three cases :
-
-        * we have no 'real' data (no ImageSource), and we use a WMS service (Harvesting) to calculate the pyramid.
-        * we have no 'real' data (no ImageSource), and we use a WMS service (Harvesting) to calculate the pyramid.
-
-=head1 FILE CONFIGURATION
-
-    In the be4 configuration
-
-        [ datasource ]
-        type                = image
-        filepath_conf       = /home/theo/TEST/BE4/SOURCE/images.source
-
-    In the source configuration (.source)
+    
+        * bottomLevelID : ID (in TMS) of the base level, from which this datasource is used
+        * bottomLevelOrder : corresponding order (integer)
+        * topLevelID : ID (in TMS) of the top level, to which this datasource is used, calculated inrelation to other datasource
+        * topLevelOrder : corresponding order (integer)
         
-        type 'image'
-
-            [ global ]
-            srs = IGNF:LAMB93
-
-            [ 19 ]
-            path_image = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
-
-            [ 14 ]
-            path_image = /home/theo/DONNEES/BDORTHO_PARIS-EST_2011_L93/
-
-        type 'harvest'
-
-            [ global ]
-            srs = IGNF:LAMB93
-            box = 123,45,137,159
-                    or
-            box = /home/theo/TEST/BE4/SHAPE/Polygon.txt
-
-            [ 19 ]
-            wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
-            wms_url     = http://localhost/wmts/rok4
-            wms_version = 1.3.0
-            wms_request = getMap
-            wms_format  = image/tiff
-            image_width = 2048
-            image_height = 2048
-
-            [ 14 ]
-            wms_layer   = ORTHO_RAW_LAMB93_PARIS_EST
-            wms_url     = http://localhost/wmts/rok4
-            wms_version = 1.3.0
-            wms_request = getMap
-            wms_format  = image/tiff
-            image_width = 4096
-            image_height = 4096
-
+        * extent : an OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
+        * bbox : bbox of extent, an array [xmin,ymin,xmax,ymax].
+        * srs : SRS of the bottom extent (and ImageSource objects if exists)
+    
+        * imageSource : a ImageSource object, can be undefined
+    
+        * harvesting : an Harvestingobject, can be undefined. If it is useless, it will be remove.
+        
+    'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
 
 =head1 LIMITATION & BUGS
 
@@ -454,7 +436,7 @@ __END__
 
 =head1 SEE ALSO
 
-    BE4::HarvestSource
+    BE4::Harvesting
     BE4::ImageSource
 
 =head1 AUTHOR
@@ -465,7 +447,6 @@ __END__
 
     Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
-    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

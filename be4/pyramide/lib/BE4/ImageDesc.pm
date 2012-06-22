@@ -50,23 +50,36 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * filePath => $args{filePath},
+    * xMin => $args{xMin},
+    * xMax => $args{xMax},
+    * yMin => $args{yMin},
+    * yMax => $args{yMax},
+    * xRes => $args{xRes},
+    * yRes => $args{yRes},
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
   my %args = @_;
@@ -96,11 +109,11 @@ sub getBbox {
   
   my @bbox;
 
-  # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($self->{xMin},$self->{yMax},$self->{xMax},$self->{yMin});
+  push @bbox, ($self->{xMin},$self->{yMin},$self->{xMax},$self->{yMax});
   
   return @bbox;
 }
+
 sub copy {
  my $this = shift;
  my $filePath = shift;
@@ -127,9 +140,22 @@ sub getFilePath {
   
   return $self->{filePath};
 }
-# to_string methode
-# la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
-#---------------------------------------------------------------------------------------------------
+
+####################################################################################################
+#                                           EXPORT                                                 #
+####################################################################################################
+
+# Group: export
+
+=begin nd
+   method: to_string
+
+   Output is formated to can be used in mergeNtiff configuration.
+   path  xmin  ymax  xmax  ymin  resx  resy
+   
+   Example :
+   /home/ign/DATA/BDORTHO/XX_YY.tif   5.44921875   43.330078125   5.537109375   43.2421875   0.000021457672119140625   0.000021457672119140625
+=cut
 sub to_string {
   my $self = shift;
   
@@ -143,9 +169,57 @@ sub to_string {
           $self->{yMin},
           $self->{xRes},
           $self->{yRes};
-  #DEBUG ($output);
+
   return $output;
 
 }
+
 1;
 __END__
+
+=head1 NAME
+
+    BE4::ImageDesc - Describe a georeferenced image (more general than GeoImage)
+
+=head1 SYNOPSIS
+
+    use BE4::ImaegDesc;
+  
+    # ImageDesc object creation
+    my $objImgDesc = BE4::ImageDesc->new({
+        filePath => "/home/ign/DATA/BDORTHO/XX_YY.tif",
+        xMin => 5.44921875,
+        xMax => 5.537109375,
+        yMin => 43.2421875,
+        yMax => 43.330078125,
+        xRes => 0.000021457672119140625,
+        yRes => 0.000021457672119140625,
+    });
+    
+    # To write in mergeNtiff configuration
+    my $stringDesc = $objImgDesc->to_string();
+    # $stringDesc = "/home/ign/DATA/BDORTHO/XX_YY.tif   5.44921875   43.330078125   5.537109375   43.2421875   0.000021457672119140625   0.000021457672119140625"
+    
+=head1 DESCRIPTION
+
+    A ImageDesc object
+
+        * filePath : complete file path
+        * xMin
+        * xMax
+        * yMin
+        * yMax
+        * xRes
+        * yRes
+
+=head1 AUTHOR
+
+    Bazonnais Jean Philippe, E<lt>jpbazonnais<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+    Copyright (C) 2011 by Bazonnais Jean Philippe
+
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

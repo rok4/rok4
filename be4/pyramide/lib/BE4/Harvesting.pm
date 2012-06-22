@@ -39,7 +39,6 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use Data::Dumper;
 
 require Exporter;
@@ -72,7 +71,7 @@ variable: $self
     * REQUEST  => undef, # ie getMap
     * FORMAT   => undef, # ie image/png
     * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
-    * image_width => 4096, # images size which will be harvested
+    * image_width => 4096, # max images size which will be harvested, can be undefined
     * image_height => 4096
 =cut
 
@@ -106,8 +105,6 @@ sub new {
     return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -174,21 +171,27 @@ sub _init {
     return TRUE;
 }
 
+####################################################################################################
+#                                      REQUEST METHOD                                              #
+####################################################################################################
 
-################################################################################
-# public method
+# Group: request method
+
+=begin nd
+   method: doRequestUrl
+
+   Abstract
+
+   Parameters:
+      srs - bbox's SRS
+      bbox - extent of the harvested image
+      imagesize - pixel size of the harvested image
+
+   Returns:
+      An urls' array : one request if no size restrictions, several if asked image is too big for the service
+=cut
 sub doRequestUrl {
     my $self = shift;
-
-    # ie "http://".$URL."?LAYERS=".$LAYERS."
-    #  &SERVICE=WMS
-    #  &VERSION=".$VERSION."
-    #  &REQUEST=GetMap
-    #  &FORMAT=image/tiff
-    #  &CRS=".$srs."
-    #  &BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."
-    #  &WIDTH=".$image_width."
-    #  &HEIGHT=".$image_height.";
 
     my %args = @_;
 
@@ -238,9 +241,12 @@ sub doRequestUrl {
     return @requests;
 }
 
-################################################################################
-# get/set
-#
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub url {
     my $self = shift;
     if (@_) {
@@ -274,8 +280,7 @@ sub layers {
     return $self->{LAYERS};
 }
 
-################################################################################
-# mapping
+
 sub getWMSVersion {
     my $self = shift;
     return $self->{VERSION};
@@ -296,16 +301,19 @@ sub getWMSServer {
     my $self = shift;
     return $self->{URL};
 }
+
 1;
 __END__
 
 =head1 NAME
 
-    BE4::Harvesting - Declare service WMS
+    BE4::Harvesting - Declare WMS service
 
 =head1 SYNOPSIS
 
     use BE4::Harvesting;
+
+    # Image width and height not defined
 
     # Harvesting object creation
     my $objHarvesting = BE4::Harvesting->new({
@@ -315,21 +323,63 @@ __END__
         wms_request => "getMap",
         wms_format  => "image/tiff"
     });
+    
+    # Do a request
+    my @requests = $objHarvesting->doRequestUrl(
+        srs=> "WGS84",
+        bbox => [5,47,6,48],
+        imagesize => [4096,4096]
+    );
+    
+    # @requests contains one url
+    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,6,48&WIDTH=4096&HEIGHT=4096&STYLES=
+    
+    OR
+    
+    # Image width and height defined
+    
+    # Harvesting object creation
+    my $objHarvesting = BE4::Harvesting->new({
+        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
+        wms_url     => "http://localhost/wmts/rok4",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff"
+        image_width  => 1024
+        image_height  => 1024
+    });
 
-    my $url = $objHarvesting->doRequestUrl(srs=> "WGS84", bbox => [0,0,500,500], imagesize => [100,100]);
-    # ie
-    # "http://".$URL."?LAYERS=".$LAYER."&SERVICE=WMS&VERSION=".$VERSION."&REQUEST=GetMap&FORMAT=image/tiff
-    # &CRS=".$srs."&BBOX=".$xmin.",".$ymin.",".$xmax.",".$ymax."&WIDTH=".$image_width."&HEIGHT=".$image_height.";
+
+    # Do a request
+    my @requests = $objHarvesting->doRequestUrl(
+        srs=> "WGS84",
+        bbox => [5,47,6,48],
+        imagesize => [4096,4096]
+    );
+    
+    # @requests contains 16 urls
+    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,5.25,47.25&WIDTH=4096&HEIGHT=4096&STYLES=
+    # ,
+    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.25,47,5.5,47.25&WIDTH=4096&HEIGHT=4096&STYLES=
+    # .
+    # .
+    # .
+    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.75,47.75,6,48&WIDTH=4096&HEIGHT=4096&STYLES=
 
 =head1 DESCRIPTION
 
     A Harvesting object
 
-        * URL : url of rok4
+        * URL : url of rok4 !
         * VERSION : 1.3.0 for WMS
         * REQUEST : getMap
-        * FORMAT : image/png, image/tiff
-        * LAYERS
+        * FORMAT : image/tiff,png... or image/x-bil;bits=32
+        * LAYERS : name of the harvested resource
+        * image_width and image_height : if not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
 
 =head2 EXPORT
 
@@ -339,13 +389,12 @@ __END__
 
 =head1 AUTHOR
 
-    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+    Satabin Théo, E<lt>tsatabin@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
     Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,
-    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
