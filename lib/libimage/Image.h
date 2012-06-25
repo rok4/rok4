@@ -137,8 +137,8 @@ class Image {
             if (fabs(getresx()-pImage->getresx()) > epsilon_x) {return false;}
             if (fabs(getresy()-pImage->getresy()) > epsilon_y) {return false;}
 
-            if (fabs(getPhasex()-pImage->getPhasex()) > 0.01) {return false;}
-            if (fabs(getPhasey()-pImage->getPhasey()) > 0.01) {return false;}
+            if (fabs(getPhasex()-pImage->getPhasex()) > 0.01 && fabs(getPhasex()-pImage->getPhasex()) < 0.99) {return false;}
+            if (fabs(getPhasey()-pImage->getPhasey()) > 0.01 && fabs(getPhasey()-pImage->getPhasey()) < 0.99) {return false;}
             
             return true;
         } 

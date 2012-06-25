@@ -354,6 +354,31 @@ void Rok4Server::buildWMSCapabilities() {
                     os.str ( "" );
                     childLayerEl->LinkEndChild ( bbEl );
                 }
+                for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
+                    BoundingBox<double> bbox = servicesConf.getGlobalCRSList()->at(i).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                    TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
+                    bbEl->SetAttribute ( "CRS",servicesConf.getGlobalCRSList()->at(i).getRequestCode() );
+                    int floatprecision = GetDecimalPlaces ( bbox.xmin );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
+                    floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
+
+                    os<< std::fixed << std::setprecision ( floatprecision );
+                    os<<bbox.xmin;
+                    bbEl->SetAttribute ( "minx",os.str() );
+                    os.str ( "" );
+                    os<<bbox.ymin;
+                    bbEl->SetAttribute ( "miny",os.str() );
+                    os.str ( "" );
+                    os<<bbox.xmax;
+                    bbEl->SetAttribute ( "maxx",os.str() );
+                    os.str ( "" );
+                    os<<bbox.ymax;
+                    bbEl->SetAttribute ( "maxy",os.str() );
+                    os.str ( "" );
+                    childLayerEl->LinkEndChild ( bbEl );
+                }
             } else {
                 TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                 bbEl->SetAttribute ( "CRS",childLayer->getBoundingBox().srs );
