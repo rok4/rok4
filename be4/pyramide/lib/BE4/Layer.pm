@@ -307,10 +307,10 @@ sub _init {
 
 # Group: export
 
+#
 =begin nd
-   method: to_string
-
-   Export Layer object in XML format
+    method: to_string
+    Export Layer object to XML format.
 =cut
 sub to_string {
   my $self = shift;
@@ -392,18 +392,19 @@ sub to_string {
 }
 
 1;
+
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
+=pod
 
 =head1 NAME
 
-  BE4::Layer - Describe a layer for Rok4 and allow to generate XML configuration file
+BE4::Layer - Describe a layer for Rok4 and allow to generate XML configuration file
 
 =head1 SYNOPSIS
 
     use BE4::Layer;
-    
+
     # Layer object creation
     my $objLayer = new BE4::Layer({
         title            => "Ortho IGN en RAW",
@@ -458,27 +459,23 @@ __END__
 
 =head2 EXPORT
 
-    None by default.
+None by default.
 
 =head1 SEE ALSO
 
-    BE4::Pyramid
-    BE4::TileMatrixSet
-    BE4::Level
-
-=head1 LIMITATIONS AND BUGS
+BE4::Pyramid
+BE4::TileMatrixSet
+BE4::Level
 
 =head1 AUTHOR
 
-    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
 

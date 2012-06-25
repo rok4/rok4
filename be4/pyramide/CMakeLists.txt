@@ -137,12 +137,13 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   endif(DOXYGEN_FOUND)
   if(NATURALDOCS_FOUND)
-    if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/src/docs/Natural/index.html)    
      INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/"
              DESTINATION doc/${PROJECT_NAME})
-    endif(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/src/docs/Natural/index.html)    
   endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
+
+INSTALL(DIRECTORY "./conf/"
+  DESTINATION config/be4)
 
 ########################################
 # Paramétrage de la gestion de package CPack

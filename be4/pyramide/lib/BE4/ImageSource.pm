@@ -143,9 +143,9 @@ sub _init {
 
 # Group: images treatments
 
+#
 =begin nd
     method: computeImageSource
-
     Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
 =cut
 sub computeImageSource {
@@ -248,9 +248,9 @@ sub computeImageSource {
     return TRUE;
 }
 
+#
 =begin nd
     method: getListImages
-
     Get the list of all path data image (image tiff only !)
 =cut  
 sub getListImages {
@@ -289,10 +289,10 @@ sub getListImages {
   return $search;
 }
 
+#
 =begin nd
-    method: computeBbox
-
-    Calculate extrem limits of images, in the source SRS.
+method: computeBbox
+Calculate extrem limits of images, in the source SRS.
 =cut
 sub computeBbox {
     my $self = shift;
@@ -355,14 +355,15 @@ sub getImages {
 
 # Group: export method
 
+#
 =begin nd
-    method: exportImageSource
+method: exportImageSource
 
-    Export all informations of image in a file.
+Export all informations of image in a file.
 
-    Format : filename, xmin, ymax, xmax, ymin, xres, yres
+Format : filename, xmin, ymax, xmax, ymin, xres, yres
 
-    Parameter: file - filepath of the export
+Parameter: file - filepath of the export
 =cut
 sub exportImageSource {
   my $self = shift;
@@ -400,7 +401,7 @@ __END__
 
 =head1 NAME
 
-    BE4::ImageSource - information about a source made up of georeferenced images
+BE4::ImageSource - information about a source made up of georeferenced images
 
 =head1 SYNOPSIS
 
@@ -414,32 +415,46 @@ __END__
 
 =head1 DESCRIPTION
 
-    A ImageSource object
+=head2 ATTRIBUTES
 
-        * PATHIMG : directory which contains images
-        * PATHMTD : directory which contains metadata (not yet implemented)
-        * images : array of GeoImage objects
-        * bestResX
-        * bestResY
-        * pixel : Pixel object
+=over 4
 
-=head2 EXPORT
+=item PATHIMG
 
-    None by default.
+Directory which contains images
+
+=item PATHMTD
+
+Directory which contains metadata (not yet implemented)
+
+=item images
+
+Array of GeoImage objects
+
+=item bestResX
+
+=item bestResY
+
+=item pixel
+
+Pixel object
+
+=back
 
 =head1 SEE ALSO
 
-    BE4::GeoImage
-    BE4::Pixel
+L<BE4::GeoIage|lib-BE4-GeoImage>
+
+L<BE4::Pixel|lib-BE4-Pixel>
 
 =head1 AUTHOR
 
-    Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Satabin Théo
+Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

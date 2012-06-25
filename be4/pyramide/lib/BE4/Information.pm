@@ -150,7 +150,7 @@ __END__
 
 =head1 NAME
 
-    BE4::Information - global information about a product
+BE4::Information - global information about a product
 
 =head1 SYNOPSIS
 
@@ -166,27 +166,21 @@ __END__
 
 =head1 DESCRIPTION
 
-    A Information object
+A Information object
 
-        * PRODUCT
-        * DATE
-        * ZONE
-        * COMMENT
-        
-=head2 EXPORT
-
-    None by default.
-
-=head1 SEE ALSO
+* PRODUCT
+* DATE
+* ZONE
+* COMMENT
 
 =head1 AUTHOR
 
-    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Bazonnais Jean Philippe
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself,    either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

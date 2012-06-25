@@ -214,7 +214,7 @@ __END__
 
 =head1 AUTHOR
 
-    Bazonnais Jean Philippe, E<lt>jpbazonnais<gt>
+    Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

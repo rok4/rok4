@@ -153,11 +153,6 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
-#Installe la configuration
-INSTALL(DIRECTORY "../config/"
-  DESTINATION config)
-
-
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
