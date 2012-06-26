@@ -53,9 +53,10 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/build/.libs/libjpeg.a)
 
 add_custom_command(OUTPUT build COMMAND mkdir -p build)
-add_custom_command(OUTPUT build/config.status COMMAND CFLAGS=-O3 ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo-1.2.0/configure --enable-static=yes --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install DEPENDS build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
-add_custom_command(OUTPUT build/.libs/libjpeg.a COMMAND make COMMAND make install DEPENDS build/config.status WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+add_custom_command(TARGET jpeg-configure COMMAND CFLAGS=-O3 ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo-1.2.0/configure --enable-static=yes --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install DEPENDS build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+add_custom_command(OUTPUT build/.libs/libjpeg.a COMMAND make COMMAND make install DEPENDS jpeg-configure WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
 
+add_custom_target(jpeg-configure)
 add_custom_target(jpeg-build ALL DEPENDS build/.libs/libjpeg.a)
 
 
