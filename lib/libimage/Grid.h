@@ -47,7 +47,7 @@ class Grid {
 
   // Pas d'interpolation : seules coordonnées des pixels dont les coordonnées image (en pixel) 
   // sont des multiples de step seront effectivement reporjetés. Les autres seront interpollés.
-  static const int step = 16;
+  static const int stepInt = 16;
 
   /**
    * Met à jour la boundingBox de la grille
@@ -61,6 +61,17 @@ class Grid {
   // Nombre de points reprojetés en Y. nby = 2 + (height-1)/step
   int nby;
 
+  // Pas d'interpolation : seules coordonnées des pixels dont les coordonnées image (en pixel) 
+  // sont des multiples de step seront effectivement reporjetés. Les autres seront interpollés.
+  int stepRight;
+  int stepBottom;
+  
+    // Nombre de points reprojetés en X à l'intérieur de l'image
+  int nbxInt;
+  
+  // Nombre de points reprojetés en Y à l'intérieur de l'image
+  int nbyInt;
+  
   // Grille d'interpolation des pixels
   // Le centre du pixel cible (i*step, j*step) correspond au pixel source (gridX[i + nbx*j], gridY[i + nbx*j])
   // Chaque tableau contient nbx*nby éléments

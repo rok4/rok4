@@ -86,7 +86,8 @@ typedef void Rok4Server;
     } TileRef;
 
     typedef struct {
-        uint8_t data[128];
+        size_t size;
+        uint8_t* data;
     } TiffHeader;
 
     typedef struct {

@@ -183,7 +183,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
         LOGGER_DEBUG("Image invalid !");
         return 0;
     }
-    return new ResampledImage ( imageout, width, height, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
+    return new ResampledImage ( imageout, width, height,ratio_x,ratio_y, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
 }
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {

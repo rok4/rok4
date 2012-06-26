@@ -1074,8 +1074,12 @@ sub createLevels {
         }
 
         $self->{levels}->{$tmID} = $objLevel;
-        # push dir to create : directories for nodata and images.
-        push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+
+        if ($self->{isnewpyramid}) {
+            # push dir to create : directories for nodata and images.
+            # if we have an old pyramid, directories are already in cache_dir
+            push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+        }
     }
 
     if (! scalar (%{$self->{levels}})) {

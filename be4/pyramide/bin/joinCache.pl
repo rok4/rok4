@@ -71,7 +71,7 @@ use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne
 $|=1;
 
 # version
-my $VERSION = "0.1.0";
+my $VERSION = "0.2.0";
 
 #
 # Title: joinCache
@@ -530,8 +530,8 @@ sub openStreams {
         my $scriptName     = join('.',$scriptId,'sh');
         my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
 
-        if (! -d dirname($this{process}->{path_shell})) {
-            my $dir = dirname($this{process}->{path_shell});
+        if (! -d dirname($scriptFilePath)) {
+            my $dir = dirname($scriptFilePath);
             DEBUG (sprintf "Create the script directory'%s' !", $dir);
             eval { mkpath([$dir]); };
             if ($@) {
@@ -1055,8 +1055,16 @@ sub doIt {
                     }
 
                     my @images;
+
+                    if (exists $source->{isCompatible}) {
+                        push @images,{img => $sourceImage,isCompatible => TRUE};
+                    } else {
+                        push @images,{img => $sourceImage,format => $source->{format},spp => $source->{samplesperpixel}};
+                    }
+
                     if ($this{pyramid}->{merge_method} ne 'replace') {
-                        @images = main::searchTile($levelId,$priority,$i,$j,$imagePath);
+                        my @others = main::searchTile($levelId,$priority+1,$i,$j,$imagePath,@images);
+                        push @images,@others;
                     }
 
                     if (! main::treatTile($i,$j,$finaleImage,@images)) {
@@ -1126,7 +1134,7 @@ sub searchTile {
             if (exists $source->{isCompatible}) {
                 push @others,{img => $sourceImage,isCompatible => TRUE};
             } else {
-                push @others,{img => $sourceImage,format => $source->{format}};
+                push @others,{img => $sourceImage,format => $source->{format},spp => $source->{samplesperpixel}};
             }
         }
     }  
@@ -1156,21 +1164,23 @@ sub treatTile {
     }
 
     if (scalar @images == 1) {
-        main::mergeWithTransparency($finaleImage,@images);
-        #main::transformImage($finaleImage,$images[0]{img},($images[0]{format} =~ m/PNG/));
+        # We have just one source image, but it is not compatible with the final cache
+        # We need to transform it.
+        if (! main::transformImage($finaleImage,$images[0]{img},$images[0]{format},int($images[0]{spp}))) {
+            ERROR(sprintf "Cannot transform the image %s",$images[0]{img});
+            return FALSE;
+        }
         $this{doneTiles}->{$i."_".$j} = TRUE;
-        return TRUE
+        return TRUE;
     }
 
-    my $mergeMethod = $this{pyramid}->{merge_method};
-
-    main::mergeWithTransparency($finaleImage,@images);
+    main::mergeImages($finaleImage,@images);
     $this{doneTiles}->{$i."_".$j} = TRUE;
     return TRUE;
 
 }
 
-sub mergeWithTransparency {
+sub mergeImages {
     my $finaleImage = shift;
     my @images = @_;
 
@@ -1186,7 +1196,13 @@ sub mergeWithTransparency {
     for (my $i = 0; $i < scalar @images; $i++) {
         if (exists $images[$i]{format} && $images[$i]{format} =~ m/PNG/) {
             $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$images[$i]{img},RESULT_TEST;
-            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+            if ((exists $images[$i]{spp} && int($images[$i]{spp}) == 4) ||
+                (exists $images[$i]{isCompatible} && int($this{pyramid}->{pixel}->{samplesperpixel}) == 4))
+            {
+                $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+            } else {
+                $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+            }
             $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img%s.tif\n%s",$i,RESULT_TEST;
         } else {
             $code .= sprintf "tiff2rgba -c none %s \${TMP_DIR}/img%s.tif\n%s",$images[$i]{img},$i,RESULT_TEST;
@@ -1219,12 +1235,11 @@ sub mergeWithTransparency {
         $finaleImage,RESULT_TEST;
 
     # Cleaning
-    $code .= " rm -f \${TMP_DIR}/* \n\n";
+    $code .= "rm -f \${TMP_DIR}/* \n\n";
 
     main::printInScript($code);
     
     return TRUE;
-
 }
 
 sub makeLink {
@@ -1276,7 +1291,8 @@ sub makeLink {
 sub transformImage {
     my $finaleImage = shift;
     my $baseImage = shift;
-    my $isPNG = shift;
+    my $format = shift;
+    my $spp = shift;
 
     TRACE();
 
@@ -1284,12 +1300,31 @@ sub transformImage {
 
     # Pretreatment
 
-    if ($isPNG) {
-        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$$baseImage,RESULT_TEST;
-        $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
-        $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+    if ($format =~ m/PNG/) {
+        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$baseImage,RESULT_TEST;
+        if ($spp == 4) {
+            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+        } else {
+            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -define tiff:rows-per-strip=4096 \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+        }
     } else {
-        $code .= sprintf "tiff2rgba -c none %s \${TMP_DIR}/img.tif\n%s",$baseImage,RESULT_TEST;
+        $code .= sprintf "tiffcp -r 4096 %s \${TMP_DIR}/img.tif\n%s",$baseImage,RESULT_TEST;
+    }
+
+    # We transform image with the samples per pixel of the final cache
+    if ($this{pyramid}->{pixel}->{photometric} eq 'rgb' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 3) {
+        $code .= "tiff2rgba -c none -n \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+    }
+    elsif ($this{pyramid}->{pixel}->{photometric} eq 'rgb' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 4) {
+        $code .= "tiff2rgba -c none \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+    }
+    elsif ($this{pyramid}->{pixel}->{photometric} eq 'gray' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 1) {
+        $code .= "convert \${TMP_DIR}/img.tif -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/transformedImg.tif\n";
+    } else {
+        ERROR (sprintf "Samplesperpixel (%s) and photometric (%d) not supported ",
+            $this{pyramid}->{pixel}->{samplesperpixel},
+            $this{pyramid}->{pixel}->{photometric});
+        return FALSE;
     }
 
     my $compression = $this{pyramid}->{compression};
@@ -1299,7 +1334,8 @@ sub transformImage {
     $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
     $code .= sprintf "if [ ! -d \"%s\" ] ; then mkdir -p %s ; fi\n", dirname($finaleImage), dirname($finaleImage);
 
-    $code .= sprintf "tiff2tile \${TMP_DIR}/result.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
+
+    $code .= sprintf "tiff2tile \${TMP_DIR}/transformedImg.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
         $compression,
         $this{pyramid}->{pixel}->{photometric},
         $this{pyramid}->{pixel}->{bitspersample},
@@ -1583,45 +1619,46 @@ Bounding boxes' SRS have to be the TMS' one
 
 * SAMPLE OF FILE CONFIGURATION OF PYRAMID :
 
+;Commentaires
+
 [logger]
 log_level      = INFO
 
 [pyramid]
 pyr_name       = PYR_TEST
-pyr_desc_path  = /home/theo/TEST/BE4/PYRAMIDS
-pyr_data_path  = /home/theo/TEST/BE4/PYRAMIDS
+pyr_desc_path  = /home/theo/TEST/JoinCache
+pyr_data_path  = /home/theo/TEST/JoinCache
+
 tms_path       = /home/theo/TEST/BE4/TMS
-tms_name       = PM.tms
+tms_name       = LAMB93_10cm.tms
+
 image_dir      = IMAGE
 metadata_dir   = METADATA
 nodata_dir     = NODATA
 
+compression = jpg
+samplesperpixel = 3
+photometric = rgb
+bitspersample = 8
+sampleformat = uint
+
+merge_method   = multiply 
+
 [bboxes]
-WLD = -20037508.3,-20037508.3,20037508.3,20037508.3
-FXX = -518548.8,5107913.5,978393,6614964.6
-REU = 6140645.1,-2433358.9,6224420.1,-2349936.0
-GUF = -6137587.6,210200.4,-5667958.5,692618.0
+PARIS = 535286,6747049,771666,6976667
 
 [ process ]
-path_shell  = /home/theo/TEST/BE4/SCRIPT
+path_shell  = /home/theo/TEST/JoinCache      ;Commentaires
 path_temp   = /home/theo/TEST/BE4/TMP
-job_number  = 3
+job_number  = 4
 
-[composition]
+[composition]  
 
-merge_method = replace   
+16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
 
-0.WLD = /FILER/DESC_PATH/MONDE12F.pyr
-
-1.WLD = /FILER/DESC_PATH/MONDE12F.pyr
-
-2.FXX = /FILER/DESC_PATH/SCAN25.pyr
-2.REU = /FILER/DESC_PATH/SCAN25.pyr
-2.GUF = /FILER/DESC_PATH/SCANREG.pyr
-
-3.FXX = /FILER/DESC_PATH/ROUTE.pyr; /FILER/DESC_PATH/BATIMENT.pyr 
-3.REU = /FILER/DESC_PATH/SCAN25.pyr
-3.GUF = /FILER/DESC_PATH/SCANREG.pyr
+19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
 
 =head1 OPTIONS
 

@@ -44,7 +44,7 @@ Creation d'une LibtiffImage a partir d un fichier TIFF filename
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox)
+LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, double resx, double resy)
 {
     int width=0,height=0,channels=0,planarconfig=0,bitspersample=0,photometric=0,compression=0,rowsperstrip=0; 
         TIFF* tif=TIFFOpen(filename, "r");
@@ -100,7 +100,7 @@ LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBo
     if (width*height*channels!=0 && planarconfig!=PLANARCONFIG_CONTIG && tif!=NULL)
         return NULL;
 
-    return new LibtiffImage(width,height,channels,bbox,tif,filename,bitspersample,photometric,compression,rowsperstrip);
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,bitspersample,photometric,compression,rowsperstrip);
 }
 
 /**
@@ -108,17 +108,17 @@ Creation d'une LibtiffImage en vue de creer un nouveau fichier TIFF
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compressioni, uint16_t rowsperstrip)
+LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compressioni, uint16_t rowsperstrip)
 {
     if (width<0||height<0)
         return NULL;
         if (width*height*channels==0)
                 return NULL;
 
-    return new LibtiffImage(width,height,channels,bbox,NULL,filename,bitspersample,photometric,compressioni,rowsperstrip);
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,NULL,filename,bitspersample,photometric,compressioni,rowsperstrip);
 }
 
-LibtiffImage::LibtiffImage(int width,int height, int channels, BoundingBox<double> bbox, TIFF* tif,char* name, int bitspersample, int photometric, int compression, int rowsperstrip) : Image(width,height,channels,bbox), tif(tif), bitspersample(bitspersample), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
+LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif,char* name, int bitspersample, int photometric, int compression, int rowsperstrip) : Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
 {
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy(filename,name);
