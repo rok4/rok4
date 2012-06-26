@@ -173,10 +173,9 @@ sub _load {
 1;
 __END__
 
-
 =head1 NAME
 
-    BE4::DataSourceLoader - Load and validate data sources
+BE4::DataSourceLoader - Load and validate data sources
 
 =head1 SYNOPSIS
 
@@ -189,63 +188,87 @@ __END__
 
 =head1 DESCRIPTION
 
-    A DataSourceLoader object
+=over 4
 
-        * FILEPATH_DATACONF
-        * sources : an array of DataSource objects
+=item FILEPATH_DATACONF
+
+Complete file's path, which contain all informations about data sources
+
+=item sources
+
+An array of DataSource objects
 
 =head1 FILE CONFIGURATION
 
-    In the be4 configuration, section datasource (multidata.conf)
+=over 4
 
-        [ datasource ]
-        filepath_conf       = /home/IGN/CONF/source.txt
+=item In the be4 configuration, section datasource (multidata.conf)
 
-    In the source configuration (source.txt)
+    [ datasource ]
+    filepath_conf       = /home/IGN/CONF/source.txt
 
-        [ 19 ]
+=item In the source configuration (source.txt)
 
-        srs                 = IGNF:LAMB93
-        path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
+    [ 19 ]
 
-        wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
-        wms_url     = http://localhost/wmts/rok4
-        wms_version = 1.3.0
-        wms_request = getMap
-        wms_format  = image/tiff
-        image_width = 2048
-        image_height = 2048
+    srs                 = IGNF:LAMB93
+    path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
 
-        [ 14 ]
+    wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
+    wms_url     = http://localhost/wmts/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/tiff
+    image_width = 2048
+    image_height = 2048
 
-        srs = IGNF:WGS84G
-        extent = /home/IGN/SHAPE/Polygon.txt
+    [ 14 ]
 
-        wms_layer   = ORTHO_RAW_LAMB93_D075-O
-        wms_url     = http://localhost/wmts/rok4
-        wms_version = 1.3.0
-        wms_request = getMap
-        wms_format  = image/tiff
-        image_width = 4096
-        image_height = 4096
+    srs = IGNF:WGS84G
+    extent = /home/IGN/SHAPE/Polygon.txt
 
+    wms_layer   = ORTHO_RAW_LAMB93_D075-O
+    wms_url     = http://localhost/wmts/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/tiff
+    image_width = 4096
+    image_height = 4096
+
+=back
 
 =head1 LIMITATION & BUGS
 
-    Metadata managing not yet implemented.
+Metadata managing not yet implemented.
 
 =head1 SEE ALSO
 
-    BE4::DataSource
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-    Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Satabin Théo
+Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

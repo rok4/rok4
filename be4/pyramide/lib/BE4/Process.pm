@@ -57,10 +57,10 @@ our @EXPORT      = qw();
 
 ################################################################################
 # Constantes
-# booleans
+# Booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
-# commands
+# Commands
 use constant RESULT_TEST      => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
 use constant CACHE_2_WORK_PRG => "tiffcp -s";
 use constant WORK_2_CACHE_PRG => "tiff2tile";
@@ -90,6 +90,10 @@ variable: $self
     * pyramid    => undef, # Pyramid object
     * nodata => undef, # NoData object
     * trees => [], # array of Tree objects
+    * scripts   => [], # name of each jobs (split and finisher)
+    * codes       => [], # code of each jobs (split and finisher)
+    * weights     => [], # weight of each jobs (split and finisher)
+    * currentTree => 0, # tree in process
     * job_number => undef,
     * path_temp  => undef,
     * path_shell => undef,
@@ -130,6 +134,16 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _init
+
+Load process' parameters, create a tree per data source.
+
+Parameters:
+    params_process - job_number, path_temp and path_shell.
+    pyr - Pyramid object.
+=cut
 sub _init {
     my ($self, $params_process, $pyr) = @_;
 
@@ -194,6 +208,7 @@ sub _init {
         # Now, if datasource contains a WMS service, we have to use it
         
         my $tree = BE4::Tree->new($datasource, $self->{pyramid}, $self->{job_number});
+        
         if (! defined $tree) {
             ERROR(sprintf "Can not create a Tree object for datasource with bottom level %s !",
                   $datasource->{bottomLevelID});
@@ -208,21 +223,21 @@ sub _init {
     return TRUE;
 }
 
-
 ####################################################################################################
 #                                  GENERAL COMPUTING METHOD                                        #
 ####################################################################################################
 
 # Group: general computing method
 
-# method: computeTrees
-#  Crée tous les script permettant de calculer les images de la pyramide.
 #
-#  Il y a exactement jobNbr +1 scripts crées :
-#       - Les scripts du début (du bottomLevel au cutLevel) se nomment SCRIPT_X.sh
-#       - Le script final (du cutLevel au topLevel) se nomme SCRIPT_FINISHER.sh
-#  Ils peuvent être vides.
-#---------------------------------------------------------------------------------------------------
+=begin nd
+method: computeTrees
+
+Initialize each script, compute each tree one after the other and save scripts to finish.
+
+See Also:
+    <computeWholeTree>
+=cut
 sub computeTrees {
     my $self = shift;
 
@@ -257,17 +272,20 @@ sub computeTrees {
     return TRUE;
 }
 
-# method: computeWholeTree
-#  Crée tous les script permettant de calculer les images de la pyramide appartenant à l'arbre.
 #
-#  Pour ce faire, on exécute 3 étapes :
-#       - Le parcours de l'arbre : à chaque noeud, on définit le poids et le code correspondant à
-#         sa construction (image)
-#       - L'arbre étant pondéré, on peut définir le cutLevel, qui optimisera la répartition et le
-#         temps total de génération de la pyramide.
-#       - Les commande étant déjà écrites, il ne reste plus qu'à parcourir l'arbre et concaténer
-#         les bouts de code, et les écrire dans les scripts.
-#---------------------------------------------------------------------------------------------------
+=begin nd
+method: computeWholeTree
+
+Determine codes and weights for each node of the current tree, and share work on scripts, so as to optimize execution time.
+
+Three steps:
+    - browse tree : add weight and code to the nodes.
+    - determine the cut level, to distribute fairly work.
+    - browse the tree once again: we concatenate node's commands and write them in different scripts.
+
+See Also:
+    <computeBranch>, <writeBranchCode>
+=cut
 sub computeWholeTree {
     my $self = shift;
 
@@ -339,29 +357,22 @@ sub computeWholeTree {
 
 # Group: computing / weighter method
 
-# method: computeBottomImage 
-#  Construction de l'image du bas de la pyramide désignée par 'node'.
-#  On détermine le poids et le code correspondant à la génération de l'image du bas
 #
-# NOTE:
-#  Si les dalles sources ne sont pas dans la projection de la pyramide on utilise le WMS pour
-# obtenir des données dans la bonne projection. Du coup autant demander la dalle entière
-# et on n'a pas besoin d'appeller mergeNtiff.
-#
-#  Si les dalles sources sont dans la projection de la pyramides MAIS que la pyramide utilise
-# une compression avec perte (JPEG), on est contraint d'utiliser le WMS pour obtenir 
-# la dalle de fond. Du coup, on peut récupérer la nouvelle dalle complète et se passer de 
-# mergeNtiff.
-#
-#  Dans le cas JPEG en projection native, on a effectivement besoin d'une image de 
-# fond pour le mergeNtiff que quand les données sources ne couvrent pas entièrement la
-# dalle. On ne fait pas la distinction ici par soucis de simplicité du code et parce que 
-# l'efficacité n'est probablement pas moins bonne.
-#
-# TODO:
-#  Dans le cas du PNG qui ne dégrade pas les images, on utilise untile+montage. Il faudrait écrire
-#  un outil améliorant cette tâche.
-#---------------------------------------------------------------------------------------------------
+=begin nd
+method: computeBottomImage
+
+Treat a bottom node : determine code and weight.
+
+2 cases.
+    - native projection, lossless compression and images as data -> mergeNtiff
+    - reprojection or lossy compression or just a WMS service as data -> wget
+
+Parameter:
+    node - bottom level's node, to treat.
+    
+See Also:
+    <wms2work>, <cache2work>, <mergeNtiff>, <work2cache>
+=cut
 sub computeBottomImage {
     my $self = shift;
     my $node = shift;
@@ -432,7 +443,7 @@ sub computeBottomImage {
             printf CFGF "%s", $bgImgDesc->to_string();
         }
         # ajout des images sources
-        my $listDesc = $tree->getImgDescOfBottomNode($node);
+        my $listDesc = $tree->getGeoImgOfBottomNode($node);
         foreach my $desc (@{$listDesc}){
             printf CFGF "%s", $desc->to_string();
         }
@@ -457,27 +468,20 @@ sub computeBottomImage {
     return TRUE;
 }
 
-# method: computeAboveImage
-#  Construction d'une image pyramide qui n'est pas au bottomLevel.
-#  On détermine le poids et le code correspondant à la génération de l'image qui n'est pas en bas
 #
-#  NOTE:
-#  Le choix d'utiliser ou non le WMS pour les niveaux supérieurs ne dépend pas de la 
-# projection puisque les données viennent du niveau inférieur de la pyramide.
-#
-#  Par contre, on a le problème avec les images de fond en JPEG et PNG. Mais contrairement a
-# ce qui est fait dans computeBottomImage(),
-# on ne souhaite pas ne faire que récupérer la nouvelle dalle sur le WMS parce que cela ne 
-# permettrait pas de faire remonter un défaut d'un niveau inférieur dans les niveaux du 
-# dessus, et l'opérateur de validation ne pourait pas utiliser les petites échelles pour avoir
-# une vision globale de son chantier. Il devrait inspecter chaque niveau de la pyramide ce 
-# qui n'est pas envisageable.
-#
-#  Conclusion, on ne fait de wget pour l'image de fond que quand on en a réellement besoin,
-# c'est à dire quand on a pas mis à jour les 4 dalles correspondantes au niveau inférieur. Et
-# même quand on fait le wget, on fait quand même le merge4tiff pour faire remonter les 
-# éventuels défauts.
-#---------------------------------------------------------------------------------------------------
+=begin nd
+method: computeAboveImage
+
+Treat an above node (different to the bottom level) : determine code and weight.
+
+To generate an above node, we use children (merge4tiff). If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
+
+Parameter:
+    node - above level's node, to treat.
+    
+See Also:
+    <wms2work>, <cache2work>, <merge4tiff>, <work2cache>
+=cut
 sub computeAboveImage {
     my $self = shift;
     my $node = shift;
@@ -488,7 +492,7 @@ sub computeAboveImage {
     my $code = "\n";
     my $weight = 0;
     my $newImgDesc = $tree->getImgDescOfNode($node);
-    my @childList = $tree->getChilds($node);
+    my @childList = $tree->getChildren($node);
 
     my $bgImgPath=undef;
     my $bgImgName=undef;
@@ -543,7 +547,7 @@ sub computeAboveImage {
     # Maintenant on constitue la liste des images à passer à merge4tiff.
     my $childImgParam=''; 
     my $imgCount=0;
-    foreach my $childNode ($tree->getPossibleChilds($node)) {
+    foreach my $childNode ($tree->getPossibleChildren($node)) {
         $imgCount++;
         if ($tree->isInTree($childNode)){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)
@@ -572,9 +576,22 @@ sub computeAboveImage {
     return TRUE;
 }
 
-# method: computeBranch
-#  On détermine le poids et le code correspondant à la génération de toute les images d'une branche
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: computeBranch
+
+Recursive method, which allow to browse tree.
+
+2 cases.
+    - the node belong to the bottom level -> computeBottomImage
+    - the node does not belong to the bottom level -> computeBranch on each child, and computeAboveImage
+
+Parameter:
+    node - level to treat.
+    
+See Also:
+    <computeBottomImage>, <computeAboveImage>
+=cut
 sub computeBranch {
     my $self = shift;
     my $node = shift;
@@ -586,7 +603,7 @@ sub computeBranch {
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
 
     my $res = '';
-    my @childList = $tree->getChilds($node);
+    my @childList = $tree->getChildren($node);
     if (scalar @childList == 0){
         if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
@@ -630,7 +647,7 @@ sub writeBranchCode {
 
     my $tree = $self->{trees}[$self->{currentTree}];
     my $code = '';
-    my @childList = $tree->getChilds($node);
+    my @childList = $tree->getChildren($node);
 
     # Le noeud est une feuille
     if (scalar @childList == 0){
@@ -685,7 +702,7 @@ sub writeTopCode {
     return '' if ($node->{level} eq $tree->getCutLevelID());
 
     my $code = '';
-    my @childList = $tree->getChilds($node);
+    my @childList = $tree->getChildren($node);
     foreach my $n (@childList){
         $code .= $self->writeTopCode($n);
     }
@@ -1168,11 +1185,29 @@ __END__
 
 
 =head1 SEE ALSO
-    
-    BE4::Tree
-    BE4::NoData
-    BE4::Pyramid
-    BE4::Harvesting
+
+=head1 SEE ALSO
+
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Tree.html">BE4::Tree</A></li>
+<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+<li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 

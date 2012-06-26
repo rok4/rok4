@@ -142,9 +142,6 @@ endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
   endif(NATURALDOCS_FOUND)
 endif(BUILD_DOC)
 
-INSTALL(DIRECTORY "./conf/"
-  DESTINATION config/be4)
-
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 

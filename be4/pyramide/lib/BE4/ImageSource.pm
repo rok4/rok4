@@ -361,9 +361,11 @@ method: exportImageSource
 
 Export all informations of image in a file.
 
-Format : filename, xmin, ymax, xmax, ymin, xres, yres
-
-Parameter: file - filepath of the export
+Parameter:
+    file - filepath of the export
+    
+Return:
+    A string : filename, xmin, ymax, xmax, ymin, xres, yres
 =cut
 sub exportImageSource {
   my $self = shift;
@@ -431,9 +433,7 @@ Directory which contains metadata (not yet implemented)
 
 Array of GeoImage objects
 
-=item bestResX
-
-=item bestResY
+=item bestResX, bestResY
 
 =item pixel
 
@@ -443,9 +443,24 @@ Pixel object
 
 =head1 SEE ALSO
 
-L<BE4::GeoIage|lib-BE4-GeoImage>
+=head2 POD documentation
 
-L<BE4::Pixel|lib-BE4-Pixel>
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-GeoImage.html">BE4::GeoImage</A></li>
+<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 

@@ -76,13 +76,11 @@ variable: $self
     * ymin => undef,
     * xres => undef,
     * yres => undef,
-    * pixelsize => undef,
     * xcenter => undef,
     * ycenter => undef,
     * height  => undef,
     * width   => undef,
 =cut
-
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -104,7 +102,6 @@ sub new {
     ymin => undef,
     xres => undef,
     yres => undef,
-    pixelsize => undef,
     xcenter => undef,
     ycenter => undef,
     height  => undef,
@@ -151,6 +148,7 @@ sub _init {
 
 # Group: computing methods
 
+#
 =begin nd
     method: computeInfo
 
@@ -276,18 +274,11 @@ sub computeInfo {
     $self->{yres} = sprintf "%.12f", abs($ndy);# $ry null ?
     $self->{xcenter}   = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
     $self->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $self->{pixelsize} = sprintf "%.12f", $dx;
     $self->{height} = $dataset->{RasterYSize};
     $self->{width}  = $dataset->{RasterXSize};
 
-=begin
-    DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-        $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},
-        $self->{xres},$self->{yres},
-        $self->{xcenter},$self->{ycenter},
-        $self->{pixelsize},
-        $self->{height},$self->{width});
-=cut
+#   DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] size:[%s %s]\n",        $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},$self->{xres},$self->{yres},       $self->{xcenter},$self->{ycenter},$self->{height},$self->{width});
+
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
         return ();
@@ -297,16 +288,17 @@ sub computeInfo {
     
 }
 
+#
 =begin nd
-    method: computeBBox
-    
-        Not just convert corners, but 7 points on each side, to determine reprojected bbox 
-    
-    Parameters:
-        ct - a Geo::OSR::CoordinateTransformation object, to convert bbox .
-    
-    Returns:
-        Image bbox in final pyramid's SRS as an hash { xMin => 1, yMin => 10, xMax => 4, yMax => 15 }
+method: computeBBox
+
+Not just convert corners, but 7 points on each side, to determine reprojected bbox 
+
+Parameters:
+    ct - a Geo::OSR::CoordinateTransformation object, to convert bbox .
+
+Returns:
+    Image bbox in final pyramid's SRS as an hash { xMin => 1, yMin => 10, xMax => 4, yMax => 15 }
 =cut
 sub computeBBox {
   my $self = shift;
@@ -413,7 +405,6 @@ sub getInfo {
     $self->{ymin},
     $self->{xres},
     $self->{yres},
-    $self->{pixelsize},
     $self->{xcenter},
     $self->{ycenter},
     $self->{height},
@@ -468,10 +459,13 @@ sub getName {
 
 # Group: export methods
 
+#
 =begin nd
-    method: to_string
+method: to_string
 
-    Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
+Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
+
+Output is formated to can be used in mergeNtiff configuration
 =cut
 sub to_string {
     my $self = shift;
@@ -493,11 +487,9 @@ sub to_string {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-    BE4::GeoImage - Describe a georeferenced image and allows to know its components.
+BE4::GeoImage - Describe a georeferenced image and enable to know its components.
 
 =head1 SYNOPSIS
 
@@ -516,7 +508,6 @@ __END__
         $ymin,
         $xres,
         $yres,
-        $pixelsize,
         $xcenter,
         $ycenter,
         $height,
@@ -525,107 +516,126 @@ __END__
 
 =head1 DESCRIPTION
 
-    A GeoImage object
+=head2 ATTRIBUTES
 
-        * PATHFILENAME : complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
-        * filename : just the image name (XXXXX_YYYYY.tif)
-        * filepath : the directory which contain the image (/home/ign/DATA)
-        * xmin
-        * ymax
-        * xmax
-        * ymin
-        * xres
-        * yres
-        * pixelsize
-        * xcenter
-        * ycenter
-        * height 
-        * width  
+=over 4
 
-    * Constraint on the input formats of images : format tiff
+=item PATHFILENAME
 
-    * Use the binding Perl of Gdal
+Complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
 
-    * Sample with gdalinfo
+=item filename
+
+Just the image name (XXXXX_YYYYY.tif)
+
+=item filepath
+
+The directory which contain the image (/home/ign/DATA)
+
+=item xmin, ymin, xmax, ymax
+
+=item xres, yres
+
+=item xcenter, ycenter
+
+=item height, width
+
+=head2 INFORMATIONS
+
+=over 4
+
+=item Constraint on the input formats of images : format tiff
+
+=item Use the binding Perl of Gdal
+
+=item Sample with gdalinfo
   
-        GDAL 1.7.2, released 2010/04/23
+    GDAL 1.7.2, released 2010/04/23
 
-        ~$ gdalinfo  image.png
+    ~$ gdalinfo  image.png
 
-        Driver: PNG/Portable Network Graphics
-        Files: image.png
-        Size is 316, 261
-        Coordinate System is `'
-        Metadata:
-        Software=Shutter
-        Image Structure Metadata:
-        INTERLEAVE=PIXEL
-        Corner Coordinates:
-        Upper Left  (    0.0,    0.0)
-        Lower Left  (    0.0,  261.0)
-        Upper Right (  316.0,    0.0)
-        Lower Right (  316.0,  261.0)
-        Center      (  158.0,  130.5)
-        Band 1 Block=316x1 Type=Byte, ColorInterp=Red
-        Band 2 Block=316x1 Type=Byte, ColorInterp=Green
-        Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
+    Driver: PNG/Portable Network Graphics
+    Files: image.png
+    Size is 316, 261
+    Coordinate System is `'
+    Metadata:
+    Software=Shutter
+    Image Structure Metadata:
+    INTERLEAVE=PIXEL
+    Corner Coordinates:
+    Upper Left  (    0.0,    0.0)
+    Lower Left  (    0.0,  261.0)
+    Upper Right (  316.0,    0.0)
+    Lower Right (  316.0,  261.0)
+    Center      (  158.0,  130.5)
+    Band 1 Block=316x1 Type=Byte, ColorInterp=Red
+    Band 2 Block=316x1 Type=Byte, ColorInterp=Green
+    Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
 
 
-        ~$ gdalinfo  image.tif
-        (...)
-        Metadata:
-        TIFFTAG_IMAGEDESCRIPTION=
-        TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
-        TIFFTAG_DATETIME=2007:03:15 11:17:17
-        TIFFTAG_XRESOLUTION=600
-        TIFFTAG_YRESOLUTION=600
-        TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
-        Image Structure Metadata:
-        INTERLEAVE=PIXEL
-        (...)
-        Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
-        Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
-        Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
-        Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
-        Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
+    ~$ gdalinfo  image.tif
+    (...)
+    Metadata:
+    TIFFTAG_IMAGEDESCRIPTION=
+    TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
+    TIFFTAG_DATETIME=2007:03:15 11:17:17
+    TIFFTAG_XRESOLUTION=600
+    TIFFTAG_YRESOLUTION=600
+    TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
+    Image Structure Metadata:
+    INTERLEAVE=PIXEL
+    (...)
+    Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
+    Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
+    Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
+    Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
+    Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
 
-        ~$ gdalinfo image.tif
+    ~$ gdalinfo image.tif
 
-        Driver: GTiff/GeoTIFF
-        Files: image.tif
-             image.tfw
-        Size is 5000, 5000
-        Coordinate System is `'
-        Origin = (937500.000000000000000,6541000.000000000000000)
-        Pixel Size = (0.100000000000000,-0.100000000000000)
-        Metadata:
-        TIFFTAG_XRESOLUTION=100
-        TIFFTAG_YRESOLUTION=100
-        TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
-        Image Structure Metadata:
-        INTERLEAVE=PIXEL
-        Corner Coordinates:
-        Upper Left  (  937500.000, 6541000.000) 
-        Lower Left  (  937500.000, 6540500.000) 
-        Upper Right (  938000.000, 6541000.000) 
-        Lower Right (  938000.000, 6540500.000) 
-        Center      (  937750.000, 6540750.000) 
-        Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
-        Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
-        Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
+    Driver: GTiff/GeoTIFF
+    Files: image.tif
+         image.tfw
+    Size is 5000, 5000
+    Coordinate System is `'
+    Origin = (937500.000000000000000,6541000.000000000000000)
+    Pixel Size = (0.100000000000000,-0.100000000000000)
+    Metadata:
+    TIFFTAG_XRESOLUTION=100
+    TIFFTAG_YRESOLUTION=100
+    TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
+    Image Structure Metadata:
+    INTERLEAVE=PIXEL
+    Corner Coordinates:
+    Upper Left  (  937500.000, 6541000.000) 
+    Lower Left  (  937500.000, 6540500.000) 
+    Upper Right (  938000.000, 6541000.000) 
+    Lower Right (  938000.000, 6540500.000) 
+    Center      (  937750.000, 6540750.000) 
+    Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
+    Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
+    Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
 
-=head2 EXPORT
+=back
 
-    None by default.
+=head1 SEE ALSO
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-    Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Satabin Théo
+Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -460,39 +460,40 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 
 int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    uint mirrors=0;
+    uint nbMirrors=0;
 
     mirrorImageFactory MIFactory;
-    
+    std::vector< Image*>  mirrors;
+
     int i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
-            
+
             MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),pECI->getSampleformat(),j,mirrorSize);
             if (mirror == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors");
                 return -1;
             }
-            
-            pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
-            mirrors++;
-            i++;
+            mirrors.push_back(mirror);
+            nbMirrors++;
         }
         i++;
     }
 
-    return mirrors;
+    pECI->getimages()->insert(pECI->getimages()->begin(),mirrors.begin(),mirrors.end());
+
+    return nbMirrors;
 }
 
 
 /**
-* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 * @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
     const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -500,26 +501,26 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double resx_src=pECI->getresx(), resy_src=pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
     double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
-    // L'image reechantillonnee est limitee a l'image de sortie
-    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin());
-    double xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax());
-    double ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin());
-    double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
-    
-    double ymaxdst_save = ymax_dst;
-    
-    // Coordonnees de l'image reechantillonnee en pixels
-    xmin_dst/=resx_dst;
-    //xmin_dst=floor(xmin_dst+0.1);
-    
-    ymin_dst/=resy_dst;
-    //ymin_dst=floor(ymin_dst+0.1);
-        
-    xmax_dst/=resx_dst;
-    //xmax_dst=ceil(xmax_dst-0.1);
-        
-    ymax_dst/=resy_dst;
-    //ymax_dst=ceil(ymax_dst-0.1);
+    /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
+     * (sans compter les miroirs, d'où le passége d'une bbox source)
+     */
+    double xmin_dst=__max(bbox_src.xmin,pImageOut->getxmin());
+    double xmax_dst=__min(bbox_src.xmax,pImageOut->getxmax());
+    double ymin_dst=__max(bbox_src.ymin,pImageOut->getymin());
+    double ymax_dst=__min(bbox_src.ymax,pImageOut->getymax());
+
+    /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
+     * avec l'image de sortie (c'est la seule raison d'être du réechantillonnage). Il faut donc modifier la bounding box
+     * afin qu'elle remplisse les conditions de compatibilité.
+     */
+
+    /* Coordonnees de l'image reechantillonnee passées en pixels. On va caler sur l'image de sortie
+     */
+    xmin_dst = pImageOut->getxmin()/resx_dst + round((xmin_dst-pImageOut->getxmin())/resx_dst);
+    xmax_dst = pImageOut->getxmin()/resx_dst + round((xmax_dst-pImageOut->getxmin())/resx_dst);
+
+    ymin_dst = pImageOut->getymin()/resy_dst + round((ymin_dst-pImageOut->getymin())/resy_dst);
+    ymax_dst = pImageOut->getymin()/resy_dst + round((ymax_dst-pImageOut->getymin())/resy_dst);
     
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
@@ -614,7 +615,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
 
             ResampledImage* pResampledMask;
             
-            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, pECI->getbbox(), interpolation, mask, pResampledMask);
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;

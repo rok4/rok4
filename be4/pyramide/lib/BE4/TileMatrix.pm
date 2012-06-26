@@ -35,7 +35,7 @@
 
 package BE4::TileMatrix;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
@@ -50,26 +50,11 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
 # constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
-
-#
-# Group: Preloaded methods
-#
-
-#
-# function: get/set in init()
-#
-#   get/set with field, ID Resolution TileWidth TileHeight MatrixWidth MatrixHeight
-#
 
 BEGIN {}
 INIT {
@@ -95,40 +80,26 @@ INIT {
 END {}
 
 ################################################################################
-# sample :
-# 
-#    <id>0</id>
-#    <resolution>0.703125</resolution>
-#    <topLeftCornerX>-180</topLeftCornerX>
-#    <topLeftCornerY>90</topLeftCornerY>
-#    <tileWidth>256</tileWidth>
-#    <tileHeight>256</tileHeight>
-#    <matrixWidth>2</matrixWidth>
-#    <matrixHeight>1</matrixHeight>
-# 
+=begin nd
+Group: variable
 
-#
-# Group: variable
-#
+variable: $self
+    *    id             => undef,
+    *    resolution     => undef,
+    *    topleftcornerx => undef,
+    *    topleftcornery => undef,
+    *    tilewidth      => undef, # ie 256 by default ?
+    *    tileheight     => undef, # ie 256 by default ?
+    *    matrixwidth    => undef,
+    *    matrixheight   => undef,
+=cut
 
-#
-# variable: $self
-#
-#    *    id             => undef,
-#    *    resolution     => undef,
-#    *    topleftcornerx => undef,
-#    *    topleftcornery => undef,
-#    *    tilewidth      => undef, # ie 256 by default ?
-#    *    tileheight     => undef, # ie 256 by default ?
-#    *    matrixwidth    => undef,
-#    *    matrixheight   => undef,
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
 
-#
 # Group: constructor
-#
 
-################################################################################
-# constructor
 sub new {
   my $this = shift;
 
@@ -157,8 +128,6 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -190,8 +159,13 @@ sub _init {
     
     return TRUE;
 }
-################################################################################
-# get/set
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getTopLeftCornerX {
     my $self = shift;
     TRACE ("getTopLeftCornerX");
@@ -218,8 +192,13 @@ sub setTopLeftCornerY {
         $self->{topleftcornery} = sprintf ("%.10f", $v);
     }
 }
-################################################################################
-# to_string method
+
+####################################################################################################
+#                                           OTHERS                                                 #
+####################################################################################################
+
+# Group: others
+
 sub to_string {
   
   my $self = shift;
@@ -239,64 +218,74 @@ sub to_string {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::TileMatrix - one level of a TileMatrixSet.
+BE4::TileMatrix - one level of a TileMatrixSet.
 
 =head1 SYNOPSIS
 
-  use BE4::TileMatrix;
-  
-  my $params = {
-    id             => 0,
-    resolution     => 1,
-    topleftcornerx => 0.0000000000000002,
-    topleftcornery => 100,
-    tilewidth      => 256,
-    tileheight     => 256,
-    matrixwidth    => 1,
-    matrixheight   => 1,
-  };
-
-  my $objH = BE4::TileMatrix->new($params);
-  
-  $objH->setResolution(2);  # 2
-  $objH->setTopLeftCornerX(100); # 100
-  $objH->setTileWidth() # not enough arguments to setTileWidth, stopped !
-  
-  $objH->to_string();
-  ...
+    use BE4::TileMatrix;
+    
+    my $params = {
+        id             => "18",
+        resolution     => 0.5,
+        topleftcornerx => 0,
+        topleftcornery => 12000000,
+        tilewidth      => 256,
+        tileheight     => 256,
+        matrixwidth    => 10080,
+        matrixheight   => 84081,
+    };
+    
+    my $objTM = BE4::TileMatrix->new($params);
 
 =head1 DESCRIPTION
 
-=head1 LIMITATIONS AND BUGS
+=head2 ATTRIBUTES
 
- No test on the type value !
- Limit of precision to X and Y : 10 decimal !
+=over 4
 
-=head2 EXPORT
+=item id
 
-None by default.
+Identifiant of the level, a string.
+
+=item resolution
+
+Ground size of a pixel, using unity of the SRS.
+
+=item topleftcornerx, topleftcornery
+
+Coordinates of the upper left corner for the level, the grid's origin.
+
+=item tilewidth, tileheight
+
+Pixel size of a tile (256 * 256).
+
+=item matrixwidth, matrixheight
+
+Number of tile in the level, widthwise and heightwise.
+
+=back
 
 =head1 SEE ALSO
 
-  eg package module following :
- 
-  BE4::TileMatrix
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
 

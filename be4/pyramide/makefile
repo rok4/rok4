@@ -96,12 +96,12 @@ buildhtml:
 	@(for f in `find lib -name "*.pm"` ;\
             do \
               h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-              pod2html --podroot=./ --podpath=./docs/Html  --title=$$f --header --infile=$$f  > docs/Html/$$h ;\
+              pod2html --index --title=$$f --header --infile=$$f  > docs/Html/$$h ;\
           done)
 	@(for f in `find bin -name "*.pl"` ;\
           do \
             h=`echo $$f | sed -e 's/\.pl/\.html/' -e 's!/!-!g'` ;\
-            pod2html --podroot=./ --podpath=./docs/Html --title=$$f --header --infile=$$f > docs/Html/$$h ;\
+            pod2html --index --title=$$f --header --infile=$$f > docs/Html/$$h ;\
           done)
 	@( echo "> Ok, Man2Html !" ) ;
 

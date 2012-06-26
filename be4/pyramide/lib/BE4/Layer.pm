@@ -392,10 +392,7 @@ sub to_string {
 }
 
 1;
-
 __END__
-
-=pod
 
 =head1 NAME
 
@@ -457,19 +454,31 @@ BE4::Layer - Describe a layer for Rok4 and allow to generate XML configuration f
 
 =head1 DESCRIPTION
 
-=head2 EXPORT
-
-None by default.
-
 =head1 SEE ALSO
 
-BE4::Pyramid
-BE4::TileMatrixSet
-BE4::Level
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

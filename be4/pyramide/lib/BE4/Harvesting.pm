@@ -177,6 +177,7 @@ sub _init {
 
 # Group: request method
 
+#
 =begin nd
    method: doRequestUrl
 
@@ -307,7 +308,7 @@ __END__
 
 =head1 NAME
 
-    BE4::Harvesting - Declare WMS service
+BE4::Harvesting - Declare WMS service
 
 =head1 SYNOPSIS
 
@@ -372,29 +373,54 @@ __END__
 
 =head1 DESCRIPTION
 
-    A Harvesting object
+=head2 ATTRIBUTES
 
-        * URL : url of rok4 !
-        * VERSION : 1.3.0 for WMS
-        * REQUEST : getMap
-        * FORMAT : image/tiff,png... or image/x-bil;bits=32
-        * LAYERS : name of the harvested resource
-        * image_width and image_height : if not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
+=over 4
 
-=head2 EXPORT
+=item URL
 
-    None by default.
+URL of rok4.
+
+=item VERSION
+
+1.3.0 for WMS.
+
+=item REQUEST
+
+"getMap"
+
+=item FORMAT
+
+Image/tiff,png... or image/x-bil;bits=32
+
+=item LAYERS
+
+Name of the harvested resource
+
+=item image_width, image_height
+
+If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
+
+=back
 
 =head1 SEE ALSO
 
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHOR
 
-    Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Satabin Théo
+Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

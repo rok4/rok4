@@ -88,7 +88,6 @@ variable: $self
     * harvesting => undef # an Harvesting object (can be undefined)
 =cut
 
-
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -127,7 +126,6 @@ sub new {
 
     return $self;
 }
-
 
 sub _load {
     my $self   = shift;
@@ -202,6 +200,7 @@ sub _load {
 
 # Group: public methods
 
+#
 =begin nd
     method: computeGlobalInfo
 
@@ -358,10 +357,9 @@ sub removeHarvesting {
 1;
 __END__
 
-
 =head1 NAME
 
-    BE4::DataSource - Managing a data source
+BE4::DataSource - Managing a data source
 
 =head1 SYNOPSIS
 
@@ -413,40 +411,75 @@ __END__
 
 =head1 DESCRIPTION
 
-    A DataSource object
-    
-        * bottomLevelID : ID (in TMS) of the base level, from which this datasource is used
-        * bottomLevelOrder : corresponding order (integer)
-        * topLevelID : ID (in TMS) of the top level, to which this datasource is used, calculated inrelation to other datasource
-        * topLevelOrder : corresponding order (integer)
+=head2 ATTRIBUTES
+
+=over 4
+  
+=item bottomLevelID, bottomLevelOrder
+
+ID (in TMS) and order (integer) of the base level, from which this datasource is used.
+
+=item topLevelID, topLevelOrder
+
+ID (in TMS) and order (integer) of the top level, to which this datasource is used, calculated in relation to other datasource
         
-        * extent : an OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
-        * bbox : bbox of extent, an array [xmin,ymin,xmax,ymax].
-        * srs : SRS of the bottom extent (and ImageSource objects if exists)
+=item extent
+
+An OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
+
+=item bbox
+
+Bbox of extent, an array [xmin,ymin,xmax,ymax].
+
+=item srs
+
+SRS of the bottom extent (and ImageSource objects if exists)
     
-        * imageSource : a ImageSource object, can be undefined
+=item imageSource
+
+An ImageSource object, can be undefined
     
-        * harvesting : an Harvestingobject, can be undefined. If it is useless, it will be remove.
-        
-    'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
+=item harvesting
+
+An Harvestingobject, can be undefined. If it is useless, it will be remove.
+
+=back
+
+'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
 
 =head1 LIMITATION & BUGS
 
-    Metadata managing not yet implemented.
+Metadata managing not yet implemented.
 
 =head1 SEE ALSO
 
-    BE4::Harvesting
-    BE4::ImageSource
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
+<li><A HREF="./lib-BE4-ImageSource.html">BE4::ImageSource</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-    Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-    Copyright (C) 2011 by Satabin Théo
+Copyright (C) 2011 by Satabin Théo
 
-    This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

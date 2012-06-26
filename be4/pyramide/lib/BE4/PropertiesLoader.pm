@@ -53,38 +53,32 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    * CFGFILE   => undef,  # file properties
-#    * HDLFILE   => undef,  # ref to file properties
-#    * CFGPARAMS => {},     # stock params
-#
-
-#
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * CFGFILE   => undef,  # file properties
+    * HDLFILE   => undef,  # ref to file properties
+    * CFGPARAMS => {},     # stock params
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
@@ -106,12 +100,6 @@ sub new {
   return $self;
 }
 
-#
-# Group: private 
-#
-
-################################################################################
-# privates init.
 sub _initParams {
     my $self = shift;
     my $file = shift;
@@ -143,12 +131,12 @@ sub _initCfg {
   return TRUE;
 }
 
-#
-# Group: public method
-#
+####################################################################################################
+#                                           LOADER                                                 #
+####################################################################################################
 
-################################################################################
-# load a properties ( or overloading !)
+# Group: loader
+
 sub LoadProperties {
   
   my $self     = shift;
@@ -198,8 +186,13 @@ sub LoadProperties {
   return TRUE;
 }
 
-################################################################################
-# public
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getAllProperties {
   my $self = shift;
   return $self->{CFGPARAMS};
@@ -257,60 +250,58 @@ sub getValueParameters {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::PropertiesLoader - load file properties.
+BE4::PropertiesLoader - load file properties.
 
 =head1 SYNOPSIS
 
-  use BE4::PropertiesLoader;
-  
-  my $proptxt << EOF
-    [section 1]
-    param1=value1
-    param2=value2
-    [section 2]
-    ; param21=value21
-    ; param22=value22
-  EOF
-  
-  open FILE, ">", $propfile;
-  printf FILE "%s",  $proptxt;
-  close FILE;
-  
-  my $objprop = BE4::PropertiesLoader->new($propfile);
-  
-  # {section 1 => {...}, section 2 => {...}}
-  my $config     = $objprop->getAllProperties();
-  
-  my @sections   = $objprop->getSections();  # [section 1, section 2]
-  my @parameters = $objprop->getKeyParameters("section 1"); # [param1, param2]
-  my @values     = $objprop->getValueParameters("section 1"); # [value1, value2]
-  
-  # {param1=>value1, param2=>value2}
-  my $config_section = $objprop->getPropertiesBySection("section 1"); 
-  ...
-
-=head1 DESCRIPTION
-
-=head2 EXPORT
-
-None by default.
+    use BE4::PropertiesLoader;
+    
+    my $proptxt << EOF
+        [section 1]
+        param1=value1
+        param2=value2
+        [section 2]
+        ; param21=value21
+        ; param22=value22
+    EOF
+    
+    open FILE, ">", $propfile;
+    printf FILE "%s",  $proptxt;
+    close FILE;
+    
+    my $objprop = BE4::PropertiesLoader->new($propfile);
+    
+    # {section 1 => {...}, section 2 => {...}}
+    my $config     = $objprop->getAllProperties();
+    
+    my @sections   = $objprop->getSections();  # [section 1, section 2]
+    my @parameters = $objprop->getKeyParameters("section 1"); # [param1, param2]
+    my @values     = $objprop->getValueParameters("section 1"); # [value1, value2]
+    
+    # {param1=>value1, param2=>value2}
+    my $config_section = $objprop->getPropertiesBySection("section 1"); 
+    ...
 
 =head1 SEE ALSO
 
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -417,12 +417,12 @@ TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char*
     const uint8_t* tiffHeader;
     TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,format::fromString ( format ),channels,width,height,possize );
     tiffHeader = fullTiffDS->getData ( tiffHeaderSize );
+    header->size = tiffHeaderSize;
+    header->data = ( uint8_t* ) malloc ( tiffHeaderSize+1 );
     memcpy ( header->data,tiffHeader,tiffHeaderSize );
+    delete fullTiffDS;
+    return header;
 }
-
-
-
-
 
 /**
 * @brief Construction d'un en-tete PNG avec Palette
