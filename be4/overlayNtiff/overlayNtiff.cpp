@@ -300,9 +300,12 @@ int treatImages()
     
     for(int h = 0; h < height; h++) {
         if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
-        for(int w = 0; w < width; w++) {
-            if (! memcmp(LINE+w*4,&transparent,3)) {
-                memset(LINE+w*4,0,4);
+        if (composeMethod == COMPOSEMETHOD_TRANSPARENCY) {
+            // merge method is transparency, we want to make transparent the 'transparent' color (given in parameters)
+            for(int w = 0; w < width; w++) {
+                if (! memcmp(LINE+w*4,&transparent,3)) {
+                    memset(LINE+w*4,0,4);
+                }
             }
         }
         memcpy(&IM[h*width*4],LINE,width*4);
@@ -337,7 +340,7 @@ int treatImages()
         for(int h = 0; h < height; h++) {
             if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
             for(int w = 0; w < width; w++) {
-                if ( LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3)) {
+                if (composeMethod == COMPOSEMETHOD_TRANSPARENCY && (LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3))) {
                     continue;
                 }
                 compose(LINE+w*4,IM+(h*width+w)*4,PIXEL,false);
