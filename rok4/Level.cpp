@@ -52,6 +52,9 @@
 #include "Pyramid.h"
 #include "PaletteDataSource.h"
 #include "format.h"
+#include "libintl.h"
+#include "config.h"
+
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -136,7 +139,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
 
     Image* image = getwindow (servicesConf, bbox_int, error );
     if (!image) {
-        LOGGER_DEBUG("Image invalid !");
+        LOGGER_DEBUG(_("Image invalid !"));
         return 0;
     }
     image->setbbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
@@ -180,7 +183,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
 
     Image* imageout = getwindow (servicesConf, bbox_int, error );
     if (!imageout) {
-        LOGGER_DEBUG("Image invalid !");
+        LOGGER_DEBUG(_("Image invalid !"));
         return 0;
     }
     return new ResampledImage ( imageout, width, height,ratio_x,ratio_y, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
@@ -204,7 +207,7 @@ Image* Level::getwindow (ServicesConf& servicesConf, BoundingBox< int64_t > bbox
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
     if (nbx >= servicesConf.getMaxTileX()) {
-        LOGGER_INFO("Too Much Tile on X axis");
+        LOGGER_INFO(_("Too Much Tile on X axis"));
         error=2;
         return 0;
     }
@@ -212,7 +215,7 @@ Image* Level::getwindow (ServicesConf& servicesConf, BoundingBox< int64_t > bbox
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
     if (nby >= servicesConf.getMaxTileY()) {
-        LOGGER_INFO("Too Much Tile on Y axis");
+        LOGGER_INFO(_("Too Much Tile on Y axis"));
         error=2;
         return 0;
     }
@@ -251,7 +254,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 std::string Level::getFilePath ( int tilex, int tiley ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( "Indice de tuile négatif" );
+        LOGGER_ERROR ( _("Indice de tuile négatif") );
         return "";
     }
 
@@ -312,12 +315,12 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<LzwDecoder> ( encData );
     else if ( format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 )
         return new DataSourceDecoder<DeflateDecoder> ( encData );
-    LOGGER_ERROR ( "Type d'encodage inconnu : "<<format );
+    LOGGER_ERROR ( _("Type d'encodage inconnu : ")<<format );
     return 0;
 }
 
 DataSource* Level::getEncodedNoDataTile() {
-    LOGGER_DEBUG ( "Tile : " << noDataFile );
+    LOGGER_DEBUG ( _("Tile : ") << noDataFile );
     return noDataSourceProxy;
 }
 
@@ -329,7 +332,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     size_t size;
 
 	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
-        LOGGER_DEBUG ( "GetTile Tiff" );
+        LOGGER_DEBUG ( _("GetTile Tiff") );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
                 return new DataSourceProxy(fullTiffDS,*ndSource);
     }
@@ -339,7 +342,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
-    LOGGER_DEBUG ( "GetTile Image" );
+    LOGGER_DEBUG ( _("GetTile Image") );
     if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32)
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,

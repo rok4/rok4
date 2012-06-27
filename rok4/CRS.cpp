@@ -39,6 +39,8 @@
 #include "Logger.h"
 #include "Grid.h"
 #include <proj_api.h>
+#include <libintl.h>
+#include "config.h"
 
 #define NO_PROJ4_CODE "noProj4Code"
 
@@ -58,7 +60,7 @@ bool isCrsProj4Compatible ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
         pj_ctx_free ( ctx );
         return false;
     }
@@ -76,7 +78,7 @@ bool isCrsLongLat ( std::string crs ) {
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        // LOGGER_DEBUG("erreur d initialisation " << crs << " " << msg);
+        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
         pj_ctx_free ( ctx );
         return false;
     }
@@ -171,7 +173,7 @@ bool CRS::cmpRequestCode ( std::string crs ) {
 std::string CRS::getAuthority() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( "Erreur sur le CRS "<<requestCode<< " : absence de separateur" );
+        LOGGER_ERROR ( _("Erreur sur le CRS ")<<requestCode<< _(" : absence de separateur") );
         pos=requestCode.length();
     }
     return ( requestCode.substr ( 0,pos ) );
@@ -180,7 +182,7 @@ std::string CRS::getAuthority() {
 std::string CRS::getIdentifier() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( "Erreur sur le CRS "<<requestCode<< " : absence de separateur" );
+        LOGGER_ERROR ( _("Erreur sur le CRS ")<<requestCode<< _(" : absence de separateur") );
         pos=-1;
     }
     return ( requestCode.substr ( pos+1 ) );
