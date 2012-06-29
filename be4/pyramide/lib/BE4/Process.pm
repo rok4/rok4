@@ -131,6 +131,7 @@ MergeNtiff () {
   local config=$2
   mergeNtiff -f $config -t $type __mNt__
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  rm -f $config
 }
 
 FUNCTIONS
@@ -818,9 +819,7 @@ sub mergeNtiff {
     #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
     # TODO pour les métadonnées ce sera 0
 
-  my $cmd = sprintf ("MergeNtiff %s %s\n",$dataType,$confFile);
-
-    $cmd .= sprintf ("rm -f %s\n" ,$confFile);
+    my $cmd = sprintf ("MergeNtiff %s %s\n",$dataType,$confFile);
 
     return $cmd;
 }
