@@ -52,7 +52,7 @@ class CompoundImage : public Image {
 		/** Indice y des tuiles courantes */
 		int y;
 
-		/** ligne correspondnat au haut des tuiles courantes*/
+		/** ligne correspondant au haut des tuiles courantes*/
 		int top;
 
 		template<typename T> 

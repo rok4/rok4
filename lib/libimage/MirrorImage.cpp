@@ -51,7 +51,7 @@ Creation d'une MirrorImage a partir d'une image et de la position par rapport à
 retourne NULL en cas d erreur
 */
 
-MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc,int position,uint mirrorSize)
+MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sampleformat,int position,uint mirrorSize)
 {
     int wTopBottom = pImageSrc->width+2*mirrorSize;
     int wLeftRight = mirrorSize;
@@ -64,15 +64,15 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc,int position
         LOGGER_ERROR("Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)");
         return NULL;
     }
-    
+
     if (position == 0){
         // TOP
         xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
         xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymax();
-        ymax=pImageSrc->getymax()+mirrorSize*pImageSrc->getresy();
+        ymin=pImageSrc->getymax();        
+        ymax=pImageSrc->getymax()+pImageSrc->getresy()*mirrorSize;        
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,0,mirrorSize);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,0,mirrorSize);
     }
     else if (position == 1){
         // RIGHT
@@ -81,16 +81,16 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc,int position
         ymin=pImageSrc->getymin();
         ymax=pImageSrc->getymax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,1,mirrorSize);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,1,mirrorSize);
     }
     else if (position == 2){
         // BOTTOM
         xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
         xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymin()-mirrorSize*pImageSrc->getresy();
+        ymin=pImageSrc->getymin()-pImageSrc->getresy()*mirrorSize;
         ymax=pImageSrc->getymin();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,2,mirrorSize);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,2,mirrorSize);
     }
     else if (position == 3){
         // LEFT
@@ -99,19 +99,20 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc,int position
         ymin=pImageSrc->getymin();
         ymax=pImageSrc->getymax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,3,mirrorSize);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,3,mirrorSize);
     }
 
 }
 
-MirrorImage::MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,channels,bbox), image(image), position(position), mirrorSize(mirrorSize)
+MirrorImage::MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getresx(),image->getresy(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat)
 {
 }
 
-int MirrorImage::getline(uint8_t* buffer, int line)
+template <typename T>
+int MirrorImage::_getline(T* buffer, int line)
 {
     uint32_t line_size=width*channels;
-    uint8_t* buf0=new uint8_t[image->width*channels];
+    T* buf0=new T[image->width*channels];
 
 
     if (position == 0) {
@@ -120,10 +121,10 @@ int MirrorImage::getline(uint8_t* buffer, int line)
         
         image->getline(buf0,lineSrc);
         
-        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels);
+        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels*sizeof(T));
         for (int j = 0; j < mirrorSize; j++) {
-            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels); // left
-            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels); // right
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // left
+            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels*sizeof(T)); // right
         }
         
     }
@@ -131,7 +132,7 @@ int MirrorImage::getline(uint8_t* buffer, int line)
         // RIGHT
         image->getline(buf0,line);
         for (int j = 0; j < mirrorSize; j++) {
-            memcpy(&buffer[j*channels],&buf0[(image->width-j-1)*channels],channels); // right
+            memcpy(&buffer[j*channels],&buf0[(image->width-j-1)*channels],channels*sizeof(T)); // right
         }
 
     }
@@ -141,10 +142,10 @@ int MirrorImage::getline(uint8_t* buffer, int line)
         
         image->getline(buf0,lineSrc);
         
-        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels);
+        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels*sizeof(T));
         for (int j = 0; j < mirrorSize; j++) {
-            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels); // left
-            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels); // right
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // left
+            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels*sizeof(T)); // right
         }
 
     }
@@ -152,18 +153,34 @@ int MirrorImage::getline(uint8_t* buffer, int line)
         // LEFT
         image->getline(buf0,line);
         for (int j = 0; j < mirrorSize; j++) {
-            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels); // right
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // right
         }
 
     }
 
-    return width*channels;
+    return width*channels*sizeof(T);
 }
 
+/** Implementation de getline pour les uint8_t */
+int MirrorImage::getline(uint8_t* buffer, int line) {
+    return _getline(buffer, line);
+}
+
+/** Implementation de getline pour les float */
 int MirrorImage::getline(float* buffer, int line)
 {
-    return width*channels;
+    if (sampleformat==1){     //uint8_t
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        getline(buffer_t,line);
+        convert(buffer,buffer_t,width*channels);
+        delete [] buffer_t;
+        return width*channels;
+    }
+    else {           //float
+        return _getline(buffer, line);
+    }
 }
+
 
 MirrorImage::~MirrorImage()
 {

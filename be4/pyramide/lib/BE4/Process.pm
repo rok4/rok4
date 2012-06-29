@@ -316,8 +316,10 @@ sub computeWholeTree {
                 INFO (sprintf "Node '%s-%s-%s' into 'SCRIPT_%s'.", $node->{level} ,$node->{x}, $node->{y}, $scriptCount);
                 $scriptCode .= sprintf "\necho \"PYRAMIDE:%s   LEVEL:%s X:%s Y:%s\"", $pyrName, $node->{level} ,$node->{x}, $node->{y}; 
                 $scriptCode .= $self->writeBranchCode($node);
+                # NOTE : pas d'image à collecter car non séparation par script du dossier temporaire, de travail
+                # A rétablir si possible
                 # on récupère l'image de travail finale pour le job de fin.
-                $finishScriptCode .= $self->collectWorkImage($node);
+                # $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
             }
         }
         if (! $self->saveScript($scriptCode,$scriptId)) {
@@ -417,7 +419,7 @@ sub computeBottomImage {
         my $confDirPath  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
         if (! -d $confDirPath) {
             DEBUG (sprintf "create dir mergeNtiff");
-            eval { mkpath([$confDirPath],0,0751); };
+            eval { mkpath([$confDirPath]); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $confDirPath, $@);
                 return FALSE;
@@ -505,10 +507,12 @@ sub computeAboveImage {
     my $bgImgPath=undef;
     my $bgImgName=undef;
 
-    # A-t-on besoin de quelque chose en fond d'image?
-    my $bg="";
-    if (scalar @childList != 4){
+    # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
+    # si on a l'option nowhite
+    my $bg='-n ' . $self->{nodata}->getColor();
 
+
+    if (scalar @childList != 4 || $self->{nodata}->{nowhite}) {
         # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
         # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
         # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
@@ -531,14 +535,12 @@ sub computeAboveImage {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
             $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
             $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
-            $bg="-b $bgImgPath";
+            $bg.=" -b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would be too high or too wide for this level (%s)",$node->{level});
-                    # On ne peut pas avoir d'image alors on donne une couleur de nodata
-                    $bg='-n ' . $self->{nodata}->getColor();
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
@@ -548,16 +550,13 @@ sub computeAboveImage {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $code .= $self->cache2work($node, $bgImgName);
             }
-        } else {
-            # On a pas d'image alors on donne une couleur de nodata
-            $bg='-n ' . $self->{nodata}->getColor();
         }
     }
 
     # Maintenant on constitue la liste des images à passer à merge4tiff.
     my $childImgParam=''; 
     my $imgCount=0;
-    foreach my $childNode ($self->{tree}->getPossibleChilds($node)){
+    foreach my $childNode ($self->{tree}->getPossibleChilds($node)) {
         $imgCount++;
         if ($self->{tree}->isInTree($childNode)){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)
@@ -664,8 +663,8 @@ sub writeTopCodes {
     TRACE;
 
     if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
-        INFO("Final script will be empty (except temporary files deletion)");
-        return "echo \"Final script have nothing to do, except to delete temporary images made by other scripts.\" \n";
+        INFO("Final script will be empty");
+        return "echo \"Final script have nothing to do.\" \n";
     }
 
     my $code = '';
@@ -792,6 +791,12 @@ sub work2cache {
   my $cmd = sprintf ("TestFileDir \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
   $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
 
+  # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
+
+  if ($node->{level} eq $self->{tree}->{topLevelId}) {
+    $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
+  }
+
   return $cmd;
 }
 
@@ -799,22 +804,25 @@ sub work2cache {
 #  compose la commande qui fusionne des images (mergeNtiff).
 #---------------------------------------------------------------------------------------------------
 sub mergeNtiff {
-  my $self = shift;
-  my $confFile = shift;
-  my $dataType = shift; # param. are image or mtd to mergeNtiff script !
-  
-  TRACE;
-  
-  $dataType = 'image' if (  defined $dataType && $dataType eq 'data');
-  $dataType = 'image' if (! defined $dataType);
-  $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
-  
-  my $pyr = $self->{pyramid};
-  #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
-  # TODO pour les métadonnées ce sera 0
+    my $self = shift;
+    my $confFile = shift;
+    my $dataType = shift; # param. are image or mtd to mergeNtiff script !
+
+    TRACE;
+
+    $dataType = 'image' if (  defined $dataType && $dataType eq 'data');
+    $dataType = 'image' if (! defined $dataType);
+    $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
+
+    my $pyr = $self->{pyramid};
+    #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
+    # TODO pour les métadonnées ce sera 0
 
   my $cmd = sprintf ("MergeNtiff %s %s\n",$dataType,$confFile);
-  return $cmd;
+
+    $cmd .= sprintf ("rm -f %s\n" ,$confFile);
+
+    return $cmd;
 }
 
 # method:merge4tiff
@@ -1022,7 +1030,7 @@ sub saveScript {
     if (! -d dirname($scriptFilePath)) {
         my $dir = dirname($scriptFilePath);
         DEBUG (sprintf "Create the script directory'%s' !", $dir);
-        eval { mkpath([$dir],0,0751); };
+        eval { mkpath([$dir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
             return FALSE;
@@ -1054,22 +1062,18 @@ sub saveScript {
 #  scripts de calcul du bas de la pyramide, pour les copier dans le répertoire
 #  temporaire du script final.
 #  NOTE
-#  le code commenté permettra de rétablir un tri des fichiers temporaires dans différents dossiers
-#--------------------------------------------------------------------------------------------------
+#  Pas utilisé pour le moment
+#--------------------------------------------------------------------------------------------
 sub collectWorkImage(){
-    my $self = shift;
-    my $node = shift;
+  my $self = shift;
+  my ($node, $scriptId, $finishId) = @_;
+  
+  TRACE;
+  
+  my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+  my $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
 
-    TRACE;
-
-    my $code = '';
-
-    my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $self->workNameOfNode($node));
-    if ($self->{tree}->{topLevelId} eq $self->{tree}->{cutLevelId}) {
-        $code   = sprintf ("rm -f %s\n", $source);
-    }
-
-    return $code;
+  return $code;
 }
 
 

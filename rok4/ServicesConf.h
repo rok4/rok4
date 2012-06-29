@@ -75,6 +75,7 @@ private:
     unsigned int maxTileY;
     std::vector<std::string> formatList;
     std::vector<CRS> globalCRSList;
+    bool fullStyling;
     // WMTS
     std::string serviceType;
     std::string serviceTypeVersion;
@@ -91,14 +92,14 @@ public:
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
-                   std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0, bool inspire=0 ) :
+                   std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0,bool fullStyling=0, bool inspire=0 ) :
             name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
             serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ),
             maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX(maxTileX), maxTileY(maxTileY) , formatList ( formatList ), globalCRSList(globalCRSList), serviceType ( serviceType ),
             serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
             individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
             deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
-            country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS(metadataWMS), metadataWMTS(metadataWMTS) , postMode(postMode),  inspire ( inspire ) {};
+            country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS(metadataWMS), metadataWMTS(metadataWMTS) , postMode(postMode), fullStyling(fullStyling), inspire ( inspire ) {};
     //  WMS & WMTS
     std::string inline getAbstract() const      {
         return abstract;
@@ -179,6 +180,9 @@ public:
     }
     std::vector<CRS>* getGlobalCRSList() {
         return &globalCRSList;
+    }
+    bool inline isFullStyleCapable() {
+        return fullStyling;
     }
     // WMTS
     std::string inline getServiceType() {

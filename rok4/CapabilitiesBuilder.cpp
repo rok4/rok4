@@ -46,7 +46,7 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-
+#include <libintl.h>
 /**
  * Conversion de int en std::string.
  */
@@ -274,7 +274,7 @@ void Rok4Server::buildWMSCapabilities() {
     }
     // Layer
     if ( layerList.empty() ) {
-        LOGGER_ERROR ( "Liste de layers vide" );
+        LOGGER_ERROR ( _("Liste de layers vide") );
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -307,7 +307,7 @@ void Rok4Server::buildWMSCapabilities() {
             }
             // CRS
             for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                childLayerEl->LinkEndChild ( buildTextNode ( "CRS", childLayer->getWMSCRSList() [i]->getRequestCode() ) );
+                childLayerEl->LinkEndChild ( buildTextNode ( "CRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
             }
             // GeographicBoundingBox
             TiXmlElement * gbbEl = new TiXmlElement ( "EX_GeographicBoundingBox" );
@@ -330,9 +330,34 @@ void Rok4Server::buildWMSCapabilities() {
             // BoundingBox
             if ( servicesConf.isInspire() ) {
                 for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    BoundingBox<double> bbox = childLayer->getWMSCRSList() [i]->boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                    BoundingBox<double> bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
-                    bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i]->getRequestCode() );
+                    bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i].getRequestCode() );
+                    int floatprecision = GetDecimalPlaces ( bbox.xmin );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
+                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
+                    floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
+
+                    os<< std::fixed << std::setprecision ( floatprecision );
+                    os<<bbox.xmin;
+                    bbEl->SetAttribute ( "minx",os.str() );
+                    os.str ( "" );
+                    os<<bbox.ymin;
+                    bbEl->SetAttribute ( "miny",os.str() );
+                    os.str ( "" );
+                    os<<bbox.xmax;
+                    bbEl->SetAttribute ( "maxx",os.str() );
+                    os.str ( "" );
+                    os<<bbox.ymax;
+                    bbEl->SetAttribute ( "maxy",os.str() );
+                    os.str ( "" );
+                    childLayerEl->LinkEndChild ( bbEl );
+                }
+                for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
+                    BoundingBox<double> bbox = servicesConf.getGlobalCRSList()->at(i).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                    TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
+                    bbEl->SetAttribute ( "CRS",servicesConf.getGlobalCRSList()->at(i).getRequestCode() );
                     int floatprecision = GetDecimalPlaces ( bbox.xmin );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
@@ -380,7 +405,7 @@ void Rok4Server::buildWMSCapabilities() {
             }
 
             // Style
-            LOGGER_DEBUG ( "Nombre de styles : "<<childLayer->getStyles().size() );
+            LOGGER_DEBUG ( _("Nombre de styles : ")<<childLayer->getStyles().size() );
             if ( childLayer->getStyles().size() != 0 ) {
                 for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                     TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -394,7 +419,7 @@ void Rok4Server::buildWMSCapabilities() {
                         styleEl->LinkEndChild ( buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                     }
                     for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                        LOGGER_DEBUG ( "LegendURL" << style->getId() );
+                        LOGGER_DEBUG ( _("LegendURL") << style->getId() );
                         LegendURL legendURL = style->getLegendURLs() [j];
                         TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -409,10 +434,10 @@ void Rok4Server::buildWMSCapabilities() {
                         if ( legendURL.getHeight() !=0 )
                             legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                         styleEl->LinkEndChild ( legendURLEl );
-                        LOGGER_DEBUG ( "LegendURL OK"<< style->getId() );
+                        LOGGER_DEBUG ( _("LegendURL OK")<< style->getId() );
                     }
 
-                    LOGGER_DEBUG ( "Style fini : " << style->getId() );
+                    LOGGER_DEBUG ( _("Style fini : ") << style->getId() );
                     childLayerEl->LinkEndChild ( styleEl );
                 }
             }
@@ -433,11 +458,11 @@ void Rok4Server::buildWMSCapabilities() {
              layer->getOpaque();
 
             */
-            LOGGER_DEBUG ( "Layer Fini" );
+            LOGGER_DEBUG ( _("Layer Fini") );
             parentLayerEl->LinkEndChild ( childLayerEl );
 
         }// for layer
-        LOGGER_DEBUG ( "Layers Fini" );
+        LOGGER_DEBUG ( _("Layers Fini") );
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -464,7 +489,7 @@ void Rok4Server::buildWMSCapabilities() {
         endPos=wmsCapaTemplate.find ( pathTag,beginPos );
     }
     wmsCapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
-    LOGGER_DEBUG ( "WMSfini" );
+    LOGGER_DEBUG ( _("WMSfini") );
 }
 
 
@@ -706,11 +731,11 @@ void Rok4Server::buildWMTSCapabilities() {
                 Style* style = layer->getStyles() [i];
                 int j;
                 for ( j=0 ; j < style->getTitles().size(); ++j ) {
-                    LOGGER_DEBUG ( "Title : " << style->getTitles() [j].c_str() );
+                    LOGGER_DEBUG ( _("Title : ") << style->getTitles() [j].c_str() );
                     styleEl->LinkEndChild ( buildTextNode ( "ows:Title", style->getTitles() [j].c_str() ) );
                 }
                 for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
-                    LOGGER_DEBUG ( "Abstract : " << style->getAbstracts() [j].c_str() );
+                    LOGGER_DEBUG ( _("Abstract : ") << style->getAbstracts() [j].c_str() );
                     styleEl->LinkEndChild ( buildTextNode ( "ows:Abstract", style->getAbstracts() [j].c_str() ) );
                 }
                 //TODO Keywords

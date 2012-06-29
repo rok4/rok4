@@ -866,6 +866,18 @@ const char* TiXmlElement::GetText() const
 }
 
 
+const std::string TiXmlElement::GetTextStr() const {
+        const TiXmlNode* child = this->FirstChild();
+        if ( child ) {
+                const TiXmlText* childText = child->ToText();
+                if ( childText ) {
+                        return childText->ValueStr();
+                }
+        }
+        return "";
+}
+
+
 TiXmlDocument::TiXmlDocument() : TiXmlNode( TiXmlNode::TINYXML_DOCUMENT )
 {
 	tabsize = 4;

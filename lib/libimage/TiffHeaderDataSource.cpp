@@ -10,7 +10,7 @@ TiffHeaderDataSource::TiffHeaderDataSource(DataSource* dataSource,
         format(format), channel(channel),
         width(width), height(height) , tileSize(tileSize)
 {
-    size_t header_size = TiffHeader::headerSize;
+    size_t header_size = TiffHeader::headerSize(channel);
     const uint8_t* tmp;
     dataSize = header_size;
     if (dataSource) {

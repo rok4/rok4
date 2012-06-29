@@ -38,10 +38,11 @@
 #include "libprojet.h"
 #include <string>
 #include <iostream>
+#include <libintl.h>
 
 LibProjet::LibProjet()
 {
-	message= std::string("Hello World!");
+	message= std::string(gettext("Hello World!"));
 }
 
 LibProjet::~LibProjet()

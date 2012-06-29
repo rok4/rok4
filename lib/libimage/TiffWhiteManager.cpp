@@ -69,7 +69,10 @@ bool TiffWhiteManager::treatWhite() {
     TIFF *TIFF_FILE = 0;
     
     TIFF_FILE = TIFFOpen(input, "r");
-    if(!TIFF_FILE) error("Unable to open file for reading: " + string(input));
+    if(!TIFF_FILE) {
+        error("Unable to open file for reading: " + string(input));
+        return false;
+    }
     if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &width)                       ||
         ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, &height)                     ||
         ! TIFFGetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
@@ -84,10 +87,18 @@ bool TiffWhiteManager::treatWhite() {
         return false;
     }
 
-    if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
-    if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
-    if (sampleperpixel != 3)  error("Sorry : tool white manager is just available for sampleperpixel = 3");
-    if (compression != 1)  error("Sorry : compression not accepted");
+    if (planarconfig != 1)  {
+        error("Sorry : only planarconfig = 1 is supported");
+        return false;
+    }
+    if (bitspersample != 8)  {
+        error("Sorry : only bitspersample = 8 is supported");
+        return false;
+    }
+    if (sampleperpixel != 3)  {
+        error("Sorry : tool white manager is just available for sampleperpixel = 3");
+        return false;
+    }
     
     IM  = new uint8_t[width * height * sampleperpixel];
 
@@ -116,7 +127,10 @@ bool TiffWhiteManager::treatWhite() {
     
     
     TIFF_FILE = TIFFOpen(output, "w");
-    if(!TIFF_FILE) error("Unable to open file for writting: " + string(output));
+    if(!TIFF_FILE) {
+        error("Unable to open file for writting: " + string(output));
+        return false;
+    }
     if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
@@ -136,7 +150,10 @@ bool TiffWhiteManager::treatWhite() {
     // output image is written
     for(int h = 0; h < height; h++) {
         memcpy(LINE, IM+h*width*sampleperpixel, width * sampleperpixel);
-        if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + string(output));
+        if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) {
+            error("Unable to write line to " + string(output));
+            return false;
+        }
     }
     
     TIFFClose(TIFF_FILE);

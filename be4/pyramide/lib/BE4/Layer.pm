@@ -68,7 +68,7 @@ my $STRLYRTMPLT   = <<"TLYR";
     <title>__TITLE__</title>
     <abstract>__ABSTRACT__</abstract>
     <keywordList>
-        <!-- __KEYWORDS__ -->
+      <!-- __KEYWORDS__ -->
     </keywordList>
     <style>__STYLE__</style>
     <EX_GeographicBoundingBox>
@@ -78,9 +78,11 @@ my $STRLYRTMPLT   = <<"TLYR";
         <northBoundLatitude>__N__</northBoundLatitude>
     </EX_GeographicBoundingBox>
     <WMSCRSList>
-        <!-- __SRSS__ -->
+      <!-- __SRSS__ -->
     </WMSCRSList>
     <boundingBox CRS="__SRS__" minx="__MINX__" miny="__MINY__" maxx="__MAXX__" maxy="__MAXY__"/>
+    <minRes>__MINRES__</minRes>
+    <maxRes>__MAXRES__</maxRes>
     <opaque>__OPAQUE__</opaque>
     <authority>__AUTHORITY__</authority>
     <resampling>__RESAMPLING__</resampling>
@@ -113,8 +115,8 @@ sub new {
         abstract         => "",          # by default (optional) !
         keywordlist      => [],          # by default (optional) !
         style            => "normal",    # by default !
-        minres           => 0.5,         # by default !
-        maxres           => 1,           # by default !
+        minres           => 0.0,         # by default !
+        maxres           => 0.0,           # by default !
         opaque           => 1,           # by default !
         authority        => "IGNF",      # by default !
         srslist          => [],          # manadatory !

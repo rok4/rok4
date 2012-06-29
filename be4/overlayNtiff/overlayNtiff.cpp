@@ -1,24 +1,24 @@
 /*
  * Copyright © (2011) Institut national de l'information
- *                    géographique et forestière 
- * 
+ *                    géographique et forestière
+ *
  * Géoportail SAV <geop_services@geoportail.fr>
- * 
+ *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
- * 
+ *
  * This software is governed by the CeCILL-C license under French law and
- * abiding by the rules of distribution of free software.  You can  use, 
+ * abiding by the rules of distribution of free software.  You can  use,
  * modify and/ or redistribute the software under the terms of the CeCILL-C
  * license as circulated by CEA, CNRS and INRIA at the following URL
- * "http://www.cecill.info". 
- * 
+ * "http://www.cecill.info".
+ *
  * As a counterpart to the access to the source code and  rights to copy,
  * modify and redistribute granted by the license, users are provided only
  * with a limited warranty  and the software's author,  the holder of the
  * economic rights,  and the successive licensors  have only  limited
- * liability. 
- * 
+ * liability.
+ *
  * In this respect, the user's attention is drawn to the risks associated
  * with loading,  using,  modifying and/or developing or reproducing the
  * software by the user in light of its specific status of free software,
@@ -26,12 +26,12 @@
  * therefore means  that it is reserved for developers  and  experienced
  * professionals having in-depth computer knowledge. Users are therefore
  * encouraged to load and test the software's suitability as regards their
- * requirements in conditions enabling the security of their systems and/or 
- * data to be ensured and,  more generally, to use and operate it in the 
- * same conditions as regards security. 
- * 
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
  * The fact that you are presently reading this means that you have had
- * 
+ *
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
@@ -87,7 +87,7 @@
 */
 void usage() {
     LOGGER_INFO("overlayNtiff version "<< BE4_VERSION);
-    LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4"
+    LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4 "
         "-input source1.tif source2.tif source3.tif -output result.tif\n"
         "-mode : transparency/multiply\n"
         "-transparent : color which will be considered to be transparent\n"
@@ -103,6 +103,7 @@ void usage() {
 */
 void error(std::string message) {
     LOGGER_ERROR(message);
+    usage();
     exit(1);
 }
 
@@ -161,28 +162,27 @@ int parseCommandLine(int argc, char** argv) {
             continue;
         }
         else {
-            usage();
-            return -1;
+            error("Unknown option : " + std::string(argv[i]));
         }
     }
-    
+
     // Mode control
     if (composeMethod == 0) {
         error("We need to know the compoistion method");
     }
-    
+
     // Input/output control
     if (input.size() == 0 || !output) {
         LOGGER_ERROR("We need to have one or more sources and one output");
         return -1;
     }
-    
+
     // Channels control
     if (outputChannels != 1 && outputChannels != 3 && outputChannels != 4) {
         LOGGER_ERROR("Samples per pixel can be 1,3 or 4.");
         return -1;
     }
-    
+
     // Transparent interpretation
     char* charValue = strtok(strTransparent,",");
     if(charValue == NULL) {
@@ -208,7 +208,7 @@ int parseCommandLine(int argc, char** argv) {
         }
         transparent[i] = value;
     }
-    
+
     // Opaque interpretation
     opaque[3] = 255;
     charValue = strtok(strOpaque,",");
@@ -235,7 +235,7 @@ int parseCommandLine(int argc, char** argv) {
         }
         opaque[i] = value;
     }
-    
+
     return 0;
 }
 
@@ -267,12 +267,12 @@ void compose(uint8_t* PixA,uint8_t* PixB,uint8_t* PixR, bool rmAlpha) {
 
 int treatImages()
 {
-    
+
     TIFF *TIFF_FILE = 0;
 
     uint32 width, height, rowsperstrip = -1;
     uint16 bitspersample, sampleperpixel, photometric, compression = -1, planarconfig;
-    
+
     // FIRST IMAGE READING
     // we determine image's characteristics from the first image
     TIFF_FILE = TIFFOpen(input.at(0), "r");
@@ -285,7 +285,7 @@ int treatImages()
         ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel)||
         ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compression)                ||
         ! TIFFGetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
-    {    
+    {
         error("Error reading file: " +  std::string(input.at(0)));
     }
 
@@ -293,28 +293,31 @@ int treatImages()
     if (sampleperpixel != 4) error("Sorry : only sampleperpixel = 4 is supported");
     if (bitspersample != 8) error("Sorry : only bitspersample = 8 is supported");
     if (compression != 1) error("Sorry : compression not accepted");
-    
+
     uint8_t *IM = new uint8_t[width * height * 4];
     uint8_t *LINE = new uint8_t[width * 4];
     uint8_t *PIXEL = new uint8_t[4];
-    
+
     for(int h = 0; h < height; h++) {
         if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
-        for(int w = 0; w < width; w++) {
-            if (! memcmp(LINE+w*4,&transparent,3)) {
-                memset(LINE+w*4,0,4);
+        if (composeMethod == COMPOSEMETHOD_TRANSPARENCY) {
+            // merge method is transparency, we want to make transparent the 'transparent' color (given in parameters)
+            for(int w = 0; w < width; w++) {
+                if (! memcmp(LINE+w*4,&transparent,3)) {
+                    memset(LINE+w*4,0,4);
+                }
             }
         }
         memcpy(&IM[h*width*4],LINE,width*4);
     }
     TIFFClose(TIFF_FILE);
-    
+
     // FOLLOWING IMAGE READING
     for (int i = 1; i < input.size(); i++) {
-        
+
         uint32 widthp, heightp;
         uint16 bitspersamplep, sampleperpixelp, compressionp = -1, planarconfigp;
-        
+
         TIFF_FILE = TIFFOpen(input.at(i), "r");
         if(!TIFF_FILE) error("Unable to open file for reading: " + std::string(input.at(i)));
         if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &widthp)                       ||
@@ -323,7 +326,7 @@ int treatImages()
             ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfigp)     ||
             ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixelp)||
             ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compressionp))
-        {    
+        {
             error("Error reading file: " +  std::string(input.at(i)));
         }
 
@@ -331,13 +334,13 @@ int treatImages()
         if (sampleperpixelp != 4) error("Sorry : only sampleperpixel = 4 is supported (" + std::string(input.at(i)) +")");
         if (bitspersamplep != 8) error("Sorry : only bitspersample = 8 is supported (" + std::string(input.at(i)) +")");
         if (compressionp != 1) error("Sorry : compression not accepted (" + std::string(input.at(i)) +")");
-        
+
         if (widthp != width || heightp != height) error("All images must have same size (width and height)");
-        
+
         for(int h = 0; h < height; h++) {
             if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
             for(int w = 0; w < width; w++) {
-                if ( LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3)) {
+                if (composeMethod == COMPOSEMETHOD_TRANSPARENCY && (LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3))) {
                     continue;
                 }
                 compose(LINE+w*4,IM+(h*width+w)*4,PIXEL,false);
@@ -346,12 +349,12 @@ int treatImages()
         }
         TIFFClose(TIFF_FILE);
     }
-    
+
     // OUTPUT IMAGE WRITTING
     uint16_t extrasample = EXTRASAMPLE_ASSOCALPHA;
     TIFF_FILE = TIFFOpen(output, "w");
     if(!TIFF_FILE) error("Unable to open file for writting: " + std::string(output));
-    
+
     if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, 8)                ||
@@ -360,18 +363,18 @@ int treatImages()
         ! TIFFSetField(TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig)      ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_COMPRESSION, compression))
             error("Error writting file: " +  std::string(output));
-    
+
     if (outputChannels == 4) {
         if (! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
             error("Error writting file: " +  std::string(output));
     }
-    
-    
+
+
     if (outputChannels == 4) {
         if (! TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) ||
             ! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
             error("Error writting file: " +  std::string(output));
-        
+
         for(int h = 0; h < height; h++) {
             memcpy(LINE, IM+h*width*outputChannels, width * outputChannels);
             if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
@@ -380,7 +383,7 @@ int treatImages()
     else if (outputChannels == 3) {
         if (!TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB))
             error("Error writting file: " +  std::string(output));
-        
+
         for(int h = 0; h < height; h++) {
             for(int i = 0; i < width; i++) {
                 compose(IM+h*width*4+i*4,opaque,PIXEL,true);
@@ -400,15 +403,15 @@ int treatImages()
             }
             if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
         }
-        
+
     }
 
     TIFFClose(TIFF_FILE);
-    
+
     delete[] IM;
     delete[] LINE;
     delete[] PIXEL;
-    
+
     return 0;
 }
 
@@ -454,7 +457,7 @@ int main(int argc, char **argv) {
         sleep(1);
         return -1;
     }
-    
+
     delete acc;
 
     return 0;

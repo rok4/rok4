@@ -47,12 +47,14 @@
 #include <cstring>
 #include <proj_api.h>
 #include <csignal>
+#include <libintl.h>
 
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
 #include "Message.h"
+#include "StyledImage.h"
 #include "Logger.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
@@ -69,7 +71,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
     if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
-        LOGGER_FATAL ( "Le listener FCGI ne peut etre initialise" );
+        LOGGER_FATAL ( _("Le listener FCGI ne peut etre initialise") );
     }
 
     while ( server->isRunning() ) {
@@ -78,7 +80,10 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         int rc;
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
-            LOGGER_ERROR ( "FCGX_InitRequest renvoie le code d'erreur" << rc );
+            if ( rc != -4 ) { // Cas différent du redémarrage
+                LOGGER_ERROR ( _("FCGX_InitRequest renvoie le code d'erreur") << rc );
+            }
+            //std::cerr <<"FCGX_InitRequest renvoie le code d'erreur" << rc << std::endl;
             break;
         }
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
@@ -100,7 +105,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
             }
             free ( contentBuffer );
             contentBuffer= NULL;
-            LOGGER_DEBUG ( "Request Content :"<< std::endl << content );
+            LOGGER_DEBUG ( _("Request Content :")<< std::endl << content );
             request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
@@ -127,7 +132,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
     }
-    LOGGER_DEBUG("Extinction du thread");
+    LOGGER_DEBUG ( _("Extinction du thread") );
+    Logger::stopLogger();
     return 0;
 }
 
@@ -136,32 +142,35 @@ void* Rok4Server::thread_loop ( void* arg ) {
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         char *& projEnv, std::string socket, int backlog) :
-        sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
-        styleList(styleList), projEnv(projEnv) , threads ( nbThread ), socket(socket), backlog(backlog),
-        running(false), notFoundError(NULL) {
+                         std::string socket, int backlog ) :
+    sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
+    styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
+    running ( false ), notFoundError ( NULL ) {
 
-    LOGGER_DEBUG ( "Build WMS Capabilities" );
+    LOGGER_DEBUG ( _("Build WMS Capabilities") );
     buildWMSCapabilities();
-    LOGGER_DEBUG ( "Build WMTS Capabilities" );
+    LOGGER_DEBUG ( _("Build WMTS Capabilities") );
     buildWMTSCapabilities();
 }
 
-Rok4Server::~Rok4Server()
-{
-    if (notFoundError) {
+Rok4Server::~Rok4Server() {
+    if ( notFoundError ) {
         delete notFoundError;
         notFoundError = NULL;
     }
 }
 
-void Rok4Server::initFCGI()
-{
+void Rok4Server::initFCGI() {
     int init=FCGX_Init();
-    if (!socket.empty()) {
-        std::cout << "before socket opening" << std::endl;
-        sock = FCGX_OpenSocket(socket.c_str(), backlog);
+    if ( !socket.empty() ) {
+        LOGGER_INFO ( _("Listening on ") << socket );
+        sock = FCGX_OpenSocket ( socket.c_str(), backlog );
     }
+}
+
+void Rok4Server::killFCGI() {
+    FCGX_CloseSocket ( sock );
+    FCGX_Close();
 }
 
 
@@ -179,14 +188,14 @@ void Rok4Server::run() {
         pthread_join ( threads[i], NULL );
 }
 
-void Rok4Server::terminate()
-{
+void Rok4Server::terminate() {
     running = false;
     //FCGX_ShutdownPending();
     // Terminate FCGI Thread
     for ( int i = 0; i < threads.size(); i++ ) {
-        pthread_kill(threads[i], SIGPIPE );
+        pthread_kill ( threads[i], SIGPIPE );
     }
+
 
 }
 
@@ -222,9 +231,9 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 
     std::string version;
-    DataStream* errorResp = request->getCapWMSParam(servicesConf,version);
+    DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getCapabilities" );
+        LOGGER_ERROR ( _("Probleme dans les parametres de la requete getCapabilities") );
         return errorResp;
     }
 
@@ -243,9 +252,9 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
 
     std::string version;
-    DataStream* errorResp = request->getCapWMTSParam(servicesConf,version);
+    DataStream* errorResp = request->getCapWMTSParam ( servicesConf,version );
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getCapabilities" );
+        LOGGER_ERROR ( _("Probleme dans les parametres de la requete getCapabilities") );
         return errorResp;
     }
 
@@ -278,77 +287,127 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     // Récupération des paramètres
     DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format ,style, format_option );
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getMap" );
+        LOGGER_ERROR ( _("Probleme dans les parametres de la requete getMap") );
         return errorResp;
     }
 
     int error;
-    Image* image = L->getbbox (servicesConf, bbox, width, height, crs, error );
+    Image* image = L->getbbox ( servicesConf, bbox, width, height, crs, error );
 
-    LOGGER_DEBUG ( "GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
+    LOGGER_DEBUG ( _("GetMap de Style : ") << style->getId() << _(" pal size : ")<<style->getPalette()->getPalettePNGSize() );
 
     if ( image == 0 ) {
-        switch (error) {
+        switch ( error ) {
 
         case 1: {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("bbox invalide"),"wms" ) );
         }
         case 2: {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"bbox trop grande","wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("bbox trop grande"),"wms" ) );
         }
         default : {
-            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_("Impossible de repondre a la requete"),"wms" ) );
         }
         }
     }
-    if ( format=="image/png" )
+
+    eformat_data pyrType = L->getDataPyramid()->getFormat();
+
+    if ( format=="image/png" ) {
+        if ( servicesConf.isFullStyleCapable() ) {
+            switch ( pyrType ) {
+
+            case TIFF_RAW_FLOAT32 :
+            case TIFF_ZIP_FLOAT32 :
+            case TIFF_LZW_FLOAT32 :
+                image = new StyledImage ( image, 4, style->getPalette() );
+                return new PNGEncoder ( image, NULL );
+            }
+        }
         return new PNGEncoder ( image,style->getPalette() );
-    else if ( format == "image/tiff" ) { // Handle compression option
-        eformat_data pyrType = L->getDataPyramid()->getFormat();
-        switch (pyrType) {
+    } else if ( format == "image/tiff" ) { // Handle compression option
+
+
+        if (servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+            image = new StyledImage ( image, 4, style->getPalette() );
+            switch ( pyrType ) {
+
+            case TIFF_RAW_FLOAT32 :
+                pyrType = TIFF_RAW_INT8;
+            case TIFF_ZIP_FLOAT32 :
+                pyrType = TIFF_ZIP_INT8;
+            case TIFF_LZW_FLOAT32 :
+                pyrType = TIFF_LZW_INT8;
+            case TIFF_RAW_INT8 :
+            case TIFF_ZIP_INT8 :
+            case TIFF_LZW_INT8 :
+                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+                }
+                return TiffEncoder::getTiffEncoder ( image, pyrType );
+            default:
+                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+                }
+                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+                }
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+            }
+        }
+
+        switch ( pyrType ) {
 
         case TIFF_RAW_FLOAT32 :
         case TIFF_ZIP_FLOAT32 :
         case TIFF_LZW_FLOAT32 :
-            if ( getParam(format_option,"compression").compare("lzw")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_FLOAT32);
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_FLOAT32 );
             }
-            if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_FLOAT32);
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_FLOAT32 );
             }
-            if ( getParam(format_option,"compression").compare("raw")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_FLOAT32);
+            if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_FLOAT32 );
             }
-            return TiffEncoder::getTiffEncoder(image, pyrType);
+            return TiffEncoder::getTiffEncoder ( image, pyrType );
         case TIFF_RAW_INT8 :
         case TIFF_ZIP_INT8 :
         case TIFF_LZW_INT8 :
-            if ( getParam(format_option,"compression").compare("lzw")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
             }
-            if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
             }
-            if ( getParam(format_option,"compression").compare("raw")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
+            if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
             }
-            return TiffEncoder::getTiffEncoder(image, pyrType);
+            return TiffEncoder::getTiffEncoder ( image, pyrType );
         default:
-            if ( getParam(format_option,"compression").compare("lzw")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_LZW_INT8);
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
             }
-            if ( getParam(format_option,"compression").compare("deflate")==0) {
-                return TiffEncoder::getTiffEncoder(image, TIFF_ZIP_INT8);
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
             }
-            return TiffEncoder::getTiffEncoder(image, TIFF_RAW_INT8);
+            return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
         }
-    }
-    else if ( format == "image/jpeg" )
+    } else if ( format == "image/jpeg" ) {
+        if (servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+            image = new StyledImage ( image, 3, style->getPalette() );
+        }
         return new JPEGEncoder ( image );
-    else if ( format == "image/x-bil;bits=32" )
+    } else if ( format == "image/x-bil;bits=32" )
         return new BilEncoder ( image );
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
-    return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms" ) );
+    return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_("Le format ")+format+_(" ne peut etre traite"),"wms" ) );
 }
 
 /*
@@ -368,13 +427,13 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
 
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
+        LOGGER_ERROR ( _("Probleme dans les parametres de la requete getTile") );
         return errorResp;
     }
     errorResp = NULL;
-    if (noDataError) {
-        if (!notFoundError) {
-            notFoundError = new SERDataSource ( new ServiceException("", HTTP_NOT_FOUND, "No data found", "wmts") );
+    if ( noDataError ) {
+        if ( !notFoundError ) {
+            notFoundError = new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _("No data found"), "wmts" ) );
         }
         errorResp = notFoundError;
     }
@@ -398,7 +457,7 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     } else if ( request->request == "gettile" ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_("L'operation ")+request->request+_(" n'est pas prise en charge par ce serveur."),"wmts" ) ),&fcgxRequest );
     }
 }
 
@@ -409,7 +468,7 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     } else if ( request->request == "getmap" ) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wms" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,("L'operation ")+request->request+_(" n'est pas prise en charge par ce serveur."),"wms" ) ),&fcgxRequest );
     }
 }
 
@@ -420,7 +479,7 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
     } else if ( request->service=="wmts" ) {
         processWMTS ( request, fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,"Le service "+request->service+" est inconnu pour ce serveur.","wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Le service ")+request->service+_(" est inconnu pour ce serveur."),"wmts" ) ),&fcgxRequest );
     }
 }
 

@@ -49,7 +49,7 @@
 
 
 ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Interpolation::KernelType KT) 
-	: Image(grid->width, grid->height, image->channels, bbox), image(image), grid(grid), K(Kernel::getInstance(KT)) {
+	: Image(grid->width, grid->height,image->channels, bbox), image(image), grid(grid), K(Kernel::getInstance(KT)) {
 
 		double res_x = image->getresx();
 		double res_y = image->getresy();

@@ -67,6 +67,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+set(GettextTranslate_ALL 1)
+set(GettextTranslate_GMO_BINARY 1)
+include(GettextTranslate)
+add_subdirectory(po)
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)

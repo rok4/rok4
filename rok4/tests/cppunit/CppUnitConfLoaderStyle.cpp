@@ -299,7 +299,7 @@ void CppUnitConfLoaderStyle::paletteStyle() {
 
     paletteElem->SetAttribute ( "maxValue","-3" );
     style = ConfLoader::parseStyle ( styleDoc,std::string(),false );
-    CPPUNIT_ASSERT_MESSAGE ( "Negative maxValue",style == NULL );
+    CPPUNIT_ASSERT_MESSAGE ( "Negative maxValue",style != NULL );
 
     paletteElem->SetAttribute ( "maxValue","255" );
     style = ConfLoader::parseStyle ( styleDoc,std::string(),false );

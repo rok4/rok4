@@ -285,17 +285,16 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 * Lecture d une ligne du fichier de la liste d images source
 */
 
-int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
+int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height, double* resx, double* resy)
 {
     std::string str;
     std::getline(file,str);
-    double resx, resy;
     int nb;
 
-    if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, &resx, &resy)) ==7) {
+    if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) ==7) {
         // Arrondi a la valeur entiere la plus proche
-        *width = lround((bbox->xmax - bbox->xmin)/resx);    
-        *height = lround((bbox->ymax - bbox->ymin)/resy);
+        *width = lround((bbox->xmax - bbox->xmin)/(*resx));    
+        *height = lround((bbox->ymax - bbox->ymin)/(*resy));
     }
 
     return nb;
@@ -311,6 +310,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
     char filename[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     BoundingBox<double> bbox(0.,0.,0.,0.);
     int width, height;
+    double resx, resy;
     libtiffImageFactory factory;
 
     // Ouverture du fichier texte listant les images
@@ -323,12 +323,12 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
     }
 
     // Lecture et creation de l image de sortie
-    if (readFileLine(file,filename,&bbox,&width,&height)<0){
+    if (readFileLine(file,filename,&bbox,&width,&height,&resx,&resy)<0){
         LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0");
         return -1;
     }
 
-    *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
+    *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height,resx, resy, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
     if (*ppImageOut==NULL) {
         LOGGER_ERROR("Impossible de creer " << filename);
@@ -337,8 +337,8 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
     // Lecture et creation des images source
     int nb=0,i;
-    while ((nb=readFileLine(file,filename,&bbox,&width,&height))==7){
-        LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox);
+    while ((nb=readFileLine(file,filename,&bbox,&width,&height,&resx,&resy))==7){
+        LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox, resx, resy);
         if (pImage==NULL){
             LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
             return -1;
@@ -460,40 +460,40 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
 
 int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    uint mirrors=0;
+    uint nbMirrors=0;
 
     mirrorImageFactory MIFactory;
-    
-    int nbImagesSrc = pECI->getimages()->size();
-    
+    std::vector< Image*>  mirrors;
+
     int i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
-            MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),j,mirrorSize);
+
+            MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),pECI->getSampleformat(),j,mirrorSize);
             if (mirror == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors");
                 return -1;
             }
-            //pECI->getimages()->push_back(mirror);
-            pECI->getimages()->insert(pECI->getimages()->begin()+mirrors,mirror);
-            mirrors++;
-            i++;
+            mirrors.push_back(mirror);
+            nbMirrors++;
         }
         i++;
     }
 
-    return mirrors;
+    pECI->getimages()->insert(pECI->getimages()->begin(),mirrors.begin(),mirrors.end());
+
+    return nbMirrors;
 }
 
 
 /**
-* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 * @brief Reechantillonnage d'une image de type ExtendedCompoundImage
 * @brief Objectif : la rendre superposable a l'image finale
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
 {
     const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -501,26 +501,26 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double resx_src=pECI->getresx(), resy_src=pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
     double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
-    // L'image reechantillonnee est limitee a l'image de sortie
-    double xmin_dst=__max(xmin_src+K.size(ratio_x)*resx_src,pImageOut->getxmin());
-    double xmax_dst=__min(xmax_src-K.size(ratio_x)*resx_src,pImageOut->getxmax());
-    double ymin_dst=__max(ymin_src+K.size(ratio_y)*resy_src,pImageOut->getymin());
-    double ymax_dst=__min(ymax_src-K.size(ratio_y)*resy_src,pImageOut->getymax());
-    
-    double ymaxdst_save = ymax_dst;
-    
-    // Coordonnees de l'image reechantillonnee en pixels
-    xmin_dst/=resx_dst;
-    //xmin_dst=floor(xmin_dst+0.1);
-    
-    ymin_dst/=resy_dst;
-    //ymin_dst=floor(ymin_dst+0.1);
-        
-    xmax_dst/=resx_dst;
-    //xmax_dst=ceil(xmax_dst-0.1);
-        
-    ymax_dst/=resy_dst;
-    //ymax_dst=ceil(ymax_dst-0.1);
+    /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
+     * (sans compter les miroirs, d'où le passége d'une bbox source)
+     */
+    double xmin_dst=__max(bbox_src.xmin,pImageOut->getxmin());
+    double xmax_dst=__min(bbox_src.xmax,pImageOut->getxmax());
+    double ymin_dst=__max(bbox_src.ymin,pImageOut->getymin());
+    double ymax_dst=__min(bbox_src.ymax,pImageOut->getymax());
+
+    /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
+     * avec l'image de sortie (c'est la seule raison d'être du réechantillonnage). Il faut donc modifier la bounding box
+     * afin qu'elle remplisse les conditions de compatibilité.
+     */
+
+    /* Coordonnees de l'image reechantillonnee passées en pixels. On va caler sur l'image de sortie
+     */
+    xmin_dst = pImageOut->getxmin()/resx_dst + round((xmin_dst-pImageOut->getxmin())/resx_dst);
+    xmax_dst = pImageOut->getxmin()/resx_dst + round((xmax_dst-pImageOut->getxmin())/resx_dst);
+
+    ymin_dst = pImageOut->getymin()/resy_dst + round((ymin_dst-pImageOut->getymin())/resy_dst);
+    ymax_dst = pImageOut->getymin()/resy_dst + round((ymax_dst-pImageOut->getymin())/resy_dst);
     
     // Dimension de l'image reechantillonnee
     int width_dst = int(xmax_dst-xmin_dst+0.1);
@@ -529,41 +529,16 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     xmax_dst*=resx_dst;
     ymin_dst*=resy_dst;
     ymax_dst*=resy_dst;
-    
-    /* Suite au arrondis, il se peut que l'image de destination finisse par dépasser les images source.
-     * Cela va logiquement générer une erreur (impossible de trouver de la donnée source.
-     * Pour éviter cela, et uniquement dans le cas où on déborde, on va rétrécir l'image de destination.
-     * On ne peut pas arrondir systématiquement vers une réduction de l'image car cela pourrait engendrer
-     * de lignes noires dans les images résultantes.
-     * Cela dit, l'ajout des miroirs suffirait à éviter ce manque de données.
-     */
-    if (ymax_dst > ymax_src) {
-        ymax_dst -= resy_dst;
-        height_dst -= 1;
-    }    
-    if (ymin_dst < ymin_src) {
-        ymin_dst += resy_dst;
-        height_dst -= 1;
-    }    
-    if (xmax_dst > xmax_src) {
-        xmax_dst -= resx_dst;
-        width_dst -= 1;
-    }    
-    if (xmin_dst < xmin_src) {
-        xmin_dst += resx_dst;
-        width_dst -= 1;
-    } 
 
     double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
     BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
     // Reechantillonnage
-    ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
-    
-    //saveImage(pRImage,"test1.tif",3,8,1,PHOTOMETRIC_RGB);
+    ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
+    // saveImage(pRImage,nom,1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK);
     // Reechantillonage du masque
-    resampledMask = new ResampledImage( mask, width_dst, height_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    resampledMask = new ResampledImage( mask, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
     
     return pRImage;
 }
@@ -600,42 +575,56 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             return -1;
         }
 
-        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+        /*TEST*/
+        //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 
         if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme res et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
-            //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
             mask = new ExtendedCompoundMaskImage(pECI);
-            //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK); /*TEST*/
             pMask.push_back(mask);
+            /*TEST*/
+            //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB);
+            //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite si necessaire
             int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
-            int mirrors=addMirrors(pECI,mirrorSize);
+            int mirrors = addMirrors(pECI,mirrorSize);
+            
             if (mirrors < 0){
                 LOGGER_ERROR("Unable to add mirrors");
                 return -1;
             }
 
-            ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()),nodata,nowhite,sampleformat,mirrors);
+            ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()), nodata,nowhite,sampleformat,mirrors);
             
-            //saveImage(pECI,"pECI_non_compat.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
-            //saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            if (pECI_withMirrors==NULL) {
+                LOGGER_ERROR("Impossible d'assembler images et miroirs");
+                return -1;
+            }
+            
+            /*TEST*//*
+            if (sampleformat == SAMPLEFORMAT_IEEEFP) {
+                saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK);         
+            } else {
+                saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB);
+            }*/
 
             mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
 
             ResampledImage* pResampledMask;
             
-            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, interpolation, mask, pResampledMask);
+            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, pECI->getbbox(), interpolation, mask, pResampledMask);
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
             }
             pOverlayedImage.push_back(pRImage);
             pMask.push_back(pResampledMask);
-            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB); /*TEST*/
+            
+            /*TEST*/
+            //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB);
             //saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MASK);
             //saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
             //saveImage(pResampledMask,"pResampledMask.tif",1,8,1,PHOTOMETRIC_MINISBLACK);
@@ -689,12 +678,12 @@ int main(int argc, char **argv) {
     logw.setf(std::ios::fixed,std::ios::floatfield);
 
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc, argv,imageListFilename,interpolation,nodata,nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
+    if (parseCommandLine(argc,argv,imageListFilename,interpolation,nodata, nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
         LOGGER_ERROR("Echec lecture ligne de commande");
         sleep(1);
         return -1;
     }
-
+    
     // TODO : gérer le type mtd !!
     if (type==0) {
         LOGGER_ERROR("Le type mtd n'est pas pris en compte");
@@ -710,14 +699,14 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-
     LOGGER_DEBUG("Check");
     // Controle des images
     if (checkImages(pImageOut,ImageIn)<0){
         LOGGER_ERROR("Echec controle des images");
         sleep(1);
         return -1;
-     }
+    }
+    
     LOGGER_DEBUG("Sort");
     // Tri des images
     if (sortImages(ImageIn, &TabImageIn)<0){
@@ -725,6 +714,7 @@ int main(int argc, char **argv) {
         sleep(1);
         return -1;
     }
+    
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
     if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,nowhite,sampleformat) < 0){
@@ -732,6 +722,7 @@ int main(int argc, char **argv) {
         sleep(1);
         return -1;
     }
+    
     LOGGER_DEBUG("Save");
     // Enregistrement de l image fusionnee
     if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){

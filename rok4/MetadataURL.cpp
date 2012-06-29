@@ -46,6 +46,14 @@ MetadataURL::MetadataURL ( const MetadataURL& origMtdUrl ) : ResourceLocator ( o
     type = origMtdUrl.type;
 }
 
+MetadataURL& MetadataURL::operator= ( const MetadataURL& other ) {
+    if (this != &other) {
+        ResourceLocator::operator=(other);
+        this->type = other.type;
+    }
+    return *this;
+}
+
 
 MetadataURL::~MetadataURL() {
 

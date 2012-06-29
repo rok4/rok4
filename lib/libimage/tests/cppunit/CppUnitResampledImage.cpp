@@ -80,7 +80,7 @@ protected:
       
 //      cerr << width << " " << height << " " << channels << " " << rwidth << " " << rheight << " " << top << " " << left << " " << right << " " << bottom << endl;
 
-      ResampledImage* R = new ResampledImage(image, rwidth, rheight, left, top, (right - left)/rwidth, (bottom - top)/rheight);
+      ResampledImage* R = new ResampledImage(image, rwidth,1,1, rheight, left, top, (right - left)/rwidth, (bottom - top)/rheight);
       float buffer[R->width*R->channels];
       for(int i = 0; i < rheight; i++) {
         R->getline(buffer, i);
@@ -117,7 +117,7 @@ protected:
     gettimeofday(&BEGIN, NULL);
     for(int i = 0; i < nb_iteration; i++) {
       Image* image = new EmptyImage(1300, 1000, channels, color);
-      ResampledImage* R = new ResampledImage(image, 800, 600, 50, 50, 1.5, 1.5, Interpolation::KernelType(kernel_type));
+      ResampledImage* R = new ResampledImage(image, 800, 600,0.5,0.5, 50, 50, 1.5, 1.5, Interpolation::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
       delete R;
     }
