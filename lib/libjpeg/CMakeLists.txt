@@ -1,4 +1,4 @@
-#Défini le nom du projet 
+#Défini le nom du projet
 project(jpeg)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
@@ -52,15 +52,17 @@ set(ENV{CFLAGS} "-O3")
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/build/config.status)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/build/.libs/libjpeg.a)
 
-add_custom_command(OUTPUT build COMMAND mkdir -p build)
-add_custom_command(TARGET jpeg-configure COMMAND CFLAGS=-O3 ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo-1.2.0/configure --enable-static=yes --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install DEPENDS build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+#add_custom_command(TARGET jpeg-configure PRE_BUILD COMMAND mkdir -p build)
+add_custom_command(OUTPUT build/config.status COMMAND CFLAGS=-O3 ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo-1.2.0/configure --enable-static=yes --enable-shared=no --prefix=${CMAKE_CURRENT_BINARY_DIR}/install WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
 add_custom_command(OUTPUT build/.libs/libjpeg.a COMMAND make COMMAND make install DEPENDS jpeg-configure WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
 
-add_custom_target(jpeg-configure)
+add_custom_target(jpeg-configure DEPENDS build/config.status)
 add_custom_target(jpeg-build ALL DEPENDS build/.libs/libjpeg.a)
 
 
 set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/install/lib/libjpeg.a)
+add_dependencies(jpeg-build jpeg-configure)
 add_dependencies(jpeg jpeg-build)
 
 ########################################
@@ -79,11 +81,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 ########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :
-#cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 
+#cmake -DCMAKE_INSTALL_PREFIX=/opt/projet
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester)
 # ici uniquement "projet"
-#INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a 
+#INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libturbojpeg-${BUILD_ARCH}/libjpeg.a
 #  DESTINATION lib
 #)
 
@@ -97,7 +99,7 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
 
 ########################################
 # Paramétrage de la gestion de package CPack
-# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
+# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")
