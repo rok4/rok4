@@ -92,28 +92,21 @@ Wms2work () {
   done
 }
 
-TestFileDir () {
-  local dir=$1
-  local file=$2
-  if [ -r $file ] ; then rm -f $file ; fi
-  if [ ! -d $dir ] ; then mkdir -p $dir ; fi
-}
-
 Cache2work () {
   local imgSrc=$1
   local workName=$2
   local png=$3
 
   if [ $png ] ; then
-    cp $imgSrc $workdir.tif
-    mkdir $workdir
-    untile $workdir.tif $workdir/
+    cp $imgSrc $workName.tif
+    mkdir $workName
+    untile $workName.tif $workName/
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage -geometry 256x256 -tile 16x16 $workdir/*.png __montage__ -define tiff:rows-per-strip=4096 $workdir.tif
+    montage -geometry 256x256 -tile 16x16 $workName/*.png __montage__ -define tiff:rows-per-strip=4096 $workName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    rm -rf $workdir/
+    rm -rf $workName/
   else
-    tiffcp __tcp__ $imgSrc $workName
+    tiffcp __tcp__ $imgSrc $workName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
 
@@ -122,6 +115,12 @@ Cache2work () {
 Work2cache () {
   local work=$1
   local cache=$2
+  
+  local dir=`dirname $cache`
+  
+  if [ -r $cache ] ; then rm -f $cache ; fi
+  if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
+  
   tiff2tile $work __t2t__  $cache
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
@@ -789,8 +788,7 @@ sub work2cache {
   DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
-  my $cmd = sprintf ("TestFileDir \${PYR_DIR}/%s \${PYR_DIR}/%s\n", dirname($cacheImgName), $cacheImgName);
-  $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
+  my $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
 
   # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
 
@@ -933,7 +931,7 @@ sub configureFunctions {
     # congigure montage
     my $conf_montage = "";
 
-    $conf_montage .= "-d $bps ";
+    $conf_montage .= "-depth $bps ";
     if ($spp == 4) {
         $conf_montage .= "-background none ";
     }
