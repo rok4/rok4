@@ -43,6 +43,8 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
+add_subdirectory(po)
+
 set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
@@ -52,6 +54,8 @@ add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
 add_executable(test_api ${rok4apitest_SRCS})
+
+
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
@@ -107,6 +111,7 @@ if(UNITTEST)
 
 
 endif(UNITTEST)
+
 
 ########################################
 #Documentation Doxygen

@@ -1,5 +1,5 @@
 if(ROK4DEPENDENCIES_FOUND)
-  message(STATUS "Dependencies already found")
+  #message(STATUS "Dependencies already found")
   return()
 endif(ROK4DEPENDENCIES_FOUND)
 
@@ -166,6 +166,14 @@ endif(IMAGE_FOUND)
 endif(NOT TARGET image)
 
 add_subdirectory(${ROK4LIBSDIR}/libxerces)
+
+#Gettext Support
+
+set(GettextTranslate_ALL TRUE)
+set(GettextTranslate_GMO_BINARY TRUE)
+include(GettextTranslate)
+
+#find_package(Gettext)
 
 #set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIIF_INCLUDE_DIR} )
 
