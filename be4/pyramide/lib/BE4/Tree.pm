@@ -76,6 +76,7 @@ Group: variable
 variable: $self
     * pyramid    => undef, # object Pyramid !
     * datasource => undef, # object DataSource !
+    * bbox => [], # datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     * job_number => undef, # param value !
     * levels => {},
 |   level1 => {
@@ -111,6 +112,7 @@ sub new {
         # in
         pyramid    => undef,
         datasource => undef,
+        bbox => [],
         job_number => undef,
         # out
         levels => {},
@@ -220,15 +222,15 @@ sub _load {
         return FALSE;
     }
 
-    INFO(sprintf "N. Tile Cache to the bottom level : %d",scalar keys(%{$self->{levels}{$self->{bottomLevelID}}}));
+    INFO(sprintf "Number of cache images to the bottom level (%s) : %d",$self->{bottomLevelID},scalar keys(%{$self->{levels}{$self->{bottomLevelID}}}));
 
     # Calcul des branches à partir des feuilles et de leur poids:
     for (my $i = $src->{bottomLevelOrder}; $i <= $src->{topLevelOrder}; $i++){
         my $levelID = $tms->getTileMatrixID($i);
         
         foreach my $refnode ($self->getNodesOfLevel($levelID)) {
-            # pyramid's limits update : we store data's limits in the object Pyramid
-            $self->{pyramid}->updateLimits($levelID,$refnode->{x},$refnode->{y});
+            # pyramid's limits update : we store data's limits in the pyramid's levels
+            $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
             
             if ($i != $src->{topLevelOrder}) {
                 my $aboveLevelID = $tms->getTileMatrixID($i+1);
@@ -240,7 +242,7 @@ sub _load {
             }
         }
 
-        DEBUG(sprintf "N. Tile Cache by level (%s) : %d",$levelID, scalar keys(%{$self->{levels}{$levelID}}));
+        DEBUG(sprintf "Number of cache images by level (%s) : %d",$levelID, scalar keys(%{$self->{levels}{$levelID}}));
     }
 
     return TRUE;
@@ -283,6 +285,8 @@ sub identifyBottomTiles {
                 return FALSE;
             }
             
+            $self->updateBBox($bbox{xMin},$bbox{yMin},$bbox{xMax},$bbox{yMax});
+            
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
             my $iMin=int(($bbox{xMin} - $TLCX) / $ImgGroundWidth);
             my $iMax=int(($bbox{xMax} - $TLCX) / $ImgGroundWidth);
@@ -320,6 +324,8 @@ sub identifyBottomTiles {
         
         my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
         
+        $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
+        
         my $iMin=int(($bboxref->[0] - $TLCX) / $ImgGroundWidth);
         my $iMax=int(($bboxref->[1] - $TLCX) / $ImgGroundWidth);
         my $jMin=int(($TLCY - $bboxref->[3]) / $ImgGroundHeight);
@@ -354,6 +360,27 @@ sub identifyBottomTiles {
     }
   
     return TRUE;  
+}
+
+#
+=begin nd
+method: updateBBox
+
+Compare old extrems coordinates and update values.
+
+Parameters:
+    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+=cut
+sub updateBBox {
+    my $self = shift;
+    my ($xmin,$ymin,$xmax,$ymax) = @_;
+
+    TRACE();
+    
+    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
+    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
+    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
+    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
 #
@@ -717,7 +744,7 @@ sub getChildren(){
 
   my @res;
   foreach my $childNode ($self->getPossibleChildren($node)){
-    if (defined $self->isInTree($childNode)){
+    if ($self->isInTree($childNode)){
       push(@res, $childNode);
     }
   }
@@ -752,6 +779,11 @@ sub getNodesOfTopLevel(){
 sub getNodesOfCutLevel(){
     my $self = shift;
     return $self->getNodesOfLevel($self->{cutLevelID});
+}
+
+sub getNodesOfBottomLevel(){
+    my $self = shift;
+    return $self->getNodesOfLevel($self->{bottomLevelID});
 }
 
 sub setComputingCode(){
@@ -938,9 +970,7 @@ BE4::Tree - reprentation of the final pyramid : cache image = node
 
     use BE4::Tree;
     
-    my $objDataSource = BE4::DataSource->new(...);
-    my $objPyramid = BE4::Pyramid-new(...);
-    my $job_number = 4;
+    my $job_number = 4; # 4 split scripts + one finisher = 5 scripts
   
     # Tree object creation
     my $objTree = = BE4::Tree->new($objDataSource, $objPyramid, $job_number);
@@ -958,8 +988,18 @@ BE4::Tree - reprentation of the final pyramid : cache image = node
 
 =over 4
 
-=item pyramid (Pyramid object)
-=item datasource (Datasource object)
+=item pyramid
+
+A Pyramid object.
+
+=item datasource
+
+A Datasource object.
+
+=item bbox
+
+Array [xmin,ymin,xmax,ymax], bbox of datasource in the TMS' SRS.
+
 =item job_number
 
 =item levels
@@ -1000,7 +1040,7 @@ Extrem levels of the tree.
 =item tms
 
 A TileMatrixSet object, used by the tree.
-        
+
 =back
 
 =head1 SEE ALSO
@@ -1010,7 +1050,7 @@ A TileMatrixSet object, used by the tree.
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-Datasource.html">BE4::Datasource</A></li>
+<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
 </ul>

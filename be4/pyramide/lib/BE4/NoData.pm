@@ -282,7 +282,7 @@ For unsigned 8-bits integer sample : integer between 0 and 255 in hexadecimal fo
 =item nowhite
 
 This boolean will be used in mergeNtiff. If it's TRUE, when images are stacked, white pixel are ignored. As this treatment is longer and often useless , default value is FALSE.
-        
+
 =back
 
 =head1 SEE ALSO

@@ -549,7 +549,7 @@ The directory which contain the image (/home/ign/DATA)
 =item Use the binding Perl of Gdal
 
 =item Sample with gdalinfo
-  
+
     GDAL 1.7.2, released 2010/04/23
 
     ~$ gdalinfo  image.png

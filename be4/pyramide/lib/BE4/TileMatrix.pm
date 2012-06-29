@@ -50,33 +50,14 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
 
 BEGIN {}
-INIT {
-  # getter/setter except "topleftcornerx topleftcornery" because of the precision !
-  foreach my $i (qw(ID Resolution TileWidth TileHeight MatrixWidth MatrixHeight)) {
-    my $field = $i;
-    
-    *{"get$field"} = sub {
-      my $self = shift;
-      TRACE ("$i");
-      return $self->{lc $field};
-    };
-    
-    *{"set$field"} = sub {
-      my $self = shift;
-      TRACE ("$i");
-      @_ or die "not enough arguments to set$field, stopped !";
-      $self->{lc $field} = shift;
-      return 1;
-    };
-  }
-}
+INIT {}
 END {}
 
 ################################################################################
@@ -147,16 +128,15 @@ sub _init {
     return FALSE if (! exists($params->{matrixheight})  || ! defined ($params->{matrixheight}));
     
     # init. params
-    $self->setID($params->{id});
-    $self->setResolution($params->{resolution});
-    $self->setTopLeftCornerX($params->{topleftcornerx});
-    $self->setTopLeftCornerY($params->{topleftcornery});
-    $self->setTileWidth($params->{tilewidth});
-    $self->setTileHeight($params->{tileheight});
-    $self->setMatrixWidth($params->{matrixwidth});
-    $self->setMatrixHeight($params->{matrixheight});
+    $self->{id} = $params->{id};
+    $self->{resolution} = $params->{resolution};
+    $self->{topleftcornerx} = $params->{topleftcornerx};
+    $self->{topleftcornery} = $params->{topleftcornery};
+    $self->{tilewidth} = $params->{tilewidth};
+    $self->{tileheight} = $params->{tileheight};
+    $self->{matrixwidth} = $params->{matrixwidth};
+    $self->{matrixheight} = $params->{matrixheight};
 
-    
     return TRUE;
 }
 
@@ -166,9 +146,33 @@ sub _init {
 
 # Group: getters - setters
 
+sub getID {
+    my $self = shift;
+    return $self->{id}; 
+}
+sub getResolution {
+    my $self = shift;
+    return $self->{resolution}; 
+}
+sub getTileWidth {
+    my $self = shift;
+    return $self->{tilewidth}; 
+}
+sub getTileHeight {
+    my $self = shift;
+    return $self->{tileheight}; 
+}
+sub getMatrixWidth {
+    my $self = shift;
+    return $self->{matrixwidth}; 
+}
+sub getMatrixHeight {
+    my $self = shift;
+    return $self->{matrixheight}; 
+}
+
 sub getTopLeftCornerX {
     my $self = shift;
-    TRACE ("getTopLeftCornerX");
     return $self->{topleftcornerx}; 
 }
 sub setTopLeftCornerX {

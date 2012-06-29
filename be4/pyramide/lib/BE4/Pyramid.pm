@@ -649,7 +649,6 @@ sub readConfPyramid {
         return FALSE;
     }
     $params->{samplesperpixel} = $tagsamplesperpixel;
-    
 
     # create PyrImageSpec object !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
@@ -1094,26 +1093,38 @@ sub createLevels {
 
 #
 =begin nd
-method: createLevels
+method: updateTMLimits
 
 Compare old extrems rows/columns of the given level with the news and update values.
 
 Parameters:
-    levelID - Level whose extrems have to be updated with following i,j
-    i - column indice
-    j - row indice
+    levelID - Level whose extrems have to be updated with following bbox
+    bbox - [xmin,ymin,xmax,ymax], to update TM limits
 =cut
-sub updateLimits {
+sub updateTMLimits {
     my $self = shift;
-    my ($levelID,$i,$j) = @_;
+    my ($levelID,@bbox) = @_;
 
     TRACE();
     
+    # We calculate extrem tiles. x -> i = column; y -> j = row
+    # we need resolution for this level
+    my $TM = $self->getTileMatrixSet()->getTileMatrix($levelID);
+        
+    my $resolution = Math::BigFloat->new($TM->getResolution());
+    my $width = $resolution*$TM->getTileWidth();
+    my $height = $resolution*$TM->getTileHeight();
+    
+    my $iMin=int(($bbox[0] - $TM->getTopLeftCornerX()) / $width);   
+    my $iMax=int(($bbox[2] - $TM->getTopLeftCornerX()) / $width);   
+    my $jMin=int(($TM->getTopLeftCornerY() - $bbox[3]) / $height); 
+    my $jMax=int(($TM->getTopLeftCornerY() - $bbox[1]) / $height);
+    
     my $objLevel = $self->getLevel($levelID);
-    if (! defined $objLevel->{limit}[0] || $j < $objLevel->{limit}[0]) {$objLevel->{limit}[0] = $j;}
-    if (! defined $objLevel->{limit}[1] || $j > $objLevel->{limit}[1]) {$objLevel->{limit}[1] = $j;}
-    if (! defined $objLevel->{limit}[2] || $i < $objLevel->{limit}[2]) {$objLevel->{limit}[2] = $i;}
-    if (! defined $objLevel->{limit}[3] || $i > $objLevel->{limit}[3]) {$objLevel->{limit}[3] = $i;}
+    if (! defined $objLevel->{limit}[0] || $jMin < $objLevel->{limit}[0]) {$objLevel->{limit}[0] = $jMin;}
+    if (! defined $objLevel->{limit}[1] || $jMax > $objLevel->{limit}[1]) {$objLevel->{limit}[1] = $jMax;}
+    if (! defined $objLevel->{limit}[2] || $iMin < $objLevel->{limit}[2]) {$objLevel->{limit}[2] = $iMin;}
+    if (! defined $objLevel->{limit}[3] || $iMax > $objLevel->{limit}[3]) {$objLevel->{limit}[3] = $iMax;}
 }
 
 
@@ -1190,7 +1201,7 @@ sub writeConfPyramid {
 
     if (-f $filepyramid) {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
-        return FALSE;
+        #TEST#return FALSE;
     }
     #
     my $PYRAMID;

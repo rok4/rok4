@@ -210,10 +210,10 @@ An array of DataSource objects
 =item In the source configuration (source.txt)
 
     [ 19 ]
-
+    
     srs                 = IGNF:LAMB93
     path_image          = /home/theo/DONNEES/BDORTHO_PARIS-OUEST_2011_L93/DATA
-
+    
     wms_layer   = ORTHO_RAW_LAMB93_PARIS_OUEST
     wms_url     = http://localhost/wmts/rok4
     wms_version = 1.3.0
@@ -221,12 +221,12 @@ An array of DataSource objects
     wms_format  = image/tiff
     image_width = 2048
     image_height = 2048
-
+    
     [ 14 ]
-
+    
     srs = IGNF:WGS84G
     extent = /home/IGN/SHAPE/Polygon.txt
-
+    
     wms_layer   = ORTHO_RAW_LAMB93_D075-O
     wms_url     = http://localhost/wmts/rok4
     wms_version = 1.3.0
@@ -234,6 +234,7 @@ An array of DataSource objects
     wms_format  = image/tiff
     image_width = 4096
     image_height = 4096
+
 
 =back
 
