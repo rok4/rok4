@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-06-27 17:29+0200\n"
+"POT-Creation-Date: 2012-07-02 17:20+0200\n"
 "PO-Revision-Date: 2012-06-27 17:30+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1139,7 +1139,7 @@ msgstr " format pyramide : "
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:695 Rok4Server.cpp:410
+#: Request.cpp:695 Rok4Server.cpp:428
 msgid "Le format "
 msgstr "Le format ["
 
@@ -1247,11 +1247,11 @@ msgstr " non pris en charge"
 msgid "Parametre STYLES absent."
 msgstr "Paramètre STYLES absent."
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:482
+#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:500
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:482
+#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:500
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -1331,15 +1331,15 @@ msgstr "Impossible de charger la configuration des Styles"
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:272 Rok4Api.cpp:344 Rok4Server.cpp:430
+#: Rok4Api.cpp:272 Rok4Api.cpp:344 Rok4Server.cpp:448
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:452 Rok4Server.cpp:460
+#: Rok4Api.cpp:452 Rok4Server.cpp:478
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Api.cpp:452 Rok4Server.cpp:460 Rok4Server.cpp:471
+#: Rok4Api.cpp:452 Rok4Server.cpp:478 Rok4Server.cpp:489
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
@@ -1399,11 +1399,11 @@ msgstr "La BoundingBox demandée est trop grande"
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
-#: Rok4Server.cpp:410
+#: Rok4Server.cpp:428
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:436
+#: Rok4Server.cpp:454
 msgid "No data found"
 msgstr "Aucune donnée"
 
