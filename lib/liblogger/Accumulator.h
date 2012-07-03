@@ -142,8 +142,13 @@ public:
      */
     bool addMessage ( std::string message );
 
+    /**
+     * ferme les descripteur de fichier utilisé
+     */
+    virtual void close() = 0;
+
     /** Constructeur permettant de définir la capacité du buffer de messages. */
-    Accumulator ( int capacity );
+    Accumulator ( int capacity ) ;
 
     /** Destructeur virtual car nous avons un classe abstraite */
     virtual ~Accumulator();
@@ -170,6 +175,9 @@ public:
     /** Constructeur */
     StreamAccumulator ( std::ostream &out = std::cerr, int capacity = 1024 ) : Accumulator ( capacity ), out ( out ) {}
 
+    /** Implémentation de la fonction virtuelle de la classe mère */
+    void close(){}
+    
     /**
      * Destructeur apellant la fonction stop.
      * Le flux out n'est pas fermé, ceci est laissé du programmeur si nécessaire.
@@ -182,7 +190,7 @@ public:
 
 
 /**
- * Implémenation basique d'un accumulateur basé sur un flux de sortie
+ * Implémenation d'un accumulateur basé sur une sortie fichier horodaté
  */
 class RollingFileAccumulator : public Accumulator {
 private:
@@ -193,18 +201,16 @@ private:
     /** Date jusqu'à laquelle le flux courrant est valide*/
     time_t validity;
 
-    /** Intervale de temps entre deux chagement de fichiers (en secondes) */
+    /** Intervale de temps entre deux changement de fichiers (en secondes) */
     time_t period;
 
     /**
      * Préfixe des fichiers de log
      *
-     * Les fichiers auront la forme prefixe-YYYY-MM-DD-HH.log si appendDate Vrai
-     * Les fichiers auront la forme prefixe.log si appendDate Faux
-     * 
+     * Les fichiers auront la forme prefixe-YYYY-MM-DD-HH.log
+     *
      */
     std::string filePrefix;
-    bool appendDate;
 
 protected:
     /** Implémentation de la fonction virtuelle de la classe mère */
@@ -213,12 +219,11 @@ protected:
 public:
 
     ///** Constructeur */
-    //RollingFileAccumulator(std::string filePrefix, int period, int capacity = 1024) : Accumulator(capacity), filePrefix(filePrefix), validity(0), period(period) {}
+    RollingFileAccumulator ( std::string filePrefix, int period, int capacity = 1024 ) : Accumulator ( capacity ), filePrefix ( filePrefix ), validity ( 0 ), period ( period ) {}
 
-    /** Constructeur*/
-    RollingFileAccumulator ( std::string filePrefix, int period, int capacity = 1024, bool appendDate=true ) : Accumulator ( capacity ), filePrefix ( filePrefix ), validity ( 0 ), period ( period ) {}
-
-
+    /** Implémentation de la fonction virtuelle de la classe mère */
+    void close();
+    
     /**
      * Destructeur apellant la fonction stop.
      * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.
@@ -230,7 +235,42 @@ public:
     }
 };
 
+/**
+ * Implémenation basique d'un accumulateur basé sur fichier
+ */
+class StaticFileAccumulator : public Accumulator {
+private:
 
+    /** Le flux courrant de sortie */
+    std::ofstream out;
+
+    /**
+     * Nom complet des fichiers de log
+     */
+    std::string file;
+
+protected:
+    /** Implémentation de la fonction virtuelle de la classe mère */
+    virtual std::ostream& getStream();
+
+public:
+
+    ///** Constructeur */
+    StaticFileAccumulator ( std::string file, int capacity = 1024 ) : Accumulator ( capacity ), file ( file ) {}
+
+    /** Implémentation de la fonction virtuelle de la classe mère */
+    void close();
+    
+    /**
+     * Destructeur apellant la fonction stop.
+     * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.
+     * Raison : Il n'est pas toujours souhaitable de fermer le flux (par exemple std::cerr).
+     */
+    virtual ~StaticFileAccumulator() {
+        stop();
+        out.close();
+    }
+};
 
 
 

@@ -167,31 +167,55 @@ Accumulator::~Accumulator() {
     pthread_mutex_destroy ( &mutex );
 }
 
-
-
+/** Implémentation de la fonction virtuelle de la classe mère */
+void RollingFileAccumulator::close() {
+    if ( out.is_open() ) out.close();
+}
 
 /** Implémentation de la fonction virtuelle de la classe mère */
 std::ostream& RollingFileAccumulator::getStream() {
-   
-        time_t t = time ( 0 );
 
-        if ( t >= validity ) { // On a dépassé la date de validité du fichier de sortie, il faut le changer.
-            // On fabrique le nom du fichier de log de la forme prefixe-YYYY-MM-DD-HH.log
-            time_t from = period* ( t/period );
-            tm* lt = localtime ( &from );
-            char fileName[filePrefix.length() + 19];
-            sprintf ( fileName, "%s-%4d-%02d-%02d-%02d.log", filePrefix.c_str(), lt->tm_year+1900, lt->tm_mon+1, lt->tm_mday, lt->tm_hour );
+    time_t t = time ( 0 );
 
-            // On ferme le fichier précédant
-            if ( out.is_open() ) out.close();
+    if ( t >= validity ) { // On a dépassé la date de validité du fichier de sortie, il faut le changer.
+        // On fabrique le nom du fichier de log de la forme prefixe-YYYY-MM-DD-HH.log
+        time_t from = period* ( t/period );
+        tm* lt = localtime ( &from );
+        char fileName[filePrefix.length() + 19];
+        sprintf ( fileName, "%s-%4d-%02d-%02d-%02d.log", filePrefix.c_str(), lt->tm_year+1900, lt->tm_mon+1, lt->tm_mday, lt->tm_hour );
 
-            // On ouvre le nouveau fichier
-            out.open ( fileName, std::ios::app );
+        // On ferme le fichier précédant
+        if ( out.is_open() ) out.close();
 
-            // Et on alerte en cas d'erreur  : on ne peut pas utiliser Logger car c'est justement lui qui est en train de planter.
-            if ( out.fail() ) std::cerr << "Impossible d'ouvrir le fichier de log: " << fileName << std::endl;
-            else validity = from + period;
+        // On ouvre le nouveau fichier
+        out.open ( fileName, std::ios::app );
+
+        // Et on alerte en cas d'erreur  : on ne peut pas utiliser Logger car c'est justement lui qui est en train de planter.
+        if ( out.fail() ) std::cerr << "Impossible d'ouvrir le fichier de log: " << fileName << std::endl;
+        else validity = from + period;
+    }
+    return out;
+}
+
+/** Implémentation de la fonction virtuelle de la classe mère */
+void StaticFileAccumulator::close() {
+    if ( out.is_open() ) out.close();
+}
+
+/** Implémentation de la fonction virtuelle de la classe mère */
+std::ostream& StaticFileAccumulator::getStream() {
+
+     if (! out.is_open() ) {
+        // On ouvre le nouveau fichier
+        char fileName[file.length() + 1];
+        sprintf ( fileName, "%s", file.c_str());
+        out.open ( fileName, std::ios::app );
+        
+        // Et on alerte en cas d'erreur  : on ne peut pas utiliser Logger car c'est justement lui qui est en train de planter.
+        if ( out.fail() ) {
+            std::cerr << "Impossible d'ouvrir le fichier de log: " << fileName << std::endl;
         }
+    }
     return out;
 }
 
