@@ -602,7 +602,7 @@ sub computeBranch {
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
     
     # We update new cache list with the new tile.
-    printf $NEWLIST "%s\n", $self->{tree}->{pyramid}->getCachePathOfImage($node,'data');
+    printf $NEWLIST "0/%s\n", $self->{tree}->{pyramid}->getCacheNameOfImage($node,'data');
 
     my $res = '';
     my @childList = $self->{tree}->getChilds($node);

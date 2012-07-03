@@ -513,7 +513,7 @@ sub doIt {
     
     ALWAYS(">>> Write Cache Pyramid ...");
 
-    if (! $objPyramid->writeCachePyramid()) {
+    if (! $objPyramid->writeCachePyramid($objProcess->{tree})) {
         ERROR ("Can not write Pyramid Cache !");
         return FALSE;
     }
