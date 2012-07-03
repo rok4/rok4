@@ -58,11 +58,7 @@ use constant FALSE => 0;
 
 # commands
 use constant RESULT_TEST      => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
-use constant CACHE_2_WORK_PRG => "tiffcp -s";
-use constant WORK_2_CACHE_PRG => "tiff2tile";
-use constant MERGE_N_TIFF     => "mergeNtiff";
 use constant MERGE_4_TIFF     => "merge4tiff";
-use constant UNTILE           => "untile";
 # commands' weights
 use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
@@ -280,16 +276,25 @@ sub computeWholeTree {
     my $pyrName = $self->{pyramid}->getPyrName();
     my $finishScriptId   = "SCRIPT_FINISHER";
     my $finishScriptCode = $self->prepareScript($finishScriptId);
+    
+    # We open stream to the new cache list, to add generated tile when we browse tree.
+    my $NEWLIST;
+    if (! open $NEWLIST, ">>", $self->{pyramid}->{new_pyramid}->{content_path}) {
+        ERROR(sprintf "Cannot open new cache list file : %s",$self->{pyramid}->{new_pyramid}->{content_path});
+        return FALSE;
+    }
 
     # Pondération de l'arbre en fonction des opérations à réaliser
     # et création du code script (ajoter aux noeuds de l'arbre
     my @topLevelNodeList = $self->{tree}->getNodesOfTopLevel();
     foreach my $topNode (@topLevelNodeList) {
-        if (! $self->computeBranch($topNode)) {
+        if (! $self->computeBranch($topNode,$NEWLIST)) {
             ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
             return FALSE;
         }
     }
+    
+    close $NEWLIST;
 
     # Détermination du cutLevel optimal et répartition des noeuds sur les jobs
     my @nodeRack = $self->{tree}->shareNodesOnJobs();
@@ -590,26 +595,35 @@ sub computeAboveImage {
 sub computeBranch {
     my $self = shift;
     my $node = shift;
+    my $NEWLIST = shift;
 
-    my $weight = 0;
 
     TRACE;
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
+    
+    # We update new cache list with the new tile.
+    printf $NEWLIST "%s\n", $self->{tree}->{pyramid}->getCachePathOfImage($node,'data');
 
     my $res = '';
     my @childList = $self->{tree}->getChilds($node);
     if (scalar @childList == 0){
+        # Node is a leaf (no child)
         if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
+        
         return TRUE;
     }
+    
+    # Node is not a leaf (1 child or more)
+    my $weight = 0;
     foreach my $n (@childList){
-        if (! $self->computeBranch($n)) {
+        if (! $self->computeBranch($n,$NEWLIST)) {
             ERROR(sprintf "Cannot compute the branch from node %s_%s , level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
+        # We add children's weights to obtain accumulated weight of the parent node
         $weight += $self->{tree}->getAccumulatedWeightOfNode($n);
     }
 
@@ -617,9 +631,8 @@ sub computeBranch {
         ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
         return FALSE;
     }
-
     $self->{tree}->setAccumulatedWeightOfNode($node,$weight);
-
+    
     return TRUE;
 }
 
@@ -738,9 +751,12 @@ sub cache2work {
     my ($self, $node, $workName) = @_;
 
     my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
-    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
+    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
 
     INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
+    
+    my $dirName = $workName;
+    $dirName =~ s/\.tif//;
 
     if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
@@ -748,8 +764,6 @@ sub cache2work {
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
         $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
-        my $dirName = $workName;
-        $dirName =~ s/\.tif//;
 
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
 
@@ -757,7 +771,7 @@ sub cache2work {
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
         $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$workName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
         return $cmd;
     }
 }
@@ -773,7 +787,7 @@ sub work2cache {
   my $node = shift;
   
   my $workImgName  = $self->workNameOfNode($node);
-  my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
+  my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data'); 
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $compression = $self->{pyramid}->getCompression();
@@ -943,7 +957,7 @@ sub configureFunctions {
 
     my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
     my $imgS = $imgSize[1];
-    $conf_tcp .= "-r $imgS ";
+    $conf_tcp .= "-s -r $imgS ";
 
     $BASHFUNCTIONS =~ s/__tcp__/$conf_tcp/;
 
