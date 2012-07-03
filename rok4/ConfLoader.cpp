@@ -1142,8 +1142,13 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         logOutput = DEFAULT_LOG_OUTPUT;
     } else {
         std::string strLogOutput= ( pElem->GetTextStr() );
-        if ( strLogOutput=="rolling_file" ) logOutput=ROLLING_FILE;
-        else if ( strLogOutput=="standard_output_stream_for_errors" ) logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
+        if ( strLogOutput=="rolling_file" ){
+            logOutput=ROLLING_FILE;
+        } else if ( strLogOutput=="standard_output_stream_for_errors" ){
+            logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
+        } else if ( strLogOutput=="static_file" ) {
+            logOutput=STATIC_FILE;
+        }
         else {
             std::cerr<<_("Le logOutput [") << pElem->GetTextStr() <<_("]  est inconnu.")<<std::endl;
             return false;
