@@ -601,7 +601,7 @@ sub getImgDescOfNode {
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $tm  = $tms->getTileMatrix($node->{level});
 
-  $params{filePath} = $self->{pyramid}->getCachePathOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
+  $params{filePath} = $self->{pyramid}->getCachePathOfImage($node, 'data');
   $params{xMin} = $tm->getTopLeftCornerX() + $node->{x} * $ImgGroundWith;   
   $params{yMax} = $tm->getTopLeftCornerY() - $node->{y} * $ImgGroundHeight; 
   $params{xMax} = $params{xMin} + $ImgGroundWith;                         
@@ -926,7 +926,14 @@ sub exportTree {
     
     my ($idxXmin, $idxYmax) = split(/_/, $k);
     my ($idxXmax, $idxYmin) = ($idxXmin+1, $idxYmax-1);
-    my $cachename = $refpyr->getCacheNameOfImage($idLevel, $idxXmin, $idxYmax, "data");
+    
+    my $node = {
+        level => $idLevel,
+        x => $idxXmin,
+        y => $idxYmax
+    };
+    
+    my $cachename = $refpyr->getCacheNameOfImage($node, "data");
     
     # image xmin ymin xmax ymax
     printf FILE "\n- idx %s (%s) => [%s,%s,%s,%s]\n", $k, $cachename,

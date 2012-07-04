@@ -55,13 +55,10 @@ use BE4::Harvesting;
 # booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
+
 # commands
 use constant RESULT_TEST      => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
-use constant CACHE_2_WORK_PRG => "tiffcp -s";
-use constant WORK_2_CACHE_PRG => "tiff2tile";
-use constant MERGE_N_TIFF     => "mergeNtiff";
 use constant MERGE_4_TIFF     => "merge4tiff";
-use constant UNTILE           => "untile";
 # commands' weights
 use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
@@ -70,6 +67,73 @@ use constant WGET_W => 35;
 use constant TIFF2TILE_W => 0;
 use constant TIFFCP_W => 0;
 
+# bash functions
+my $BASHFUNCTIONS   = <<'FUNCTIONS';
+
+Wms2work () {
+  local img_dst=$1
+  local url=$2
+  local count=0; local wait_delay=60
+  while :
+  do
+    let count=count+1
+    wget --no-verbose -O $img_dst $url 
+    if tiffck $img_dst ; then break ; fi
+    echo "Failure $count : wait for $wait_delay s"
+    sleep $wait_delay
+    let wait_delay=wait_delay*2
+    if [ 3600 -lt $wait_delay ] ; then 
+      let wait_delay=3600
+    fi
+  done
+}
+
+Cache2work () {
+  local imgSrc=$1
+  local workName=$2
+  local png=$3
+
+  if [ $png ] ; then
+    cp $imgSrc $workName.tif
+    mkdir $workName
+    untile $workName.tif $workName/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage -geometry 256x256 -tile 16x16 $workName/*.png __montage__ -define tiff:rows-per-strip=4096 $workName.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf $workName/
+  else
+    tiffcp __tcp__ $imgSrc $workName.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
+}
+
+Work2cache () {
+  local work=$1
+  local cache=$2
+  
+  local dir=`dirname $cache`
+  
+  if [ -r $cache ] ; then rm -f $cache ; fi
+  if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
+  
+  tiff2tile $work __t2t__  $cache
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+MergeNtiff () {
+  local type=$1
+  local config=$2
+  local bg=$3
+  mergeNtiff -f $config -t $type __mNt__
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  rm -f $config
+  if [ $bg ] ; then
+    rm -f $bg
+  fi
+}
+
+FUNCTIONS
 
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
@@ -210,20 +274,31 @@ sub computeWholeTree {
 
     TRACE;
 
+    $self->configureFunctions();
+
     # initialisation du script final
     my $pyrName = $self->{pyramid}->getPyrName();
     my $finishScriptId   = "SCRIPT_FINISHER";
     my $finishScriptCode = $self->prepareScript($finishScriptId);
+    
+    # We open stream to the new cache list, to add generated tile when we browse tree.
+    my $NEWLIST;
+    if (! open $NEWLIST, ">>", $self->{pyramid}->{new_pyramid}->{content_path}) {
+        ERROR(sprintf "Cannot open new cache list file : %s",$self->{pyramid}->{new_pyramid}->{content_path});
+        return FALSE;
+    }
 
     # Pondération de l'arbre en fonction des opérations à réaliser
     # et création du code script (ajoter aux noeuds de l'arbre
     my @topLevelNodeList = $self->{tree}->getNodesOfTopLevel();
     foreach my $topNode (@topLevelNodeList) {
-        if (! $self->computeBranch($topNode)) {
+        if (! $self->computeBranch($topNode,$NEWLIST)) {
             ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
             return FALSE;
         }
     }
+    
+    close $NEWLIST;
 
     # Détermination du cutLevel optimal et répartition des noeuds sur les jobs
     my @nodeRack = $self->{tree}->shareNodesOnJobs();
@@ -388,17 +463,12 @@ sub computeBottomImage {
         close CFGF;
 
         $weight += MERGENTIFF_W;
-        $code .= $self->mergeNtiff($confFilePathForScript);
+        $code .= $self->mergeNtiff($confFilePathForScript, $bgImgName);
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
     $weight += TIFF2TILE_W;
     $code .= $self->work2cache($node);
-
-    # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined($bgImgName) ){
-        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
-    }
 
     $self->{tree}->updateWeightOfNode($node,$weight);
     $self->{tree}->setComputingCode($node,$code);
@@ -524,26 +594,35 @@ sub computeAboveImage {
 sub computeBranch {
     my $self = shift;
     my $node = shift;
+    my $NEWLIST = shift;
 
-    my $weight = 0;
 
     TRACE;
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
+    
+    # We update new cache list with the new tile.
+    printf $NEWLIST "0/%s\n", $self->{tree}->{pyramid}->getCacheNameOfImage($node,'data');
 
     my $res = '';
     my @childList = $self->{tree}->getChilds($node);
     if (scalar @childList == 0){
+        # Node is a leaf (no child)
         if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
+        
         return TRUE;
     }
+    
+    # Node is not a leaf (1 child or more)
+    my $weight = 0;
     foreach my $n (@childList){
-        if (! $self->computeBranch($n)) {
+        if (! $self->computeBranch($n,$NEWLIST)) {
             ERROR(sprintf "Cannot compute the branch from node %s_%s , level %s)", $node->{x}, $node->{y}, $node->{level});
             return FALSE;
         }
+        # We add children's weights to obtain accumulated weight of the parent node
         $weight += $self->{tree}->getAccumulatedWeightOfNode($n);
     }
 
@@ -551,9 +630,8 @@ sub computeBranch {
         ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
         return FALSE;
     }
-
     $self->{tree}->setAccumulatedWeightOfNode($node,$weight);
-
+    
     return TRUE;
 }
 
@@ -660,21 +738,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd="";
-
-  $cmd .= "count=0; wait_delay=60\n";
-  $cmd .= "while :\n";
-  $cmd .= "do\n";
-  $cmd .= "  let count=count+1\n";
-  $cmd .= "  wget --no-verbose -O \${TMP_DIR}/$fileName \"$url\" \n";
-  $cmd .= "  if tiffck \${TMP_DIR}/$fileName ; then break ; fi\n";
-  $cmd .= "  echo \"echec \$count : wait for \$wait_delay s\"\n";
-  $cmd .= "  sleep \$wait_delay\n";
-  $cmd .= "  let wait_delay=wait_delay*2\n";
-  $cmd .= "  if [ 3600 -lt \$wait_delay ] ; then \n";
-  $cmd .= "    let wait_delay=3600\n";
-  $cmd .= "  fi\n";
-  $cmd .= "done\n";
+  my $cmd=sprintf "wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
   
   return $cmd;
 }
@@ -686,9 +750,12 @@ sub cache2work {
     my ($self, $node, $workName) = @_;
 
     my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
-    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data');
+    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
 
     INFO(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
+    
+    my $dirName = $workName;
+    $dirName =~ s/\.tif//;
 
     if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
@@ -696,26 +763,14 @@ sub cache2work {
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
         $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
-        my $dirName = $workName;
-        $dirName =~ s/\.tif//;
-        my $cmd =  sprintf ("cp \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName , $workName);
-        $cmd .=  sprintf ("mkdir \${TMP_DIR}/%s\n", $dirName);
-        $cmd .=  sprintf ("%s \${TMP_DIR}/%s \${TMP_DIR}/%s/\n%s", UNTILE, $workName,$dirName, RESULT_TEST);
-        
-        if (int($self->{pyramid}->getSamplesPerPixel()) == 4) {
-            # Option supplémentaire pour conserver le canal alpha
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -background none -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        } else {
-            $cmd .=  sprintf ("montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/%s/*.png -depth %s -define tiff:rows-per-strip=4096  \${TMP_DIR}/%s\n%s",$dirName, $self->{pyramid}->getBitsPerSample(), $workName, RESULT_TEST);
-        }
 
-        $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$dirName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
 
         return $cmd;
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
         $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
-        my $cmd =  sprintf ("%s -r %s \${PYR_DIR}/%s \${TMP_DIR}/%s\n%s", CACHE_2_WORK_PRG, $imgSize[1], $cacheName , $workName, RESULT_TEST);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
         return $cmd;
     }
 }
@@ -731,7 +786,7 @@ sub work2cache {
   my $node = shift;
   
   my $workImgName  = $self->workNameOfNode($node);
-  my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node->{level}, $node->{x}, $node->{y}, 'data'); 
+  my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data'); 
   
   my $tms = $self->{pyramid}->getTileMatrixSet();
   my $compression = $self->{pyramid}->getCompression();
@@ -746,22 +801,7 @@ sub work2cache {
   DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
   
   # Suppression du lien pour ne pas corrompre les autres pyramides.
-  my $cmd = sprintf ("if [ -r \"\${PYR_DIR}/%s\" ] ; then rm -f \${PYR_DIR}/%s ; fi\n", $cacheImgName, $cacheImgName);
-  $cmd .= sprintf ("if [ ! -d \"\${PYR_DIR}/%s\" ] ; then mkdir -p \${PYR_DIR}/%s ; fi\n", dirname($cacheImgName), dirname($cacheImgName));
-  $cmd .= sprintf ("%s \${TMP_DIR}/%s ", WORK_2_CACHE_PRG, $workImgName);
-  $cmd .= sprintf ("-c %s ",    $compression);
-  
-  if ($compressionoption eq 'crop') {
-    $cmd .= sprintf ("-crop ");
-  }
-
-  $cmd .= sprintf ("-p %s ",    $self->{pyramid}->getPhotometric());
-  $cmd .= sprintf ("-t %s %s ", $tms->getTileWidth(), $tms->getTileHeight()); # ie size tile 256 256 pix !
-  $cmd .= sprintf ("-b %s ",    $self->{pyramid}->getBitsPerSample());
-  $cmd .= sprintf ("-a %s ",    $self->{pyramid}->getSampleFormat());
-  $cmd .= sprintf ("-s %s ",    $self->{pyramid}->getSamplesPerPixel());
-  $cmd .= sprintf (" \${PYR_DIR}/%s\n", $cacheImgName);
-  $cmd .= sprintf ("%s", RESULT_TEST);
+  my $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
 
   # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
 
@@ -778,6 +818,7 @@ sub work2cache {
 sub mergeNtiff {
     my $self = shift;
     my $confFile = shift;
+    my $bg = shift; # optionnal
     my $dataType = shift; # param. are image or mtd to mergeNtiff script !
 
     TRACE;
@@ -790,18 +831,13 @@ sub mergeNtiff {
     #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
     # TODO pour les métadonnées ce sera 0
 
-    my $cmd = sprintf ("%s -f %s ",MERGE_N_TIFF, $confFile);
-    $cmd .= sprintf ( " -i %s ", $pyr->getInterpolation());
-    $cmd .= sprintf ( " -n %s ", $self->{nodata}->getColor() );
-    $cmd .= sprintf (" -nowhite ") if ($self->{nodata}->{nowhite});
-    $cmd .= sprintf ( " -t %s ", $dataType);
-    $cmd .= sprintf ( " -s %s ", $pyr->getSamplesPerPixel());
-    $cmd .= sprintf ( " -b %s ", $pyr->getBitsPerSample() );
-    $cmd .= sprintf ( " -p %s ", $pyr->getPhotometric() );
-    $cmd .= sprintf ( " -a %s\n",$pyr->getSampleFormat());
-    $cmd .= sprintf ("%s" ,RESULT_TEST);
-
-    $cmd .= sprintf ("rm -f %s\n" ,$confFile);
+    my $cmd = sprintf "MergeNtiff %s %s",$dataType,$confFile;
+    
+    if (defined $bg) {
+        $cmd .= " \${TMP_DIR}/$bg\n";
+    } else {
+        $cmd .= "\n";
+    }
 
     return $cmd;
 }
@@ -878,6 +914,79 @@ sub getScriptTmpDir {
   #return File::Spec->catdir($self->{path_temp}, $pyrName, "\${SCRIPT_ID}/");
   # ie .../TMP/PYRNAME/SCRIPT_X/
 }
+# method: configureFunctions
+#  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
+#  dalles noData.
+#-------------------------------------------------------------------------------
+sub configureFunctions {
+    my $self = shift;
+
+    TRACE;
+
+    my $pyr = $self->{pyramid};
+
+    # congigure mergeNtiff
+    my $conf_mNt = "";
+
+    my $ip = $pyr->getInterpolation();
+    $conf_mNt .= "-i $ip ";
+    my $spp = $pyr->getSamplesPerPixel();
+    $conf_mNt .= "-s $spp ";
+    my $bps = $pyr->getBitsPerSample();
+    $conf_mNt .= "-b $bps ";
+    my $ph = $pyr->getPhotometric();
+    $conf_mNt .= "-p $ph ";
+    my $sf = $pyr->getSampleFormat();
+    $conf_mNt .= "-a $sf ";
+
+    if ($self->{nodata}->{nowhite}) {
+        $conf_mNt .= "-nowhite ";
+    }
+
+    my $nd = $self->{nodata}->getColor();
+    $conf_mNt .= "-n $nd ";
+
+    $BASHFUNCTIONS =~ s/__mNt__/$conf_mNt/;
+
+    # congigure montage
+    my $conf_montage = "";
+
+    $conf_montage .= "-depth $bps ";
+    if ($spp == 4) {
+        $conf_montage .= "-background none ";
+    }
+
+    $BASHFUNCTIONS =~ s/__montage__/$conf_montage/;
+
+    # congigure tiffcp
+    my $conf_tcp = "";
+
+    my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $imgS = $imgSize[1];
+    $conf_tcp .= "-s -r $imgS ";
+
+    $BASHFUNCTIONS =~ s/__tcp__/$conf_tcp/;
+
+    # congigure tiff2tile
+    my $conf_t2t = "";
+
+    my $compression = $pyr->getCompression();
+    my $compressionoption = $pyr->getCompressionOption();
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $conf_t2t .= "-c $compression ";
+    if ($pyr->getCompressionOption() eq 'crop') {
+        $conf_t2t .= "-crop ";
+    }
+
+    $conf_t2t .= "-p $ph ";
+    $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet()->getTileWidth(),$pyr->getTileMatrixSet()->getTileHeight();
+    $conf_t2t .= "-b $bps ";
+    $conf_t2t .= "-a $sf ";
+    $conf_t2t .= "-s $spp ";
+
+    $BASHFUNCTIONS =~ s/__t2t__/$conf_t2t/;
+
+}
 
 # method: prepareScript
 #  Initilise le script avec les chemins du répertoire temporaire, de la pyramide et des
@@ -899,8 +1008,11 @@ sub prepareScript {
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", File::Spec->catdir($self->{path_temp}, $pyrName));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $tmpDir);
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrpath);
-    $code   .= sprintf ("NODATA_DIR=\"%s\"\n", $self->{nodata}->getPath());
-    $code   .= "\n";
+    $code   .= sprintf ("NODATA_DIR=\"%s\"\n\n", $self->{nodata}->getPath());
+
+    # écriture des fonctions des scripts:
+    $code .= "# fonctions de factorisation\n";
+    $code .= $BASHFUNCTIONS;
 
     # creation du répertoire de travail:
     $code .= "# creation du repertoire de travail\n";
