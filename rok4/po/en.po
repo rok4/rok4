@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-07-03 17:26+0200\n"
+"POT-Creation-Date: 2012-07-04 10:19+0200\n"
 "PO-Revision-Date: 2012-06-26 18:56+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: \n"
@@ -895,19 +895,19 @@ msgstr ""
 msgid "Indice de tuile négatif"
 msgstr ""
 
-#: Level.cpp:318
+#: Level.cpp:320
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:323
+#: Level.cpp:325
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:335
+#: Level.cpp:337
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:345
+#: Level.cpp:347
 msgid "GetTile Image"
 msgstr ""
 

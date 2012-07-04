@@ -111,10 +111,12 @@ int main(int argc, char* argv[]) {
                     else if(strncmp(argv[i], "zip",3) == 0) {
                         compression = COMPRESSION_DEFLATE;
                     }
+                    else if(strncmp(argv[i], "pkb",3) == 0) {
+                        compression = COMPRESSION_PACKBITS;
+                    }
                     else {
-                        compression = COMPRESSION_NONE;
-                        std::cerr << "Warning : unknown compression ("<< argv[i] 
-                            <<"), no compression will be used" << std::endl;
+                        std::cerr << "Error : unknown compression ("<< argv[i] <<")." << std::endl;
+                        exit(2);
                     }
                     break;
                 case 'n': // nodata

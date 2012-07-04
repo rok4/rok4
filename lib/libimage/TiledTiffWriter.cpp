@@ -38,6 +38,7 @@
 #include "TiledTiffWriter.h"
 #include "byteswap.h"
 #include "lzwEncoder.h"
+#include "pkbEncoder.h"
 #include <string.h>
 #include <iostream>
 #include <algorithm>
@@ -87,7 +88,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
 // input control
     if (width % tilewidth || length % tilelength) std::cerr << "Image size must be a multiple of tile size" << std::endl;
     if (photometric != PHOTOMETRIC_RGB && photometric != PHOTOMETRIC_MINISBLACK) std::cerr << "Only Gray, RGB photometric is supported" << std::endl;
-    if (compression != COMPRESSION_NONE && compression != COMPRESSION_JPEG && compression != COMPRESSION_PNG && compression != COMPRESSION_LZW  && compression != COMPRESSION_DEFLATE) std::cerr << "Compression not supported" << std::endl;
+    if (compression != COMPRESSION_NONE && compression != COMPRESSION_JPEG && compression != COMPRESSION_PNG && compression != COMPRESSION_LZW  && compression != COMPRESSION_DEFLATE  && compression != COMPRESSION_PACKBITS) std::cerr << "Compression not supported" << std::endl;
 
     if (photometric == PHOTOMETRIC_RGB && compression == COMPRESSION_JPEG) photometric = PHOTOMETRIC_YCBCR;
 
@@ -124,7 +125,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     else
         *((uint16_t*) (p += 2)) = 11;
 
-// Offset of the IFD is here
+//  Offset of the IFD is here
     *((uint16_t*) (p += 2)) = TIFFTAG_IMAGEWIDTH;      //
     *((uint16_t*) (p += 2)) = TIFF_LONG;               //
     *((uint32_t*) (p += 2)) = 1;                       //
@@ -225,7 +226,7 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
     BufferSize = 2*rawtilesize;
     Buffer = new uint8_t[BufferSize];
 
-// z compression initalization
+//  z compression initalization
     if (compression == COMPRESSION_PNG || compression == COMPRESSION_DEFLATE) {
         PNG_buffer = new uint8_t[rawtilesize + tilelength];
         zstream.zalloc = Z_NULL;
@@ -297,6 +298,29 @@ size_t TiledTiffWriter::computeLzwTile(uint8_t *buffer, uint8_t *data) {
     return outSize;
 }
 
+size_t TiledTiffWriter::computePackbitsTile(uint8_t *buffer, uint8_t *data) {
+
+    uint8_t* pkbBuffer = new uint8_t[tilelinesize*tilelength*2];
+    size_t pkbBufferSize = 0;
+    uint8_t* rawLine = new uint8_t[tilelinesize];
+    int lRead = 0;
+    pkbEncoder encoder;
+    uint8_t * pkbLine;
+    for ( ; lRead < tilelength ; lRead++ ) {
+        memcpy(rawLine,data+lRead*tilelinesize,tilelinesize);
+        size_t pkbLineSize = 0;
+        pkbLine = encoder.encode(rawLine, tilelinesize, pkbLineSize);
+        memcpy(pkbBuffer+pkbBufferSize,pkbLine,pkbLineSize);
+        pkbBufferSize += pkbLineSize;
+        delete[] pkbLine;
+    }
+
+    memcpy(buffer,pkbBuffer,pkbBufferSize);
+    delete[] pkbBuffer;
+    delete[] rawLine;
+
+    return pkbBufferSize;
+}
 
 size_t TiledTiffWriter::computePngTile(uint8_t *buffer, uint8_t *data) {
     uint8_t *B = PNG_buffer;
@@ -450,7 +474,9 @@ int TiledTiffWriter::WriteTile(int n, uint8_t *data, bool crop) {
     case COMPRESSION_PNG :
         size = computePngTile(Buffer, data);
         break;
-    
+    case COMPRESSION_PACKBITS :
+        size = computePackbitsTile(Buffer, data);
+        break;
     case COMPRESSION_DEFLATE :
         size = computeDeflateTile(Buffer, data);
         break;
