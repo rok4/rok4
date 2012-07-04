@@ -40,11 +40,11 @@ set(ENV{CFLAGS} "-O3")
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/src/configure)
 add_custom_command(OUTPUT src/configure COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/cppunit-1.12.1/* src)
 
-add_custom_command(TARGET cppunit-configure COMMAND ./configure CXXFLAGS=-O3 CFLAGS=-O3 LDFLAGS=-ldl --enable-shared=yes --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --enable-doxygen=no DEPENDS src/configure )
 add_custom_command(OUTPUT install/lib/libcppunit.so 
+  COMMAND ./configure CXXFLAGS=-O3 CFLAGS=-O3 LDFLAGS=-ldl --enable-shared=yes --prefix=${CMAKE_CURRENT_BINARY_DIR}/install --enable-doxygen=no 
   COMMAND make 
   COMMAND make install 
-  DEPENDS cppunit-configure 
+  DEPENDS src/configure 
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 #add_custom_command(OUTPUT install/lib/libcppunit.a 
@@ -52,7 +52,7 @@ add_custom_command(OUTPUT install/lib/libcppunit.so
 #   DEPENDS src/configure 
 #  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
-add_custom_target(cppunit-configure)
+
 add_custom_target(cppunit-build ALL DEPENDS install/lib/libcppunit.so)
 
 if(NOT TARGET cppunit)
