@@ -35,59 +35,30 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "format.h"
-#include <string.h>
+#ifndef PKBENCODER_H
+#define PKBENCODER_H
 
-namespace format {
-const char *eformat_name[] = {
-    "UNKNOWN",
-    "TIFF_RAW_INT8",
-    "TIFF_JPG_INT8",
-    "TIFF_PNG_INT8",
-    "TIFF_LZW_INT8",
-    "TIFF_RAW_FLOAT32",
-    "TIFF_LZW_FLOAT32",
-    "TIFF_ZIP_INT8",
-    "TIFF_ZIP_FLOAT32",
-    "TIFF_PKB_INT8",
-    "TIFF_PKB_FLOAT32"
+#include <cstddef>
+#include <climits>
+#include <stdint.h>
+#include <cstdlib>
+#include <ctype.h>
+
+class pkbEncoder
+{
+
+private:
+    enum compression_state { BASE,
+                             LITERAL,
+                             RUN/*,
+                            LITERAL_RUN*/
+                           };
+
+  
+public:
+    pkbEncoder();
+    uint8_t* encode(const uint8_t * in, size_t inSize, size_t &outSize);
+    virtual ~pkbEncoder();
 };
 
-const int eformat_size = 10;
-
-const char *eformat_mime[] = {
-    "UNKNOWN",
-    "image/tiff",
-    "image/jpeg",
-    "image/png",
-    "image/tiff",
-    "image/x-bil;bits=32",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff"
-};
-
-
-
-eformat_data fromString ( std::string strFormat ) {
-    int i;
-    for ( i=eformat_size; i ; --i ) {
-        if ( strFormat.compare ( eformat_name[i] ) ==0 )
-            break;
-    }
-    return static_cast<eformat_data> ( i );
-}
-
-std::string toString ( eformat_data format ) {
-    return std::string ( eformat_name[format] );
-}
-
-std::string toMimeType ( eformat_data format ) {
-    return std::string ( eformat_mime[format] );
-}
-
-
-
-}
+#endif // PKBENCODER_H

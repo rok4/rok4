@@ -52,7 +52,6 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::PyrImageSpec;
 use BE4::TileMatrixSet;
 use BE4::Layer;
 
@@ -114,7 +113,7 @@ sub init {
         return FALSE;
     }
     if (! -f $pyrFile) {
-        ERROR(sprintf "Le descripteur de pyramide n'existe pas ('%s') !", basename($pyrFile));
+        ERROR(sprintf "Le descripteur de pyramide n'existe pas ('%s') !", $pyrFile);
         return FALSE;
     }
     $MYPYR = $pyrFile;
@@ -266,8 +265,8 @@ my $tileHeight = $bottomTM->getTileHeight();
 
 my $xmin = $X0 + $imin * $res * $tileWidth;
 my $ymax = $Y0 - $jmin * $res * $tileHeight;
-my $xmax = $X0 + $imax * $res * $tileWidth;
-my $ymin = $Y0 - $jmax * $res * $tileHeight;
+my $xmax = $X0 + ($imax+1) * $res * $tileWidth;
+my $ymin = $Y0 - ($jmax+1) * $res * $tileHeight;
 
 ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
 

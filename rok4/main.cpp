@@ -193,7 +193,7 @@ int main ( int argc, char** argv ) {
         }
 
         rok4KillServer ( W );
-
+        rok4ReloadLogger();
     }
     rok4KillLogger();
     return 0;

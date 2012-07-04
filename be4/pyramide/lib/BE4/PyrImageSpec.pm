@@ -65,7 +65,7 @@ INIT {
 
 %IMAGESPEC = (
     interpolation => ['nn','bicubic','linear','lanczos'],
-    compression => ['raw','jpg','png','lzw','zip'],
+    compression => ['raw','jpg','png','lzw','zip','pkb'],
     compressionoption => ['none','crop']
 );
 

@@ -44,6 +44,7 @@
 #include "zlib.h"
 #include "byteswap.h"
 #include "lzwDecoder.h"
+#include "pkbDecoder.h"
 
 /*
  * Fonctions déclarées pour la libjpeg
@@ -267,6 +268,28 @@ const uint8_t* PngDecoder::decode(DataSource* source, size_t &size) {
     }
 
     size = width * height * channels;
+
+    return raw_data;
+}
+
+/**
+ * Decodage de donnee PackBits
+ */
+const uint8_t* PackBitsDecoder::decode(DataSource* source, size_t& size)
+{
+    size = 0;
+    if (!source) return 0;
+
+    size_t encSize;
+    const uint8_t* encData = source->getData(encSize);
+
+    if (!encData) return 0;
+
+    // Initialisation du flux
+    pkbDecoder decoder;
+    uint8_t* raw_data = decoder.decode(encData,encSize,size);
+
+    if (!raw_data) return 0;
 
     return raw_data;
 }

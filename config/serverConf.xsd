@@ -7,6 +7,7 @@
 			<xs:simpleType name="logOutputType">
                                 <xs:restriction base="xs:string">
                                         <xs:enumeration value="rolling_file"/>
+                                        <xs:enumeration value="static_file"/>
                                         <xs:enumeration value="standard_output_stream_for_errors"/>
                                 </xs:restriction>
                         </xs:simpleType>

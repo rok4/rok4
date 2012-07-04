@@ -124,9 +124,13 @@ Work2cache () {
 MergeNtiff () {
   local type=$1
   local config=$2
+  local bg=$3
   mergeNtiff -f $config -t $type __mNt__
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   rm -f $config
+  if [ $bg ] ; then
+    rm -f $bg
+  fi
 }
 
 FUNCTIONS
@@ -459,17 +463,12 @@ sub computeBottomImage {
         close CFGF;
 
         $weight += MERGENTIFF_W;
-        $code .= $self->mergeNtiff($confFilePathForScript);
+        $code .= $self->mergeNtiff($confFilePathForScript, $bgImgName);
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
     $weight += TIFF2TILE_W;
     $code .= $self->work2cache($node);
-
-    # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined($bgImgName) ){
-        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
-    }
 
     $self->{tree}->updateWeightOfNode($node,$weight);
     $self->{tree}->setComputingCode($node,$code);
@@ -819,6 +818,7 @@ sub work2cache {
 sub mergeNtiff {
     my $self = shift;
     my $confFile = shift;
+    my $bg = shift; # optionnal
     my $dataType = shift; # param. are image or mtd to mergeNtiff script !
 
     TRACE;
@@ -831,7 +831,13 @@ sub mergeNtiff {
     #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
     # TODO pour les métadonnées ce sera 0
 
-    my $cmd = sprintf ("MergeNtiff %s %s\n",$dataType,$confFile);
+    my $cmd = sprintf "MergeNtiff %s %s",$dataType,$confFile;
+    
+    if (defined $bg) {
+        $cmd .= " \${TMP_DIR}/$bg\n";
+    } else {
+        $cmd .= "\n";
+    }
 
     return $cmd;
 }

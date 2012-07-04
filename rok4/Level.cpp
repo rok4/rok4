@@ -315,6 +315,8 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<LzwDecoder> ( encData );
     else if ( format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 )
         return new DataSourceDecoder<DeflateDecoder> ( encData );
+    else if ( format==TIFF_PKB_INT8 || format == TIFF_PKB_FLOAT32 )
+        return new DataSourceDecoder<PackBitsDecoder> ( encData );
     LOGGER_ERROR ( _("Type d'encodage inconnu : ")<<format );
     return 0;
 }
