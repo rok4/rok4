@@ -71,7 +71,7 @@ use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne
 $|=1;
 
 # version
-my $VERSION = "0.2.0";
+my $VERSION = '@VERSION_TEXT@';
 
 #
 # Title: joinCache

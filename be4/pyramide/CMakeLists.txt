@@ -51,6 +51,7 @@ set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
