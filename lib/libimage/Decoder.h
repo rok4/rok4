@@ -62,6 +62,10 @@ struct DeflateDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size);
 };
 
+struct PackBitsDecoder {
+    static const uint8_t* decode(DataSource* encData, size_t &size);
+};
+
 struct InvalidDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size) {
         size = 0;

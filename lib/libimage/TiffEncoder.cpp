@@ -40,6 +40,7 @@
 #include "TiffRawEncoder.h"
 #include "TiffLZWEncoder.h"
 #include "TiffDeflateEncoder.h"
+#include "TiffPackBitsEncoder.h"
 
 DataStream* TiffEncoder::getTiffEncoder(Image* image, eformat_data format)
 {
@@ -50,12 +51,16 @@ DataStream* TiffEncoder::getTiffEncoder(Image* image, eformat_data format)
         return new TiffLZWEncoder<uint8_t>(image);
     case TIFF_ZIP_INT8 :
         return new TiffDeflateEncoder<uint8_t>(image);
+    case TIFF_PKB_INT8 :
+        return new TiffPackBitsEncoder<uint8_t>(image);
     case TIFF_RAW_FLOAT32 :
         return new TiffRawEncoder<float>(image);
     case TIFF_LZW_FLOAT32 :
         return new TiffLZWEncoder<float>(image);
     case TIFF_ZIP_FLOAT32 :
         return new TiffDeflateEncoder<float>(image);
+    case TIFF_PKB_FLOAT32 : 
+        return new TiffPackBitsEncoder<float>(image);
     default:
         return NULL;
     }

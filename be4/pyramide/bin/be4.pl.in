@@ -480,7 +480,7 @@ sub doIt {
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objData);
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objData,$params->{process}->{path_temp});
     
     if (! defined $objPyramid) {
         ERROR ("Can not load Pyramid !");
@@ -513,7 +513,7 @@ sub doIt {
     
     ALWAYS(">>> Write Cache Pyramid ...");
 
-    if (! $objPyramid->writeCachePyramid()) {
+    if (! $objPyramid->writeCachePyramid($objProcess->{tree})) {
         ERROR ("Can not write Pyramid Cache !");
         return FALSE;
     }

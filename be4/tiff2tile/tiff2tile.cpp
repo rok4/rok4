@@ -85,6 +85,9 @@ int main(int argc, char **argv) {
                     else if(strncmp(argv[i], "zip",3) == 0) {
                         compression = COMPRESSION_DEFLATE;
                     }
+                    else if(strncmp(argv[i], "pkb",3) == 0) {
+                        compression = COMPRESSION_PACKBITS;
+                    }
                     else {
                         std::cerr << "Error : unknown compression ("<< argv[i] <<")." << std::endl;
                         exit(2);

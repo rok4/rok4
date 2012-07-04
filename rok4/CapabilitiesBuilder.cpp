@@ -46,7 +46,7 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-
+#include <libintl.h>
 /**
  * Conversion de int en std::string.
  */
@@ -274,7 +274,7 @@ void Rok4Server::buildWMSCapabilities() {
     }
     // Layer
     if ( layerList.empty() ) {
-        LOGGER_ERROR ( "Liste de layers vide" );
+        LOGGER_ERROR ( _("Liste de layers vide") );
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -405,7 +405,7 @@ void Rok4Server::buildWMSCapabilities() {
             }
 
             // Style
-            LOGGER_DEBUG ( "Nombre de styles : "<<childLayer->getStyles().size() );
+            LOGGER_DEBUG ( _("Nombre de styles : ")<<childLayer->getStyles().size() );
             if ( childLayer->getStyles().size() != 0 ) {
                 for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                     TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -419,7 +419,7 @@ void Rok4Server::buildWMSCapabilities() {
                         styleEl->LinkEndChild ( buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                     }
                     for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                        LOGGER_DEBUG ( "LegendURL" << style->getId() );
+                        LOGGER_DEBUG ( _("LegendURL") << style->getId() );
                         LegendURL legendURL = style->getLegendURLs() [j];
                         TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -434,10 +434,10 @@ void Rok4Server::buildWMSCapabilities() {
                         if ( legendURL.getHeight() !=0 )
                             legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                         styleEl->LinkEndChild ( legendURLEl );
-                        LOGGER_DEBUG ( "LegendURL OK"<< style->getId() );
+                        LOGGER_DEBUG ( _("LegendURL OK")<< style->getId() );
                     }
 
-                    LOGGER_DEBUG ( "Style fini : " << style->getId() );
+                    LOGGER_DEBUG ( _("Style fini : ") << style->getId() );
                     childLayerEl->LinkEndChild ( styleEl );
                 }
             }
@@ -458,11 +458,11 @@ void Rok4Server::buildWMSCapabilities() {
              layer->getOpaque();
 
             */
-            LOGGER_DEBUG ( "Layer Fini" );
+            LOGGER_DEBUG ( _("Layer Fini") );
             parentLayerEl->LinkEndChild ( childLayerEl );
 
         }// for layer
-        LOGGER_DEBUG ( "Layers Fini" );
+        LOGGER_DEBUG ( _("Layers Fini") );
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -489,7 +489,7 @@ void Rok4Server::buildWMSCapabilities() {
         endPos=wmsCapaTemplate.find ( pathTag,beginPos );
     }
     wmsCapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
-    LOGGER_DEBUG ( "WMSfini" );
+    LOGGER_DEBUG ( _("WMSfini") );
 }
 
 
@@ -731,11 +731,11 @@ void Rok4Server::buildWMTSCapabilities() {
                 Style* style = layer->getStyles() [i];
                 int j;
                 for ( j=0 ; j < style->getTitles().size(); ++j ) {
-                    LOGGER_DEBUG ( "Title : " << style->getTitles() [j].c_str() );
+                    LOGGER_DEBUG ( _("Title : ") << style->getTitles() [j].c_str() );
                     styleEl->LinkEndChild ( buildTextNode ( "ows:Title", style->getTitles() [j].c_str() ) );
                 }
                 for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
-                    LOGGER_DEBUG ( "Abstract : " << style->getAbstracts() [j].c_str() );
+                    LOGGER_DEBUG ( _("Abstract : ") << style->getAbstracts() [j].c_str() );
                     styleEl->LinkEndChild ( buildTextNode ( "ows:Abstract", style->getAbstracts() [j].c_str() ) );
                 }
                 //TODO Keywords

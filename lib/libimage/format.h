@@ -51,7 +51,9 @@ enum eformat_data {
     TIFF_RAW_FLOAT32 = 5,
     TIFF_LZW_FLOAT32 = 6,
     TIFF_ZIP_INT8 = 7,
-    TIFF_ZIP_FLOAT32 = 8
+    TIFF_ZIP_FLOAT32 = 8,
+    TIFF_PKB_INT8 = 9,
+    TIFF_PKB_FLOAT32 = 10
 };
 
 namespace format {

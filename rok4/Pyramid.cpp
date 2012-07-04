@@ -48,6 +48,8 @@
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
+#include <libintl.h>
+#include "config.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;
@@ -158,20 +160,20 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         Grid* grid = new Grid ( width, height, bbox );
 
 
-        LOGGER_DEBUG ( "debut pyramide" );
+        LOGGER_DEBUG ( _("debut pyramide") );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
             error=1;
             return 0;
         }
-        LOGGER_DEBUG ( "fin pyramide" );
+        LOGGER_DEBUG ( _("fin pyramide") );
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
     }
     std::string l = best_level ( resolution_x, resolution_y );
-    LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
+    LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
 
     if ( tms.getCrs() == dst_crs )
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );

@@ -103,7 +103,6 @@ int main(int argc, char* argv[]) {
 
     if (planarconfig != 1)  error("Sorry : only planarconfig = 1 is supported");
     if (bitspersample != 8)  error("Sorry : only bitspersample = 8 is supported");
-    if (compression != 1)  error("Sorry : compression not accepted");
     
     IM  = new uint8_t[width * height * sampleperpixel];
 

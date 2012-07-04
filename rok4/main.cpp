@@ -42,7 +42,10 @@
 #include <csignal>
 #include <bits/signum.h>
 #include <sys/time.h>
-
+#include <locale>
+#include <libintl.h>
+#include <limits>
+#include "config.h"
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
@@ -59,7 +62,7 @@ volatile timeval signal_timestamp;
 
 
 void usage() {
-    std::cerr<<" Usage : rok4 [-f server_config_file]"<<std::endl;
+    std::cerr<<_("Usage : rok4 [-f server_config_file]")<<std::endl;
 }
 
 void reloadConfig ( int signum ) {
@@ -92,6 +95,19 @@ void shutdownServer ( int signum ) {
 }
 
 
+std::string getlocalepath()
+  {
+  char result[ 4096 ];
+  char procPath[20];
+  sprintf(procPath,"/proc/%u/exe",getpid());
+  ssize_t count = readlink( procPath, result, 4096 );
+  std::string exePath( result, (count > 0) ? count : 0 );
+  std::string localePath(exePath.substr(0,exePath.rfind("/")));
+  localePath.append("/../share/locale");
+  return localePath;
+  }
+
+
 /**
 * @brief main
 * @return -1 en cas d'erreur, 0 sinon
@@ -116,6 +132,10 @@ int main ( int argc, char** argv ) {
     // Apache mod_fastcgi compatibility
     sa.sa_handler = shutdownServer;
     sigaction ( SIGUSR1, &sa,0 );
+
+    setlocale(LC_ALL,"");
+  //  textdomain("Rok4Server");
+    bindtextdomain(DOMAINNAME, getlocalepath().c_str());
     
 
     /* the following loop is for fcgi debugging purpose */
@@ -131,7 +151,7 @@ int main ( int argc, char** argv ) {
             switch ( argv[i][1] ) {
             case 'f': // fichier de configuration du serveur
                 if ( i++ >= argc ) {
-                    std::cerr<<"Erreur sur l'option -f"<<std::endl;
+                    std::cerr<<_("Erreur sur l'option -f")<<std::endl;
                     usage();
                     return -1;
                 }
@@ -147,7 +167,7 @@ int main ( int argc, char** argv ) {
     // Demarrage du serveur
     while ( reload ) {
         reload = false;
-        std::cout<< "Lancement du serveur rok4 ["<< getpid()<<"]" <<std::endl;
+        std::cout<< _("Lancement du serveur rok4") << "["<< getpid()<<"]" <<std::endl;
         W=rok4InitServer ( serverConfigFile.c_str() );
         if ( firstStart ) {
             W->initFCGI();
@@ -165,17 +185,16 @@ int main ( int argc, char** argv ) {
 
         // Extinction du serveur
         if ( reload ) {
-            LOGGER_INFO ( "Rechargement de la configuration" );
+            LOGGER_INFO ( _("Rechargement de la configuration") );
             sock = W->getFCGISocket();
         } else {
-            LOGGER_INFO ( "Extinction du serveur ROK4" );
+            LOGGER_INFO ( _("Extinction du serveur ROK4") );
             W->killFCGI();
         }
 
         rok4KillServer ( W );
-
+        rok4ReloadLogger();
     }
     rok4KillLogger();
     return 0;
 }
-

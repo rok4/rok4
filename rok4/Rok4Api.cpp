@@ -57,6 +57,7 @@
 #include "TileMatrixSet.h"
 #include "TileMatrix.h"
 #include <cfloat>
+#include <libintl.h>
 
 /**
 * @brief Initialisation d'une reponse a partir d'une source
@@ -95,17 +96,23 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     bool reprojectionCapability;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
-        std::cerr<<"ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur "<<strServerConfigFile<<std::endl;
+        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
     if ( !loggerInitialised ) {
         Logger::setOutput ( logOutput );
         // Initialisation du logger
         Accumulator *acc=0;
-        if ( logOutput==ROLLING_FILE ) {
+        switch ( logOutput ) {
+        case ROLLING_FILE :
             acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
-        } else if ( logOutput==STANDARD_OUTPUT_STREAM_FOR_ERRORS ) {
+            break;
+        case STATIC_FILE :
+            acc = new StaticFileAccumulator ( strLogFileprefix );
+            break;
+        case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
             acc = new StreamAccumulator();
+            break;
         }
         // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
         for ( int i=0; i<=logLevel; i++ )
@@ -114,34 +121,34 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         log.precision ( 8 );
         log.setf ( std::ios::fixed,std::ios::floatfield );
 
-        std::cout<<"Envoi des messages dans la sortie du logger"<< std::endl;
-        LOGGER_INFO ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" );
+        std::cout<<_ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
+        LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
         loggerInitialised=true;
     } else {
-        LOGGER_INFO ( "*** NOUVEAU CLIENT DU LOGGER ***" );
+        LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
     }
 
     // Construction des parametres de service
     sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
     if ( sc==NULL ) {
-        LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf "<<strServicesConfigFile );
-        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
     // Chargement des TMS
     std::map<std::string,TileMatrixSet*> tmsList;
     if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
-        LOGGER_FATAL ( "Impossible de charger la conf des TileMatrix" );
-        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
     //Chargement des styles
     std::map<std::string, Style*> styleList;
     if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
-        LOGGER_FATAL ( "Impossible de charger la conf des Styles" );
-        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -149,8 +156,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
     if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
-        LOGGER_FATAL ( "Impossible de charger la conf des Layers/pyramides" );
-        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -268,7 +275,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData );
     // Exception
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
         HttpResponse* error=initResponseFromSource ( errorResp );
         delete errorResp;
         return error;
@@ -340,7 +347,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style, errorNoData );
     // Exception
     if ( errorResp ) {
-        LOGGER_ERROR ( "Probleme dans les parametres de la requete getTile" );
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
         HttpResponse* error=initResponseFromSource ( errorResp );
         delete errorResp;
         return error;
@@ -448,7 +455,7 @@ HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, c
 
     std::string strQuery=queryString;
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
-    DataSource* source=new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts" ) );
+    DataSource* source=new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) );
     HttpResponse* response=initResponseFromSource ( source );
     delete request;
     delete source;
@@ -520,7 +527,7 @@ void rok4DeleteTilePalette ( TilePalette* palette ) {
 */
 
 void rok4KillServer ( Rok4Server* server ) {
-    LOGGER_INFO ( "Extinction du serveur ROK4" );
+    LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
 
     std::map<std::string,TileMatrixSet*>::iterator iTms;
     for ( iTms = server->getTmsList().begin(); iTms != server->getTmsList().end(); iTms++ )
@@ -536,7 +543,7 @@ void rok4KillServer ( Rok4Server* server ) {
 
     //Clear proj4 cache
     pj_clear_initcache();
-    
+
     delete sc;
     delete server;
     sc = NULL;
@@ -549,14 +556,30 @@ void rok4KillLogger() {
     loggerInitialised = false;
     Accumulator* acc = NULL;
     for ( int i=0; i<= nbLogLevel ; i++ )
-        if (Logger::getAccumulator( (LogLevel) i )) {
-            acc = Logger::getAccumulator( (LogLevel) i );
+        if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
+            acc = Logger::getAccumulator ( ( LogLevel ) i );
             break;
         }
     Logger::stopLogger();
-    if (acc) {
+    if ( acc ) {
         delete acc;
     }
-    
+
 }
+
+/**
+ * @brief Fermeture des descripteurs de fichiers
+ */
+void rok4ReloadLogger() {
+        Accumulator* acc = NULL;
+    for ( int i=0; i<= nbLogLevel ; i++ )
+        if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
+            acc = Logger::getAccumulator ( ( LogLevel ) i );
+            break;
+        }
+        if(acc) {
+            acc->close();
+        }
+}
+
 
