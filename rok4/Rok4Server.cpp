@@ -331,13 +331,16 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         if ( servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             image = new StyledImage ( image, 4, style->getPalette() );
             switch ( pyrType ) {
-
+            
+            //Only use int8 output while styling
             case TIFF_RAW_FLOAT32 :
                 pyrType = TIFF_RAW_INT8;
             case TIFF_ZIP_FLOAT32 :
                 pyrType = TIFF_ZIP_INT8;
             case TIFF_LZW_FLOAT32 :
                 pyrType = TIFF_LZW_INT8;
+            case TIFF_PKB_FLOAT32 :
+                pyrType = TIFF_PKB_INT8;
             case TIFF_RAW_INT8 :
             case TIFF_ZIP_INT8 :
             case TIFF_LZW_INT8 :
