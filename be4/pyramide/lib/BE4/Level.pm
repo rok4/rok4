@@ -264,7 +264,7 @@ sub getLevelToXML {
     my $dirimg   = $self->{dir_image};
     $levelXML =~ s/__DIRIMG__/$dirimg/;
 
-    my $pathnd = $self->{dir_nodata}."/nd.tiff";
+    my $pathnd = $self->{dir_nodata}."/nd.tif";
     $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
     my $tilew    = $self->{size}->[0];

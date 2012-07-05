@@ -2241,7 +2241,7 @@ None by default.
                             |__ ${ID_LEVELN}/
                 |_____ ${NODATA}/
                             |__ ${ID_LEVEL0}/
-                                |__nd.tiff (it can be a link)
+                                |__nd.tif (it can be a link)
                             .
                             .
                             .

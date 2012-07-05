@@ -1439,7 +1439,7 @@ sub writeNodata {
     TRACE;
     
     my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
-    $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+    $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tif");
         
     my $nodatadir = dirname($nodataFilePath);
 
