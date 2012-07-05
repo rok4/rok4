@@ -35,91 +35,111 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _TIFFLZWENCODER_
-#define _TIFFLZWENCODER_
+#ifndef _TIFFPACKBITSENCODER_
+#define _TIFFPACKBITSENCODER_
 
 #include "Data.h"
 #include "Image.h"
-#include "lzwEncoder.h"
 #include "TiffHeader.h"
+#include "pkbEncoder.h"
 
-#include <iostream>
-#include <string.h> // Pour memcpy
-#include <algorithm>
+#include <cstring>
+#include <cstdlib>
 
 template <typename T>
-class TiffLZWEncoder : public TiffEncoder {
+class TiffPackBitsEncoder : public TiffEncoder {
+
+    enum compression_state { BASE,
+                             LITERAL,
+                             RUN/*,
+                            LITERAL_RUN*/
+                           };
+
 protected:
     Image *image;
     int line;   // Ligne courante
-
-    size_t rawBufferSize;
     T* rawBuffer;
-    size_t lzwBufferSize;
-    size_t lzwBufferPos;
-    uint8_t* lzwBuffer;
+    size_t rawBufferSize;
+    
+    size_t pkbBufferSize;
+    size_t pkbBufferPos;
+    uint8_t* pkbBuffer;
 
 public:
-    TiffLZWEncoder ( Image *image ) : image ( image ), line ( -1 ), rawBufferSize ( 0 ), lzwBufferSize ( 0 ),lzwBufferPos ( 0 ) , lzwBuffer ( NULL ), rawBuffer ( NULL ) {}
-    ~TiffLZWEncoder() {
-        if ( lzwBuffer ) delete[] lzwBuffer;
-        delete image;
+    TiffPackBitsEncoder ( Image *image ) : image ( image ), line ( -1 ),rawBufferSize( 0 ) , pkbBufferPos( 0 ), pkbBufferSize(0), pkbBuffer ( NULL ), rawBuffer( NULL ) {
+
     }
-    size_t read ( uint8_t *buffer, size_t size ) {
+    ~TiffPackBitsEncoder() {
+        delete image;
+        if (rawBuffer) 
+            delete[] rawBuffer;
+        if ( pkbBuffer )
+            delete[] pkbBuffer;
+    }
+
+    virtual size_t read ( uint8_t *buffer, size_t size ) {
         size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->width*image->channels, dataToCopy=0;
-        if ( !lzwBuffer ) {
-            rawBuffer = new T[image->height*image->width*image->channels];
+        
+        if ( !pkbBuffer ) {
+            pkbBuffer = new uint8_t[linesize* image->height * sizeof ( T ) *2];
+            pkbBufferSize = 0;
+            rawBuffer = new T[linesize];
+            rawBufferSize = linesize * sizeof ( T );
             int lRead = 0;
+            pkbEncoder encoder;
+            uint8_t * pkbLine;
             for ( ; lRead < image->height ; lRead++ ) {
-                image->getline ( rawBuffer + rawBufferSize, lRead );
-                rawBufferSize += linesize;
+                image->getline (rawBuffer, lRead );
+                size_t pkbLineSize = 0;
+                pkbLine =  encoder.encode ( ( uint8_t* ) rawBuffer,rawBufferSize, pkbLineSize );
+                memcpy(pkbBuffer+pkbBufferSize,pkbLine,pkbLineSize);
+                pkbBufferSize += pkbLineSize;
+                delete[] pkbLine;
             }
-            rawBufferSize *= sizeof ( T );
-            lzwEncoder encoder;
-            lzwBuffer = encoder.encode ( ( uint8_t* ) rawBuffer,rawBufferSize, lzwBufferSize );
             delete[] rawBuffer;
             rawBuffer = NULL;
         }
 
+        
         if ( line == -1 ) { // écrire le header tiff
-            // Si pas assez de place pour le header, ne rien écrire.
-            if ( size < header_size ) return 0;
-
-            // Ceci est du tiff avec une seule strip.
             if ( image->channels==1 )
                 if ( sizeof ( T ) == sizeof ( float ) ) {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, header_size );
+                    memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_FLOAT32_GRAY, header_size );
                 } else {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_GRAY, header_size );
+                    memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_INT8_GRAY, header_size );
                 }
             else if ( image->channels==3 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, header_size );
+                memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_INT8_RGB, header_size );
             else if ( image->channels==4 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, header_size );
+                memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_INT8_RGBA, header_size );
             * ( ( uint32_t* ) ( buffer+18 ) )  = image->width;
             * ( ( uint32_t* ) ( buffer+30 ) )  = image->height;
             * ( ( uint32_t* ) ( buffer+102 ) ) = image->height;
-            * ( ( uint32_t* ) ( buffer+114 ) ) = lzwBufferSize;
+            * ( ( uint32_t* ) ( buffer+114 ) ) = pkbBufferSize ;
             offset = header_size;
             line = 0;
         }
 
         if ( size - offset > 0 ) { // il reste de la place
-            if ( lzwBufferPos <= lzwBufferSize ) { // il reste de la donnée
-                dataToCopy = std::min ( size-offset, lzwBufferSize -lzwBufferPos );
-                memcpy ( buffer+offset,lzwBuffer+lzwBufferPos,dataToCopy );
-                lzwBufferPos+=dataToCopy;
+            if ( pkbBufferPos <= pkbBufferSize ) { // il reste de la donnée
+                dataToCopy = std::min ( size-offset, pkbBufferSize - pkbBufferPos );
+                memcpy ( buffer+offset, pkbBuffer+pkbBufferPos, dataToCopy );
+                pkbBufferPos+=dataToCopy;
                 offset+=dataToCopy;
             }
         }
 
         return offset;
     }
-    bool eof() {
-        return ( lzwBufferPos>=lzwBufferSize );
+    virtual bool eof() {
+        return ( pkbBufferPos>=pkbBufferSize );
     }
+
+
+
 };
 
 #endif
+
 
 

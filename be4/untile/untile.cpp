@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   if (argc == 1){
     std::cout << "untile version "<< BE4_VERSION << std::endl;
     std::cout << std::endl << "untile: get tiles out of the tiff" << std::endl; 
-    std::cout << "usage: until <filename> [-c <colomn> -r <row> -s <suffix>] !! options are not implemented yet !!" << std::endl << std::endl; 
+    std::cout << "usage: untile <filename> [-c <colomn> -r <row> -s <suffix>] !! options are not implemented yet !!" << std::endl << std::endl; 
     std::cout << "Kind of prototype..." << std::endl; 
     std::cout << "Do not handle tiled image yet" << std::endl; 
     std::cout << "Do not handle bigendian yet" << std::endl; 

@@ -3,6 +3,7 @@ syntax: glob
 *.komodoproject
 build
 build*
+*.komodoproject
 *.kate-swp
 .kdev_include_paths
 syntax: regexp

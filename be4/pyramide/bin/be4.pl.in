@@ -473,7 +473,7 @@ Steps in order, using parameters.
     - Load data sources
     - Create the Pyramid object
     - Create the Process object
-    - Write (initialization) the cache
+    - Write (initialization) the cache and its list
     - Write the pyramid's descriptor
     - Compute trees (write scripts)
 =cut
@@ -516,7 +516,7 @@ sub doIt {
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDataSources);
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDataSources,$params->{process}->{path_temp});
     
     if (! defined $objPyramid) {
         ERROR ("Can not load Pyramid !");
@@ -546,10 +546,10 @@ sub doIt {
     ##################
     # write the pyramid cache
     
-    ALWAYS(">>> Write Cache Pyramid ...");
+    ALWAYS(">>> Write Cache Pyramid and the list ...");
 
-    if (! $objPyramid->writeCachePyramid()) {
-        ERROR ("Can not write Pyramid Cache !");
+    if (! $objPyramid->writeCachePyramid($objProcess->{trees})) {
+        ERROR ("Can not write Pyramid Cache or the list !");
         return FALSE;
     }
     
@@ -680,7 +680,7 @@ Complete file path to configuration file for data sources (F</home/ign/SOURCE/so
 
 =item pyr_name_new
 
-Name of the new pyramid, used to name the descriptor, the data directory and the temporary directory.
+Name of the new pyramid, used to name the descriptor, the cache's list, the data directory and the temporary directory.
 
 =item pyr_desc_path
 
@@ -712,7 +712,7 @@ Default : pyr_data_path value.
 
 =item compression
 
-Possible values : raw, jpg, zip, lzw, png. png compression is not an official compression for tiff format (just readable by rok4).
+Possible values : raw, jpg, zip, lzw, png, pkb. png compression is not an official compression for tiff format (just readable by rok4).
 
 Default : raw.
 
@@ -814,6 +814,8 @@ Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2
 
 Descriptor file: F<pyr_desc_path/pyr_name.pyr>
 
+List file: F<pyr_desc_path/pyr_name.list>
+
 Cache directory: F<pyr_data_path/pyr_name/>
 
 TMS file: F<tms_path/tms_name>
@@ -893,7 +895,7 @@ A file configuration can be composed of sections and parameters following :
     [ section ]
     parameter  = value     ; comments
     ;comments
-    
+
 In a data source configuration, sections are level ID, from which the data source is used.
 
 =head1 OPTIONS

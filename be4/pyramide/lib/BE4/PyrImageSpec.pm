@@ -57,7 +57,8 @@ our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
-# constantes
+################################################################################
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -74,7 +75,7 @@ INIT {
 
 %IMAGESPEC = (
     interpolation => ['nn','bicubic','linear','lanczos'],
-    compression => ['raw','jpg','png','lzw','zip'],
+    compression => ['raw','jpg','png','lzw','zip','pkb'],
     compressionoption => ['none','crop']
 );
 
