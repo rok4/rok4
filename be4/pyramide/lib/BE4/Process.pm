@@ -539,7 +539,6 @@ sub computeAboveImage {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
             $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
             $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
-            $bg.=" -b $bgImgPath";
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
@@ -548,11 +547,13 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $weight += WGET_W;
+                    $bg.=" -b $bgImgPath";
                     $code .= $self->wms2work($node, $bgImgName);
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $code .= $self->cache2work($node, $bgImgName);
+                $bg.=" -b $bgImgPath";
             }
         }
     }
@@ -738,7 +739,7 @@ sub wms2work {
                                                    imagesize => [$imgSize[0], $imgSize[1]]
                                                    );
   
-  my $cmd=sprintf "wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
+  my $cmd=sprintf "Wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
   
   return $cmd;
 }
