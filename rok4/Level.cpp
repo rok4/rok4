@@ -333,7 +333,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* ndSource = (errorDataSource?errorDataSource:noDataSourceProxy);
     size_t size;
 
-	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 )&& source!=0 && source->getData(size)!=0){
+	if ((format==TIFF_RAW_INT8 || format == TIFF_LZW_INT8 || format==TIFF_LZW_FLOAT32 || format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 || format==TIFF_PKB_FLOAT32 || format==TIFF_PKB_INT8 )&& source!=0 && source->getData(size)!=0){
         LOGGER_DEBUG ( _("GetTile Tiff") );
                 TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
                 return new DataSourceProxy(fullTiffDS,*ndSource);
@@ -345,7 +345,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
     LOGGER_DEBUG ( _("GetTile Image") );
-    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32)
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32)
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
