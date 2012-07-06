@@ -316,10 +316,12 @@ sub identifyBottomTiles {
     } else {
         # We have just a WMS service as source. We use extent to determine bottom tiles
         my $convertExtent = $datasource->{extent}->Clone();
-        eval { $convertExtent->Transform($ct); };
-        if ($@) { 
-            ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
-            return FALSE;
+        if (defined $ct) {
+            eval { $convertExtent->Transform($ct); };
+            if ($@) { 
+                ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
+                return FALSE;
+            }
         }
         
         my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]

@@ -167,7 +167,7 @@ sub _load {
     }
     $self->{imageSource} = $imagesource;
 
-    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we want others
+    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
     my $harvesting = undef;
     if (exists $params->{wms_layer}) {
         $harvesting = BE4::Harvesting->new({
@@ -176,6 +176,10 @@ sub _load {
             wms_version => $params->{wms_version},
             wms_request => $params->{wms_request},
             wms_format  => $params->{wms_format},
+            wms_style => $params->{wms_style},
+            wms_bgcolor => $params->{wms_bgcolor},
+            wms_transparent  => $params->{wms_transparent},
+            min_size  => $params->{min_size},
             image_width  => $params->{image_width},
             image_height  => $params->{image_height}
         });
@@ -376,18 +380,22 @@ BE4::DataSource - Managing a data source
         }
     );
     
-    # No Data, just harvesting
+    # No Data, just harvesting (here for a WMS vector)
     my $objDataSource = BE4::DataSource->new(
         "19",
         {
             srs => IGNF:WGS84G,
             extent => /home/ign/SHAPE/GMLPolygon.txt,
             
-            wms_layer => "ORTHO_XXX",
+            wms_layer   => "tp:TRONCON_ROUTE",
             wms_url => "http://geoportail/wms/",
             wms_version => "1.3.0",
             wms_request => "getMap",
-            wms_format => "image/tiff",
+            wms_format  => "image/png",
+            wms_bgcolor => "0xFFFFFF",
+            wms_transparent  => "FALSE",
+            wms_style  => "line",
+            min_size => 9560,
             image_width => 1024,
             image_height => 1024
         }
@@ -403,9 +411,7 @@ BE4::DataSource - Managing a data source
             wms_url => "http://geoportail/wms/",
             wms_version => "1.3.0",
             wms_request => "getMap",
-            wms_format => "image/tiff",
-            image_width => 1024,
-            image_height => 1024
+            wms_format => "image/tiff"
         }
     );
 

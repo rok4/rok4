@@ -83,11 +83,13 @@ my $BASHFUNCTIONS   = <<'FUNCTIONS';
 Wms2work () {
   local img_dst=$1
   local url=$2
+  local png=$2
   local count=0; local wait_delay=60
   while :
   do
     let count=count+1
-    wget --no-verbose -O $img_dst $url 
+    wget --no-verbose -O $img_dst $url
+    if [ $png ] ; then break ; fi
     if tiffck $img_dst ; then break ; fi
     echo "Failure $count : wait for $wait_delay s"
     sleep $wait_delay
@@ -127,8 +129,11 @@ Work2cache () {
   if [ -r $cache ] ; then rm -f $cache ; fi
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
-  tiff2tile $work __t2t__  $cache
-  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  if [ -f $work ] ; then
+    echo "tiff2tile"
+    tiff2tile $work __t2t__  $cache
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
 }
 
 MergeNtiff () {
@@ -229,6 +234,7 @@ sub _init {
     # manadatory !
     $self->{job_number} = $params_process->{job_number}; 
     $self->{path_temp}  = $params_process->{path_temp};
+    $self->{path_shell} = $params_process->{path_shell};
     $self->{path_shell} = $params_process->{path_shell};
 
     if (! defined $self->{job_number}) {
@@ -816,8 +822,7 @@ Parameters:
     fileName - file to save the download (level_x_y.tif).
 =cut
 sub wms2work {
-    #  FIXME: - appeler la méthode de l'objet src
-    #         - parametrer le proxy (placer une option dans le fichier de configuration [harvesting] !)
+    #  FIXME: - parametrer le proxy (placer une option dans le fichier de configuration [harvesting] !)
     my ($self, $node, $fileName) = @_;
     
     TRACE;
@@ -828,7 +833,9 @@ sub wms2work {
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->{level}); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet();
     
-    my @requests = $tree->{datasource}->{harvesting}->doRequestUrl(
+    my $harvesting = $tree->{datasource}->{harvesting};
+    
+    my @requests = $harvesting->doRequestUrl(
         srs      => $tms->getSRS(),
         bbox     => [$imgDesc->{xMin},$imgDesc->{yMin},$imgDesc->{xMax},$imgDesc->{yMax}],
         imagesize => [$imgSize[0], $imgSize[1]]
@@ -836,11 +843,17 @@ sub wms2work {
   
     my $cmd="";
     
-    my $nodeName = $self->workNameOfNode($node);
+    my $nodeName = sprintf "%s_%s_%s",$node->{level},$node->{x},$node->{y};
     
     if (scalar @requests == 0) {
         ERROR("Cannot harvest image for node $nodeName");
         exit 4;
+    }
+    
+    # Si on a une taille minimale :
+    #   - on somme, DANS LES SCRIPTS, le poids de chaque morceau, et on compare à la fin avec la taille minimale
+    if (defined $harvesting->{min_size}) {
+        $cmd .= sprintf "size=0\n";
     }
     
     # Si plusieurs requêtes :
@@ -857,24 +870,47 @@ sub wms2work {
         # On requête toutes les images avec éventuellement plusieurs tentatives
         my $partFileName = $fileName;
         
-        if (scalar @requests > 1) {
+        if (scalar @requests > 1 || $harvesting->{FORMAT} eq "image/png") {
             # Si il y a plusieurs images, on ajoute au chemin d'écriture un dossier et on suffixe les images
-            my $suffix = sprintf "_%02d",$i;
-            $partFileName =~ s/\.tif/$suffix\.tif/;
+            $partFileName = sprintf "img%02d",$i;
+            if ($harvesting->{FORMAT} eq "image/png") {
+                $partFileName .= ".png";
+            } else {
+                $partFileName .= ".tif";
+            }
             $partFileName = "$nodeName/".$partFileName;
         }
         
-        $cmd .= sprintf "Wms2work \${TMP_DIR}/%s \"%s\"\n",$partFileName,$requests[$i];
+        $cmd .= sprintf "Wms2work \${TMP_DIR}/%s \"%s\"",$partFileName,$requests[$i];
+        
+        if ($harvesting->{FORMAT} eq "image/png") {
+            $cmd .= " png\n";
+        } else {
+            $cmd .= "\n";
+        }
+        
+        if (defined $harvesting->{min_size}) {
+            $cmd .= "let size=\`stat -c \"\%s\" ";
+            $cmd .= sprintf "\${TMP_DIR}/%s\`+\$size\n",$partFileName;
+        }
         
     }
     
-    if (scalar @requests > 1) {
+    if (defined $harvesting->{min_size}) {
+        $cmd .= sprintf "if [ \$size -lt %s ] ; then\n rm -r \${TMP_DIR}/%s\n echo \"Global image is empty\"\n else \n",$harvesting->{min_size},$nodeName;
+    }
+    
+    if (scalar @requests > 1 || $harvesting->{FORMAT} eq "image/png") {
         # On configure le montage, les images sont déjà nommées dans le bon ordre
         my $width = $tree->{datasource}->{harvesting}->{image_width};
         my $height = $tree->{datasource}->{harvesting}->{image_height};
-        $cmd .=  sprintf "montage -geometry %sx%s -tile %sx%s \${TMP_DIR}/%s/*.tif -depth %s",
+        
+        my $ext = "tif";
+        $ext = "png" if ($harvesting->{FORMAT} eq "image/png");
+        
+        $cmd .=  sprintf "montage -geometry %sx%s -tile %sx%s \${TMP_DIR}/%s/*.%s -depth %s",
             $width,$height,$imgSize[0]/$width,$imgSize[1]/$height,
-            $nodeName,$self->{pyramid}->getBitsPerSample();
+            $nodeName,$ext,$self->{pyramid}->getBitsPerSample();
             
         $cmd .=  " -background none" if (int($self->{pyramid}->getSamplesPerPixel()) == 4);
         
@@ -882,6 +918,10 @@ sub wms2work {
             $self->{pyramid}->getCacheImageWidth($node->{level}),$fileName, RESULT_TEST;
 
         $cmd .=  sprintf ("rm -rf \${TMP_DIR}/%s/\n",$nodeName);
+    }
+    
+    if (defined $harvesting->{min_size}) {
+        $cmd .= "fi\n";
     }
     
     return $cmd;

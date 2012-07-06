@@ -800,13 +800,19 @@ Mandatory
 
 Number of split scripts. If job_number = 5 -> 5 split scripts (can run in parallel) + one finisher (when splits are finished) = 6 scripts.
 
+Mandatory.
+
 =item path_temp
 
 Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new/>.
 
+Mandatory.
+
 =item path_shell
 
 Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... and F<SCRIPT_FINISHER.sh> for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
+
+Mandatory.
 
 =back
 
@@ -866,13 +872,31 @@ Mandatory if wms_layer is present.
 
 =item wms_format
 
-image/jpeg, image/png, image/tiff, image/x-bil;bits=32
+Possible values : image/png, image/tiff, image/x-bil;bits=32.
 
 Mandatory if wms_layer is present.
 
-=item image_width
+=item wms_style
 
-Mandatory if wms_layer is present.
+Optionnal.
+
+=item wms_transparent
+
+TRUE or FALSE
+
+Optionnal.
+
+=item min_size
+
+Used to remove too short harvested images.
+
+Optionnal.
+
+=item wms_bgcolor
+
+Format : 0xFFFFFF
+
+Optionnal.
 
 =item extent
 
@@ -882,7 +906,7 @@ Mandatory if path_image is not present.
 
 Optionnal.
 
-=item image_height
+=item image_width,image_height
 
 Optionnal.
 

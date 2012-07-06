@@ -56,9 +56,19 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
+# Global
+my %WMS;
+
+################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+    
+%WMS = (
+    wms_format => ['image/png','image/tiff','image/x-bil;bits=32'],
+);
+    
+}
 END {}
 
 ################################################################################
@@ -71,6 +81,7 @@ variable: $self
     * REQUEST  => undef, # ie getMap
     * FORMAT   => undef, # ie image/png
     * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
+    * OPTIONS    => undef, # transparence, background color, style
     * image_width => 4096, # max images size which will be harvested, can be undefined
     * image_height => 4096
 =cut
@@ -91,6 +102,8 @@ sub new {
         REQUEST  => undef,
         FORMAT   => undef,
         LAYERS    => undef,
+        OPTIONS    => "STYLES=",
+        min_size => undef,
         image_width => undef,
         image_height => undef
     };
@@ -113,6 +126,8 @@ sub _init {
     
     return FALSE if (! defined $params);
     
+    ALWAYS (sprintf "params %s",Dumper($params) ); #TEST#
+    
     # 'image_width' and 'image_height' are optionnal, but if one is defined, the other must be defined
     if (exists($params->{image_width}) && defined ($params->{image_width})) {
         $self->{image_width} = $params->{image_width};
@@ -128,24 +143,69 @@ sub _init {
             return FALSE ;
         }
     }
+    
+    if (exists($params->{wms_style}) && defined ($params->{wms_style})) {
+        # "STYLES=" is always present in the options
+        $self->{OPTIONS} .= $params->{wms_style};
+    }
+    
+    my $hasBGcolor = FALSE;
+    
+    if (exists($params->{wms_bgcolor}) && defined ($params->{wms_bgcolor})) {
+        if ($params->{wms_bgcolor} !~ m/^0x[a-fA-F0-9]{6}/) {
+            ERROR("Parameter 'wms_bgcolor' must be to format '0x' + 6 numbers in hexadecimal format.");
+            return FALSE ;
+        }
+        $self->{OPTIONS} .= "&BGCOLOR=".$params->{wms_bgcolor};
+        $hasBGcolor = TRUE;
+    }
+    
+    if (exists($params->{wms_transparent}) && defined ($params->{wms_transparent})) {
+        if (uc($params->{wms_transparent}) ne "TRUE" && uc($params->{wms_transparent}) ne "FALSE") {
+            ERROR(sprintf "Parameter 'wms_transparent' have to be 'TRUE' or 'FALSE' (%s).",$params->{wms_transparent});
+            return FALSE ;
+        }
+        if (uc($params->{wms_transparent}) eq "TRUE" && $hasBGcolor) {
+            ERROR("If 'wms_bgcolor' is given, 'wms_transparent' must be 'FALSE'.");
+            return FALSE ;
+        }
+        $self->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_bgcolor});
+    }
+    
+    if (exists($params->{min_size}) && defined ($params->{min_size})) {
+        if (int($params->{min_size}) <= 0) {
+            ERROR("If 'min_size' is given, it must be strictly positive.");
+            return FALSE ;
+        }
+        $self->{min_size} .= int($params->{min_size});
+    }
 
     # Other parameters are mandatory
+    # URL
     if (! exists($params->{wms_url}) || ! defined ($params->{wms_url})) {
         ERROR("Parameter 'wms_url' is required !");
         return FALSE ;
     }
+    # VERSION
     if (! exists($params->{wms_version}) || ! defined ($params->{wms_version})) {
         ERROR("Parameter 'wms_version' is required !");
         return FALSE ;
     }
+    # REQUEST
     if (! exists($params->{wms_request}) || ! defined ($params->{wms_request})) {
         ERROR("Parameter 'wms_request' is required !");
         return FALSE ;
     }
+    # FORMAT
     if (! exists($params->{wms_format}) || ! defined ($params->{wms_format})) {
         ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
+    if (! $self->is_WmsFormat($params->{wms_format})) {
+        ERROR("Parameter 'wms_format' is not valid !");
+        return FALSE ;
+    }
+    # LAYER
     if (! exists($params->{wms_layer}) || ! defined ($params->{wms_layer})) {
         ERROR("Parameter 'wms_layer' is required !");
         return FALSE ;
@@ -225,7 +285,7 @@ sub doRequestUrl {
 
     for (my $i = 0; $i < $imagePerHeight; $i++) {
         for (my $j = 0; $j < $imagePerHeight; $j++) {
-            my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLES=",
+            my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&%s",
                     $self->url(),
                     $self->layers(),
                     $self->version(),
@@ -234,12 +294,34 @@ sub doRequestUrl {
                     $srs,
                     $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
                     $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight,
-                    $self->{image_width}, $self->{image_height});
+                    $self->{image_width}, $self->{image_height},
+                    $self->{OPTIONS});
             push @requests,$url;
         }
     }
 
     return @requests;
+}
+
+####################################################################################################
+#                                     ATTRIBUTE TESTS                                              #
+####################################################################################################
+
+# Group: attribute tests
+
+sub is_WmsFormat {
+    my $self = shift;
+    my $wmsformat = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $wmsformat);
+
+    foreach (@{$WMS{wms_format}}) {
+        return TRUE if ($wmsformat eq $_);
+    }
+    ERROR (sprintf "Unknown 'wms_format' (%s) !",$wmsformat);
+    return FALSE;
 }
 
 ####################################################################################################
@@ -338,7 +420,7 @@ BE4::Harvesting - Declare WMS service
     
     OR
     
-    # Image width and height defined
+    # Image width and height defined, style, transparent and background color (for a WMS vector)
     
     # Harvesting object creation
     my $objHarvesting = BE4::Harvesting->new({
@@ -346,8 +428,11 @@ BE4::Harvesting - Declare WMS service
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
         wms_request => "getMap",
-        wms_format  => "image/tiff"
-        image_width  => 1024
+        wms_format  => "image/png",
+        wms_bgcolor => "0xFFFFFF",
+        wms_transparent  => "FALSE",
+        wms_style  => "line",
+        image_width  => 1024,
         image_height  => 1024
     });
 
@@ -361,15 +446,18 @@ BE4::Harvesting - Declare WMS service
     
     # @requests contains 16 urls
     # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,5.25,47.25&WIDTH=4096&HEIGHT=4096&STYLES=
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,5.25,47.25&WIDTH=4096&HEIGHT=4096&STYLES=line&
+    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
     # ,
     # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.25,47,5.5,47.25&WIDTH=4096&HEIGHT=4096&STYLES=
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.25,47,5.5,47.25&WIDTH=4096&HEIGHT=4096&STYLES=line&
+    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
     # .
     # .
     # .
     # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.75,47.75,6,48&WIDTH=4096&HEIGHT=4096&STYLES=
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.75,47.75,6,48&WIDTH=4096&HEIGHT=4096&STYLES=line&
+    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
 
 =head1 DESCRIPTION
 
@@ -391,11 +479,19 @@ URL of rok4.
 
 =item FORMAT
 
-Image/tiff,png... or image/x-bil;bits=32
+Possible values : 'image/png', 'image/tiff', 'image/x-bil;bits=32'.
 
 =item LAYERS
 
 Name of the harvested resource
+
+=item OPTIONS
+
+Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent msut be 'FALSE'.
+
+=item min_size
+
+Used in Process.pm to remove too short harvested images.
 
 =item image_width, image_height
 
