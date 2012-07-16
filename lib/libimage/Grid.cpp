@@ -209,37 +209,22 @@ void Grid::update_bbox() {
     }
 }
 
-int Grid::interpolate_line ( int line, float* X, float* Y, int nb ) {
-    int ky = line / stepInt;
-    double wy;
-    double wx;
-    if (ky > nbyInt) {
-        wy= ( stepBottom - ( line%stepBottom ) ) /double ( stepBottom );
-    } else {
-        wy= ( stepInt - ( line%stepInt ) ) /double ( stepInt );
-    }
-    double LX[nbx], LY[nbx];
-    for ( int i = 0; i < nbx; i++ ) {
-        if (i > nbxInt) {
-            wx= ( stepRight - ( i%stepRight ) ) /double ( stepRight );
-        } else {
-            wx= ( stepInt - ( i%stepInt ) ) /double ( stepInt );
-        }
-        LX[i] = wx*gridX[ky*nbx + i] + ( 1-wx ) *gridX[ky * nbx + nbx + i];
-        LY[i] = wy*gridY[ky*nbx + i] + ( 1-wy ) *gridY[ky * nbx + nbx + i];
-    }
+int Grid::interpolate_line(int line, float* X, float* Y, int nb) {
+  int ky = line / stepInt;
+  double w = (stepInt - (line%stepInt))/double(stepInt);   
+  double LX[nbx], LY[nbx];
+  for(int i = 0; i < nbx; i++) {
+    LX[i] = w*gridX[ky*nbx + i] + (1-w)*gridX[ky * nbx + nbx + i];
+    LY[i] = w*gridY[ky*nbx + i] + (1-w)*gridY[ky * nbx + nbx + i];
+  }
 
-    for ( int i = 0; i < nb; i++ ) {
-        int kx = i / stepInt;
-        if (kx > nbxInt) {
-            wx= ( stepRight - ( i%stepRight ) ) /double ( stepRight );
-        } else {
-            wx= ( stepInt - ( i%stepInt ) ) /double ( stepInt );
-        }
-        X[i] = wx*LX[kx] + ( 1-wx ) *LX[kx+1];
-        Y[i] = wy*LY[kx] + ( 1-wy ) *LY[kx+1];
-    }
-    return nb;
+  for(int i = 0; i < nb; i++) {
+    int kx = i / stepInt;
+    double w = (stepInt - (i%stepInt))/double(stepInt);   
+    X[i] = w*LX[kx] + (1-w)*LX[kx+1];
+    Y[i] = w*LY[kx] + (1-w)*LY[kx+1];
+  }
+  return nb;
 }
 
 
