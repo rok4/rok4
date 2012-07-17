@@ -72,7 +72,7 @@ private:
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );
-    DataSource* getEncodedNoDataTile();
+
 
 
 protected:
@@ -125,6 +125,8 @@ public:
         return noDataFile;
     }
 
+    DataSource* getEncodedNoDataTile();
+    
     Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
     Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
@@ -139,7 +141,7 @@ public:
      * y = floor((Y - Y0) / (tile_height * resolution_y))
      */
 
-    DataSource* getTile ( int x, int y );
+    DataSource* getTile ( int x, int y, DataSource* errorDataSource = NULL );
 
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
 

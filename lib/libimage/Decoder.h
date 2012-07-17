@@ -58,6 +58,13 @@ struct LzwDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size);
 };
 
+struct DeflateDecoder {
+    static const uint8_t* decode(DataSource* encData, size_t &size);
+};
+
+struct PackBitsDecoder {
+    static const uint8_t* decode(DataSource* encData, size_t &size);
+};
 
 struct InvalidDecoder {
     static const uint8_t* decode(DataSource* encData, size_t &size) {
@@ -91,7 +98,7 @@ public:
         if (!decData && encData) {
             decData = Decoder::decode(encData, decSize);
             if (!decData) {
-                delete[] encData;
+                delete encData;
                 encData = 0;
             }
         }

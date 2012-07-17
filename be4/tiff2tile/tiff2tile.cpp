@@ -42,9 +42,11 @@
 #include "TiffReader.h"
 #include "TiledTiffWriter.h"
 #include "TiffWhiteManager.h"
+#include "../be4version.h"
 
 void usage() {
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpeg/lzw] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
+    std::cerr << "tiff2tile version "<< BE4_VERSION << std::endl;
+    std::cerr << "usage : tiff2tile input_file -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
     std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
 }
 
@@ -73,17 +75,22 @@ int main(int argc, char **argv) {
                         compression = COMPRESSION_PNG;
                         if(argv[i][3] == ':') quality = atoi(argv[i]+4);
                     }
-                    else if(strncmp(argv[i], "jpeg",4) == 0) {
+                    else if(strncmp(argv[i], "jpg",3) == 0) {
                         compression = COMPRESSION_JPEG;
                         if(argv[i][4] == ':') quality = atoi(argv[i]+5);
                     }
                     else if(strncmp(argv[i], "lzw",3) == 0) {
                         compression = COMPRESSION_LZW;
                     }
+                    else if(strncmp(argv[i], "zip",3) == 0) {
+                        compression = COMPRESSION_DEFLATE;
+                    }
+                    else if(strncmp(argv[i], "pkb",3) == 0) {
+                        compression = COMPRESSION_PACKBITS;
+                    }
                     else {
-                        compression = COMPRESSION_NONE;
-                        std::cerr << "Warning : unknown compression ("<< argv[i] 
-                            <<"), no compression will be used" << std::endl;
+                        std::cerr << "Error : unknown compression ("<< argv[i] <<")." << std::endl;
+                        exit(2);
                     }
                     break;
                 case 'p': // photometric
@@ -139,7 +146,7 @@ int main(int argc, char **argv) {
     if (crop) {
         TiffWhiteManager TWM(input,input,true,true);
         if (! TWM.treatWhite()) {
-            std::cerr << "Unbale to treat white pixels in this image : " << input << std::endl;
+            std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
             exit(2);
         }
     }

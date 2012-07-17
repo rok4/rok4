@@ -75,6 +75,9 @@
 #define COMPRESSION_JPEG        7       /* %JPEG DCT compression */
 #define	COMPRESSION_PNG         8   	/* Zlib compression PNG spec */
 #define	COMPRESSION_LZW         5   	/* liblzw */
+#define COMPRESSION_ADOBE_DEFLATE 8     /* Zlib */
+#define COMPRESSION_DEFLATE     32946   /* Zlib */
+#define COMPRESSION_PACKBITS     32773   /* Packbits */
 
 #define	PHOTOMETRIC_MINISBLACK	1	/* min value is black */
 #define	PHOTOMETRIC_RGB		2	/* RGB color model */
@@ -142,7 +145,9 @@ class TiledTiffWriter {
     size_t computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop);
     void emptyWhiteBlock(uint8_t *buffheight, int l);
     size_t computeLzwTile(uint8_t *buffer, uint8_t *data);
+    size_t computePackbitsTile(uint8_t *buffer, uint8_t *data);
     size_t computePngTile (uint8_t *buffer, uint8_t *data);
+    size_t computeDeflateTile (uint8_t *buffer, uint8_t *data);
   public: 
 
     /*

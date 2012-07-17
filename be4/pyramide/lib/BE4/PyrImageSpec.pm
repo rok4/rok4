@@ -65,7 +65,7 @@ INIT {
 
 %IMAGESPEC = (
     interpolation => ['nn','bicubic','linear','lanczos'],
-    compression => ['raw','jpg','png','lzw'],
+    compression => ['raw','jpg','png','lzw','zip','pkb'],
     compressionoption => ['none','crop']
 );
 
@@ -338,7 +338,9 @@ sub decodeFormat {
         return undef;
     }
   
-    $value[2] =~ m/(\w+)(\d+)/;
+    # FIXME : cette regex ne fonctionne pas toujours ?!
+    # $value[2] =~ m/(\w+)(\d+)/; 
+    $value[2] =~ m/([A-Z]+)([0-9]+)/;
 
     # Contrôle de la valeur sampleFormat extraite
     my $sampleformatCode = $1;

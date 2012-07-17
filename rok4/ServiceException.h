@@ -90,7 +90,8 @@ typedef enum {
                                         dimension value. */
     OWS_OPERATION_NOT_SUPORTED= 14,  /*!< Request is for an optional operation
                                         that is not supported by the server.*/
-    WMTS_TILE_OUT_OF_RANGE= 15       /*!< TileRow or TileCol out of range */
+    WMTS_TILE_OUT_OF_RANGE= 15,       /*!< TileRow or TileCol out of range */
+    HTTP_NOT_FOUND = 16                  /*!< HTTP 404 implementation */
 
 } ExceptionCode;
 

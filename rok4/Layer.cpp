@@ -39,8 +39,8 @@
 #include "Pyramid.h"
 #include "Logger.h"
 
-DataSource* Layer::gettile ( int x, int y, std::string tmId ) {
-    return dataPyramid->getTile ( x, y, tmId );
+DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
+    return dataPyramid->getTile ( x, y, tmId, errorDataSource );
 }
 
 Image* Layer::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
@@ -53,10 +53,12 @@ std::string Layer::getId() {
 }
 
 Layer::~Layer() {
-    while (!(WMSCRSList.empty())){
-        CRS* tmp = WMSCRSList.back();
+    
+    /*for (int i = 0 ; i < WMSCRSList.size() ; i++) {
+        CRS* tmp = WMSCRSList.at(i);
         delete tmp;
-        WMSCRSList.pop_back();
     }
+    WMSCRSList.clear();*/
+    
     delete dataPyramid;
 }

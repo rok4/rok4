@@ -130,7 +130,7 @@ public:
      * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
      * indiquer le nombre réel de coefficients écrits dans W.
      */
-    virtual int weight(float* W, int &length, double x, double ratio) const;
+    virtual double weight(float* W, int &length, double x, double ratio) const;
 
 };
 

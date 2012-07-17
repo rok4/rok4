@@ -2046,6 +2046,11 @@ int FCGX_OpenSocket(const char *path, int backlog)
     return rc;
 }
 
+int FCGX_CloseSocket ( int sock ) {
+    return OS_Close(sock);
+}
+
+
 int FCGX_InitRequest(FCGX_Request *request, int sock, int flags)
 {
     memset(request, 0, sizeof(FCGX_Request));
@@ -2092,6 +2097,24 @@ int FCGX_Init(void)
     webServerAddressList = p ? StringCopy(p) : NULL;
 
     libInitialized = 1;
+    return 0;
+}
+
+
+/*
+ *----------------------------------------------------------------------
+ *
+ * FCGX_Close --
+ *
+ *      Free memory . Call in multi-threaded apps
+ *
+ *      Returns 0 upon success.
+ *
+ *----------------------------------------------------------------------
+ */
+int FCGX_Close(void){
+    OS_LibShutdown();
+    libInitialized = 0;
     return 0;
 }
 

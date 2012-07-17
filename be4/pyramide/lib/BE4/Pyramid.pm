@@ -47,6 +47,7 @@ use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
+use Tie::File;
 
 use Data::Dumper;
 
@@ -144,34 +145,6 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
-my $STRLEVELTMPLT = <<"TLEVEL";
-    <level>
-        <tileMatrix>__ID__</tileMatrix>
-        <baseDir>__DIRIMG__</baseDir>
-<!-- __MTD__ -->
-        <tilesPerWidth>__TILEW__</tilesPerWidth>
-        <tilesPerHeight>__TILEH__</tilesPerHeight>
-        <pathDepth>__DEPTH__</pathDepth>
-        <nodata>
-            <filePath>__NODATAPATH__</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>__MINROW__</minTileRow>
-            <maxTileRow>__MAXROW__</maxTileRow>
-            <minTileCol>__MINCOL__</minTileCol>
-            <maxTileCol>__MAXCOL__</maxTileCol>
-        </TMSLimits>
-    </level>
-<!-- __LEVELS__ -->
-TLEVEL
-
-my $STRLEVELTMPLTMORE = <<"TMTD";
-            <metadata type='INT32_DB_LZW'>
-                <baseDir>__DIRMTD__</baseDir>
-                <format>__FORMATMTD__</format>
-            </metadata>
-TMTD
-
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -180,6 +153,7 @@ sub new {
     my $this = shift;
     my $params = shift;
     my $datasource = shift;
+    my $path_temp = shift;
 
     my $class= ref($this) || $this;
     my $self = {
@@ -196,12 +170,14 @@ sub new {
             name      => undef, # string name
             desc_path     => undef, # path
             data_path     => undef, # path
+            content_path  => undef,
         },
         isnewpyramid => 1,     # new pyramid by default !
         old_pyramid => { 
             name      => undef, # string name
             desc_path     => undef, # path
             data_path     => undef, # path
+            content_path  => undef,
         },
 
         pyr_level_bottom  => undef, # number
@@ -222,8 +198,6 @@ sub new {
         tms        => undef,   # it's an object !
         nodata     => undef,   # it's an object !
         levels     => {},      # it's a hash of object level !
-        cache_tile => [],      # ie tile image to link  !
-        cache_dir  => [],      # ie dir to search !
         #
         dataLimits => {      # data's limits, in the pyramid's SRS
             xmin => undef,
@@ -241,7 +215,7 @@ sub new {
     return undef if (! $self->_init($params,$datasource));
 
     # a new pyramid or from existing pyramid !
-    return undef if (! $self->_load($params));
+    return undef if (! $self->_load($params,$path_temp));
 
     return $self;
 }
@@ -368,6 +342,9 @@ sub _init {
     }
     $self->{imagesize} = $params->{imagesize};
     #
+    if (! exists($params->{nowhite})) {
+        $params->{nowhite} = 'false';
+    }
     if (! exists($params->{color})) {
         WARN ("Parameter 'color' (for nodata) has not been set. The default value will be used (consistent with the pixel's format");
         $params->{color} = undef;
@@ -431,6 +408,7 @@ sub _init {
 sub _load {
     my $self = shift;
     my $params = shift;
+    my $path_temp = shift;
 
     TRACE;
 
@@ -442,7 +420,7 @@ sub _load {
         #
         # init. process hasn't checked all parameters,
         # so, we must read file pyramid to initialyze them...
-        return FALSE if (! $self->_fillFromPyramid($params));
+        return FALSE if (! $self->_fillFromPyramid($params,$path_temp));
     }
 
     # create NoData !
@@ -450,7 +428,8 @@ sub _load {
             path_nodata      => $params->{path_nodata},
             pixel            => $self->getPixel(),
             imagesize        => $self->getImageSize(), 
-            color            => $params->{color}
+            color            => $params->{color},
+            nowhite          => $params->{nowhite}
     });
 
     if (! defined $objNodata) {
@@ -476,6 +455,8 @@ sub _fillToPyramid {
     my $self  = shift;
     my $params = shift;
 
+    TRACE();
+    
     # create PyrImageSpec !
     my $pyrImgSpec = BE4::PyrImageSpec->new({
         bitspersample => $params->{bitspersample},
@@ -531,6 +512,7 @@ sub _fillToPyramid {
 sub _fillFromPyramid {
     my $self  = shift;
     my $params = shift;
+    my $path_temp = shift;
 
     TRACE;
 
@@ -540,12 +522,25 @@ sub _fillFromPyramid {
         return FALSE;
     }
 
-    my $cachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),$self->getPyrNameOld());
-
-    if (! $self->readCachePyramid($cachepyramid)) {
-        ERROR (sprintf "Can not read the Directory Cache Pyramid : %s !", $cachepyramid);
-        return FALSE;
+    my $listpyramid = File::Spec->catfile($self->getPyrDescPathOld(),$self->getPyrNameOld().".list");
+    if (! -f $listpyramid) {
+        my $cachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),$self->getPyrNameOld());
+        
+        if (! defined $path_temp) {
+            ERROR("'path_temp' must be defined to write the file list if it doesn't exist.");
+            return FALSE;
+        }
+        $listpyramid = File::Spec->catfile($path_temp,$self->getPyrName(),$self->getPyrNameOld().".list");
+        
+        WARN(sprintf "Cache list file does not exist. We browse the old cache to create it (%s).",$listpyramid);
+        
+        if (! $self->readCachePyramid($cachepyramid,$listpyramid)) {
+            ERROR (sprintf "Can not read the Directory Cache Pyramid : %s !", $cachepyramid);
+            return FALSE;
+        }
     }
+    
+    $self->{old_pyramid}->{content_path} = $listpyramid;
 
     # we create all levels between the top and the bottom levels
     if (! $self->createLevels()) {
@@ -700,14 +695,14 @@ sub readConfPyramid {
     my @directories = File::Spec->splitdir($level->findvalue('baseDir'));
     # <baseDir> : rel_datapath_from_desc/dir_image/level
     #                                       -2      -1
-    my $dir_image = $directories[scalar(@directories)-2];
+    my $dir_image = $directories[-2];
     $self->{dir_image} = $dir_image;
     
     # read nodata directory name in the old pyramid, using a level
     @directories = File::Spec->splitdir($level->findvalue('nodata/filePath'));
-    # <filePath> : rel_datapath_from_desc/dir_nodata/level/nd.tiff
+    # <filePath> : rel_datapath_from_desc/dir_nodata/level/nd.tif
     #                                        -3       -2     -1
-    my $dir_nodata = $directories[scalar(@directories)-3];
+    my $dir_nodata = $directories[-3];
     $self->{dir_nodata} = $dir_nodata;
 
     foreach my $v (@levels) {
@@ -738,20 +733,19 @@ sub readConfPyramid {
                                            );
         #
         my $levelOrder = $self->getLevelOrder($tagtm);
-        my $objLevel = BE4::Level->new(
-            {
-                id                => $tagtm,
-                order             => $levelOrder,
-                dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
-                dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
-                dir_metadata      => undef,      # TODO !
-                compress_metadata => undef,      # TODO !
-                type_metadata     => undef,      # TODO !
-                size              => [$tagsize[0],$tagsize[1]],
-                dir_depth         => $tagdirdepth,
-                limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
-                is_in_pyramid  => 0
-            });
+        my $objLevel = BE4::Level->new({
+            id                => $tagtm,
+            order             => $levelOrder,
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
+            size              => [$tagsize[0],$tagsize[1]],
+            dir_depth         => $tagdirdepth,
+            limit             => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
+            is_in_pyramid     => 0
+        });
             
 
         if (! defined $objLevel) {
@@ -761,7 +755,8 @@ sub readConfPyramid {
 
         $self->{levels}->{$tagtm} = $objLevel;
 
-        # fill parameters if not ... !
+        # same for each level
+        $self->{dir_depth}  = $tagdirdepth;
         $self->{image_width}  = $tagsize[0];
         $self->{image_height} = $tagsize[1];
     }
@@ -784,100 +779,162 @@ sub readConfPyramid {
 # method: readCachePyramid
 #---------------------------------------------------------------------------------------------------
 sub readCachePyramid {
-  my $self     = shift;
-  my $cachedir = shift; # old cache directory by default !
+    my $self     = shift;
+    my $cachedir = shift; # old cache directory by default !
+    my $listpyramid = shift;
+    
+    TRACE("Reading cache of pyramid...");
   
-  TRACE;
-  
-  # Node IMAGE
-  my $dir = File::Spec->catdir($cachedir);
-  my $searchitem = $self->FindCacheNode($dir);
-  
-  if (! defined $searchitem) {
-    ERROR("Can not find cache file or directory");
-    return FALSE;
-  }
+    if (-f $listpyramid) {
+        WARN(sprintf "Cache list ('%s') exists in temporary directory, overwrite it !", $listpyramid);
+    }
+    
+    if (! -d dirname($listpyramid)) {
+        eval { mkpath([dirname($listpyramid)]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the old cache list directory '%s' : %s !",dirname($listpyramid), $@);
+            return FALSE;
+        }
+    }
+    
+    # We list:
+    #   - old cache files (write in the file $LIST)
+    #   - old caches' roots (store in %cacheRoots)
+    #   - old cache broken links (store in @brokenlinks)
+    
+    my $LIST;
 
-  DEBUG(Dumper($searchitem));
+    if (! open $LIST, ">", $listpyramid) {
+        ERROR(sprintf "Cannot open (to write) old cache list file : %s",$listpyramid);
+        return FALSE;
+    }
+
+    my $dir = File::Spec->catdir($cachedir);
+    my @brokenlinks;
+    my %cacheRoots;
+    
+    if (! $self->FindCacheNode($dir, $LIST, \@brokenlinks, \%cacheRoots)) {
+        ERROR("An error on searching into the cache structure !");
+        return FALSE;
+    }
+    
+    close $LIST;
+    
+    # Have we broken links ?
+    if (scalar @brokenlinks) {
+        ERROR("Some links are broken in directory cache !");
+        return FALSE;
+    }
+
+    
+    # We write at the top of the list file, caches' roots, using Tie library
+    
+    my @list;
+    if (! tie @list, 'Tie::File', $listpyramid) {
+        ERROR(sprintf "Cannot write the header of old cache list file : %s",$listpyramid);
+        return FALSE;
+    }
+    
+    unshift @list,"#";
+    
+    while( my ($root,$rootID) = each(%cacheRoots) ) {
+        unshift @list,(sprintf "%s=%s",$rootID,$root);
+    }
+    
+    untie @list;
   
-  # Info, cache file of old cache !
-  if (! scalar @{$searchitem->{cachetile}}) {
-    WARN("No tiles found in directory cache ?");
-  }
-  # Info, cache dir of old cache !
-  if (! scalar @{$searchitem->{cachedir}}){
-    ERROR("No directory found in directory cache ?");
-    return FALSE;
-  }
-  
-  my @tiles = sort(@{$searchitem->{cachetile}});
-  my @dirs  = sort(@{$searchitem->{cachedir}});
-  
-  $self->{cache_dir} = \@dirs;
-  $self->{cache_tile}= \@tiles;
-  
-  return TRUE;
+    return TRUE;
 }
 
 # method: FindCacheNode
 #---------------------------------------------------------------------------------------------------
 sub FindCacheNode {
-  my $self      = shift;
-  my $directory = shift;
+    my $self      = shift;
+    my $directory = shift;
+    my $LIST = shift;
+    my $brokenlinks = shift;
+    my $cacheroots = shift;
+    
+    TRACE(sprintf "Searching node in %s\n", $directory);
+    
+    my $pyr_datapath = $self->getPyrDataPath();
+    
+    if (! opendir (DIR, $directory)) {
+        ERROR("Can not open directory cache (%s) ?",$directory);
+        return FALSE;
+    }
+    
+    foreach my $entry (readdir DIR) {
+        
+        next if ($entry =~ m/^\.{1,2}$/);
+        
+        my $pathentry = File::Spec->catfile($directory, $entry);
+        
+        my $realName;
+        
+        if ( -d $pathentry) {
+            TRACE(sprintf "DIR:%s\n",$pathentry);
+            # recursif
+            if (! $self->FindCacheNode($pathentry, $LIST, $brokenlinks, $cacheroots)) {
+                ERROR("Can not search in directory cache (%s) ?",$pathentry);
+                return FALSE;
+            }
+            next;
+        }
+        
+        elsif( -f $pathentry && ! -l $pathentry) {
+            TRACE(sprintf "%s\n",$pathentry);
+            # It's the real file, not a link
+            $realName = $pathentry;
+        }
+        
+        elsif (  -f $pathentry && -l $pathentry) {
+            TRACE(sprintf "%s\n",$pathentry);
+            # It's a link
+            
+            my $linked   = File::Spec::Link->linked($pathentry);
+            $realName = File::Spec::Link->full_resolve($linked);
+            
+            if (! defined $realName) {
+                # FIXME : on fait le choix de mettre en erreur le traitement dès le premier lien cassé
+                # ou liste exaustive des liens cassés ?
+                WARN(sprintf "This tile '%s' may be a broken link in %s !\n",$entry, $directory);
+                push @$brokenlinks,$entry;
+                return TRUE;
+            }         
+        }
+        
+        # We extract from the old tile path, the cache name (without the old cache root path)
+        my @directories = File::Spec->splitdir($realName);
+        # $realName : abs_datapath/dir_image/level/XY/XY/XY.tif
+        #                             -5      -4  -3 -2   -1
+        #                     => -(3 + dir_depth)
+        #    OR
+        # $realName : abs_datapath/dir_nodata/level/nd.tif
+        #                              -3      -2     -1
+        #                           => - 3
+        my $deb = -3;
+            
+        $deb -= $self->{dir_depth} if ($directories[-3] ne $self->{dir_nodata});
+        
+        my @indexName = ($deb..-1);
+        my @indexRoot = (0..@directories+$deb-1);
+        
+        my $name = File::Spec->catdir(@directories[@indexName]);
+        my $root = File::Spec->catdir(@directories[@indexRoot]);
+        
+        my $rootID;
+        if (exists $cacheroots->{$root}) {
+            $rootID = $cacheroots->{$root};
+        } else {
+            $rootID = scalar (keys %$cacheroots);
+            $cacheroots->{$root} = $rootID;
+        }
 
-  TRACE();
-  
-  my $search = {
-    cachedir  => [],
-    cachetile => [],
-  };
-  
-  my $pyr_datapath = $self->getPyrDataPath();
-
-  if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directory cache (%s) ?",$directory);
-    return undef;
-  }
-
-  my $newsearch;
-  
-  foreach my $entry (readdir DIR) {
-    
-    next if ($entry =~ m/^\.{1,2}$/);
-    
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);
-      #push @{$search->{cachedir}}, File::Spec->abs2rel(File::Spec->catdir($directory, $entry), $pyr_datapath);
-      push @{$search->{cachedir}}, File::Spec->catdir($directory, $entry);
-      
-      # recursif
-      $newsearch = $self->FindCacheNode(File::Spec->catdir($directory, $entry));
-      push @{$search->{cachetile}}, $_  foreach(@{$newsearch->{cachetile}});
-      push @{$search->{cachedir}},  $_  foreach(@{$newsearch->{cachedir}});
+        printf $LIST "%s\n", File::Spec->catdir($rootID,$name);;
     }
     
-    elsif( -f File::Spec->catfile($directory, $entry) &&
-         ! -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "FIL:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
-    }
-    
-    elsif (  -f File::Spec->catfile($directory, $entry) &&
-             -l File::Spec->catfile($directory, $entry)) {
-      TRACE(sprintf "LIK:%s\n",$entry);
-      #push @{$search->{cachetile}}, File::Spec->abs2rel(File::Spec->catfile($directory, $entry), $pyr_datapath);
-      push @{$search->{cachetile}}, File::Spec->catfile($directory, $entry);
-    }
-    
-    else {
-        TRACE(sprintf "???:%s\n",$entry);
-    }
-    
-  }
-  
-  return $search;
-  
+    return TRUE;
 }
 
 ####################################################################################################
@@ -890,10 +947,14 @@ sub FindCacheNode {
 sub calculateExtremLevels {
     my $self = shift;
 
+    TRACE();
+
     # tilematrix list sort by resolution
     my @tmList = $self->getTileMatrixSet()->getTileMatrixByArray();
 
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    TRACE("sort by ID...");
+    
     my $levelIdx;
     for (my $i=0; $i < scalar @tmList; $i++){
         $levelIdx->{$tmList[$i]->getID()} = $i;
@@ -993,6 +1054,8 @@ sub calculateExtremLevels {
 sub createLevels {
     my $self = shift;
 
+    TRACE();
+    
     my $objTMS = $self->getTileMatrixSet();
 
     if (! defined $objTMS) {
@@ -1049,8 +1112,8 @@ sub createLevels {
         my $params = {
             id                => $tmID,
             order             => $i,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()), # FIXME rel with the pyr path !
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()), # FIXME rel with the pyr path !
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getPyrDescPath()),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getPyrDescPath()),
             dir_metadata      => undef,           # TODO,
             compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
             type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW,
@@ -1067,8 +1130,12 @@ sub createLevels {
         }
 
         $self->{levels}->{$tmID} = $objLevel;
-        # push dir to create : directories for nodata and images.
-        push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+
+        if ($self->{isnewpyramid}) {
+            # push dir to create : directories for nodata and images.
+            # if we have an old pyramid, directories are already in cache_dir
+            push @{$self->{cache_dir}}, $baseimage, $basenodata; #absolute path
+        }
     }
 
     if (! scalar (%{$self->{levels}})) {
@@ -1134,7 +1201,9 @@ sub computeSrcRes(){
 sub updateLimits {
     my $self = shift;
     my ($xMin, $yMin, $xMax, $yMax) = @_;
-  
+
+    TRACE();
+    
     if (! defined $self->{dataLimits}->{xmin} || $xMin < $self->{dataLimits}->{xmin}) {$self->{dataLimits}->{xmin} = $xMin;}
     if (! defined $self->{dataLimits}->{xmax} || $xMax > $self->{dataLimits}->{xmax}) {$self->{dataLimits}->{xmax} = $xMax;}
     if (! defined $self->{dataLimits}->{ymin} || $yMin < $self->{dataLimits}->{ymin}) {$self->{dataLimits}->{ymin} = $yMin;}
@@ -1147,6 +1216,8 @@ sub updateLimits {
 #---------------------------------------------------------------------------------------------------------------
 sub calculateTMLimits {
     my $self = shift;
+
+    TRACE();
     
     if (! defined $self->{dataLimits}->{xmin} || ! defined $self->{dataLimits}->{xmax} || 
         ! defined $self->{dataLimits}->{ymin} || ! defined $self->{dataLimits}->{ymax})
@@ -1197,13 +1268,14 @@ sub createNodata {
     my $self = shift;
     my $nodataFilePath = shift;
     
+    TRACE();
+    
     my $sizex = int($self->getImageSize()) / int($self->getTilePerWidth());
     my $sizey = int($self->getImageSize()) / int($self->getTilePerHeight());
     my $compression = $self->getCompression();
   
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
-    $compression = ($compression eq 'jpg'?'jpeg':$compression);
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->getNodataColor());
     $cmd .= sprintf ( " -c %s", $compression);
@@ -1269,51 +1341,11 @@ sub writeConfPyramid {
     my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
     my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
 
-    foreach my $objLevel (values %levels){
-
-        # image
-        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$STRLEVELTMPLT/;
-        
-        my $id       = $objLevel->{id};
-        $strpyrtmplt =~ s/__ID__/$id/;
-    
-        my $dirimg   = $objLevel->{dir_image};
-        $strpyrtmplt =~ s/__DIRIMG__/$dirimg/;
-        
-        my $dirnd   = $objLevel->{dir_nodata};
-        my $pathnd = $dirnd."/nd.tiff";
-        $strpyrtmplt =~ s/__NODATAPATH__/$pathnd/;
-        
-        my $tilew    = $objLevel->{size}->[0];
-        $strpyrtmplt =~ s/__TILEW__/$tilew/;
-        my $tileh    = $objLevel->{size}->[1];
-        $strpyrtmplt =~ s/__TILEH__/$tileh/;
-        
-        my $depth    =  $objLevel->{dir_depth};
-        $strpyrtmplt =~ s/__DEPTH__/$depth/;
-        
-        my $minrow   =  $objLevel->{limit}->[0];
-        $strpyrtmplt =~ s/__MINROW__/$minrow/;
-        my $maxrow   =  $objLevel->{limit}->[1];
-        $strpyrtmplt =~ s/__MAXROW__/$maxrow/;
-        my $mincol   =  $objLevel->{limit}->[2];
-        $strpyrtmplt =~ s/__MINCOL__/$mincol/;
-        my $maxcol   =  $objLevel->{limit}->[3];
-        $strpyrtmplt =~ s/__MAXCOL__/$maxcol/;
-    
-        # metadata
-        if (defined $objLevel->{dir_metadata}) {
-
-            $strpyrtmplt =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;
-
-            my $dirmtd   = $objLevel->{dir_metadata};
-            $strpyrtmplt =~ s/__DIRMTD__/$dirmtd/;
-
-            my $formatmtd = $objLevel->{compress_metadata};
-            $strpyrtmplt  =~ s/__FORMATMTD__/$formatmtd/;
-        }
-        $strpyrtmplt =~ s/<!-- __MTD__ -->\n//;
-        
+    for (my $i = $topLevelOrder; $i >= $bottomLevelOrder; $i--) {
+        # we write levels in pyramid's descriptor from the top to the bottom
+        my $ID = $self->getLevelID($i);
+        my $levelXML = $self->{levels}->{$ID}->getLevelToXML();
+        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
@@ -1353,6 +1385,7 @@ sub writeConfPyramid {
 #---------------------------------------------------------------------------------------------------
 sub writeCachePyramid {
     my $self = shift;
+    my $tree = shift;
 
     TRACE;
 
@@ -1369,176 +1402,187 @@ sub writeCachePyramid {
 
     my $oldcachepyramid = File::Spec->catdir($self->getPyrDataPathOld(),$self->getPyrNameOld());
     my $newcachepyramid = File::Spec->catdir($self->getPyrDataPath(),$self->getPyrName());
-
-
-    $newcachepyramid =~ s/\//\\\//g;
-    $oldcachepyramid =~ s/\//\\\//g;
     
     DEBUG(sprintf "%s to %s !",$oldcachepyramid , $newcachepyramid);
     my $dirimage      = $self->getDirImage();
     my $dirnodata     = $self->getDirNodata();
     my $dirmetadata   = undef; # TODO ?
-
-    # substring function 
-    my $substring;
-    $substring = sub {
-        my $expr = shift;
-        $_       = $expr;
-
-        my $regex = "s/".$oldcachepyramid."/".$newcachepyramid."/";
-
-        eval ($regex);
-        if ($@) {
-          ERROR(sprintf "REGEXE", $regex, $@);
-          return FALSE;
-        }
-
-        return $_;
-    };
-
-    # create new cache directory
-    my @newdirs;
-    my @olddirs = @{$self->{cache_dir}};
-
-    if ($self->isNewPyramid()) {
-        @newdirs = @olddirs;
-    } else {
-        @newdirs = map ({ &$substring($_) } @olddirs); # list cache modified !
-    }
-
-    # Now, @newdir contains :
-    #  - for a new pyramid : directories {IMAGE} and {NODATA}/{level}
-    #  - for an update pyramid : every directory which contains an image (data or nodata) in the old pyramid
-    # @newdir cannot be empty.
-
-    if (! scalar @newdirs) {
-        ERROR("Listing of new cache directory is empty !");
+    
+    my $newcachelist = File::Spec->catdir($self->getPyrDescPath(),$self->getPyrName().".list");
+    $self->{new_pyramid}->{content_path} = $newcachelist;
+    
+    if (-f $newcachelist) {
+        ERROR(sprintf "New cache list ('%s') exist, can not overwrite it ! ", $newcachelist);
         return FALSE;
     }
+    
+    my $NEWLIST;
 
-    foreach my $absdir (@newdirs) {
-        #create folders
-        eval { mkpath([$absdir],0,0751); };
-        if ($@) {
-            ERROR(sprintf "Can not create the cache directory '%s' : %s !", $absdir , $@);
-            return FALSE;
-        }
+    if (! open $NEWLIST, ">", $newcachelist) {
+        ERROR(sprintf "Cannot open new cache list file : %s",$newcachelist);
+        return FALSE;
     }
-  
+    
+    my %oldCacheRoots;
+    $oldCacheRoots{0} = $newcachepyramid;
+    printf $NEWLIST "0=%s\n",$newcachepyramid;
+    
     # search and create link for only new cache tile
     if (! $self->isNewPyramid()) {
-
-        my @oldtiles = @{$self->{cache_tile}};
-        my @newtiles = map ({ &$substring($_) } @{$self->{cache_tile}}); # list cache modified !
-        my $ntile    = scalar(@oldtiles)-1;
-
-        if (! scalar @oldtiles) {
-            WARN("Listing of old cache tile is empty !");
-            # return FALSE;
-        }
-
-        if (! scalar @newtiles) {
-            WARN("Listing of new cache tile is empty !");
-            # return FALSE;
-        }
-
-        foreach my $i (0..$ntile) {
-
-            my $new_absfile = $newtiles[$i];
-            my $old_absfile = $oldtiles[$i];
-
-            if (! -d dirname($new_absfile)) {
-                ERROR(sprintf "The directory cache '%s' doesn't exist !",dirname($new_absfile));
-                return FALSE;
-            }
-
-            if (! -e $old_absfile) {
-                ERROR(sprintf "The tile '%s' doesn't exist in '%s' !",
-                            basename($old_absfile),
-                            dirname($old_absfile));
-                return FALSE;  
-            }
-
-            my $follow_relfile = undef;
-
-            if (-f $old_absfile && ! -l $old_absfile) {
-                $follow_relfile = File::Spec->abs2rel($old_absfile,dirname($new_absfile));
-            }
-
-            elsif (-f $old_absfile && -l $old_absfile) {
-                my $linked   = File::Spec::Link->linked($old_absfile);
-                my $realname = File::Spec::Link->full_resolve($linked);
-                $follow_relfile = File::Spec->abs2rel($realname, dirname($new_absfile));
-            }
-
-            else {
-                ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",
-                            basename($old_absfile),
-                            dirname($old_absfile));
-                return FALSE;  
-            }
-
-            if (! defined $follow_relfile) {
-                ERROR (sprintf "The link '%s' can not be resolved in '%s' ?",
-                            basename($old_absfile),
-                            dirname($old_absfile));
-                return FALSE;
-            }
-
-            my $result = eval { symlink ($follow_relfile, $new_absfile); };
-            if (! $result) {
-                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
-                            $follow_relfile,
-                            $new_absfile,
-                            $!);
-                return FALSE;
-            }
-        }
-    }
-
-    # we need to create nodata tiles, for each level between pyr_level_bottom and pyr_level_top.
-    # If a symbolic link already exists, we move on
-
-    my %levels = $self->getLevels();
-
-    my $topLevelOrder = $self->getLevelOrder($self->getTopLevel());
-    my $bottomLevelOrder = $self->getLevelOrder($self->getBottomLevel());
-
-    foreach my $objLevel (values %levels){
-
-        my $levelOrder = $self->getLevelOrder($objLevel->{id});
         
-        if (! $objLevel->{is_in_pyramid}) {next;}
+        my $OLDLIST;
 
-        # we have to create the nodata tile
-        my $nodataFilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
-        $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
+        if (! open $OLDLIST, "<", $self->{old_pyramid}->{content_path}) {
+            ERROR(sprintf "Cannot open old cache list file : %s",$self->{old_pyramid}->{content_path});
+            return FALSE;
+        }
         
-        if (! -e $nodataFilePath) {
+        
+        while( defined( my $cacheRoot = <$OLDLIST> ) ) {
+            chomp $cacheRoot;
+            if ($cacheRoot eq "#") {
+                # separator between caches' roots and images
+                last;
+            }
             
-            my $nodatadir = dirname($nodataFilePath);
+            $cacheRoot =~ s/\s+//g; # we remove all spaces
+            my @Root = split(/=/,$cacheRoot,-1);
+            
+            if (scalar @Root != 2) {
+                ERROR(sprintf "Bad formatted cache list (root definition) : %s",$cacheRoot);
+                return FALSE;
+            }
+            
+            # ID 0 is kept for the new pyramid root, all ID are incremented
+            $oldCacheRoots{$Root[0]+1} = $Root[1];
+            
+            printf $NEWLIST "%s=%s\n",$Root[0]+1,$Root[1];
+        }
+        
+        printf $NEWLIST "#\n";
+        
+        while( defined( my $oldtile = <$OLDLIST> ) ) {
+            chomp $oldtile;
+            
+            # old tile path is split. Afterwards, only array will be used to compose paths
+            my @directories = File::Spec->splitdir($oldtile);
+            # @directories = [ RootID, dir_name, levelID, ..., XY.tif]
+            #                    0        1        2      3  ... n
+            
+            # ID 0 is kept for the new pyramid root, all ID are incremented
+            $directories[0]++;
+            
+            my $node = undef;
+            
+            if ($directories[1] ne $self->{dir_nodata}) {
+                
+                my $level = $directories[2];
+                
+                my $xB36 = "";
+                my $yB36 = "";
+                
+                for (my $i = 3; $i < scalar @directories; $i++) {
+                    my $part = $directories[$i];
+                    $part =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
+                    $xB36 .= substr($part,0,length($part)/2);
+                    $yB36 .= substr($part,length($part)/2);
+                }
+                
+                my $x = $self->_encodeB36toIDX($xB36);
+                my $y = $self->_encodeB36toIDX($yB36);
+                
+                $node = {level => $level, x => $x, y => $y};
+            }
+            
+            
+            
+            if (! defined $node || ! $tree->isInTree($node)) {
+                # This image is not in the tree, it won't be modified by this generation.
+                # We add it now to the list (real file path)
+                printf $NEWLIST "%s\n", File::Spec->catdir(@directories);
+            }
+            
+            # We replace root ID with the root path, to obtain a real path.
+            if (! exists $oldCacheRoots{$directories[0]}) {
+                ERROR(sprintf "Old cache list uses an undefined root ID : %s",$directories[0]);
+                return FALSE;
+            }
+            $directories[0] = $oldCacheRoots{$directories[0]};
+            $oldtile = File::Spec->catdir(@directories);
+            
+            shift @directories;
+            
+            my $newtile = File::Spec->catdir($newcachepyramid,@directories);
 
-            if (! -e $nodatadir) {
-                #create folders
-                eval { mkpath([$nodatadir],0,0751); };
+            #create folders
+            my $dir = dirname($newtile);
+            
+            if (! -d $dir) {
+                eval { mkpath([$dir]); };
                 if ($@) {
-                    ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
+                    ERROR(sprintf "Can not create the cache directory '%s' : %s !",$dir, $@);
                     return FALSE;
                 }
             }
 
-            my $createNodataCommand = $self->createNodata($nodataFilePath);
+            if (! -f $oldtile || -l $oldtile) {
+                ERROR(sprintf "File path in the cache list does not exist or is a link : %s.",$oldtile);
+                return FALSE;
+            }
             
-            if (! system($createNodataCommand) == 0) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
-                                The command is incorrect : '%s'",
-                                $objLevel->getID(),
-                                $createNodataCommand);
+            my $reloldtile = File::Spec->abs2rel($oldtile, dirname($newtile));
+
+            my $result = eval { symlink ($reloldtile, $newtile); };
+            if (! $result) {
+                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",$reloldtile,$newtile,$!);
                 return FALSE;
             }
         }
-   
+    } else {
+        printf $NEWLIST "#\n";
     }
+    
+    my %levels = $self->getLevels();
+    foreach my $objLevel (values %levels) {
+        #create folders for data and nodata (metadata not implemented) if they don't exist
+        
+        my $dataDir = File::Spec->catdir($newcachepyramid,$self->{dir_image},$objLevel->getID());
+        if (! -d $dataDir) {
+            eval { mkpath([$dataDir]); };
+            if ($@) {
+                ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $dataDir , $@);
+                return FALSE;
+            }
+        }
+        
+        my $nodataDir = File::Spec->catdir($newcachepyramid,$self->{dir_nodata},$objLevel->getID());
+        if (! -d $nodataDir) {
+            eval { mkpath([$nodataDir]); };
+            if ($@) {
+                ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodataDir , $@);
+                return FALSE;
+            }
+        }
+        
+        # we need to create nodata tiles, for each level between pyr_level_bottom and pyr_level_top.
+        # If a symbolic link already exists, we move on
+        
+        my $nodataTilePath = $nodataDir."/nd.tif";
+        
+        if (! -e $nodataTilePath) {
+            my $createNodataCommand = $self->createNodata($nodataTilePath);
+                
+            if (! system($createNodataCommand) == 0) {
+                ERROR (sprintf "Impossible to create the nodata tile for the level %s !\nThe command is incorrect : '%s'",$objLevel->getID(),$createNodataCommand);
+                return FALSE;
+            }
+            
+            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->{dir_nodata},$objLevel->getID(),"nd.tif");
+        }
+        
+    }
+    
+    close $NEWLIST;
 
     return TRUE;
   
@@ -1709,12 +1753,20 @@ sub getLevels {
 # method: getLevelOrder
 #  return the tile matrix order from the ID :  
 #   - 0 (bottom level, smallest resolution)
-#   - NumberOfTM (top level, biggest resolution).
+#   - NumberOfTM-1 (top level, biggest resolution).
 #---------------------------------------------------------------------------------
 sub getLevelOrder {
     my $self = shift;
     my $ID = shift;
     return $self->getTileMatrixSet()->getTileMatrixOrder($ID);
+}
+# method: getLevelID
+#  return the tile matrix ID from the order.
+#---------------------------------------------------------------------------------
+sub getLevelID {
+    my $self = shift;
+    my $order = shift;
+    return $self->getTileMatrixSet()->getTileMatrixID($order);
 }
 
 sub getBottomLevel {
@@ -1775,9 +1827,7 @@ sub getTilePerHeight {
 # ex: METADATA/3e/42/01.tif
 sub getCacheNameOfImage {
   my $self  = shift;
-  my $level = shift;
-  my $x     = shift; # X idx !
-  my $y     = shift; # Y idx !
+  my $node = shift;
   my $type  = shift;
   
   my $typeDir;
@@ -1787,11 +1837,8 @@ sub getCacheNameOfImage {
     $typeDir=$self->getDirMetadata();;
   }
   
-  #my $xb36 = $self->_encodeIDXtoB36($self->_getIDXX($level, $x));
-  #my $yb36 = $self->_encodeIDXtoB36($self->_getIDXY($level,$y));
-  
-  my $xb36 = $self->_encodeIDXtoB36($x);
-  my $yb36 = $self->_encodeIDXtoB36($y);
+  my $xb36 = $self->_encodeIDXtoB36($node->{x});
+  my $yb36 = $self->_encodeIDXtoB36($node->{y});
 
   my @xcut = split (//, $xb36);
   my @ycut = split (//, $yb36);
@@ -1830,43 +1877,19 @@ sub getCacheNameOfImage {
   my $imagePath     = scalar reverse(@l);
   my $imagePathName = join('.', $imagePath, 'tif');
   
-  return File::Spec->catfile($typeDir, $level, $imagePathName); 
+  return File::Spec->catfile($typeDir, $node->{level}, $imagePathName); 
 }
 
 # retourne le chemin absolu du fichier de la dalle en paramètre.
 # ex: /mnt/data/PYRAMIDS/ORTHO/IMAGES/34/31/0a.tif
 sub getCachePathOfImage {
     my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
+    my $node = shift;
     my $type  = shift;
 
-    my $imageName = $self->getCacheNameOfImage($level, $x, $y, $type);
+    my $imageName = $self->getCacheNameOfImage($node, $type);
 
     return File::Spec->catfile($self->getPyrDataPath(), $self->getPyrName(), $imageName); 
-}
-
-# ref alias to getCacheNameOfImage !
-sub getCacheImageName {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
-
-    return $self->getCacheNameOfImage($level, $x, $y, $type);
-}
-
-# ref alias to getCachePathOfImage !
-sub getCacheImagePath {
-    my $self  = shift;
-    my $level = shift;
-    my $x     = shift;
-    my $y     = shift;
-    my $type  = shift;
-
-    return  $self->getCachePathOfImage($level, $x, $y, $type);
 }
 
 sub isNewPyramid {
@@ -1895,7 +1918,7 @@ sub _IDXtoX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   my $x = ($idx * $rx * $sx) + $xo ;
 
@@ -1934,7 +1957,7 @@ sub _XtoIDX {
   
   my $xo  = $tm->getTopLeftCornerX();
   my $rx  = $tm->getResolution();
-  my $sx  = $self->getCacheImageWith();
+  my $sx  = $self->getCacheImageWidth();
   
   $idx = int(($x - $xo) / ($rx * $sx)) ;
 
@@ -1997,11 +2020,7 @@ sub _encodeB36toIDX {
     $number += $_ * (36 ** $i++);
   }
   
-  INFO ("0"x($padlength - length $number).$number);
-  
-  # fill with 0 !
-  return "0"x($padlength - length $number).$number;
-  # return decode_base36($b36,$padlength);
+  return $number;
 }
 
 sub to_string {}
@@ -2222,7 +2241,7 @@ None by default.
                             |__ ${ID_LEVELN}/
                 |_____ ${NODATA}/
                             |__ ${ID_LEVEL0}/
-                                |__nd.tiff (it can be a link)
+                                |__nd.tif (it can be a link)
                             .
                             .
                             .

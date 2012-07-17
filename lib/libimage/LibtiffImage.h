@@ -65,7 +65,7 @@ class LibtiffImage : public Image {
 
     protected:
         /** Constructeur */
-        LibtiffImage(int width, int height, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);
+        LibtiffImage(int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);
 
     public:
 
@@ -88,8 +88,8 @@ class LibtiffImage : public Image {
 
 class libtiffImageFactory {
     public:
-        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox);
-        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip);
+        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, double resx, double resy);
+        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip);
 };
 
 

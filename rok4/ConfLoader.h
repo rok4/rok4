@@ -55,7 +55,7 @@ public:
     friend class CppUnitConfLoaderServicesConf;
     friend class CppUnitConfLoaderTechnicalParam;
 #endif //UNITTEST
-    static bool getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir , char*& projEnv);
+    static bool getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog);
     static bool buildStylesList ( std::string styleDir, std::map<std::string,Style*> &stylesList,bool inspire );
     static bool buildTMSList ( std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList );
     static bool buildLayersList ( std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf );
@@ -70,7 +70,7 @@ private:
     static Pyramid* buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList );
     static Layer * parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
     static Layer * buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
-    static bool parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, char*& projEnv );
+    static bool parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog);
     static ServicesConf * parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile );
 };
 

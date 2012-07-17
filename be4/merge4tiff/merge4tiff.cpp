@@ -36,7 +36,7 @@
  */
 
 /**
- * \file mergeitiff.cpp
+ * \file merge4tiff.cpp
  * \brief Sous echantillonage de 4 images 
  * \author IGN
 *
@@ -49,8 +49,12 @@
 #include <algorithm>
 #include <string.h>
 #include <stdint.h>
+#include "../be4version.h"
+
+int epsilon = 0.01; // pour comparer les valeurs avec celle de nodata
 
 void usage() {
+  std::cerr << "merge4tiff version "<< BE4_VERSION << std::endl;
   std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
   std::cerr << "-n : this integer point value in decimal is used only for DTM. (-99999 for example)"<< std::endl;
   std::cerr << "     For images (u_int8), the value is between 0 and 255 in hexadecimal (C9... for example, just first two characters are used)"<< std::endl;
@@ -106,8 +110,8 @@ void parseCommandLine(int argc, char* argv[],
                       if(++i == argc) error("Error in -c option");
                       if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
                       else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
-                      else if(strncmp(argv[i], "packbits",8) == 0) compression = COMPRESSION_PACKBITS;
-                      else if(strncmp(argv[i], "jpeg",4) == 0) compression = COMPRESSION_JPEG;
+                      else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
+                      else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
                       else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
                       else compression = COMPRESSION_NONE;
                       break;
@@ -260,7 +264,9 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
     float  line_out[nbsamples];
     int left,right;
     
-    memset(line_background,nodata,sizeof(float)*nbsamples);
+    for (int i = 0; i < nbsamples ; i++) {
+        line_background[i] = nodata;
+    }
 
     for(int y = 0; y < 2; y++){
         if (INPUT[y][0]) left=0; else left=nbsamples/2;
@@ -291,10 +297,13 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
                 for(int j = sampleperpixel; j > 0 ; j--, pos_in++) {
                     float data[4];
                     int nbData = 0;
-                    if (line1[pos_in] != nodata) data[nbData++]=line1[pos_in];
-                    if (line1[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
-                    if (line2[pos_in] != nodata) data[nbData++]=line2[pos_in];
-                    if (line2[pos_in + sampleperpixel] != nodata) data[nbData++]=line1[pos_in + sampleperpixel];
+                    if (line1[pos_in] < nodata-epsilon || line1[pos_in] > nodata+epsilon) data[nbData++]=line1[pos_in];
+                    if (line1[pos_in + sampleperpixel] < nodata-epsilon || line1[pos_in + sampleperpixel] > nodata+epsilon)
+                        data[nbData++]=line1[pos_in + sampleperpixel];
+                    if (line2[pos_in] < nodata-epsilon || line2[pos_in] > nodata+epsilon) data[nbData++]=line2[pos_in];
+                    if (line2[pos_in + sampleperpixel] < nodata-epsilon || line2[pos_in + sampleperpixel] > nodata+epsilon)
+                        data[nbData++]=line2[pos_in + sampleperpixel];
+
 
                     if (nbData>1) {
                         float value = 0.;
@@ -303,7 +312,7 @@ int merge4float32(uint32_t width, uint32_t height, uint16_t sampleperpixel,float
                         line_out[pos_out] = value/(float)nbData;
                         pos_out++;
                     }else {
-                        line_out[pos_out] = nodata;
+                        // on n'a pas assez de données, on laisse donc la valeur de fond (nodata ou image de fond)
                         pos_out++;
                     }
                 }

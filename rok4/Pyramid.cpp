@@ -45,72 +45,77 @@
 #include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
+#include "TiffEncoder.h"
+#include "Level.h"
+#include <cfloat>
+#include <libintl.h>
+#include "config.h"
 
-/*
-* @fn std::string extern getMimeType(std::string format)
-* @return Le type MIME correspindant au format passe en argument
-*/
-
-/*std::string getMimeType(std::string format){
-        if (format.compare("TIFF_RAW_INT8")==0)
-                return "image/tiff";
-        else if (format.compare("TIFF_JPG_INT8")==0)
-                return "image/jpeg";
-        else if (format.compare("TIFF_PNG_INT8")==0)
-                return "image/png";
-        else if (format.compare("TIFF_RAW_FLOAT32")==0)
-                return "image/x-bil;bits=32";
-        return "text/plain";
-}*/
-
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
-
-    std::map<std::string, TileMatrix>::iterator itTm;
-    for ( itTm=tms.getTmList()->begin();itTm!=tms.getTmList()->end();itTm++ ) {
+Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+    std::map<std::string, Level*>::iterator itLevel;
+    double minRes= DBL_MAX;
+    double maxRes= DBL_MIN;
+    for ( itLevel=levels.begin(); itLevel!=levels.end(); itLevel++ ) {
         //Empty Source as fallback
         DataSource* noDataSource;
-        if ( format==TIFF_RAW_INT8 ) {
-            TiffEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        } else if ( format==TIFF_LZW_INT8 ) {
-            TiffEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        }  else if ( format==TIFF_JPG_INT8 ) {
-            JPEGEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        } else if ( format==TIFF_PNG_INT8 ) {
-            PNGEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        } else if ( format==TIFF_RAW_FLOAT32 ) {
-            BilEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        } else if ( format==TIFF_LZW_FLOAT32 ) {
-            BilEncoder dataStream ( new ImageDecoder ( 0, itTm->second.getTileW(), itTm->second.getTileH(), channels ) );
-            noDataSource = new BufferedDataSource ( dataStream );
-        } else
-            // Cas normalement filtre avant l'appel au constructeur
-            LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
-        noDataSources.insert ( std::pair<std::string, DataSource*> ( itTm->second.getId(), noDataSource ) );
+        DataStream* nodatastream;
 
-        std::map<std::string, Level*>::const_iterator itLevel=levels.find ( itTm->second.getId() );
-        if ( itLevel!=levels.end() )
-            itLevel->second->setNoDataSource ( noDataSource );
+        if ( format==TIFF_JPG_INT8 ) {
+            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else if ( format==TIFF_PNG_INT8 ) {
+            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else if ( format==TIFF_RAW_FLOAT32 ) {
+            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else {
+            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
+        }
+        if ( nodatastream ) {
+            noDataSource = new BufferedDataSource ( *nodatastream );
+            delete nodatastream;
+            nodatastream = NULL;
+        } else {
+            LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
+        }
+        itLevel->second->setNoDataSource ( noDataSource );
+        
+        //Determine Higher and Lower Levels
+        double d = itLevel->second->getRes();
+        if ( minRes > d ) {
+            minRes = d;
+            lowestLevel = itLevel->second;
+        }
+        if ( maxRes < d ) {
+            maxRes = d;
+            highestLevel = itLevel->second;
+        }
     }
+
 }
 
-DataSource* Pyramid::getTile ( int x, int y, std::string tmId ) {
+DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
 
     std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
     if ( itLevel==levels.end() ) {
-        std::map<std::string, DataSource*>::const_iterator itNoDataSource=noDataSources.find ( tmId );
-        if ( itNoDataSource!=noDataSources.end() )
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( itNoDataSource->second ) );
-        else {
-            LOGGER_ERROR ( "pas de nodata disponible pour le TM "<<tmId );
-            return 0;
+        if ( errorDataSource ) { // NoData Error
+            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * errorDataSource );
         }
+        DataSource * noDataSource;
+
+        //Pick the nearest available level for NoData
+        std::map<std::string, TileMatrix>::iterator itTM;
+        double askedRes;
+
+        itTM = getTms().getTmList()->find ( tmId );
+        if ( itTM==getTms().getTmList()->end() ) {
+            //return the lowest Level available
+            noDataSource = getLowestLevel()->getEncodedNoDataTile();
+        } else {
+            askedRes = itTM->second.getRes();
+            noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
+        }
+        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
     }
-    return itLevel->second->getTile ( x, y );
+    return itLevel->second->getTile ( x, y, errorDataSource );
 }
 
 std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
@@ -123,7 +128,7 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
     std::string best_h = it->first;
     double best = resolution_x / it->second->getRes();
     ++it;
-    for ( ;it!=itend;++it ) {
+    for ( ; it!=itend; ++it ) {
         double d = resolution / it->second->getRes();
         if ( ( best < 0.8 && d > best ) ||
                 ( best >= 0.8 && d >= 0.8 && d < best ) ) {
@@ -145,30 +150,30 @@ TileMatrixSet Pyramid::getTms() {
 }
 
 
-Image* Pyramid::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
-    if ( tms.getCrs() ==dst_crs ) {
+    if ( tms.getCrs() == dst_crs ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
         Grid* grid = new Grid ( width, height, bbox );
 
 
-        LOGGER_DEBUG ( "debut pyramide" );
+        LOGGER_DEBUG ( _("debut pyramide") );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
             error=1;
             return 0;
         }
-        LOGGER_DEBUG ( "fin pyramide" );
+        LOGGER_DEBUG ( _("fin pyramide") );
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
     }
     std::string l = best_level ( resolution_x, resolution_y );
-    LOGGER_DEBUG ( "best_level=" << l << " resolution requete=" << resolution_x << " " << resolution_y );
+    LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
 
     if ( tms.getCrs() == dst_crs )
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
@@ -179,11 +184,11 @@ Image* Pyramid::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, i
 
 Pyramid::~Pyramid() {
     std::map<std::string, DataSource*>::iterator itDataSource;
-    for ( itDataSource=noDataSources.begin();itDataSource!=noDataSources.end();itDataSource++ )
-        delete ( *itDataSource ).second;
-    
+    /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
+        delete ( *itDataSource ).second;*/
+
     std::map<std::string, Level*>::iterator iLevel;
-    for ( iLevel=levels.begin();iLevel!=levels.end();iLevel++ )
+    for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
 }
 

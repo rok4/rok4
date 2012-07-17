@@ -41,10 +41,12 @@
 #include <ostream>
 #include <vector>
 #include "Accumulator.h"
+#include <unistd.h>
 
 typedef enum {
 	ROLLING_FILE = 0,
-	STANDARD_OUTPUT_STREAM_FOR_ERRORS
+	STANDARD_OUTPUT_STREAM_FOR_ERRORS,
+	STATIC_FILE
 } LogOutput;
 
 typedef enum {	
@@ -94,6 +96,11 @@ class Logger {
 		inline static void setOutput(LogOutput output) {logOutput=output;}
 		inline static LogOutput& getOutput() {return logOutput;}
 		
+		/**
+                 * Arrête le logger dans le thread courant.
+                 * 
+                 * L'accumulateur doit être libéré après l'arrêt de tous les threads.
+                 */
 		static void stopLogger();
 };
 
@@ -105,7 +112,7 @@ extern std::ostream nullstream;
 
 //#define LOGGER(x) (Logger::getAccumulator(x)?Logger::getLogger(x):nullstream)
 //#define LOGGER(x) (Logger::getOutput()==ROLLING_FILE?(Logger::getAccumulator(x)?Logger::getLogger(x):nullstream):std::cerr)
-#define LOGGER(x) (Logger::getAccumulator(x)?(Logger::getOutput()==ROLLING_FILE?Logger::getLogger(x):std::cerr):nullstream)
+#define LOGGER(x) (Logger::getAccumulator(x)?(Logger::getOutput()==STANDARD_OUTPUT_STREAM_FOR_ERRORS?std::cerr:Logger::getLogger(x)):nullstream)
 
 #define LOGGER_DEBUG(m) LOGGER(DEBUG)<<"pid="<<getpid()<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
 #define LOGGER_INFO(m) LOGGER(INFO)<<"pid="<<getpid()<<" "<<m<<std::endl

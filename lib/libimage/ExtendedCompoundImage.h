@@ -71,15 +71,26 @@ private:
 
     // Certaines images peuvent etre des miroirs (MirrorImage)
     // Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage
-    // Hypothese : ces images sont stockees en dernier
+    // Hypothese : ces images sont stockees en premier
     // A partir du nombre total de miroirs, on peut donc determiner si une image est un miroir ou non
     uint mirrors;
 
     int nodata;
+    
+    /* Il existe des données source qui contiennent du nodata, de valeur nodata_src. Lors de la superposition, on ne veut pas
+     * le garder. Ce filtre augmantant le temps du mergeNtiff, on veut que ce soit en option :
+     *      - true : on retire le blanc
+     *      - false : comme avant
+     */
+    bool nowhite;
+    
     uint16_t sampleformat;
 
     template<typename T>
     int _getline(T* buffer, int line);
+
+    bool isNodata(uint8_t* pixel);
+    bool isNodata(float* pixel);
 
 protected:
 
@@ -88,24 +99,27 @@ protected:
       * Les Image sont detruites ensuite en meme temps que l'objet
       * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
      */
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors) :
-        Image(width, height, channels,bbox),
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
+        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         nodata(nodata),
         sampleformat(sampleformat),
-        mirrors(mirrors) {}
+        mirrors(mirrors),
+        nowhite(nowhite) {}
 
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors) :
-        Image(width, height, channels,bbox),
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
+        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         masks(masks),
         nodata(nodata),
         sampleformat(sampleformat),
-        mirrors(mirrors) {}
+        mirrors(mirrors),
+        nowhite(nowhite) {}
 
 public:
     std::vector<Image*>* getimages() {return &images;}
     uint getmirrors() {return mirrors;}
+    uint16_t getSampleformat() {return sampleformat;}
 
     /** Implementation de getline pour les uint8_t */
     int getline(uint8_t* buffer, int line);
@@ -133,9 +147,9 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 };
 
 /**
@@ -153,7 +167,7 @@ private:
 public:
     /** Constructeur */
     ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
-        Image(ECI->width, ECI->height, 1,ECI->getbbox()),
+        Image(ECI->width, ECI->height, ECI->getresx(), ECI->getresy(), 1,ECI->getbbox()),
         ECI(ECI) {}
 
     /** Implementation de getline pour les uint8_t */

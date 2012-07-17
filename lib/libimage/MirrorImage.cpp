@@ -47,149 +47,140 @@
 #endif
 
 /**
-Creation d'une MirrorImage a partir de 4 images
+Creation d'une MirrorImage a partir d'une image et de la position par rapport à celle ci
 retourne NULL en cas d erreur
 */
 
-MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImage0, Image* pImage1, Image* pImage2, Image* pImage3)
+MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sampleformat,int position,uint mirrorSize)
 {
-    std::vector<Image*> images;
-    images.push_back(pImage0);
-    images.push_back(pImage1);
-    images.push_back(pImage2);
-    images.push_back(pImage3);
-
-    int i;
-    for (i=0;i<4;i++) {
-        if (images[i]!=NULL) {break;}
-    }
-    if (i==4) {return NULL;}
-    int w=images[i]->width;
-    int h=images[i]->height;
-    int c=images[i]->channels;
-
-    double xmin,xmax,ymin,ymax;
-    if (i==0){
-        xmin=images[i]->getxmax();
-        xmax=images[i]->getxmax()+w*images[i]->getresx();
-        ymin=images[i]->getymin();
-        ymax=images[i]->getymax();
-    }
-    else if (i==1){
-        xmin=images[i]->getxmin();
-        xmax=images[i]->getxmax();
-        ymin=images[i]->getymin()-h*images[i]->getresy();
-        ymax=images[i]->getymin();
-    }
-    else if (i==2){
-        xmin=images[i]->getxmin()-w*images[i]->getresx();
-        xmax=images[i]->getxmin();
-        ymin=images[i]->getymin();
-        ymax=images[i]->getymax();
-    }
-    else if (i==3){
-        xmin=images[i]->getxmin();
-        xmax=images[i]->getxmax();
-        ymin=images[i]->getymax();
-        ymax=images[i]->getymax()+h*images[i]->getresy();
+    int wTopBottom = pImageSrc->width+2*mirrorSize;
+    int wLeftRight = mirrorSize;
+    int hTopBottom = mirrorSize;
+    int hLeftRight = pImageSrc->height;
+    
+    double xmin,ymin,xmax,ymax;
+    
+    if (mirrorSize > pImageSrc->width || mirrorSize > pImageSrc->height) {
+        LOGGER_ERROR("Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)");
+        return NULL;
     }
 
-    BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+    if (position == 0){
+        // TOP
+        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
+        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
+        ymin=pImageSrc->getymax();        
+        ymax=pImageSrc->getymax()+pImageSrc->getresy()*mirrorSize;        
+        BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,0,mirrorSize);
+    }
+    else if (position == 1){
+        // RIGHT
+        xmin=pImageSrc->getxmax();
+        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
+        ymin=pImageSrc->getymin();
+        ymax=pImageSrc->getymax();
+        BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,1,mirrorSize);
+    }
+    else if (position == 2){
+        // BOTTOM
+        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
+        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
+        ymin=pImageSrc->getymin()-pImageSrc->getresy()*mirrorSize;
+        ymax=pImageSrc->getymin();
+        BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,2,mirrorSize);
+    }
+    else if (position == 3){
+        // LEFT
+        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
+        xmax=pImageSrc->getxmin();
+        ymin=pImageSrc->getymin();
+        ymax=pImageSrc->getymax();
+        BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,3,mirrorSize);
+    }
 
-    bbox.print();
-
-    return new MirrorImage(w,h,c,bbox,images);
 }
 
-MirrorImage::MirrorImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images) : Image(width,height,channels,bbox), images(images)
+MirrorImage::MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getresx(),image->getresy(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat)
 {
 }
 
-int MirrorImage::getline(uint8_t* buffer, int line)
+template <typename T>
+int MirrorImage::_getline(T* buffer, int line)
 {
     uint32_t line_size=width*channels;
-    uint8_t* buf0=new uint8_t[line_size],*buf1=new uint8_t[line_size],*buf2=new uint8_t[line_size],*buf3=new uint8_t[line_size];
-    if (images[0]!=NULL)
-        images[0]->getline(buf0,line);
-    if (images[1]!=NULL)
-        images[1]->getline(buf1,height-line-1);
-    if (images[2]!=NULL)
-        images[2]->getline(buf2,line);
-    if (images[3]!=NULL)
-        images[3]->getline(buf3,height-line-1);
+    T* buf0=new T[image->width*channels];
 
-    int c0,c1,j;
-    double r=(double)width/height;
-    // Debut de la ligne
-    c0=0;
-    c1=__min(line, (height-line))*r;
-    if (c1>c0){
-        if (images[0]!=NULL){
-            for (j=c0;j<c1;j++) {
-                memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-            }
+
+    if (position == 0) {
+        // TOP
+        int lineSrc = height - line -1;
+        
+        image->getline(buf0,lineSrc);
+        
+        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels*sizeof(T));
+        for (int j = 0; j < mirrorSize; j++) {
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // left
+            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels*sizeof(T)); // right
         }
-        else if (line<height/2 && images[1]!=NULL ) {memcpy(buffer,buf1,(c1-c0)*channels);}
-        else if (images[3]!=NULL) {memcpy(buffer,buf3,(c1-c0)*channels);}
+        
+    }
+    else if (position == 1) {
+        // RIGHT
+        image->getline(buf0,line);
+        for (int j = 0; j < mirrorSize; j++) {
+            memcpy(&buffer[j*channels],&buf0[(image->width-j-1)*channels],channels*sizeof(T)); // right
+        }
+
+    }
+    else if (position == 2) {
+        // BOTTOM
+        int lineSrc = image->height - line -1;
+        
+        image->getline(buf0,lineSrc);
+        
+        memcpy(&buffer[mirrorSize*channels],buf0,image->width*channels*sizeof(T));
+        for (int j = 0; j < mirrorSize; j++) {
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // left
+            memcpy(&buffer[(width-j-1)*channels],&buf0[(image->width - mirrorSize + j)*channels],channels*sizeof(T)); // right
+        }
+
+    }
+    else if (position == 3) {
+        // LEFT
+        image->getline(buf0,line);
+        for (int j = 0; j < mirrorSize; j++) {
+            memcpy(&buffer[j*channels],&buf0[(mirrorSize-j-1)*channels],channels*sizeof(T)); // right
+        }
+
     }
 
-    // Milieu de la ligne
-    if (c0<c1) c0=c1+1;    
-    c1=width-c1-1;
-
-    if (c1>c0){
-        // Partie haute
-        if (line<height/2){
-            if (images[1]!=NULL) {memcpy(&buffer[c0*channels],&buf1[c0*channels],(c1-c0)*channels);}
-            else if (images[0]!=NULL) {
-                for (j=c0;j<c1;j++) {
-                    memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-                }
-            }
-            else if (images[2]!=NULL && c1>width/2) {
-                for (j=width/2;j<c1;j++) {
-                    memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-                }
-            }
-        }
-        // Partie basse
-        else {
-            if (images[3]!=NULL) {memcpy(&buffer[c0*channels],&buf3[c0*channels],(c1-c0)*channels);}
-            else if (images[0]!=NULL) {
-                for (j=c0;j<c1;j++) {
-                    memcpy(&buffer[j*channels],&buf0[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-                }
-            }
-            else if (images[2]!=NULL && c1>width/2) {
-                for (j=width/2;j<c1;j++) {
-                    memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-                }
-            }
-        }
-    }
-
-    // Fin de la ligne
-
-    c0=c1;
-    c1=width-1;
-
-    if (images[2]!=NULL){
-        for (j=c0;j<c1;j++) {
-            memcpy(&buffer[j*channels],&buf2[line_size-(j+1)*channels],sizeof(uint8_t)*channels);
-        }
-    }
-    else if (line<height/2 && images[1]!=NULL && c1>c0) {
-        memcpy(&buffer[c0*channels],&buf1[c0*channels],(c1-c0)*channels);
-    }
-    else if (images[3]!=NULL && c1>c0) {memcpy(&buffer[c0*channels],&buf3[c0*channels],(c1-c0)*channels);}
-
-    return width*channels;
+    return width*channels*sizeof(T);
 }
 
+/** Implementation de getline pour les uint8_t */
+int MirrorImage::getline(uint8_t* buffer, int line) {
+    return _getline(buffer, line);
+}
+
+/** Implementation de getline pour les float */
 int MirrorImage::getline(float* buffer, int line)
 {
-    return width*channels;
+    if (sampleformat==1){     //uint8_t
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        getline(buffer_t,line);
+        convert(buffer,buffer_t,width*channels);
+        delete [] buffer_t;
+        return width*channels;
+    }
+    else {           //float
+        return _getline(buffer, line);
+    }
 }
+
 
 MirrorImage::~MirrorImage()
 {
