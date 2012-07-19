@@ -35,65 +35,29 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef STYLE_H
-#define STYLE_H
-#include <string>
-#include <vector>
-#include "LegendURL.h"
-#include "Palette.h"
+#ifndef ESTOMPAGEIMAGE_H
+#define ESTOMPAGEIMAGE_H
 
+#include "Image.h"
 
-class Style {
-private :
-    std::string id;
-    std::vector<std::string> titles;
-    std::vector<std::string> abstracts;
-    std::vector<std::string> keywords;
-    std::vector<LegendURL> legendURLs;
-    Palette palette;
-    //Estompage
-    bool estompage;
-    int angle;
+class EstompageImage : public Image {
+private:
+    Image* origImage;
+    uint8_t* estompage;
+    float* buffer;
+    float matrix[9];
     float exaggeration;
     uint8_t center;
+    int _getline ( uint8_t* buffer, int line );
+    int _getline ( float* buffer, int line );
+    void generate();
+    void generateLine(int line, float* line1, float* line2 , float* line3);
+    
 public:
-    Style ( const std::string& id,const std::vector<std::string>& titles,
-            const std::vector<std::string>& abstracts,const  std::vector<std::string>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0);
-    inline std::string getId() {
-        return id;
-    }
-    inline std::vector<std::string> getTitles() {
-        return titles;
-    }
-    inline std::vector<std::string> getAbstracts() {
-        return abstracts;
-    }
-    inline std::vector<std::string> getKeywords() {
-        return keywords;
-    }
-    inline std::vector<LegendURL> getLegendURLs() {
-        return legendURLs;
-    }
-    inline Palette* getPalette() {
-        return &palette;
-    }
-    inline bool isEstompage() {
-        return estompage;
-    }
-    
-    inline int getAngle() {
-        return angle;
-    }
-    
-    inline float getExaggeration() {
-        return exaggeration;
-    }
-    
-    inline uint8_t getCenter() {
-        return center;
-    }
+    virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line );
+    EstompageImage ( Image* image, int angle, float exaggeration, uint8_t center );
+    virtual ~EstompageImage();
 };
 
-
-#endif // STYLE_H
+#endif // ESTOMPAGEIMAGE_H

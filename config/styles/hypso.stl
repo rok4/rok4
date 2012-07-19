@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style>
+	<Identifier>hypso</Identifier>
+	<Title>Teinte Hypsométrique</Title> 
+	<Abstract>Teinte hypsométrique</Abstract>
+	<Keywords>
+		<Keyword>Défaut</Keyword>
+	</Keywords>
+	<LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://rok4.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+	<!-- Rok4-->
+	<palette maxValue="3.40282e+38" rgbContinuous="true" alphaContinuous="true">
+		<colour value="-99999.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>255</blue>
+			<alpha>0</alpha>
+		</colour>
+		<colour value="-99998.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>255</blue>
+			<alpha>0</alpha>
+		</colour>
+		<colour value="-99997.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>255</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="-10000.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>255</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="-10.0">
+			<red>0</red>
+			<green>0</green>
+			<blue>255</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="0.0">
+			<red>0</red>
+			<green>170</green>
+			<blue>255</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="1.0">
+			<red>0</red>
+			<green>170</green>
+			<blue>0</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="100.0">
+			<red>148</red>
+			<green>255</green>
+			<blue>61</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="500.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>127</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="1000.0">
+			<red>255</red>
+			<green>85</green>
+			<blue>0</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="3000.0">
+			<red>255</red>
+			<green>0</green>
+			<blue>0</blue>
+			<alpha>255</alpha>
+		</colour>
+		<colour value="6000.0">
+			<red>255</red>
+			<green>255</green>
+			<blue>255</blue>
+			<alpha>255</alpha>
+		</colour>
+	</palette>
+</style>

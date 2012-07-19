@@ -62,7 +62,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     std::map<double, Colour> colourMap;
     bool rgbContinuous = false;
     bool alphaContinuous = false;
-
+    int angle =-1;
+    float exaggeration=1;
+    int center=0;
     int errorCode;
 
     /*TiXmlDocument doc(fileName.c_str());
@@ -272,17 +274,6 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
                 colourMap.insert ( std::pair<double,Colour> ( value, Colour ( r,g,b,a ) ) );
             }
 
-            /*
-            for (int k = 0; k < maxValue+1 ; ++k) {
-                std::map<double,Colour>::iterator nearestValue = paletteMap.upper_bound(k);
-                if ( nearestValue != paletteMap.begin()){
-                    nearestValue--;
-                }
-
-                Colour tmp = nearestValue->second;
-                colours.push_back ( Colour ( tmp.r,tmp.g,tmp.b, ( tmp.a==-1?k:tmp.a ) ) );
-            }*/
-
             if ( colourMap.size() == 0 ) {
                 LOGGER_ERROR ( _("Palette sans Couleur ") << id <<_(" : il est invalide!!") );
                 return NULL;
@@ -291,9 +282,30 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         }
     }
     Palette pal ( colourMap, rgbContinuous, alphaContinuous );
-    //std::map<double,Colour>* palMap = pal.getColoursMap();
-    //LOGGER_DEBUG ( "Png palette Size : " <<pal.getPalettePNGSize());
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal );
+
+    pElem = hRoot.FirstChild ( "estompage" ).Element();
+    if ( pElem ) {
+        errorCode = pElem->QueryIntAttribute ( "angle",&angle );
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut angle invalide a été trouvé dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            angle=-1;
+        }
+        errorCode = pElem->QueryFloatAttribute ( "exaggeration",&exaggeration);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut exaggeration invalide a été trouvé dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            exaggeration=1;
+        }
+
+        errorCode = pElem->QueryIntAttribute ( "center",&center );
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut center invalide a été trouvé dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            center=0;
+        }
+    }
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal ,angle,exaggeration,center);
     LOGGER_DEBUG ( _("Style Créé") );
     return style;
 

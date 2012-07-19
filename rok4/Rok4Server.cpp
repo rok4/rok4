@@ -61,6 +61,7 @@
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include "PaletteDataSource.h"
+#include <EstompageImage.h>
 
 
 
@@ -293,6 +294,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
     int error;
     Image* image = L->getbbox ( servicesConf, bbox, width, height, crs, error );
+    Image* oldimage = image;
 
     LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << style->getId() << _ ( " pal size : " ) <<style->getPalette()->getPalettePNGSize() );
 
@@ -312,6 +314,28 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     }
 
     eformat_data pyrType = L->getDataPyramid()->getFormat();
+    
+    if (style->isEstompage()) {
+        LOGGER_DEBUG(_("Estompage"));
+        image = new EstompageImage(image,style->getAngle(),style->getExaggeration(), style->getCenter());
+        switch ( pyrType ) {
+            //Only use int8 output whith estompage
+            case TIFF_RAW_FLOAT32 :
+                pyrType = TIFF_RAW_INT8;
+                break;
+            case TIFF_ZIP_FLOAT32 :
+                pyrType = TIFF_ZIP_INT8;
+                break;
+            case TIFF_LZW_FLOAT32 :
+                pyrType = TIFF_LZW_INT8;
+                break;
+            case TIFF_PKB_FLOAT32 :
+                pyrType = TIFF_PKB_INT8;
+                break;
+            default:
+                break;
+        }
+    }
 
     if ( format=="image/png" ) {
         if ( servicesConf.isFullStyleCapable() ) {
