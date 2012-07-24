@@ -60,27 +60,25 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4::TileMatrixSet;
 use BE4::Pixel;
+use BE4::NoData;
 use BE4::Level;
 
-# constantes
+################################################################################
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
 
-# pas de bufferisation des sorties.
+################################################################################
+# Pas de bufferisation des sorties.
 $|=1;
 
-# version
+################################################################################
+# Version
 my $VERSION = '@VERSION_TEXT@';
 
-#
-# Title: joinCache
-#
-# (see uml-global.png)
-#
 ################################################################################
-# Global template Pyr
-
+# Global
 my $STRPYRTMPLT   = <<"TPYR";
 <?xml version='1.0' encoding='US-ASCII'?>
 <Pyramid>
@@ -94,19 +92,27 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
-
 ################################################################################
-
 #
+# Title: joinCache
+#
+####################################################################################################
+#                                              VARIABLES                                           #
+####################################################################################################
+
 # Group: variables
-#
 
 #
-# variable: options
-#   command options
-#       - properties
-#       - environment
-#
+=begin nd
+variable: %opts
+
+Command options.
+
+    * version
+    * help
+    * usage
+    * properties
+=cut
 my %opts =
 (
     "version"    => 0,
@@ -118,14 +124,23 @@ my %opts =
 );
 
 #
-# variable: parameters
-#   all parameters by sections
-#        - logger
-#        - pyramid      
-#        - bboxes
-#        - composition
-#        - process
-#
+=begin nd
+variable: %this
+
+All Parameters by section.
+    * logger
+    * pyramid
+    * bboxes
+    * composition
+    * process
+
+Perl objects to merge pyramids.
+    * sourceByLevel
+    * sourcePyramids
+    * currentscript
+    * streams
+    * doneTiles
+=cut
 my %this =
 (
 
@@ -144,25 +159,47 @@ my %this =
     doneTiles => {},
 );
 
+#
+=begin nd
+variable: %CONF
+
+Define allowed:
+    * sections
+    * merge methods
+    * compressions
+=cut
 my %CONF = (
     sections => ['pyramid','process','composition','logger','bboxes'],
     merge_method => ['replace','transparency','multiply'],
     compression => ['raw','jpg','png','lzw','zip'],
 );
 
+#
+=begin nd
+variable: %SAMPLEFORMAT2CODE
+
+To convert sample format from parameter to code
+=cut
 my %SAMPLEFORMAT2CODE = (
     uint => "INT",
     float => "FLOAT"
 );
 
-#
-# Group: proc
-#
+####################################################################################################
+#                                                MAIN                                              #
+####################################################################################################
 
-################################################################################
-# function: main
-#   main program
+# Group: main
+
 #
+=begin nd
+method: main
+
+Main method
+
+See Also:
+    <_init>, <_config>, <_validate>, <openStreams>, <doIt>, <closeStreams>, <writePyr>
+=cut
 sub main {
     printf("JoinCache : version [%s]\n",$VERSION);
     # message
@@ -230,10 +267,13 @@ sub main {
     $message = "END";
     printf STDOUT "%s\n", $message;
 }
-################################################################################
-# function: init
-#   Check options and initialize the logger
-#  
+
+#
+=begin nd
+method: _init
+
+Check options and initialize the logger
+=cut
 sub _init {
 
     ALWAYS(">>> Check Configuration ...");
@@ -297,6 +337,17 @@ sub _init {
 #                                     CONFIGURATION LOADER                                         #
 ####################################################################################################  
 
+# Group: configuration loader
+
+#
+=begin nd
+method: _config
+
+Load all parameters from the configuration file.
+
+See Also:
+    <_read>, <checkParams>
+=cut
 sub _config {
   
     ALWAYS(">>> Load Properties ...");
@@ -320,8 +371,18 @@ sub _config {
 
 }
 
-# method: _read
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: _read
+
+Read line by line (order is important), no library is used.
+
+Parameter:
+    filepath - Configuration file to read.
+
+See Also:
+    <is_ConfSection>, <readComposition>
+=cut
 sub _read {
     my $filepath = shift;
 
@@ -384,8 +445,16 @@ sub _read {
     return TRUE;
 }
 
-# method: readComposition
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: readComposition
+
+Read a 'composition' section line. Determine sources by level and calculate priorities.
+
+Parameters:
+    prop - composition's name: levelId.bboxId
+    val - composition's value: pyrPath1,pyrPath2,pyrPath3
+=cut
 sub readComposition {
     my $prop = shift;
     my $val = shift;
@@ -435,8 +504,17 @@ sub readComposition {
 
 }
 
-# method: is_ConfSection
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: is_ConfSection
+
+Check section's name
+
+Parameter:
+    section - section's name
+
+Possible values: 'pyramid','process','composition','logger','bboxes'.
+=cut
 sub is_ConfSection {
     my $section = shift;
 
@@ -453,8 +531,12 @@ sub is_ConfSection {
 
 
 
-# method: readComposition
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: checkParams
+
+Check is basic: sections have not to be empty
+=cut
 sub checkParams {
 
     ###################
@@ -521,6 +603,14 @@ sub checkParams {
 #                                         STREAM METHODS                                           #
 ####################################################################################################  
 
+# Group: stream methods
+
+#
+=begin nd
+method: openStreams
+
+Open one stream by script and write header. They stay opened to write commands directly in files (not store in memory).
+=cut
 sub openStreams {
     TRACE;
 
@@ -539,34 +629,40 @@ sub openStreams {
                 return FALSE;
             }
         }
-    
+        
         DEBUG(sprintf "Open stream to %s",$scriptFilePath);
         my $SCRIPT;
         if ( ! (open $SCRIPT,">", $scriptFilePath)) {
             ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
             return FALSE;
         }
-
+        
         my $header = sprintf ("# Environment variables\n");
         $header   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
         $header   .= sprintf ("TMP_DIR=\"%s\"\n",
             File::Spec->catdir($this{process}->{path_temp},$this{pyramid}->{pyr_name},$scriptId));
         $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->{pyr_data_path});
         $header   .= "\n";
-
+        
         $header .= "# Work directory creation\n";
         $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
-
+        
         printf $SCRIPT "%s", $header;
-
+        
         push @{$this{streams}},$SCRIPT;
-
+        
     }
 
     return TRUE;
 
 }
 
+#
+=begin nd
+method: closeStreams
+
+Close all streams to scripts.
+=cut
 sub closeStreams {
 
     TRACE;
@@ -581,7 +677,16 @@ sub closeStreams {
 
 }
 
+#
+=begin nd
+method: printInScript
 
+Writes commands in the current script. Round robin method is used to fill scripts.
+
+Parameter:
+    code - code to write in the current script.
+
+=cut
 sub printInScript {
     my $code = shift;
 
@@ -598,11 +703,18 @@ sub printInScript {
 #                                       VALIDATION METHODS                                         #
 ####################################################################################################  
 
+# Group: validation method
 
-# method: _validate
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: _validate
+
+Validates all components, checks consistency.
+
+See Also:
+    <validateMergedPyramid>, <validateBboxes>, <validateSourcePyramids>, <validateComposition>
+=cut
 sub _validate {
-
 
     ##################
 
@@ -647,10 +759,20 @@ sub _validate {
     
 }
 
-# method: validateComposition
-#       - we control the levelId (have to be present in the TMS)
-#       - 
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: validateComposition
+
+Validates each source in the composition.
+    - levelId have to be in the TMS
+    - bboxId have to be defined in the 'bboxes' section (and is interpreted)
+    - used level have to be present in the pyramid
+
+We store too pyramid's format (phtomoetric, samples per pixel...).
+
+See also:
+    <calculateBbox>
+=cut
 sub validateComposition {
 
     TRACE();
@@ -697,9 +819,16 @@ sub validateComposition {
     return TRUE;
 }
 
-# method: calculateBbox
-#  from a bbox ID and a level ID, calculate extrems index and return them
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: calculateBbox
+
+We have source's bbox in ground coordinates. We calculate indices for a given level.
+
+Parameters:
+    levelId - level for which we want to calculate bbox's indices
+    bboxId - bbox whose we want to calculate indices
+=cut
 sub calculateBbox {
     my $levelId = shift;
     my $bboxId = shift;
@@ -729,9 +858,12 @@ sub calculateBbox {
     return TRUE;
 }
 
-# method: validateBboxes
-#  for each bbox, we parse string to store values in array and we control consistency (min < max)
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: validateBboxes
+
+For each bbox, we parse string to store values in array and we control consistency (min < max).
+=cut
 sub validateBboxes {
     TRACE();
 
@@ -758,8 +890,15 @@ sub validateBboxes {
     return TRUE;
 }
 
-# method: validateMergedPyramid
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: validateMergedPyramid
+
+Checks final pyramid's paramters (compression, TMS, merge method...)
+
+See also:
+    <is_Compression>, <is_MergeMethod>
+=cut
 sub validateMergedPyramid {
 
     TRACE();
@@ -830,8 +969,17 @@ sub validateMergedPyramid {
 
 }
 
-# method: is_MergeMethod
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: is_MergeMethod
+
+Check merge method value.
+
+Parameter:
+    mergeMethod - merge method value
+
+Possible values: 'replace','transparency','multiply'.
+=cut
 sub is_MergeMethod {
     my $mergeMethod = shift;
 
@@ -846,8 +994,17 @@ sub is_MergeMethod {
     return FALSE;
 }
 
-# method: is_Compression
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: is_Compression
+
+Check compression value.
+
+Parameter:
+    compression - compression value
+
+Possible values: 'raw','jpg','png','lzw','zip'.
+=cut
 sub is_Compression {
     my $compression = shift;
 
@@ -862,9 +1019,15 @@ sub is_Compression {
     return FALSE;
 }
 
-# method: validateSourcePyramids
-#  for each pyramids, we control attributes : TMS, format... They must be the same for every one
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: validateSourcePyramids
+
+For each pyramid in composition, we store and control attributes, reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
+
+See alse:
+    <is_Compatible>
+=cut
 sub validateSourcePyramids {
 
     TRACE();
@@ -986,8 +1149,12 @@ sub validateSourcePyramids {
     return TRUE;
 }
 
-# method: is_Compatible
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: is_Compatible
+
+A pyramid is compatible with the final cache if format and sample per pixel are the same
+=cut
 sub is_Compatible {
     my $format = shift;
     my $samplesperpixel = shift;
@@ -1001,8 +1168,17 @@ sub is_Compatible {
 #                                        PROCESS METHODS                                           #
 ####################################################################################################  
 
-# method: doIt
-#---------------------------------------------------------------------------------------------------
+# Group: process method
+
+#
+=begin nd
+method: doIt
+
+Reads each image from each source pyramids which is in the bbox and writes it in the final cache, according the merge method.
+
+See also:
+    <getCacheNameOfImage>, <searchTile>, <treatTile>
+=cut
 sub doIt {
 
     TRACE();
@@ -1031,7 +1207,7 @@ sub doIt {
             for (my $i = $imin; $i <= $imax; $i++) {
                 for (my $j = $jmin; $j <= $jmax; $j++) {
                     if (exists $this{doneTiles}->{$i."_".$j}) {
-                        #Tile already exists (created by a treatment)
+                        #Tile have been already treated (treatment written in a script)
                         next;
                     }
 
@@ -1087,7 +1263,8 @@ sub doIt {
             type_metadata     => undef,      # TODO !
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
-            limit             => [$JMIN,$JMAX,$IMIN,$IMAX],
+            # WARN : I and J are IMAGE's indices and a Level object want TILE's indices
+            limit             => [$JMIN*$this{pyramid}->{tilesPerHeight},($JMAX+1)*$this{pyramid}->{tilesPerHeight},$IMIN*$this{pyramid}->{tilesPerWidth},($IMAX+1)*$this{pyramid}->{tilesPerWidth}],
             is_in_pyramid     => 0
         });
 
@@ -1105,9 +1282,18 @@ sub doIt {
 
 }
 
-# method: searchTile
-#  search a tile in source pyramids which have not the priority
-#---------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: searchTile
+
+Search a tile in source pyramids with a smaller priority
+
+Parameters:
+    levelId - level in which we serach tiles
+    priority - source's priority from which we search tiles
+    i,j - searched tile's indices
+    imagePath - relative image path, from the image directory ("19/00/M4/12.tif")
+=cut
 sub searchTile {
     my $levelId = shift;
     my $priority = shift;
@@ -1143,10 +1329,23 @@ sub searchTile {
   
 }
 
-# method: treatTile
-#       - we have only one source image for this tile : we create a symbolic link to this source if compatibility
-#       - we have more sources : according to the merge method, we write necessary commands in the script
-#--------------------------------------------------------------------------------------------------------
+#
+=begin nd
+method: treatTile
+
+3 possibilities:
+    - the image is present in just one pyramid or merge_method = replace, and is compatible with the final cache -> we write a symbolic link.
+    - the image is present in just one pyramid or merge_method = replace, and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts.
+    - the image is preent in seve(ral pyramids and merge method is not 'replace' -> we use tool 'overlayNtiff', commands are written in scripts.
+
+Parameters:
+    i,j - tile's indices to calculate
+    finaleImage - absolute path of the final image
+    images - array of absolute source images' paths
+    
+See also:
+    <makeLink>, <transformImage>, <mergeImages>
+=cut
 sub treatTile {
     my $i = shift;
     my $j = shift;
@@ -1180,6 +1379,16 @@ sub treatTile {
 
 }
 
+#
+=begin nd
+method: mergeImages
+
+Write commands in the current script to merge n images according to the merge method. We use tiff2rgba to convert into work format and overlayNtiff to merge.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    images - array of absolute source images' paths
+=cut
 sub mergeImages {
     my $finaleImage = shift;
     my @images = @_;
@@ -1242,6 +1451,16 @@ sub mergeImages {
     return TRUE;
 }
 
+#
+=begin nd
+method: makeLink
+
+Create a symbolic link in the final cache, to a source image.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    baseImage - absolute source image's path, to link
+=cut
 sub makeLink {
     my $finaleImage = shift;
     my $baseImage = shift;
@@ -1288,6 +1507,18 @@ sub makeLink {
 
 }
 
+#
+=begin nd
+method: makeLink
+
+Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    baseImage - absolute source image's path, to transform
+    format - format of the source cache ('TIFF_PNG_INT8')
+    spp - samples per pixel of the source cache
+=cut
 sub transformImage {
     my $finaleImage = shift;
     my $baseImage = shift;
@@ -1355,10 +1586,14 @@ sub transformImage {
 #                                        WRITTING METHODS                                          #
 ####################################################################################################  
 
+# Group: writting methods
 
-# method: writePyr
-#  ecrit le fichier .pyr
-#-------------------------------------------------------------------------------
+#
+=begin nd
+method: writePyr
+
+Export the Pyramid object to XML format, write the pyramid's descriptor ("pyr_desc_path/pyr_name_new.pyr"). Use Level XML export. Levels are written in descending order, from worst to best resolution.
+=cut
 sub writePyr {
 
     TRACE;
@@ -1383,20 +1618,32 @@ sub writePyr {
     my $channel = $this{pyramid}->{pixel}->{samplesperpixel};
     $strpyrtmplt =~ s/__CHANNEL__/$channel/;
     #  
-    my $nodata = "FF"x($channel);
-    $strpyrtmplt =~ s/__NODATAVALUE__/$nodata/;
+    my $nodata = BE4::NoData->new({
+        value => undef, #default value will be set.
+        pixel => $this{pyramid}->{pixel},
+        nowhite => "false"
+    });
+
+    my $nodataValue = $nodata->getValue();
+    $strpyrtmplt =~ s/__NODATAVALUE__/$nodataValue/;
     #  
     $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;
     #  
-    my $photometric = "rgb";
-    $photometric = "gray" if ($channel == 1);
+    my $photometric = $this{pyramid}->{pixel}->{photometric};
     $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
 
-    foreach my $objLevel (values %{$this{pyramid}->{levels}}){
+    foreach my $objLevel (values %{$this{pyramid}->{levels}}) {
         my $levelXML = $objLevel->getLevelToXML();
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
-        if (! main::writeNodata($objLevel,$nodata)) {
-            ERROR(sprintf "Cannot write the nodata tile for the level %s",$objLevel->getID());
+        
+        # Nodata tile creation
+        my $nodataTilePath = File::Spec->catdir($this{pyramid}->{pyr_data_path},$objLevel->{dir_nodata},$objLevel->getID(),"nd.tif");
+
+        my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->{id});
+        my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->{id});
+        
+        if (! $nodata->createNodata($nodataTilePath,$width,$height,$this{pyramid}->{compression})) {
+            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
             return FALSE;
         }
     }
@@ -1427,68 +1674,24 @@ sub writePyr {
     return TRUE;
 }
 
-
-# method: writeNodata
-#  ecrit les tuiles de nodata
-#-------------------------------------------------------------------------------
-sub writeNodata {
-
-    my $level = shift;
-    my $nodata = shift;
-
-    TRACE;
-    
-    my $nodataFilePath = File::Spec->rel2abs($level->{dir_nodata},$this{pyramid}->{pyr_desc_path});
-    $nodataFilePath = File::Spec->catfile($nodataFilePath,"nd.tiff");
-        
-    my $nodatadir = dirname($nodataFilePath);
-
-    if (! -e $nodatadir) {
-        #create folders
-        eval { mkpath([$nodatadir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
-            return FALSE;
-        }
-    }
-
-    my $tm  = $this{pyramid}->{tms}->getTileMatrix($level->getID);
-
-    my $sizex = $tm->getTileWidth();
-    my $sizey = $tm->getTileHeight();
-    my $compression = $this{pyramid}->{compression};
-  
-    # cas particulier de la commande createNodata :
-    $compression = ($compression eq 'raw'?'none':$compression);
-    
-    my $cmd = sprintf ("createNodata -n %s",$nodata);
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s",$this{pyramid}->{pixel}->{photometric});
-    $cmd .= sprintf ( " -t %s %s", $sizex, $sizey);
-    $cmd .= sprintf ( " -b %s",$this{pyramid}->{pixel}->{bitspersample});
-    $cmd .= sprintf ( " -s %s",$this{pyramid}->{pixel}->{samplesperpixel});
-    $cmd .= sprintf ( " -a %s",$this{pyramid}->{pixel}->{sampleformat});
-    $cmd .= sprintf ( " %s", $nodataFilePath);
-    
-    if (! system($cmd) == 0) {
-        ERROR (sprintf "Impossible to create the nodata tile for the level %i !\n
-                        The command is incorrect : '%s'",
-                        $level->getID(),
-                        $cmd);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-
 ####################################################################################################
 #                                             TOOLS                                                #
 ####################################################################################################  
 
-# method: getCacheNameOfImage
-#  return the image path : /3E/42/01.tif
-#---------------------------------------------------------------------------------------------------
+# Group: tools
+
+#
+=begin nd
+method: getCacheNameOfImage
+
+Return the image relative path, from the data directory (pyr_data_path/dir_image). Tile's indices are convert in base 36, and split to give the path.
+
+Example:
+    getCacheNameOfImage(4032,18217) returns "3E/42/01.tif"
+
+Parameter:
+    i,j - indices from which name is determined
+=cut
 sub getCacheNameOfImage {
     my $i     = shift; # X idx !
     my $j     = shift; # Y idx !
@@ -1561,30 +1764,7 @@ sub encodeIntToB36 {
     return $b36;
 }
 
-sub encodeB36toInt {
-    my $b36  = shift; # idx in base 36 !
-
-    my $padlength = $this{pyramid}->{dirDepth} + 1;
-
-    my $number = 0;
-    my $i = 0;
-    foreach(split //, reverse uc $b36) {
-        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
-        $number += $_ * (36 ** $i++);
-    }
-
-    # fill with 0 !
-    return "0"x($padlength - length $number).$number;
-    # return decode_base36($b36,$padlength);
-}
-
-
-
-
 ################################################################################
-#
-# autoload
-#
 
 BEGIN {}
 INIT {}
@@ -1594,132 +1774,246 @@ exit 0;
 
 END {}
 
-=pod
+################################################################################
+
+1;
+__END__
 
 =head1 NAME
 
-  joinCache : create a pyramid from several, thanks to n triplets
-     a triplet = a level (ID in the TMS) + an extent (a bbox) + a pyramid (file .pyr)
+joinCache - create a pyramid from several, thanks to n triplets (composition)
+
+A triplet = a level (ID in the TMS) + an extent (a bbox) + a list of pyramid's descriptor path
 
 =head1 SYNOPSIS
 
-  perl joinCache.pl --conf=path
+    perl joinCache.pl --conf=path
 
 =head1 DESCRIPTION
 
-All used pyramids must have identical parameters :
-    - used TMS, sample format(uint), bits per sample(8)
-Resulting pyramid will have same attributes.
+All used pyramids must have identical parameters : used TMS, sample format (uint), bits per sample (8). Resulting pyramid will have same attributes.
 
-Others parameters are free.
+Others parameters are free (compression, samples per pixel) and have to be defined for the final cache.
 
-Bounding boxes' SRS have to be the TMS' one
+Bounding boxes' SRS have to be the TMS' one.
 
-=head1 FILE CONFIGURATION
+=head1 JOINCACHE CONFIGURATION FILE
 
-* SAMPLE OF FILE CONFIGURATION OF PYRAMID :
+=head2 By section
 
-;Commentaires
+=over 4
 
-[logger]
-log_level      = INFO
+=head3 logger
 
-[pyramid]
-pyr_name       = PYR_TEST
-pyr_desc_path  = /home/theo/TEST/JoinCache
-pyr_data_path  = /home/theo/TEST/JoinCache
+=item log_level
 
-tms_path       = /home/theo/TEST/BE4/TMS
-tms_name       = LAMB93_10cm.tms
+Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
 
-image_dir      = IMAGE
-metadata_dir   = METADATA
-nodata_dir     = NODATA
+=head3 pyramid
 
-compression = jpg
-samplesperpixel = 3
-photometric = rgb
-bitspersample = 8
-sampleformat = uint
+=item pyr_name
 
-merge_method   = multiply 
+Name of the new pyramid, used to name the descriptor, the cache's list, the data directory and the temporary directory.
 
-[bboxes]
-PARIS = 535286,6747049,771666,6976667
+Mandatory.
 
-[ process ]
-path_shell  = /home/theo/TEST/JoinCache      ;Commentaires
-path_temp   = /home/theo/TEST/BE4/TMP
-job_number  = 4
+=item pyr_desc_path
 
-[composition]  
+Directory path, where to write the descriptor.
 
-16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
-16.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
+Mandatory.
 
-19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
-19.PARIS = /home/theo/TEST/BE4/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
+=item pyr_data_path
+
+Directory path, where to write the cache.
+
+Mandatory.
+
+=item compression
+
+Possible values : raw, jpg, zip, lzw, png, pkb. png compression is not an official compression for tiff format (just readable by rok4).
+
+Mandatory.
+
+=item bitspersample
+
+Possible value : 8.
+
+Mandatory.
+
+=item sampleformat
+
+Possible value : uint.
+
+Mandatory.
+
+=item samplesperpixel
+
+Possible values : 1, 3, 4.
+
+Mandatory.
+
+=item photometric
+
+Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb.
+
+Mandatory.
+
+=item dir_image, dir_nodata
+
+Names of subdirectories in the cache, in F<pyr_data_path/pyr_name/>.
+
+Default : IMAGE, NODATA.
+
+=item tms_name
+
+TMS file name, with extension .tms.
+
+Mandatory.
+
+=item tms_path
+
+Directory, where to find the TMS file.
+
+Mandatory.
+
+=item merge_method
+
+Method to use to overlay several images. Used by overlayNtiff.
+
+Possible values : 'replace', 'transparency', 'multiply'.
+
+Mandatory.
+
+=head3 process
+
+=item job_number
+
+Number of split scripts. Round robin method is used to share jobs between splits.
+
+Mandatory.
+
+=item path_temp
+
+Temporary directory path in which we create a directory named like the merged cache : temporary files are written in F<path_temp/pyr_name_new/>.
+
+Mandatory.
+
+=item path_shell
+
+Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
+
+Mandatory.
+
+=back
+
+=head3 bboxes
+
+Format : ID = xmin,ymin,xmax,ymax , ID is a basic string, without space and coordinates are in the TMS' SRS.
+
+=head3 composition
+
+Format : LevelID.BboxId = pyrPath1,pyrPath2 , BboxId have to be defined in 'bboxes' section, LevelId have to be present in the TMS and in used pyramids.
+
+Order in 'composition' is important, a triplet will take precedence over the triplets for a same level.
+
+=head2 Example.
+
+    ;Commentaires
+    
+    [logger]
+    log_level      = INFO
+    
+    [pyramid]
+    pyr_name       = MERGE_PYRAMID
+    pyr_desc_path  = /home/ign/JoinCache
+    pyr_data_path  = /home/ign/JoinCache
+    
+    tms_path       = /home/ign/TMS
+    tms_name       = LAMB93_10cm.tms
+    
+    image_dir      = IMAGE
+    nodata_dir     = NODATA
+    
+    compression = jpg
+    samplesperpixel = 3
+    photometric = rgb
+    bitspersample = 8
+    sampleformat = uint
+    
+    merge_method   = multiply 
+    
+    [bboxes]
+    PARIS = 535286,6747049,771666,6976667
+    
+    [process]
+    path_shell  = /home/ign/JoinCache      ;Commentaires
+    path_temp   = /home/ign/TMP
+    job_number  = 4
+    
+    [composition]  
+    
+    16.PARIS = /home/ign/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+    16.PARIS = /home/ign/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
+    
+    19.PARIS = /home/ign/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr,/home/ign/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
 
 =head1 OPTIONS
 
-=over
+=over 4
 
-=item B<--help>
+=item --help
 
-=item B<--usage>
+=item --usage
 
-=item B<--version>
+=item --version
 
-=item B<--conf=path>
+=item --conf=path
 
-Path to file configuration of the pyramid.
-This option is manadatory !
-
-=back
-
-=head1 DIAGNOSTICS
-
-=head1 REQUIRES
-
-=over
-
-=item * LIB EXTERNAL
-
-Use of binding gdal (Geo::GDAL)
-
-=item * MODULES (CPAN)
-
-    use POSIX qw(locale_h);
-    use sigtrap qw(die normal-signals);
-    use Getopt::Long;
-    use Pod::Usage;
-    use Log::Log4perl qw(get_logger);
-    use Cwd qw(abs_path cwd chdir);
-    use File::Spec;
-
-=item * MODULES (owner)
-
-    use BE4::PropertiesLoader;
-
-=item * deployment and installation
-
-cf. INSTALL and README file
+Path to file configuration of the pyramid. This option is mandatory !
 
 =back
 
-=head1 BUGS AND LIMITATIONS
+=head1 SEE ALSO
 
-cf. FIXME and TODO file
+=head2 Intern libraries
 
-=over
+=head3 POD documentation
 
-=item * FIXME
+=begin html
 
-=item * TODO
+<ul>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
+<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
+<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
+</ul>
 
-=back
+=end html
 
-=head1 SEE ASLO
+=head3 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head2 Modules CPAN
+
+POSIX qw(locale_h)
+
+sigtrap qw(die normal-signals)
+
+Getopt::Long
+
+Pod::Usage
+
+Log::Log4perl qw(get_logger)
+
+Cwd qw(abs_path cwd chdir)
+
+File::Spec
 
 =head1 AUTHOR
 
@@ -1727,9 +2021,8 @@ Théo Satabin, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011 by SIEL/TLGE/Théo Satabin - Institut Géographique National
+Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

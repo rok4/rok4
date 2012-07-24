@@ -371,36 +371,35 @@ END {}
 
 =head1 NAME
 
-  create-layer - Outil orienté maintenance qui permet de construire un layer pour Rok4, sur
-  la pyramide du fichier de configuration.
+create-layer - Outil orienté maintenance qui permet de construire un layer pour Rok4, sur la pyramide du fichier de configuration.
 
 =head1 SYNOPSIS
 
-  ORIENTÉ MAINTENANCE !
-  perl create-layer.pl --properties=path
-                      [--resampling="" --opaque --style=""  ]
-  perl create-layer.pl --conf=path
+    ORIENTÉ MAINTENANCE !
+    perl create-layer.pl --properties=path
+                        [--resampling="" --opaque --style=""  ]
+    perl create-layer.pl --conf=path
                       [--r="" --opaque --s=""  ] 
 
 =head1 DESCRIPTION
 
-  ORIENTÉ MAINTENANCE !
-  
-  Pas de conf. d'environement..., donc mettre les parametres suivants dans la
-  conf de la pyramide :
-    - pyr_desc_path
-    - tms_path
-    - log_path
-    - log_file
-    
-  Par defaut, la liste des SRS sont les suivantes :
-  - la projection des données sources,
-  - "CR:84",
-  - "IGNF:WGS84G",
-  - "epsg:3857",
-  - "epsg:4258",
+ORIENTÉ MAINTENANCE !
 
-  Le nom du layer est le nom de la pyramide !
+Pas de conf. d'environement..., donc mettre les parametres suivants dans la
+conf de la pyramide :
+  - pyr_desc_path
+  - tms_path
+  - log_path
+  - log_file
+  
+Par defaut, la liste des SRS sont les suivantes :
+- la projection des données sources,
+- "CR:84",
+- "IGNF:WGS84G",
+- "epsg:3857",
+- "epsg:4258",
+
+Le nom du layer est le nom de la pyramide !
 
 =head1 OPTIONS
 

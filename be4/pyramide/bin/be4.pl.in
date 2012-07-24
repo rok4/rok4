@@ -637,10 +637,12 @@ be4 - create a pyramid of tiled tiff images, several resolutions, with compressi
 =head1 DESCRIPTION
 
 2 types of generation:
+
 * create a new pyramid with data
 * create a pyramid from an existing (update)
 
 2 data source type:
+
 * Images
 * WMS service
 
@@ -934,7 +936,7 @@ In a data source configuration, sections are level ID, from which the data sourc
 
 =item --conf=path
 
-Path to file configuration of the pyramid. This option is manadatory !
+Path to file configuration of the pyramid. This option is mandatory !
 
 =item --env=path
 

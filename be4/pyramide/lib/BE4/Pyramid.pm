@@ -1473,7 +1473,7 @@ sub writeCachePyramid {
         if (! -d $dataDir) {
             eval { mkpath([$dataDir]); };
             if ($@) {
-                ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $dataDir , $@);
+                ERROR(sprintf "Can not create the data directory '%s' : %s !", $dataDir , $@);
                 return FALSE;
             }
         }
@@ -1784,7 +1784,7 @@ method: getCacheNameOfImage
 Return the image relative path, from the cache root directory (pyr_data_path). Tile's indices are convert in base 36, and split to give the path.
 
 Example:
-    $objPyr->getCacheNameOfImage({level => "level_19",x => 4032,y => 18217},"data") return "IMAGE/levele_19/3E/42/01.tif"
+    $objPyr->getCacheNameOfImage({level => "level_19",x => 4032,y => 18217},"data") returns "IMAGE/level_19/3E/42/01.tif"
 
 Parameter:
     node - node whose name is wanted
