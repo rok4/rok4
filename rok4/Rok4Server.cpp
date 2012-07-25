@@ -62,6 +62,7 @@
 #include "fcgiapp.h"
 #include "PaletteDataSource.h"
 #include <EstompageImage.h>
+#include <MergeImage.h>
 
 
 
@@ -277,125 +278,126 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
  */
 
 DataStream* Rok4Server::getMap ( Request* request ) {
-    Layer* L;
+    std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
     int width, height;
     CRS crs;
     std::string format;
-    Style* style=0;
+    std::vector<Style*> styles;
     std::map <std::string, std::string > format_option;
+    std::vector<Image*> images;
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, L, bbox, width, height, crs, format ,style, format_option );
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
     }
 
     int error;
-    Image* image = L->getbbox ( servicesConf, bbox, width, height, crs, error );
-    Image* oldimage = image;
+    Image* image;
+    for ( int i = 0 ; i < layers.size(); i ++ ) {
+        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
 
-    LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << style->getId() << _ ( " pal size : " ) <<style->getPalette()->getPalettePNGSize() );
+        LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
-    if ( image == 0 ) {
-        switch ( error ) {
+        if ( curImage == 0 ) {
+            switch ( error ) {
 
-        case 1: {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+            case 1: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+            }
+            case 2: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+            }
+            default : {
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+            }
+            }
         }
-        case 2: {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+
+        eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+
+        if ( servicesConf.isFullStyleCapable() ) {
+            if ( styles.at ( i )->isEstompage() ) {
+                LOGGER_DEBUG ( _ ( "Estompage" ) );
+                curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
+                switch ( pyrType ) {
+                    //Only use int8 output whith estompage
+                case TIFF_RAW_FLOAT32 :
+                    pyrType = TIFF_RAW_INT8;
+                    break;
+                case TIFF_ZIP_FLOAT32 :
+                    pyrType = TIFF_ZIP_INT8;
+                    break;
+                case TIFF_LZW_FLOAT32 :
+                    pyrType = TIFF_LZW_INT8;
+                    break;
+                case TIFF_PKB_FLOAT32 :
+                    pyrType = TIFF_PKB_INT8;
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
+                if ( format == "image/png" && layerList.size() == 1 ) {
+                    switch ( pyrType ) {
+
+                    case TIFF_RAW_FLOAT32 :
+                    case TIFF_ZIP_FLOAT32 :
+                    case TIFF_LZW_FLOAT32 :
+                    case TIFF_PKB_FLOAT32 :
+                        curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                    default:
+                        break;
+                    }
+                } else {
+                    curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                }
+            }
+
         }
-        default : {
-            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
-        }
-        }
+
+        images.push_back ( curImage );
     }
 
-    eformat_data pyrType = L->getDataPyramid()->getFormat();
-    
-    if (style->isEstompage()) {
-        LOGGER_DEBUG(_("Estompage"));
-        image = new EstompageImage(image,style->getAngle(),style->getExaggeration(), style->getCenter());
+    //Use background image format.
+    eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
+    image = images.at(0);
+    if ( images.size() > 1 ) {
         switch ( pyrType ) {
             //Only use int8 output whith estompage
-            case TIFF_RAW_FLOAT32 :
-                pyrType = TIFF_RAW_INT8;
-                break;
-            case TIFF_ZIP_FLOAT32 :
-                pyrType = TIFF_ZIP_INT8;
-                break;
-            case TIFF_LZW_FLOAT32 :
-                pyrType = TIFF_LZW_INT8;
-                break;
-            case TIFF_PKB_FLOAT32 :
-                pyrType = TIFF_PKB_INT8;
-                break;
-            default:
-                break;
+        case TIFF_RAW_FLOAT32 :
+            pyrType = TIFF_RAW_INT8;
+            break;
+        case TIFF_ZIP_FLOAT32 :
+            pyrType = TIFF_ZIP_INT8;
+            break;
+        case TIFF_LZW_FLOAT32 :
+            pyrType = TIFF_LZW_INT8;
+            break;
+        case TIFF_PKB_FLOAT32 :
+            pyrType = TIFF_PKB_INT8;
+            break;
+        default:
+            break;
+        }
+        image = new MergeImage(images.at(0), images.at(1), MergeImage::MULTIPLY, 0.5);
+        for (int i = 2 ; i < images.size()  ; i++) {
+            image = new MergeImage(image, images.at(i), MergeImage::MULTIPLY, 0.5);
         }
     }
 
     if ( format=="image/png" ) {
-        if ( servicesConf.isFullStyleCapable() ) {
-            switch ( pyrType ) {
-
-            case TIFF_RAW_FLOAT32 :
-            case TIFF_ZIP_FLOAT32 :
-            case TIFF_LZW_FLOAT32 :
-                image = new StyledImage ( image, 4, style->getPalette() );
-                return new PNGEncoder ( image, NULL );
-            }
+        if ( layerList.size() == 1 ) {
+            return new PNGEncoder ( image,styles.at(0)->getPalette() );
+        } else {
+            return new PNGEncoder ( image,NULL);
         }
-        return new PNGEncoder ( image,style->getPalette() );
+        
     } else if ( format == "image/tiff" ) { // Handle compression option
-
-
-        if ( servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
-            image = new StyledImage ( image, 4, style->getPalette() );
-            switch ( pyrType ) {
-            
-            //Only use int8 output while styling
-            case TIFF_RAW_FLOAT32 :
-                pyrType = TIFF_RAW_INT8;
-            case TIFF_ZIP_FLOAT32 :
-                pyrType = TIFF_ZIP_INT8;
-            case TIFF_LZW_FLOAT32 :
-                pyrType = TIFF_LZW_INT8;
-            case TIFF_PKB_FLOAT32 :
-                pyrType = TIFF_PKB_INT8;
-            case TIFF_RAW_INT8 :
-            case TIFF_ZIP_INT8 :
-            case TIFF_LZW_INT8 :
-            case TIFF_PKB_INT8 :
-                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
-                }
-                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
-                }
-                if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
-                }
-                if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_PKB_INT8 );
-                }
-                return TiffEncoder::getTiffEncoder ( image, pyrType );
-            default:
-                if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
-                }
-                if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
-                }
-                if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                    return TiffEncoder::getTiffEncoder ( image, TIFF_PKB_INT8 );
-                }
-                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
-            }
-        }
-
         switch ( pyrType ) {
 
         case TIFF_RAW_FLOAT32 :
@@ -445,9 +447,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
         }
     } else if ( format == "image/jpeg" ) {
-        if ( servicesConf.isFullStyleCapable() && style && image->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
-            image = new StyledImage ( image, 3, style->getPalette() );
-        }
         return new JPEGEncoder ( image );
     } else if ( format == "image/x-bil;bits=32" )
         return new BilEncoder ( image );

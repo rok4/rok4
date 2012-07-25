@@ -40,7 +40,7 @@
 #include "Logger.h"
 
 #include "Utils.h"
-#include <string.h>
+#include <cstring>
 #include <cmath>
 #define DEG_TO_RAD      .0174532925199432958
 

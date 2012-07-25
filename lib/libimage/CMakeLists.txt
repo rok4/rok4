@@ -53,7 +53,7 @@ endif(DEBUG_BUILD)
 set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp TiffReader.cpp TiffWhiteManager.cpp TiledTiffWriter.cpp Decoder.cpp 
 ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp
 BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp format.cpp Interpolation.cpp
- TiffHeaderDataSource.cpp StyledImage.cpp EstompageImage.cpp)
+ TiffHeaderDataSource.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp)
 
 
 add_library(image STATIC ${libimage_SRCS})

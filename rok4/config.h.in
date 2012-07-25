@@ -76,6 +76,7 @@
 #define DEFAULT_OPAQUE     true
 #define DEFAULT_RESAMPLING "lanczos_2"
 #define DEFAULT_CHANNELS   3
+#define DEFAULT_LAYER_LIMIT  1
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";
