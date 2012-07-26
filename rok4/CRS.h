@@ -50,6 +50,7 @@ class CRS {
 private:
     std::string requestCode;    // Code du CRS tel qu'il est ecrit dans la requete WMS
     std::string proj4Code;      // Code du CRS dans la base proj4
+    BoundingBox<double> definitionArea;
 public:
     CRS();
     CRS ( std::string crs_code );
@@ -57,6 +58,7 @@ public:
     CRS& operator= (CRS const& other);
     
     void buildProj4Code();
+    void fetchDefinitionArea();
     bool isProj4Compatible();
     bool isLongLat();
     long double getMetersPerUnit();
@@ -75,7 +77,15 @@ public:
     }
     BoundingBox<double> boundingBoxFromGeographic ( BoundingBox<double> geographicBBox );
     BoundingBox<double> boundingBoxFromGeographic ( double minx, double miny, double maxx, double maxy );
+    
+    BoundingBox<double> boundingBoxToGeographic ( BoundingBox<double> geographicBBox );
+    BoundingBox<double> boundingBoxToGeographic ( double minx, double miny, double maxx, double maxy );
 
+    bool validateBBox ( BoundingBox< double > BBox );
+    bool validateBBox ( double minx, double miny, double maxx, double maxy );
+    
+    bool validateBBoxGeographic ( BoundingBox< double > BBox );
+    bool validateBBoxGeographic ( double minx, double miny, double maxx, double maxy );
 };
 
 #endif

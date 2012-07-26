@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-06-29 16:34+0200\n"
+"POT-Creation-Date: 2012-07-16 14:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1135,7 +1135,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:695 Rok4Server.cpp:428
+#: Request.cpp:695 Rok4Server.cpp:431
 msgid "Le format "
 msgstr ""
 
@@ -1239,11 +1239,11 @@ msgstr ""
 msgid "Parametre STYLES absent."
 msgstr ""
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:500
+#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:503
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:500
+#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:503
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1321,15 +1321,15 @@ msgstr ""
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:278 Rok4Api.cpp:350 Rok4Server.cpp:448
+#: Rok4Api.cpp:278 Rok4Api.cpp:350 Rok4Server.cpp:451
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:458 Rok4Server.cpp:478
+#: Rok4Api.cpp:458 Rok4Server.cpp:481
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:458 Rok4Server.cpp:478 Rok4Server.cpp:489
+#: Rok4Api.cpp:458 Rok4Server.cpp:481 Rok4Server.cpp:492
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
@@ -1389,11 +1389,11 @@ msgstr ""
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:428
+#: Rok4Server.cpp:431
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:454
+#: Rok4Server.cpp:457
 msgid "No data found"
 msgstr ""
 
