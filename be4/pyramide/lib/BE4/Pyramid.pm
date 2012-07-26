@@ -138,6 +138,7 @@ sub new {
     my $path_temp = shift;
 
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # NOTE
         # 2 options possible with parameters :
@@ -1275,7 +1276,7 @@ sub writeConfPyramid {
 
     if (-f $filepyramid) {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
-        #TEST#return FALSE;
+        return FALSE;
     }
     #
     my $PYRAMID;

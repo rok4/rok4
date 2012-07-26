@@ -79,9 +79,9 @@ variable: $self
     * topLevelID => undef,
     * topLevelOrder => undef,
     
-    * bbox => undef, # array of limits of the previous extent
-    * extent => undef, # OGR::Geometry object, in the previous SRS
     * srs => undef,
+    * extent => undef, # OGR::Geometry object, in the previous SRS
+    * bbox => undef, # array of limits of the previous extent
 
     * imageSource => undef, # an ImageSource object (can be undefined)
 
@@ -100,6 +100,7 @@ sub new {
     my $params = shift;
 
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # Global information
         bottomLevelID => undef,
@@ -226,7 +227,7 @@ sub computeGlobalInfo {
         # We have real images for source, bbox will be calculated from them.
         my ($xmin,$ymin,$xmax,$ymax);
 
-        my @BBOX = $self->{imageSource}->computeBbox();
+        my @BBOX = $self->{imageSource}->computeBBox();
         $xmin = $BBOX[0] if (! defined $xmin || $xmin < $BBOX[0]);
         $ymin = $BBOX[1] if (! defined $ymin || $xmin < $BBOX[1]);
         $xmax = $BBOX[2] if (! defined $xmax || $xmin > $BBOX[2]);
@@ -401,7 +402,7 @@ BE4::DataSource - Managing a data source
         }
     );
     
-    # Real Data and no harvesting : native SRS and lossless compression
+    # Real Data and harvesting : reprojection or lossy compression
     my $objDataSource = BE4::DataSource->new(
         "19",
         {

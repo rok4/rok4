@@ -281,7 +281,7 @@ ou dans le repertoire courant !
     use BE4::PropertiesLoader;
     use BE4::Pyramid;
     use BE4::DataSource;
-    use BE4::Tree;s
+    use BE4::Tree;
 
 =back
 

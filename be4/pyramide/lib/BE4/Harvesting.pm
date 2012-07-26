@@ -82,6 +82,7 @@ variable: $self
     * FORMAT   => undef, # ie image/png
     * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
     * OPTIONS    => undef, # transparence, background color, style
+    * min_size => undef, # used to remove too small harvested images (bytes), can be undefined
     * image_width => 4096, # max images size which will be harvested, can be undefined
     * image_height => 4096
 =cut
@@ -96,6 +97,7 @@ sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         URL      => undef,
         VERSION  => undef,
@@ -487,7 +489,7 @@ Name of the harvested resource
 
 =item OPTIONS
 
-Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent msut be 'FALSE'.
+Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
 
 =item min_size
 

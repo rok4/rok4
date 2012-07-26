@@ -80,7 +80,7 @@ variable: $self
     * job_number => undef, # param value !
     * levels => {},
 |   level1 => {
-|      x1_y2 => [[objimage1] or harvesting,w1,c1],
+|      x1_y2 => [[objimage1],w1,c1],
 |      x2_y2 => [[objimage2],w2,c2],
 |      x3_y2 => [[objimage3],w3,c3], ...}
 |   level2 => { 
@@ -108,6 +108,7 @@ sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # in
         pyramid    => undef,
@@ -279,7 +280,7 @@ sub identifyBottomTiles {
         my @images = $datasource->getImages();
         foreach my $objImg (@images){
             # On reprojette l'emprise si nécessaire
-            my %bbox = $objImg->computeBBox($ct);
+            my %bbox = $objImg->convertBBox($ct);
             if ($bbox{xMin} == 0 && $bbox{xMax} == 0) {
                 ERROR(sprintf "Impossible to compute BBOX for the image '%s'. Probably limits are reached !", $objImg->getName());
                 return FALSE;
@@ -886,7 +887,7 @@ sub exportTree {
   
   my $srsini   = $refdata->getSRS();
   my $resini   = $refdata->getResolution();
-  my @bboxini  = $refdata->computeBbox(); # (Upper Left, Lower Right) !
+  my @bboxini  = $refdata->{bbox}; # (Upper Left, Lower Right) !
   
   my $srsfinal  = $refpyr->getTileMatrixSet()->getSRS();
   my $resfinal  = $refpyr->getTileMatrixSet()->getTileMatrix($idLevel)->getResolution();
@@ -925,7 +926,7 @@ sub exportTree {
   printf FILE "=> Data Source :\n";
   printf FILE "   - resolution [%s]\n", $resini;
   printf FILE "   - srs        [%s]\n", $srsini;
-  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[3], $bboxini[2], $bboxini[1];
+  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[1], $bboxini[2], $bboxini[3];
   printf FILE "----------------------------------------------------\n";
   printf FILE "=> Index (level n° %s):\n", $idLevel;
   printf FILE "   - resolution [%s]\n", $resfinal;

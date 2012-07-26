@@ -86,6 +86,7 @@ sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
     PATHIMG => undef,
     PATHMTD => undef,
@@ -250,8 +251,9 @@ sub computeImageSource {
 
 #
 =begin nd
-    method: getListImages
-    Get the list of all path data image (image tiff only !)
+method: getListImages
+
+Get the list of all path data image (image tiff only !). Recursive to browse directories.
 =cut  
 sub getListImages {
   my $self      = shift;
@@ -291,10 +293,11 @@ sub getListImages {
 
 #
 =begin nd
-method: computeBbox
+method: computeBBox
+
 Calculate extrem limits of images, in the source SRS.
 =cut
-sub computeBbox {
+sub computeBBox {
     my $self = shift;
 
     TRACE;

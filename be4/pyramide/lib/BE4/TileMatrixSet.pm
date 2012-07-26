@@ -87,6 +87,7 @@ sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
     PATHFILENAME => undef,
     #
@@ -144,77 +145,117 @@ sub _init {
 }
 
 sub _load {
-  my $self = shift;
-  
-  TRACE;
-  
-  my $xmltms  = new XML::Simple(KeepRoot => 0, SuppressEmpty => 1, ContentKey => '-content');
-  my $xmltree = eval { $xmltms->XMLin($self->{PATHFILENAME}); };
-  
-  if ($@) {
-    ERROR (sprintf "Can not read the XML file TMS : %s !", $@);
-    return FALSE;
-  }
-  
-  # load tileMatrix
-  while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
-
-    # we identify level max (with the best resolution, the smallest) and level min (with the 
-    # worst resolution, the biggest)
+    my $self = shift;
     
-    if (! defined $self->{leveltop} || ! defined $self->{resworst} || $v->{resolution} > $self->{resworst}) {
-        $self->{leveltop} = $k;
-        $self->{resworst} = $v->{resolution};
+    TRACE;
+    
+    my $xmltms  = new XML::Simple(KeepRoot => 0, SuppressEmpty => 1, ContentKey => '-content');
+    my $xmltree = eval { $xmltms->XMLin($self->{PATHFILENAME}); };
+    
+    if ($@) {
+        ERROR (sprintf "Can not read the XML file TMS : %s !", $@);
+        return FALSE;
     }
-    if (! defined $self->{levelbottom} || ! defined $self->{resbest} || $v->{resolution} < $self->{resbest}) {
-        $self->{levelbottom} = $k;
-        $self->{resbest} = $v->{resolution};
+  
+    # load tileMatrix
+    while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
+        # we identify level max (with the best resolution, the smallest) and level min (with the 
+        # worst resolution, the biggest)
+        
+        if (! defined $self->{leveltop} || ! defined $self->{resworst} || $v->{resolution} > $self->{resworst}) {
+            $self->{leveltop} = $k;
+            $self->{resworst} = $v->{resolution};
+        }
+        if (! defined $self->{levelbottom} || ! defined $self->{resbest} || $v->{resolution} < $self->{resbest}) {
+            $self->{levelbottom} = $k;
+            $self->{resbest} = $v->{resolution};
+        }
+        
+        my $objTM = BE4::TileMatrix->new({
+            id => $k,
+            resolution     => $v->{resolution},
+            topleftcornerx => $v->{topLeftCornerX},
+            topleftcornery => $v->{topLeftCornerY},
+            tilewidth      => $v->{tileWidth},
+            tileheight     => $v->{tileHeight},
+            matrixwidth    => $v->{matrixWidth},
+            matrixheight   => $v->{matrixHeight},
+        });
+        
+        if (! defined $objTM) {
+            ERROR(sprintf "Cannot create the TileMatrix object for thye level '%s'",$k);
+            return FALSE;
+        }
+        
+        $self->{tilematrix}->{$k} = $objTM;
+        undef $objTM;
     }
     
-    my $obj = BE4::TileMatrix->new({
-        id => $k,
-        resolution     => $v->{resolution},
-        topleftcornerx => $v->{topLeftCornerX},
-        topleftcornery => $v->{topLeftCornerY},
-        tilewidth      => $v->{tileWidth},
-        tileheight     => $v->{tileHeight},
-        matrixwidth    => $v->{matrixWidth},
-        matrixheight   => $v->{matrixHeight},
-    });
- 
-    return FALSE if (! defined $obj);
-   
-    $self->{tilematrix}->{$k} = $obj;
-    undef $obj;
-  }
+    if (! $self->getCountTileMatrix()) {
+        ERROR (sprintf "No tilematrix loading from XML file TMS !");
+        return FALSE;
+    }
+    
+    # srs (== crs)
+    if (! exists ($xmltree->{crs}) || ! defined ($xmltree->{crs})) {
+        ERROR (sprintf "Can not determine parameter 'srs' in the XML file TMS !");
+        return FALSE;
+    }
+    $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
+    
+    # clean
+    $xmltree = undef;
+    $xmltms  = undef;
+    
+    # tilematrix list sort by resolution
+    my @tmList = $self->getTileMatrixByArray();
   
-  if (! $self->getCountTileMatrix()) {
-    ERROR (sprintf "No tilematrix loading from XML file TMS !");
-    return FALSE;
-  }
+    # Is TMS a QuadTree ? If not, we don't know how to do -> ERROR
+    
+    if (scalar(@tmList) != 1) {
+        my $epsilon = $tmList[0]->{resolution} / 100 ;
+        for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
+            if ( abs($tmList[$i]->{resolution}*2 - $tmList[$i+1]->{resolution}) > $epsilon ) {
+                ERROR(sprintf "Resolutions have to go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{resolution},
+                    $tmList[$i]->{id},$tmList[$i+1]->{resolution});
+                return FALSE;
+            }
+            if ( abs($tmList[$i]->{topLeftCornerX} - $tmList[$i+1]->{topLeftCornerX}) > $epsilon ) {
+                ERROR(sprintf "'topLeftCornerX' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerX},
+                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerX});
+                return FALSE;
+            }
+            if ( abs($tmList[$i]->{topLeftCornerY} - $tmList[$i+1]->{topLeftCornerY}) > $epsilon ) {
+                ERROR(sprintf "'topLeftCornerY' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerY},
+                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerY});
+                return FALSE;
+            }
+            if ( $tmList[$i]->{tileWidth} != $tmList[$i+1]->{tileWidth}) {
+                ERROR(sprintf "'tileWidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileWidth},
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileWidth});
+                return FALSE;
+            }
+            if ( $tmList[$i]->{tileHeight} != $tmList[$i+1]->{tileHeight}) {
+                ERROR(sprintf "'tileHeight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileHeight},
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileHeight});
+                return FALSE;
+            }
+        };
+    };
   
-  # srs (== crs)
-  if (! exists ($xmltree->{crs}) || ! defined ($xmltree->{crs})) {
-    ERROR (sprintf "Can not determine parameter 'srs' in the XML file TMS !");
-    return FALSE;
-  }
-  $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
-  
-  # clean
-  $xmltree = undef;
-  $xmltms  = undef;
-
-  # tilematrix list sort by resolution
-  my @tmList = $self->getTileMatrixByArray();
-
-  # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-  TRACE("sort by ID...");
-  
-  for (my $i=0; $i < scalar @tmList; $i++){
-    $self->{levelIdx}{$tmList[$i]->getID()} = $i;
-  }
-
-  return TRUE;
+    # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    TRACE("sort by ID...");
+    
+    for (my $i=0; $i < scalar @tmList; $i++){
+        $self->{levelIdx}{$tmList[$i]->getID()} = $i;
+    }
+    
+    return TRUE;
 }
 
 ####################################################################################################

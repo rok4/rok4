@@ -85,6 +85,7 @@ sub new {
   my %args = @_;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
     filePath => $args{filePath},
     xMin => $args{xMin},

@@ -183,6 +183,7 @@ sub new {
     my $this = shift;
     
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # in
         pyramid     => undef,
@@ -235,7 +236,6 @@ sub _init {
     $self->{job_number} = $params_process->{job_number}; 
     $self->{path_temp}  = $params_process->{path_temp};
     $self->{path_shell} = $params_process->{path_shell};
-    $self->{path_shell} = $params_process->{path_shell};
 
     if (! defined $self->{job_number}) {
         ERROR("Parameter required to 'job_number' !");
@@ -271,7 +271,9 @@ sub _init {
                 (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg'))) {
                 
                 if (! $datasource->hasHarvesting()) {
-                    ERROR ("We need a WMS service to harvest in this case (Reprojection with image source, or update of JPEG cache");
+                    ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s) for the base level %s",
+                        $self->{pyramid}->getDataSource()->getSRS(), $self->{pyramid}->getTileMatrixSet()->getSRS(),
+                        $self->{pyramid}->getCompression(), $datasource->{bottomLevelID});
                     return FALSE;
                 }
                 

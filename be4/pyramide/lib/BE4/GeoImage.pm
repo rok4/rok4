@@ -92,6 +92,7 @@ sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
     PATHFILENAME => undef,
     filename => undef,
@@ -290,7 +291,7 @@ sub computeInfo {
 
 #
 =begin nd
-method: computeBBox
+method: convertBBox
 
 Not just convert corners, but 7 points on each side, to determine reprojected bbox 
 
@@ -300,7 +301,7 @@ Parameters:
 Returns:
     Image bbox in final pyramid's SRS as an hash { xMin => 1, yMin => 10, xMax => 4, yMax => 15 }
 =cut
-sub computeBBox {
+sub convertBBox {
   my $self = shift;
   my $ct = shift;
   
