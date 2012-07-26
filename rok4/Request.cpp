@@ -845,25 +845,27 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         bbox.ymax=bb[2];
     }
 
-
+    if (!(crs.validateBBox(bbox))) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Parametre BBOX invalide pour le CRS ")+str_crs+_("."),"wms" ) );
+    }
     // SCALE DENOMINATORS
 
     // Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
 
     // Resolution en x et y en unites du CRS demande
-    double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
+    //double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
 
     // Resolution en x et y en m
     // Hypothese : les CRS en geographiques sont en degres
-    if ( crs.isLongLat() ) {
+    /*if ( crs.isLongLat() ) {
         resx*=111319;
         resy*=111319;
-    }
+    }*/
 
     // Le serveur ne doit pas renvoyer d'exception
     // Cf. WMS 1.3.0 - 7.2.4.6.9
 
-    double epsilon=0.0000001;   // Gestion de la precision de la division
+    /*double epsilon=0.0000001;   // Gestion de la precision de la division
     if ( resx>0. )
         if ( resx+epsilon<layer->getMinRes() ||resy+epsilon<layer->getMinRes() ) {
             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
@@ -871,7 +873,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( resy>0. )
         if ( resx>layer->getMaxRes() +epsilon||resy>layer->getMaxRes() +epsilon )
             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
-
+    */
     // EXCEPTION
     std::string str_exception=getParam ( "exception" );
     if ( str_exception!=""&&str_exception!="XML" )

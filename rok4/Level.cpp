@@ -118,7 +118,10 @@ void Level::setNoDataSource ( DataSource* source ) {
 Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
-    grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() );
+    if (!(grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ))) {
+        error = 1; // BBox invalid
+        return 0;
+    }
 
     // Calcul de la taille du noyau
     //Maintain previous Lanczos behaviour : Lanczos_2 for resampling and reprojecting

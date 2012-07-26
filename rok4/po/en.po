@@ -1,21 +1,22 @@
-# SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR IGN
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
+# Alexandre Viard <alexandre.viard@ign.fr>, 2012.
 msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-07-19 15:14+0200\n"
-"PO-Revision-Date: 2012-06-26 18:56+0100\n"
+"POT-Creation-Date: 2012-07-26 16:01+0200\n"
+"PO-Revision-Date: 2012-07-26 15:52+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
-"Language-Team: \n"
+"Language-Team: French <kde-i18n-doc@kde.org>\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-Language: English\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Lokalize 1.4\n"
 
 #: CapabilitiesBuilder.cpp:277
 msgid "Liste de layers vide"
@@ -883,44 +884,43 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: CRS.cpp:176 CRS.cpp:185
-#, fuzzy
+#: CRS.cpp:195 CRS.cpp:204
 msgid "Erreur sur le CRS "
-msgstr "Error on -f parameter"
+msgstr "Error on the CRS"
 
-#: CRS.cpp:176 CRS.cpp:185
+#: CRS.cpp:195 CRS.cpp:204
 msgid " : absence de separateur"
 msgstr ""
 
-#: Level.cpp:142 Level.cpp:186
+#: Level.cpp:145 Level.cpp:189
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:210
+#: Level.cpp:213
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:218
+#: Level.cpp:221
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:257
+#: Level.cpp:260
 msgid "Indice de tuile négatif"
 msgstr ""
 
-#: Level.cpp:320
+#: Level.cpp:323
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:325
+#: Level.cpp:328
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:337
+#: Level.cpp:340
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:347
+#: Level.cpp:350
 msgid "GetTile Image"
 msgstr ""
 
@@ -1153,7 +1153,7 @@ msgstr ""
 msgid "Le format "
 msgstr ""
 
-#: Request.cpp:695 Request.cpp:708 Request.cpp:893
+#: Request.cpp:695 Request.cpp:708 Request.cpp:895
 msgid " n'est pas gere pour la couche "
 msgstr ""
 
@@ -1161,11 +1161,11 @@ msgstr ""
 msgid "Parametre STYLE absent."
 msgstr ""
 
-#: Request.cpp:708 Request.cpp:893
+#: Request.cpp:708 Request.cpp:895
 msgid "Le style "
 msgstr ""
 
-#: Request.cpp:742 Request.cpp:935
+#: Request.cpp:742 Request.cpp:937
 msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr ""
 
@@ -1241,27 +1241,35 @@ msgstr ""
 msgid "Parametre BBOX incorrect."
 msgstr ""
 
-#: Request.cpp:878
+#: Request.cpp:849
+msgid "Parametre BBOX invalide pour le CRS "
+msgstr ""
+
+#: Request.cpp:849
+msgid "."
+msgstr ""
+
+#: Request.cpp:880
 msgid "Format d'exception "
 msgstr ""
 
-#: Request.cpp:878
+#: Request.cpp:880
 msgid " non pris en charge"
 msgstr ""
 
-#: Request.cpp:881
+#: Request.cpp:883
 msgid "Parametre STYLES absent."
 msgstr ""
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:527
+#: Request.cpp:928 Request.cpp:949 Rok4Server.cpp:527
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:926 Request.cpp:947 Rok4Server.cpp:527
+#: Request.cpp:928 Request.cpp:949 Rok4Server.cpp:527
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
-#: Request.cpp:955
+#: Request.cpp:957
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr ""
 
@@ -1360,9 +1368,8 @@ msgid "Request Content :"
 msgstr ""
 
 #: Rok4Server.cpp:136
-#, fuzzy
 msgid "Extinction du thread"
-msgstr "Shutdown the ROK4 server"
+msgstr "Shutting down worker thread."
 
 #: Rok4Server.cpp:151
 msgid "Build WMS Capabilities"
