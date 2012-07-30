@@ -52,6 +52,7 @@ use Cwd;
 
 use Log::Log4perl qw(:easy);
 use XML::LibXML;
+use List::Util qw[min max];
 
 # My search module
 use FindBin qw($Bin);
@@ -686,10 +687,21 @@ sub validateComposition {
                 $source->{samplesperpixel} = $this{sourcePyramids}->{$source->{pyr}}->{samplesperpixel};
             }
 
-            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId};
-            my @bboxArray = main::calculateBbox($levelId,$source->{bbox});
+            my @extremTiles = @{$this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{extremTiles}}; #[$jMin,$jMax,$iMin,$iMax]
+            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{dir};
+            
+            my @bboxArray = main::calculateBbox($levelId,$source->{bbox}); #[$iMin,$jMin,$iMax,$jMax]
             $source->{bbox} = undef;
             @{$source->{bbox}} = @bboxArray;
+            
+            # We calculate intersection between the composition's bbox (extrem IMAGES) and source pyramid's extrem TILES.
+            $extremTiles[0] = max($extremTiles[0],$bboxArray[1]*$this{pyramid}->{tilesPerHeight}); #jMin
+            $extremTiles[1] = min($extremTiles[1],($bboxArray[3]+1)*$this{pyramid}->{tilesPerHeight}); #jMax
+            $extremTiles[2] = max($extremTiles[2],$bboxArray[0]*$this{pyramid}->{tilesPerWidth}); #iMin
+            $extremTiles[3] = min($extremTiles[3],($bboxArray[2]+1)*$this{pyramid}->{tilesPerWidth}); #iMax
+            
+            @{$source->{extremTiles}} = @extremTiles;
+
         }
     
     }
@@ -965,7 +977,16 @@ sub validateSourcePyramids {
         foreach my $v (@levels) {
             my $levelId = $v->findvalue('tileMatrix');
             my $baseDir = $v->findvalue('baseDir');
-            $this{sourcePyramids}->{$pyr}->{$levelId} = File::Spec->rel2abs($baseDir,$volume.$directories);
+            $this{sourcePyramids}->{$pyr}->{$levelId}->{dir} = File::Spec->rel2abs($baseDir,$volume.$directories);
+
+            my @taglimit = (
+                $v->findvalue('TMSLimits/minTileRow'),
+                $v->findvalue('TMSLimits/maxTileRow'),
+                $v->findvalue('TMSLimits/minTileCol'),
+                $v->findvalue('TMSLimits/maxTileCol')
+            );
+
+            @{$this{sourcePyramids}->{$pyr}->{$levelId}->{extremTiles}} = @taglimit;
         }
 
         if (main::is_Compatible($tagformat,$tagchannels)) {
@@ -1014,39 +1035,46 @@ sub doIt {
     while( my ($levelId,$sources) = each(%$composition) ) {
         INFO(sprintf "Level %s",$levelId);
 
+        # Extrems :
+        #    - Image : ($IMIN,$JMIN,$IMAX,$JMAX)
+        #    - Tiles (for the Level object : ($imin,$jmin,$imax,$jmax)
+
         my $priority = 1;
+        
         my $baseImage = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{image_dir},$levelId;
+                        $this{pyramid}->{dir_image},$levelId;
         my $baseNodata = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{nodata_dir},$levelId;
-        my ($IMIN,$JMIN,$IMAX,$JMAX);
+                        $this{pyramid}->{dir_nodata},$levelId;
+                        
+        my ($imin,$jmin,$imax,$jmax);
 
         while( exists $sources->{$priority}) {
             my $source = $sources->{$priority};
             INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
-            my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
+            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{bbox}};
 
-            for (my $i = $imin; $i <= $imax; $i++) {
-                for (my $j = $jmin; $j <= $jmax; $j++) {
-                    if (exists $this{doneTiles}->{$i."_".$j}) {
+            for (my $I = $IMIN; $I <= $IMAX; $I++) {
+                for (my $J = $JMIN; $J <= $JMAX; $J++) {
+                    if (exists $this{doneTiles}->{$I."_".$J}) {
                         #Tile already exists (created by a treatment)
                         next;
                     }
 
-                    my $imagePath = main::getCacheNameOfImage($i,$j);
+                    my $imagePath = main::getCacheNameOfImage($I,$J);
                     my $sourceImage = $source->{pyr}.$imagePath;
                     if (! -f $sourceImage) {
                         # no data source
                         next;
                     }
 
+                    my @extremTiles = @{$source->{extremTiles}};
                     # we update extrems tiles
-                    if (! defined $IMIN || $i < $IMIN) {$IMIN = $i;}
-                    if (! defined $JMIN || $j < $JMIN) {$JMIN = $j;}
-                    if (! defined $IMAX || $i > $IMAX) {$IMAX = $i;}
-                    if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
+                    if (! defined $imin || $extremTiles[2] < $imin) {$imin = $extremTiles[2];}
+                    if (! defined $jmin || $extremTiles[0] < $jmin) {$jmin = $extremTiles[0];}
+                    if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
+                    if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
 
                     my $finaleImage = $baseImage.$imagePath;
                     if (-f $finaleImage) {
@@ -1063,11 +1091,11 @@ sub doIt {
                     }
 
                     if ($this{pyramid}->{merge_method} ne 'replace') {
-                        my @others = main::searchTile($levelId,$priority+1,$i,$j,$imagePath,@images);
+                        my @others = main::searchTile($levelId,$priority+1,$I,$J,$imagePath,@images);
                         push @images,@others;
                     }
 
-                    if (! main::treatTile($i,$j,$finaleImage,@images)) {
+                    if (! main::treatTile($I,$J,$finaleImage,@images)) {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
@@ -1087,7 +1115,7 @@ sub doIt {
             type_metadata     => undef,      # TODO !
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
-            limit             => [$JMIN,$JMAX,$IMIN,$IMAX],
+            limit             => [$jmin,$jmax,$imin,$imax],
             is_in_pyramid     => 0
         });
 
@@ -1632,9 +1660,9 @@ pyr_data_path  = /home/theo/TEST/JoinCache
 tms_path       = /home/theo/TEST/BE4/TMS
 tms_name       = LAMB93_10cm.tms
 
-image_dir      = IMAGE
+dir_image      = IMAGE
 metadata_dir   = METADATA
-nodata_dir     = NODATA
+dir_nodata     = NODATA
 
 compression = jpg
 samplesperpixel = 3
