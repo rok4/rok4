@@ -1043,10 +1043,10 @@ sub doIt {
         
         my $baseImage = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{dir_image},$levelId;
+                        $this{pyramid}->{image_dir},$levelId;
         my $baseNodata = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{dir_nodata},$levelId;
+                        $this{pyramid}->{nodata_dir},$levelId;
                         
         my ($imin,$jmin,$imax,$jmax);
 
@@ -1660,9 +1660,9 @@ pyr_data_path  = /home/theo/TEST/JoinCache
 tms_path       = /home/theo/TEST/BE4/TMS
 tms_name       = LAMB93_10cm.tms
 
-dir_image      = IMAGE
+image_dir      = IMAGE
 metadata_dir   = METADATA
-dir_nodata     = NODATA
+nodata_dir     = NODATA
 
 compression = jpg
 samplesperpixel = 3
