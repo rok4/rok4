@@ -195,10 +195,10 @@ sub getValue {
 =begin nd
    method: createNodata
 
-   Compose the command to create a nodata tile and execute it.
+   Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
 
    Parameters:
-      nodataFilePath - complete absolute file path, where to write the nodata tile ("/path/to/write/nd.tif")
+      nodataDirPath - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
       width - width in pixel of the tile (256)
       height - height in pixel of the tile (256)
       compression - compression to apply : raw/none, png, pjg, lzw, zip.
@@ -208,13 +208,15 @@ sub getValue {
 =cut
 sub createNodata {
     my $self = shift;
-    my $nodataFilePath = shift;
+    my $nodataDirPath = shift;
     my $width = shift;
     my $height = shift;
     my $compression = shift;
     
     TRACE();
-  
+    
+    my $nodataFilePath .= my $filepyramid = File::Spec->catfile($nodataDirPath,$self->getNodataName());
+      
     # cas particulier de la commande createNodata :
     $compression = ($compression eq 'raw'?'none':$compression);
     
@@ -227,13 +229,11 @@ sub createNodata {
     $cmd .= sprintf ( " -a %s", $self->{pixel}->{sampleformat});
     $cmd .= sprintf ( " %s", $nodataFilePath);
 
-    my $nodatadir = dirname($nodataFilePath);
-
-    if (! -d $nodatadir) {
+    if (! -d $nodataDirPath) {
         #create folders
-        eval { mkpath([$nodatadir]); };
+        eval { mkpath([$nodataDirPath]); };
         if ($@) {
-            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodatadir , $@);
+            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodataDirPath , $@);
             return FALSE;
         }
     }
@@ -247,6 +247,17 @@ sub createNodata {
     
 }
 
+#
+=begin nd
+   method: getNodataName
+
+   Return the nam of the nodata tile : nd.tif
+=cut
+sub getNodataName {
+    my $self = shift;
+    
+    return "nd.tif"
+}
 
 1;
 __END__

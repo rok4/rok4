@@ -114,15 +114,15 @@ sub new {
 sub _init {
 
     my $self   = shift;
-    my $imagesParams = shift;
+    my $params = shift;
 
     TRACE;
     
-    return FALSE if (! defined $imagesParams);
+    return FALSE if (! defined $params);
     
     # init. params    
-    $self->{PATHIMG} = $imagesParams->{path_image} if (exists($imagesParams->{path_image})); 
-    $self->{PATHMTD} = $imagesParams->{path_metadata} if (exists($imagesParams->{path_metadata}));
+    $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
+    $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
     
     if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
         ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
@@ -150,7 +150,7 @@ sub _init {
     Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
 =cut
 sub computeImageSource {
-        my $self = shift;
+    my $self = shift;
 
     TRACE;
 
@@ -213,8 +213,8 @@ sub computeImageSource {
                 $imageInfo[0] = 8;
             }
             # we have already values. We must have the same components for all images
-            if (! ($pixel->{bitspersample} eq $imageInfo[0] && $pixel->{photometric} eq $imageInfo[1] &&
-                    $pixel->{sampleformat} eq $imageInfo[2] && $pixel->{samplesperpixel} eq $imageInfo[3])) {
+            if (! ($pixel->getBitsPerSample eq $imageInfo[0] && $pixel->getPhotometric eq $imageInfo[1] &&
+                    $pixel->getSampleFormat eq $imageInfo[2] && $pixel->getSamplesPerPixel eq $imageInfo[3])) {
                 ERROR ("All images must have same components. This image ('$filepath') is different !");
                 return FALSE;
             }
@@ -242,7 +242,7 @@ sub computeImageSource {
     $self->{bestResY} = $bestResY;
 
     if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
-        ERROR ("Can not found image source in '$self->{PATHIMG}' !");
+        ERROR (sprintf "Can not found image source in '%s' !",$self->{PATHIMG});
         return FALSE;
     }
 

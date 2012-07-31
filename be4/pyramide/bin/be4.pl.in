@@ -122,6 +122,7 @@ All Parameters by section.
 
     * logger
     * datasource
+    * harvesting (deprecated)
     * pyramid
     * tilematrixset
     * nodata
@@ -133,6 +134,7 @@ my %this =
     params => {
         logger        => undef, # can be null !
         datasource    => undef, # can be null if no data to process !
+        harvesting    => undef, # deprecated
         pyramid       => undef, # ALWAYS !!!
         tilematrixset => undef, # can be in pyramid params !
         nodata        => undef, # can be in pyramid params !
@@ -388,81 +390,86 @@ Logger parameters are used to initialize logger (Log::Log4perl library).
 
 =cut
 sub checkParams {
-
-  ###################
-  # check parameters
-  
-  my $pyramid     = $this{params}->{pyramid};       # 
-  my $logger      = $this{params}->{logger};        # 
-  my $tms         = $this{params}->{tilematrixset}; #  
-  my $tile        = $this{params}->{tile};          # 
-  my $nodata      = $this{params}->{nodata};        # 
-  my $datasource  = $this{params}->{datasource};    #
-  my $process     = $this{params}->{process};       # 
-  
-  # pyramid
-  if (! defined $pyramid) {
-    ERROR ("Parameters Pyramid can not be null !");
-    return FALSE;
-  }
-  
-  # datasource
-  if (! defined $datasource) {
-    ERROR ("Parameters Datasource can not be null !");
-    return FALSE;
-  }
-  
-  # process
-  if (! defined $process) {
-    ERROR ("Parameters Process can not be null !");
-    return FALSE;
-  }
-
-  # logger
-  if (defined $logger) {
     
-    my @args;
+    ###################
+    # check parameters
     
-    my $layout= '[%C][%M](%L): %m%n';
-    my $level = $logger->{log_level};
-    my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-                    if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
+    my $pyramid     = $this{params}->{pyramid};       # 
+    my $logger      = $this{params}->{logger};        # 
+    my $tms         = $this{params}->{tilematrixset}; #  
+    my $tile        = $this{params}->{tile};          # 
+    my $nodata      = $this{params}->{nodata};        # 
+    my $datasource  = $this{params}->{datasource};    #
+    my $harvesting  = $this{params}->{harvesting};    #
+    my $process     = $this{params}->{process};       # 
     
-    $out   = "STDOUT" if (! defined $out);
-    $level = "WARN"   if (! defined $level);
-    
-    if ($level =~ /(ALL|DEBUG)/) {
-        $layout = '[%C][%M](%L): %m%n';
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR ("Parameters Pyramid can not be null !");
+        return FALSE;
     }
     
-    # add the param logger by default (user settings !)
-    push @args, {
-                    file   => $out,
-                    level  => $level,
-                    layout => $layout,
-                };
+    # datasource
+    if (! defined $datasource) {
+        ERROR ("Parameters Datasource can not be null !");
+        return FALSE;
+    }
+    # harvesting
+    if (defined $harvesting) {
+        WARN("Use the 'harvesting' section is deprecated !");
+    }
     
-    if ($out ne "STDOUT") {
-        # add the param logger to the STDOUT
+    # process
+    if (! defined $process) {
+        ERROR ("Parameters Process can not be null !");
+        return FALSE;
+    }
+    
+    # logger
+    if (defined $logger) {
+    
+        my @args;
+        
+        my $layout= '[%C][%M](%L): %m%n';
+        my $level = $logger->{log_level};
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '[%C][%M](%L): %m%n';
+        }
+        
+        # add the param logger by default (user settings !)
         push @args, {
-                        file   => "STDOUT",
-                        level  => $level,
-                        layout => $layout,
-                    },
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+        Log::Log4perl->easy_init(@args); 
     }
-    Log::Log4perl->easy_init(@args); 
-  }
-  
-  # 
-  $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tms,         $pyramid) };
-  $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tile,        $pyramid) };
-  $pyramid = { map %$_, grep ref $_ eq 'HASH', ($nodata,      $pyramid) };
-  
-  # save
-  $this{params}->{pyramid} = $pyramid;
-  $this{params}->{logger}  = $logger;
-  
-  return TRUE;
+    
+    # 
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tms,         $pyramid) };
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tile,        $pyramid) };
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($nodata,      $pyramid) };
+    
+    # save
+    $this{params}->{pyramid} = $pyramid;
+    $this{params}->{logger}  = $logger;
+    
+    return TRUE;
 }
 
 #
@@ -496,13 +503,13 @@ sub doIt {
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = BE4::DataSourceLoader->new($params->{datasource});
+    $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
     if (! defined $objDSL) {
         ERROR ("Cannot load data sources !");
         return FALSE;
     }
 
-    $objDataSources = $objDSL->{sources};
+    $objDataSources = $objDSL->getSources();
     
     if (scalar $objDataSources == 0) {
         ERROR ("No data source !");
@@ -548,7 +555,7 @@ sub doIt {
     
     ALWAYS(">>> Write Cache Pyramid and the list ...");
 
-    if (! $objPyramid->writeCachePyramid($objProcess->{trees})) {
+    if (! $objPyramid->writeCachePyramid($objProcess->getTrees())) {
         ERROR ("Can not write Pyramid Cache or the list !");
         return FALSE;
     }

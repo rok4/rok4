@@ -52,6 +52,7 @@ use Cwd;
 
 use Log::Log4perl qw(:easy);
 use XML::LibXML;
+use List::Util qw[min max];
 
 # My search module
 use FindBin qw($Bin);
@@ -91,6 +92,79 @@ my $STRPYRTMPLT   = <<"TPYR";
 <!-- __LEVELS__ -->
 </Pyramid>
 TPYR
+
+my $BASHFUNCTIONS   = <<'FUNCTIONS';
+
+PrepareImage () {
+  local imgSrc=$1
+  local imgDst=$2
+  local png=$3
+  local opt=$4
+
+  if [ $png ] ; then
+    mkdir ${TMP_DIR}/Untiled_PNG
+    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/Untiled_PNG.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf ${TMP_DIR}/Untiled_PNG
+  
+    tiff2rgba -c none ${TMP_DIR}/Untiled_PNG.tif $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  else
+    tiff2rgba -c none $imgSrc $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
+}
+
+Cache2work () {
+  local imgSrc=$1
+  local imgDst=$2
+  local png=$3
+  local opt=$4
+
+  if [ $png ] ; then
+    mkdir ${TMP_DIR}/Untiled_PNG
+    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf ${TMP_DIR}/Untiled_PNG
+  else
+    tiffcp __tcp__ $imgSrc $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
+}
+
+OverlayNtiff () {
+  local inputs=$1
+  
+  overlayNtiff __oNt__ -input $inputs -output ${TMP_DIR}/result.tif
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  rm -f $config
+  if [ $bg ] ; then
+    rm -f $bg
+  fi
+}
+
+Work2cache () {
+  local work=$1
+  local cache=$2
+  
+  local dir=`dirname $cache`
+  
+  if [ -r $cache ] ; then rm -f $cache ; fi
+  if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
+  
+  if [ -f $work ] ; then
+    tiff2tile $work __t2t__  $cache
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+}
+
+FUNCTIONS
 
 ################################################################################
 #
@@ -613,6 +687,8 @@ Open one stream by script and write header. They stay opened to write commands d
 =cut
 sub openStreams {
     TRACE;
+    
+    my $functions = main::configureFunctions();
 
     for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
         my $scriptId = sprintf "SCRIPT_%s",$i+1;
@@ -644,6 +720,10 @@ sub openStreams {
         $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->{pyr_data_path});
         $header   .= "\n";
         
+        # Fonctions
+        $header   .= "# Functions\n";
+        $header   .= "$functions\n";
+        
         $header .= "# Work directory creation\n";
         $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
         
@@ -655,6 +735,76 @@ sub openStreams {
 
     return TRUE;
 
+}
+
+#
+=begin nd
+method: configureFunctions
+
+Configure bash functions to write in scripts' header.
+=cut
+sub configureFunctions {
+    my $self = shift;
+
+    TRACE;
+
+    my $pyr = $self->{pyramid};
+    my $configuredFunc = $BASHFUNCTIONS;
+
+    # congigure overlayNtiff
+    my $conf_oNt = "";
+
+    $conf_oNt .= sprintf "-mode %s -transparent 255,255,255 -opaque 255,255,255 -channels %s",
+        $this{pyramid}->{merge_method}, $this{pyramid}->{pixel}->{samplesperpixel};
+
+    $configuredFunc =~ s/__oNt__/$conf_oNt/;
+
+    # calculate image pixel size
+    
+    my $tileWidth = $this{pyramid}->{tms}->getTileWidth();
+    my $tileHeight = $this{pyramid}->{tms}->getTileHeight();
+    
+    my $imgHeight = $this{pyramid}->{tilesPerHeight} * $tileHeight;
+    
+    # congigure tiffcp
+    my $conf_tcp = "";
+
+    $conf_tcp .= "-s -r $imgHeight ";
+
+    $configuredFunc =~ s/__tcp__/$conf_tcp/;
+    
+    # configure montage
+    my $conf_montageIn = "";
+
+    $conf_montageIn .= sprintf "-geometry %sx%s ",$tileWidth,$tileHeight;
+    $conf_montageIn .= sprintf "-tile %sx%s",$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight};
+    
+    $configuredFunc =~ s/__montageIn__/$conf_montageIn/g;
+    
+    my $conf_montageOut = "";
+    
+    $conf_montageOut .= sprintf "-depth %s ",$this{pyramid}->{pixel}->{bitspersample};
+    
+    $conf_montageOut .= "-define tiff:rows-per-strip=$imgHeight ";
+
+    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
+
+    # congigure tiff2tile
+    my $conf_t2t = "";
+
+    my $compression = $this{pyramid}->{compression};
+    $compression = ($compression eq 'raw'?'none':$compression);
+    $conf_t2t .= "-c $compression ";
+
+    $conf_t2t .= sprintf "-p %s ",$this{pyramid}->{pixel}->{photometric};
+    $conf_t2t .= "-t $tileWidth $tileHeight ";
+    $conf_t2t .= sprintf "-b %s ",$this{pyramid}->{pixel}->{bitspersample};
+    $conf_t2t .= sprintf "-a %s ",$this{pyramid}->{pixel}->{sampleformat};
+    $conf_t2t .= sprintf "-s %s ",$this{pyramid}->{pixel}->{samplesperpixel};
+
+    $configuredFunc =~ s/__t2t__/$conf_t2t/;
+
+    return $configuredFunc;
 }
 
 #
@@ -808,10 +958,20 @@ sub validateComposition {
                 $source->{samplesperpixel} = $this{sourcePyramids}->{$source->{pyr}}->{samplesperpixel};
             }
 
-            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId};
-            my @bboxArray = main::calculateBbox($levelId,$source->{bbox});
+            my @extremTiles = @{$this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{extremTiles}}; #[$jMin,$jMax,$iMin,$iMax]
+            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{dir};
+            
+            my @bboxArray = main::calculateBbox($levelId,$source->{bbox}); #[$iMin,$jMin,$iMax,$jMax]
             $source->{bbox} = undef;
             @{$source->{bbox}} = @bboxArray;
+            
+            # We calculate intersection between the composition's bbox (extrem IMAGES) and source pyramid's extrem TILES.
+            $extremTiles[0] = max($extremTiles[0],$bboxArray[1]*$this{pyramid}->{tilesPerHeight}); #jMin
+            $extremTiles[1] = min($extremTiles[1],($bboxArray[3]+1)*$this{pyramid}->{tilesPerHeight}); #jMax
+            $extremTiles[2] = max($extremTiles[2],$bboxArray[0]*$this{pyramid}->{tilesPerWidth}); #iMin
+            $extremTiles[3] = min($extremTiles[3],($bboxArray[2]+1)*$this{pyramid}->{tilesPerWidth}); #iMax
+            
+            @{$source->{extremTiles}} = @extremTiles;
         }
     
     }
@@ -1128,7 +1288,16 @@ sub validateSourcePyramids {
         foreach my $v (@levels) {
             my $levelId = $v->findvalue('tileMatrix');
             my $baseDir = $v->findvalue('baseDir');
-            $this{sourcePyramids}->{$pyr}->{$levelId} = File::Spec->rel2abs($baseDir,$volume.$directories);
+            $this{sourcePyramids}->{$pyr}->{$levelId}->{dir} = File::Spec->rel2abs($baseDir,$volume.$directories);
+
+            my @taglimit = (
+                $v->findvalue('TMSLimits/minTileRow'),
+                $v->findvalue('TMSLimits/maxTileRow'),
+                $v->findvalue('TMSLimits/minTileCol'),
+                $v->findvalue('TMSLimits/maxTileCol')
+            );
+
+            @{$this{sourcePyramids}->{$pyr}->{$levelId}->{extremTiles}} = @taglimit;
         }
 
         if (main::is_Compatible($tagformat,$tagchannels)) {
@@ -1168,7 +1337,7 @@ sub is_Compatible {
 #                                        PROCESS METHODS                                           #
 ####################################################################################################  
 
-# Group: process method
+# Group: process methods
 
 #
 =begin nd
@@ -1190,39 +1359,46 @@ sub doIt {
     while( my ($levelId,$sources) = each(%$composition) ) {
         INFO(sprintf "Level %s",$levelId);
 
+        # Extrems :
+        #    - Image : ($IMIN,$JMIN,$IMAX,$JMAX)
+        #    - Tiles (for the Level object : ($imin,$jmin,$imax,$jmax)
+
         my $priority = 1;
+        
         my $baseImage = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
                         $this{pyramid}->{image_dir},$levelId;
         my $baseNodata = sprintf "%s/%s/%s/%s",
                         $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
                         $this{pyramid}->{nodata_dir},$levelId;
-        my ($IMIN,$JMIN,$IMAX,$JMAX);
+                        
+        my ($imin,$jmin,$imax,$jmax);
 
         while( exists $sources->{$priority}) {
             my $source = $sources->{$priority};
             INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
-            my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
+            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{bbox}};
 
-            for (my $i = $imin; $i <= $imax; $i++) {
-                for (my $j = $jmin; $j <= $jmax; $j++) {
-                    if (exists $this{doneTiles}->{$i."_".$j}) {
-                        #Tile have been already treated (treatment written in a script)
+            for (my $I = $IMIN; $I <= $IMAX; $I++) {
+                for (my $J = $JMIN; $J <= $JMAX; $J++) {
+                    if (exists $this{doneTiles}->{$I."_".$J}) {
+                        #Tile already exists (created by a treatment)
                         next;
                     }
 
-                    my $imagePath = main::getCacheNameOfImage($i,$j);
+                    my $imagePath = main::getCacheNameOfImage($I,$J);
                     my $sourceImage = $source->{pyr}.$imagePath;
                     if (! -f $sourceImage) {
                         # no data source
                         next;
                     }
 
+                    my @extremTiles = @{$source->{extremTiles}};
                     # we update extrems tiles
-                    if (! defined $IMIN || $i < $IMIN) {$IMIN = $i;}
-                    if (! defined $JMIN || $j < $JMIN) {$JMIN = $j;}
-                    if (! defined $IMAX || $i > $IMAX) {$IMAX = $i;}
-                    if (! defined $JMAX || $j > $JMAX) {$JMAX = $j;}
+                    if (! defined $imin || $extremTiles[2] < $imin) {$imin = $extremTiles[2];}
+                    if (! defined $jmin || $extremTiles[0] < $jmin) {$jmin = $extremTiles[0];}
+                    if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
+                    if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
 
                     my $finaleImage = $baseImage.$imagePath;
                     if (-f $finaleImage) {
@@ -1239,11 +1415,11 @@ sub doIt {
                     }
 
                     if ($this{pyramid}->{merge_method} ne 'replace') {
-                        my @others = main::searchTile($levelId,$priority+1,$i,$j,$imagePath,@images);
+                        my @others = main::searchTile($levelId,$priority+1,$I,$J,$imagePath,@images);
                         push @images,@others;
                     }
 
-                    if (! main::treatTile($i,$j,$finaleImage,@images)) {
+                    if (! main::treatTile($I,$J,$finaleImage,@images)) {
                         ERROR(sprintf "Cannot treat the image %s",$finaleImage);
                         return FALSE;                        
                     }
@@ -1263,8 +1439,7 @@ sub doIt {
             type_metadata     => undef,      # TODO !
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
-            # WARN : I and J are IMAGE's indices and a Level object want TILE's indices
-            limit             => [$JMIN*$this{pyramid}->{tilesPerHeight},($JMAX+1)*$this{pyramid}->{tilesPerHeight},$IMIN*$this{pyramid}->{tilesPerWidth},($IMAX+1)*$this{pyramid}->{tilesPerWidth}],
+            limit             => [$jmin,$jmax,$imin,$imax],
             is_in_pyramid     => 0
         });
 
@@ -1403,49 +1578,35 @@ sub mergeImages {
     # Pretreatment
 
     for (my $i = 0; $i < scalar @images; $i++) {
-        if (exists $images[$i]{format} && $images[$i]{format} =~ m/PNG/) {
-            $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$images[$i]{img},RESULT_TEST;
+        
+        if ((exists $images[$i]{format} && $images[$i]{format} =~ m/PNG/) ||
+            (exists $images[$i]{isCompatible} && $this{pyramid}->{compression} eq "png") == 4){
+            
             if ((exists $images[$i]{spp} && int($images[$i]{spp}) == 4) ||
                 (exists $images[$i]{isCompatible} && int($this{pyramid}->{pixel}->{samplesperpixel}) == 4))
             {
-                $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png \"-background none\"\n", $images[$i]{img} ,$i);
             } else {
-                $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -define tiff:rows-per-strip=4096 \${TMP_DIR}/PNG_untiled.tif\n%s",RESULT_TEST;
+                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png\n", $images[$i]{img} ,$i);
             }
-            $code .= sprintf "tiff2rgba -c none \${TMP_DIR}/PNG_untiled.tif \${TMP_DIR}/img%s.tif\n%s",$i,RESULT_TEST;
         } else {
-            $code .= sprintf "tiff2rgba -c none %s \${TMP_DIR}/img%s.tif\n%s",$images[$i]{img},$i,RESULT_TEST;
+            $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif\n", $images[$i]{img} ,$i);
         }
     }
 
     # Superposition
-    $code .= sprintf "overlayNtiff -mode %s -transparent 255,255,255 -opaque 255,255,255 -channels %s -input ",
-        $this{pyramid}->{merge_method},
-        $this{pyramid}->{pixel}->{samplesperpixel};
+    my $inputs = "";
 
     for (my $i = scalar @images - 1; $i >= 0; $i--) {
-        $code .= sprintf "\${TMP_DIR}/img%s.tif ",$i;
+        $inputs .= sprintf " \${TMP_DIR}/img%s.tif ",$i;
     }
 
-    $code .= " -output \${TMP_DIR}/result.tif \n";
-
-    my $compression = $this{pyramid}->{compression};
-    $compression = ($compression eq 'raw'?'none':$compression);
+    $code .= "OverlayNtiff \"$inputs\"\n";
 
     # Final location writting
-    $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
-    $code .= sprintf "if [ ! -d \"%s\" ] ; then mkdir -p %s ; fi\n", dirname($finaleImage), dirname($finaleImage);
+    $code .= sprintf ("Work2cache \${TMP_DIR}/result.tif %s\n\n", $finaleImage);
 
-    $code .= sprintf "tiff2tile \${TMP_DIR}/result.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
-        $compression,
-        $this{pyramid}->{pixel}->{photometric},
-        $this{pyramid}->{pixel}->{bitspersample},
-        $this{pyramid}->{pixel}->{samplesperpixel},
-        $finaleImage,RESULT_TEST;
-
-    # Cleaning
-    $code .= "rm -f \${TMP_DIR}/* \n\n";
-
+    # Storage
     main::printInScript($code);
     
     return TRUE;
@@ -1509,7 +1670,7 @@ sub makeLink {
 
 #
 =begin nd
-method: makeLink
+method: transformImage
 
 Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel.
 
@@ -1532,14 +1693,13 @@ sub transformImage {
     # Pretreatment
 
     if ($format =~ m/PNG/) {
-        $code .= sprintf "untile %s \${TMP_DIR}/\n%s",$baseImage,RESULT_TEST;
         if ($spp == 4) {
-            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -background none -define tiff:rows-per-strip=4096 \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png \"-background none\"\n", $baseImage;
         } else {
-            $code .= sprintf "montage -geometry 256x256 -tile 16x16 \${TMP_DIR}/*.png -depth 8 -define tiff:rows-per-strip=4096 \${TMP_DIR}/img.tif\n%s",RESULT_TEST;
+            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png\n", $baseImage;
         }
     } else {
-        $code .= sprintf "tiffcp -r 4096 %s \${TMP_DIR}/img.tif\n%s",$baseImage,RESULT_TEST;
+        $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif\n", $baseImage;
     }
 
     # We transform image with the samples per pixel of the final cache
@@ -1558,24 +1718,10 @@ sub transformImage {
         return FALSE;
     }
 
-    my $compression = $this{pyramid}->{compression};
-    $compression = ($compression eq 'raw'?'none':$compression);
-
     # Final location writting
-    $code .= sprintf "if [ -r \"%s\" ] ; then rm -f %s ; fi\n", $finaleImage, $finaleImage;
-    $code .= sprintf "if [ ! -d \"%s\" ] ; then mkdir -p %s ; fi\n", dirname($finaleImage), dirname($finaleImage);
+    $code .= sprintf ("Work2cache \${TMP_DIR}/transformedImg.tif %s\n", $finaleImage);
 
-
-    $code .= sprintf "tiff2tile \${TMP_DIR}/transformedImg.tif -c %s -p %s -t 256 256 -b %s -a uint -s %s  %s\n%s",
-        $compression,
-        $this{pyramid}->{pixel}->{photometric},
-        $this{pyramid}->{pixel}->{bitspersample},
-        $this{pyramid}->{pixel}->{samplesperpixel},
-        $finaleImage,RESULT_TEST;
-
-    # Cleaning
-    $code .= " rm -f \${TMP_DIR}/* \n\n";
-
+    # Storage
     main::printInScript($code);
     
     return TRUE;
@@ -1626,9 +1772,9 @@ sub writePyr {
 
     my $nodataValue = $nodata->getValue();
     $strpyrtmplt =~ s/__NODATAVALUE__/$nodataValue/;
-    #  
+    #
     $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;
-    #  
+    #
     my $photometric = $this{pyramid}->{pixel}->{photometric};
     $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
 
@@ -1637,7 +1783,9 @@ sub writePyr {
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
         
         # Nodata tile creation
-        my $nodataTilePath = File::Spec->catdir($this{pyramid}->{pyr_data_path},$objLevel->{dir_nodata},$objLevel->getID(),"nd.tif");
+        my $nodataTilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $this{pyramid}->{pyr_desc_path});
+        
+        ALWAYS("-> nodata path : $nodataTilePath"); #TEST#
 
         my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->{id});
         my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->{id});
@@ -1651,7 +1799,7 @@ sub writePyr {
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
     $strpyrtmplt =~ s/^$//g;
     $strpyrtmplt =~ s/^\n$//g;
-    #
+    #|
   
     my $filepyramid = File::Spec->catfile($this{pyramid}->{pyr_desc_path},$this{pyramid}->{pyr_name}.".pyr");
 
@@ -1684,7 +1832,7 @@ sub writePyr {
 =begin nd
 method: getCacheNameOfImage
 
-Return the image relative path, from the data directory (pyr_data_path/dir_image). Tile's indices are convert in base 36, and split to give the path.
+Return the image relative path, from the data level directory (pyr_data_path/dir_image/level_ID). Tile's indices are convert in base 36, and split to give the path.
 
 Example:
     getCacheNameOfImage(4032,18217) returns "3E/42/01.tif"
@@ -1932,8 +2080,8 @@ Order in 'composition' is important, a triplet will take precedence over the tri
     tms_path       = /home/ign/TMS
     tms_name       = LAMB93_10cm.tms
     
-    image_dir      = IMAGE
-    nodata_dir     = NODATA
+    dir_image      = IMAGE
+    dir_nodata     = NODATA
     
     compression = jpg
     samplesperpixel = 3
@@ -1985,7 +2133,6 @@ Path to file configuration of the pyramid. This option is mandatory !
 <ul>
 <li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
 <li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
-<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
 <li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
 </ul>
 

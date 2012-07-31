@@ -243,7 +243,7 @@ sub _init {
 =begin nd
    method: doRequestUrl
 
-   Abstract
+   From an bbox, determine request(s) to send to obtain what we want.
 
    Parameters:
       srs - bbox's SRS
@@ -267,21 +267,34 @@ sub doRequestUrl {
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
     my ($image_width, $image_height) = @{$imagesize};
     
-    if (defined $self->{image_width} && 
-        ($self->{image_width} < $image_width && $image_width % $self->{image_width} != 0) ||
-        ($self->{image_height} < $image_height && $image_height % $self->{image_height} != 0))
-    {
-        ERROR(sprintf "Harvesting size is not compatible with the image's size in the request.");
-        return ();;
-    }
-    
-    # Size in harvested image of the asked image
-    my $imagePerWidth = int($image_width/$self->{image_width});
-    my $imagePerHeight = int($image_height/$self->{image_height});
+    my $imagePerWidth = 1;
+    my $imagePerHeight = 1;
     
     # Ground size of an harvested image
-    my $groundHeight = ($xmax-$xmin)/$imagePerHeight;
-    my $groundWidth = ($ymax-$ymin)/$imagePerWidth;
+    my $groundHeight = $xmax-$xmin;
+    my $groundWidth = $ymax-$ymin;
+    
+    if (defined $self->{image_width} && $self->{image_width} < $image_width) {
+        if ($image_width % $self->{image_width} != 0) {
+            ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request."
+                  ,$self->{image_width},$image_width);
+            return ();
+        }
+        $imagePerWidth = int($image_width/$self->{image_width});
+        $groundWidth /= $imagePerWidth;
+        $image_width = $self->{image_width};
+    }
+    
+    if (defined $self->{image_height} && $self->{image_height} < $image_height) {
+        if ($image_height % $self->{image_height} != 0) {
+            ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request."
+                  ,$self->{image_height},$image_height);
+            return ();
+        }
+        $imagePerHeight = int($image_height/$self->{image_height});
+        $groundHeight /= $imagePerHeight;
+        $image_height = $self->{image_height};
+    }
     
     my @requests;
 
@@ -296,7 +309,7 @@ sub doRequestUrl {
                     $srs,
                     $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
                     $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight,
-                    $self->{image_width}, $self->{image_height},
+                    $image_width, $image_height,
                     $self->{OPTIONS});
             push @requests,$url;
         }

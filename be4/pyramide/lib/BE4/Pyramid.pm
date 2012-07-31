@@ -1470,7 +1470,7 @@ sub writeCachePyramid {
     foreach my $objLevel (values %levels) {
         #create folders for data and nodata (metadata not implemented) if they don't exist
         
-        my $dataDir = File::Spec->catdir($newcachepyramid,$self->{dir_image},$objLevel->getID());
+        my $dataDir = File::Spec->rel2abs($objLevel->{dir_image}, $self->getPyrDescPath());
         if (! -d $dataDir) {
             eval { mkpath([$dataDir]); };
             if ($@) {
@@ -1479,7 +1479,7 @@ sub writeCachePyramid {
             }
         }
         
-        my $nodataDir = File::Spec->catdir($newcachepyramid,$self->{dir_nodata},$objLevel->getID());
+        my $nodataDir = File::Spec->rel2abs($objLevel->{dir_nodata}, $self->getPyrDescPath());
         if (! -d $nodataDir) {
             eval { mkpath([$nodataDir]); };
             if ($@) {
@@ -1488,19 +1488,18 @@ sub writeCachePyramid {
             }
         }
         
-        my $nodataTilePath = $nodataDir."/nd.tif";
-        
+        my $nodataTilePath = File::Spec->catfile($nodataDir,$self->{nodata}->getNodataName());
         if (! -e $nodataTilePath) {
 
             my $width = $self->getTileMatrixSet()->getTileWidth($objLevel->{id});
             my $height = $self->getTileMatrixSet()->getTileHeight($objLevel->{id});
 
-            if (! $self->{nodata}->createNodata($nodataTilePath,$width,$height,$self->getCompression())) {
+            if (! $self->{nodata}->createNodata($nodataDir,$width,$height,$self->getCompression())) {
                 ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
                 return FALSE;
             }
             
-            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->{dir_nodata},$objLevel->getID(),"nd.tif");
+            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->{dir_nodata},$objLevel->getID(),$self->{nodata}->getNodataName());
         }
     }
     
@@ -1787,7 +1786,7 @@ Return the image relative path, from the cache root directory (pyr_data_path). T
 Example:
     $objPyr->getCacheNameOfImage({level => "level_19",x => 4032,y => 18217},"data") returns "IMAGE/level_19/3E/42/01.tif"
 
-Parameter:
+Parameters:
     node - node whose name is wanted
     type - tile type : data or metadata.
 =cut
@@ -1855,9 +1854,9 @@ Return the image absolute path. Use method getCacheNameOfImage.
 Example:
     $objPyr->getCachePathOfImage({level => "level_19",x => 4032,y => 18217},"data")
     
-    return "/home/ign/BDORTHO/IMAGE/levele_19/3E/42/01.tif"
+    return "/home/ign/BDORTHO/IMAGE/level_19/3E/42/01.tif"
 
-Parameter:
+Parameters:
     node - node whose path is wanted.
     type - tile type : data or metadata.
     

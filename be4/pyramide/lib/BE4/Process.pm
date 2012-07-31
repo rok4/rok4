@@ -110,7 +110,7 @@ Cache2work () {
     mkdir $workName
     untile $workName.tif $workName/
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage -geometry 256x256 -tile 16x16 $workName/*.png __montage__ -define tiff:rows-per-strip=4096 $workName.tif
+    montage __montageIn__ $workName/*.png __montageOut__ $workName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -rf $workName/
   else
@@ -130,7 +130,6 @@ Work2cache () {
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
   if [ -f $work ] ; then
-    echo "tiff2tile"
     tiff2tile $work __t2t__  $cache
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
@@ -1180,21 +1179,29 @@ sub configureFunctions {
 
     $configuredFunc =~ s/__mNt__/$conf_mNt/;
 
-    # congigure montage
-    my $conf_montage = "";
+    # configure montage
+    my $conf_montageIn = "";
 
-    $conf_montage .= "-depth $bps ";
+    $conf_montageIn .= sprintf "-geometry %sx%s",$self->{pyramid}->getTileWidth(),$self->{pyramid}->getTileHeight();
+    $conf_montageIn .= sprintf "-tile %sx%s",$self->{pyramid}->getTilePerWidth(),$self->{pyramid}->getTilePerHeight();
+    
+    $configuredFunc =~ s/__montageIn__/$conf_montageIn/;
+    
+    my $conf_montageOut = "";
+    
+    $conf_montageOut .= "-depth $bps ";
+    
+    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s ",$self->{pyramid}->getCacheImageHeight();
     if ($spp == 4) {
-        $conf_montage .= "-background none ";
+        $conf_montageOut .= "-background none ";
     }
 
-    $configuredFunc =~ s/__montage__/$conf_montage/;
+    $configuredFunc =~ s/__montageOut__/$conf_montageOut/;
 
     # congigure tiffcp
     my $conf_tcp = "";
 
-    my @imgSize   = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
-    my $imgS = $imgSize[1];
+    my $imgS = $self->{pyramid}->getCacheImageHeight();
     $conf_tcp .= "-s -r $imgS ";
 
     $configuredFunc =~ s/__tcp__/$conf_tcp/;
@@ -1401,6 +1408,17 @@ sub processScript {
   }
   
   return TRUE;
+}
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
+sub getTrees {
+  my $self = shift;
+  return $self->{trees}; 
 }
 
 1;

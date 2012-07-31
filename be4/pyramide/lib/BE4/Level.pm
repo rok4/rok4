@@ -249,7 +249,7 @@ sub getLevelToXML {
     my $dirimg   = $self->{dir_image};
     $levelXML =~ s/__DIRIMG__/$dirimg/;
 
-    my $pathnd = $self->{dir_nodata}."/nd.tiff";
+    my $pathnd = $self->{dir_nodata}."/nd.tif";
     $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
     my $tilew    = $self->{size}[0];
@@ -329,15 +329,15 @@ Presence of the level in pyramids (0 : just in the old pyramid; 1 : just in the 
 
 =item dir_image
 
-Absolute images' directory path for this level.
+Relative images' directory path for this level, from the pyramid's descriptor.
 
 =item dir_nodata
 
-Absolute nodata's directory path for this level.
+Relative nodata's directory path for this level, from the pyramid's descriptor..
 
 =item dir_metadata, compress_metadata, type_metadata
 
-Absolute metadata's directory path for this level. NOT IMPLEMENTED.
+Relative metadata's directory path for this level, from the pyramid's descriptor.. NOT IMPLEMENTED.
 
 =item size
 

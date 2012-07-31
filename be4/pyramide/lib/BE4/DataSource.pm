@@ -340,7 +340,7 @@ sub getSRS {
 
 sub getImages {
     my $self = shift;
-    return $self->{imageSource}->getImages;
+    return $self->{imageSource}->getImages();
 }
 
 sub hasImages {

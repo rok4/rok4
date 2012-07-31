@@ -226,12 +226,12 @@ sub getSampleFormat {
     return $self->{sampleformat};
 }
 
-sub getBitsperSample {
+sub getBitsPerSample {
     my $self = shift;
     return $self->{bitspersample};
 }
 
-sub getSamplesperPixels {
+sub getSamplesPerPixels {
     my $self = shift;
     return $self->{samplesperpixel};
 }

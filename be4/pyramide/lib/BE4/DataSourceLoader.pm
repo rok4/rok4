@@ -78,7 +78,6 @@ variable: $self
     * sources  => [], # array of DataSource objects
 =cut
 
-
 ####################################################################################################
 #                                       CONSTRUCTOR METHODS                                        #
 ####################################################################################################
@@ -103,33 +102,42 @@ sub new {
     return undef if (! $self->_init(@_));
 
     # load. class
-    return undef if (! $self->_load());
+    if (defined $self->{FILEPATH_DATACONF}) {
+        return undef if (! $self->_load());
+    } else {
+        # Old datasource definition
+        return undef if (! $self->_loadOld(@_));
+    }
 
     return $self;
 }
 
-
 sub _init {
     my $self   = shift;
-    my $params = shift;
+    my $datasource = shift;
+    my $harvesting = shift;
 
     TRACE;
     
-    return FALSE if (! defined $params);
+    return FALSE if (! defined $datasource);
     
-    if (! exists($params->{filepath_conf}) || ! defined ($params->{filepath_conf})) {
-        ERROR("key/value required to 'filepath_conf' !");
+    if (defined $harvesting || exists($datasource->{path_image})) {
+        WARN("Old method is using to define a datasource (without datasource configuration file), convert it.");
+        return TRUE;
+    }
+    
+    if (! exists($datasource->{filepath_conf}) || ! defined ($datasource->{filepath_conf})) {
+        ERROR("'filepath_conf' is required in the 'datasource' section !");
         return FALSE ;
     }
-    if (! -f $params->{filepath_conf}) {
-        ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$params->{filepath_conf});
+    if (! -f $datasource->{filepath_conf}) {
+        ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$datasource->{filepath_conf});
         return FALSE;
     }
-    $self->{FILEPATH_DATACONF} = $params->{filepath_conf};
+    $self->{FILEPATH_DATACONF} = $datasource->{filepath_conf};
 
     return TRUE;
 }
-
 
 sub _load {
     my $self   = shift;
@@ -169,6 +177,58 @@ sub _load {
     }
 
     return TRUE;
+}
+
+#
+=begin nd
+method: _loadOld
+
+Allow to use old method to define datasource (just one). Use be4 configuration sections 'datasource', 'harvesting' and parameter 'pyr_level_bottom'.
+
+Parameters:
+    datasource - be4 configuration section 'datasource' = path_image + srs
+    harvesting - be4 configuration section 'harvesting' (can be undefined)
+    bottomId - be4 configuration parameter 'pyr_level_bottom' (section 'pyramid')
+=cut
+sub _loadOld {
+    my $self   = shift;
+    my $datasource = shift;
+    my $harvesting = shift;
+    my $bottomId = shift;
+
+    TRACE;
+
+    if (! defined $bottomId) {
+        ERROR("We need a bottom level identifiant (section 'pyramid', parameter 'pyr_level_bottom') !");
+        return FALSE;
+    }
+    
+    my $params;
+    
+    $params = { map %$_, grep ref $_ eq 'HASH', ($datasource, $params) };
+    $params = { map %$_, grep ref $_ eq 'HASH', ($harvesting, $params) };
+
+    my $sources = $self->{sources};
+
+    my $objDataSource = BE4::DataSource->new($bottomId,$params);
+    if (! defined $objDataSource) {
+        ERROR(sprintf "Cannot create the DataSource object for the base level %s (old method)",$bottomId);
+        return FALSE;
+    }
+    push @{$sources}, $objDataSource;
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
+sub getSources {
+  my $self = shift;
+  return $self->{sources}; 
 }
 
 1;

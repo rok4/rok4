@@ -221,28 +221,28 @@ sub _load {
                     $tmList[$i]->{id},$tmList[$i+1]->{resolution});
                 return FALSE;
             }
-            if ( abs($tmList[$i]->{topLeftCornerX} - $tmList[$i+1]->{topLeftCornerX}) > $epsilon ) {
-                ERROR(sprintf "'topLeftCornerX' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerX},
-                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerX});
+            if ( abs($tmList[$i]->{topleftcornerx} - $tmList[$i+1]->{topleftcornerx}) > $epsilon ) {
+                ERROR(sprintf "'topleftcornerx' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornerx},
+                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornerx});
                 return FALSE;
             }
-            if ( abs($tmList[$i]->{topLeftCornerY} - $tmList[$i+1]->{topLeftCornerY}) > $epsilon ) {
-                ERROR(sprintf "'topLeftCornerY' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerY},
-                    $tmList[$i]->{id},$tmList[$i+1]->{topLeftCornerY});
+            if ( abs($tmList[$i]->{topleftcornery} - $tmList[$i+1]->{topleftcornery}) > $epsilon ) {
+                ERROR(sprintf "'topleftcornery' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornery},
+                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornery});
                 return FALSE;
             }
-            if ( $tmList[$i]->{tileWidth} != $tmList[$i+1]->{tileWidth}) {
-                ERROR(sprintf "'tileWidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileWidth},
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileWidth});
+            if ( $tmList[$i]->{tilewidth} != $tmList[$i+1]->{tilewidth}) {
+                ERROR(sprintf "'tilewidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{tilewidth},
+                    $tmList[$i]->{id},$tmList[$i+1]->{tilewidth});
                 return FALSE;
             }
-            if ( $tmList[$i]->{tileHeight} != $tmList[$i+1]->{tileHeight}) {
-                ERROR(sprintf "'tileHeight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileHeight},
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileHeight});
+            if ( $tmList[$i]->{tileheight} != $tmList[$i+1]->{tileheight}) {
+                ERROR(sprintf "'tileheight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileheight},
+                    $tmList[$i]->{id},$tmList[$i+1]->{tileheight});
                 return FALSE;
             }
         };
