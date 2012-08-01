@@ -114,6 +114,7 @@ CRS::CRS ( std::string crs_code ) : definitionArea(-90.0,-180.0,90.0,180.0) {
 CRS::CRS ( const CRS& crs ) : definitionArea(crs.definitionArea) {
     requestCode=crs.requestCode;
     proj4Code=crs.proj4Code;
+    fetchDefinitionArea();
 }
 
 CRS& CRS::operator= ( const CRS& other ) {
@@ -136,8 +137,8 @@ void CRS::fetchDefinitionArea() {
         return;
     }
     pj_get_def_area(pj, &(definitionArea.xmin), &(definitionArea.ymin), &(definitionArea.xmax), &(definitionArea.ymax));
-    LOGGER_DEBUG(proj4Code); 
-    definitionArea.print();
+    //LOGGER_DEBUG(proj4Code); 
+    //definitionArea.print();
     pj_free ( pj );
     pj_ctx_free ( ctx );
 }
@@ -183,6 +184,7 @@ long double CRS::getMetersPerUnit() {
 void CRS::setRequestCode ( std::string crs ) {
     requestCode=crs;
     buildProj4Code();
+    fetchDefinitionArea();
 }
 
 bool CRS::cmpRequestCode ( std::string crs ) {
@@ -253,7 +255,7 @@ BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny,
  */
 BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > geographicBBox ) {
     Grid* grid = new Grid ( 256,256,geographicBBox );
-    grid->reproject ( "epsg:4326",proj4Code );
+    grid->reproject ( proj4Code,"epsg:4326" );
     BoundingBox<double> bbox = grid->bbox;
     delete grid;
     grid=0;
@@ -307,5 +309,35 @@ bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
  */
 bool CRS::validateBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
     return validateBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
+
+BoundingBox< double > CRS::cropBBox ( BoundingBox< double > BBox ) {
+    BoundingBox<double> defArea = boundingBoxFromGeographic(definitionArea);
+    double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
+    if (BBox.xmin < defArea.xmin) {
+        minx = defArea.xmin;
+    } 
+    if (BBox.xmax > defArea.xmax) {
+        maxx = defArea.xmax;
+    }
+    if (BBox.xmin > defArea.xmax || BBox.xmax < defArea.xmin) {
+        minx = maxx = 0;
+    }
+    if (BBox.ymin < defArea.ymin) {
+        miny = defArea.ymin;
+    }
+    if (BBox.ymax > defArea.ymax) {
+        maxy = defArea.ymax;
+    }
+    if (BBox.ymin > defArea.ymax || BBox.ymax < defArea.ymin) {
+        miny = maxy = 0;
+    }
+    return BoundingBox<double> ( minx,miny,maxx,maxy );
+}
+
+
+BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, double maxy ) {
+    return cropBBox( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 

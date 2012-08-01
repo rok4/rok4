@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-07-16 14:09+0200\n"
+"POT-Creation-Date: 2012-08-01 10:11+0200\n"
 "PO-Revision-Date: 2012-06-27 17:30+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -874,43 +874,43 @@ msgstr "NOMBRE DE COUCHES CHARGÉES : "
 msgid "Construction de la configuration des services depuis "
 msgstr "Construction de la configuration des services depuis "
 
-#: CRS.cpp:176 CRS.cpp:185
+#: CRS.cpp:197 CRS.cpp:206
 msgid "Erreur sur le CRS "
 msgstr "Erreur sur le CRS "
 
-#: CRS.cpp:176 CRS.cpp:185
+#: CRS.cpp:197 CRS.cpp:206
 msgid " : absence de separateur"
 msgstr " : absence de séparateur"
 
-#: Level.cpp:142 Level.cpp:186
+#: Level.cpp:149 Level.cpp:186 Level.cpp:231
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:210
+#: Level.cpp:256
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:218
+#: Level.cpp:264
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:257
+#: Level.cpp:303
 msgid "Indice de tuile négatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:320
+#: Level.cpp:366 Level.cpp:384
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:325
+#: Level.cpp:390
 msgid "Tile : "
 msgstr "Tuile : "
 
-#: Level.cpp:337
+#: Level.cpp:402
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:347
+#: Level.cpp:412 Level.cpp:425
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -935,19 +935,19 @@ msgstr "Rechargement de la configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:163
+#: Pyramid.cpp:164
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:169
+#: Pyramid.cpp:171
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:176
+#: Pyramid.cpp:178
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:176
+#: Pyramid.cpp:178
 msgid " resolution requete="
 msgstr " resolution de la requête="
 

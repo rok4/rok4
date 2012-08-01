@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-07-16 14:09+0200\n"
+"POT-Creation-Date: 2012-08-01 10:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -870,43 +870,43 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: CRS.cpp:176 CRS.cpp:185
+#: CRS.cpp:197 CRS.cpp:206
 msgid "Erreur sur le CRS "
 msgstr ""
 
-#: CRS.cpp:176 CRS.cpp:185
+#: CRS.cpp:197 CRS.cpp:206
 msgid " : absence de separateur"
 msgstr ""
 
-#: Level.cpp:142 Level.cpp:186
+#: Level.cpp:149 Level.cpp:186 Level.cpp:231
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:210
+#: Level.cpp:256
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:218
+#: Level.cpp:264
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:257
+#: Level.cpp:303
 msgid "Indice de tuile négatif"
 msgstr ""
 
-#: Level.cpp:320
+#: Level.cpp:366 Level.cpp:384
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:325
+#: Level.cpp:390
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:337
+#: Level.cpp:402
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:347
+#: Level.cpp:412 Level.cpp:425
 msgid "GetTile Image"
 msgstr ""
 
@@ -931,19 +931,19 @@ msgstr ""
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
-#: Pyramid.cpp:163
+#: Pyramid.cpp:164
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:169
+#: Pyramid.cpp:171
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:176
+#: Pyramid.cpp:178
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:176
+#: Pyramid.cpp:178
 msgid " resolution requete="
 msgstr ""
 

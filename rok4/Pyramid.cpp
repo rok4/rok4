@@ -45,6 +45,7 @@
 #include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
+#include "ExtendedCompoundImage.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
@@ -166,6 +167,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
             error=1;
             return 0;
         }
+        grid->bbox.print();
         LOGGER_DEBUG ( _("fin pyramide") );
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
@@ -174,6 +176,35 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     }
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
+    if ( ! ( dst_crs.validateBBox ( bbox ) ) ) {
+        std::vector<Image*> images;
+
+        BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
+        if ( abs ( cropBBox.xmin - bbox.xmin ) > 0.0001 || abs ( cropBBox.ymin - bbox.ymin ) > 0.0001 ||
+                abs ( cropBBox.xmax - bbox.xmax ) > 0.0001 || abs ( cropBBox.ymax - bbox.ymax ) > 0.0001 ) { //BBox Croped with CRS definition area
+            if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
+                images.push_back ( levels[l]->getNoDataTile ( bbox ) );
+            } else {
+                double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
+                double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
+                Image* tmp ;
+                if ( tms.getCrs() == dst_crs )
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, error );
+                else
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, error );
+                if ( error > 0 ) {
+                    images.push_back ( levels[l]->getNoDataTile ( bbox ) );
+                } else {
+                    images.push_back ( tmp );
+                }
+
+            }
+        }
+
+        extendedCompoundImageFactory facto;
+        return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,levels[l]->getNoDataValue(),levels[l]->getSampleFormat(),0, false );
+    }
+
 
     if ( tms.getCrs() == dst_crs )
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );

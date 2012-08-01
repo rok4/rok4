@@ -86,6 +86,11 @@ public:
     
     bool validateBBoxGeographic ( BoundingBox< double > BBox );
     bool validateBBoxGeographic ( double minx, double miny, double maxx, double maxy );
+    
+    BoundingBox<double> cropBBox ( BoundingBox< double > BBox );
+    BoundingBox<double> cropBBox ( double minx, double miny, double maxx, double maxy );
+    
+    
 };
 
 #endif
