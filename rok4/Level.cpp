@@ -112,6 +112,47 @@ void Level::setNoDataSource ( DataSource* source ) {
 }
 
 
+Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
+//     Image* imageout = getNoDataTile (bbox);
+    // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
+    bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
+    bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
+    double tmp = bbox.ymin;
+    bbox.ymin = ( tm.getY0() - bbox.ymax ) /tm.getRes();
+    bbox.ymax = ( tm.getY0() - tmp ) /tm.getRes();
+
+    
+    //A VERIFIER !!!!
+    BoundingBox<int64_t> bbox_int ( floor ( bbox.xmin + EPS ),
+                                    floor ( bbox.ymin + EPS ),
+                                    ceil ( bbox.xmax - EPS ),
+                                    ceil ( bbox.ymax - EPS ) );
+
+        // Rappel : les coordonnees de la bbox sont ici en pixels
+    double res_x = ( bbox.xmax - bbox.xmin ) / width;
+    double res_y = ( bbox.ymax - bbox.ymin ) / height;
+    
+    double ratio_x = width  / (double) (tm.getTileH()) ;
+    double ratio_y = height / (double) (tm.getTileW()) ;
+    
+    //Most efficient
+    interpolation = Interpolation::LINEAR;
+    const Kernel& kk = Kernel::getInstance ( interpolation ); 
+
+    bbox_int.xmin = floor ( bbox.xmin - kk.size ( res_x ) );
+    bbox_int.xmax = ceil ( bbox.xmax + kk.size ( res_x ) );
+    bbox_int.ymin = floor ( bbox.ymin - kk.size ( res_y ) );
+    bbox_int.ymax = ceil ( bbox.ymax + kk.size ( res_y ) );
+
+    Image* imageout = getNoDataTile (bbox);
+    if (!imageout) {
+        LOGGER_DEBUG(_("Image invalid !"));
+        return 0;
+    }
+    return new ResampledImage ( imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, interpolation, bbox );
+}
+
+
 /*
  * A REFAIRE
  */
@@ -149,6 +190,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
 
     return new ReprojectedImage ( image, bbox, grid, interpolation );
 }
+
 
 
 Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
@@ -191,6 +233,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
     }
     return new ResampledImage ( imageout, width, height,ratio_x,ratio_y, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
 }
+
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {
     int q=i/n;  // Division tronquee
@@ -324,6 +367,25 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
     return 0;
 }
 
+DataSource* Level::getDecodedNoDataTile() {
+DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
+    if ( format==TIFF_RAW_INT8 || format==TIFF_RAW_FLOAT32 )
+        return encData;
+    else if ( format==TIFF_JPG_INT8 )
+        return new DataSourceDecoder<JpegDecoder> ( encData );
+    else if ( format==TIFF_PNG_INT8 )
+        return new DataSourceDecoder<PngDecoder> ( encData );
+    else if ( format==TIFF_LZW_INT8 || format == TIFF_LZW_FLOAT32 )
+        return new DataSourceDecoder<LzwDecoder> ( encData );
+    else if ( format==TIFF_ZIP_INT8 || format == TIFF_ZIP_FLOAT32 )
+        return new DataSourceDecoder<DeflateDecoder> ( encData );
+    else if ( format==TIFF_PKB_INT8 || format == TIFF_PKB_FLOAT32 )
+        return new DataSourceDecoder<PackBitsDecoder> ( encData );
+    LOGGER_ERROR ( _("Type d'encodage inconnu : ")<<format );
+    return 0;
+}
+
+
 DataSource* Level::getEncodedNoDataTile() {
     LOGGER_DEBUG ( _("Tile : ") << noDataFile );
     return noDataSourceProxy;
@@ -356,6 +418,37 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
                                                     tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes(),
                                                     tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
+}
+
+Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
+    int pixel_size=1;
+    LOGGER_DEBUG ( _("GetTile Image") );
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32)
+        pixel_size=4;
+    return new ImageDecoder ( getDecodedNoDataTile() , tm.getTileW(), tm.getTileH(), channels,
+                              bbox, 0, 0, 0, 0, pixel_size );
+}
+
+int Level::getNoDataValue() {
+    DataSource *nd =  getDecodedNoDataTile();
+    int nodatavalue = 0;
+    size_t size;
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
+        
+        const uint8_t * buffer = nd->getData(size);
+        const float* fbuf =  (const float*) buffer;
+        nodatavalue = (int) *fbuf;
+    } else {
+        const uint8_t * buffer = nd->getData(size);
+        nodatavalue = *buffer;
+    }
+    return nodatavalue;
+}
+
+uint16_t Level::getSampleFormat() {
+    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32)
+        return 3;
+    return 1;
 }
 
 

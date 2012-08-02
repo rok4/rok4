@@ -181,23 +181,23 @@ void pj_get_spheroid_defn(projPJ defn, double *major_axis, double *eccentricity_
 /************************************************************************/
 void pj_get_def_area(PJ* pj, double *xmin, double *ymin, double *xmax, double *ymax){
 	if( pj_param(pj->ctx, pj->params, "tarea_s").i ) {
-		*xmin = pj_param(pj->ctx, pj->params, "dareas").f;
+		*ymin = pj_param(pj->ctx, pj->params, "darea_s").f;
 	} else {
-		*xmin = -90;
+		*ymin = -90;
 	}
 	if( pj_param(pj->ctx, pj->params, "tarea_w").i ) {
-		*ymin = pj_param(pj->ctx, pj->params, "dareaw").f;
+		*xmin = pj_param(pj->ctx, pj->params, "darea_w").f;
 	} else {
-		*ymin = -180;
+		*xmin = -180;
 	}
 	if( pj_param(pj->ctx, pj->params, "tarea_n").i ) {
-		*xmax = pj_param(pj->ctx, pj->params, "darean").f;
+		*ymax = pj_param(pj->ctx, pj->params, "darea_n").f;
 	} else {
-		*xmax = 90;
+		*ymax = 90;
 	}
 	if( pj_param(pj->ctx, pj->params, "tarea_e").i ) {
-		*ymax = pj_param(pj->ctx, pj->params, "dareae").f;
+		*xmax = pj_param(pj->ctx, pj->params, "darea_e").f;
 	} else {
-		*ymax = 180;
+		*xmax = 180;
 	}
 }

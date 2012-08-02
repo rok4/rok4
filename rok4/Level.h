@@ -84,7 +84,6 @@ protected:
      */
     Image* getwindow (ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
-
 public:
     TileMatrix getTm() {
         return tm;
@@ -126,6 +125,9 @@ public:
     }
 
     DataSource* getEncodedNoDataTile();
+    DataSource* getDecodedNoDataTile();
+    
+    Image* getnodatabbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
     
     Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
@@ -145,6 +147,11 @@ public:
 
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
 
+    Image* getNoDataTile ( BoundingBox<double> bbox );
+    
+    int getNoDataValue();
+    uint16_t getSampleFormat();
+    
     void setNoData ( const std::string& file ) ;
     void setNoDataSource ( DataSource* source );
 

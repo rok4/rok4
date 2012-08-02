@@ -1332,6 +1332,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string serviceProvider="";
     std::string fee="";
     std::string accessConstraint="";
+    unsigned int layerLimit;
     unsigned int maxWidth;
     unsigned int maxHeight;
     unsigned int maxTileX;
@@ -1450,6 +1451,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     if ( pElem && pElem->GetText() )
         electronicMailAddress= pElem->GetTextStr();
 
+    pElem = hRoot.FirstChild ( "layerLimit" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        layerLimit=DEFAULT_LAYER_LIMIT;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&layerLimit ) ) {
+        LOGGER_ERROR ( servicesConfigFile << _("Le layerLimit est inexploitable:[") << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+    
     pElem = hRoot.FirstChild ( "maxWidth" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxWidth=MAX_IMAGE_WIDTH;
@@ -1463,7 +1472,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         maxHeight=MAX_IMAGE_HEIGHT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxHeight ) ) {
         LOGGER_ERROR ( servicesConfigFile << _("Le maxHeight est inexploitable:[") << pElem->GetTextStr() << "]" );
-//         return NULL;
+        return NULL;
     }
 
     pElem = hRoot.FirstChild ( "maxTileX" ).Element();
@@ -1605,7 +1614,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );

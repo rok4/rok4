@@ -40,7 +40,7 @@
 #include "Logger.h"
 
 #include "Utils.h"
-#include <string.h>
+#include <cstring>
 #include <cmath>
 #define DEG_TO_RAD      .0174532925199432958
 
@@ -77,20 +77,38 @@ EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, ui
     matrix[7] = sin(angleRad + M_PI);
     matrix[8] = sin(angleRad + M_PI_4 + M_PI_2);
     
+    /*float intensity = 0.5;
+    angleRad = (angle + 60) * DEG_TO_RAD;
+    matrix[0] += intensity * sin(angleRad - M_PI_4);
+    matrix[1] += intensity * sin(angleRad);
+    matrix[2] += intensity * sin(angleRad + M_PI_4);
     
-    //Add Zenithal Light
-    matrix[0] +=  (-1) ;
-    matrix[1] +=  (-1) ;
-    matrix[2] +=  (-1) ;
+    matrix[3] += intensity * sin(angleRad - M_PI_2);
+    matrix[4] += intensity *  0.   ;
+    matrix[5] += intensity * sin(angleRad + M_PI_2);
     
-    matrix[3] +=  (-1) ;
-    matrix[4] +=    8  ;
-    matrix[5] +=  (-1) ;
+    matrix[6] += intensity * sin(angleRad - M_PI_4 - M_PI_2);
+    matrix[7] += intensity * sin(angleRad + M_PI);
+    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);
     
-    matrix[6] +=  (-1) ;
-    matrix[7] +=  (-1) ;
-    matrix[8] +=  (-1) ;
+    angleRad = (angle - 20) * DEG_TO_RAD;
+    matrix[0] += intensity * sin(angleRad - M_PI_4);
+    matrix[1] += intensity * sin(angleRad);
+    matrix[2] += intensity * sin(angleRad + M_PI_4);
     
+    matrix[3] += intensity * sin(angleRad - M_PI_2);
+    matrix[4] += intensity *  0.   ;
+    matrix[5] += intensity * sin(angleRad + M_PI_2);
+    
+    matrix[6] += intensity * sin(angleRad - M_PI_4 - M_PI_2);
+    matrix[7] += intensity * sin(angleRad + M_PI);
+    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);
+    */
+    for (int i = 0; i< 9 ; i++) {
+        //matrix[i] *= 2;
+        //Add Zenithal Light
+        matrix[i] += (i==4?8:-1);
+    }
 
 }
 

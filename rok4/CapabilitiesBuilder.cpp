@@ -86,7 +86,7 @@ void Rok4Server::buildWMSCapabilities() {
     TiXmlDocument doc;
     TiXmlDeclaration * decl = new TiXmlDeclaration ( "1.0", "UTF-8", "" );
     doc.LinkEndChild ( decl );
-
+    std::ostringstream os;
 
     TiXmlElement * capabilitiesEl = new TiXmlElement ( "WMS_Capabilities" );
     capabilitiesEl->SetAttribute ( "version","1.3.0" );
@@ -156,7 +156,10 @@ void Rok4Server::buildWMSCapabilities() {
 
     serviceEl->LinkEndChild ( buildTextNode ( "Fees",servicesConf.getFee() ) );
     serviceEl->LinkEndChild ( buildTextNode ( "AccessConstraints",servicesConf.getAccessConstraint() ) );
-    serviceEl->LinkEndChild ( buildTextNode ( "LayerLimit","1" ) );
+    
+    os << servicesConf.getLayerLimit();
+    serviceEl->LinkEndChild ( buildTextNode ( "LayerLimit",os.str() ) );
+    os.str("");
     serviceEl->LinkEndChild ( buildTextNode ( "MaxWidth",numToStr ( servicesConf.getMaxWidth() ) ) );
     serviceEl->LinkEndChild ( buildTextNode ( "MaxHeight",numToStr ( servicesConf.getMaxHeight() ) ) );
 
@@ -311,7 +314,7 @@ void Rok4Server::buildWMSCapabilities() {
             }
             // GeographicBoundingBox
             TiXmlElement * gbbEl = new TiXmlElement ( "EX_GeographicBoundingBox" );
-            std::ostringstream os;
+            
             os<<childLayer->getGeographicBoundingBox().minx;
             gbbEl->LinkEndChild ( buildTextNode ( "westBoundLongitude", os.str() ) );
             os.str ( "" );
