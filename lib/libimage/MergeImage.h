@@ -35,56 +35,60 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _CONFIG_
-#define _CONFIG_
+#include "Image.h"
 
-#include <unistd.h>
-#include <stdint.h>
-#include <cstring>
-#include <cstdlib>
-#include <algorithm>
+#ifndef MERGEIMAGE_H
+#define MERGEIMAGE_H
 
-#include <cassert>
-// Pour déactiver tous les assert, décommenter la ligne suivante
-// #define NDEBUG
-
-#include <iostream>
-#include "Logger.h"
-
-#define ROK4_VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
-#define ROK4_INFO "ROK4-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
-#define MAX_IMAGE_WIDTH  65536
-#define MAX_IMAGE_HEIGHT 65536
-
-//Correct value for a 2 factor between TMS resolution and a max image size output of 5000pixels
-#define MAX_TILE_X 40
-#define MAX_TILE_Y 40
-
-#define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
-#define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
-
-#define DEFAULT_LOG_OUTPUT ROLLING_FILE
-#define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
-#define DEFAULT_LOG_FILE_PERIOD 3600
-#define DEFAULT_LOG_LEVEL  ERROR
-#define DEFAULT_NB_THREAD  1
-#define DEFAULT_LAYER_DIR  "../config/layers/"
-#define DEFAULT_TMS_DIR    "../config/tileMatrixSet"
-#define DEFAULT_STYLE_DIR  "../config/styles"
-#define DEFAULT_PROJ_DIR   "../config/proj"
-#define DEFAULT_STYLE      "normal"   //FIXME: nom du fichier de style par défaut
-#define DEFAULT_STYLE_INSPIRE     "inspire"//FIXME nom du fichier de style inspire par défaut "inspire_common:DEFAULT"
-#define DEFAULT_OPAQUE     true
-#define DEFAULT_RESAMPLING "lanczos_2"
-#define DEFAULT_CHANNELS   3
-#define DEFAULT_LAYER_LIMIT  1
-
-// Configuration de l'acces au parametrage de PROJ4
-#define PROJ_LIB_PATH      "../config/proj/";
-
-//Configuration de gettext
-#define DOMAINNAME "Rok4Server"
-#define _(string) dgettext(DOMAINNAME,string)
+class MergeImage : public Image {
+public:
+    enum MergeType {
+        UNKNOWN = 0,
+        NORMAL = 1,
+        LIGHTEN = 2,
+        DARKEN = 3,
+        MULTIPLY = 4,
+        MULTIPLYOLD = 5
+    };
 
 
-#endif
+private:
+    Image* backImage;
+    Image* frontImage;
+
+    MergeType composition;
+    float factor;
+    void mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front );
+    void mergeline ( float* buffer, uint8_t* back, uint8_t* front );
+
+public:
+    virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line );
+    MergeImage ( Image* backImage,Image* frontImage, MergeType composition = NORMAL, float factor = 1 );
+    virtual ~MergeImage();
+};
+
+class Pixel {
+public: 
+    float Sr, Sg, Sb, Sa;
+    float Sra, Sga, Sba;
+    // 3 Chan + Alpha
+    Pixel ( uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255): 
+                    Sr(r), Sb(b), Sg(g)
+                    {
+                        Sa  = a/255.;
+                        Sra = r * Sa;
+                        Sga = g * Sa;
+                        Sba = b * Sa;
+                    }
+    // 1 Chan + Alpha
+    Pixel ( uint8_t x, uint8_t a = 255):
+                    Sr(x/255), Sb(x/255), Sg(x/255), Sa(a/255)
+                    {
+                        Sra = Sr * Sa;
+                        Sga = Sra;
+                        Sba = Sra;
+                    }
+};
+
+#endif // MERGEIMAGE_H

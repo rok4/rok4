@@ -287,6 +287,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     std::map <std::string, std::string > format_option;
     std::vector<Image*> images;
 
+
     // Récupération des paramètres
     DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
     if ( errorResp ) {
@@ -384,9 +385,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         default:
             break;
         }
-        image = new MergeImage(images.at(0), images.at(1), MergeImage::MULTIPLY, 0.5);
+        image = new MergeImage(images.at(0), images.at(1), MergeImage::NORMAL);
         for (int i = 2 ; i < images.size()  ; i++) {
-            image = new MergeImage(image, images.at(i), MergeImage::MULTIPLY, 0.5);
+            image = new MergeImage(image, images.at(i), MergeImage::NORMAL);
         }
     }
 

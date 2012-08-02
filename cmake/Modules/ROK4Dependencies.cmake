@@ -181,7 +181,7 @@ add_subdirectory(${ROK4LIBSDIR}/libxerces)
 
 #Gettext Support
 
-set(GettextTranslate_ALL TRUE)
+set(GettextTranslate_ALL FALSE)
 set(GettextTranslate_GMO_BINARY TRUE)
 include(GettextTranslate)
 

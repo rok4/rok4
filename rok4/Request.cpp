@@ -873,33 +873,35 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         bbox.ymax=bb[2];
     }
 
-
-//     // SCALE DENOMINATORS
-// 
+//     if ( !(hasParam("disable_bbox_crs_check")) && !(crs.validateBBox(bbox))) {
+//         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Parametre BBOX invalide pour le CRS ")+str_crs+_("."),"wms" ) );
+//     }
 //     // Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
 // 
 //     // Resolution en x et y en unites du CRS demande
 //     double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
 // 
-//     // Resolution en x et y en m
-//     // Hypothese : les CRS en geographiques sont en degres
-//     if ( crs.isLongLat() ) {
-//         resx*=111319;
-//         resy*=111319;
-//     }
-// 
-//     // Le serveur ne doit pas renvoyer d'exception
-//     // Cf. WMS 1.3.0 - 7.2.4.6.9
-// 
-//     double epsilon=0.0000001;   // Gestion de la precision de la division
-//     if ( resx>0. )
-//         if ( resx+epsilon<layer->getMinRes() ||resy+epsilon<layer->getMinRes() ) {
-//             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
-//         }
-//     if ( resy>0. )
-//         if ( resx>layer->getMaxRes() +epsilon||resy>layer->getMaxRes() +epsilon )
-//             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
+    //double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
 
+    // Resolution en x et y en m
+    // Hypothese : les CRS en geographiques sont en degres
+    /*if ( crs.isLongLat() ) {
+        resx*=111319;
+        resy*=111319;
+    }*/
+
+    // Le serveur ne doit pas renvoyer d'exception
+    // Cf. WMS 1.3.0 - 7.2.4.6.9
+
+    /*double epsilon=0.0000001;   // Gestion de la precision de la division
+    if ( resx>0. )
+        if ( resx+epsilon<layer->getMinRes() ||resy+epsilon<layer->getMinRes() ) {
+            ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
+        }
+    if ( resy>0. )
+        if ( resx>layer->getMaxRes() +epsilon||resy>layer->getMaxRes() +epsilon )
+            ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
+    */
     // EXCEPTION
     std::string str_exception=getParam ( "exception" );
     if ( str_exception!=""&&str_exception!="XML" )
@@ -910,8 +912,10 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES absent."),"wms" ) );
     std::string str_styles=getParam ( "styles" );
     if ( str_styles == "" ) {//TODO Gestion du style par défaut
-        for (int i = 0;  i < layerList.size()-1; i++) {
-        str_styles.append(",");
+        str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+        for (int i = 1;  i < layers.size(); i++) {
+            str_styles.append(",");
+            str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
         }
     }
     std::vector<std::string> stylesString = split(str_styles,',');
@@ -920,8 +924,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES incomplet."),"wms" ) );
     }
     for (int k = 0 ; k  < stylesString.size(); k++ ) {
-        if (stylesString.at(k)=="")
-            stylesString.at(k)= ( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+        
         if ( layers.at(k)->getStyles().size() != 0 ) {
             for ( unsigned int i=0; i < layers.at(k)->getStyles().size(); i++ ) {
                 if ( stylesString.at(k) == layers.at(k)->getStyles() [i]->getId() ) {

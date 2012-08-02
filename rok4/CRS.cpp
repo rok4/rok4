@@ -91,7 +91,7 @@ bool isCrsLongLat ( std::string crs ) {
 /**
  * Default constructor
  */
-CRS::CRS() {
+CRS::CRS() : definitionArea(-90.0,-180.0,90.0,180.0) {
     proj4Code = NO_PROJ4_CODE;
 }
 
@@ -101,27 +101,48 @@ CRS::CRS() {
 * Contructeur
 */
 
-CRS::CRS ( std::string crs_code ) {
+CRS::CRS ( std::string crs_code ) : definitionArea(-90.0,-180.0,90.0,180.0) {
     requestCode=crs_code;
     buildProj4Code();
+    fetchDefinitionArea();
 }
 
 /**
 * Contructeur de copie
 */
 
-CRS::CRS ( const CRS& crs ) {
+CRS::CRS ( const CRS& crs ) : definitionArea(crs.definitionArea) {
     requestCode=crs.requestCode;
     proj4Code=crs.proj4Code;
+    fetchDefinitionArea();
 }
 
 CRS& CRS::operator= ( const CRS& other ) {
     if (this != &other) {
         this->proj4Code = other.proj4Code;
         this->requestCode = other.requestCode;
+        this->definitionArea = other.definitionArea;
     }
     return *this;
 }
+
+void CRS::fetchDefinitionArea() {
+    projCtx ctx = pj_ctx_alloc();
+    projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + proj4Code +" +wktext" ).c_str() );
+    if ( !pj ) {
+        int err = pj_ctx_get_errno ( ctx );
+        char *msg = pj_strerrno ( err );
+        // LOGGER_DEBUG(_("erreur d initialisation ") << crs << " " << msg);
+        pj_ctx_free ( ctx );
+        return;
+    }
+    pj_get_def_area(pj, &(definitionArea.xmin), &(definitionArea.ymin), &(definitionArea.xmax), &(definitionArea.ymax));
+    //LOGGER_DEBUG(proj4Code); 
+    //definitionArea.print();
+    pj_free ( pj );
+    pj_ctx_free ( ctx );
+}
+
 
 
 /*
@@ -129,6 +150,7 @@ CRS& CRS::operator= ( const CRS& other ) {
 */
 
 void CRS::buildProj4Code() {
+    proj4Code=NO_PROJ4_CODE;
     if ( isCrsProj4Compatible ( requestCode ) )
         proj4Code=requestCode;
     else if ( isCrsProj4Compatible ( toLowerCase ( requestCode ) ) )
@@ -140,8 +162,6 @@ void CRS::buildProj4Code() {
     // ISO 19128 6.7.3.2
     else if ( requestCode=="CRS:84" )
         proj4Code="epsg:4326";
-    else
-        proj4Code=NO_PROJ4_CODE;
 }
 
 bool CRS::isProj4Compatible() {
@@ -164,6 +184,7 @@ long double CRS::getMetersPerUnit() {
 void CRS::setRequestCode ( std::string crs ) {
     requestCode=crs;
     buildProj4Code();
+    fetchDefinitionArea();
 }
 
 bool CRS::cmpRequestCode ( std::string crs ) {
@@ -220,7 +241,6 @@ BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geogr
     return bbox;
 }
 
-
 /**
  * Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
  * @return La BoundingBox en projection
@@ -228,3 +248,96 @@ BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geogr
 BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny, double maxx, double maxy ) {
     return boundingBoxFromGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
+
+/**
+ * Calcule la BoundingBox en géographique à partir de la BoundingBox dans le CRS courant
+ * @return La BoundingBox en projection
+ */
+BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > geographicBBox ) {
+    Grid* grid = new Grid ( 256,256,geographicBBox );
+    grid->reproject ( proj4Code,"epsg:4326" );
+    BoundingBox<double> bbox = grid->bbox;
+    delete grid;
+    grid=0;
+    return bbox;
+}
+
+/**
+ * Calcule la BoundingBox en géographique à partir de la BoundingBox dans le CRS courant
+ * @return La BoundingBox en projection
+ */
+BoundingBox<double> CRS::boundingBoxToGeographic ( double minx, double miny, double maxx, double maxy ) {
+    return boundingBoxToGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
+/**
+ * Vérifie que la BoundingBox est dans le domaine de définition de la projection
+ * @return true si incluse, false sinon
+ */
+bool CRS::validateBBox ( BoundingBox< double > BBox ) {
+    return validateBBoxGeographic(boundingBoxToGeographic( BBox));
+}
+
+/**
+ * Vérifie que la BoundingBox est dans le domaine de définition de la projection
+ * @return true si incluse, false sinon
+ */
+bool CRS::validateBBox ( double minx, double miny, double maxx, double maxy ) {
+    return validateBBoxGeographic( boundingBoxToGeographic ( minx,miny,maxx,maxy ) );
+}
+
+/**
+ * Vérifie que la BoundingBox est dans le domaine de définition de la projection
+ * @return true si incluse, false sinon
+ */
+bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
+    bool valid = true;
+    if (BBox.xmin > definitionArea.xmax || BBox.xmin < definitionArea.xmin ||
+        BBox.xmax > definitionArea.xmax || BBox.xmax < definitionArea.xmin ||
+        BBox.ymin > definitionArea.ymax || BBox.ymin < definitionArea.ymin ||
+        BBox.ymax > definitionArea.ymax || BBox.ymax < definitionArea.ymin ){
+            valid = false;
+        }
+    
+    
+    return valid;
+}
+
+/**
+ * Vérifie que la BoundingBox est dans le domaine de définition de la projection
+ * @return true si incluse, false sinon
+ */
+bool CRS::validateBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
+    return validateBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
+
+BoundingBox< double > CRS::cropBBox ( BoundingBox< double > BBox ) {
+    BoundingBox<double> defArea = boundingBoxFromGeographic(definitionArea);
+    double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
+    if (BBox.xmin < defArea.xmin) {
+        minx = defArea.xmin;
+    } 
+    if (BBox.xmax > defArea.xmax) {
+        maxx = defArea.xmax;
+    }
+    if (BBox.xmin > defArea.xmax || BBox.xmax < defArea.xmin) {
+        minx = maxx = 0;
+    }
+    if (BBox.ymin < defArea.ymin) {
+        miny = defArea.ymin;
+    }
+    if (BBox.ymax > defArea.ymax) {
+        maxy = defArea.ymax;
+    }
+    if (BBox.ymin > defArea.ymax || BBox.ymax < defArea.ymin) {
+        miny = maxy = 0;
+    }
+    return BoundingBox<double> ( minx,miny,maxx,maxy );
+}
+
+
+BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, double maxy ) {
+    return cropBBox( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
