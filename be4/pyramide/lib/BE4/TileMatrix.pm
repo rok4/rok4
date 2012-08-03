@@ -39,6 +39,7 @@ package BE4::TileMatrix;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use Math::BigFloat ;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -142,6 +143,7 @@ sub new {
     tileheight     => undef, # ie 256 by default ?
     matrixwidth    => undef,
     matrixheight   => undef,
+    parentstmid => [],
   };
 
   bless($self, $class);
@@ -218,6 +220,108 @@ sub setTopLeftCornerY {
         $self->{topleftcornery} = sprintf ("%.10f", $v);
     }
 }
+sub getParentsTmId {
+  my $self = shift;
+  return $self->{parentstmid}
+
+}
+# (x,y) in Land projection => (i,j) in Tile Matrix
+sub computeTileCoordFromLandCoord {
+  my $self = shift;
+  my $x = shift;
+  my $y = shift;
+  
+  my ($i,$j) = [ undef, undef ] ;
+  
+  $i = int( ($self->getTopLeftCornerX() + $x)/($self->getTileWidthGroundSize()) );
+  $j = int( ($self->getTopLeftCornerY() - $y)/($self->getTileHeightGroundSize()) );
+    
+  return($i,$j);
+}
+# (i,j) in Tile Matrix => (i,j) in Image Matrix
+sub computeImageCoordFromTileCoord {
+  my $self = shift ;
+  my $i = shift;
+  my $j = shift;
+  my $pyramid = shift;
+
+  return ($i % $pyramid->getTilePerWidth(),$j % $pyramid->getTilePerHeight());
+}
+# (i,j) in Image Matrix => (i,j) in Tile Matrix (upper left tile of the image)
+sub computeTileCoordFromImageCoord {
+  my $self = shift ;
+  my $i = shift;
+  my $j = shift;
+  my $pyramid = shift;
+  
+  return ($i * $pyramid->getTilePerWidth(),$j * $pyramid->getTilePerHeight());
+}
+# (x,y) in Land Projection => (i,j) in Image Matrix
+sub computeImageCoordFromLandCoord {
+  my $self = shift;
+  my $x = shift;
+  my $y = shift;
+  my $pyramid = shift;
+
+  my ($i,$j) = @{$self->computeTileCoordFromLandCoord($x,$y)};
+  return @{$self->computeImageCoordFromTileCoord($i,$j,$pyramid)};
+  
+};
+# (i,j) of Tile Matrix => (xMin,yMax,xMax,yMin) of Image in Land Projection
+sub computeLandCoordFromTileCoord {
+  my $self = shift;
+  my $i = shift; # Tile coord
+  my $j = shift; # Tile coord
+
+  my $xMin = $self->getTopLeftCornerX() + $i * $self->getTileWidthGroundSize();
+  my $yMax = $self->getTopLeftCornerY() - $j * $self->getTileHeightGroundSize();
+  my $xMax = $xMin + $self->getTileWidthGroundSize();
+  my $yMin = $yMax - $self->getTileHeightGroundSize();
+    
+  return ($xMin,$yMax,$xMax,$yMin);
+}
+# (i,j) of Tile Matrix => (xMin,yMax,xMax,yMin) of Image in Land Projection
+sub computeLandCoordFromImageCoord {
+  my $self = shift;
+  my $i = shift; # Tile coord
+  my $j = shift; # Tile coord
+  my $pyramid = shift;
+  
+  my $image_width = $pyramid->getTilePerWidth() * $self->getTileWidthGroundSize();
+  my $image_height = $pyramid->getTilePerHeight() * $self->getTileHeightGroundSize();
+
+  my $xMin = $self->getTopLeftCornerX() + $i*$image_width;
+  my $yMax = $self->getTopLeftCornerY() - $j*$image_height;
+  my $xMax = $xMin + $image_width;
+  my $yMin = $yMax - $image_height;
+    
+  return ($xMin,$yMax,$xMax,$yMin);
+}
+
+# method: getTileWidthGroundSize
+# Calcule la largeur en dimensions terrain (en unité du srs) des tuiles du tm
+#------------------------------------------------------------------------------
+sub getTileWidthGroundSize {
+  my $self = shift;
+
+  my $Res = Math::BigFloat->new($self->getResolution()); 
+  my $tileGroundWidth   = $self->getTileWidth() * $Res;
+  
+  return $tileGroundWidth;
+}
+
+# method: getTileHeightGroundSize
+# Calcule la longueur en dimensions terrain (en unité du srs) des tuiles du tm
+#------------------------------------------------------------------------------
+sub getTileHeightGroundSize {
+  my $self = shift;
+
+  my $Res = Math::BigFloat->new($self->getResolution()); 
+  my $tileGroundHeight   = $self->getTileHeight() * $Res;
+  
+  return $tileGroundHeight;
+}
+
 ################################################################################
 # to_string method
 sub to_string {

@@ -48,7 +48,8 @@ use Data::Dumper;
 my $VERSION = "0.0.1";
 
 # My module
-use BE4::Tree;
+use BE4::QTree;
+use BE4::Graph;
 use BE4::Harvesting;
 
 # constantes
@@ -153,7 +154,7 @@ sub new {
         path_temp  => undef, # param value !
         path_shell => undef, # param value !
         # 
-        tree       => undef, # object Tree !
+        graph      => undef, # object Graph or QTree !
         nodata     => undef, # object NoData !
         harvesting => undef, # object Harvesting !
         # out
@@ -230,19 +231,19 @@ sub _init {
         DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
     }
 
-    # FIXME :
-    #    use case with only a transformation proj or compression without data ?
+    # Graph or QTree ?
+    if ($self->{pyramid}->{tms}->{isQTree}) {
+      $self->{graph} = BE4::QTree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
+    } else {
+      $self->{graph} = BE4::Graph->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
+    };
 
-    #  it's an object !
-    
-    $self->{tree} = BE4::Tree->new($self->{pyramid}->getDataSource(), $self->{pyramid}, $self->{job_number});
-
-    if (! defined $self->{tree}) {
-        ERROR("Can not create Tree object !");
+    if (! defined $self->{graph}) {
+        ERROR("Can not create Graph or QTree object !");
         return FALSE;
     }
     
-    DEBUG (sprintf "TREE = %s", Dumper($self->{tree}));
+    DEBUG (sprintf "GRAPH = %s", Dumper($self->{graph}));
 
     return TRUE;
 }
@@ -252,7 +253,7 @@ sub _init {
 #                                  GENERAL COMPUTING METHOD                                        #
 ####################################################################################################
 
-# method: computeWholeTree
+# method: computeWholeGraph
 #  Crée tous les script permettant de calculer les images de la pyramide.
 #
 #  NOTE
@@ -269,7 +270,7 @@ sub _init {
 #       - Les commande étant déjà écrites, il ne reste plus qu'à parcourir l'arbre et concaténer
 #         les bouts de code, et les écrire dans les scripts.
 #-------------------------------------------------------------------------------
-sub computeWholeTree {
+sub computeWholeGraph {
     my $self = shift;
 
     TRACE;
@@ -281,7 +282,7 @@ sub computeWholeTree {
     my $finishScriptId   = "SCRIPT_FINISHER";
     my $finishScriptCode = $self->prepareScript($finishScriptId);
     
-    # We open stream to the new cache list, to add generated tile when we browse tree.
+    # We open stream to the new cache list, to add generated tile when we browse graph.
     my $NEWLIST;
     if (! open $NEWLIST, ">>", $self->{pyramid}->{new_pyramid}->{content_path}) {
         ERROR(sprintf "Cannot open new cache list file : %s",$self->{pyramid}->{new_pyramid}->{content_path});
@@ -290,7 +291,7 @@ sub computeWholeTree {
 
     # Pondération de l'arbre en fonction des opérations à réaliser
     # et création du code script (ajoter aux noeuds de l'arbre
-    my @topLevelNodeList = $self->{tree}->getNodesOfTopLevel();
+    my @topLevelNodeList = $self->{graph}->getNodesOfTopLevel();
     foreach my $topNode (@topLevelNodeList) {
         if (! $self->computeBranch($topNode,$NEWLIST)) {
             ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
@@ -301,12 +302,12 @@ sub computeWholeTree {
     close $NEWLIST;
 
     # Détermination du cutLevel optimal et répartition des noeuds sur les jobs
-    my @nodeRack = $self->{tree}->shareNodesOnJobs();
+    my @nodeRack = $self->{graph}->shareNodesOnJobs();
     if (! scalar @nodeRack) {
         ERROR("Cut Level Node List is empty !");
         return FALSE;
     }
-    INFO (sprintf "CutLevel : %s", $self->{tree}->{cutLevelId});
+    INFO (sprintf "CutLevel : %s", $self->{graph}->{cutLevelId});
 
     $finishScriptCode .= "#recuperation des images calculees par les scripts precedents\n";
 
@@ -407,9 +408,9 @@ sub computeBottomImage {
     (! $self->{pyramid}->isNewPyramid() && ($self->{pyramid}->getCompression() eq 'jpg')))
     {
         $code .= $self->wms2work($node,$self->workNameOfNode($node));
-        $self->{tree}->updateWeightOfNode($node,WGET_W);
+        $self->{graph}->updateWeightOfNode($node,WGET_W);
     } else {
-        my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
+        my $newImgDesc = $self->{graph}->getImgDescOfNode($node);
         my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir(), $self->workNameOfNode($node));
         my $workImgDesc = $newImgDesc->copy($workImgFilePath); # copie du descripteur avec changement du nom de fichier
 
@@ -456,7 +457,7 @@ sub computeBottomImage {
             printf CFGF "%s", $bgImgDesc->to_string();
         }
         # ajout des images sources
-        my $listDesc = $self->{tree}->getImgDescOfBottomNode($node);
+        my $listDesc = $self->{graph}->getImgDescOfBottomNode($node);
         foreach my $desc (@{$listDesc}){
             printf CFGF "%s", $desc->to_string();
         }
@@ -470,8 +471,8 @@ sub computeBottomImage {
     $weight += TIFF2TILE_W;
     $code .= $self->work2cache($node);
 
-    $self->{tree}->updateWeightOfNode($node,$weight);
-    $self->{tree}->setComputingCode($node,$code);
+    $self->{graph}->updateWeightOfNode($node,$weight);
+    $self->{graph}->setComputingCode($node,$code);
 
     return TRUE;
 }
@@ -505,8 +506,8 @@ sub computeAboveImage {
 
     my $code = "\n";
     my $weight = 0;
-    my $newImgDesc = $self->{tree}->getImgDescOfNode($node);
-    my @childList = $self->{tree}->getChilds($node);
+    my $newImgDesc = $self->{graph}->getImgDescOfNode($node);
+    my @childList = $self->{graph}->getChilds($node);
 
     my $bgImgPath=undef;
     my $bgImgName=undef;
@@ -526,7 +527,7 @@ sub computeAboveImage {
         # tuilage il y a) est la même entre le cache moissonné et la pyramide en cours d'écriture.
         # On a à l'heure actuelle du 16 sur 16 sur toute les pyramides et pas de JPEG 2000. 
 
-        my $tm = $self->{tree}->getTileMatrix($node->{level});
+        my $tm = $self->{graph}->getTileMatrix($node->{level});
         if (! defined $tm) {
             ERROR(sprintf "Cannot load the Tile Matrix for the level %s",$node->{level});
             return undef;
@@ -561,9 +562,9 @@ sub computeAboveImage {
     # Maintenant on constitue la liste des images à passer à merge4tiff.
     my $childImgParam=''; 
     my $imgCount=0;
-    foreach my $childNode ($self->{tree}->getPossibleChilds($node)) {
+    foreach my $childNode ($self->{graph}->getPossibleChilds($node)) {
         $imgCount++;
-        if ($self->{tree}->isInTree($childNode)){
+        if ($self->{graph}->isInTree($childNode)){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode)
         }
     }
@@ -583,8 +584,8 @@ sub computeAboveImage {
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
     $code .= $self->work2cache($node);
 
-    $self->{tree}->updateWeightOfNode($node,$weight);
-    $self->{tree}->setComputingCode($node,$code);
+    $self->{graph}->updateWeightOfNode($node,$weight);
+    $self->{graph}->setComputingCode($node,$code);
 
     return TRUE;
 }
@@ -602,10 +603,10 @@ sub computeBranch {
     DEBUG(sprintf "Search in Level %s (idx: %s - %s)", $node->{level}, $node->{x}, $node->{y});
     
     # We update new cache list with the new tile.
-    printf $NEWLIST "0/%s\n", $self->{tree}->{pyramid}->getCacheNameOfImage($node,'data');
+    printf $NEWLIST "0/%s\n", $self->{graph}->{pyramid}->getCacheNameOfImage($node,'data');
 
     my $res = '';
-    my @childList = $self->{tree}->getChilds($node);
+    my @childList = $self->{graph}->getChilds($node);
     if (scalar @childList == 0){
         # Node is a leaf (no child)
         if (! $self->computeBottomImage($node)) {
@@ -624,14 +625,14 @@ sub computeBranch {
             return FALSE;
         }
         # We add children's weights to obtain accumulated weight of the parent node
-        $weight += $self->{tree}->getAccumulatedWeightOfNode($n);
+        $weight += $self->{graph}->getAccumulatedWeightOfNode($n);
     }
 
     if (! $self->computeAboveImage($node)) {
         ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
         return FALSE;
     }
-    $self->{tree}->setAccumulatedWeightOfNode($node,$weight);
+    $self->{graph}->setAccumulatedWeightOfNode($node,$weight);
     
     return TRUE;
 }
@@ -651,18 +652,18 @@ sub writeBranchCode {
     TRACE;
 
     my $code = '';
-    my @childList = $self->{tree}->getChilds($node);
+    my @childList = $self->{graph}->getChilds($node);
 
     # Le noeud est une feuille
     if (scalar @childList == 0){
-        return $self->{tree}->getComputingCode($node);
+        return $self->{graph}->getComputingCode($node);
     }
 
     # Le noeud a des enfants
     foreach my $n (@childList){
         $code .= $self->writeBranchCode($n);
     }
-    $code .= $self->{tree}->getComputingCode($node);
+    $code .= $self->{graph}->getComputingCode($node);
 
     return $code;
 }
@@ -675,13 +676,13 @@ sub writeTopCodes {
 
     TRACE;
 
-    if ($self->{tree}->getTopLevelId() eq $self->{tree}->getCutLevelId()){
+    if ($self->{graph}->getTopLevelId() eq $self->{graph}->getCutLevelId()){
         INFO("Final script will be empty");
         return "echo \"Final script have nothing to do.\" \n";
     }
 
     my $code = '';
-    my @nodeList = $self->{tree}->getNodesOfTopLevel();
+    my @nodeList = $self->{graph}->getNodesOfTopLevel();
     foreach my $node (@nodeList){
         $code .= $self->writeTopCode($node);
     }
@@ -699,14 +700,14 @@ sub writeTopCode {
     TRACE;
 
     # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
-    return '' if ($node->{level} eq $self->{tree}->getCutLevelId());
+    return '' if ($node->{level} eq $self->{graph}->getCutLevelId());
 
     my $code = '';
-    my @childList = $self->{tree}->getChilds($node);
+    my @childList = $self->{graph}->getChilds($node);
     foreach my $n (@childList){
         $code .= $self->writeTopCode($n);
     }
-    $code .= $self->{tree}->getComputingCode($node);
+    $code .= $self->{graph}->getComputingCode($node);
 
     return $code;
 }
@@ -727,7 +728,7 @@ sub wms2work {
   
   TRACE;
   
-  my $imgDesc = $self->{tree}->getImgDescOfNode($node);
+  my $imgDesc = $self->{graph}->getImgDescOfNode($node);
   my @imgSize = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
   my $tms     = $self->{pyramid}->getTileMatrixSet();
   my $url     = $self->{harvesting}->doRequestUrl(
@@ -763,14 +764,14 @@ sub cache2work {
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
-        $self->{tree}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
+        $self->{graph}->updateWeightOfNode($node,CACHE2WORK_PNG_W);
 
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
 
         return $cmd;
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
-        $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
+        $self->{graph}->updateWeightOfNode($node,TIFFCP_W);
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
         return $cmd;
     }
@@ -806,7 +807,7 @@ sub work2cache {
 
   # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
 
-  if ($node->{level} eq $self->{tree}->{topLevelId}) {
+  if ($node->{level} eq $self->{graph}->{topLevelId}) {
     $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
   }
 

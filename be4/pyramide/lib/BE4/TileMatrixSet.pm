@@ -108,6 +108,8 @@ sub new {
     #
     srs        => undef, # srs is casted in uppercase
     tilematrix => {},
+    #
+    isQTree => undef, # boolean used to qualify the TMS which could be used with QTree
   };
 
   bless($self, $class);
@@ -191,12 +193,14 @@ sub _load {
                         matrixwidth    => $v->{matrixWidth},
                         matrixheight   => $v->{matrixHeight},
                           });
- 
+
     return FALSE if (! defined $obj);
    
     $self->{tilematrix}->{$k} = $obj;
     undef $obj;
   }
+
+  
   
   if (! $self->getCountTileMatrix()) {
     ERROR (sprintf "No tilematrix loading from XML file TMS !");
@@ -223,9 +227,73 @@ sub _load {
   for (my $i=0; $i < scalar @tmList; $i++){
     $self->{levelIdx}{$tmList[$i]->getID()} = $i;
   }
+  
+    # Is TMS compatible with a QuadTree ? 
+  $self->{isQTree} = TRUE; # default value
+  if (scalar(@tmList) != 1) {
+   my $epsilon = $tmList[0]->{resolution} / 100 ;
+   for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
+     if ( abs($tmList[$i]->{resolution}*2 - $tmList[$i+1]->{resolution}) > $epsilon ) {
+       $self->{isQTree} = FALSE;
+       last;
+     };
+     if ( abs($tmList[$i]->{topLeftCornerX} - $tmList[$i+1]->{topLeftCornerX}) > $epsilon ) {
+       $self->{isQTree} = FALSE;
+       last;
+     };
+     if ( abs($tmList[$i]->{topLeftCornerY} - $tmList[$i+1]->{topLeftCornerY}) > $epsilon ) {
+       $self->{isQTree} = FALSE;
+       last;
+     };
+     if ( $tmList[$i]->{tileWidth} - $tmList[$i+1]->{tileWidth} != 0 ) {
+       $self->{isQTree} = FALSE;
+       last;
+     };
+     if ( $tmList[$i]->{tileHeight} - $tmList[$i+1]->{tileHeight} != 0 ) {
+       $self->{isQTree} = FALSE;
+       last;
+     };
+   };
+  };
+
+  ## Adding informations about child/parent in TM objects
+  for (my $i = 0; $i < scalar(@tmList) ;$i++) {
+    my $tmChild = $self->_computeTmChild($tmList[$i]);
+    if (defined $tmChild) {
+      push(@{$tmChild->{parentstmid}},$tmList[$i]->{id});
+      #print "Level : ".$tmList[$i]->{resolution}." (".$tmList[$i]->{id}.") valeurs : ".join(' ',@{$tmChild->{parentsTmId}})."\n";
+    }
+  }
 
   return TRUE;
 }
+
+### Simon modif
+# return the Tm child (from which the TM is calculated) of the TM in argument
+# Only one child by TM, a level is computed with only one level source
+sub _computeTmChild {
+  my $self = shift;
+  my $tmParent = shift;
+  
+  if ($tmParent->{id} == $self->{levelbottom}) {
+    return undef;
+  }
+
+  my @tmList = $self->getTileMatrixByArray();
+  my $tmChild = undef; # The TM to be used to compute images in TM target
+  my $tmChild_resolution = 0;
+  
+  # TODO : improve way to compute the best TM to use (for float)
+  foreach my $potentialTmChild (@tmList) {
+    if ( $potentialTmChild->{resolution} < $tmParent->{resolution} && $tmParent->{resolution} % $potentialTmChild->{resolution} == 0 && $potentialTmChild->{resolution} > $tmChild_resolution) {
+        $tmChild_resolution = $potentialTmChild->{resolution};
+        $tmChild = $potentialTmChild;
+    }
+  }
+  #print "The child of Level Resolution : [".$tmParent->{resolution}."] is Level Resolution [".$tmChild->{resolution}."]\n";
+  return $tmChild;
+}
+
 ################################################################################
 # get
 sub getSRS {

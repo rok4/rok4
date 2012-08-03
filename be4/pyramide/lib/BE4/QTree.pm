@@ -33,7 +33,7 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
-package BE4::Tree;
+package BE4::QTree;
 
 use Math::BigFloat;
 use Geo::OSR;
@@ -45,7 +45,7 @@ use Data::Dumper;
 
 # My Module
 use BE4::DataSource;
-use BE4::ImageDesc;
+use BE4::Node;
 
 use Log::Log4perl qw(:easy);
 
@@ -396,7 +396,7 @@ sub imgGroundSizeOfLevel(){
 ####################################################################################################
 
 
-# method: shareNodesOnJobs
+# method: shareNodesOnJobs$node
 #  Détermine le cutLevel afin que la répartition sur les différents scripts et le temps d'exécution
 #  de ceux-ci soient, a priori, optimaux.
 #  Création du tableau de répartition des noeuds sur les jobs
@@ -420,7 +420,6 @@ sub shareNodesOnJobs {
     for (my $i = $self->{levelIdx}{$self->{topLevelId}}; $i >= $self->{levelIdx}{$self->{bottomLevelId}}; $i--){
         my $levelId = $self->{tmList}[$i]->getID();
         my @levelNodeList = $self->getNodesOfLevel($levelId);
-        
         if (scalar @levelNodeList < $self->{job_number}) {
             next;
         }
