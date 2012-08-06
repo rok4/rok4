@@ -1363,6 +1363,14 @@ sub writeConfPyramid {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
         return FALSE;
     }
+
+    if (! -d dirname($filepyramid)) {
+        eval { mkpath([dirname($filepyramid)]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($filepyramid), $@);
+            return FALSE;
+        }
+    }
     #
     my $PYRAMID;
 
@@ -1414,6 +1422,14 @@ sub writeCachePyramid {
     if (-f $newcachelist) {
         ERROR(sprintf "New cache list ('%s') exist, can not overwrite it ! ", $newcachelist);
         return FALSE;
+    }
+
+    if (! -d dirname($newcachelist)) {
+        eval { mkpath([dirname($newcachelist)]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the cache directory '%s' : %s !",dirname($newcachelist), $@);
+            return FALSE;
+        }
     }
     
     my $NEWLIST;
