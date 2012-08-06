@@ -149,11 +149,11 @@ sub _init {
     }
     
     # init. params    
-    $self->url(     $params->{wms_url});
+    $self->url($params->{wms_url});
     $self->version ($params->{wms_version});
-    $self->request( $params->{wms_request});
-    $self->format(  $params->{wms_format});
-    $self->layer(   $params->{wms_layer});
+    $self->request($params->{wms_request});
+    $self->format($params->{wms_format});
+    $self->layer($params->{wms_layer});
 
     return TRUE;
 }
@@ -174,26 +174,38 @@ sub doRequestUrl {
     #  &WIDTH=".$image_width."
     #  &HEIGHT=".$image_height.";
 
-    my %args = @_;
+    my $args = shift;
 
     TRACE;
 
-    my $srs       = $args{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
-    my $bbox      = $args{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
-    my $imagesize = $args{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
+    my $srs       = $args->{srs}          || ( ERROR ("'srs' parameter required !") && return undef );
+    my $bbox      = $args->{bbox}         || ( ERROR ("'bbox' parameter required !") && return undef );
+    my $imagesize = $args->{imagesize}    || ( ERROR ("'imagesize' parameter required !") && return undef );
+
+    my $inversion = $args->{inversion};
+    if (! defined $inversion) {
+        ERROR ("'inversion' parameter required !");
+        return undef;
+    }
 
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
     my ($image_width, $image_height) = @{$imagesize};
 
-    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&STYLES=",
+    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s",
                         $self->url(),
                         $self->layer(),
                         $self->version(),
                         $self->request(),
                         $self->format(),
-                        $srs,
-                        $xmin, $ymin, $xmax, $ymax,
-                        $image_width, $image_height);
+                        $srs);
+
+    if ($inversion) {
+        $url .= sprintf ("&BBOX=%s,%s,%s,%s", $ymin, $xmin, $ymax, $xmax);
+    } else {
+        $url .= sprintf ("&BBOX=%s,%s,%s,%s", $xmin, $ymin, $xmax, $ymax);
+    }
+
+    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&STYLES=", $image_width, $image_height);
 
     return $url;
 }

@@ -43,6 +43,7 @@ use Log::Log4perl qw(:easy);
 use File::Basename;
 use File::Path;
 use Data::Dumper;
+use Geo::OSR;
 
 # version
 my $VERSION = "0.0.1";
@@ -156,6 +157,7 @@ sub new {
         tree       => undef, # object Tree !
         nodata     => undef, # object NoData !
         harvesting => undef, # object Harvesting !
+        coordinates_inversion => FALSE, # boolean
         # out
         scripts    => [],    # list of script
     };
@@ -213,8 +215,10 @@ sub _init {
     # FIXME :
     #    use case with only a transformation proj or compression without data ?
 
+
+    my $srs_fin_string = $self->{pyramid}->getTileMatrixSet()->getSRS();
     # it's an object !
-    if (($self->{pyramid}->getDataSource()->getSRS() ne $self->{pyramid}->getTileMatrixSet()->getSRS())
+    if (($self->{pyramid}->getDataSource()->getSRS() ne $srs_fin_string)
         ||
         (! $self->{pyramid}->isNewPyramid() && (
         $self->{pyramid}->getCompression() eq 'jpg')
@@ -225,6 +229,26 @@ sub _init {
         if (! defined $self->{harvesting}) {
             ERROR ("Can not load Harvest service !");
             return FALSE;
+        }
+
+        # Have coodinates to be reversed ?
+        my $srs= new Geo::OSR::SpatialReference;
+        eval { $srs->ImportFromProj4('+init='.$srs_fin_string.' +wktext'); };
+        if ($@) {
+            eval { $srs->ImportFromProj4('+init='.lc($srs_fin_string).' +wktext'); };
+            if ($@) {
+                ERROR("$@");
+                ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$srs_fin_string);
+                return FALSE;
+            }
+        }
+
+        my $authority = (split(":",$srs_fin_string))[0];
+        $self->{coordinates_inversion} = ($srs->IsGeographic() && uc($authority) eq "EPSG");
+        if ($self->{coordinates_inversion}) {
+            WARN(sprintf "Coordinates will be reversed in requests (SRS : %s)",$srs_fin_string);
+        } else {
+            INFO(sprintf "Coordinates order will be kept in requests (SRS : %s)",$srs_fin_string);
         }
 
         DEBUG (sprintf "HARVESTING = %s", Dumper($self->{harvesting}));
@@ -723,25 +747,27 @@ sub writeTopCode {
 #         - parametrer le proxy (placer une option dans le fichier de configuration [harvesting] !)
 #---------------------------------------------------------------------------------------------------
 sub wms2work {
-  my ($self, $node, $fileName) = @_;
-  
-  TRACE;
-  
-  my $imgDesc = $self->{tree}->getImgDescOfNode($node);
-  my @imgSize = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
-  my $tms     = $self->{pyramid}->getTileMatrixSet();
-  my $url     = $self->{harvesting}->doRequestUrl(
-                                                   srs      => $tms->getSRS(),
-                                                   bbox     => [$imgDesc->{xMin},
-                                                                $imgDesc->{yMin},
-                                                                $imgDesc->{xMax},
-                                                                $imgDesc->{yMax}],
-                                                   imagesize => [$imgSize[0], $imgSize[1]]
-                                                   );
-  
-  my $cmd=sprintf "Wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
-  
-  return $cmd;
+    my ($self, $node, $fileName) = @_;
+
+    TRACE;
+
+    my $imgDesc = $self->{tree}->getImgDescOfNode($node);
+    my @imgSize = $self->{pyramid}->getCacheImageSize(); # ie size tile image in pixel !
+    my $tms     = $self->{pyramid}->getTileMatrixSet();
+    
+    my $url     = $self->{harvesting}->doRequestUrl({
+        inversion => $self->{coordinates_inversion},
+        srs       => $tms->getSRS(),
+        bbox      => [$imgDesc->{xMin},
+                    $imgDesc->{yMin},
+                    $imgDesc->{xMax},
+                    $imgDesc->{yMax}],
+        imagesize => [$imgSize[0], $imgSize[1]]
+    });
+
+    my $cmd=sprintf "Wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
+
+    return $cmd;
 }
 
 # method: cache2work
