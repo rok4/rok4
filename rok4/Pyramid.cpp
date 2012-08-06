@@ -188,11 +188,12 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
                 Image* tmp ;
+                int cropError = 0;
                 if ( tms.getCrs() == dst_crs )
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, error );
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, cropError );
                 else
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, error );
-                if ( error > 0 ) {
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, cropError );
+                if ( cropError > 0 ) {
                     images.push_back ( levels[l]->getNoDataTile ( bbox ) );
                 } else {
                     images.push_back ( tmp );
