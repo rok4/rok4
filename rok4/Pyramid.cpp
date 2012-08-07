@@ -176,7 +176,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
     if ( ! ( dst_crs.validateBBox ( bbox ) ) ) {
-        LOGGER_DEBUG("CRS BBOX EXTENDEDCOMPOUND IMAGE");
+        LOGGER_DEBUG(_("CRS BBOX EXTENDEDCOMPOUND IMAGE"));
         std::vector<Image*> images;
 
         BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
@@ -187,13 +187,14 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
             } else {
                 double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-                LOGGER_DEBUG("New width = " << (int) (width * ratio_x) << " New Height = " << (int) (height * ratio_y));
+                LOGGER_DEBUG(_("New width = ") << (int) (width * ratio_x) << _("New Height = ") << (int) (height * ratio_y));
                 Image* tmp ;
+                int cropError = 0;
                 if ( tms.getCrs() == dst_crs )
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, error );
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, cropError );
                 else
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, error );
-                if ( error > 0 ) {
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, cropError );
+                if ( cropError > 0 ) {
                     images.push_back ( levels[l]->getNoDataTile ( bbox ) );
                 } else {
                     images.push_back ( tmp );

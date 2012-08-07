@@ -102,10 +102,10 @@ EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, ui
     
     matrix[6] += intensity * sin(angleRad - M_PI_4 - M_PI_2);
     matrix[7] += intensity * sin(angleRad + M_PI);
-    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);
-    */
+    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);*/
+    
     for (int i = 0; i< 9 ; i++) {
-        //matrix[i] *= 2;
+        //matrix[i] *= 0.5;
         //Add Zenithal Light
         matrix[i] += (i==4?8:-1);
     }
@@ -127,6 +127,21 @@ int EstompageImage::_getline ( uint8_t* buffer, int line ) {
     return width;
 }
 
+int EstompageImage::getOrigLine ( uint8_t* buffer, int line ) {
+    return origImage->getline(buffer,line);
+}
+
+int EstompageImage::getOrigLine ( float* buffer, int line ) {
+    return origImage->getline(buffer,line);
+//     int size = origImage->getline(buffer,line);
+//     float ndval = -99999.0;
+//     for (int pos = 0; pos < size ; pos++) {
+//         *(buffer+pos) = (*(buffer+pos) == ndval?0:*(buffer+pos));
+//     }
+//     return size;
+}
+
+
 void EstompageImage::generate() {
     estompage = new uint8_t[origImage->width * origImage->height];
     buffer = new float[origImage->width * 3];
@@ -137,13 +152,13 @@ void EstompageImage::generate() {
     
     int line = 0;
     int nextBuffer = 0;
-    origImage->getline(lineBuffer[0], line);
-    origImage->getline(lineBuffer[0], line+1);
-    origImage->getline(lineBuffer[2], line+2);
+    getOrigLine(lineBuffer[0], line);
+    getOrigLine(lineBuffer[1], line+1);
+    getOrigLine(lineBuffer[2], line+2);
     generateLine(line++, lineBuffer[0],lineBuffer[0],lineBuffer[1]);
     generateLine(line++, lineBuffer[0],lineBuffer[1],lineBuffer[2]);
     while (line < origImage->height -1) {
-        origImage->getline(lineBuffer[nextBuffer], line+1);
+        getOrigLine(lineBuffer[nextBuffer], line+1);
         generateLine(line++, lineBuffer[(nextBuffer+1)%3],lineBuffer[(nextBuffer+2)%3],lineBuffer[nextBuffer]);
         nextBuffer = (nextBuffer+1)%3;
     }
@@ -166,8 +181,8 @@ void EstompageImage::generateLine ( int line, float* line1, float* line2, float*
     
     while (column < width - 1 ) {
         value = matrix[0] * (*(line1+column-1)) + matrix[1] * (*(line1+column)) + matrix[2] * (*(line1+column+1))
-               + matrix[3] * (*(line2+column-1)) + matrix[4] * (*(line2+column)) + matrix[5] * (*(line2+column+1))
-               + matrix[6] * (*(line3+column-1)) + matrix[7] * (*(line3+column)) + matrix[8] * (*(line3+column+1));
+              + matrix[3] * (*(line2+column-1)) + matrix[4] * (*(line2+column)) + matrix[5] * (*(line2+column+1))
+              + matrix[6] * (*(line3+column-1)) + matrix[7] * (*(line3+column)) + matrix[8] * (*(line3+column+1));
         value*=exaggeration;
         value+=center;
         if (value < 0 ) value = 0;

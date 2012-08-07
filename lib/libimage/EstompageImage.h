@@ -50,6 +50,8 @@ private:
     uint8_t center;
     int _getline ( uint8_t* buffer, int line );
     int _getline ( float* buffer, int line );
+    int getOrigLine ( uint8_t* buffer, int line );
+    int getOrigLine ( float* buffer, int line );
     void generate();
     void generateLine(int line, float* line1, float* line2 , float* line3);
     

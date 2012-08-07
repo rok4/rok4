@@ -300,7 +300,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 std::string Level::getFilePath ( int tilex, int tiley ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( _("Indice de tuile négatif") );
+        LOGGER_ERROR ( _("Indice de tuile negatif") );
         return "";
     }
 
