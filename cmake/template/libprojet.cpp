@@ -40,6 +40,7 @@
 #include <iostream>
 #include <libintl.h>
 
+
 LibProjet::LibProjet()
 {
 	message= std::string(gettext("Hello World!"));
