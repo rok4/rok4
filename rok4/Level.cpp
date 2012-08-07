@@ -442,6 +442,7 @@ int Level::getNoDataValue() {
         const uint8_t * buffer = nd->getData(size);
         nodatavalue = *buffer;
     }
+    delete nd;
     return nodatavalue;
 }
 
