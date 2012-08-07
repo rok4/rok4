@@ -83,8 +83,8 @@ variable: $self
     * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
     * OPTIONS    => undef, # transparence, background color, style
     * min_size => undef, # used to remove too small harvested images (bytes), can be undefined
-    * image_width => 4096, # max images size which will be harvested, can be undefined
-    * image_height => 4096
+    * max_width => 4096, # max images size which will be harvested, can be undefined
+    * max_height => 4096
 =cut
 
 ####################################################################################################
@@ -106,8 +106,8 @@ sub new {
         LAYERS    => undef,
         OPTIONS    => "STYLES=",
         min_size => undef,
-        image_width => undef,
-        image_height => undef
+        max_width => undef,
+        max_height => undef
     };
 
     bless($self, $class);
@@ -130,22 +130,23 @@ sub _init {
     
     ALWAYS (sprintf "params %s",Dumper($params) ); #TEST#
     
-    # 'image_width' and 'image_height' are optionnal, but if one is defined, the other must be defined
-    if (exists($params->{image_width}) && defined ($params->{image_width})) {
-        $self->{image_width} = $params->{image_width};
-        if (exists($params->{image_height}) && defined ($params->{image_height})) {
-            $self->{image_height} = $params->{image_height};
+    # 'max_width' and 'max_height' are optionnal, but if one is defined, the other must be defined
+    if (exists($params->{max_width}) && defined ($params->{max_width})) {
+        $self->{max_width} = $params->{max_width};
+        if (exists($params->{max_height}) && defined ($params->{max_height})) {
+            $self->{max_height} = $params->{max_height};
         } else {
-            ERROR("If parameter 'image_width' is defined, parameter 'image_height' must be defined !");
+            ERROR("If parameter 'max_width' is defined, parameter 'max_height' must be defined !");
             return FALSE ;
         }
     } else {
-        if (exists($params->{image_height}) && defined ($params->{image_height})) {
-            ERROR("If parameter 'image_height' is defined, parameter 'image_width' must be defined !");
+        if (exists($params->{max_height}) && defined ($params->{max_height})) {
+            ERROR("If parameter 'max_height' is defined, parameter 'max_width' must be defined !");
             return FALSE ;
         }
     }
     
+    # OPTIONS
     if (exists($params->{wms_style}) && defined ($params->{wms_style})) {
         # "STYLES=" is always present in the options
         $self->{OPTIONS} .= $params->{wms_style};
@@ -188,6 +189,7 @@ sub _init {
         ERROR("Parameter 'wms_url' is required !");
         return FALSE ;
     }
+    $params->{wms_url} =~ s/http:\/\///;
     # VERSION
     if (! exists($params->{wms_version}) || ! defined ($params->{wms_version})) {
         ERROR("Parameter 'wms_version' is required !");
@@ -224,48 +226,130 @@ sub _init {
     }
     
     # init. params    
-    $self->url($params->{wms_url});
-    $self->version ($params->{wms_version});
-    $self->request($params->{wms_request});
-    $self->format($params->{wms_format});
-    $self->layers($params->{wms_layer});
+    $self->{URL} = $params->{wms_url};
+    $self->{VERSION} = $params->{wms_version};
+    $self->{REQUEST} = $params->{wms_request};
+    $self->{FORMAT} = $params->{wms_format};
+    $self->{LAYERS} = $params->{wms_layer};
 
     return TRUE;
 }
 
 ####################################################################################################
-#                                      REQUEST METHOD                                              #
+#                                      REQUEST METHODS                                             #
 ####################################################################################################
 
-# Group: request method
+# Group: request methods
 
 #
 =begin nd
    method: doRequestUrl
 
-   From an bbox, determine request(s) to send to obtain what we want.
+   From an bbox, determine the request to send to obtain what we want.
 
-   Parameters:
+   Parameters (hash):
       srs - bbox's SRS
+      inversion - boolean, to know if we have to reverse coordinates in the request.
       bbox - extent of the harvested image
       imagesize - pixel size of the harvested image
 
    Returns:
-      An urls' array : one request if no size restrictions, several if asked image is too big for the service
+      An url
 =cut
 sub doRequestUrl {
     my $self = shift;
 
-    my %args = @_;
+    my $args = shift;
 
     TRACE;
 
-    my $srs       = $args{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
-    my $bbox      = $args{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
-    my $imagesize = $args{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
+    my $srs       = $args->{srs}          || ( ERROR ("'srs' parameter required !") && return undef );
+    my $bbox      = $args->{bbox}         || ( ERROR ("'bbox' parameter required !") && return undef );
+    my $imagesize = $args->{imagesize}    || ( ERROR ("'imagesize' parameter required !") && return undef );
+
+    my $inversion = $args->{inversion};
+    if (! defined $inversion) {
+        ERROR ("'inversion' parameter required !");
+        return undef;
+    }
 
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
     my ($image_width, $image_height) = @{$imagesize};
+
+    my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s",
+                        $self->url(),
+                        $self->layer(),
+                        $self->version(),
+                        $self->request(),
+                        $self->format(),
+                        $srs);
+
+    if ($inversion) {
+        $url .= sprintf ("&BBOX=%s,%s,%s,%s", $ymin, $xmin, $ymax, $xmax);
+    } else {
+        $url .= sprintf ("&BBOX=%s,%s,%s,%s", $xmin, $ymin, $xmax, $ymax);
+    }
+
+    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&%s", $image_width, $image_height, $self->{OPTIONS});
+
+    return $url;
+}
+
+#
+=begin nd
+method: getCommandWms2work
+
+Compose the BBoxes' array and the Wms2work call (bash function), used to obtain wanted image.
+
+Parameters:
+    dir - directory, to know the final image location and where to write temporary images
+    srs - bbox's SRS
+    inversion - boolean, to know if we have to reverse coordinates in the BBoxes.
+    bbox - extent of the final harvested image
+    imagesize - pixel size of the final harvested image
+
+Returns:
+    A string, which contain the BBoxes array and the "Wms2work" call:
+    
+    BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
+    10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
+    11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
+    11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
+    10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
+    10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
+    11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
+    11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
+    10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
+    10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
+    11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
+    11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
+    10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
+    10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
+    11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
+    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
+
+    Wms2work "test_png_plusieurs" "png" "1024x1024" "4x4" "250000" "http://gpp3-wxs-i-ign-fr.aw.atosorigin.com/r1oldcvxu2ec7lmimd6ng4x7/geoportail/v/wms?LAYERS=NATURALEARTH_BDD_WLD_WM_20120704&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+=cut
+sub getCommandWms2work {
+    my $self = shift;
+
+    my $args = shift;
+
+    TRACE;
+
+    my $dir       = $args->{dir}       || ( ERROR ("'dir' parameter required !") && return undef );
+    my $srs       = $args->{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
+    my $bbox      = $args->{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
+    my $imagesize = $args->{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
+
+    my $inversion = $args->{inversion};
+    if (! defined $inversion) {
+        ERROR ("'inversion' parameter required !");
+        return undef;
+    }
+    
+    my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
+    my ($max_width, $max_height) = @{$imagesize};
     
     my $imagePerWidth = 1;
     my $imagePerHeight = 1;
@@ -274,48 +358,67 @@ sub doRequestUrl {
     my $groundHeight = $xmax-$xmin;
     my $groundWidth = $ymax-$ymin;
     
-    if (defined $self->{image_width} && $self->{image_width} < $image_width) {
-        if ($image_width % $self->{image_width} != 0) {
+    if (defined $self->{max_width} && $self->{max_width} < $max_width) {
+        if ($max_width % $self->{max_width} != 0) {
             ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request."
-                  ,$self->{image_width},$image_width);
-            return ();
+                  ,$self->{max_width},$max_width);
+            return undef;
         }
-        $imagePerWidth = int($image_width/$self->{image_width});
+        $imagePerWidth = int($max_width/$self->{max_width});
         $groundWidth /= $imagePerWidth;
-        $image_width = $self->{image_width};
+        $max_width = $self->{max_width};
     }
     
-    if (defined $self->{image_height} && $self->{image_height} < $image_height) {
-        if ($image_height % $self->{image_height} != 0) {
+    if (defined $self->{max_height} && $self->{max_height} < $max_height) {
+        if ($max_height % $self->{max_height} != 0) {
             ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request."
-                  ,$self->{image_height},$image_height);
-            return ();
+                  ,$self->{max_height},$max_height);
+            return undef;
         }
-        $imagePerHeight = int($image_height/$self->{image_height});
+        $imagePerHeight = int($max_height/$self->{max_height});
         $groundHeight /= $imagePerHeight;
-        $image_height = $self->{image_height};
+        $max_height = $self->{max_height};
     }
     
-    my @requests;
-
-    for (my $i = 0; $i < $imagePerHeight; $i++) {
+    my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
+                    $self->getURL, $self->getLayers, $self->getVersion, $self->getRequest, $self->getFormat,
+                    $srs, $max_width, $max_height, $self->{OPTIONS});
+    my $BBoxesAsString = "\"";
+    for (my $i = 0; $i < $imagePerWidth; $i++) {
         for (my $j = 0; $j < $imagePerHeight; $j++) {
-            my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&BBOX=%s,%s,%s,%s&WIDTH=%s&HEIGHT=%s&%s",
-                    $self->url(),
-                    $self->layers(),
-                    $self->version(),
-                    $self->request(),
-                    $self->format(),
-                    $srs,
+            if ($inversion) {
+                $BBoxesAsString .= sprintf "%s,%s,%s,%s\n",
+                    $ymax-($i+1)*$groundHeight, $xmin+$j*$groundWidth,
+                    $ymax-$i*$groundHeight, $xmin+($j+1)*$groundWidth;
+            } else {
+                $BBoxesAsString .= sprintf "%s,%s,%s,%s\n",
                     $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
-                    $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight,
-                    $image_width, $image_height,
-                    $self->{OPTIONS});
-            push @requests,$url;
+                    $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight;
+            }
         }
     }
-
-    return @requests;
+    $BBoxesAsString .= "\"";
+    
+    my $cmd = "BBOXES=$BBoxesAsString\n";
+    
+    $cmd .= "Wms2work";
+    $cmd .= " \"$dir\"";
+    if ($self->getFormat eq "image/png") {
+        $cmd .= " \"png\"";
+    } else {
+        $cmd .= " \"tif\"";
+    }
+    $cmd .= sprintf " \"%sx%s\"",$max_width,$max_height;
+    $cmd .= sprintf " \"%sx%s\"",$imagePerWidth,$imagePerHeight;
+    if (defined $self->{min_size}) {
+        $cmd .= sprintf " \"%s\"",$self->{min_size};
+    } else {
+        $cmd .= " \"0\"";
+    }
+    $cmd .= " \"$URL\"";
+    $cmd .= " \$BBOXES\n";
+    
+    return $cmd;
 }
 
 ####################################################################################################
@@ -345,60 +448,46 @@ sub is_WmsFormat {
 
 # Group: getters - setters
 
-sub url {
+sub getURL {
     my $self = shift;
-    if (@_) {
-        my $string = shift;
-        $string =~ s/^http:\/\///;
-        $string =~ s/\?$//;
-        $self->{URL} = $string;
-    }
     return $self->{URL};
 }
 
-sub version {
+sub getVersion {
     my $self = shift;
-    if (@_) { $self->{VERSION} = shift; }
     return $self->{VERSION};
 }
 
-sub request {
+sub getRequest {
   my $self = shift;
-  if (@_) { $self->{REQUEST} = shift; }
   return $self->{REQUEST};
 }
-sub format {
-    my $self = shift;
-    if (@_) { $self->{FORMAT} = shift; }
-    return $self->{FORMAT};
-}
-sub layers {
-    my $self = shift;
-    if (@_) { $self->{LAYERS} = shift; }
-    return $self->{LAYERS};
-}
 
-
-sub getWMSVersion {
-    my $self = shift;
-    return $self->{VERSION};
-}
-sub getWMSRequest {
-    my $self = shift;
-    return $self->{REQUEST};
-}
-sub getWMSFormat {
+sub getFormat {
     my $self = shift;
     return $self->{FORMAT};
 }
-sub getWMSLayers {
+
+sub getLayers {
     my $self = shift;
     return $self->{LAYERS};
 }
-sub getWMSServer {
+
+sub getMinSize {
     my $self = shift;
-    return $self->{URL};
+    return $self->{min_size};
 }
+
+sub getMaxWidth {
+    my $self = shift;
+    return $self->{max_width};
+}
+
+sub getMaxHeight {
+    my $self = shift;
+    return $self->{max_height};
+}
+
 
 1;
 __END__
@@ -423,15 +512,16 @@ BE4::Harvesting - Declare WMS service
     });
     
     # Do a request
-    my @requests = $objHarvesting->doRequestUrl(
-        srs=> "WGS84",
+    my $request = $objHarvesting->doRequestUrl(
+        inversion => TRUE,
+        srs => "EPSG:4326",
         bbox => [5,47,6,48],
         imagesize => [4096,4096]
     );
     
-    # @requests contains one url
+    # $request =
     # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,6,48&WIDTH=4096&HEIGHT=4096&STYLES=
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:4326&BBOX=47,5,48,6&WIDTH=4096&HEIGHT=4096&STYLES=
     
     OR
     
@@ -439,7 +529,7 @@ BE4::Harvesting - Declare WMS service
     
     # Harvesting object creation
     my $objHarvesting = BE4::Harvesting->new({
-        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
+        wms_layer   => "BDD_WLD_WM",
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
         wms_request => "getMap",
@@ -447,32 +537,43 @@ BE4::Harvesting - Declare WMS service
         wms_bgcolor => "0xFFFFFF",
         wms_transparent  => "FALSE",
         wms_style  => "line",
-        image_width  => 1024,
-        image_height  => 1024
+        max_width  => 1024,
+        max_height  => 1024
     });
 
 
-    # Do a request
-    my @requests = $objHarvesting->doRequestUrl(
-        srs=> "WGS84",
-        bbox => [5,47,6,48],
+    # Obtain a "Wms2work" command
+    my $cmd = $objHarvesting->getCommandWms2work(
+        dir => "path/image_several_requests",
+        inversion => FALSE,
+        srs => "WGS84",
+        bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
         imagesize => [4096,4096]
     );
     
-    # @requests contains 16 urls
-    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5,47,5.25,47.25&WIDTH=4096&HEIGHT=4096&STYLES=line&
-    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
-    # ,
-    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.25,47,5.5,47.25&WIDTH=4096&HEIGHT=4096&STYLES=line&
-    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
-    # .
-    # .
-    # .
-    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=WGS84&BBOX=5.75,47.75,6,48&WIDTH=4096&HEIGHT=4096&STYLES=line&
-    # BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE
+    # $cmd =
+    # BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
+    # 10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
+    # 11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
+    # 11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
+    # 10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
+    # 10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
+    # 11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
+    # 11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
+    # 10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
+    # 10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
+    # 11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
+    # 11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
+    # 10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
+    # 10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
+    # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
+    # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
+    # 
+    # Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    # The command execution will create the file f<path/image_several_requests.tif>
+    # The 16 temporary images will be f<path/image_several_requests/img01.png>, f<path/image_several_requests/img02.png>, ...
+    # If a minimum size is specified (not "0"), we compare the temporary images' size sum and the minimum. No image will be created if harvested images are too small.
+    # The directory is finally remove.
 
 =head1 DESCRIPTION
 
@@ -508,7 +609,7 @@ Contains style, background color and transparent parameters : STYLES=line&BGCOLO
 
 Used in Process.pm to remove too short harvested images.
 
-=item image_width, image_height
+=item max_width, max_height
 
 If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
 

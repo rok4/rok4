@@ -296,26 +296,26 @@ sub getListImages {
 method: computeBBox
 
 Calculate extrem limits of images, in the source SRS.
+
+Returns:
+    [xMin,yMin,xMax,yMax]
 =cut
 sub computeBBox {
     my $self = shift;
 
     TRACE;
 
-    my $lstImagesSources = $self->{images};
+    my $lstGeoImages = $self->{images};
 
     my @bbox;
 
-    my $xmin = $lstImagesSources->[0]->{xmin};
-    my $xmax = $lstImagesSources->[0]->{xmax};
-    my $ymin = $lstImagesSources->[0]->{ymin};
-    my $ymax = $lstImagesSources->[0]->{ymax};
+    my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox;
 
-    foreach my $objImage (@$lstImagesSources) {
-        $xmin = min($xmin, $objImage->{xmin});
-        $xmax = max($xmax, $objImage->{xmax});
-        $ymin = min($ymin, $objImage->{ymin});
-        $ymax = max($ymax, $objImage->{ymax});
+    foreach my $objImage (@$lstGeoImages) {
+        $xmin = min($xmin, $objImage->getXmin);
+        $xmax = max($xmax, $objImage->getYmin);
+        $ymin = min($ymin, $objImage->getXmax);
+        $ymax = max($ymax, $objImage->getYmax);
     }
 
     push @bbox, ($xmin,$ymin,$xmax,$ymax);
@@ -328,13 +328,6 @@ sub computeBBox {
 ####################################################################################################
 
 # Group: getters - setters
- 
-sub hasImages {
-  my $self = shift;
-  
-  return FALSE if (! defined ($self->{PATHIMG}));
-  return TRUE;
-}
 
 sub getResolution {
   my $self = shift;

@@ -112,28 +112,28 @@ sub new {
 
     my $sampleformat = $params->{sampleformat};
     if ( ! defined $sampleformat || ! $self->is_SampleFormat($sampleformat)) {
-        ERROR ("'sampleformat' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
         return undef;
     }
     $self->{sampleformat} = $sampleformat;
 
     my $samplesperpixel = $params->{samplesperpixel};
     if (! defined $samplesperpixel || ! $self->is_SamplesPerPixel($samplesperpixel)) {
-        ERROR ("'samplesperpixel' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
         return undef;
     }
     $self->{samplesperpixel} = int($samplesperpixel);
 
     my $photometric = $params->{photometric};
     if (! defined $photometric || ! $self->is_Photometric($photometric)) {
-        ERROR ("'photometric' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
         return undef;
     }
     $self->{photometric} = $photometric;
 
     my $bitspersample = $params->{bitspersample};
     if (! defined $bitspersample || ! $self->is_BitsPerSample($bitspersample)) {
-        ERROR ("'bitspersample' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
         return undef;
     }
     $self->{bitspersample} = int($bitspersample);
@@ -159,7 +159,6 @@ sub is_SampleFormat {
     foreach (@{$PIXEL{sampleformat}}) {
         return TRUE if ($sampleformat eq $_);
     }
-    ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
     return FALSE;
 }
 
@@ -176,7 +175,6 @@ sub is_BitsPerSample {
             return TRUE;
         }
     }
-    ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
     return FALSE;
 }
 
@@ -191,7 +189,6 @@ sub is_Photometric {
     foreach (@{$PIXEL{photometric}}) {
         return TRUE if ($photometric eq $_);
     }
-    ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
     return FALSE;
 }
 
@@ -206,7 +203,6 @@ sub is_SamplesPerPixel {
     foreach (@{$PIXEL{samplesperpixel}}) {
         return TRUE if ($samplesperpixel eq $_);
     }
-    ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
     return FALSE;
 }
 
@@ -231,7 +227,7 @@ sub getBitsPerSample {
     return $self->{bitspersample};
 }
 
-sub getSamplesPerPixels {
+sub getSamplesPerPixel {
     my $self = shift;
     return $self->{samplesperpixel};
 }

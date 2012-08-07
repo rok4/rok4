@@ -97,7 +97,6 @@ Group: variable
 variable: $self
     * id                => undef, # (string, in the TMS)
     * order             => undef, # (integer)
-    * is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyramids
     * dir_image         => undef,
     * dir_nodata        => undef,
     * dir_metadata      => undef,  # NOT IMPLEMENTED !
@@ -122,7 +121,6 @@ sub new {
   my $self = {
         id                => undef,
         order             => undef,
-        is_in_pyramid     => undef,
         dir_image         => undef,
         dir_nodata        => undef,
         dir_metadata      => undef,
@@ -199,9 +197,6 @@ sub _init {
       ERROR("list empty to 'limit' !");
       return FALSE;
     }
-    if (! exists($params->{is_in_pyramid})) {
-        $params->{is_in_pyramid} = 1;
-    }
     
     # parameters optional !
     # TODO : metadata 
@@ -213,7 +208,6 @@ sub _init {
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
-    $self->{is_in_pyramid}  = $params->{is_in_pyramid};
     
     return TRUE;
 }
@@ -227,6 +221,39 @@ sub _init {
 sub getID {
     my $self = shift;
     return $self->{id};
+}
+
+sub getDirImage {
+    my $self = shift;
+    return $self->{dir_image};
+}
+
+
+sub getDirNodata {
+    my $self = shift;
+    return $self->{dir_nodata};
+}
+
+
+#
+=begin nd
+method: updateExtremTiles
+
+Compare old extrems rows/columns with the news and update values.
+
+Parameter:
+    jMin, jMax, iMin, iMax - tiles indices to compare with current extrems
+=cut
+sub updateExtremTiles {
+    my $self = shift;
+    my ($jMin,$jMax,$iMin,$iMax) = @_;
+
+    TRACE();
+    
+    if (! defined $self->{limit}[0] || $jMin < $self->{limit}[0]) {$self->{limit}[0] = $jMin;}
+    if (! defined $self->{limit}[1] || $jMax > $self->{limit}[1]) {$self->{limit}[1] = $jMax;}
+    if (! defined $self->{limit}[2] || $iMin < $self->{limit}[2]) {$self->{limit}[2] = $iMin;}
+    if (! defined $self->{limit}[3] || $iMax > $self->{limit}[3]) {$self->{limit}[3] = $iMax;}
 }
 
 #
@@ -307,8 +334,7 @@ BE4::Level - Describe a level in a pyramid.
         type_metadata     => undef,
         size              => [16, 16],
         dir_depth         => 2,
-        limit             => [365,368,1026,1035] 
-        is_in_pyramid     => 1
+        limit             => [365,368,1026,1035]
     };
     
     my $objLevel = BE4::Level->new($params);
@@ -322,10 +348,6 @@ BE4::Level - Describe a level in a pyramid.
 =item id, order
 
 ID (in TMS) and order (integer) of the level.
-
-=item is_in_pyramid
-
-Presence of the level in pyramids (0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyramids).
 
 =item dir_image
 

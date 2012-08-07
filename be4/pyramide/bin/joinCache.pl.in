@@ -698,7 +698,7 @@ sub openStreams {
 
         if (! -d dirname($scriptFilePath)) {
             my $dir = dirname($scriptFilePath);
-            DEBUG (sprintf "Create the script directory'%s' !", $dir);
+            DEBUG (sprintf "Create the script directory '%s' !", $dir);
             eval { mkpath([$dir]); };
             if ($@) {
                 ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
@@ -1086,7 +1086,7 @@ sub validateMergedPyramid {
         ERROR ("'merge_method' must be given in the configuration file !");
         return FALSE;
     } elsif (! main::is_MergeMethod($this{pyramid}->{merge_method})) {
-        ERROR ("Invalid 'merge_method' !");
+        ERROR (sprintf "Unknown 'merge_method' (%s) !",$this{pyramid}->{merge_method});
         return FALSE;
     }
 
@@ -1094,7 +1094,12 @@ sub validateMergedPyramid {
         ERROR ("'compression' must be given in the configuration file !");
         return FALSE;
     } elsif (! main::is_Compression($this{pyramid}->{compression})) {
-        ERROR ("Invalid 'compression' !");
+        ERROR (sprintf "Unknown 'compression' (%s) !",$this{pyramid}->{compression});
+        return FALSE;
+    }
+
+    if ($this{pyramid}->{sampleformat} ne 'uint') {
+        ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
         return FALSE;
     }
 
@@ -1107,23 +1112,20 @@ sub validateMergedPyramid {
     if (! defined $objPixel) {
         ERROR (sprintf "Cannot create the Pixel object !");
         return FALSE;
-    } else {
-        if ($this{pyramid}->{sampleformat} ne 'uint') {
-            ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
-            return FALSE;
-        }
-        # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
-        $this{pyramid}->{format} = sprintf "TIFF_%s_%s%s",
-            uc $this{pyramid}->{compression},
-            $SAMPLEFORMAT2CODE{$this{pyramid}->{sampleformat}},
-            $this{pyramid}->{bitspersample};
-
-        delete($this{pyramid}->{photometric});
-        delete($this{pyramid}->{sampleformat});
-        delete($this{pyramid}->{bitspersample});
-        delete($this{pyramid}->{samplesperpixel});
     }
     $this{pyramid}->{pixel} = $objPixel;
+    
+    # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
+    $this{pyramid}->{format} = sprintf "TIFF_%s_%s%s",
+        uc $this{pyramid}->{compression},
+        $SAMPLEFORMAT2CODE{$this{pyramid}->{sampleformat}},
+        $this{pyramid}->{bitspersample};
+
+    delete($this{pyramid}->{photometric});
+    delete($this{pyramid}->{sampleformat});
+    delete($this{pyramid}->{bitspersample});
+    delete($this{pyramid}->{samplesperpixel});
+
 
     return TRUE;
 
@@ -1150,7 +1152,6 @@ sub is_MergeMethod {
     foreach (@{$CONF{merge_method}}) {
         return TRUE if ($mergeMethod eq $_);
     }
-    ERROR (sprintf "Unknown 'merge_method' (%s) !",$mergeMethod);
     return FALSE;
 }
 
@@ -1175,7 +1176,6 @@ sub is_Compression {
     foreach (@{$CONF{compression}}) {
         return TRUE if ($compression eq $_);
     }
-    ERROR (sprintf "Unknown 'compression' (%s) !",$compression);
     return FALSE;
 }
 
@@ -1330,7 +1330,7 @@ sub is_Compatible {
 
     TRACE;
 
-    return ($format eq $this{pyramid}->{format} && $samplesperpixel eq $this{pyramid}->{pixel}->{samplesperpixel});
+    return ($format eq $this{pyramid}->{format} && $samplesperpixel eq $this{pyramid}->{pixel}->getSamplesPerPixel);
 }
 
 ####################################################################################################
@@ -1365,12 +1365,10 @@ sub doIt {
 
         my $priority = 1;
         
-        my $baseImage = sprintf "%s/%s/%s/%s",
-                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{image_dir},$levelId;
-        my $baseNodata = sprintf "%s/%s/%s/%s",
-                        $this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
-                        $this{pyramid}->{nodata_dir},$levelId;
+        my $baseImage = File::Spec->catfile($this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
+                        $this{pyramid}->{image_dir},$levelId);
+        my $baseNodata = File::Spec->catfile($this{pyramid}->{pyr_data_path},$this{pyramid}->{pyr_name},
+                        $this{pyramid}->{nodata_dir},$levelId);
                         
         my ($imin,$jmin,$imax,$jmax);
 
@@ -1387,7 +1385,7 @@ sub doIt {
                     }
 
                     my $imagePath = main::getCacheNameOfImage($I,$J);
-                    my $sourceImage = $source->{pyr}.$imagePath;
+                    my $sourceImage = File::Spec->catfile($source->{pyr},$imagePath);
                     if (! -f $sourceImage) {
                         # no data source
                         next;
@@ -1400,7 +1398,7 @@ sub doIt {
                     if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
                     if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
 
-                    my $finaleImage = $baseImage.$imagePath;
+                    my $finaleImage = File::Spec->catfile($baseImage,$imagePath);
                     if (-f $finaleImage) {
                         #Tile already exists (it's a link)
                         next;
@@ -1428,7 +1426,7 @@ sub doIt {
             $priority++;
         }
 
-        my $levelOrder = $tms->getTileMatrixOrder($levelId);
+        my $levelOrder = $tms->getOrderfromID($levelId);
         my $objLevel = BE4::Level->new({
             id                => $levelId,
             order             => $levelOrder,
@@ -1440,7 +1438,6 @@ sub doIt {
             size              => [$this{pyramid}->{tilesPerWidth},$this{pyramid}->{tilesPerHeight}],
             dir_depth         => $this{pyramid}->{dirDepth},
             limit             => [$jmin,$jmax,$imin,$imax],
-            is_in_pyramid     => 0
         });
 
         if (! defined $objLevel) {
@@ -1454,7 +1451,6 @@ sub doIt {
     }
 
     return TRUE;
-
 }
 
 #
@@ -1647,7 +1643,7 @@ sub makeLink {
         $follow_relfile = File::Spec->abs2rel($realname, dirname($finaleImage));
     } else {
         ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",basename($baseImage),dirname($baseImage));
-        return FALSE;  
+        return FALSE;
     }
 
     if (! defined $follow_relfile) {
@@ -1659,8 +1655,7 @@ sub makeLink {
 
     my $result = eval { symlink ($follow_relfile, $finaleImage); };
     if (! $result) {
-        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",
-                    $follow_relfile,$finaleImage,$!);
+        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?", $follow_relfile,$finaleImage,$!);
         return FALSE;
     }
 
@@ -1783,15 +1778,15 @@ sub writePyr {
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
         
         # Nodata tile creation
-        my $nodataTilePath = File::Spec->rel2abs($objLevel->{dir_nodata}, $this{pyramid}->{pyr_desc_path});
+        my $nodataTilePath = File::Spec->rel2abs($objLevel->getDirNodata, $this{pyramid}->{pyr_desc_path});
         
         ALWAYS("-> nodata path : $nodataTilePath"); #TEST#
 
-        my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->{id});
-        my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->{id});
+        my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->getID);
+        my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->getID);
         
         if (! $nodata->createNodata($nodataTilePath,$width,$height,$this{pyramid}->{compression})) {
-            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID());
+            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID);
             return FALSE;
         }
     }
@@ -1885,7 +1880,7 @@ sub getCacheNameOfImage {
     my $imagePath = scalar reverse(@l);
     my $imagePathName = join('.', $imagePath, 'tif');
 
-    return File::Spec->catfile('/'.$imagePathName); 
+    return $imagePathName; 
 }
 
 sub encodeIntToB36 {

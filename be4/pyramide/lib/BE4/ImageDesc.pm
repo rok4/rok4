@@ -65,13 +65,13 @@ END {}
 Group: variable
 
 variable: $self
-    * filePath => $args{filePath},
-    * xMin => $args{xMin},
-    * xMax => $args{xMax},
-    * yMin => $args{yMin},
-    * yMax => $args{yMax},
-    * xRes => $args{xRes},
-    * yRes => $args{yRes},
+    * filePath
+    * xMin
+    * xMax
+    * yMin
+    * yMax
+    * xRes
+    * yRes
 =cut
 
 ####################################################################################################
@@ -82,18 +82,18 @@ variable: $self
 
 sub new {
   my $this = shift;
-  my %args = @_;
+  my $args = shift;
 
   my $class= ref($this) || $this;
   # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-    filePath => $args{filePath},
-    xMin => $args{xMin},
-    xMax => $args{xMax},
-    yMin => $args{yMin},
-    yMax => $args{yMax},
-    xRes => $args{xRes},
-    yRes => $args{yRes},
+    filePath => $args->{filePath},
+    xMin => $args->{xMin},
+    xMax => $args->{xMax},
+    yMin => $args->{yMin},
+    yMax => $args->{yMax},
+    xRes => $args->{xRes},
+    yRes => $args->{yRes},
   };
 
   bless($self, $class);
@@ -103,24 +103,12 @@ sub new {
   return $self;
 }
 
-sub getBbox {
-  my $self = shift;
-
-  TRACE;
-  
-  my @bbox;
-
-  push @bbox, ($self->{xMin},$self->{yMin},$self->{xMax},$self->{yMax});
-  
-  return @bbox;
-}
-
 sub copy {
  my $this = shift;
  my $filePath = shift;
 
   my $class= ref($this) || $this;
-  my $self = {
+  my $copy = {
     filePath => $filePath,
     xMin => $this->{xMin},
     xMax => $this->{xMax},
@@ -130,16 +118,27 @@ sub copy {
     yRes => $this->{yRes},
   };
 
-  bless($self, $class);
+  bless($copy, $class);
   
   TRACE;
   
-  return $self;
+  return $copy;
 }
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getFilePath {
   my $self = shift;
-  
   return $self->{filePath};
+}
+
+sub getBBox {
+  my $self = shift;
+  return [$self->{xMin},$self->{yMin},$self->{xMax},$self->{yMax}];
 }
 
 ####################################################################################################

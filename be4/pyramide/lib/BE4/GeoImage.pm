@@ -293,13 +293,13 @@ sub computeInfo {
 =begin nd
 method: convertBBox
 
-Not just convert corners, but 7 points on each side, to determine reprojected bbox 
+Not just convert corners, but 7 points on each side, to determine reprojected bbox.
 
-Parameters:
+Parameter:
     ct - a Geo::OSR::CoordinateTransformation object, to convert bbox .
 
 Returns:
-    Image bbox in final pyramid's SRS as an hash { xMin => 1, yMin => 10, xMax => 4, yMax => 15 }
+    Converted (according to the given CoordinateTransformation) image bbox as an array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
 =cut
 sub convertBBox {
   my $self = shift;
@@ -307,16 +307,16 @@ sub convertBBox {
   
   TRACE;
   
-  my %BBox = ();
+  my @BBox = [0,0,0,0];
 
   if (!defined($ct)){
-    $BBox{xMin} = Math::BigFloat->new($self->getXmin());
-    $BBox{yMin} = Math::BigFloat->new($self->getYmin());
-    $BBox{xMax} = Math::BigFloat->new($self->getXmax());
-    $BBox{yMax} = Math::BigFloat->new($self->getYmax());
+    $BBox[0] = Math::BigFloat->new($self->getXmin());
+    $BBox[1] = Math::BigFloat->new($self->getYmin());
+    $BBox[2] = Math::BigFloat->new($self->getXmax());
+    $BBox[3] = Math::BigFloat->new($self->getYmax());
     DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $self->getName(),
-        $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
-    return %BBox;
+        $BBox[0], $BBox[1], $BBox[2], $BBox[3]);
+    return @BBox;
   }
   # TODO:
   # Dans le cas où le SRS de la pyramide n'est pas le SRS natif des données, il faut reprojeter la bbox.
@@ -376,14 +376,14 @@ sub convertBBox {
   my $margeX = ($xmax_reproj - $xmin_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
   my $margeY = ($ymax_reproj - $ymax_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
 
-  $BBox{xMin} = Math::BigFloat->new($xmin_reproj - $margeX);
-  $BBox{yMin} = Math::BigFloat->new($ymin_reproj - $margeY);
-  $BBox{xMax} = Math::BigFloat->new($xmax_reproj + $margeX);
-  $BBox{yMax} = Math::BigFloat->new($ymax_reproj + $margeY);
+  $BBox[0] = Math::BigFloat->new($xmin_reproj - $margeX);
+  $BBox[1] = Math::BigFloat->new($ymin_reproj - $margeY);
+  $BBox[2] = Math::BigFloat->new($xmax_reproj + $margeX);
+  $BBox[3] = Math::BigFloat->new($ymax_reproj + $margeY);
   
-  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $self->getName(), $BBox{xMin}, $BBox{yMin}, $BBox{xMax}, $BBox{yMax});
+  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $self->getName(), $BBox[0], $BBox[1], $BBox[2], $BBox[3]);
   
-  return %BBox;
+  return @BBox;
 }
 
 ####################################################################################################
@@ -413,7 +413,7 @@ sub getInfo {
   );
   
 }
-sub getBbox {
+sub getBBox {
   my $self = shift;
 
   TRACE;

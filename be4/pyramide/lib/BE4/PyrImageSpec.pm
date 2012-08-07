@@ -140,8 +140,6 @@ sub new {
 
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -188,7 +186,7 @@ sub _init {
         return FALSE;
     }
     if (! $self->is_Compression($params->{compression})) {
-        ERROR ("'compression' is not valid !");
+        ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
         return FALSE;
     }
     $self->{compression} = $params->{compression};
@@ -198,19 +196,18 @@ sub _init {
         return FALSE;
     }
     if (! $self->is_CompressionOption($params->{compressionoption})) {
-        ERROR ("'compressionoption' is not valid !");
+        ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
         return FALSE;
     }
     $self->{compressionoption} = $params->{compressionoption};
 
     # Interpolation parameter
-
     if (! exists $params->{interpolation} || ! defined $params->{interpolation}) {
         ERROR ("'interpolation' is required !");
         return FALSE;
     }
     if (! $self->is_Interpolation($params->{interpolation})) {
-        ERROR ("'interpolation' is not valid !");
+        ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
     }
     $self->{interpolation} = $params->{interpolation};
@@ -256,7 +253,6 @@ sub is_Compression {
     foreach (@{$IMAGESPEC{compression}}) {
         return TRUE if ($compression eq $_);
     }
-    ERROR (sprintf "Unknown 'compression' (%s) !",$compression);
     return FALSE;
 }
 
@@ -277,14 +273,13 @@ sub is_CompressionOption {
         }
     }
     if (! $bool) {
-        ERROR (sprintf "Unknown 'compressionoption' (%s) !",$compressionoption);
         return FALSE;
     }
     # NOTE
     # Compression have to be already define in the pixel objet
     if ($compressionoption eq 'crop' && $self->{compression} ne 'jpg') {
         ERROR (sprintf "Crop option is just allowed for jpeg compression, not for compression '%s' !",
-            $self->{pixel}->{compression});
+            $self->{compression});
         return FALSE;
     }
 
@@ -302,7 +297,6 @@ sub is_Interpolation {
     foreach (@{$IMAGESPEC{interpolation}}) {
         return TRUE if ($interpolation eq $_);
     }
-    ERROR (sprintf "Unknown 'interpolation' (%s) !",$interpolation);
     return FALSE;
 }
 
@@ -368,6 +362,41 @@ sub decodeFormat {
     
     return (lc $value[0], lc $value[1], $sampleformat, $bitspersample);
     
+}
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
+sub getInterpolation {
+    my $self = shift;
+    return $self->{interpolation};
+}
+sub getGamma {
+    my $self = shift;
+    return $self->{gamma};
+}
+sub getCompression {
+    my $self = shift;
+    return $self->{compression};
+}
+sub getCompressionOption {
+    my $self = shift;
+    return $self->{compressionoption};
+}
+sub getCode {
+    my $self = shift;
+    return $self->{formatCode};
+}
+sub getPixel {
+    my $self = shift;
+    return $self->{pixel};
+}
+sub getFormatCode {
+    my $self = shift;
+    return $self->{formatCode};
 }
 
 1;

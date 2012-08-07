@@ -121,7 +121,7 @@ sub _init {
     
     return FALSE if (! defined $datasource);
     
-    if (defined $harvesting || exists($datasource->{path_image})) {
+    if (exists($datasource->{path_image})) {
         WARN("Old method is using to define a datasource (without datasource configuration file), convert it.");
         return TRUE;
     }
@@ -280,8 +280,8 @@ An array of DataSource objects
     wms_version = 1.3.0
     wms_request = getMap
     wms_format  = image/tiff
-    image_width = 2048
-    image_height = 2048
+    max_width = 2048
+    max_height = 2048
     
     [ 14 ]
     
@@ -293,8 +293,8 @@ An array of DataSource objects
     wms_version = 1.3.0
     wms_request = getMap
     wms_format  = image/tiff
-    image_width = 4096
-    image_height = 4096
+    max_width = 4096
+    max_height = 4096
 
 
 =back

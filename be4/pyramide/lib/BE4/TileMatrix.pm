@@ -69,8 +69,8 @@ variable: $self
     *    resolution     => undef,
     *    topleftcornerx => undef,
     *    topleftcornery => undef,
-    *    tilewidth      => undef, # ie 256 by default ?
-    *    tileheight     => undef, # ie 256 by default ?
+    *    tilewidth      => undef, # often 256
+    *    tileheight     => undef, # often 256
     *    matrixwidth    => undef,
     *    matrixheight   => undef,
 =cut
@@ -91,8 +91,8 @@ sub new {
     resolution     => undef,
     topleftcornerx => undef,
     topleftcornery => undef,
-    tilewidth      => undef, # often 256
-    tileheight     => undef, # often 256
+    tilewidth      => undef,
+    tileheight     => undef,
     matrixwidth    => undef,
     matrixheight   => undef,
   };
@@ -176,50 +176,14 @@ sub getTopLeftCornerX {
     my $self = shift;
     return $self->{topleftcornerx}; 
 }
-sub setTopLeftCornerX {
-    my $self = shift;
-    TRACE ("setTopLeftCornerX");
-    if (@_) {
-        my $v = shift;
-        $self->{topleftcornerx} = sprintf ("%.10f", $v);
-    }
-}
+
 sub getTopLeftCornerY {
     my $self = shift;
     TRACE ("getTopLeftCornerY");
     return $self->{topleftcornery}; 
 }
-sub setTopLeftCornerY {
-    my $self = shift;
-    TRACE ("setTopLeftCornerY");
-    if (@_) {
-        my $v = shift;
-        $self->{topleftcornery} = sprintf ("%.10f", $v);
-    }
-}
 
-####################################################################################################
-#                                           OTHERS                                                 #
-####################################################################################################
 
-# Group: others
-
-sub to_string {
-  
-  my $self = shift;
-  
-  TRACE;
-  
-  printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", 
-    $self->getID(),
-    $self->getResolution(),
-    $self->getTopLeftCornerX(),
-    $self->getTopLeftCornerY(),
-    $self->getTileWidth(),
-    $self->getTileHeight(),
-    $self->getMatrixWidth(),
-    $self->getMatrixHeight();
-}
 1;
 __END__
 

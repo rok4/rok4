@@ -82,24 +82,24 @@ variable: $self
 # Group: constructor
 
 sub new {
-  my $this = shift;
-
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    pixel           => undef, # Pixel object
-    value           => undef, # FF per sample or -99999 by default !
-    nowhite         => undef, # FALSE by default
-  };
-
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  return $self;
+    my $this = shift;
+    
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    my $self = {
+        pixel           => undef, # Pixel object
+        value           => undef, # FF per sample or -99999 by default !
+        nowhite         => undef, # FALSE by default
+    };
+    
+    bless($self, $class);
+    
+    TRACE;
+    
+    # init. class
+    return undef if (! $self->_init(@_));
+    
+    return $self;
 }
 
 sub _init {
@@ -170,7 +170,7 @@ sub _init {
     }
     
     $self->{value} = $params->{value};
-    
+
     return TRUE;
 }
 
@@ -181,8 +181,13 @@ sub _init {
 # Group: getters - setters
 
 sub getValue {
-  my $self = shift;
-  return $self->{value};
+    my $self = shift;
+    return $self->{value};
+}
+
+sub getNoWhite {
+    my $self = shift;
+    return $self->{nowhite};
 }
 
 ####################################################################################################
@@ -215,18 +220,15 @@ sub createNodata {
     
     TRACE();
     
-    my $nodataFilePath .= my $filepyramid = File::Spec->catfile($nodataDirPath,$self->getNodataName());
-      
-    # cas particulier de la commande createNodata :
-    $compression = ($compression eq 'raw'?'none':$compression);
+    my $nodataFilePath = File::Spec->catfile($nodataDirPath,$self->getNodataFilename());
     
     my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{value});
     $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s", $self->{pixel}->{photometric});
+    $cmd .= sprintf ( " -p %s", $self->{pixel}->getPhotometric);
     $cmd .= sprintf ( " -t %s %s",$width,$height);
-    $cmd .= sprintf ( " -b %s", $self->{pixel}->{bitspersample});
-    $cmd .= sprintf ( " -s %s", $self->{pixel}->{samplesperpixel});
-    $cmd .= sprintf ( " -a %s", $self->{pixel}->{sampleformat});
+    $cmd .= sprintf ( " -b %s", $self->{pixel}->getBitsPerSample);
+    $cmd .= sprintf ( " -s %s", $self->{pixel}->getSamplesPerPixel);
+    $cmd .= sprintf ( " -a %s", $self->{pixel}->getSampleFormat);
     $cmd .= sprintf ( " %s", $nodataFilePath);
 
     if (! -d $nodataDirPath) {
@@ -251,12 +253,12 @@ sub createNodata {
 =begin nd
    method: getNodataName
 
-   Return the nam of the nodata tile : nd.tif
+   Return the name of the nodata tile : nd.tif
 =cut
-sub getNodataName {
+sub getNodataFilename {
     my $self = shift;
     
-    return "nd.tif"
+    return "nd.tif";
 }
 
 1;

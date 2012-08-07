@@ -236,7 +236,7 @@ my ($imin,$imax,$jmin,$jmax);
 
 foreach my $v (@levels) {
     my $ID = $v->findvalue('tileMatrix');
-    my $order = $objTMS->getTileMatrixOrder($ID);
+    my $order = $objTMS->getOrderfromID($ID);
     
     if (! defined $bottomOrder || $order < $bottomOrder) {
         $bottomOrder = $order;
@@ -280,7 +280,7 @@ my $auth = (split(":", $srs))[0];
 # TODO ajouter une liste par defaut
 my @lstsrs;
 push @lstsrs, $srs; # Toujour en 1er !!!
-push @lstsrs, "CR:84";
+push @lstsrs, "CRS:84";
 push @lstsrs, "IGNF:WGS84G";
 push @lstsrs, "EPSG:3857";
 push @lstsrs, "EPSG:4258";
@@ -293,7 +293,7 @@ my $srsini= new Geo::OSR::SpatialReference;
 eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
 
 if ($@) {
-  ERROR(sprintf "Erreur de projection : %s !", $@);
+  ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
   exit -41;
 }
     
@@ -301,7 +301,7 @@ my $srsfin= new Geo::OSR::SpatialReference;
 eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
     
 if ($@) {
-  ERROR(sprintf "Erreur de projection : %s !", $@);
+  ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
   exit -42;
 }
 

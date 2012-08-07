@@ -46,7 +46,7 @@
 
 void usage() {
     std::cerr << "tiff2tile version "<< BE4_VERSION << std::endl;
-    std::cerr << "usage : tiff2tile input_file -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
+    std::cerr << "usage : tiff2tile input_file -c [none/raw/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
     std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
 }
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
             switch(argv[i][1]) {
                 case 'c': // compression
                     if(++i == argc) {std::cerr << "Error in -c option" << std::endl; exit(2);}
-                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    if(strncmp(argv[i], "none",4) == 0 || strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
                     else if(strncmp(argv[i], "png",3) == 0) {
                         compression = COMPRESSION_PNG;
                         if(argv[i][3] == ':') quality = atoi(argv[i]+4);

@@ -42,6 +42,7 @@ use Log::Log4perl qw(:easy);
 
 use XML::Simple;
 use Data::Dumper;
+use Geo::OSR;
 
 use BE4::TileMatrix;
 
@@ -74,6 +75,7 @@ variable: $self
     * levelbottom => undef,
     * resbest  => undef,
     * srs => undef, # srs is casted in uppercase
+    * coordinates_inversion => FALSE, # boolean, to know if we have to reverse coordinates to harvest in this SRS
     * tilematrix => {}, # an hash of TileMatrix objects
 =cut
 
@@ -102,6 +104,7 @@ sub new {
     resbest  => undef,
     #
     srs        => undef, # srs is casted in uppercase
+    coordinates_inversion  => FALSE,
     tilematrix => {},
   };
 
@@ -183,7 +186,7 @@ sub _load {
         });
         
         if (! defined $objTM) {
-            ERROR(sprintf "Cannot create the TileMatrix object for thye level '%s'",$k);
+            ERROR(sprintf "Cannot create the TileMatrix object for the level '%s'",$k);
             return FALSE;
         }
         
@@ -203,6 +206,27 @@ sub _load {
     }
     $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
     
+    # Have coodinates to be reversed ?
+    my $sr= new Geo::OSR::SpatialReference;
+    eval { $sr->ImportFromProj4('+init='.$self->{srs}.' +wktext'); };
+    if ($@) {
+        eval { $sr->ImportFromProj4('+init='.lc($self->{srs}).' +wktext'); };
+        if ($@) {
+            ERROR("$@");
+            ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$self->{srs});
+            return FALSE;
+        }
+    }
+
+    my $authority = (split(":",$self->{srs}))[0];
+    if ($sr->IsGeographic() && uc($authority) eq "EPSG") {
+        INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
+        $self->{coordinates_inversion} = TRUE;
+    } else {
+        INFO(sprintf "Coordinates order will be kept in requests (SRS : %s)",$self->{srs});
+        $self->{coordinates_inversion} = FALSE;
+    }
+    
     # clean
     $xmltree = undef;
     $xmltms  = undef;
@@ -213,36 +237,36 @@ sub _load {
     # Is TMS a QuadTree ? If not, we don't know how to do -> ERROR
     
     if (scalar(@tmList) != 1) {
-        my $epsilon = $tmList[0]->{resolution} / 100 ;
+        my $epsilon = $tmList[0]->getResolution / 100 ;
         for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
-            if ( abs($tmList[$i]->{resolution}*2 - $tmList[$i+1]->{resolution}) > $epsilon ) {
+            if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
                 ERROR(sprintf "Resolutions have to go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{resolution},
-                    $tmList[$i]->{id},$tmList[$i+1]->{resolution});
+                    $tmList[$i]->{id},$tmList[$i+1]->getResolution,
+                    $tmList[$i]->{id},$tmList[$i+1]->getResolution);
                 return FALSE;
             }
-            if ( abs($tmList[$i]->{topleftcornerx} - $tmList[$i+1]->{topleftcornerx}) > $epsilon ) {
+            if ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
                 ERROR(sprintf "'topleftcornerx' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornerx},
-                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornerx});
+                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX,
+                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX);
                 return FALSE;
             }
-            if ( abs($tmList[$i]->{topleftcornery} - $tmList[$i+1]->{topleftcornery}) > $epsilon ) {
+            if ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
                 ERROR(sprintf "'topleftcornery' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornery},
-                    $tmList[$i]->{id},$tmList[$i+1]->{topleftcornery});
+                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY,
+                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY);
                 return FALSE;
             }
-            if ( $tmList[$i]->{tilewidth} != $tmList[$i+1]->{tilewidth}) {
+            if ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
                 ERROR(sprintf "'tilewidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{tilewidth},
-                    $tmList[$i]->{id},$tmList[$i+1]->{tilewidth});
+                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth,
+                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth);
                 return FALSE;
             }
-            if ( $tmList[$i]->{tileheight} != $tmList[$i+1]->{tileheight}) {
+            if ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
                 ERROR(sprintf "'tileheight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileheight},
-                    $tmList[$i]->{id},$tmList[$i+1]->{tileheight});
+                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight,
+                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight);
                 return FALSE;
             }
         };
@@ -268,6 +292,10 @@ sub getSRS {
   my $self = shift;
   return $self->{srs};
 }
+sub getInversion {
+  my $self = shift;
+  return $self->{coordinates_inversion};
+}
 sub getName {
   my $self = shift;
   return $self->{name};
@@ -280,6 +308,12 @@ sub getFile {
   my $self = shift;
   return $self->{filename};
 }
+
+sub getLevelTop {
+  my $self = shift;
+  return $self->{leveltop};
+}
+
 # TileWidth TileHeight
 sub getTileWidth {
   my $self = shift;
@@ -288,7 +322,7 @@ sub getTileWidth {
   $levelID = $self->{levelbottom} if (! defined $levelID);
   
   # size of tile in pixel !
-  return $self->{tilematrix}->{$levelID}->{tilewidth};
+  return $self->{tilematrix}->{$levelID}->getTileWidth;
 }
 sub getTileHeight {
   my $self = shift;
@@ -297,7 +331,7 @@ sub getTileHeight {
   $levelID = $self->{levelbottom} if (! defined $levelID);
   
   # size of tile in pixel !
-  return $self->{tilematrix}->{$self->{levelbottom}}->{tileheight};
+  return $self->{tilematrix}->{$levelID}->getTileHeight;
 }
 
 ####################################################################################################
@@ -362,14 +396,14 @@ sub getCountTileMatrix {
 
 #
 =begin nd
-method: getTileMatrixID
+method: getIDfromOrder
 
 Return the tile matrix ID from the ascending resolution order (integer).  
     - 0 (bottom level, smallest resolution)
     - NumberOfTM (top level, biggest resolution).
 
 =cut
-sub getTileMatrixID {
+sub getIDfromOrder {
     my $self = shift;
     my $order= shift; 
 
@@ -397,18 +431,19 @@ sub getBelowTileMatrixID {
     
     return undef if (! exists $self->{levelIdx}->{$ID});
     my $order = $self->{levelIdx}->{$ID};
-    return $self->getTileMatrixOrder($order-1);
+    return undef if ($order == 0);
+    return $self->getIDfromOrder($order-1);
 }
 
 #
 =begin nd
-method: getTileMatrixOrder
+method: getOrderfromID
 
 Return the tile matrix order from the ID.
     - 0 (bottom level, smallest resolution)
     - NumberOfTM (top level, biggest resolution).
 =cut
-sub getTileMatrixOrder {
+sub getOrderfromID {
     my $self = shift;
     my $ID= shift; 
 
@@ -421,27 +456,6 @@ sub getTileMatrixOrder {
     }
 }
 
-####################################################################################################
-#                                           OTHERS                                                 #
-####################################################################################################
-
-# Group: others
-
-sub to_string {
-    my $self = shift;
-
-    TRACE;
-
-    printf "%s\n", $self->{srs};
-
-    my $i = 0;
-
-    while(defined (my $tm = $self->getTileMatrix($self->getTileMatrixID($i)))) {
-        printf "tilematrix:\n";
-        printf "%s\n", $tm->to_string();
-        $i++;
-    }
-}
 
 1;
 __END__
@@ -491,6 +505,10 @@ Higher level ID and its resolution.
 Lower level ID and its resolution.
 
 =item srs
+
+=item coordinates_inversion
+
+For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
 
 =item tilematrix
 

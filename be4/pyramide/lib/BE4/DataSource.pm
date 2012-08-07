@@ -181,8 +181,8 @@ sub _load {
             wms_bgcolor => $params->{wms_bgcolor},
             wms_transparent  => $params->{wms_transparent},
             min_size  => $params->{min_size},
-            image_width  => $params->{image_width},
-            image_height  => $params->{image_height}
+            max_width  => $params->{max_width},
+            max_height  => $params->{max_height}
         });
         if (! defined $harvesting) {
             ERROR("Cannot create the Harvesting object");
@@ -338,6 +338,16 @@ sub getSRS {
     return $self->{srs};
 }
 
+sub getExtent {
+    my $self = shift;
+    return $self->{extent};
+}
+
+sub getHarvesting {
+    my $self = shift;
+    return $self->{harvesting};
+}
+
 sub getImages {
     my $self = shift;
     return $self->{imageSource}->getImages();
@@ -358,6 +368,43 @@ sub removeHarvesting {
     $self->{harvesting} = undef;
 }
 
+sub getBottomID {
+    my $self = shift;
+    return $self->{bottomLevelID};
+}
+
+sub getTopID {
+    my $self = shift;
+    return $self->{topLevelID};
+}
+
+sub getBottomOrder {
+    my $self = shift;
+    return $self->{bottomLevelOrder};
+}
+
+sub getTopOrder {
+    my $self = shift;
+    return $self->{topLevelOrder};
+}
+
+sub setBottomOrder {
+    my $self = shift;
+    my $bottomOrder = shift;
+    $self->{bottomLevelOrder} = $bottomOrder;
+}
+
+sub setTopOrder {
+    my $self = shift;
+    my $topOrder = shift;
+    $self->{topLevelOrder} = $topOrder;
+}
+
+sub setTopID {
+    my $self = shift;
+    my $topID = shift;
+    $self->{topLevelID} = $topID;
+}
 
 1;
 __END__
@@ -397,8 +444,8 @@ BE4::DataSource - Managing a data source
             wms_transparent  => "FALSE",
             wms_style  => "line",
             min_size => 9560,
-            image_width => 1024,
-            image_height => 1024
+            max_width => 1024,
+            max_height => 1024
         }
     );
     

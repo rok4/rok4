@@ -99,8 +99,8 @@ int main(int argc, char **argv) {
   // controle du type tiff
   uint16_t tiff_file_tag;
   if (fread (&tiff_file_tag,2,1,pFile)!=1){ std::cerr << "tiffck: Can't read in File" << std::endl;  return(4); }
-  // std::cout << "tiff_tag:" << tiff_file_tag << std::endl;
-  if (tiff_file_tag != 42){
+  std::cout << "tiff_tag:" << tiff_file_tag << std::endl;
+  if (tiff_file_tag != 42 && tiff_file_tag != 10752){
     std::cerr << "tiffck: This is not a tiff file." << std::endl;
     return(5);
   }
@@ -108,7 +108,8 @@ int main(int argc, char **argv) {
   // read de first directory offset
   uint32_t dir_offset;
   if (fread (&dir_offset,sizeof(uint32_t),1,pFile)!=1){std::cerr << "tiffck: Can't read in File" << std::endl; return(4);}
-  // std::cout << "dir_offset:" << dir_offset << std::endl;
+  std::cout << "dir_offset:" << dir_offset << std::endl;
+  std::cout << "file_size:" << file_size << std::endl;
   if (dir_offset + 2 > file_size){
     std::cerr << "tiffck: File is too short (dir offset)" << std::endl;
     return(3);
