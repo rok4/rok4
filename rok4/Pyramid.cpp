@@ -176,41 +176,48 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     }
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
-    if ( ! ( dst_crs.validateBBox ( bbox ) ) ) {
-        std::vector<Image*> images;
+    
 
-        BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
-        if ( abs ( cropBBox.xmin - bbox.xmin ) > 0.0001 || abs ( cropBBox.ymin - bbox.ymin ) > 0.0001 ||
-                abs ( cropBBox.xmax - bbox.xmax ) > 0.0001 || abs ( cropBBox.ymax - bbox.ymax ) > 0.0001 ) { //BBox Croped with CRS definition area
+
+        if ( tms.getCrs() == dst_crs ){
+            return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
+        }
+        else {
+            if ( dst_crs.validateBBox ( bbox ) ) {
+            return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+        } else {
+            extendedCompoundImageFactory facto;
+            std::vector<Image*> images;
+            LOGGER_DEBUG(_("BBox en dehors de la definition du CRS"));
+            BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
+
             if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-                images.push_back ( levels[l]->getNoDataTile ( bbox ) );
+                LOGGER_DEBUG(_("BBox decoupe incorrect"));
             } else {
+                
                 double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-                Image* tmp ;
+                int newWidth = width * ratio_x;
+                int newHeigth = height * ratio_y;
+                LOGGER_DEBUG(_("New Width = ") << newWidth << " " << _("New Height = ") << newHeigth);
+                Image* tmp = 0;
                 int cropError = 0;
-                if ( tms.getCrs() == dst_crs )
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, interpolation, cropError );
-                else
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, width * ratio_x, height * ratio_y, tms.getCrs(), dst_crs, interpolation, cropError );
-                if ( cropError > 0 ) {
-                    images.push_back ( levels[l]->getNoDataTile ( bbox ) );
-                } else {
+                if ( newWidth > 0 && newHeigth > 0 ){
+                        tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+                } 
+                if ( tmp != 0 ) {
+                    LOGGER_DEBUG(_("Image decoupe valide"));
                     images.push_back ( tmp );
                 }
-
             }
+            
+            if (images.empty()) {
+                images.push_back ( levels[l]->getNoDataTile ( bbox ) );
+            }
+            
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,levels[l]->getNoDataValue(),levels[l]->getSampleFormat(),0, false );
         }
-
-        extendedCompoundImageFactory facto;
-        return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,levels[l]->getNoDataValue(),levels[l]->getSampleFormat(),0, false );
     }
-
-
-    if ( tms.getCrs() == dst_crs )
-        return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
-    else
-        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
 
 }
 

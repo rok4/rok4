@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-08-06 12:49+0200\n"
-"PO-Revision-Date: 2012-06-27 17:30+0200\n"
+"POT-Creation-Date: 2012-08-09 13:11+0200\n"
+"PO-Revision-Date: 2012-08-09 13:15+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
 "Language: fr\n"
@@ -950,6 +950,26 @@ msgstr "Meilleur niveau :"
 #: Pyramid.cpp:178
 msgid " resolution requete="
 msgstr " resolution de la requête="
+
+#: Pyramid.cpp:191
+msgid "BBox en dehors de la definition du CRS"
+msgstr "L'emprise demandée est en dehors de la zone de définition du CRS."
+
+#: Pyramid.cpp:195
+msgid "BBox decoupe incorrect"
+msgstr "L'emprise découpée est incorrecte."
+
+#: Pyramid.cpp:203
+msgid "New Width = "
+msgstr "Nouvelle hauteur de l'image = "
+
+#: Pyramid.cpp:203
+msgid "New Height = "
+msgstr "Nouvelle largeur de l'image = "
+
+#: Pyramid.cpp:211
+msgid "Image decoupe valide"
+msgstr "Image dévoupée invalide !"
 
 #: Request.cpp:113
 msgid "Parse GetCapabilities Request"

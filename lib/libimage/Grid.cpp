@@ -192,21 +192,17 @@ void Grid::update_bbox() {
     bbox.ymin = gridY[0];
     bbox.ymax = gridY[0];
     // Top pixel
-    for ( int i = 0; i < nbxInt; i++ ) {
-        update ( bbox, gridX[i], gridY[i] );
-    }
+    for(int i = 0; i < nbx - 1; i++) update(bbox, gridX[i], gridY[i]);
     // Left pixel
-    for ( int i = 0; i < nbyInt; i++ ) {
-        update ( bbox, gridX[i*nbx], gridY[i*nbx] );
-    }
+    for(int i = 0; i < nby - 1; i++) update(bbox, gridX[i*nbx], gridY[i*nbx]);
     //Right Pixel
-    for ( int i = 0; i < nbyInt; i++ ) {
-        update ( bbox, gridX[(i+1)*nbx -1], gridY[(i+1)*nbx -1] );
-    }
+    double wx = (stepInt - ((width - 1)%stepInt))/double(stepInt);
+    for(int i = 0; i < nby; i++) update(bbox, wx * gridX[i*nbx + nbx - 2] + (1.-wx) * gridX[i*nbx + nbx - 1],
+                                            wx * gridY[i*nbx + nbx - 2] + (1.-wx) * gridY[i*nbx + nbx - 1]);
     //Bottom Pixel
-    for ( int i = 0; i < nbxInt; i++ ) {
-        update ( bbox, gridX[nbyInt * nby + i], gridY[nbyInt * nby + i] );
-    }
+    double wy = (stepInt - ((height - 1)%stepInt))/double(stepInt);
+    for(int i = 0; i < nbx; i++) update(bbox, wy * gridX[(nby-2)*nbx + i] + (1.-wy) * gridX[(nby-1)*nbx + i],
+                                              wy * gridY[(nby-2)*nbx + i] + (1.-wy) * gridY[(nby-1)*nbx + i]);
 }
 
 int Grid::interpolate_line(int line, float* X, float* Y, int nb) {
