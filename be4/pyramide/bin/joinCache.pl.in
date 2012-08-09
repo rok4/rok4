@@ -63,6 +63,7 @@ use BE4::TileMatrixSet;
 use BE4::Pixel;
 use BE4::NoData;
 use BE4::Level;
+use BE4::Base36;
 
 ################################################################################
 # Constantes
@@ -328,7 +329,9 @@ sub main {
         $message = "ERROR CLOSE STREAMS !";
         printf STDERR "%s\n", $message;
         exit 6;
-    }  
+    }
+    
+    ALWAYS(sprintf "MERGED PYRAMID : %s",Dumper($this{pyramid})); #TEST#
 
     # writting pyramid's configuration file
     ALWAYS("> Write pyramid's descriptor");
@@ -455,7 +458,7 @@ Parameter:
     filepath - Configuration file to read.
 
 See Also:
-    <is_ConfSection>, <readComposition>
+    <isConfSection>, <readComposition>
 =cut
 sub _read {
     my $filepath = shift;
@@ -479,7 +482,7 @@ sub _read {
         if ($l =~ m/^\[(\w*)\]$/) {
             $l =~ s/[\[\]]//g;
 
-            if (! main::is_ConfSection($l)) {
+            if (! main::isConfSection($l)) {
                 ERROR ("Invalid section's name");
                 return FALSE;
             }
@@ -580,7 +583,7 @@ sub readComposition {
 
 #
 =begin nd
-method: is_ConfSection
+method: isConfSection
 
 Check section's name
 
@@ -589,7 +592,7 @@ Parameter:
 
 Possible values: 'pyramid','process','composition','logger','bboxes'.
 =cut
-sub is_ConfSection {
+sub isConfSection {
     my $section = shift;
 
     TRACE;
@@ -874,7 +877,7 @@ sub _validate {
         ERROR ("Merged pyramid is not valid !");
         return FALSE;
     }
-
+    
     ##################
     # load bounding boxes
     ALWAYS(">>> Validate bounding boxes ...");
@@ -983,7 +986,7 @@ sub validateComposition {
 =begin nd
 method: calculateBbox
 
-We have source's bbox in ground coordinates. We calculate indices for a given level.
+We have source's bbox in ground coordinates. We calculate images' indices for a given level [$iMin,$jMin,$iMax,$jMax].
 
 Parameters:
     levelId - level for which we want to calculate bbox's indices
@@ -995,27 +998,17 @@ sub calculateBbox {
 
     TRACE();
 
-    my @bboxArray = @{$this{bboxes}->{$bboxId}} ;
+    my @bboxCoord = @{$this{bboxes}->{$bboxId}};
+    my @bboxInd;
 
-    my $tm  = $this{pyramid}->{tms}->getTileMatrix($levelId);
+    my $tm = $this{pyramid}->{tms}->getTileMatrix($levelId);
 
-    my $Res = Math::BigFloat->new($tm->getResolution());
-    my $imgGroundWidth = $tm->getTileWidth() * $this{pyramid}->{tilesPerWidth} * $Res;
-    my $imgGroundHeight = $tm->getTileHeight() * $this{pyramid}->{tilesPerHeight} * $Res;
+    push @bboxInd, $tm->xToColumn($bboxCoord[0],$this{pyramid}->{tilesPerWidth}); #xMin -> iMin
+    push @bboxInd, $tm->yToRow($bboxCoord[3],$this{pyramid}->{tilesPerHeight}); # yMax -> jMin
+    push @bboxInd, $tm->xToColumn($bboxCoord[2],$this{pyramid}->{tilesPerWidth}); # xMax -> iMax
+    push @bboxInd, $tm->yToRow($bboxCoord[1],$this{pyramid}->{tilesPerHeight}); # yMin -> jMax
 
-    my $iMin=int(($bboxArray[0] - $tm->getTopLeftCornerX()) / $imgGroundWidth);   
-    my $iMax=int(($bboxArray[2] - $tm->getTopLeftCornerX()) / $imgGroundWidth);   
-    my $jMin=int(($tm->getTopLeftCornerY() - $bboxArray[3]) / $imgGroundHeight); 
-    my $jMax=int(($tm->getTopLeftCornerY() - $bboxArray[1]) / $imgGroundHeight);
-
-    $bboxArray[0] = $iMin;
-    $bboxArray[1] = $jMin;
-    $bboxArray[2] = $iMax;
-    $bboxArray[3] = $jMax;
-
-    return @bboxArray;
-
-    return TRUE;
+    return @bboxInd;
 }
 
 #
@@ -1057,7 +1050,7 @@ method: validateMergedPyramid
 Checks final pyramid's paramters (compression, TMS, merge method...)
 
 See also:
-    <is_Compression>, <is_MergeMethod>
+    <isCompression>, <isMergeMethod>
 =cut
 sub validateMergedPyramid {
 
@@ -1085,7 +1078,7 @@ sub validateMergedPyramid {
     if (! exists $this{pyramid}->{merge_method}) {
         ERROR ("'merge_method' must be given in the configuration file !");
         return FALSE;
-    } elsif (! main::is_MergeMethod($this{pyramid}->{merge_method})) {
+    } elsif (! main::isMergeMethod($this{pyramid}->{merge_method})) {
         ERROR (sprintf "Unknown 'merge_method' (%s) !",$this{pyramid}->{merge_method});
         return FALSE;
     }
@@ -1093,11 +1086,15 @@ sub validateMergedPyramid {
     if (! exists $this{pyramid}->{compression}) {
         ERROR ("'compression' must be given in the configuration file !");
         return FALSE;
-    } elsif (! main::is_Compression($this{pyramid}->{compression})) {
+    } elsif (! main::isCompression($this{pyramid}->{compression})) {
         ERROR (sprintf "Unknown 'compression' (%s) !",$this{pyramid}->{compression});
         return FALSE;
     }
 
+    if (! exists $this{pyramid}->{sampleformat}) {
+        ERROR ("'sampleformat' must be given in the configuration file !");
+        return FALSE;
+    }
     if ($this{pyramid}->{sampleformat} ne 'uint') {
         ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
         return FALSE;
@@ -1133,7 +1130,7 @@ sub validateMergedPyramid {
 
 #
 =begin nd
-method: is_MergeMethod
+method: isMergeMethod
 
 Check merge method value.
 
@@ -1142,7 +1139,7 @@ Parameter:
 
 Possible values: 'replace','transparency','multiply'.
 =cut
-sub is_MergeMethod {
+sub isMergeMethod {
     my $mergeMethod = shift;
 
     TRACE;
@@ -1157,7 +1154,7 @@ sub is_MergeMethod {
 
 #
 =begin nd
-method: is_Compression
+method: isCompression
 
 Check compression value.
 
@@ -1166,7 +1163,7 @@ Parameter:
 
 Possible values: 'raw','jpg','png','lzw','zip'.
 =cut
-sub is_Compression {
+sub isCompression {
     my $compression = shift;
 
     TRACE;
@@ -1186,7 +1183,7 @@ method: validateSourcePyramids
 For each pyramid in composition, we store and control attributes, reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
 
 See alse:
-    <is_Compatible>
+    <isCompatible>
 =cut
 sub validateSourcePyramids {
 
@@ -1300,7 +1297,7 @@ sub validateSourcePyramids {
             @{$this{sourcePyramids}->{$pyr}->{$levelId}->{extremTiles}} = @taglimit;
         }
 
-        if (main::is_Compatible($tagformat,$tagchannels)) {
+        if (main::isCompatible($tagformat,$tagchannels)) {
             $this{sourcePyramids}->{$pyr}->{isCompatible} = TRUE;
         } else {
             $this{sourcePyramids}->{$pyr}->{format} = $tagformat;
@@ -1320,11 +1317,11 @@ sub validateSourcePyramids {
 
 #
 =begin nd
-method: is_Compatible
+method: isCompatible
 
 A pyramid is compatible with the final cache if format and sample per pixel are the same
 =cut
-sub is_Compatible {
+sub isCompatible {
     my $format = shift;
     my $samplesperpixel = shift;
 
@@ -1374,7 +1371,18 @@ sub doIt {
 
         while( exists $sources->{$priority}) {
             my $source = $sources->{$priority};
+            
+            my @extremTiles = @{$source->{extremTiles}};
+            # we update extrems tiles
+            if (! defined $imin || $extremTiles[2] < $imin) {$imin = $extremTiles[2];}
+            if (! defined $jmin || $extremTiles[0] < $jmin) {$jmin = $extremTiles[0];}
+            if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
+            if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
+            
+            
             INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
+            
+            ALWAYS("BBOX : $jmin,$jmax,$imin,$imax"); #TEST#
             my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{bbox}};
 
             for (my $I = $IMIN; $I <= $IMAX; $I++) {
@@ -1384,19 +1392,14 @@ sub doIt {
                         next;
                     }
 
-                    my $imagePath = main::getCacheNameOfImage($I,$J);
+                    my $base36path = BE4::Base36->indicesToB36Path($I,$J,$this{pyramid}->{dirDepth}+1);
+                    my $imagePath = "$base36path.tif";
+                    
                     my $sourceImage = File::Spec->catfile($source->{pyr},$imagePath);
                     if (! -f $sourceImage) {
                         # no data source
                         next;
                     }
-
-                    my @extremTiles = @{$source->{extremTiles}};
-                    # we update extrems tiles
-                    if (! defined $imin || $extremTiles[2] < $imin) {$imin = $extremTiles[2];}
-                    if (! defined $jmin || $extremTiles[0] < $jmin) {$jmin = $extremTiles[0];}
-                    if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
-                    if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
 
                     my $finaleImage = File::Spec->catfile($baseImage,$imagePath);
                     if (-f $finaleImage) {
@@ -1486,7 +1489,7 @@ sub searchTile {
             next;
         }
 
-        my $sourceImage = $source->{pyr}.$imagePath;
+        my $sourceImage = File::Spec->catfile($source->{pyr},$imagePath);
         if (-f $sourceImage) {
             if (exists $source->{isCompatible}) {
                 push @others,{img => $sourceImage,isCompatible => TRUE};
@@ -1714,7 +1717,7 @@ sub transformImage {
     }
 
     # Final location writting
-    $code .= sprintf ("Work2cache \${TMP_DIR}/transformedImg.tif %s\n", $finaleImage);
+    $code .= sprintf ("Work2cache \${TMP_DIR}/transformedImg.tif %s\n\n", $finaleImage);
 
     # Storage
     main::printInScript($code);
@@ -1779,8 +1782,6 @@ sub writePyr {
         
         # Nodata tile creation
         my $nodataTilePath = File::Spec->rel2abs($objLevel->getDirNodata, $this{pyramid}->{pyr_desc_path});
-        
-        ALWAYS("-> nodata path : $nodataTilePath"); #TEST#
 
         my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->getID);
         my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->getID);
@@ -1817,95 +1818,6 @@ sub writePyr {
     return TRUE;
 }
 
-####################################################################################################
-#                                             TOOLS                                                #
-####################################################################################################  
-
-# Group: tools
-
-#
-=begin nd
-method: getCacheNameOfImage
-
-Return the image relative path, from the data level directory (pyr_data_path/dir_image/level_ID). Tile's indices are convert in base 36, and split to give the path.
-
-Example:
-    getCacheNameOfImage(4032,18217) returns "3E/42/01.tif"
-
-Parameter:
-    i,j - indices from which name is determined
-=cut
-sub getCacheNameOfImage {
-    my $i     = shift; # X idx !
-    my $j     = shift; # Y idx !
-
-    my $ib36 = main::encodeIntToB36($i);
-    my $jb36 = main::encodeIntToB36($j);
-
-    my @icut = split (//, $ib36);
-    my @jcut = split (//, $jb36);
-
-    if (scalar(@icut) != scalar(@jcut)) {
-        if (length ($ib36) > length ($jb36)) {
-            $jb36 = "0"x(length ($ib36) - length ($jb36)).$jb36;
-            @jcut = split (//, $jb36);
-        } else {
-            $ib36 = "0"x(length ($jb36) - length ($ib36)).$ib36;
-            @icut = split (//, $ib36);
-        }
-    }
-
-    my $padlength = $this{pyramid}->{dirDepth} + 1;
-    my $size      = scalar(@icut);
-    my $pos       = $size;
-    my @l;
-
-    for(my $i=0; $i<$padlength;$i++) {
-        $pos--;
-        push @l, $jcut[$pos];
-        push @l, $icut[$pos];
-        push @l, '/';
-    }
-
-    pop @l;
-
-    if ($size>$padlength) {
-        while ($pos) {
-            $pos--;
-            push @l, $jcut[$pos];
-            push @l, $icut[$pos];
-        }
-    }
-
-    my $imagePath = scalar reverse(@l);
-    my $imagePathName = join('.', $imagePath, 'tif');
-
-    return $imagePathName; 
-}
-
-sub encodeIntToB36 {
-    my $number= shift; # idx !
-
-    my $padlength = $this{pyramid}->{dirDepth} + 1;
-
-    my $b36 = "";
-    $b36 = "000" if $number == 0;
-
-    while ( $number ) {
-        my $v = $number % 36;
-        if($v <= 9) {
-            $b36 .= $v;
-        } else {
-            $b36 .= chr(55 + $v); # Assume that 'A' is 65
-        }
-        $number = int $number / 36;
-    }
-
-    # fill with 0 !
-    $b36 = "0"x($padlength - length $b36).reverse($b36);
-
-    return $b36;
-}
 
 ################################################################################
 
@@ -2084,7 +1996,7 @@ Order in 'composition' is important, a triplet will take precedence over the tri
     bitspersample = 8
     sampleformat = uint
     
-    merge_method   = multiply 
+    merge_method = multiply 
     
     [bboxes]
     PARIS = 535286,6747049,771666,6976667

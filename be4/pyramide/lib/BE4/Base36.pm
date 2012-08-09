@@ -38,6 +38,8 @@ package BE4::Base36;
 use strict;
 use warnings;
 
+use Data::Dumper;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -62,7 +64,7 @@ Convert a base-10 number into base-36 (string).
 
 Parameters:
     number - the base-10 integer to convert.
-    length - optionnal, to force the number of character (if consistent).
+    length - optionnal, to force the minimum number of character.
     
 Examples:
     - BE4::Base36->encodeB10toB36(32674) returns "P7M".
@@ -70,7 +72,7 @@ Examples:
     - BE4::Base36->encodeB10toB36(156,1) returns "4C".
 =cut
 sub encodeB10toB36 {
-
+    my $class = shift ;
     my $number = shift; # in base 10 !
     my $padlength = shift;
     
@@ -87,9 +89,11 @@ sub encodeB10toB36 {
         $number = int $number / 36;
     }
     
+    $b36 = reverse($b36);
+    
     # fill with 0 !
     if (defined $padlength && $padlength > length $b36) {
-        $b36 = "0"x($padlength - length $b36).reverse($b36);
+        $b36 = "0"x($padlength - length $b36).$b36;
     }
     
     return $b36;
@@ -108,17 +112,17 @@ Example:
     BE4::Base36->encodeB10toB36("F4S6") returns 706038.
 =cut
 sub encodeB36toB10 {
-
-  my $b36  = shift; # idx in base 36 !
-  
-  my $number = 0;
-  my $i = 0;
-  foreach(split //, reverse uc $b36) {
-    $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
-    $number += $_ * (36 ** $i++);
-  }
-  
-  return $number;
+    my $class = shift ;
+    my $b36  = shift; # idx in base 36 !
+    
+    my $number = 0;
+    my $i = 0;
+    foreach(split //, reverse uc $b36) {
+        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
+        $number += $_ * (36 ** $i++);
+    }
+    
+    return $number;
 }
 
 #
@@ -129,7 +133,7 @@ Convert base-10 indices into a base-36 path (string). If the base-36 indices are
 
 Parameters:
     i,j - base-10 indices to convert.
-    depth - number of subdirectories.
+    pathlength - number of subdirectories + the file.
     
 Examples:
     BE4::Base36->indicesToB36Path(4032, 18217, 2) returns "3E/42/01".
@@ -138,80 +142,70 @@ See also:
     <encodeB10toB36>
 =cut
 sub indicesToB36Path {
+    my $class = shift ;
+    my $i = shift ;
+    my $j = shift ;
+    my $pathlength = shift ;
     
-  my $i = shift ; # the x coord of the image in the matrix of image
-  my $j = shift ; # the y coord of the image in the matrix of image
-  my $depth = shift ; # depth of the path
+    my $xb36 = BE4::Base36->encodeB10toB36($i,$pathlength);
+    my $yb36 = BE4::Base36->encodeB10toB36($j,$pathlength);
     
-  my $xb36 = BE4::Base36->encodeB10toB36($i,$depth);
-  my $yb36 = BE4::Base36->encodeB10toB36($j,$depth);
-
-  my @xcut = split (//, $xb36);
-  my @ycut = split (//, $yb36);
-  
-  if (scalar(@xcut) != scalar(@ycut)) {
-    $yb36 = "0"x(length ($xb36) - length ($yb36)).$yb36 if (length ($xb36) > length ($yb36));
-    $xb36 = "0"x(length ($yb36) - length ($xb36)).$xb36 if (length ($yb36) > length ($xb36));
-  }
-  
-  my $size = scalar(@xcut);
-  my $pos  = $size;
-  my @l;
-  
-  for(my $i=0; $i < $depth; $i++) {
-    $pos--;
-    push @l, $ycut[$pos];
-    push @l, $xcut[$pos];
-    push @l, '/';
-  }
-  
-  pop @l;
-  
-  if ($size > $depth) {
-    while ($pos) {
-        $pos--;
-        push @l, $ycut[$pos];
-        push @l, $xcut[$pos];
+    if (length ($xb36) > length ($yb36)) {
+        $yb36 = "0"x(length ($xb36) - length ($yb36)).$yb36;
     }
-  }
-  
-  my $B36Path = scalar reverse(@l);
-  
-  return $B36Path ;
+    
+    if (length ($xb36) < length ($yb36)) {
+        $xb36 = "0"x(length ($yb36) - length ($xb36)).$xb36;
+    }
+    
+    my $B36Path = "";
+    
+    for(my $i=1; $i < $pathlength; $i++) {
+        $B36Path = chop($yb36).$B36Path;
+        $B36Path = chop($xb36).$B36Path;
+        $B36Path = '/'.$B36Path;
+    }
+    
+    # We add what are left
+    $B36Path = $yb36.$B36Path;
+    $B36Path = $xb36.$B36Path;
+        
+    return $B36Path ;
 }
 
 #
 =begin nd
 method: b36PathToIndices
 
-Convert a base-36 path into base-10 indices (x,y) as an hash. If the base-36 indices are (ABC,123), the base-36 path is "A1/B2/C3".
+Convert a base-36 path into base-10 indices (x,y). If the base-36 indices are (ABC,123), the base-36 path is "A1/B2/C3".
 
 Parameters:
     number - the base-10 integer to convert.
     
 Example:
-    BE4::Base36->b36PathToIndices("3E/42/01") returns {x => 4032, y => 18217}.
+    BE4::Base36->b36PathToIndices("3E/42/01") returns [4032,18217].
         
 See also:
     <encodeB36toB10>
 =cut
 sub b36PathToIndices {
-  my $path = shift;
-  
-  my $xB36 = "";
-  my $yB36 = "";
-  
-  my @dirs = split(/\//,$path);
-  for (my $i = 0; $i < scalar @dirs; $i++) {
-    my $part = $dirs[$i];
-    $xB36 .= substr($part,0,length($part)/2);
-    $yB36 .= substr($part,length($part)/2);
-  }
-
-  my $x = BE4::Base36->encodeB36toB10($xB36);
-  my $y = BE4::Base36->encodeB36toB10($yB36);
-  
-  return {x => $x, y => $y};
+    my $class = shift ;
+    my $path = shift;
+    
+    my $xB36 = "";
+    my $yB36 = "";
+    
+    my @dirs = split(/\//,$path);
+    for (my $i = 0; $i < scalar @dirs; $i++) {
+        my $part = $dirs[$i];
+        $xB36 .= substr($part,0,length($part)/2);
+        $yB36 .= substr($part,length($part)/2);
+    }
+    
+    my $x = BE4::Base36->encodeB36toB10($xB36);
+    my $y = BE4::Base36->encodeB36toB10($yB36);
+    
+    return [$x, $y];
 }
 
 

@@ -257,16 +257,10 @@ foreach my $v (@levels) {
 
 my $bottomTM = $objTMS->getTileMatrix($bottomID);
 
-my $res = $bottomTM->getResolution();
-my $X0 = $bottomTM->getTopLeftCornerX();
-my $Y0 = $bottomTM->getTopLeftCornerY();
-my $tileWidth = $bottomTM->getTileWidth();
-my $tileHeight = $bottomTM->getTileHeight();
-
-my $xmin = $X0 + $imin * $res * $tileWidth;
-my $ymax = $Y0 - $jmin * $res * $tileHeight;
-my $xmax = $X0 + ($imax+1) * $res * $tileWidth;
-my $ymin = $Y0 - ($jmax+1) * $res * $tileHeight;
+my $xmin = $bottomTM->columnToX($imin);
+my $ymax = $bottomTM->rowToY($jmin);
+my $xmax = $bottomTM->columnToX($imax+1);
+my $ymin = $bottomTM->rowToY($jmax+1);
 
 ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
 

@@ -713,8 +713,8 @@ sub computeAboveImage {
             return undef;
         }
 
-        my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilePerWidth();
-        my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilePerHeight();
+        my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth();
+        my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight();
 
         if (-f $newImgDesc->getFilePath()) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
@@ -1124,7 +1124,7 @@ sub configureFunctions {
     my $conf_montageIn = "";
 
     $conf_montageIn .= sprintf "-geometry %sx%s",$self->{pyramid}->getTileWidth,$self->{pyramid}->getTileHeight;
-    $conf_montageIn .= sprintf "-tile %sx%s",$self->{pyramid}->getTilePerWidth,$self->{pyramid}->getTilePerHeight;
+    $conf_montageIn .= sprintf "-tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
     
     $configuredFunc =~ s/__montageIn__/$conf_montageIn/;
     

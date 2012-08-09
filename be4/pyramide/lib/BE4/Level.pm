@@ -186,15 +186,15 @@ sub _init {
 
     # check type ref
     if (! scalar ($params->{size})){
-      ERROR("list empty to 'size' !");
+      ERROR("List empty to 'size' !");
       return FALSE;
     }
     if (! $params->{dir_depth}){
-      ERROR("value not informed to 'dir_depth' !");
+      ERROR("Value not informed to 'dir_depth' !");
       return FALSE;
     }
     if (! scalar (@{$params->{limit}})){
-      ERROR("list empty to 'limit' !");
+      ERROR("List empty to 'limit' !");
       return FALSE;
     }
     
@@ -221,6 +221,11 @@ sub _init {
 sub getID {
     my $self = shift;
     return $self->{id};
+}
+
+sub getOrder {
+    my $self = shift;
+    return $self->{order};
 }
 
 sub getDirImage {

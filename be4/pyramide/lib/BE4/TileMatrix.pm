@@ -38,6 +38,7 @@ package BE4::TileMatrix;
 use strict;
 use warnings;
 
+use Math::BigFloat;
 use Log::Log4perl qw(:easy);
 
 require Exporter;
@@ -139,6 +140,184 @@ sub _init {
     $self->{matrixheight} = $params->{matrixheight};
 
     return TRUE;
+}
+
+####################################################################################################
+#                                   COORDINATES MANIPULATION                                       #
+####################################################################################################
+
+#
+=begin nd
+method: getImgGroundWidth
+
+Return the ground width of an image, whose number of tile (widthwise) is can be provided.
+
+Parameters:
+    tilesPerWidth - Optionnal (1 if undefined) 
+=cut
+sub getImgGroundWidth {
+    my $self  = shift;
+    my $tilesPerWidth = shift;
+    
+    $tilesPerWidth = 1 if (! defined $tilesPerWidth);
+    
+    my $xRes = Math::BigFloat->new($self->getResolution);
+    my $imgGroundWidth = $self->getTileWidth * $tilesPerWidth * $xRes;
+    
+    return $imgGroundWidth;
+}
+
+#
+=begin nd
+method: getImgGroundHeight
+
+Return the ground height of an image, whose number of tile (heightwise) is can be provided.
+
+Parameters:
+    tilesPerHeight - Optionnal (1 if undefined) 
+=cut
+sub getImgGroundHeight {
+    my $self  = shift;
+    my $tilesPerHeight = shift;
+    
+    $tilesPerHeight = 1 if (! defined $tilesPerHeight);
+    
+    my $yRes = Math::BigFloat->new($self->getResolution);
+    my $imgGroundHeight = $self->getTileHeight * $tilesPerHeight * $yRes;
+    
+    return $imgGroundHeight;
+}
+
+#
+=begin nd
+method: columnToX
+
+Return the X coordinate, in the TMS SRS, of the upper left corner, from the column indice and the number of tiles per width.
+
+Parameters:
+    col - Column indice
+    tilesPerWidth - Optionnal (1 if undefined) 
+=cut
+sub columnToX {
+    my $self  = shift;
+    my $col   = shift;
+    my $tilesPerWidth = shift;
+    
+    $tilesPerWidth = 1 if (! defined $tilesPerWidth);
+    
+    my $xo  = $self->getTopLeftCornerX;
+    my $rx  = Math::BigFloat->new($self->getResolution);
+    my $width = $self->getTileWidth;
+    
+    my $x = $xo + $col * $rx * $width * $tilesPerWidth;
+    
+    return $x;
+}
+
+#
+=begin nd
+method: rowToY
+
+Return the Y coordinate, in the TMS SRS, of the upper left corner, from the row indice and the number of tiles per height.
+
+Parameters:
+    row - Row indice
+    tilesPerHeight - Optionnal (1 if undefined)
+=cut
+sub rowToY {
+    my $self  = shift;
+    my $row   = shift;
+    my $tilesPerHeight = shift;
+    
+    $tilesPerHeight = 1 if (! defined $tilesPerHeight);
+    
+    my $yo = $self->getTopLeftCornerY;
+    my $ry = Math::BigFloat->new($self->getResolution);
+    my $height = $self->getTileHeight;
+    
+    my $y = $yo - ($row * $ry * $height * $tilesPerHeight);
+    
+    return $y;
+}
+
+#
+=begin nd
+method: xToColumn
+
+Return the column indice for the given X coordinate and the number of tiles per width.
+
+Parameters:
+    x - x-axis coordinate
+    tilesPerWidth - Optionnal (1 if undefined) 
+=cut
+sub xToColumn {
+    my $self  = shift;
+    my $x     = shift;
+    my $tilesPerWidth = shift;
+    
+    $tilesPerWidth = 1 if (! defined $tilesPerWidth);
+    
+    my $xo  = $self->getTopLeftCornerX;
+    my $rx  = Math::BigFloat->new($self->getResolution);
+    my $width = $self->getTileWidth;
+    
+    my $col = int(($x - $xo) / ($rx * $width * $tilesPerWidth)) ;
+    
+    return $col;
+}
+
+#
+=begin nd
+method: yToRow
+
+Return the row indice for the given Y coordinate and the number of tiles per height.
+
+Parameters:
+    y - y-axis coordinate
+    tilesPerHeight - Optionnal (1 if undefined) 
+=cut
+sub yToRow {
+    my $self  = shift;
+    my $y     = shift;
+    my $tilesPerHeight = shift;
+    
+    $tilesPerHeight = 1 if (! defined $tilesPerHeight);
+    
+    my $yo  = $self->getTopLeftCornerY;
+    my $ry  = Math::BigFloat->new($self->getResolution);
+    my $height = $self->getTileHeight;
+    
+    my $row = int(($yo - $y) / ($ry * $height * $tilesPerHeight)) ;
+    
+    return $row;
+}
+
+#
+=begin nd
+method: indicesToBBox
+
+Return the BBox from image's indices in an array : [xMin,yMin,xMax,yMax].
+
+Parameters:
+    i,j - Image indices.
+    tilesPerWidth,tilesPerHeight - Number of tile in the image, width wise and heightwise.
+=cut
+sub indicesToBBox {
+    my $self  = shift;
+    my $i     = shift;
+    my $j     = shift;
+    my $tilesPerWidth = shift;
+    my $tilesPerHeight = shift;
+    
+    my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
+    
+    my $xMin = $self->getTopLeftCornerX + $i * $imgGroundWidth;
+    my $yMax = $self->getTopLeftCornerY - $j * $imgGroundHeight;
+    my $xMax = $xMin + $imgGroundWidth;
+    my $yMin = $yMax - $imgGroundHeight;
+    
+    return ($xMin,$yMin,$xMax,$yMax);
 }
 
 ####################################################################################################

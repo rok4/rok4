@@ -270,10 +270,9 @@ sub identifyBottomTiles {
     
     TRACE();
     
-    my ($ImgGroundWidth, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($self->{bottomLevelID});
     my $tm = $self->{tms}->getTileMatrix($self->{bottomLevelID});
-    my ($TLCX,$TLCY) = ($tm->getTopLeftCornerX(),$tm->getTopLeftCornerY());
     my $datasource = $self->{datasource};
+    my ($TPW,$TPH) = ($self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight);
     
     if ($datasource->hasImages()) {
         # We have real data as source. Images determine bottom tiles
@@ -289,10 +288,10 @@ sub identifyBottomTiles {
             $self->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            my $iMin=int(($bbox[0] - $TLCX) / $ImgGroundWidth);
-            my $iMax=int(($bbox[2] - $TLCX) / $ImgGroundWidth);
-            my $jMin=int(($TLCY - $bbox[3]) / $ImgGroundHeight);
-            my $jMax=int(($TLCY - $bbox[1]) / $ImgGroundHeight);
+            my $iMin = $tm->xToColumn($bbox[0],$TPW);
+            my $iMax = $tm->xToColumn($bbox[2],$TPW);
+            my $jMin = $tm->yToRow($bbox[3],$TPH);
+            my $jMax = $tm->yToRow($bbox[1],$TPH);
             
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
@@ -329,18 +328,15 @@ sub identifyBottomTiles {
         
         $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
         
-        my $iMin=int(($bboxref->[0] - $TLCX) / $ImgGroundWidth);
-        my $iMax=int(($bboxref->[1] - $TLCX) / $ImgGroundWidth);
-        my $jMin=int(($TLCY - $bboxref->[3]) / $ImgGroundHeight);
-        my $jMax=int(($TLCY - $bboxref->[2]) / $ImgGroundHeight);
+        my $iMin = $tm->xToColumn($bboxref->[0],$TPW);
+        my $iMax = $tm->xToColumn($bboxref->[1],$TPW);
+        my $jMin = $tm->yToRow($bboxref->[3],$TPH);
+        my $jMax = $tm->yToRow($bboxref->[2],$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
-                my $xmin = $ImgGroundWidth*$i + $TLCX;
-                my $xmax = $ImgGroundWidth*($i+1) + $TLCX;
-                my $ymin = $TLCY - $ImgGroundHeight*($j+1);
-                my $ymax = $TLCY - $ImgGroundHeight*$j;
-                
+                my ($xmin,$ymin,$xmax,$ymax) = $tm->xToColumn($i,$j,$TPW,$TPH);
+
                 my $GMLtile = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
                     $xmin,$ymin,
                     $xmin,$ymax,
@@ -392,17 +388,16 @@ method: imgGroundSizeOfLevel
 
 Calculate terrain size (in SRS's units) of a cache image (do not mistake for a tile), for the supplied level.
 =cut
-sub imgGroundSizeOfLevel(){
+sub imgGroundSizeOfLevel {
     my $self = shift;
     my $levelID = shift;
     
-    TRACE();
+    TRACE;
     
     my $tm = $self->{tms}->getTileMatrix($levelID);
-    my $xRes = Math::BigFloat->new($tm->getResolution()); 
-    my $yRes = Math::BigFloat->new($tm->getResolution());
-    my $imgGroundWidth = $tm->getTileWidth()  * $self->{pyramid}->getTilePerWidth() * $xRes;
-    my $imgGroundHeight = $tm->getTileHeight() * $self->{pyramid}->getTilePerHeight() * $yRes;
+    
+    my $imgGroundWidth = $tm->getImgGroundWidth($self->{pyramid}->getTilesPerWidth);
+    my $imgGroundHeight = $tm->getImgGroundHeight($self->{pyramid}->getTilesPerHeight);
     
     return ($imgGroundWidth,$imgGroundHeight);
 }
@@ -625,18 +620,14 @@ sub getImgDescOfNode {
     my $node = shift;
     
     my $params = {};
-    my ($ImgGroundWith, $ImgGroundHeight) = $self->imgGroundSizeOfLevel($node->{level});
     
-    my $tms = $self->{pyramid}->getTileMatrixSet();
-    my $tm  = $tms->getTileMatrix($node->{level});
+    my $tm  = $self->{tms}->getTileMatrix($node->{level});
     
     $params->{filePath} = $self->{pyramid}->getCachePathOfImage($node, 'data');
-    $params->{xMin} = $tm->getTopLeftCornerX() + $node->{x} * $ImgGroundWith;   
-    $params->{yMax} = $tm->getTopLeftCornerY() - $node->{y} * $ImgGroundHeight; 
-    $params->{xMax} = $params->{xMin} + $ImgGroundWith;                         
-    $params->{yMin} = $params->{yMax} - $ImgGroundHeight;
-    $params->{xRes} = $tm->getResolution();
-    $params->{yRes} = $tm->getResolution();
+    ($params->{xMin},$params->{yMin},$params->{xMax},$params->{yMax}) = $tm->indicesToBBox(
+        $node->{x}, $node->{y}, $self->{pyramid}->getTilesPerWidth, $self->{pyramid}->getTilesPerHeight);
+    $params->{xRes} = $tm->getResolution;
+    $params->{yRes} = $tm->getResolution;
     
     my $desc = BE4::ImageDesc->new($params);
     
@@ -824,133 +815,6 @@ sub setAccumulatedWeightOfNode(){
 
     $self->{nodes}{$node->{level}}{$keyidx}[1] = $weight + $self->{nodes}{$node->{level}}{$keyidx}[0];
     
-}
-
-####################################################################################################
-#                                           EXPORT                                                 #
-####################################################################################################
-
-# Group: export
-
-#
-=begin nd
-method: exportTree
-
-Export tree in a file (for service).
-
-Parameters:
-    file - complete file path, to export the tree.
-=cut
-sub exportTree {
-  my $self = shift;
-  my $file = shift; # filepath !
-  
-  # sur le bottomlevel, on a :
-  # { level1 => { x1_y2 => [[objimage1, objimage2, ...],w1,c1],
-  #               x2_y2 => [[objimage2],w2,c2],
-  #               x3_y2 => [[objimage3],w3,c3], ...} }
-  
-  # on exporte dans un fichier la liste des indexes par images sources en projection :
-  #  imagesource
-  #  - x1_y2 => /OO/IF/ZX.tif => xmin, ymin, xmax, ymax
-  #  - x2_y2 => /OO/IF/YX.tif => xmin, ymin, xmax, ymax
-  #  ...
-  TRACE;
-
-  my $idLevel = $self->{bottomLevelID};
-  my $lstIdx  = $self->getNodesOfBottomLevel;
-  
-  if (! open (FILE, ">", $file)) {
-    ERROR ("Can not create file ('$file') !");
-    return FALSE;
-  }
-  
-  my $refpyr  = $self->{pyramid};
-  my $refdata = $self->{datasource};
-  my $reftms = $self->{tms};
-  
-  my $srsini   = $refdata->getSRS();
-  my $resini   = $refdata->getResolution();
-  my @bboxini  = $refdata->{bbox}; # (Upper Left, Lower Right) !
-  
-  my $srsfinal  = $reftms->getSRS();
-  my $resfinal  = $reftms->getTileMatrix($idLevel)->getResolution();
-  my @bboxfinal;
-  
-  my $idxmin = 0;
-  my $idxmax = 0;
-  my $idymin = 0;
-  my $idymax = 0;
-  
-  foreach my $idx (keys %$lstIdx) {
-    
-    my ($idxXmin, $idxYmax) = split(/_/, $idx);
-    my ($idxXmax, $idxYmin) = ($idxXmin+1, $idxYmax-1);
-    
-    if (!$idxmin && !$idxmax && !$idymin && !$idymax) {
-      $idxmin = $idxXmin;
-      $idxmax = $idxXmax;
-      $idymin = $idxYmin;
-      $idymax = $idxYmax;
-    }
-    
-    $idxmin = $idxXmin if ($idxmin > $idxXmin);
-    $idxmax = $idxXmax if ($idxmax < $idxXmax);
-    $idymin = $idxYmin if ($idymin > $idxYmin);
-    $idymax = $idxYmax if ($idymax < $idxYmax);
-  }
-  
-  # (xmin, ymin, xmax, ymax) !
-  push @bboxfinal, ($refpyr->_IDXtoX($idLevel,$idxmin),
-                    $refpyr->_IDXtoY($idLevel,$idymin),
-                    $refpyr->_IDXtoX($idLevel,$idxmax),
-                    $refpyr->_IDXtoY($idLevel,$idymax));
-  
-  printf FILE "----------------------------------------------------\n";
-  printf FILE "=> Data Source :\n";
-  printf FILE "   - resolution [%s]\n", $resini;
-  printf FILE "   - srs        [%s]\n", $srsini;
-  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxini[0], $bboxini[1], $bboxini[2], $bboxini[3];
-  printf FILE "----------------------------------------------------\n";
-  printf FILE "=> Index (level n° %s):\n", $idLevel;
-  printf FILE "   - resolution [%s]\n", $resfinal;
-  printf FILE "   - srs        [%s]\n", $srsfinal;
-  printf FILE "   - bbox       [%s, %s, %s, %s]\n", $bboxfinal[0], $bboxfinal[1], $bboxfinal[2], $bboxfinal[3];
-  printf FILE "----------------------------------------------------\n";
- 
-  while( my ($k, $v) = each(%$lstIdx)) {
-    
-    my ($idxXmin, $idxYmax) = split(/_/, $k);
-    my ($idxXmax, $idxYmin) = ($idxXmin+1, $idxYmax-1);
-    
-    my $node = {
-        level => $idLevel,
-        x => $idxXmin,
-        y => $idxYmax
-    };
-    
-    my $cachename = $refpyr->getCacheNameOfImage($node, "data");
-    
-    # image xmin ymin xmax ymax
-    printf FILE "\n- idx %s (%s) => [%s,%s,%s,%s]\n", $k, $cachename,
-      $refpyr->_IDXtoX($idLevel,$idxXmin),
-      $refpyr->_IDXtoY($idLevel,$idxYmax),
-      $refpyr->_IDXtoX($idLevel,$idxXmax),
-      $refpyr->_IDXtoY($idLevel,$idxYmin);
-    
-    next if (ref $v ne 'ARRAY');
-    
-    foreach my $objImage (@$v) {
-      
-      next if (ref $objImage ne 'BE4::GeoImage');
-      
-      printf FILE "\t%s\n", $objImage->getName;
-    }
-  }
-  
-  close FILE;
-  
-  return TRUE;
 }
 
 1;
