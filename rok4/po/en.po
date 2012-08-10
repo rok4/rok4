@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-08-09 13:11+0200\n"
+"POT-Creation-Date: 2012-08-10 09:07+0200\n"
 "PO-Revision-Date: 2012-06-26 18:56+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: \n"
@@ -956,15 +956,15 @@ msgstr ""
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:203
+#: Pyramid.cpp:202
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:203
+#: Pyramid.cpp:202
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:211
+#: Pyramid.cpp:209
 msgid "Image decoupe valide"
 msgstr ""
 
