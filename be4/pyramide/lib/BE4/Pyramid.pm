@@ -110,8 +110,6 @@ variable: $self
         data_path     => undef, # path
         content_path  => undef,
     },
-    * pyr_level_bottom  => undef, string
-    * pyr_level_top     => undef, string
     * dir_depth    => undef, # number
     * dir_image    => undef, # dir name
     * dir_nodata   => undef, # dir name
@@ -119,7 +117,6 @@ variable: $self
     * image_width  => undef, # number
     * image_height => undef, # number
     * pyrImgSpec => undef,   # it's an PyrImageSpec object
-    * datasources => [],   # it's an array of DataSource objects
     * tms => undef,   # TileMatrixSet object
     * nodata => undef,   # Nodata object
     * levels => {},      # it's a hash of Level objects
@@ -134,7 +131,6 @@ variable: $self
 sub new {
     my $this = shift;
     my $params = shift;
-    my $datasources = shift;
     my $path_temp = shift;
 
     my $class= ref($this) || $this;
@@ -161,9 +157,6 @@ sub new {
             data_path     => undef, # path
             content_path  => undef,
         },
-
-        pyr_level_bottom  => undef, # number
-        pyr_level_top     => undef, # number
         #
         dir_depth    => undef, # number
         dir_image    => undef, # dir name
@@ -174,7 +167,6 @@ sub new {
 
         # OUT
         pyrImgSpec => undef,   # it's an PyrImageSpec object
-        datasources => [],   # it's an array of DataSource objects
         tms        => undef,   # TileMatrixSet object
         nodata     => undef,   # Nodata object
         levels     => {},      # it's a hash of Level objects
@@ -185,7 +177,7 @@ sub new {
     TRACE;
 
     # init. parameters
-    return undef if (! $self->_init($params,$datasources));
+    return undef if (! $self->_init($params));
 
     # a new pyramid or from existing pyramid !
     return undef if (! $self->_load($params,$path_temp));
@@ -201,7 +193,6 @@ We detect missing parameters and define default values.
 
 Parameters:
     params - All parameters abour pyramid's format.
-    datasources - Array of DataSource objects used to generate the pyramid, error if empty.
 
 See Also:
     <new>, <_load>
@@ -209,7 +200,6 @@ See Also:
 sub _init {
     my $self   = shift;
     my $params = shift;
-    my $datasources = shift;
 
     TRACE;
 
@@ -217,12 +207,6 @@ sub _init {
         ERROR ("Parameters argument required (null) !");
         return FALSE;
     }
-
-    if (! scalar $datasources ) {
-        ERROR ("Datasources required (null) !");
-        return FALSE;
-    }
-    $self->{datasources} = $datasources;
     
     # Always mandatory :
     #   - pyr_name_new, pyr_desc_path, pyr_data_path
@@ -307,18 +291,7 @@ sub _init {
     if (! exists($params->{compressionoption})) {
         INFO ("Optional parameter 'compressionoption' is not set. The default value is 'none'");
         $params->{compressionoption} = 'none';
-    }
-    #
-    if (exists($params->{pyr_level_bottom})) {
-        WARN ("Parameter 'pyr_level_bottom' has been set. Values in sources configuration are used !");
-    }
-    #
-    if (! exists($params->{pyr_level_top})) {
-        WARN ("Parameter 'pyr_level_top' has not been set. The defaut value is the top of the TMS' !");
-        $params->{pyr_level_top} = undef;
-    }
-    $self->{pyr_level_top} = $params->{pyr_level_top};
-    
+    }    
     #
     if (! exists($params->{nowhite})) {
         $params->{nowhite} = 'false';
@@ -384,7 +357,7 @@ Parameters:
     params - All parameters about a pyramid's format (new or update).
 
 See Also:
-    <new>, <_init>, <_fillToPyramid>, <_fillFromPyramid>, <calculateExtremLevels>, <updateDatasources>, <createLevels>
+    <new>, <_init>, <_fillToPyramid>, <_fillFromPyramid>
 =cut
 sub _load {
     my $self = shift;
@@ -402,24 +375,6 @@ sub _load {
         # init. process hasn't checked all parameters,
         # so, we must read file pyramid to initialyze them...
         return FALSE if (! $self->_fillFromPyramid($params,$path_temp));
-    }
-
-    # identify bottom and top levels
-    if (! $self->calculateExtremLevels()) {
-        ERROR(sprintf "Impossible to calculate top and bottom levels");
-        return FALSE;
-    }
-    
-    # identify bottom and top levels for each data sources
-    if (! $self->updateDatasources()) {
-        ERROR(sprintf "Impossible to update data sources");
-        return FALSE;
-    }
-
-    # we create all levels between the top and the bottom levels
-    if (! $self->createLevels()) {
-        ERROR(sprintf "Cannot create levels !");
-        return FALSE;
     }
 
     # create NoData !
@@ -960,173 +915,87 @@ sub findImages {
 
 #
 =begin nd
-method: calculateExtremLevels
+method: updateLevels
 
-From data sources, TMS and parameters, we identify top and bottom levels for the whole pyramid.
+Determine top and bottom for the new pyramid and create Level objects.
 
-* bottom level = the lowest level among data source base levels
-
-* top level = levelID in parameters if defined, top level of TMS otherwise.
+Parameters:
+    DSL - a DataSourceLoader, to determine extrem levels.
+    topID - optionnal, from the 'pyramid' section in the configuration file
 =cut
-sub calculateExtremLevels {
+sub updateLevels {
     my $self = shift;
-
-    TRACE();
-
-    # Intitialisation du topLevel:
-    #  - En priorité celui fourni en paramètre
-    #  - Par defaut, c'est le plus haut niveau du TMS, 
-    my $toplevelID = $self->{pyr_level_top};
-    my $toplevelOrder = undef;
-    if (defined $toplevelID) {
-        $toplevelOrder = $self->getTileMatrixSet()->getOrderfromID($toplevelID);
-        if (! defined $toplevelOrder) {
-            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$toplevelID);
-            return FALSE;
-        }
-    } else {
-        $toplevelID = $self->getTileMatrixSet()->getLevelTop();
-        $toplevelOrder = $self->getTileMatrixSet()->getOrderfromID($toplevelID);
-        $self->setTopLevel($toplevelID);
+    my $DSL = shift;
+    my $topID = shift;
+    
+    # update datasources top/bottom levels !
+    my ($bottomOrder,$topOrder) = $DSL->updateDataSources($self->getTileMatrixSet, $topID);
+    if (! $DSL->updateDataSources($self->getTileMatrixSet)) {
+        ERROR("Cannot determine top and bottom levels");
+        return FALSE;
     }
 
-    # Intitialisation du bottomLevel:
-    #  - celui fournit dans la configuration des sources : le niveau le plus bas de toutes les sources
-    #  - on vérifie la cohérence des niveaux défini dans la configuration des sources avec le niveau du haut
-    my $bottomlevelID = undef;
-    my $bottomlevelOrder = undef;
-
-    foreach my $datasource (@{$self->{datasources}}) {
-        my $levelID = $datasource->getBottomID();
-        my $levelOrder = $self->getTileMatrixSet()->getOrderfromID($levelID);
-        if (! defined $levelOrder) {
-            ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
-                $levelID);
-            return FALSE;
-        }
-
-        if ($toplevelOrder < $levelOrder) {
-            ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$levelID,$self->{pyr_level_top});
-            return FALSE;
-        }
-
-        $datasource->setBottomOrder($levelOrder);
-        
-        if (! defined $bottomlevelOrder || $levelOrder < $bottomlevelOrder) {
-            $bottomlevelID = $levelID;
-            $bottomlevelOrder = $levelOrder;
-        }
+    if (! $self->createLevels($bottomOrder,$topOrder)) {
+        ERROR("Cannot create Level objects for the new pyramid");
+        return FALSE;
     }
-
-    $self->setBottomID($bottomlevelID);
-
-    if ($toplevelOrder == $bottomlevelOrder) {
-        INFO(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$bottomlevelID);
-    }
-
-    return TRUE;
-    
-}
-
-#
-=begin nd
-method: updateDatasources
-
-For each datasource, we store the order and the ID of the higher level which use this datasource.
-The base level (from which datasource is used) is already known.
-
-Example (with 2 data sources):
-* DataSource1: from level_18 (order 2) to level_16 (order 4)
-* DataSource1: from level_15 (order 5) to level_12 (order 8)
-
-There are no superposition between data sources.
-=cut
-sub updateDatasources {
-    my $self = shift;
-
-    TRACE();
-    
-    @{$self->{datasources}} = sort {$a->getBottomOrder <=> $b->getBottomOrder} ( @{$self->{datasources}});
-
-    my $i = 0;
-    
-    while ( $i < scalar @{$self->{datasources}} -1) {
-        my $topLevelOrder = $self->{datasources}[$i+1]->{bottomLevelOrder} - 1;
-        $self->{datasources}[$i]->setTopOrder($topLevelOrder);
-        $self->{datasources}[$i]->setTopID($self->getIDfromOrder($topLevelOrder));
-        $i++;
-    }
-    
-    my $topID = $self->{pyr_level_top};
-    $self->{datasources}[$i]->setTopID($topID);
-    $self->{datasources}[$i]->setTopOrder($self->getOrderfromID($topID));
-    
-    return TRUE;
 }
 
 #
 =begin nd
 method: createLevels
 
-Create all objects Level between the top and the bottom levels for the new pyramid.
+Create all objects Level between the global top and the bottom levels (from data sources) for the new pyramid.
 
-If there are an old pyramid, levels already exist. We don't create twice the same level.
+If there are an old pyramid, some levels already exist. We don't create twice the same level.
+
+Parameters:
+    bottomOrder, topOrder - global extrem levels' orders.
 =cut
 sub createLevels {
     my $self = shift;
+    my $bottomOrder = shift;
+    my $topOrder = shift;
 
     TRACE();
     
-    my $objTMS = $self->getTileMatrixSet();
-
+    my $objTMS = $self->getTileMatrixSet;
     if (! defined $objTMS) {
-        ERROR("Object TMS not defined !");
+        ERROR("We need a TMS to create levels.");
         return FALSE;
     }
+    
+    # Create all level between the bottom and the top
+    for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-    my $topOrder = $self->getOrderfromID($self->{pyr_level_top});
-    my $bottomOrder = $self->getOrderfromID($self->{pyr_level_bottom});
-
-    # load all level
-    for (my $i = $bottomOrder; $i<=$topOrder; $i++) {
-
-        my $tmID = $self->getIDfromOrder($i);
-        if (! defined $tmID) {
-            ERROR(sprintf "Cannot identify ID for the order %s !",$i);
+        my $ID = $self->getIDfromOrder($order);
+        if (! defined $ID) {
+            ERROR(sprintf "Cannot identify ID for the order %s !",$order);
             return FALSE;
         }
 
-        if (exists $self->{levels}->{$tmID}) {
+        if (exists $self->{levels}->{$ID}) {
             # this level already exists (from the old pyramid). We have not to remove informations (like extrem tiles)
             next;
         }
 
-        my $tilesperwidth     = $self->getTilesPerWidth();
-        my $tilesperheight    = $self->getTilesPerHeight();
+        my $tilesperwidth = $self->getTilesPerWidth();
+        my $tilesperheight = $self->getTilesPerHeight();
 
         # base dir image
-        my $baseimage = File::Spec->catdir($self->getNewDataDir(),
-            $self->getDirImage(),
-            $tmID
-        );
+        my $baseimage = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $ID);
 
         # base dir nodata
-        my $basenodata = File::Spec->catdir($self->getNewDataDir(),
-            $self->getDirNodata(),
-            $tmID
-        );
+        my $basenodata = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $ID);
 
         # TODO : metadata
         #   compression, type ...
-        my $basemetadata = File::Spec->catdir($self->getNewDataDir(),
-            $self->getDirMetadata(),
-            $tmID
-        );
+        my $basemetadata = File::Spec->catdir($self->getNewDataDir(), $self->getDirMetadata(), $ID);
 
         # params to level
         my $params = {
-            id                => $tmID,
-            order             => $i,
+            id                => $ID,
+            order             => $order,
             dir_image         => File::Spec->abs2rel($baseimage, $self->{new_pyramid}->{desc_path}),
             dir_nodata        => File::Spec->abs2rel($basenodata, $self->{new_pyramid}->{desc_path}),
             dir_metadata      => undef,           # TODO,
@@ -1139,16 +1008,11 @@ sub createLevels {
         my $objLevel = BE4::Level->new($params);
 
         if(! defined  $objLevel) {
-            ERROR (sprintf "Can not create the level '%s' !", $tmID);
+            ERROR (sprintf "Can not create the level '%s' !", $ID);
             return FALSE;
         }
 
-        $self->{levels}->{$tmID} = $objLevel;
-    }
-
-    if (! scalar (%{$self->{levels}})) {
-        ERROR ("No level loaded !");
-        return FALSE;
+        $self->{levels}->{$ID} = $objLevel;
     }
 
     return TRUE;
@@ -1162,21 +1026,21 @@ Store the Level object in the Pyramid object. Return an error if the level alrea
 
 Parameters
     levelID - TM identifiant
-    level - The BE4::Level object to store
+    objLevel - The BE4::Level object to store
 =cut
 sub addLevel {
     my $self = shift;
     my $levelID = shift;
-    my $level = shift;
+    my $objLevel = shift;
 
     TRACE();
     
-    if(! defined  $levelID || ! defined  $level) {
+    if(! defined  $levelID || ! defined  $objLevel) {
         ERROR (sprintf "Level ID or Level object is undefined.");
         return FALSE;
     }
     
-    if (ref ($level) ne "BE4::Level") {
+    if (ref ($objLevel) ne "BE4::Level") {
         ERROR (sprintf "We must have a Level object for the level $levelID.");
         return FALSE;
     }
@@ -1186,7 +1050,7 @@ sub addLevel {
         return FALSE;
     }
 
-    $self->{levels}->{$levelID} = $level;
+    $self->{levels}->{$levelID} = $objLevel;
 
     return TRUE;
 }
@@ -1712,13 +1576,6 @@ sub getNodataValue {
     return $self->{nodata}->getValue;
 }
 
-################ Datasource #################
-
-sub getDataSources {
-    my $self = shift;
-    return $self->{datasources};
-}
-
 ################### Levels ##################
 
 sub getLevel {
@@ -1762,19 +1619,7 @@ Parameter:
 sub getIDfromOrder {
     my $self = shift;
     my $order = shift;
-    return $self->getTileMatrixSet()->getIDfromOrder($order);
-}
-
-sub setBottomID {
-    my $self = shift;
-    my $bottomID = shift;
-    $self->{pyr_level_bottom} = $bottomID;
-}
-
-sub setTopLevel {
-    my $self = shift;
-    my $topLevel = shift;
-    $self->{pyr_level_top} = $topLevel;
+    return $self->getTileMatrixSet->getIDfromOrder($order);
 }
 
 sub getCacheImageSize {
@@ -1957,10 +1802,6 @@ Hash which contains informations about the new pyramid. Keys are 'name' (new cac
 
 Hash which contains informations about the old pyramid (can be undefined). Keys are 'name' (old cache name, without extension .pyr), 'desc_path' (absolute path, where old pyramid's descriptor is), 'data_path' (absolute path of root directory, where old pyramid's cache is) and 'content_path' (old chache list file path).
 
-=item pyr_level_bottom, pyr_level_top
-
-Identifiants (in the TMS) of top and bottom levels of the whole cache.
-
 =item dir_depth
 
 Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
@@ -1976,10 +1817,6 @@ Number of tile in one image (the same for each level), widthwise and heightwise 
 =item pyrImgSpec
 
 A PyrImageSpec object. Contains all informations about images : sample format, compression, photometric...
-
-=item datasources
-
-An array of DataSource objects (for different level). Can be images or just a WMS service.
 
 =item tms
 

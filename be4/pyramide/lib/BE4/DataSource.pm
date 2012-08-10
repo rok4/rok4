@@ -74,10 +74,10 @@ END {}
 Group: variable
 
 variable: $self
-    * bottomLevelID => undef, # this datasource will be used between bottomLevel and topLevel
-    * bottomLevelOrder => undef,
-    * topLevelID => undef,
-    * topLevelOrder => undef,
+    * bottomID => undef, # this datasource will be used between bottomLevel and topLevel
+    * bottomOrder => undef,
+    * topID => undef,
+    * topOrder => undef,
     
     * srs => undef,
     * extent => undef, # OGR::Geometry object, in the previous SRS
@@ -103,10 +103,10 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # Global information
-        bottomLevelID => undef,
-        bottomLevelOrder => undef,
-        topLevelID => undef,
-        topLevelOrder => undef,
+        bottomID => undef,
+        bottomOrder => undef,
+        topID => undef,
+        topOrder => undef,
         bbox => undef,
         extent => undef,
         srs => undef,
@@ -141,7 +141,7 @@ sub _load {
         ERROR("A data source have to be defined with a level !");
         return FALSE;
     }
-    $self->{bottomLevelID} = $level;
+    $self->{bottomID} = $level;
 
     if (! exists $params->{srs} || ! defined $params->{srs}) {
         ERROR("A data source have to be defined with the 'srs' parameter !");
@@ -370,40 +370,40 @@ sub removeHarvesting {
 
 sub getBottomID {
     my $self = shift;
-    return $self->{bottomLevelID};
+    return $self->{bottomID};
 }
 
 sub getTopID {
     my $self = shift;
-    return $self->{topLevelID};
+    return $self->{topID};
 }
 
 sub getBottomOrder {
     my $self = shift;
-    return $self->{bottomLevelOrder};
+    return $self->{bottomOrder};
 }
 
 sub getTopOrder {
     my $self = shift;
-    return $self->{topLevelOrder};
+    return $self->{topOrder};
 }
 
 sub setBottomOrder {
     my $self = shift;
     my $bottomOrder = shift;
-    $self->{bottomLevelOrder} = $bottomOrder;
+    $self->{bottomOrder} = $bottomOrder;
 }
 
 sub setTopOrder {
     my $self = shift;
     my $topOrder = shift;
-    $self->{topLevelOrder} = $topOrder;
+    $self->{topOrder} = $topOrder;
 }
 
 sub setTopID {
     my $self = shift;
     my $topID = shift;
-    $self->{topLevelID} = $topID;
+    $self->{topID} = $topID;
 }
 
 1;
@@ -469,11 +469,11 @@ BE4::DataSource - Managing a data source
 
 =over 4
   
-=item bottomLevelID, bottomLevelOrder
+=item bottomID, bottomOrder
 
 ID (in TMS) and order (integer) of the base level, from which this datasource is used.
 
-=item topLevelID, topLevelOrder
+=item topID, topOrder
 
 ID (in TMS) and order (integer) of the top level, to which this datasource is used, calculated in relation to other datasource
         

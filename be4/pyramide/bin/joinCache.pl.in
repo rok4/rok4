@@ -60,6 +60,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4::TileMatrixSet;
+use BE4::Pyramid;
 use BE4::Pixel;
 use BE4::NoData;
 use BE4::Level;
@@ -218,7 +219,6 @@ Perl objects to merge pyramids.
 =cut
 my %this =
 (
-
     logger        => undef,
     pyramid       => undef,
     bboxes        => undef,
@@ -246,7 +246,6 @@ Define allowed:
 my %CONF = (
     sections => ['pyramid','process','composition','logger','bboxes'],
     merge_method => ['replace','transparency','multiply'],
-    compression => ['raw','jpg','png','lzw','zip'],
 );
 
 #
@@ -335,7 +334,7 @@ sub main {
 
     # writting pyramid's configuration file
     ALWAYS("> Write pyramid's descriptor");
-    if (! main::writePyr()) {
+    if (! $this{pyramid}->writeConfPyramidPyr) {
         $message = "ERROR WRITE PYRAMID DESCRIPTOR !";
         printf STDERR "%s\n", $message;
         exit 7;
@@ -877,6 +876,29 @@ sub _validate {
         ERROR ("Merged pyramid is not valid !");
         return FALSE;
     }
+
+    ##################
+
+    ALWAYS(">>> Validate source pyramids ...");
+
+    if (! main::validateSourcePyramids()) {
+        ERROR ("Some source pyramids are not valid !");
+        return FALSE;
+    }
+    
+    ##################
+
+    ALWAYS(">>> Create the Pyramid object ...");
+    
+    my $pyramid = BE4::Pyramid->new($this{pyramid});
+
+    if (! defined $pyramid) {
+        ERROR ("Cannot create the Pyramid object !");
+        return FALSE;
+    }
+    
+    delete $this{pyramid};
+    $this{pyramid} = $pyramid;
     
     ##################
     # load bounding boxes
@@ -888,15 +910,6 @@ sub _validate {
     }
 
     DEBUG(sprintf "BBOXES : %s",Dumper($this{bboxes}));
-
-    ##################
-
-    ALWAYS(">>> Validate source pyramids ...");
-
-    if (! main::validateSourcePyramids()) {
-        ERROR ("Some source pyramids are not valid !");
-        return FALSE;
-    }
 
     DEBUG(sprintf "SOURCE PYRAMIDS : %s",Dumper($this{sourcePyramids}));
 
@@ -1047,7 +1060,7 @@ sub validateBboxes {
 =begin nd
 method: validateMergedPyramid
 
-Checks final pyramid's paramters (compression, TMS, merge method...)
+Checks final pyramid's paramters presence (TMS, merge method, sampleformat, ...)
 
 See also:
     <isCompression>, <isMergeMethod>
@@ -1055,25 +1068,19 @@ See also:
 sub validateMergedPyramid {
 
     TRACE();
-
-    ##################
-    # load TMS
-
-    if (!( exists $this{pyramid}->{tms_path} &&  exists $this{pyramid}->{tms_name})) {
-        ERROR ("TMS path information are missing in the configuration file !");
+    
+    # TMS
+    
+    if (! exists $this{pyramid}->{tms_path}) {
+        ERROR ("'tms_path' must be given in the configuration file !");
         return FALSE;
     }
-    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($this{pyramid}->{tms_path},$this{pyramid}->{tms_name}));
-
-    if (! defined $objTMS) {
-        ERROR (sprintf "Cannot load the TMS %s !",$this{pyramid}->{tms_name});
+    if (! exists $this{pyramid}->{tms_name}) {
+        ERROR ("'tms_name' must be given in the configuration file !");
         return FALSE;
-    } else {
-        delete($this{pyramid}->{tms_path});
-        delete($this{pyramid}->{tms_name});
     }
-
-    $this{pyramid}->{tms} = $objTMS;
+    
+    # Merge method
 
     if (! exists $this{pyramid}->{merge_method}) {
         ERROR ("'merge_method' must be given in the configuration file !");
@@ -1082,14 +1089,8 @@ sub validateMergedPyramid {
         ERROR (sprintf "Unknown 'merge_method' (%s) !",$this{pyramid}->{merge_method});
         return FALSE;
     }
-
-    if (! exists $this{pyramid}->{compression}) {
-        ERROR ("'compression' must be given in the configuration file !");
-        return FALSE;
-    } elsif (! main::isCompression($this{pyramid}->{compression})) {
-        ERROR (sprintf "Unknown 'compression' (%s) !",$this{pyramid}->{compression});
-        return FALSE;
-    }
+    
+    # TMS
 
     if (! exists $this{pyramid}->{sampleformat}) {
         ERROR ("'sampleformat' must be given in the configuration file !");
@@ -1099,30 +1100,25 @@ sub validateMergedPyramid {
         ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
         return FALSE;
     }
-
-    my $objPixel = BE4::Pixel->new({
-        photometric => $this{pyramid}->{photometric},
-        sampleformat => $this{pyramid}->{sampleformat},
-        bitspersample => $this{pyramid}->{bitspersample},
-        samplesperpixel => $this{pyramid}->{samplesperpixel}
-    });
-    if (! defined $objPixel) {
-        ERROR (sprintf "Cannot create the Pixel object !");
+    
+    if (! exists $this{pyramid}->{bitspersample}) {
+        ERROR ("'bitspersample' must be given in the configuration file !");
         return FALSE;
     }
-    $this{pyramid}->{pixel} = $objPixel;
+    if ($this{pyramid}->{bitspersample} != 8) {
+        ERROR (sprintf "Just 8 bits poer sample is handled (not '%s')",$this{pyramid}->{bitspersample});
+        return FALSE;
+    }
     
-    # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
-    $this{pyramid}->{format} = sprintf "TIFF_%s_%s%s",
-        uc $this{pyramid}->{compression},
-        $SAMPLEFORMAT2CODE{$this{pyramid}->{sampleformat}},
-        $this{pyramid}->{bitspersample};
-
-    delete($this{pyramid}->{photometric});
-    delete($this{pyramid}->{sampleformat});
-    delete($this{pyramid}->{bitspersample});
-    delete($this{pyramid}->{samplesperpixel});
-
+    if (! exists $this{pyramid}->{photometric}) {
+        ERROR ("'photometric' must be given in the configuration file !");
+        return FALSE;
+    }
+    
+    if (! exists $this{pyramid}->{samplesperpixel}) {
+        ERROR ("'samplesperpixel' must be given in the configuration file !");
+        return FALSE;
+    }
 
     return TRUE;
 
@@ -1148,30 +1144,6 @@ sub isMergeMethod {
 
     foreach (@{$CONF{merge_method}}) {
         return TRUE if ($mergeMethod eq $_);
-    }
-    return FALSE;
-}
-
-#
-=begin nd
-method: isCompression
-
-Check compression value.
-
-Parameter:
-    compression - compression value
-
-Possible values: 'raw','jpg','png','lzw','zip'.
-=cut
-sub isCompression {
-    my $compression = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $compression);
-
-    foreach (@{$CONF{compression}}) {
-        return TRUE if ($compression eq $_);
     }
     return FALSE;
 }
@@ -1242,9 +1214,9 @@ sub validateSourcePyramids {
             return FALSE;
         }
         $tms = $tagTMS if (! defined $tms);
-        if ($tms ne $this{pyramid}->{tms}->{name}) {
-            ERROR (sprintf "The TMS in the pyramid '%s' is different from the TMS in the configuration %s (%s) !",
-                $pyr,$this{pyramid}->{tms}->{name},$tms);
+        if ($tms ne $this{pyramid}->{tms_name}) {
+            ERROR (sprintf "The TMS in the pyramid '%s' (%) is different from the TMS in the configuration %s !",
+                $pyr,$tms,$this{pyramid}->{tms_name});
             return FALSE;
         }
 
@@ -1302,15 +1274,14 @@ sub validateSourcePyramids {
         } else {
             $this{sourcePyramids}->{$pyr}->{format} = $tagformat;
             $this{sourcePyramids}->{$pyr}->{samplesperpixel} = $tagchannels;
-            $this{sourcePyramids}->{$pyr}->{photometric} = $tagphotometric;
         }
 
     }
 
     # we save merged pyramid's attributes
-    $this{pyramid}->{dirDepth} = $dirDepth;
-    $this{pyramid}->{tilesPerWidth} = $tilesPerWidth;
-    $this{pyramid}->{tilesPerHeight} = $tilesPerHeight;
+    $this{pyramid}->{dir_depth} = $dirDepth;
+    $this{pyramid}->{image_width} = $tilesPerWidth;
+    $this{pyramid}->{image_height} = $tilesPerHeight;
 
     return TRUE;
 }
@@ -1701,18 +1672,16 @@ sub transformImage {
     }
 
     # We transform image with the samples per pixel of the final cache
-    if ($this{pyramid}->{pixel}->{photometric} eq 'rgb' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 3) {
+    if (int($this{pyramid}->{pixel}->{samplesperpixel}) == 3) {
         $code .= "tiff2rgba -c none -n \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
     }
-    elsif ($this{pyramid}->{pixel}->{photometric} eq 'rgb' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 4) {
+    elsif (int($this{pyramid}->{pixel}->{samplesperpixel}) == 4) {
         $code .= "tiff2rgba -c none \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
     }
-    elsif ($this{pyramid}->{pixel}->{photometric} eq 'gray' && int($this{pyramid}->{pixel}->{samplesperpixel}) == 1) {
+    elsif (int($this{pyramid}->{pixel}->{samplesperpixel}) == 1) {
         $code .= "convert \${TMP_DIR}/img.tif -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/transformedImg.tif\n";
     } else {
-        ERROR (sprintf "Samplesperpixel (%s) and photometric (%d) not supported ",
-            $this{pyramid}->{pixel}->{samplesperpixel},
-            $this{pyramid}->{pixel}->{photometric});
+        ERROR (sprintf "Samplesperpixel (%s) not supported ", $this{pyramid}->{pixel}->{samplesperpixel});
         return FALSE;
     }
 
@@ -1724,98 +1693,6 @@ sub transformImage {
     
     return TRUE;
 
-}
-
-####################################################################################################
-#                                        WRITTING METHODS                                          #
-####################################################################################################  
-
-# Group: writting methods
-
-#
-=begin nd
-method: writePyr
-
-Export the Pyramid object to XML format, write the pyramid's descriptor ("pyr_desc_path/pyr_name_new.pyr"). Use Level XML export. Levels are written in descending order, from worst to best resolution.
-=cut
-sub writePyr {
-
-    TRACE;
-    
-    # parsing template
-    my $parser = XML::LibXML->new();
-
-    my $doctpl = eval { $parser->parse_string($STRPYRTMPLT); };
-    if (!defined($doctpl) || $@) {
-        ERROR(sprintf "Can not parse template file of pyramid : %s !", $@);
-        return FALSE;
-    }
-    my $strpyrtmplt = $doctpl->toString(0);
-  
-    #
-    my $tmsname = $this{pyramid}->{tms}->getName();
-    $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
-    #
-    my $formatimg = $this{pyramid}->{format}; # ie TIFF_RAW_INT8 !
-    $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
-    #  
-    my $channel = $this{pyramid}->{pixel}->{samplesperpixel};
-    $strpyrtmplt =~ s/__CHANNEL__/$channel/;
-    #  
-    my $nodata = BE4::NoData->new({
-        value => undef, #default value will be set.
-        pixel => $this{pyramid}->{pixel},
-        nowhite => "false"
-    });
-
-    my $nodataValue = $nodata->getValue();
-    $strpyrtmplt =~ s/__NODATAVALUE__/$nodataValue/;
-    #
-    $strpyrtmplt =~ s/__INTERPOLATION__/bicubic/;
-    #
-    my $photometric = $this{pyramid}->{pixel}->{photometric};
-    $strpyrtmplt =~ s/__PHOTOMETRIC__/$photometric/;
-
-    foreach my $objLevel (values %{$this{pyramid}->{levels}}) {
-        my $levelXML = $objLevel->getLevelToXML();
-        $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
-        
-        # Nodata tile creation
-        my $nodataTilePath = File::Spec->rel2abs($objLevel->getDirNodata, $this{pyramid}->{pyr_desc_path});
-
-        my $width = $this{pyramid}->{tms}->getTileWidth($objLevel->getID);
-        my $height = $this{pyramid}->{tms}->getTileHeight($objLevel->getID);
-        
-        if (! $nodata->createNodata($nodataTilePath,$width,$height,$this{pyramid}->{compression})) {
-            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID);
-            return FALSE;
-        }
-    }
-    #
-    $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
-    $strpyrtmplt =~ s/^$//g;
-    $strpyrtmplt =~ s/^\n$//g;
-    #|
-  
-    my $filepyramid = File::Spec->catfile($this{pyramid}->{pyr_desc_path},$this{pyramid}->{pyr_name}.".pyr");
-
-    if (-f $filepyramid) {
-        ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
-        return FALSE;
-    }
-    #
-    my $PYRAMID;
-
-    if (! open $PYRAMID, ">", $filepyramid) {
-        ERROR("");
-        return FALSE;
-    }
-    #
-    printf $PYRAMID "%s", $strpyrtmplt;
-    #
-    close $PYRAMID;
-
-    return TRUE;
 }
 
 

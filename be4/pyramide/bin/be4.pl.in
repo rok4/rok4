@@ -477,8 +477,9 @@ sub checkParams {
 method: doIt
 
 Steps in order, using parameters.
-    - Load data sources
     - Create the Pyramid object
+    - Load data sources
+    - Update levels for this Pyramid object
     - Create the Process object
     - Write (initialization) the cache and its list
     - Write the pyramid's descriptor
@@ -486,19 +487,29 @@ Steps in order, using parameters.
 =cut
 sub doIt {
 
-    ###################
+    #######################
     # link to parameters
     my $params = $this{params};
     
-    ###################
+    #######################
     # objects to implemented
     
     my $objPyramid     = undef;
     my $objDSL = undef;
-    my $objDataSources = undef;
     my $objProcess     = undef;
-
-    ###################
+    
+    #######################
+    # create a pyramid
+    
+    ALWAYS(">>> Load a Pyramid ...");
+    
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDSL,$params->{process}->{path_temp});
+    if (! defined $objPyramid) {
+        ERROR ("Can not load Pyramid !");
+        return FALSE;
+    }
+    
+    #######################
     # load data source
     
     ALWAYS(">>> Load Data Source ...");
@@ -508,25 +519,16 @@ sub doIt {
         ERROR ("Cannot load data sources !");
         return FALSE;
     }
-
-    $objDataSources = $objDSL->getSources();
     
-    if (scalar $objDataSources == 0) {
-        ERROR ("No data source !");
-        return FALSE;
-    }
+    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDSL));
     
-    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDataSources));
-  
-    ##################
-    # create a pyramid
+    #######################
+    # update levels
     
-    ALWAYS(">>> Load a Pyramid ...");
+    ALWAYS(">>> Determine levels ...");
     
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDataSources,$params->{process}->{path_temp});
-    
-    if (! defined $objPyramid) {
-        ERROR ("Can not load Pyramid !");
+    if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
+        ERROR ("Can not update levels !");
         return FALSE;
     }
 
@@ -550,7 +552,7 @@ sub doIt {
         return FALSE;
     }
 
-    ##################
+    #######################
     # write the pyramid cache
     
     ALWAYS(">>> Write Cache Pyramid and the list ...");
@@ -561,7 +563,7 @@ sub doIt {
     }
     
     
-    ##################
+    #######################
     # write the pyramid descriptor
 
     ALWAYS(">>> Write Configuration Pyramid ...");
@@ -574,7 +576,7 @@ sub doIt {
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
     
-    ##################
+    #######################
     # compute process
     
     ALWAYS(">>> Compute Process ...");
