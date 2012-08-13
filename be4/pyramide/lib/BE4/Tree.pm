@@ -335,7 +335,7 @@ sub identifyBottomTiles {
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
-                my ($xmin,$ymin,$xmax,$ymax) = $tm->xToColumn($i,$j,$TPW,$TPH);
+                my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
                 my $GMLtile = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
                     $xmin,$ymin,
@@ -658,7 +658,7 @@ sub getGeoImgOfBottomNode {
 
 #
 =begin nd
-method: isInTree
+method: containsNode
 
 Parameters:
     node - node we want to know if it is in the tree.
@@ -666,7 +666,7 @@ Parameters:
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
 =cut
-sub isInTree(){
+sub containsNode(){
   my $self = shift;
   my $node = shift;
   
@@ -721,7 +721,7 @@ sub getChildren {
 
   my @res;
   foreach my $childNode ($self->getPossibleChildren($node)){
-    if ($self->isInTree($childNode)){
+    if ($self->containsNode($childNode)){
       push(@res, $childNode);
     }
   }

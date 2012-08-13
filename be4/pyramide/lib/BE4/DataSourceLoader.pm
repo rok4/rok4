@@ -108,6 +108,8 @@ sub new {
         # Old datasource definition
         return undef if (! $self->_loadOld(@_));
     }
+    
+    INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}}); #TEST#
 
     return $self;
 }
@@ -286,8 +288,8 @@ sub updateDataSources {
     #  - on renseigne l'ordre du niveau du bas pour chaque source de données
     my $bottomID = undef;
     my $bottomOrder = undef;
-
-    foreach my $datasource (@{$self->{sources}}) {
+    
+    foreach my $datasource (@{$self->{dataSources}}) {
         my $dsBottomID = $datasource->getBottomID;
         my $dsBottomOrder = $TMS->getOrderfromID($dsBottomID);
         if (! defined $dsBottomOrder) {
@@ -304,6 +306,7 @@ sub updateDataSources {
         $datasource->setBottomOrder($dsBottomOrder);
         
         if (! defined $bottomOrder || $dsBottomOrder < $bottomOrder) {
+            ALWAYS ("Devient le niveau du bas"); #TEST#
             $bottomID = $dsBottomID;
             $bottomOrder = $dsBottomOrder;
         }
@@ -317,8 +320,8 @@ sub updateDataSources {
     
     @{$self->{dataSources}} = sort {$a->getBottomOrder <=> $b->getBottomOrder} ( @{$self->{dataSources}});
     
-    for (my $i = 0; $i < scalar @{$self->{sources}} -1; $i++) {
-        my $dsTopOrder = $self->{sources}[$i+1]->getBottomOrder - 1;
+    for (my $i = 0; $i < scalar @{$self->{dataSources}} -1; $i++) {
+        my $dsTopOrder = $self->{dataSources}[$i+1]->getBottomOrder - 1;
         $self->{dataSources}[$i]->setTopOrder($dsTopOrder);
         $self->{dataSources}[$i]->setTopID($TMS->getIDfromOrder($dsTopOrder));
     }

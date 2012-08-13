@@ -249,7 +249,7 @@ Parameters:
     pyr - Pyramid object.
 =cut
 sub _init {
-    my ($self, $params_process, $pyr) = @_;
+    my ($self, $params_process, $pyr, $DSL) = @_;
 
     TRACE;
 
@@ -259,6 +259,12 @@ sub _init {
         return FALSE;
     }
     $self->{pyramid} = $pyr;
+    
+    # it's an object and it's mandatory !
+    if (! defined $DSL || ref ($DSL) ne "BE4::DataSourceLoader") {
+        ERROR("Can not load data sources !");
+        return FALSE;
+    }
 
 
     # manadatory !
@@ -289,7 +295,7 @@ sub _init {
         return FALSE;
     }
 
-    my $dataSources = $self->{pyramid}->getDataSources();
+    my $dataSources = $DSL->getDataSources();
     my $TMS = $self->{pyramid}->getTileMatrixSet();
 
     foreach my $datasource (@{$dataSources}) {
@@ -599,7 +605,7 @@ sub computeBottomImage {
 # A terme, il faudra vérifier cette zone et ne demander que les tuiles contenant des données, et reconstruire une
 # image entière à partir de là (en ajoutant sur place des tuiles de nodata pour compléter).
 
-    if ($tree->{datasource}->hasHarvesting()) {
+    if ($tree->getDataSource->hasHarvesting()) {
         # Datasource has a WMS service : we have to use it
         $code .= $self->wms2work($node,$self->workNameOfNode($node));
         $tree->updateWeightOfNode($node,WGET_W);
@@ -747,7 +753,7 @@ sub computeAboveImage {
     
     foreach my $childNode ($tree->getPossibleChildren($node)){
         $imgCount++;
-        if ($tree->isInTree($childNode)){
+        if ($tree->containsNode($childNode)){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode);
         }
     }
