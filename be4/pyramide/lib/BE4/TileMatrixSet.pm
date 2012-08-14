@@ -418,12 +418,12 @@ sub getIDfromOrder {
 
 #
 =begin nd
-method: getBelowTileMatrixID
+method: getBelowLevelID
 
 Return:
     The tile matrix ID below the given tile matrix (ID).
 =cut
-sub getBelowTileMatrixID {
+sub getBelowLevelID {
     my $self = shift;
     my $ID= shift; 
 

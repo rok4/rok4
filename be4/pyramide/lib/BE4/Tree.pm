@@ -45,6 +45,7 @@ use Data::Dumper;
 
 use BE4::DataSource;
 use BE4::ImageDesc;
+use BE4::Node;
 use BE4::Array;
 
 use Log::Log4perl qw(:easy);
@@ -82,17 +83,14 @@ variable: $self
     * bbox => [], # datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     * nodes => {},
 |   level1 => {
-|      x1_y2 => [[objimage1],w1,c1],
-|      x2_y2 => [[objimage2],w2,c2],
-|      x3_y2 => [[objimage3],w3,c3], ...}
+|      x1_y2 => n1,
+|      x2_y2 => n2,
+|      x3_y2 => n3, ...}
 |   level2 => { 
-|      x1_y2 => [w,W,c],
-|      x2_y2 => [w',W',c'], ...}
+|      x1_y2 => n4,
+|      x2_y2 => n5, ...}
 |
-|   objimage = ImageSource object
-|   w = own node's weight
-|   W = accumulated weight (childs' weights sum)
-|   c = commands to generate this node (to write in a script)
+|   nX = BE4::Node object
 
     * cutLevelID    => undef, # top level for the parallele processing
     * bottomID => undef, # first level under the source images resolution
@@ -216,7 +214,7 @@ sub _load {
         $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
-    # identifier les dalles du niveau de base à mettre à jour et les associer aux images sources:
+    # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
     if (! $self->identifyBottomTiles($ct)) {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
@@ -225,21 +223,34 @@ sub _load {
     INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
          $self->{bottomID},scalar keys(%{$self->{nodes}{$self->{bottomID}}}));
 
-    # Calcul des branches à partir des feuilles et de leur poids:
+    # Calcul des branches à partir des feuilles
     for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++){
         my $levelID = $tms->getIDfromOrder($i);
         
-        foreach my $refnode ($self->getNodesOfLevel($levelID)) {
-            # pyramid's limits update : we store data's limits in the pyramid's nodes
+        foreach my $node ($self->getNodesOfLevel($levelID)) {
+            # pyramid's limits update : we store data's limits in the pyramid's levels
             $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
             
             if ($i != $src->getTopOrder) {
                 my $aboveLevelID = $tms->getIDfromOrder($i+1);
-                my $parentNodeID = int($refnode->{x}/2)."_".int($refnode->{y}/2);
-                if (! defined($self->{nodes}{$aboveLevelID}{$parentNodeID})){
-                    # A new node for this level
-                    $self->{nodes}{$aboveLevelID}{$parentNodeID} = [0,0];
+                my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
+                if (exists $self->{nodes}->{$parentNodeKey}) {
+                    # This Node already exists
+                    next;
                 }
+                # Create a new Node
+                my $node = BE4::Node->new({
+                    i => int($node->getCol/2),
+                    j => int($node->getRow/2),
+                    tm => $tms->getTileMatrix($aboveLevelID),
+                    graph => $self,
+                });
+                if (! defined $node) { 
+                    ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
+                          $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
+                    return FALSE;
+                }
+                $self->{nodes}->{$parentNodeKey} = $node;
             }
         }
 
@@ -275,7 +286,7 @@ sub identifyBottomTiles {
     my $datasource = $self->{datasource};
     my ($TPW,$TPH) = ($self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight);
     
-    if ($datasource->hasImages()) {
+    if ($datasource->hasImages) {
         # We have real data as source. Images determine bottom tiles
         my @images = $datasource->getImages();
         foreach my $objImg (@images){
@@ -296,21 +307,50 @@ sub identifyBottomTiles {
             
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
-                    my $idxkey = sprintf "%s_%s", $i, $j;
-                    if ($datasource->hasHarvesting()) {
+                    my $nodeKey = sprintf "%s_%s", $i, $j;
+
+                    if ($datasource->hasHarvesting) {
                         # we use WMS service to generate this leaf
-                        $self->{nodes}{$self->{bottomID}}{$idxkey}[0] = 0;
-                        # { level1 => { x1_y2 => [0,w1],
-                        #               x2_y2 => [0,w2],
-                        #               x3_y2 => [0,w3], ...} }
+                        if (exists $self->{nodes}->{$nodeKey}) {
+                            # This Node already exists
+                            next;
+                        }
+                        # Create a new Node
+                        my $node = BE4::Node->new({
+                            i => $i,
+                            j => $j,
+                            tm => $tm,
+                            graph => $self,
+                        });
+                        if (! defined $node) { 
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
+                                  $self->{bottomID}, $i, $j);
+                            return FALSE;
+                        }
+                        $self->{nodes}->{$nodeKey} = $node;
                     } else {
                         # we use images to generate this leaf
-                        push (@{$self->{nodes}{$self->{bottomID}}{$idxkey}[0]},$objImg);
-                        # { level1 => { x1_y2 => [[list objimage1],w1],
-                        #               x2_y2 => [[list objimage2],w2],
-                        #               x3_y2 => [[list objimage3],w3], ...} }
+                        if (exists $self->{nodes}->{$nodeKey}) {
+                            # This Node already exists
+                            # We add this GeoImage to this node
+                            $self->{nodes}->{$nodeKey}->addGeoImages($objImg);
+                            next;
+                        }
+                        # Create a new Node
+                        my $node = BE4::Node->new({
+                            i => $i,
+                            j => $j,
+                            tm => $tm,
+                            graph => $self,
+                        });
+                        if (! defined $node) { 
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
+                                  $self->{bottomID}, $i, $j);
+                            return FALSE;
+                        }
+                        $node->addGeoImages($objImg);
+                        $self->{nodes}->{$nodeKey} = $node;
                     }
-                    $self->{nodes}{$self->{bottomID}}{$idxkey}[1] = 0;
                 }
             }
         }
@@ -347,13 +387,20 @@ sub identifyBottomTiles {
                 
                 my $OGRtile = Geo::OGR::Geometry->create(GML=>$GMLtile);
                 if ($OGRtile->Intersect($convertExtent)){
-                    my $idxkey = sprintf "%s_%s", $i, $j;
-                    $self->{nodes}{$self->{bottomID}}{$idxkey}[0] = 0;
-                    $self->{nodes}{$self->{bottomID}}{$idxkey}[1] = 0;
-                    
-                    # { level1 => { x1_y2 => [0,w1],
-                    #               x2_y2 => [0,w2],
-                    #               x3_y2 => [0,w3], ...} }
+                    my $nodeKey = sprintf "%s_%s", $i, $j;
+                    # Create a new Node
+                    my $node = BE4::Node->new({
+                        i => $i,
+                        j => $j,
+                        tm => $tm,
+                        graph => $self,
+                    });
+                    if (! defined $node) { 
+                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
+                              $self->{bottomID}, $i, $j);
+                        return FALSE;
+                    }
+                    $self->{nodes}->{$nodeKey} = $node;
                 }
             }
         }
@@ -586,7 +633,7 @@ sub computeBottomImage {
 
     if ($self->getDataSource->hasHarvesting()) {
         # Datasource has a WMS service : we have to use it
-        $code .= $self->{process}->wms2work($node,$self->workNameOfNode($node));
+        $code .= $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
         $self->updateWeightOfNode($node,WGET_W);
     } else {
     
@@ -729,9 +776,9 @@ sub computeAboveImage {
     my $childImgParam=''; 
     my $imgCount=0;
     
-    foreach my $childNode ($self->getPossibleChildren($node)){
+    foreach my $childNode ($self->getPossibleChildren($node)) {
         $imgCount++;
-        if ($self->containsNode($childNode)){
+        if (defined $childNode){
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode);
         }
     }
@@ -956,71 +1003,6 @@ sub getBottomOrder {
     return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{bottomID});
 }
 
-sub getComputingCode {
-    my $self = shift;
-    my $node = shift;
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-    return $self->{nodes}{$node->{level}}{$keyidx}[2];
-}
-
-sub getAccumulatedWeightOfNode {
-    my $self = shift;
-    my $node = shift;
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-    return $self->{nodes}{$node->{level}}{$keyidx}[1];
-}
-
-#
-=begin nd
-method: getImgDescOfNode
-
-Parameters:
-    node - node we want the description
-
-Returns:
-    An ImageDesc object, representing the give node.
-=cut
-sub getImgDescOfNode {
-    my $self = shift;
-    my $node = shift;
-    
-    my $params = {};
-    
-    my $tm  = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->{level});
-    
-    $params->{filePath} = $self->{pyramid}->getCachePathOfImage($node, 'data');
-    ($params->{xMin},$params->{yMin},$params->{xMax},$params->{yMax}) = $tm->indicesToBBox(
-        $node->{x}, $node->{y}, $self->{pyramid}->getTilesPerWidth, $self->{pyramid}->getTilesPerHeight);
-    $params->{xRes} = $tm->getResolution;
-    $params->{yRes} = $tm->getResolution;
-    
-    my $desc = BE4::ImageDesc->new($params);
-    
-    return $desc
-}
-
-#
-=begin nd
-method: getGeoImgOfBottomNode
-
-Parameters:
-    node - node we want GeoImage objects.
-
-Returns:
-    An array of GeoImage objects, used to generate this node. Undef if level is not bottom level or if node does not exist in the tree
-=cut
-sub getGeoImgOfBottomNode {
-  my $self = shift;
-  my $node = shift;
-  
-  my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-  
-  return undef if ($node->{level} ne $self->{bottomID});
-  return undef if (! exists $self->{nodes}{$node->{level}}{$keyidx});
-  
-  return $self->{nodes}{$node->{level}}{$keyidx}[0];
-}
-
 #
 =begin nd
 method: containsNode
@@ -1031,7 +1013,7 @@ Parameters:
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
 =cut
-sub containsNode(){
+sub containsNode {
   my $self = shift;
   my $node = shift;
   
@@ -1046,27 +1028,34 @@ sub containsNode(){
 method: getPossibleChildren
 
 Parameters:
-    node - node we want to know possible children.
+    node - node we want to know children.
 
 Returns:
-    An array of the four possible childs from a node, an empty array if the node is a leaf.
+    An array of the real children from a node (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 =cut
-sub getPossibleChildren(){
+sub getPossibleChildren {
     my $self = shift;
     my $node = shift;
     
     my @res;
-    if ($node->{level} eq $self->{bottomID}) {
+    if ($node->getLevel eq $self->{bottomID}) {
         return @res;
     }
     
-    my $lowerLevelID = $self->{pyramid}->getTileMatrixSet->getBelowTileMatrixID($node->{level});
-    for (my $i=0; $i<=1; $i++){
-        for (my $j=0; $j<=1; $j++){
-            my $childNode = {level => $lowerLevelID, x => $node->{x}*2+$j, y => $node->{y}*2+$i};
-            push(@res, $childNode);
+    my $lowerLevelID = $self->{pyramid}->getTileMatrixSet->getBelowLevelID($node->getLevel);
+    
+    
+    for (my $j=0; $j<=1; $j++){
+        for (my $i=0; $i<=1; $i++){
+            my $nodeKey = sprintf "%s_%s",$node->getCol*2+$i, $node->getRow*2+$j;
+            if (exists $self->{nodes}->{$nodeKey}) {
+                push @res, $self->{nodes}->{$nodeKey};
+            } else {
+                push @res, undef;
+            }
         }
     }
+    
     return @res;
 }
 
@@ -1078,44 +1067,46 @@ Parameters:
     node - node we want to know children.
 
 Returns:
-    An array of the real children from a node (four max.), an empty array if the node is a leaf.
+    An array of the real children from a node (max length = 4), an empty array if the node is a leaf.
 =cut
 sub getChildren {
-  my $self = shift;
-  my $node = shift;
-
-  my @res;
-  foreach my $childNode ($self->getPossibleChildren($node)){
-    if ($self->containsNode($childNode)){
-      push(@res, $childNode);
+    my $self = shift;
+    my $node = shift;
+    
+    my @res;
+    if ($node->getLevel eq $self->{bottomID}) {
+        return @res;
     }
-  }
-  return @res
+    
+    my $lowerLevelID = $self->{pyramid}->getTileMatrixSet->getBelowLevelID($node->getLevel);
+    
+    for (my $j=0; $j<=1; $j++){
+        for (my $i=0; $i<=1; $i++){
+            my $nodeKey = sprintf "%s_%s",$node->getCol*2+$i, $node->getRow*2+$j;
+            if (exists $self->{nodes}->{$nodeKey}) {
+                push @res, $self->{nodes}->{$nodeKey};
+            }
+        }
+    }
+    
+    return @res;
 }
 
 sub getNodesOfLevel {
-  my $self = shift;
-  my $levelID= shift;
-
-  if (! defined $levelID) {
-    ERROR("Level undef ?");
-    return undef;
-  }
-  
-  my @nodes;
-  my $lvl=$self->{nodes}->{$levelID};
-
-  foreach my $k (keys(%$lvl)){
-    my ($x,$y) = split(/_/, $k);
-    push(@nodes, {level => $levelID, x => $x, y => $y});
-  }
-
-  return @nodes;
+    my $self = shift;
+    my $levelID= shift;
+    
+    if (! defined $levelID) {
+        ERROR("Undefined Level");
+        return undef;
+    }
+    
+    return @{values $self->{nodes}->{$levelID}};
 }
 
 sub getNodesOfTopLevel {
-  my $self = shift;
-  return $self->getNodesOfLevel($self->{topID});
+    my $self = shift;
+    return $self->getNodesOfLevel($self->{topID});
 }
 
 sub getNodesOfCutLevel {
@@ -1126,60 +1117,6 @@ sub getNodesOfCutLevel {
 sub getNodesOfBottomLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{bottomID});
-}
-
-sub setComputingCode {
-    my $self = shift;
-    my $node = shift;
-    my $code = shift;
-
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-
-    $self->{nodes}{$node->{level}}{$keyidx}[2] = $code;
-
-}
-
-#
-=begin nd
-method: updateWeightOfNode
-
-Parameters:
-    node - node we want to update weight.
-    weight - value to add to the node's weight.
-=cut
-sub updateWeightOfNode(){
-    my $self = shift;
-    my $node = shift;
-    my $weight = shift;
-
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-
-    if ($node->{level} eq $self->{bottomID}) {
-        $self->{nodes}{$node->{level}}{$keyidx}[1] += $weight;
-    } else {
-        $self->{nodes}{$node->{level}}{$keyidx}[0] += $weight;
-    }
-}
-
-#
-=begin nd
-method: setAccumulatedWeightOfNode
-
-Parameters:
-    node - node we want to store accumulated weight.
-    weight - value to add to the node's own weight to obtain accumulated weight (childs' accumulated weights' sum).
-=cut
-sub setAccumulatedWeightOfNode(){
-    my $self = shift;
-    my $node = shift;
-    my $weight = shift;
-
-    my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-
-    return if ($node->{level} eq $self->{bottomID});
-
-    $self->{nodes}{$node->{level}}{$keyidx}[1] = $weight + $self->{nodes}{$node->{level}}{$keyidx}[0];
-    
 }
 
 1;

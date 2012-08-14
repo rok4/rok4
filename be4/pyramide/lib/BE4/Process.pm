@@ -44,6 +44,7 @@ use File::Path;
 use Data::Dumper;
 
 use BE4::Harvesting;
+use BE4::Level;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -61,11 +62,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 # Commands
 use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
-use constant CACHE_2_WORK_PRG => "tiffcp -s";
-use constant WORK_2_CACHE_PRG => "tiff2tile";
-use constant MERGE_N_TIFF     => "mergeNtiff";
 use constant MERGE_4_TIFF     => "merge4tiff";
-use constant UNTILE           => "untile";
 # Commands' weights
 use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
@@ -359,29 +356,23 @@ Example:
     Wms2work ${TMP_DIR}/18_8300_5638.tif "http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_D075-E&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:3857&BBOX=264166.3697535659936,6244599.462785762557312,266612.354658691633792,6247045.447690888197504&WIDTH=4096&HEIGHT=4096&STYLES="
 
 Parameters:
-    node - node whose image have to be harvested.
-    fileName - file to save the download (level_x_y.tif).
+    node - BE4::Node object, whose image have to be harvested.
+    harvesting - BE4::Harvesting object, to use to harvest image.
 =cut
 sub wms2work {
-    #  FIXME: - parametrer le proxy (placer une option dans le fichier de configuration [harvesting] !)
-    my ($self, $node, $fileName) = @_;
+    my ($self, $node, $harvesting) = @_;
     
     TRACE;
     
-    my $tree = $self->{trees}[$self->{currentTree}];
+    my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
+    my $tms     = $self->{pyramid}->getTileMatrixSet;
     
-    my $imgDesc = $tree->getImgDescOfNode($node);
-    my @imgSize = $self->{pyramid}->getCacheImageSize($node->{level}); # ie size tile image in pixel !
-    my $tms     = $self->{pyramid}->getTileMatrixSet();
-    
-    my $harvesting = $tree->getDataSource->getHarvesting;
-    
-    my $nodeName = sprintf "%s_%s_%s",$node->{level},$node->{x},$node->{y};
+    my $nodeName = $node->getWorkBaseName;
     my $cmd = $harvesting->getCommandWms2work({
         inversion => $tms->getInversion,
         dir       => "\${TMP_DIR}/".$nodeName,
-        srs       => $tms->getSRS(),
-        bbox      => $imgDesc->getBBox,
+        srs       => $tms->getSRS,
+        bbox      => $node->getBBox,
         imagesize => [$imgSize[0], $imgSize[1]]
     });    
     
@@ -390,7 +381,7 @@ sub wms2work {
         exit 4;
     }
     
-    return $cmd;
+    return ($cmd,WGET_W);
 }
 
 #
@@ -408,34 +399,28 @@ Examples:
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/bgImg_19_398_3136 (png)
     
 Parameters:
-    node - node whose image have to be transfered in the work directory.
+    node - BE4::Node object, whose image have to be transfered in the work directory.
     workName - work file name (level_x_y.tif).
 =cut
 sub cache2work {
     my ($self, $node, $workName) = @_;
 
-    my $tree = $self->{trees}[$self->{currentTree}];
-    my @imgSize   = $self->{pyramid}->getCacheImageSize($node->{level}); # ie size tile image in pixel !
+    my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
-
-    DEBUG(sprintf "'%s'(cache) === '%s'(work)", $cacheName, $workName);
     
-    my $dirName = $workName;
-    $dirName =~ s/\.tif//;
+    my $dirName = $node->getWorkBaseName;
 
     if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
-        $tree->updateWeightOfNode($node,CACHE2WORK_PNG_W);
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
-        return $cmd;
+        return ($cmd,CACHE2WORK_PNG_W);
     } else {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
-        $tree->updateWeightOfNode($node,TIFFCP_W);
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
-        return $cmd;
+        return ($cmd,TIFFCP_W);
     }
 }
 
@@ -456,7 +441,7 @@ sub work2cache {
     my $node = shift;
   
     my $tree = $self->{trees}[$self->{currentTree}];
-    my $workImgName  = $self->workNameOfNode($node);
+    my $workImgName  = $node->getWorkName;
     my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data'); 
     
     my $tm = $self->{pyramid}->getTileMatrixSet()->getTileMatrix($node->{level});
@@ -464,7 +449,6 @@ sub work2cache {
     # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
     # complémentaire comme le quadrillage des dalles et le numéro du node, 
     # ou celui des tuiles et leur identifiant.
-    DEBUG(sprintf "'%s'(work) === '%s'(cache)", $workImgName, $cacheImgName);
     
     # Suppression du lien pour ne pas corrompre les autres pyramides.
     my $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
@@ -475,7 +459,7 @@ sub work2cache {
         $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
     }
     
-    return $cmd;
+    return ($cmd,TIFF2TILE_W);
 }
 
 #
@@ -504,9 +488,6 @@ sub mergeNtiff {
     $dataType = 'image' if (! defined $dataType);
     $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
 
-    #"bicubic"; # TODO l'interpolateur pour les mtd sera "nn"
-    # TODO pour les métadonnées ce sera 0
-
     my $cmd = sprintf "MergeNtiff %s %s",$dataType,$confFile;
     
     if (defined $bg) {
@@ -515,7 +496,7 @@ sub mergeNtiff {
         $cmd .= "\n";
     }
 
-    return $cmd;
+    return ($cmd,MERGENTIFF_W);
 }
 
 #
@@ -549,31 +530,8 @@ sub merge4tiff {
   $cmd .= "$childImgParam ";
   $cmd .= sprintf "%s\n%s",$resultImg, RESULT_TEST;
   
-  return $cmd;
+  return ($cmd,MERGE4TIFF_W);
 }
-
-#
-=begin nd
-method: workNameOfNode
-
-Compose the name corresponding to the node
-
-Parameter:
-    node - node whose we want name
-
-Example:
-    level-15_132_3654
-=cut
-sub workNameOfNode {
-  my $self = shift;
-  my $node = shift;
-  
-  TRACE;
-  
-  return sprintf ("%s_%s_%s.tif", $node->{level}, $node->{x}, $node->{y}); 
-}
-
-
 
 
 ####################################################################################################
@@ -735,13 +693,13 @@ sub prepareScript {
 # NOTE
 # Pas utilisé pour le moment
 #--------------------------------------------------------------------------------------------
-sub collectWorkImage(){
+sub collectWorkImage {
   my $self = shift;
   my ($node, $scriptId, $finishId) = @_;
   
   TRACE;
   
-  my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $self->workNameOfNode($node));
+  my $source = File::Spec->catfile( '${ROOT_TMP_DIR}', $scriptId, $node->getWorkName);
   my $code   = sprintf ("mv %s \$TMP_DIR \n", $source);
 
   return $code;
