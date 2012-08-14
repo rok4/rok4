@@ -47,6 +47,7 @@ use Geo::GDAL;
 
 # My module
 use BE4::Tree;
+use BE4::Process;
 use BE4::Pyramid;
 use BE4::DataSourceLoader;
 use BE4::DataSource;
@@ -77,6 +78,7 @@ Group: variable
 
 variable: $self
     * pyramid => undef, # Pyramid object
+    * process => undef, # Process object
     * trees => [], # array of Tree objects
 =cut
 
@@ -115,14 +117,15 @@ sub new {
 =begin nd
 method: _init
 
-Check the Pyramid and DataSourceLoader objects.
+Check the Pyramid and DataSourceLoader objects and Process parameters.
 
 Parameters:
     pyr - a BE4::Pyramid object.
     DSL - a BE4::DataSourceLoader object
+    params_process - job_number, path_temp and path_shell.
 =cut
 sub _init {
-    my ($self, $pyr, $DSL) = @_;
+    my ($self, $pyr, $DSL, $params_process) = @_;
 
     TRACE;
 
@@ -139,6 +142,11 @@ sub _init {
         return FALSE;
     }
 
+    if (! defined $params_process) {
+        ERROR("We need Process' parameters !");
+        return FALSE;
+    }
+    
     return TRUE;
 }
 
@@ -146,28 +154,39 @@ sub _init {
 =begin nd
 method: _load
 
-Create a Tree object per data source.
+Create a Tree object per data source and a Process object.
 
 Parameters:
     pyr - a BE4::Pyramid object.
     DSL - a BE4::DataSourceLoader object
+    params_process - job_number, path_temp and path_shell.
 =cut
 sub _load {
-    my ($self, $pyr, $DSL) = @_;
+    my ($self, $pyr, $DSL, $params_process) = @_;
 
     TRACE;
 
     my $dataSources = $DSL->getDataSources;
     my $TMS = $pyr->getTileMatrixSet;
 
+    # PROCESS
+    my $process = BE4::Process->new($params_process);
+
+    if (! defined $process) {
+        ERROR ("Can not load Process !");
+        return FALSE;
+    }
+    $self->{process} = $process;
+    
+    # TREES
     foreach my $datasource (@{$dataSources}) {
         
-        if ($datasource->hasImages()) {
+        if ($datasource->hasImages) {
             
-            if (($datasource->getSRS() ne $TMS->getSRS()) ||
-                (! $self->{pyramid}->isNewPyramid() && ($pyr->getCompression() eq 'jpg'))) {
+            if (($datasource->getSRS ne $TMS->getSRS) ||
+                (! $self->{pyramid}->isNewPyramid && ($pyr->getCompression eq 'jpg'))) {
                 
-                if (! $datasource->hasHarvesting()) {
+                if (! $datasource->hasHarvesting) {
                     ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s) for the base level %s",
                         $pyr->getDataSource()->getSRS(), $pyr->getTileMatrixSet()->getSRS(),
                         $pyr->getCompression(), $datasource->getBottomID);
@@ -184,7 +203,7 @@ sub _load {
         
         # Now, if datasource contains a WMS service, we have to use it
         
-        my $tree = BE4::Tree->new($datasource, $pyr, $self->{job_number});
+        my $tree = BE4::Tree->new($datasource, $pyr, $process);
         
         if (! defined $tree) {
             ERROR(sprintf "Can not create a Tree object for datasource with bottom level %s !",
@@ -215,12 +234,6 @@ sub containsNode {
     return FALSE;
 }
 
-####################################################################################################
-#                                       GETTERS / SETTERS                                          #
-####################################################################################################
-
-# Group: getters - setters
-
 #
 =begin nd
 method: computeTrees
@@ -235,35 +248,6 @@ sub computeTrees {
 
     TRACE;
     
-    # -------------------------------------------------------------------
-    # We initialize scripts (name, header, weights)
-    
-    my $functions = $self->configureFunctions();
-    
-    for (my $i = 0; $i <= $self->{job_number}; $i++) {
-        my $scriptID = sprintf "SCRIPT_%s",$i;
-        $scriptID = "SCRIPT_FINISHER" if ($i == 0);
-        
-        my $header = $self->prepareScript($scriptID,$functions);
-        
-        push @{$self->{scriptsID}},$scriptID;
-        push @{$self->{codes}},$header;
-        push @{$self->{weights}},0;
-    }
-    
-    # -------------------------------------------------------------------
-    # We create the mergeNtiff configuration directory "path_temp/mergNtiff"
-    my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir(), "mergeNtiff");
-    if (! -d $mergNtiffConfDir) {
-        DEBUG (sprintf "Create mergeNtiff configuration directory");
-        eval { mkpath([$mergNtiffConfDir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $mergNtiffConfDir, $@);
-            return FALSE;
-        }
-    }
-    
-    # -------------------------------------------------------------------
     # We open stream to the new cache list, to add generated tile when we browse tree.    
     my $NEWLIST;
     if (! open $NEWLIST, ">>", $self->{pyramid}->getNewListFile) {
@@ -271,28 +255,26 @@ sub computeTrees {
         return FALSE;
     }
     
-    while ($self->{currentTree} < scalar @{$self->{trees}}) {
-        if (! $self->computeWholeTree($NEWLIST)) {
-            ERROR(sprintf "Cannot compute tree number %s",$self->{currentTree});
+    my $treeInd = 0;
+    my $treeNumber = scalar @{$self->{trees}};
+    foreach my $tree (@{$self->{trees}}) {
+        if (! $tree->computeWholeTree($NEWLIST)) {
+            ERROR(sprintf "Cannot compute tree $treeInd/$treeNumber");
             return FALSE;
         }
-        $self->{currentTree}++;
+        INFO("Tree $treeInd/$treeNumber computed")
     }
     
     close $NEWLIST;
     
-    # -------------------------------------------------------------------
-    # We save codes in files
-    
-    for (my $i = 0; $i <= $self->{job_number}; $i++) {
-        if (! $self->saveScript($self->{codes}[$i], $self->{scriptsID}[$i])) {
-            ERROR(sprintf "Can not save the script '%s' !", $self->{scriptsID}[$i]);
-            return FALSE;
-        }
-    }
-    
     return TRUE;
 }
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
 
 sub getTrees {
     my $self = shift;

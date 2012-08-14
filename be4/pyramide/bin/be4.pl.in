@@ -542,6 +542,7 @@ sub doIt {
     ALWAYS(">>> Load Forest ...");
   
     $objForest = BE4::Forest->new(
+        $params->{process},
         $objPyramid,
         $objDSL
     );
