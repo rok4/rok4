@@ -1112,8 +1112,8 @@ sub createLevels {
             next;
         }
 
-        my $tileperwidth     = $self->getTilePerWidth();
-        my $tileperheight    = $self->getTilePerHeight();
+        my $tileperwidth     = $self->getTilesPerWidth();
+        my $tileperheight    = $self->getTilesPerHeight();
 
         # base dir image
         my $baseimage = File::Spec->catdir($self->getNewDataDir(),
@@ -1408,7 +1408,7 @@ sub writeCachePyramid {
                 my $level = $directories[2];
                 my $b36path = "";
                 for (my $i = 3; $i < scalar @directories; $i++) {
-                    $b36path .= $directories[$i];
+                    $b36path .= $directories[$i]."/";
                 }
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
@@ -1761,13 +1761,13 @@ sub getCacheImageWidth {
     my $self = shift;
     my $level = shift;
     # width of cache image in pixel for a defined level !
-    return $self->getTilePerWidth() * $self->getTileMatrixSet()->getTileWidth($level);
+    return $self->getTilesPerWidth() * $self->getTileMatrixSet()->getTileWidth($level);
 }
 sub getCacheImageHeight {
     my $self = shift;
     my $level = shift;
     # height of cache image in pixel for a defined level !
-    return $self->getTilePerHeight() * $self->getTileMatrixSet()->getTileHeight($level);
+    return $self->getTilesPerHeight() * $self->getTileMatrixSet()->getTileHeight($level);
 }
 
 sub getTileWidth {
@@ -1782,12 +1782,12 @@ sub getTileHeight {
     return $self->getTileMatrixSet()->getTileHeight($level);
 }
 
-sub getTilePerWidth {
+sub getTilesPerWidth {
     my $self = shift;
     return $self->{image_width};
 }
 
-sub getTilePerHeight {
+sub getTilesPerHeight {
     my $self = shift;
     return $self->{image_height};
 }

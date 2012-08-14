@@ -205,7 +205,7 @@ sub b36PathToIndices {
     my $x = BE4::Base36->encodeB36toB10($xB36);
     my $y = BE4::Base36->encodeB36toB10($yB36);
     
-    return [$x, $y];
+    return ($x, $y);
 }
 
 
