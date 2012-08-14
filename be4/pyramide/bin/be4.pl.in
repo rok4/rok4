@@ -58,8 +58,9 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4::PropertiesLoader;
 use BE4::Pyramid;
+use BE4::DataSource;
 use BE4::DataSourceLoader;
-use BE4::Forest;
+use BE4::Process;
 
 ################################################################################
 # Constantes
@@ -476,39 +477,28 @@ sub checkParams {
 method: doIt
 
 Steps in order, using parameters.
-    - Create the Pyramid object
     - Load data sources
-    - Update levels for this Pyramid object
-    - Create the Forest object
+    - Create the Pyramid object
+    - Create the Process object
     - Write (initialization) the cache and its list
     - Write the pyramid's descriptor
     - Compute trees (write scripts)
 =cut
 sub doIt {
 
-    #######################
+    ###################
     # link to parameters
     my $params = $this{params};
     
-    #######################
+    ###################
     # objects to implemented
     
-    my $objPyramid = undef;
+    my $objPyramid     = undef;
     my $objDSL = undef;
-    my $objForest = undef;
-    
-    #######################
-    # create a pyramid
-    
-    ALWAYS(">>> Load a Pyramid ...");
-    
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$params->{process}->{path_temp});
-    if (! defined $objPyramid) {
-        ERROR ("Can not load Pyramid !");
-        return FALSE;
-    }
-    
-    #######################
+    my $objDataSources = undef;
+    my $objProcess     = undef;
+
+    ###################
     # load data source
     
     ALWAYS(">>> Load Data Source ...");
@@ -518,16 +508,25 @@ sub doIt {
         ERROR ("Cannot load data sources !");
         return FALSE;
     }
+
+    $objDataSources = $objDSL->getSources();
     
-    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDSL));
+    if (scalar $objDataSources == 0) {
+        ERROR ("No data source !");
+        return FALSE;
+    }
     
-    #######################
-    # update levels
+    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDataSources));
+  
+    ##################
+    # create a pyramid
     
-    ALWAYS(">>> Determine levels ...");
+    ALWAYS(">>> Load a Pyramid ...");
     
-    if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
-        ERROR ("Can not update levels !");
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$objDataSources,$params->{process}->{path_temp});
+    
+    if (! defined $objPyramid) {
+        ERROR ("Can not load Pyramid !");
         return FALSE;
     }
 
@@ -537,31 +536,32 @@ sub doIt {
     # which are calculated in the Process creation
   
     #######################
-    # create forest : load trees
+    # create process script
     
-    ALWAYS(">>> Load Forest ...");
+    ALWAYS(">>> Load Process ...");
   
-    $objForest = BE4::Forest->new(
-        $objPyramid,
-        $objDSL
+    $objProcess = BE4::Process->new(
+        $params->{process},
+        $objPyramid
     );
   
-    if (! defined $objForest) {
-        ERROR ("Can not load the forest !");
+    if (! defined $objProcess) {
+        ERROR ("Can not prepare process !");
         return FALSE;
     }
 
-    #######################
+    ##################
     # write the pyramid cache
     
     ALWAYS(">>> Write Cache Pyramid and the list ...");
 
-    if (! $objPyramid->writeCachePyramid($objForest)) {
+    if (! $objPyramid->writeCachePyramid($objProcess->getTrees())) {
         ERROR ("Can not write Pyramid Cache or the list !");
         return FALSE;
     }
     
-    #######################
+    
+    ##################
     # write the pyramid descriptor
 
     ALWAYS(">>> Write Configuration Pyramid ...");
@@ -574,17 +574,29 @@ sub doIt {
     DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
     
-    #######################
+    ##################
     # compute process
     
     ALWAYS(">>> Compute Process ...");
     
-    if (! $objForest->computeTrees()) {
+    if (! $objProcess->computeTrees()) {
         ERROR ("Can not compute process !");
         return FALSE;
     }
       
-    DEBUG (sprintf "FOREST (dump) = %s", Dumper($objForest));
+    DEBUG (sprintf "PROCESS (dump) = %s", Dumper($objProcess));
+    
+    return TRUE; #TEST#
+
+    #######################
+    # execute process script
+    
+    return TRUE if (! $opts{test}); #TEST#
+    
+    if (! $objProcess->processScript()) {
+        ERROR ("Can not execute process !");
+        return FALSE;
+    }
     
     return TRUE;
 }
