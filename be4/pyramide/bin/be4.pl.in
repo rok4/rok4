@@ -531,7 +531,7 @@ sub doIt {
         return FALSE;
     }
 
-    DEBUG(sprintf "PYRAMID (dump) = %s", Dumper($objPyramid)); #TEST#
+    DEBUG(sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
     # we cannot write the pyramid descriptor and cache now. We need data's limits
     # which are calculated in the Process creation
@@ -542,9 +542,9 @@ sub doIt {
     ALWAYS(">>> Load Forest ...");
   
     $objForest = BE4::Forest->new(
-        $params->{process},
         $objPyramid,
-        $objDSL
+        $objDSL,
+        $params->{process}
     );
   
     if (! defined $objForest) {
@@ -578,10 +578,10 @@ sub doIt {
     #######################
     # compute process
     
-    ALWAYS(">>> Compute Process ...");
+    ALWAYS(">>> Compute forest ...");
     
     if (! $objForest->computeTrees()) {
-        ERROR ("Can not compute process !");
+        ERROR ("Can not compute forest !");
         return FALSE;
     }
       

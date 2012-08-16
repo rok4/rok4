@@ -191,8 +191,6 @@ sub b36PathToIndices {
     my $class = shift ;
     my $path = shift;
     
-    print "path = $path\n"; #TEST#
-    
     my $xB36 = "";
     my $yB36 = "";
     
@@ -205,8 +203,6 @@ sub b36PathToIndices {
     
     my $x = BE4::Base36->encodeB36toB10($xB36);
     my $y = BE4::Base36->encodeB36toB10($yB36);
-    
-    print "$xB36, $yB36 => $x, $y\n"; #TEST#
     
     return ($x, $y);
 }

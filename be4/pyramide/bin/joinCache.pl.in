@@ -1355,7 +1355,6 @@ sub doIt {
             
             INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
             
-            ALWAYS("BBOX : $jmin,$jmax,$imin,$imax"); #TEST#
             my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{bbox}};
 
             for (my $I = $IMIN; $I <= $IMAX; $I++) {

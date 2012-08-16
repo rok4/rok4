@@ -57,6 +57,7 @@ use BE4::NoData;
 use BE4::PyrImageSpec;
 use BE4::Pixel;
 use BE4::Forest;
+use BE4::Node;
 use BE4::Base36;
 
 require Exporter;
@@ -1288,7 +1289,7 @@ sub writeCachePyramid {
             # ID 0 is kept for the new pyramid root, all ID are incremented
             $directories[0]++;
             
-            my $node = undef;
+            my ($level,$x,$y);
             
             if ($directories[1] ne $self->{dir_nodata}) {
                 my $level = $directories[2];
@@ -1299,10 +1300,9 @@ sub writeCachePyramid {
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
                 my ($x,$y) = BE4::Base36->b36PathToIndices($b36path);
-                $node = {level => $level, x => $x, y => $y};
             }
             
-            if (! $forest->containsNode($node)) {
+            if (! $forest->containsNode($level,$x,$y)) {
                 # This image is not in the forest, it won't be modified by this generation.
                 # We add it now to the list (real file path)
                 printf $NEWLIST "%s\n", File::Spec->catdir(@directories);
@@ -1685,7 +1685,7 @@ Example:
     $objPyr->getCacheNameOfImage({level => "level_19",x => 4032,y => 18217},"data") returns "IMAGE/level_19/3E/42/01.tif"
 
 Parameters:
-    node - node whose name is wanted
+    node - BE4::Node object whose name is wanted.
     type - tile type : "data" or "metadata".
 =cut
 sub getCacheNameOfImage {
@@ -1700,9 +1700,9 @@ sub getCacheNameOfImage {
       $typeDir=$self->getDirImage();
     }
     
-    my $base36path = BE4::Base36->indicesToB36Path($node->{x},$node->{y},$self->getDirDepth()+1);
+    my $base36path = BE4::Base36->indicesToB36Path($node->getCol,$node->getRow,$self->getDirDepth()+1);
     
-    return File::Spec->catfile($typeDir, $node->{level}, $base36path.".tif"); 
+    return File::Spec->catfile($typeDir, $node->getLevel, $base36path.".tif"); 
 }
 
 #
@@ -1717,7 +1717,7 @@ Example:
     return "/home/ign/BDORTHO/IMAGE/level_19/3E/42/01.tif"
 
 Parameters:
-    node - node whose path is wanted.
+    node - BE4::Node object whose path is wanted.
     type - tile type : data or metadata.
     
 See also:

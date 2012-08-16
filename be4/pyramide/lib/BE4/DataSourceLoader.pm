@@ -109,7 +109,7 @@ sub new {
         return undef if (! $self->_loadOld(@_));
     }
     
-    INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}}); #TEST#
+    INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}});
 
     return $self;
 }
@@ -306,7 +306,6 @@ sub updateDataSources {
         $datasource->setBottomOrder($dsBottomOrder);
         
         if (! defined $bottomOrder || $dsBottomOrder < $bottomOrder) {
-            ALWAYS ("Devient le niveau du bas"); #TEST#
             $bottomID = $dsBottomID;
             $bottomOrder = $dsBottomOrder;
         }

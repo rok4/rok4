@@ -128,8 +128,6 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    ALWAYS (sprintf "params %s",Dumper($params) ); #TEST#
-    
     # 'max_width' and 'max_height' are optionnal, but if one is defined, the other must be defined
     if (exists($params->{max_width}) && defined ($params->{max_width})) {
         $self->{max_width} = $params->{max_width};

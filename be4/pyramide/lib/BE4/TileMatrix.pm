@@ -150,7 +150,7 @@ sub _init {
 =begin nd
 method: getImgGroundWidth
 
-Return the ground width of an image, whose number of tile (widthwise) is can be provided.
+Return the ground width of an image, whose number of tile (widthwise) can be provided.
 
 Parameters:
     tilesPerWidth - Optionnal (1 if undefined) 
@@ -162,7 +162,7 @@ sub getImgGroundWidth {
     $tilesPerWidth = 1 if (! defined $tilesPerWidth);
     
     my $xRes = Math::BigFloat->new($self->getResolution);
-    my $imgGroundWidth = $self->getTileWidth * $tilesPerWidth * $xRes;
+    my $imgGroundWidth = $xRes * $self->getTileWidth * $tilesPerWidth;
     
     return $imgGroundWidth;
 }
@@ -171,7 +171,7 @@ sub getImgGroundWidth {
 =begin nd
 method: getImgGroundHeight
 
-Return the ground height of an image, whose number of tile (heightwise) is can be provided.
+Return the ground height of an image, whose number of tile (heightwise) can be provided.
 
 Parameters:
     tilesPerHeight - Optionnal (1 if undefined) 
@@ -183,7 +183,7 @@ sub getImgGroundHeight {
     $tilesPerHeight = 1 if (! defined $tilesPerHeight);
     
     my $yRes = Math::BigFloat->new($self->getResolution);
-    my $imgGroundHeight = $self->getTileHeight * $tilesPerHeight * $yRes;
+    my $imgGroundHeight = $yRes * $self->getTileHeight * $tilesPerHeight;
     
     return $imgGroundHeight;
 }
@@ -296,11 +296,11 @@ sub yToRow {
 =begin nd
 method: indicesToBBox
 
-Return the BBox from image's indices in an array : [xMin,yMin,xMax,yMax].
+Return the BBox from image's indices in a list : (xMin,yMin,xMax,yMax).
 
 Parameters:
     i,j - Image indices.
-    tilesPerWidth,tilesPerHeight - Number of tile in the image, width wise and heightwise.
+    tilesPerWidth,tilesPerHeight - Number of tile in the image, widthwise and heightwise.
 =cut
 sub indicesToBBox {
     my $self  = shift;
@@ -312,8 +312,8 @@ sub indicesToBBox {
     my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
     my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
     
-    my $xMin = $self->getTopLeftCornerX + $i * $imgGroundWidth;
-    my $yMax = $self->getTopLeftCornerY - $j * $imgGroundHeight;
+    my $xMin = $self->getTopLeftCornerX + $imgGroundWidth * $i;
+    my $yMax = $self->getTopLeftCornerY - $imgGroundHeight * $j;
     my $xMax = $xMin + $imgGroundWidth;
     my $yMin = $yMax - $imgGroundHeight;
     
@@ -353,13 +353,13 @@ sub getMatrixHeight {
 
 sub getTopLeftCornerX {
     my $self = shift;
-    return $self->{topleftcornerx}; 
+    return Math::BigFloat->new($self->{topleftcornerx}); 
 }
 
 sub getTopLeftCornerY {
     my $self = shift;
     TRACE ("getTopLeftCornerY");
-    return $self->{topleftcornery}; 
+    return Math::BigFloat->new($self->{topleftcornery}); 
 }
 
 

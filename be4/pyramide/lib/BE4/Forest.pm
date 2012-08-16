@@ -131,7 +131,7 @@ sub _init {
 
     # it's an object and it's mandatory !
     if (! defined $pyr || ref ($pyr) ne "BE4::Pyramid") {
-        ERROR("Can not load Pyramid!");
+        ERROR("Can not load Pyramid !");
         return FALSE;
     }
     $self->{pyramid} = $pyr;
@@ -170,7 +170,7 @@ sub _load {
     my $TMS = $pyr->getTileMatrixSet;
 
     # PROCESS
-    my $process = BE4::Process->new($params_process);
+    my $process = BE4::Process->new($params_process, $pyr);
 
     if (! defined $process) {
         ERROR ("Can not load Process !");
@@ -188,8 +188,8 @@ sub _load {
                 
                 if (! $datasource->hasHarvesting) {
                     ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s) for the base level %s",
-                        $pyr->getDataSource()->getSRS(), $pyr->getTileMatrixSet()->getSRS(),
-                        $pyr->getCompression(), $datasource->getBottomID);
+                        $pyr->getDataSource->getSRS, $pyr->getTileMatrixSet->getSRS,
+                        $pyr->getCompression, $datasource->getBottomID);
                     return FALSE;
                 }
                 
@@ -225,10 +225,12 @@ sub _load {
 
 sub containsNode {
     my $self = shift;
-    my $node = shift;
+    my $level = shift;
+    my $x = shift;
+    my $y = shift;
     
     foreach my $tree (@{$self->{trees}}) {
-        return TRUE if ($tree->containsNode($node));
+        return TRUE if ($tree->containsNode($level,$x,$y));
     }
     
     return FALSE;
@@ -255,7 +257,7 @@ sub computeTrees {
         return FALSE;
     }
     
-    my $treeInd = 0;
+    my $treeInd = 1;
     my $treeNumber = scalar @{$self->{trees}};
     foreach my $tree (@{$self->{trees}}) {
         if (! $tree->computeWholeTree($NEWLIST)) {

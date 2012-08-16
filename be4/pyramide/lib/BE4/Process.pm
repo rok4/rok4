@@ -245,7 +245,7 @@ sub _init {
     TRACE;
 
     if (! defined $pyr || ref ($pyr) ne "BE4::Pyramid") {
-        ERROR("Can not load Pyramid!");
+        ERROR("Can not load Pyramid !");
         return FALSE;
     }
     $self->{pyramid} = $pyr;
@@ -364,8 +364,12 @@ sub wms2work {
     
     TRACE;
     
+    ALWAYS (sprintf "harvesting : %s",Dumper($harvesting)); #TEST#
+    
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
+    
+    ALWAYS (sprintf "img size : %s",Dumper(@imgSize)); #TEST#
     
     my $nodeName = $node->getWorkBaseName;
     my $cmd = $harvesting->getCommandWms2work({
@@ -373,7 +377,7 @@ sub wms2work {
         dir       => "\${TMP_DIR}/".$nodeName,
         srs       => $tms->getSRS,
         bbox      => $node->getBBox,
-        imagesize => [$imgSize[0], $imgSize[1]]
+        imagesize => ($imgSize[0], $imgSize[1])
     });    
     
     if (! defined $cmd) {
@@ -400,26 +404,23 @@ Examples:
     
 Parameters:
     node - BE4::Node object, whose image have to be transfered in the work directory.
-    workName - work file name (level_x_y.tif).
 =cut
 sub cache2work {
-    my ($self, $node, $workName) = @_;
+    my ($self, $node, $baseName) = @_;
 
+    $baseName = $node->getWorkBaseName if (! defined $baseName);
     my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
-    
-    my $dirName = $node->getWorkBaseName;
 
     if ($self->{pyramid}->getCompression() eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $dirName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName);
         return ($cmd,CACHE2WORK_PNG_W);
     } else {
-        # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);
         return ($cmd,TIFFCP_W);
     }
 }
@@ -428,34 +429,34 @@ sub cache2work {
 =begin nd
 method: work2cache
 
-Copy image from work directory to cache and transform it (tiles and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
 
 Example:
     Work2cache ${TMP_DIR}/19_395_3137.tif ${PYR_DIR}/IMAGE/19/02/AF/Z5.tif
 
 Parameter:
-    node - node whose image have to be transfered in the cache.
+    node - BE4::Node object, whose image have to be transfered in the cache.
+    rm - boolean, specify if image have to be removed after copy in the cache (false by default)
 =cut
 sub work2cache {
     my $self = shift;
     my $node = shift;
-  
-    my $tree = $self->{trees}[$self->{currentTree}];
-    my $workImgName  = $node->getWorkName;
-    my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data'); 
+    my $rm = shift;
     
-    my $tm = $self->{pyramid}->getTileMatrixSet()->getTileMatrix($node->{level});
+    $rm = FALSE if (! defined $rm);
+
+    my $workImgName  = $node->getWorkName;
+    my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
     
     # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
     # complémentaire comme le quadrillage des dalles et le numéro du node, 
     # ou celui des tuiles et leur identifiant.
     
     # Suppression du lien pour ne pas corrompre les autres pyramides.
-    my $cmd   .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
+    my $cmd .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
-    
-    if ($node->{level} eq $tree->getTopLevelID) {
+    if ($rm) {
         $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
     }
     
@@ -478,25 +479,67 @@ Example:
 =cut
 sub mergeNtiff {
     my $self = shift;
-    my $confFile = shift;
-    my $bg = shift; # optionnal
-    my $dataType = shift; # param. are image or mtd to mergeNtiff script !
+    my $node = shift;
 
     TRACE;
-
-    $dataType = 'image' if (  defined $dataType && $dataType eq 'data');
-    $dataType = 'image' if (! defined $dataType);
-    $dataType = 'mtd'   if (  defined $dataType && $dataType eq 'metadata');
-
-    my $cmd = sprintf "MergeNtiff %s %s",$dataType,$confFile;
     
-    if (defined $bg) {
-        $cmd .= " \${TMP_DIR}/$bg\n";
-    } else {
-        $cmd .= "\n";
+    my ($c, $w);
+    my ($code, $weight) = ("",0);
+    
+    my $workBgPath=undef;
+    my $workBgBaseName=undef;
+    my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
+    my $workImgPath = File::Spec->catfile($self->getScriptTmpDir, $node->getWorkName);
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
+    # correspondant dans la nouvelle pyramide.
+    if ( -f $cacheImgPath ) {
+        $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
+        $workBgPath = File::Spec->catfile($self->getScriptTmpDir,$workBgBaseName.".tif");
+        # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
+        ($c,$w) = $self->cache2work($node,$workBgBaseName);
+        $code .= $c;
+        $weight += $w;
     }
 
-    return ($cmd,MERGENTIFF_W);
+    my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir, "mergeNtiff");
+    my $mergNtiffConfFilename = join("_","mergeNtiffConfig", $node->getWorkBaseName).".txt";
+    my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
+    my $mergNtiffConfFileForScript = File::Spec->catfile('${ROOT_TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
+
+    if (! open CFGF, ">", $mergNtiffConfFile ){
+        ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
+        return ("",-1);
+    }
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    printf CFGF $node->to_mergentif_string($workImgPath);
+
+    # Maintenant les dalles en entrée:
+    # L'éventuel fond
+    if (defined $workBgPath){
+        # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
+        printf CFGF "%s", $node->to_mergentif_string($workBgPath);
+    }
+    # Les images source
+    my $listGeoImg = $node->getGeoImages;
+    foreach my $img (@{$listGeoImg}){
+        printf CFGF "%s", $img->to_string();
+    }
+    close CFGF;
+    
+
+    $code .= "MergeNtiff image $mergNtiffConfFileForScript";
+    $weight += MERGENTIFF_W;
+    
+    if (defined $workBgPath) {
+        $code .= " $workBgPath\n";
+    } else {
+        $code .= "\n";
+    }
+
+    return ($code,$weight);
 }
 
 #
@@ -568,11 +611,11 @@ sub configureFunctions {
     my $sf = $pyr->getSampleFormat;
     $conf_mNt .= "-a $sf ";
 
-    if ($self->{pyramid}->getNodata->getNoWhite) {
+    if ($self->getNodata->getNoWhite) {
         $conf_mNt .= "-nowhite ";
     }
 
-    my $nd = $self->{pyramid}->getNodata->getValue;
+    my $nd = $self->getNodata->getValue;
     $conf_mNt .= "-n $nd ";
 
     $configuredFunc =~ s/__mNt__/$conf_mNt/;
@@ -745,7 +788,7 @@ sub getJobNumber {
 
 sub getNodata {
   my $self = shift;
-  return $self->{nodata}; 
+  return $self->{pyramid}->{nodata}; 
 }
 
 sub getWeights {

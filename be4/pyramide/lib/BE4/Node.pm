@@ -41,6 +41,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 
 use File::Spec ;
+use Data::Dumper ;
 use BE4::Base36 ;
 
 require Exporter;
@@ -141,9 +142,9 @@ sub _init {
     $self->{j} = $params->{j};
     $self->{tm} = $params->{tm};
     $self->{graph} = $params->{graph};
-    $self->{w} = $params->{w};
-    $self->{W} = $params->{W};
-    $self->{c} = $params->{c};
+    $self->{w} = 0;
+    $self->{W} = 0;
+    $self->{code} = '';
     
     return TRUE;
 }
@@ -233,6 +234,8 @@ sub getBBox {
         $self->{graph}->getPyramid->getTilesPerHeight
     );
     
+    #ALWAYS(sprintf "BBOX : %s",Dumper(@Bbox)); #TEST#
+    
     return @Bbox;
 }
 
@@ -281,9 +284,9 @@ sub to_mergentif_string {
     my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $filePath,
         $Bbox[0],
-        $Bbox[1],
-        $Bbox[2],
         $Bbox[3],
+        $Bbox[2],
+        $Bbox[1],
         $self->getTM->getResolution(),
         $self->getTM->getResolution();
     

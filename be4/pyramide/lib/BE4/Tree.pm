@@ -44,7 +44,6 @@ use Geo::OGR;
 use Data::Dumper;
 
 use BE4::DataSource;
-use BE4::ImageDesc;
 use BE4::Node;
 use BE4::Array;
 
@@ -226,15 +225,16 @@ sub _load {
     # Calcul des branches à partir des feuilles
     for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++){
         my $levelID = $tms->getIDfromOrder($i);
-        
+
+        # pyramid's limits update : we store data's limits in the pyramid's levels
+        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
+
         foreach my $node ($self->getNodesOfLevel($levelID)) {
-            # pyramid's limits update : we store data's limits in the pyramid's levels
-            $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
             
             if ($i != $src->getTopOrder) {
                 my $aboveLevelID = $tms->getIDfromOrder($i+1);
                 my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
-                if (exists $self->{nodes}->{$parentNodeKey}) {
+                if (exists $self->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
                     # This Node already exists
                     next;
                 }
@@ -250,7 +250,7 @@ sub _load {
                           $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
                     return FALSE;
                 }
-                $self->{nodes}->{$parentNodeKey} = $node;
+                $self->{nodes}->{$aboveLevelID}->{$parentNodeKey} = $node;
             }
         }
 
@@ -282,7 +282,8 @@ sub identifyBottomTiles {
     
     TRACE();
     
-    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($self->{bottomID});
+    my $bottomID = $self->{bottomID};
+    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     my $datasource = $self->{datasource};
     my ($TPW,$TPH) = ($self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight);
     
@@ -311,7 +312,7 @@ sub identifyBottomTiles {
 
                     if ($datasource->hasHarvesting) {
                         # we use WMS service to generate this leaf
-                        if (exists $self->{nodes}->{$nodeKey}) {
+                        if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
                             # This Node already exists
                             next;
                         }
@@ -327,13 +328,13 @@ sub identifyBottomTiles {
                                   $self->{bottomID}, $i, $j);
                             return FALSE;
                         }
-                        $self->{nodes}->{$nodeKey} = $node;
+                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     } else {
                         # we use images to generate this leaf
-                        if (exists $self->{nodes}->{$nodeKey}) {
+                        if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
                             # This Node already exists
                             # We add this GeoImage to this node
-                            $self->{nodes}->{$nodeKey}->addGeoImages($objImg);
+                            $self->{nodes}->{$bottomID}->{$nodeKey}->addGeoImages($objImg);
                             next;
                         }
                         # Create a new Node
@@ -349,7 +350,7 @@ sub identifyBottomTiles {
                             return FALSE;
                         }
                         $node->addGeoImages($objImg);
-                        $self->{nodes}->{$nodeKey} = $node;
+                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     }
                 }
             }
@@ -400,7 +401,7 @@ sub identifyBottomTiles {
                               $self->{bottomID}, $i, $j);
                         return FALSE;
                     }
-                    $self->{nodes}->{$nodeKey} = $node;
+                    $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }
@@ -483,7 +484,8 @@ sub computeWholeTree {
     # Pondération de l'arbre en fonction des opérations à réaliser,
     # création du code script (ajouté aux noeuds de l'arbre) et mise à
     # jour de la liste des fichiers du cache avec les nouvelles images.
-    my @topLevelNodeList = $self->getNodesOfTopLevel();
+    my @topLevelNodeList = $self->getNodesOfTopLevel;
+    
     foreach my $topNode (@topLevelNodeList) {
         if (! $self->computeBranch($topNode,$NEWLIST)) {
             ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
@@ -510,12 +512,12 @@ sub computeWholeTree {
     # Split scripts
     for (my $scriptCount = 1; $scriptCount <= $self->{process}->getJobNumber; $scriptCount++){
 
-        if (! defined($nodeRack[$scriptCount-1])){
+        if (! defined($nodeRack[$scriptCount-1])) {
             $self->{process}->printInScript("echo \"Nothing to do : not a problem.\"\n",$scriptCount);
         } else {
-            foreach my $node (@{$nodeRack[$scriptCount-1]}){
+            foreach my $node (@{$nodeRack[$scriptCount-1]}) {
                 $self->{process}->printInScript(
-                    sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->{level} ,$node->{x}, $node->{y})
+                    sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow)
                     ,$scriptCount);
                 $self->writeBranchCode($node,$scriptCount);
                 # NOTE : pas d'image à collecter car non séparation par script du dossier temporaire, de travail
@@ -559,6 +561,7 @@ See Also:
     <computeBottomImage>, <computeAboveImage>
 =cut
 sub computeBranch {
+    
     my $self = shift;
     my $node = shift;
     my $NEWLIST = shift;
@@ -574,26 +577,25 @@ sub computeBranch {
     if (scalar @childList == 0){
         if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)",
-                  $node->{x}, $node->{y}, $node->{level});
+                  $node->getCol, $node->getRow, $node->getLevel);
             return FALSE;
         }
         return TRUE;
     }
     foreach my $n (@childList){
         if (! $self->computeBranch($n,$NEWLIST)) {
-            ERROR(sprintf "Cannot compute the branch from node %s_%s , level %s)",
-                  $node->{x}, $node->{y}, $node->{level});
+            ERROR(sprintf "Cannot compute the branch from node %s)", $node->getWorkBaseName);
             return FALSE;
         }
-        $weight += $self->getAccumulatedWeightOfNode($n);
+        $weight += $n->getAccumulatedWeight;
     }
 
     if (! $self->computeAboveImage($node)) {
-        ERROR(sprintf "Cannot compute the above image : %s_%s, level %s)", $node->{x}, $node->{y}, $node->{level});
+        ERROR(sprintf "Cannot compute the above image : %s)", $node->getWorkBaseName);
         return FALSE;
     }
 
-    $self->setAccumulatedWeightOfNode($node,$weight);
+    $node->setAccumulatedWeight($weight);
 
     return TRUE;
 }
@@ -612,85 +614,44 @@ Parameter:
     node - bottom level's node, to treat.
     
 See Also:
-    <wms2work>, <cache2work>, <mergeNtiff>, <work2cache>
+    <wms2work>, <Process:cache2work>, <mergeNtiff>, <work2cache>
 =cut
 sub computeBottomImage {
+    
     my $self = shift;
     my $node = shift;
 
     TRACE;
-
+    
+    # Temporary weight and code
+    my ($c,$w);
+    # Final weight and code
     my $weight  = 0;
     my $code  = "\n";
-
-    my $bgImgPath=undef;
-    my $bgImgName=undef;
-  
-# FIXME (TOS) Ici, on fait appel au service WMS sans vérifier que la zone demandée n'est pas trop grande.
-# On considère que le niveau le plus bas de la pyramide que l'on est en train de construire n'est pas trop élevé.
-# A terme, il faudra vérifier cette zone et ne demander que les tuiles contenant des données, et reconstruire une
-# image entière à partir de là (en ajoutant sur place des tuiles de nodata pour compléter).
-
-    if ($self->getDataSource->hasHarvesting()) {
+    
+    if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        $code .= $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
-        $self->updateWeightOfNode($node,WGET_W);
-    } else {
-    
-        my $newImgDesc = $self->getImgDescOfNode($node);
-    
-        my $workImgFilePath = File::Spec->catfile($self->getScriptTmpDir(), $self->workNameOfNode($node));
-        my $workImgDesc = $newImgDesc->copy($workImgFilePath); # copie du descripteur avec changement du nom de fichier
-
-        # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-        # en la convertissant du format cache au format de travail: c'est notre image de fond.
-        # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
-        # correspondant dans la nouvelle pyramide.
-        if ( -f $newImgDesc->getFilePath() ){
-            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
-            $bgImgPath = File::Spec->catfile($self->{process}->getScriptTmpDir(),$bgImgName);
-            # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-            $code .= $self->{process}->cache2work($node, $bgImgName);
-        }
-
-        my $mergNtiffConfDir  = File::Spec->catdir($self->{process}->getScriptTmpDir(), "mergeNtiff");
-        my $mergNtiffConfFilename = join("_","mergeNtiffConfig", $node->{level}, $node->{x}, $node->{y}).".txt";
-        
-        my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
-        my $mergNtiffConfFileForScript = File::Spec->catfile('${ROOT_TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
-
-        DEBUG (sprintf "Create mergeNtiff configuration");
-        if (! open CFGF, ">", $mergNtiffConfFile ){
-            ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
+        ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+        $code .= $c;
+        $weight += $w;
+    } else {    
+        ($c,$w) = $self->{process}->mergeNtiff($node);
+        if ($w == -1) {
+            ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
             return FALSE;
         }
-        # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-        printf CFGF $workImgDesc->to_string();
-
-        # Maintenant les dalles en entrée:
-        my $bgImgDesc;
-        if (defined $bgImgPath){
-            # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
-            $bgImgDesc = $newImgDesc->copy($bgImgPath);
-            printf CFGF "%s", $bgImgDesc->to_string();
-        }
-        # ajout des images sources
-        my $listDesc = $self->getGeoImgOfBottomNode($node);
-        foreach my $desc (@{$listDesc}){
-            printf CFGF "%s", $desc->to_string();
-        }
-        close CFGF;
-
-        $weight += MERGENTIFF_W;
-        $code .= $self->{process}->mergeNtiff($mergNtiffConfFileForScript, $bgImgName);
+        $code .= $c;
+        $weight += $w;
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    $weight += TIFF2TILE_W;
-    $code .= $self->{process}->work2cache($node);
+    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID));
+    
+    $code .= $c;
+    $weight += $w;
 
-    $self->updateWeightOfNode($node,$weight);
-    $self->setComputingCode($node,$code);
+    $node->updateOwnWeight($weight);
+    $node->setCode($code);
 
     return TRUE;
 }
@@ -710,25 +671,28 @@ See Also:
     <wms2work>, <cache2work>, <merge4tiff>, <work2cache>
 =cut
 sub computeAboveImage {
+    
     my $self = shift;
     my $node = shift;
 
     TRACE;
 
-    my $code = "\n";
-    my $weight = 0;
-    my $newImgDesc = $self->getImgDescOfNode($node);
-    my @childList = $self->getChildren($node);
+    # Temporary weight and code
+    my ($c,$w);
+    # Final weight and code
+    my $weight  = 0;
+    my $code  = "\n";
 
-    my $bgImgPath=undef;
-    my $bgImgName=undef;
+    my $workBgPath=undef;
+    my $workBgName=undef;
 
     # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
     # si on a l'option nowhite
-    my $bg='-n ' . $self->{nodata}->getValue;
+    my $bg='-n ' . $self->{pyramid}->getNodata->getValue;
+    
+    my @childList = $self->getChildren($node);
 
-
-    if (scalar @childList != 4 || $self->{process}->getNodata->getNoWhite) {
+    if (scalar @childList != 4 || $self->{pyramid}->getNodata->getNoWhite) {
         # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
         # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
         # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
@@ -738,35 +702,37 @@ sub computeAboveImage {
         # tuilage il y a) est la même entre le cache moissonné et la pyramide en cours d'écriture.
         # On a à l'heure actuelle du 16 sur 16 sur toute les pyramides et pas de JPEG 2000. 
 
-        my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->{level});
-        if (! defined $tm) {
-            ERROR(sprintf "Cannot load the Tile Matrix for the level %s",$node->{level});
-            return undef;
-        }
+        my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
 
         my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth();
         my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight();
+        
+        my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
+        my $workImgPath = File::Spec->catfile($self->{process}->getScriptTmpDir, $node->getWorkName);
 
-        if (-f $newImgDesc->getFilePath()) {
+        if (-f $cacheImgPath) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-            $bgImgName = join("_","bgImg",$node->{level},$node->{x},$node->{y}).".tif";
-            $bgImgPath = File::Spec->catfile('${TMP_DIR}',$bgImgName);
+            $workBgName = join("_","bgImg",$node->getWorkName);
+            $workBgPath = File::Spec->catfile('${TMP_DIR}',$workBgName);
 
             if ($self->{pyramid}->getCompression() eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
                 if ($tooWide || $tooHigh) {
                     WARN(sprintf "The image would have been too high or too wide to harvest it (level %s)",
-                         $node->{level});
+                         $node->getLevel);
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
-                    $weight += WGET_W;
-                    $bg.=" -b $bgImgPath";
-                    $code .= $self->{process}->wms2work($node, $bgImgName);
+                    $bg.=" -b $workBgPath";
+                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+                    $code .= $c;
+                    $weight += $w;
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $bg.=" -b $bgImgPath";
-                $code .= $self->{process}->cache2work($node, $bgImgName);
+                $bg.=" -b $workBgPath";
+                ($c,$w) = $self->{process}->cache2work($node);
+                $code .= $c;
+                $weight += $w;
             }
         }
     }
@@ -779,29 +745,30 @@ sub computeAboveImage {
     foreach my $childNode ($self->getPossibleChildren($node)) {
         $imgCount++;
         if (defined $childNode){
-            $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $self->workNameOfNode($childNode);
+            $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $childNode->getWorkName;
         }
     }
-    $code .= $self->{process}->merge4tiff('$TMP_DIR/' . $self->workNameOfNode($node), $bg, $childImgParam);
-    $weight += MERGE4TIFF_W;
+    ($c,$w) = $self->{process}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam);
+    $code .= $c;
+    $weight += $w;
 
     # Suppression des images de travail dont on a plus besoin.
     foreach my $node (@childList){
-        my $workName = $self->workNameOfNode($node);
-        $code .= "rm -f \${TMP_DIR}/$workName \n";
+        $code .= sprintf "rm -f \${TMP_DIR}/%s \n", $node->getWorkName;
     }
 
     # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined $bgImgName ){
-        $code.= "rm -f \${TMP_DIR}/$bgImgName \n";
+    if ( defined $workBgName ){
+        $code.= "rm -f $workBgPath \n";
     }
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    $weight += TIFF2TILE_W;
-    $code .= $self->{process}->work2cache($node);
+    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID));
+    $code .= $c;
+    $weight += $w;
 
-    $self->updateWeightOfNode($node,$weight);
-    $self->setComputingCode($node,$code);
+    $node->updateOwnWeight($weight);
+    $node->setCode($code);
 
     return TRUE;
 }
@@ -834,7 +801,7 @@ sub writeBranchCode {
 
     # Le noeud est une feuille
     if (scalar @childList == 0){
-        $self->{process}->printInScript($self->getComputingCode($node),$ind);
+        $self->{process}->printInScript($node->getCode,$ind);
         return TRUE;
     }
 
@@ -843,7 +810,7 @@ sub writeBranchCode {
         $self->writeBranchCode($n,$ind);
     }
     
-    $self->{process}->printInScript($self->getComputingCode($node),$ind);
+    $self->{process}->printInScript($node->getCode,$ind);
 
     return TRUE;
 }
@@ -864,14 +831,14 @@ sub writeTopCode {
     TRACE;
 
     # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
-    return TRUE if ($node->{level} eq $self->getCutLevelID);
+    return TRUE if ($node->getLevel eq $self->getCutLevelID);
 
     my @childList = $self->getChildren($node);
     foreach my $n (@childList){
         $self->writeTopCode($n);
     }
     
-    $self->{process}->printInScript($self->getComputingCode($node),0);
+    $self->{process}->printInScript($node->getCode,0);
 
     return TRUE;
 }
@@ -909,9 +876,9 @@ sub shareNodesOnJobs {
 
     # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel
     my $wholeTreeWeight = 0;
-    my @topLevelNodeList = $self->getNodesOfTopLevel();
+    my @topLevelNodeList = $self->getNodesOfTopLevel;
     foreach my $node (@topLevelNodeList) {
-        $wholeTreeWeight += $self->getAccumulatedWeightOfNode($node);
+        $wholeTreeWeight += $node->getAccumulatedWeight;
     }
 
     for (my $i = $self->getTopOrder(); $i >= $self->getBottomOrder(); $i--){
@@ -923,7 +890,7 @@ sub shareNodesOnJobs {
         }
         
         @levelNodeList =
-            sort {$self->getAccumulatedWeightOfNode($b) <=> $self->getAccumulatedWeightOfNode($a)} @levelNodeList;
+            sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
 
         my @TMP_WEIGHTS;
         
@@ -937,7 +904,7 @@ sub shareNodesOnJobs {
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
             my $indexMin = BE4::Array->minArrayIndex(1,@TMP_WEIGHTS);
-            my $nodeWeight = $self->getAccumulatedWeightOfNode($levelNodeList[$j]);
+            my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
             $TMP_WEIGHTS[$indexMin] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
             push @{$TMP_JOBS[$indexMin-1]}, $levelNodeList[$j];
@@ -947,6 +914,8 @@ sub shareNodesOnJobs {
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
         my $worstWeight = BE4::Array->maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
+        
+        DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 
         # on compare ce pire des cas avec celui obtenu jusqu'ici. S'il est plus petit, on garde ce niveau comme
         # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
@@ -983,6 +952,11 @@ sub getDataSource{
     return $self->{datasource};
 }
 
+sub getPyramid{
+    my $self = shift;
+    return $self->{pyramid};
+}
+
 sub getCutLevelID {
     my $self = shift;
     return $self->{cutLevelID};
@@ -1014,13 +988,15 @@ Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
 =cut
 sub containsNode {
-  my $self = shift;
-  my $node = shift;
+    my $self = shift;
+    my $level = shift;
+    my $x = shift;
+    my $y = shift;
   
-  return FALSE if (! defined $node);
-  
-  my $keyidx = sprintf "%s_%s", $node->{x}, $node->{y};
-  return (exists $self->{nodes}{$node->{level}}{$keyidx});
+    return FALSE if (! defined $level);
+    
+    my $nodeKey = $x."_".$y;
+    return (exists $self->{nodes}->{$level}->{$nodeKey});
 }
 
 #
@@ -1044,12 +1020,11 @@ sub getPossibleChildren {
     
     my $lowerLevelID = $self->{pyramid}->getTileMatrixSet->getBelowLevelID($node->getLevel);
     
-    
     for (my $j=0; $j<=1; $j++){
         for (my $i=0; $i<=1; $i++){
             my $nodeKey = sprintf "%s_%s",$node->getCol*2+$i, $node->getRow*2+$j;
-            if (exists $self->{nodes}->{$nodeKey}) {
-                push @res, $self->{nodes}->{$nodeKey};
+            if (exists $self->{nodes}->{$lowerLevelID}->{$nodeKey}) {
+                push @res, $self->{nodes}->{$lowerLevelID}->{$nodeKey};
             } else {
                 push @res, undef;
             }
@@ -1083,8 +1058,8 @@ sub getChildren {
     for (my $j=0; $j<=1; $j++){
         for (my $i=0; $i<=1; $i++){
             my $nodeKey = sprintf "%s_%s",$node->getCol*2+$i, $node->getRow*2+$j;
-            if (exists $self->{nodes}->{$nodeKey}) {
-                push @res, $self->{nodes}->{$nodeKey};
+            if (exists $self->{nodes}->{$lowerLevelID}->{$nodeKey}) {
+                push @res, $self->{nodes}->{$lowerLevelID}->{$nodeKey};
             }
         }
     }
@@ -1101,7 +1076,7 @@ sub getNodesOfLevel {
         return undef;
     }
     
-    return @{values $self->{nodes}->{$levelID}};
+    return values (%{$self->{nodes}->{$levelID}});
 }
 
 sub getNodesOfTopLevel {
