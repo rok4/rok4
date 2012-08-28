@@ -98,11 +98,11 @@ Cache2work () {
     mkdir $workName
     untile $workName.tif $workName/
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage -geometry 256x256 -tile 16x16 $workName/*.png __montage__ -define tiff:rows-per-strip=4096 $workName.tif
+    montage -geometry 256x256 -tile 16x16 $workName/*.png __montage__ -define tiff:rows-per-strip=4096 -compress Zip $workName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -rf $workName/
   else
-    tiffcp __tcp__ $imgSrc $workName.tif
+    tiffcp __tcp__ -c zip $imgSrc $workName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
 
@@ -125,7 +125,7 @@ MergeNtiff () {
   local type=$1
   local config=$2
   local bg=$3
-  mergeNtiff -f $config -t $type __mNt__
+  mergeNtiff -f $config -t $type -c zip __mNt__
   if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   rm -f $config
   if [ $bg ] ; then
@@ -740,7 +740,7 @@ sub wms2work {
                                                    );
   
   my $cmd=sprintf "Wms2work \${TMP_DIR}/%s \"%s\"\n",$fileName,$url;
-  
+
   return $cmd;
 }
 
@@ -772,6 +772,7 @@ sub cache2work {
         # Pour le tiffcp on fixe le rowPerStrip au nombre de ligne de l'image ($imgSize[1])
         $self->{tree}->updateWeightOfNode($node,TIFFCP_W);
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$dirName);
+
         return $cmd;
     }
 }
@@ -839,7 +840,6 @@ sub mergeNtiff {
     } else {
         $cmd .= "\n";
     }
-
     return $cmd;
 }
 
@@ -862,12 +862,14 @@ sub merge4tiff {
   
   my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $pyr->getGamma();
   
+  $cmd .= "-c zip ";
+  
   $cmd .= "$backGround ";
   
   $cmd .= "$childImgParam ";
   
   $cmd .= sprintf "%s\n%s",$resultImg, RESULT_TEST;
-  
+
   return $cmd;
 }
 
@@ -939,7 +941,7 @@ sub configureFunctions {
     $conf_mNt .= "-p $ph ";
     my $sf = $pyr->getSampleFormat();
     $conf_mNt .= "-a $sf ";
-
+    
     if ($self->{nodata}->{nowhite}) {
         $conf_mNt .= "-nowhite ";
     }
@@ -949,7 +951,7 @@ sub configureFunctions {
 
     $BASHFUNCTIONS =~ s/__mNt__/$conf_mNt/;
 
-    # congigure montage
+    # configure montage
     my $conf_montage = "";
 
     $conf_montage .= "-depth $bps ";
@@ -1018,6 +1020,9 @@ sub prepareScript {
     # creation du répertoire de travail:
     $code .= "# creation du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+    # $code .= "# traces (orienté maintenance !)\n";
+    # $code .= "set -x\n\n";
 
     return $code;
 }
