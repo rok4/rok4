@@ -97,7 +97,7 @@
 
 void usage() {
     LOGGER_INFO("mergeNtiff version "<< BE4_VERSION);
-    LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
+    LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -c [none/png/jpg/lzw/zip/pkb] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
     LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }
 
@@ -123,11 +123,11 @@ int h2i(char s)
 * Lecture des parametres de la ligne de commande
 */
 
-int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, bool& nowhite, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric) {
+int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, int& nodata, bool& nowhite, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric,  uint16_t& compression) {
 
     char strnodata[10];
     
-    if (argc != 17 && argc != 18) {
+    if (argc != 18 && argc != 19) {
         LOGGER_ERROR(" Nombre de parametres incorrect");
         usage();
         return -1;
@@ -188,6 +188,15 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
                     else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
                     else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
                     break;
+                case 'c': // compression
+                   if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -c"); return -1;}
+                   if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                   else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
+                   else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
+                   else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
+                   else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
+                   else compression = COMPRESSION_NONE;
+                   break;
                 default: usage(); return -1;
             }
         }
@@ -227,12 +236,13 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
 * @param bitspersample : nombre de bits par canal de l'image TIFF
 * @param sampleformat : format des données binaires (uint ou float)
 * @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
+* @param compression : valeur de compression de l'image a enregistrer
 * @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
 * TODO : gerer tous les types de couleur pour la valeur NODATA
 * @return : 0 en cas de succes, -1 sinon
 */
 
-int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric) {
+int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression) {
         // Ouverture du fichier
         LOGGER_DEBUG("Sauvegarde de l'image" << pName);
         TIFF* output=TIFFOpen(pName,"w");
@@ -249,7 +259,7 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
         TIFFSetField(output, TIFFTAG_SAMPLEFORMAT, sampleformat);
         TIFFSetField(output, TIFFTAG_PHOTOMETRIC, photometric);
         TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+        TIFFSetField(output, TIFFTAG_COMPRESSION, compression);
         TIFFSetField(output, TIFFTAG_ROWSPERSTRIP, 1);
         TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE);
 
@@ -433,7 +443,7 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int noda
     }
 
     // Rectangle englobant des images d entree
-    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12;
+    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
     for (unsigned int j=0;j<TabImageIn.size();j++) {
         if (TabImageIn.at(j)->getxmin()<xmin)  xmin=TabImageIn.at(j)->getxmin();
         if (TabImageIn.at(j)->getymin()<ymin)  ymin=TabImageIn.at(j)->getymin();
@@ -650,7 +660,7 @@ int main(int argc, char **argv) {
     char imageListFilename[256];
     int nodata;
     bool nowhite = false;
-    uint16_t sampleperpixel, bitspersample, sampleformat, photometric;
+    uint16_t sampleperpixel, bitspersample, sampleformat, photometric, compression;
     int type=-1;
     Interpolation::KernelType interpolation;
 
@@ -678,7 +688,7 @@ int main(int argc, char **argv) {
     logw.setf(std::ios::fixed,std::ios::floatfield);
 
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc,argv,imageListFilename,interpolation,nodata, nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric)<0){
+    if (parseCommandLine(argc,argv,imageListFilename,interpolation,nodata, nowhite,type,sampleperpixel,bitspersample,sampleformat,photometric,compression)<0){
         LOGGER_ERROR("Echec lecture ligne de commande");
         sleep(1);
         return -1;
@@ -725,7 +735,7 @@ int main(int argc, char **argv) {
     
     LOGGER_DEBUG("Save");
     // Enregistrement de l image fusionnee
-    if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric)<0){
+    if (saveImage(pECImage,pImageOut->getfilename(),pImageOut->channels,bitspersample,sampleformat,photometric,compression)<0){
         LOGGER_ERROR("Echec enregistrement de l image finale");
         sleep(1);
         return -1;
