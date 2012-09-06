@@ -50,23 +50,12 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-my $VERSION = "0.0.1";
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
-BEGIN {}
-INIT {}
-END {}
-
-################################################################################
-# Global template Pyramid
-
+# Global
 my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
         <tileMatrix>__ID__</tileMatrix>
@@ -96,67 +85,50 @@ my $STRLEVELTMPLTMORE = <<"TMTD";
 TMTD
 
 ################################################################################
-# sample: 
-# 
-#        <tileMatrix>0</tileMatrix>
-#        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/0</baseDir>
-#        <tilesPerWidth>16</tilesPerWidth>
-#        <tilesPerHeight>16</tilesPerHeight>
-#        <pathDepth>2</pathDepth>
-#        <nodata>
-#            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
-#        </nodata>
-#        <TMSLimits>
-#            <minTileRow>1</minTileRow>
-#            <maxTileRow>1000000</maxTileRow>
-#            <minTileCol>1</minTileCol>
-#            <maxTileCol>1000000</maxTileCol>
-#        </TMSLimits>
-# 
+
+BEGIN {}
+INIT {}
+END {}
+
 ################################################################################
+=begin nd
+Group: variable
 
-#
-# Group: variable
-#
+variable: $self
+    * id                => undef, # (string, in the TMS)
+    * order             => undef, # (integer)
+    * dir_image         => undef,
+    * dir_nodata        => undef,
+    * dir_metadata      => undef,  # NOT IMPLEMENTED !
+    * compress_metadata => undef,  # NOT IMPLEMENTED !
+    * type_metadata     => undef,  # NOT IMPLEMENTED !
+    * size              => [],    # [width, height]
+    * dir_depth         => 0,     # ie 2
+    * limit             => [], # dim bbox [jmin,jmax,imin,imax] !!!
+=cut
 
-#
-# variable: $self
-#
-#    *          id                => undef,
-#    *          order             => undef,
-#    *          dir_image         => undef,
-#    *          dir_nodata        => undef,
-#    *          dir_metadata      => undef,  # NOT IMPLEMENTED !
-#    *          compress_metadata => undef,  # NOT IMPLEMENTED !
-#    *          type_metadata     => undef,  # NOT IMPLEMENTED !
-#    *          size              => [],    # number w/h !
-#    *          dir_depth         => 0,     # ie 2
-#    *          limit             => []     # dim bbox Row/Col !!!
-#    *          is_in_pyramid     => undef,
-#
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
 
-#
 # Group: constructor
-#
 
-################################################################################
-# constructor
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
         id                => undef,
         order             => undef,
-        is_in_pyramid     => undef, # 0 : just in the old pyramid; 1 : just in the new pyramid; 2 : in two pyamids
         dir_image         => undef,
         dir_nodata        => undef,
-        dir_metadata      => undef,  # NOT IMPLEMENTED !
-        compress_metadata => undef,  # NOT IMPLEMENTED !
-        type_metadata     => undef,  # NOT IMPLEMENTED !
-        size              => [],    # number w/h !
-        dir_depth         => 0,     # ie 2
-        limit             => []     # dim bbox Row/Col !!!
+        dir_metadata      => undef,
+        compress_metadata => undef,
+        type_metadata     => undef,
+        size              => [],
+        dir_depth         => 0,
+        limit             => [undef,undef,undef,undef]
   };
 
   bless($self, $class);
@@ -172,8 +144,6 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -216,19 +186,16 @@ sub _init {
 
     # check type ref
     if (! scalar ($params->{size})){
-      ERROR("list empty to 'size' !");
+      ERROR("List empty to 'size' !");
       return FALSE;
     }
     if (! $params->{dir_depth}){
-      ERROR("value not informed to 'dir_depth' !");
+      ERROR("Value not informed to 'dir_depth' !");
       return FALSE;
     }
     if (! scalar (@{$params->{limit}})){
-      ERROR("list empty to 'limit' !");
+      ERROR("List empty to 'limit' !");
       return FALSE;
-    }
-    if (! exists($params->{is_in_pyramid})) {
-        $params->{is_in_pyramid} = 1;
     }
     
     # parameters optional !
@@ -241,18 +208,68 @@ sub _init {
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limit}          = $params->{limit};
-    $self->{is_in_pyramid}  = $params->{is_in_pyramid};
     
     return TRUE;
 }
 
-################################################################################
-# get
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getID {
     my $self = shift;
     return $self->{id};
 }
 
+sub getOrder {
+    my $self = shift;
+    return $self->{order};
+}
+
+sub getDirImage {
+    my $self = shift;
+    return $self->{dir_image};
+}
+
+
+sub getDirNodata {
+    my $self = shift;
+    return $self->{dir_nodata};
+}
+
+
+#
+=begin nd
+method: updateExtremTiles
+
+Compare old extrems rows/columns with the news and update values.
+
+Parameter:
+    jMin, jMax, iMin, iMax - tiles indices to compare with current extrems
+=cut
+sub updateExtremTiles {
+    my $self = shift;
+    my ($jMin,$jMax,$iMin,$iMax) = @_;
+
+    TRACE();
+    
+    if (! defined $self->{limit}[0] || $jMin < $self->{limit}[0]) {$self->{limit}[0] = $jMin;}
+    if (! defined $self->{limit}[1] || $jMax > $self->{limit}[1]) {$self->{limit}[1] = $jMax;}
+    if (! defined $self->{limit}[2] || $iMin < $self->{limit}[2]) {$self->{limit}[2] = $iMin;}
+    if (! defined $self->{limit}[3] || $iMax > $self->{limit}[3]) {$self->{limit}[3] = $iMax;}
+}
+
+#
+=begin nd
+method: getLevelToXML
+
+Insert Level's attributes in the XML template, write in the pyramid's descriptor.
+
+Returns:
+   A string in XML format.
+=cut
 sub getLevelToXML {
     my $self = shift;
 
@@ -267,21 +284,21 @@ sub getLevelToXML {
     my $pathnd = $self->{dir_nodata}."/nd.tif";
     $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
-    my $tilew    = $self->{size}->[0];
+    my $tilew    = $self->{size}[0];
     $levelXML =~ s/__TILEW__/$tilew/;
-    my $tileh    = $self->{size}->[1];
+    my $tileh    = $self->{size}[1];
     $levelXML =~ s/__TILEH__/$tileh/;
 
     my $depth    =  $self->{dir_depth};
     $levelXML =~ s/__DEPTH__/$depth/;
 
-    my $minrow   =  $self->{limit}->[0];
+    my $minrow   =  $self->{limit}[0];
     $levelXML =~ s/__MINROW__/$minrow/;
-    my $maxrow   =  $self->{limit}->[1];
+    my $maxrow   =  $self->{limit}[1];
     $levelXML =~ s/__MAXROW__/$maxrow/;
-    my $mincol   =  $self->{limit}->[2];
+    my $mincol   =  $self->{limit}[2];
     $levelXML =~ s/__MINCOL__/$mincol/;
-    my $maxcol   =  $self->{limit}->[3];
+    my $maxcol   =  $self->{limit}[3];
     $levelXML =~ s/__MAXCOL__/$maxcol/;
 
     # metadata
@@ -304,100 +321,106 @@ sub getLevelToXML {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::Level -
+BE4::Level - Describe a level in a pyramid.
 
 =head1 SYNOPSIS
 
-  use BE4::Level;
-  
-  my $params = {
-            id                => 1024,
-            order             => 12,
-            dir_image         => "./t/data/pyramid/SCAN_RAW_TEST/1024/",
-            dir_nodata        => undef,
-            dir_metadata      => undef,
-            compress_metadata => undef,
-            type_metadata     => undef,
-            size              => [ 4, 4],
-            dir_depth         => 2,
-            limit             => [1, 1000000, 1, 1000000] 
-            is_in_pyramid     => 1
+    use BE4::Level;
+    
+    my $params = {
+        id                => level_5,
+        order             => 12,
+        dir_image         => "./BDORTHO/IMAGE/level_5/",
+        dir_nodata        => "./BDORTHO/NODATA/level_5/",
+        dir_metadata      => undef,
+        compress_metadata => undef,
+        type_metadata     => undef,
+        size              => [16, 16],
+        dir_depth         => 2,
+        limit             => [365,368,1026,1035]
     };
     
-  my $objLevel = BE4::Level->new($params);
+    my $objLevel = BE4::Level->new($params);
 
 =head1 DESCRIPTION
 
-=head2 EXPORT
+=head2 ATTRIBUTES
 
-None by default.
+=over 4
+
+=item id, order
+
+ID (in TMS) and order (integer) of the level.
+
+=item dir_image
+
+Relative images' directory path for this level, from the pyramid's descriptor.
+
+=item dir_nodata
+
+Relative nodata's directory path for this level, from the pyramid's descriptor..
+
+=item dir_metadata, compress_metadata, type_metadata
+
+Relative metadata's directory path for this level, from the pyramid's descriptor.. NOT IMPLEMENTED.
+
+=item size
+
+Number of tile in one image for this level, widthwise and heightwise (often 16x16).
+
+=item dir_depth
+
+Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
+
+=item limit
+
+Extrems tiles indices of data in this level : [jmin,jmax,imin,imax].
+
+=back
 
 =head1 SAMPLE
 
-* Sample Pyramid file (.pyr) :
-
-  [MNT_MAYOTTE_REDUCT.pyr]
-  
-<?xml version="1.0" encoding="US-ASCII"?>
-<Pyramid>
-    <tileMatrixSet>RGM04UTM38S_10cm</tileMatrixSet>
-    <format>TIFF_LZW_FLOAT32</format>
-    <channels>1</channels>
     <level>
-        <tileMatrix>0</tileMatrix>
-        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/0</baseDir>
+        <tileMatrix>level_5</tileMatrix>
+        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>MNT_MAYOTTE_REDUCT/NODATA/0/nd.tif</filePath>
+            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
         </nodata>
         <TMSLimits>
-            <minTileRow>1</minTileRow>
-            <maxTileRow>1000000</maxTileRow>
-            <minTileCol>1</minTileCol>
-            <maxTileCol>1000000</maxTileCol>
+            <minTileRow>365</minTileRow>
+            <maxTileRow>368</maxTileRow>
+            <minTileCol>1026</minTileCol>
+            <maxTileCol>1035</maxTileCol>
         </TMSLimits>
     </level>
-    <level>
-        <tileMatrix>1</tileMatrix>
-        <baseDir>MNT_MAYOTTE_REDUCT/IMAGE/1</baseDir>
-        <tilesPerWidth>16</tilesPerWidth>
-        <tilesPerHeight>16</tilesPerHeight>
-        <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>MNT_MAYOTTE_REDUCT/NODATA/1/nd.tif</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>1</minTileRow>
-            <maxTileRow>1000000</maxTileRow>
-            <minTileCol>1</minTileCol>
-            <maxTileCol>1000000</maxTileCol>
-        </TMSLimits>
-    </level>
-</Pyramid>
 
 =head1 LIMITATIONS AND BUGS
 
- No test on the type value !
- Metadata not implemented !
+Metadata not implemented.
 
 =head1 SEE ALSO
 
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHORS
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

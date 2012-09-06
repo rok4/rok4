@@ -51,16 +51,12 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global template
+# Global
 
 my $STRLYRTMPLT   = <<"TLYR";
 <?xml version='1.0' encoding='US-ASCII'?>
@@ -100,31 +96,59 @@ my $STRSRSTMPLT   = <<"TSRS";
     <!-- __SRSS__ -->
 TSRS
 
-#
-# Group: constructor
-#
+################################################################################
+
+BEGIN {}
+INIT {}
+END {}
 
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * title => undef, # manadatory !
+    * abstract => "", # by default (optional) !
+    * keywordlist => [], # by default (optional) !
+    * style => "normal", # by default !
+    * minres => 0.0, # by default !
+    * maxres => 0.0, # by default !
+    * opaque => 1, # by default !
+    * authority => "IGNF", # by default !
+    * srslist => [], # manadatory !
+    * resampling => "lanczos_4", # by default !
+    * geo_bbox => [], # manadatory: minx,miny,maxx,maxy !
+    * proj => undef, # by default first param srslist (optional) !
+    * proj_bbox => [], # manadatory: minx,miny,maxx,maxy !
+    * pyramid => undef, # manadatory: path of pyr. desc. !
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-	title            => undef,       # manadatory !
-        abstract         => "",          # by default (optional) !
-        keywordlist      => [],          # by default (optional) !
-        style            => "normal",    # by default !
-        minres           => 0.0,         # by default !
-        maxres           => 0.0,           # by default !
-        opaque           => 1,           # by default !
-        authority        => "IGNF",      # by default !
-        srslist          => [],          # manadatory !
-        resampling       => "lanczos_4", # by default !
-        geo_bbox         => [],          # manadatory: minx,miny,maxx,maxy !
-        proj             => undef,       # by default first param srslist (optional) !
-        proj_bbox        => [],          # manadatory: minx,miny,maxx,maxy !
-        pyramid          => undef,       # manadatory: path of pyr. desc. !
+	title            => undef,
+        abstract         => "",
+        keywordlist      => [],
+        style            => "normal",
+        minres           => 0.0,
+        maxres           => 0.0,
+        opaque           => 1,
+        authority        => "IGNF",
+        srslist          => [],
+        resampling       => "lanczos_4",
+        geo_bbox         => [],
+        proj             => undef,
+        proj_bbox        => [],
+        pyramid          => undef,
   };
 
   bless($self, $class);
@@ -140,8 +164,6 @@ sub new {
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -279,8 +301,18 @@ sub _init {
     
     return TRUE;
 }
-################################################################################
-# public function.
+
+####################################################################################################
+#                                           EXPORT                                                 #
+####################################################################################################
+
+# Group: export
+
+#
+=begin nd
+    method: to_string
+    Export Layer object to XML format.
+=cut
 sub to_string {
   my $self = shift;
   
@@ -360,114 +392,100 @@ sub to_string {
   return $string;
 }
 
-################################################################################
-# Preloaded methods go here.
-BEGIN {}
-INIT {}
-END {}
-
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::Layer -
+BE4::Layer - Describe a layer for Rok4 and allow to generate XML configuration file
 
 =head1 SYNOPSIS
 
-  use BE4::Layer;
-  
-  my $params = {
-            title            => "Ortho IGN en RAW",
-            abstract         => "Projection native",
-            keywordlist      => [],
-            style            => "normal",    # normal by default !
-            minRes           => 0.5,
-            maxRes           => 1,
-            opaque           => 1,           # 0|1 !
-            authority        => "IGNF",      # IGNF by default !
-            srslist          => [ "IGNF:LAMB93",
-                                  "IGNF:RGF93G"],
-            resampling       => "lanczos_4", # type of values : ...
-            geo_bbox         => [, , , ],    # minx,miny,maxx,maxy
-            proj             => "IGNF:LAMB93",
-            proj_bbox        => [, , , ],    # minx,miny,maxx,maxy
-            pyramid          => "",          # path of pyr. desc. !
-    };
+    use BE4::Layer;
+
+    # Layer object creation
+    my $objLayer = new BE4::Layer({
+        title            => "Ortho IGN en RAW",
+        abstract         => "Projection native",
+        keywordlist      => ["key","word"],
+        style            => "normal",
+        minRes           => 0.5,
+        maxRes           => 1,
+        opaque           => 1,
+        authority        => "IGNF",
+        srslist          => [ "IGNF:LAMB93","IGNF:RGF93G"],
+        resampling       => "lanczos_4",
+        geo_bbox         => [0,40,10,50],
+        proj             => "IGNF:LAMB93",
+        proj_bbox        => [805888,6545408,806912,6546432],
+        pyramid          => "/pyramids/ORTHO.pyr",
+    });
     
-  my $objLayer = new BE4::Layer($params);
-  $objLayer->to_string();
+    my $XMLlayer = $objLayer->to_string();
+    
+    # $XMLlayer =
+    <layer>
+        <title>Ortho IGN en RAW</title>
+        <abstract>Projection native</abstract>
+        <keywordList>
+            <keyword>key</keyword>
+            <keyword>word</keyword>
+        </keywordList>
+        <style>normal</style>
+        <minRes>0.5</minRes>
+        <maxRes>1</maxRes>
+        <EX_GeographicBoundingBox>
+            <westBoundLongitude>0</westBoundLongitude>
+            <eastBoundLongitude>10</eastBoundLongitude>
+            <southBoundLatitude>40</southBoundLatitude>
+            <northBoundLatitude>50</northBoundLatitude>
+        </EX_GeographicBoundingBox>
+        <WMSCRSList>
+            <WMSCRS>IGNF:LAMB93</WMSCRS>
+            <WMSCRS>IGNF:RGF93G</WMSCRS>
+        </WMSCRSList>
+        <boundingBox CRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
+        <opaque>true</opaque>
+        <authority>IGNF</authority>
+        <resampling>lanczos_4</resampling>
+        <pyramidList>
+            <pyramid>/pyramids/ORTHO.pyr</pyramid>
+        </pyramidList>
+    </layer>
 
 =head1 DESCRIPTION
 
-=head2 EXPORT
-
-None by default.
-
-=head1 SAMPLE
-
-* Sample Pyramid file (.pyr) :
-
-  eg SEE ASLO
-
-* Sample TMS file (.tms) :
-
-  eg SEE ASLO
-
-* Sample LAYER file (.lay) :
-
-  [SCAN_RAW_TEST.lay]
-  
-  <layer>
-	<title>Scan IGN en RAW</title>
-	<abstract></abstract>
-	<keywordList>
-		<keyword></keyword>
-	</keywordList>
-	<style>normal</style>
-	<minRes>0.5</minRes>
-	<maxRes>1</maxRes>
-	<EX_GeographicBoundingBox>
-                <westBoundLongitude>0</westBoundLongitude>
-                <eastBoundLongitude>10</eastBoundLongitude>
-                <southBoundLatitude>40</southBoundLatitude>
-                <northBoundLatitude>50</northBoundLatitude>
-        </EX_GeographicBoundingBox>
-	<WMSCRSList>
-		<WMSCRS>IGNF:LAMB93</WMSCRS>
-	</WMSCRSList>
-	<boundingBox CRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
-	<opaque>true</opaque>
-	<authority>IGNF</authority>
-	<resampling>lanczos_4</resampling>
-	<pyramidList>
-		<pyramid>../config/pyramids/SCAN_RAW_TEST.pyr</pyramid>
-	</pyramidList>
-  </layer>
-
 =head1 SEE ALSO
 
- eg package module following :
- 
- BE4::Pyramid
- BE4::TileMatrixSet
- BE4::Level
+=head2 POD documentation
 
-=head1 LIMITATIONS AND BUGS
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
 

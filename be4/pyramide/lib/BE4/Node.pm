@@ -40,6 +40,10 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 
+use File::Spec ;
+use Data::Dumper ;
+use BE4::Base36 ;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -50,230 +54,285 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * i => undef, # i colonne dans la matrice des images
+    * j => undef, # j ligne dans la matrice des images
+    * tm => undef, # BE4::TileMatrix object, to which node belong
+    * graph => undef, # BE4::Graph or BE4::QTree object, which contain the node
+    * w => 0,     # w = own node's weight  
+    * W => 0,     # W = accumulated weight (childs' weights sum)
+    * code => '',     # c = commands to generate this node (to write in a script)
+    * script_nb => undef, # number of the script in which the node is calculated
+    * nodeSources => [], # list of BE4::Node from which this node is calculated
+    * geoImages => [], # list of BE4::GeoImage from which this node is calculated
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
-  my $this = shift;
-  
-  ## simon
-  my $class= ref($this) || $this;
-  my $self = {
-    i => undef, # i colonne dans la matrice des images
-    j => undef, # j ligne dans la matrice des images
-    tmObj => undef, # the tm linked to the node
-    graphObj => undef, # the graph linked to the node (graph can be a graph obj or a qtree obj)
-    filePath => undef, # filePath for the image/node
-    w => undef,     # w = own node's weight  
-    W => undef,     # W = accumulated weight (childs' weights sum)
-    c => undef,     # c = commands to generate this node (to write in a script)
-    nodeSources => [], # list of nodes from which this node is calculated
-    imageSources => [], # list of ImageSource from which this node is calculated
-  };
-
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  # load 
-  #return undef if (! $self->_load());
-  
-  # DEBUG(Dumper($self));
-  
-  return $self;
+    my $this = shift;
+    
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    my $self = {
+        i => undef,
+        j => undef,
+        tm => undef,
+        graph => undef,
+        w => 0,
+        W => 0,
+        code => '',
+        script_nb => undef,
+        nodeSources => [],
+        geoImages => [],
+    };
+    
+    bless($self, $class);
+    
+    TRACE;
+    
+    # init. class
+    return undef if (! $self->_init(@_));
+    
+    return $self;
 }
-# method: _init.
-#  Define the number of level
-#  get source images.
-#-------------------------------------------------------------------------------
+
 sub _init {
-  
-  my $self = shift;
-  my $params = shift ; # Hash
-  
-  TRACE;
-  
-  # mandatory parameters !
-  if (! defined $params->{i}) {
-    ERROR("Node Coord i is undef !");
-    return FALSE;
-  }
-  if (! defined $params->{j}) {
-    ERROR("Node Coord j is undef !");
-    return FALSE;
-  }
-  if (! defined $params->{tmObj}) {
-    ERROR("Node tmid is undef !");
-    return FALSE;
-  }
-  if (! defined $params->{filePath}) {
-    ERROR("Node filePath is undef !");
-    return FALSE;
-  }
-  if (! defined $params->{graphObj}) {
-    ERROR("Tree Node is undef !");
-    return FALSE;
-  }
-  
-  # init. params    
-  $self->{i} = $params->{i};
-  $self->{j} = $params->{j};
-  $self->{tmObj} = $params->{tmObj};
-  $self->{graphObj} = $params->{graphObj};
-  $self->{filePath} = $params->{filePath};
-  $self->{w} = $params->{w};
-  $self->{W} = $params->{W};
-  $self->{c} = $params->{c};
-
-  return TRUE;
+    my $self = shift;
+    my $params = shift ; # Hash
+    
+    TRACE;
+    
+    # mandatory parameters !
+    if (! defined $params->{i}) {
+        ERROR("Node Coord i is undef !");
+        return FALSE;
+    }
+    if (! defined $params->{j}) {
+        ERROR("Node Coord j is undef !");
+        return FALSE;
+    }
+    if (! defined $params->{tm}) {
+        ERROR("Node tmid is undef !");
+        return FALSE;
+    }
+    if (! defined $params->{graph}) {
+        ERROR("Tree Node is undef !");
+        return FALSE;
+    }
+    
+    # init. params    
+    $self->{i} = $params->{i};
+    $self->{j} = $params->{j};
+    $self->{tm} = $params->{tm};
+    $self->{graph} = $params->{graph};
+    $self->{w} = 0;
+    $self->{W} = 0;
+    $self->{code} = '';
+    
+    return TRUE;
 }
 
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
 
-sub getBbox {
-  my $self = shift;
+# Group: getters - setters
 
-  TRACE;
-  
-  # Format of bbox : (Upper Left, Lower Right)   
-  my $tilePerWidth = $self->getGraphObj()->getPyramid()->getTilePerWidth();
-  my $tilePerHeight = $self->getGraphObj()->getPyramid()->getTilePerHeight();
-  my ($xmin,$ymax) = $self->getTmObj()->computeLandCoordFromImageCoord($self->getCoordImageI(),$self->getCoordImageJ(),$tilePerWidth,$tilePerHeight);
-  my ($xmax,$ymin) = $self->getTmObj()->computeLandCoordFromImageCoord($self->getCoordImageI() + 1,$self->getCoordImageJ() + 1,$tilePerWidth,$tilePerHeight);
-   
-  return ($xmin,$ymax,$ymin,$xmax);
+sub getScriptNb {
+    my $self = shift;
+    return $self->{script_nb}
 }
-sub copy {
-  my $this = shift;
-  my $filePath = shift;
 
-  my $class= ref($this) || $this;
-  my $self = {
-    filePath => $filePath,
-    i => $this->{i},
-    j => $this->{j},
-    graphObj => $this->{graphObj},
-    tmObj => $this->{tmObj},
-    nodeSources => @{$this->{nodeSources}},
-    imageSources => @{$this->{imageSources}},
-    w => $this->{w},
-    W => $this->{W},
-    c => $this->{c},
-  };
+sub setScriptNb {
+    my $self = shift;
+    my $number = shift;
+    $self->{script_nb} = $number; 
+}
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  return $self;
+sub getCol {
+    my $self = shift;
+    return $self->{i};
 }
-sub getCoordImageI {
-  my $self = shift;
-  return $self->{i};
-}
-sub getCoordImageJ {
+
+sub getRow {
   my $self = shift;
   return $self->{j};
 }
-sub getFilePath {
+
+sub getWorkBaseName {
   my $self = shift;
-  return $self->{filePath};
+  return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
 }
-sub getTmObj {
+
+sub getWorkName {
   my $self = shift;
-  return $self->{tmObj};
+  return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
 }
-sub getGraphObj {
+
+sub getLevel {
   my $self = shift;
-    return $self->{graphObj};
+  return $self->{tm}->getID;
 }
+
+sub getTM {
+  my $self = shift;
+  return $self->{tm};
+}
+
+sub getGraph {
+  my $self = shift;
+    return $self->{graph};
+}
+
 sub getNodeSources {
   my $self = shift;
-  return @{$self->{nodeSources}};
+  return $self->{nodeSources};
 }
-sub getImageSources {
+
+sub getGeoImages {
   my $self = shift;
-  return @{$self->{imageSources}};
+  return $self->{geoImages};
 }
-sub setNodeSources {
+
+sub addNodeSources {
   my $self = shift;
   my @nodes = shift;
+  
   push(@{$self->getNodeSources()},@nodes);
+  
   return TRUE;
 }
-sub setImageSources {
+
+sub addGeoImages {
   my $self = shift;
   my @images = shift;
-  push(@{$self->getImageSources()},@images);
+  
+  push(@{$self->getGeoImages()},@images);
+  
   return TRUE;
 }
-sub setComputingCode(){
+
+sub setCode {
     my $self = shift;
     my $code = shift;
-    $self->{c} = $code;
+    $self->{code} = $code;
 }
-sub getComputingCode(){
+
+sub getBBox {
     my $self = shift;
-    return $self->{c};
+    
+    my @Bbox = $self->{tm}->indicesToBBox(
+        $self->{i},
+        $self->{j},
+        $self->{graph}->getPyramid->getTilesPerWidth,
+        $self->{graph}->getPyramid->getTilesPerHeight
+    );
+    
+    #ALWAYS(sprintf "BBOX : %s",Dumper(@Bbox)); #TEST#
+    
+    return @Bbox;
 }
-sub getWeightOfNode(){
+
+sub getCode {
+    my $self = shift;
+    return $self->{code};
+}
+
+sub getOwnWeight {
   my $self = shift;
   return $self->{w};
 }
-sub getAccumulatedWeightOfNode(){
+
+sub getAccumulatedWeight {
   my $self = shift;
   return $self->{W};
 }
-sub updateWeightOfNode(){
+
+sub updateOwnWeight {
   my $self = shift;
   my $weight = shift;
   $self->{w} += $weight;
 }
+
+sub exportNode {
+  my $self = shift ;
+  print "Objet Node :\n";
+  print "\tLevel : ".$self->getLevel()."\n";
+  print "\tTM Resolution : ".$self->getTM()->getResolution()."\n";
+  print "\tColonne : ".$self->getCol()."\n";
+  print "\tLigne : ".$self->getRow()."\n";
+  if (defined $self->getScriptNb()) {
+      print "\tScript NB : ".$self->getScriptNb()."\n";
+  } else {
+      print "\tScript NB undefined.\n";
+  }
+  printf "\t Noeud Source :\n";
+  foreach my $node_sup ( @{$self->getNodeSources()} ) {
+    printf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
+  }
+  printf "\t Geoimage Source :\n";
+  foreach my $img ( @{$self->getGeoImages()} ) {
+    printf "\t\tNom : %s\n",$img->getName();
+  }
+    
+}
+
+sub getScriptID {
+    my $self = shift;
+    return sprintf "LEVEL_%s-SCRIPT_%s",$self->getLevel(),$self->getScriptNb();
+}
+
 # method: setAccumulatedWeightOfNode
 #  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
 #  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
 #------------------------------------------------------------------------------
-sub setAccumulatedWeightOfNode(){
+sub setAccumulatedWeight {
     my $self = shift;
     my $weight = shift;
-    $self->{W} = $weight + $self->getWeightOfNode();
+    $self->{W} = $weight + $self->getOwnWeight;
 }
 
-# to_string methode
+# to_mergentif_string
 # la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
 #---------------------------------------------------------------------------------------------------
-sub to_string {
-  my $self = shift;
-  
-  TRACE;
-  my @Bbox = $self->getBbox();
-  
-  my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-          $self->{filePath},
-          $Bbox[0],
-          $Bbox[1],
-          $Bbox[2],
-          $Bbox[3],
-          $self->getTmObj()->getResolution(),
-          $self->getTmObj()->getResolution();
-  #DEBUG ($output);
-  return $output;
-
+sub to_mergentif_string {
+    my $self = shift;
+    my $filePath = shift;
+    
+    TRACE;
+    
+    my @Bbox = $self->getBBox;
+    
+    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $filePath,
+        $Bbox[0],
+        $Bbox[3],
+        $Bbox[2],
+        $Bbox[1],
+        $self->getTM()->getResolution(),
+        $self->getTM()->getResolution();
+    
+    return $output;
 }
+
 1;
 __END__

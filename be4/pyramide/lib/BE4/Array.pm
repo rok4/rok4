@@ -38,18 +38,44 @@ package BE4::Array;
 use strict;
 use warnings;
 
-# version
-my $VERSION = "0.0.1";
+use Data::Dumper;
 
-# method: minArrayIndex
-#  Renvoie l'indice de l'élément le plus petit du tableau
-#-------------------------------------------------------------------------------
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+
+#
+=begin nd
+method: minArrayIndex
+
+Parameters:
+    first - integer, indice from which minimum is looked for.
+    array - numbers (floats or integers) array
+
+Returns:
+    Index of the smaller element in a array, begining with the element 'first'
+=cut
 sub minArrayIndex {
+    my $self = shift;
+    my $first = shift;
     my @array = @_;
+
     my $min = undef;
     my $minIndex = undef;
 
-    for (my $i = 0; $i < scalar @array; $i++){
+    for (my $i = $first; $i < scalar @array; $i++){
         if (! defined $minIndex || $min > $array[$i]) {
             $min = $array[$i];
             $minIndex = $i;
@@ -58,101 +84,33 @@ sub minArrayIndex {
 
     return $minIndex;
 }
-# method: maxArrayIndex
-#  Renvoie l'indice de l'élément le plus grand du tableau
-#-------------------------------------------------------------------------------
-sub maxArrayIndex {
-    my @array = @_;
-    my $max = undef;
-    my $maxIndex = undef;
 
-    for (my $i = 0; $i < scalar @array; $i++){
-        if (! defined $maxIndex || $max < $array[$i]) {
+#
+=begin nd
+method: maxArrayValue
+
+Parameters:
+    first - integer, indice from which maximum is looked for.
+    array - numbers (floats or integers) array
+
+Returns:
+    The greater value in a array, begining with the element 'first'
+=cut
+sub maxArrayValue {
+    my $self = shift;
+    my $first = shift;
+    my @array = @_;
+
+    my $max = undef;
+
+    for (my $i = $first; $i < scalar @array; $i++){
+        if (! defined $max || $max < $array[$i]) {
             $max = $array[$i];
-            $maxIndex = $i;
         }
     }
 
-    return $maxIndex;
+    return $max;
 }
-
-# method: maxArrayValue
-#  Renvoie la valeur maximale du tableau
-#-------------------------------------------------------------------------------
-sub maxArrayValue {
-  my @array = @_;
-  my $max = undef;
-  
-  for (my $i = 0; $i < scalar @array; $i++){
-    if (! defined $max || $max < $array[$i]) {
-      $max = $array[$i];
-    }
-  }
-  return $max;
-}
-
-# method: minArrayValue
-#  Renvoie la valeur minimale du tableau
-#-------------------------------------------------------------------------------
-sub minArrayValue {
-  my @array = @_;
-  my $min = undef;
-
-  for (my $i = 0; $i < scalar @array; $i++){
-    if (! defined $min || $min > $array[$i]) {
-      $min = $array[$i];
-    }
-  }
-
-  return $min;
-}
-
-# method: sumArray
-#  Renvoie la somme des élément du tableau tableau
-#-------------------------------------------------------------------------------
-sub sumArray {
-    my $self = shift;
-    my @array = @_;
-
-    TRACE;
-
-    my $sum = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $sum += $array[$i];
-    }
-
-    return $sum;
-}
-
-# method: statArray
-#  fonction de test renvoyant des statistiques sur le tableau donné : moyenne
-#  et écart type.
-#-------------------------------------------------------------------------------
-sub statArray {
-    my $self = shift;
-    my @array = @_;
-
-    TRACE;
-
-    my $moyenne = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $moyenne += $array[$i];
-    }
-
-    $moyenne /= scalar @array;
-    my $variance = 0;
-
-    for (my $i = 0; $i < scalar @array; $i++){
-        $variance += ($array[$i]-$moyenne) * ($array[$i]-$moyenne);
-    }
-    $variance /= scalar @array;
-    my $ecarttype = sqrt($variance);
-    #print "Moyenne : $moyenne, écart type : $ecarttype\n";
-    return ($moyenne,$ecarttype);
-}
-
 
 1;
 __END__

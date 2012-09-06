@@ -35,7 +35,7 @@
 
 package BE4::PyrImageSpec;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
@@ -48,7 +48,17 @@ my $VERSION = "0.0.1";
 # My module
 use BE4::Pixel;
 
-# constantes
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
+################################################################################
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -59,7 +69,7 @@ my %CODE2SAMPLEFORMAT;
 my %SAMPLEFORMAT2CODE;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
@@ -82,38 +92,31 @@ INIT {
 }
 END {}
 
-# constructor: new
+################################################################################
+=begin nd
+Group: variable
 
-#    params = {
-#        formatCode => TIFF_RAW_INT8,
-#               OU
-#        compression => raw,
-#        sampleformat => uint,
-#        bitspersample => 8,
-#
-#        samplesperpixel => 3,
-#        photometric => rgb,
-#        compressionoption => none,
-#        interpolation => bicubic,
-#        gamma  => 1
-#    }
-#
-#    variable: $self
-#
-#       * pixel (Pixel object)
-#       * compression
-#       * compressionoption
-#       * interpolation
-#       * gamma
-#       * formatCode
+variable: $self
+    *  pixel (Pixel object)
+    *  compression
+    *  compressionoption
+    *  interpolation
+    *  gamma
+    *  formatCode
+=cut
 
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
 
-#---------------------------------------------------------------------------------------------------
+# Group: constructor
+
 sub new {
     my $this = shift;
     my $params = shift;
     
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         pixel    => undef, # object Pixel !
         compression => undef, # param value !
@@ -137,8 +140,6 @@ sub new {
 
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -185,7 +186,7 @@ sub _init {
         return FALSE;
     }
     if (! $self->is_Compression($params->{compression})) {
-        ERROR ("'compression' is not valid !");
+        ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
         return FALSE;
     }
     $self->{compression} = $params->{compression};
@@ -195,19 +196,18 @@ sub _init {
         return FALSE;
     }
     if (! $self->is_CompressionOption($params->{compressionoption})) {
-        ERROR ("'compressionoption' is not valid !");
+        ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
         return FALSE;
     }
     $self->{compressionoption} = $params->{compressionoption};
 
     # Interpolation parameter
-
     if (! exists $params->{interpolation} || ! defined $params->{interpolation}) {
         ERROR ("'interpolation' is required !");
         return FALSE;
     }
     if (! $self->is_Interpolation($params->{interpolation})) {
-        ERROR ("'interpolation' is not valid !");
+        ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
     }
     $self->{interpolation} = $params->{interpolation};
@@ -236,9 +236,11 @@ sub _init {
     return TRUE;
 }
 
-################################################################################
-# Group: control methods
-#
+####################################################################################################
+#                                     ATTRIBUTE TESTS                                              #
+####################################################################################################
+
+# Group: attribute tests
 
 sub is_Compression {
     my $self = shift;
@@ -251,7 +253,6 @@ sub is_Compression {
     foreach (@{$IMAGESPEC{compression}}) {
         return TRUE if ($compression eq $_);
     }
-    ERROR (sprintf "Unknown 'compression' (%s) !",$compression);
     return FALSE;
 }
 
@@ -272,14 +273,13 @@ sub is_CompressionOption {
         }
     }
     if (! $bool) {
-        ERROR (sprintf "Unknown 'compressionoption' (%s) !",$compressionoption);
         return FALSE;
     }
     # NOTE
     # Compression have to be already define in the pixel objet
     if ($compressionoption eq 'crop' && $self->{compression} ne 'jpg') {
         ERROR (sprintf "Crop option is just allowed for jpeg compression, not for compression '%s' !",
-            $self->{pixel}->{compression});
+            $self->{compression});
         return FALSE;
     }
 
@@ -297,25 +297,28 @@ sub is_Interpolation {
     foreach (@{$IMAGESPEC{interpolation}}) {
         return TRUE if ($interpolation eq $_);
     }
-    ERROR (sprintf "Unknown 'interpolation' (%s) !",$interpolation);
     return FALSE;
 }
 
-################################################################################
+####################################################################################################
+#                                          CODE METHOD                                             #
+####################################################################################################
+
 # Group: code manager methods
+
 #
+=begin nd
+method: methodName
 
-# codes handled by rok4 are :
-#     - TIFF_INT8 (deprecated, use TIFF_RAW_INT8 instead)
-#     - TIFF_RAW_INT8
-#     - TIFF_JPG_INT8
-#     - TIFF_LZW_INT8
-#     - TIFF_PNG_INT8
+Extract bits per sample, compression and sample format from a code (present in pyramid's descriptor)
 
-#     - TIFF_FLOAT32 (deprecated, use TIFF_RAW_FLOAT32 instead)
-#     - TIFF_RAW_FLOAT32
-#     - TIFF_LZW_FLOAT32
+Parameters:
+    formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
 
+Returns:
+    An array : [image format,compression,sample format,bits per sample] ( ["TIFF","png","uint",8] )
+
+=cut
 sub decodeFormat {
     my $self = shift;
     my $formatCode = shift;
@@ -337,24 +340,17 @@ sub decodeFormat {
         ERROR(sprintf "Format code is not valid '%s' !", $formatCode);
         return undef;
     }
-  
-    # FIXME : cette regex ne fonctionne pas toujours ?!
-    # $value[2] =~ m/(\w+)(\d+)/; 
+
     $value[2] =~ m/([A-Z]+)([0-9]+)/;
 
     # Contrôle de la valeur sampleFormat extraite
     my $sampleformatCode = $1;
-    my $sampleformat = '';
 
-    foreach (keys %CODE2SAMPLEFORMAT) {
-        if ($sampleformatCode eq $_) {
-            $sampleformat = $CODE2SAMPLEFORMAT{$_};
-        }
-    }
-    if ($sampleformat eq '') {
+    if (! exists $CODE2SAMPLEFORMAT{$sampleformatCode}) {
         ERROR(sprintf "Extracted sampleFormat is not valid '%s' !", $sampleformatCode);
         return undef;
     }
+    my $sampleformat = $CODE2SAMPLEFORMAT{$sampleformatCode};
 
     # Contrôle de la valeur compression extraite
     if (! $self->is_Compression(lc $value[1])) {
@@ -365,16 +361,139 @@ sub decodeFormat {
     my $bitspersample = $2;
     
     return (lc $value[0], lc $value[1], $sampleformat, $bitspersample);
-  
-    # ie 'tiff', 'raw', 'uint' , '8'
-    # ie 'tiff', 'png', 'uint' , '8'
-    # ie 'tiff', 'jpg', 'uint' , '8'
-    # ie 'tiff', 'lzw', 'uint' , '8'
-    # ie 'tiff', 'raw', 'float', '32'    
-    # ie 'tiff', 'lzw', 'float', '32'
     
 }
 
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
+sub getInterpolation {
+    my $self = shift;
+    return $self->{interpolation};
+}
+sub getGamma {
+    my $self = shift;
+    return $self->{gamma};
+}
+sub getCompression {
+    my $self = shift;
+    return $self->{compression};
+}
+sub getCompressionOption {
+    my $self = shift;
+    return $self->{compressionoption};
+}
+sub getCode {
+    my $self = shift;
+    return $self->{formatCode};
+}
+sub getPixel {
+    my $self = shift;
+    return $self->{pixel};
+}
+sub getFormatCode {
+    my $self = shift;
+    return $self->{formatCode};
+}
 
 1;
 __END__
+
+=head1 NAME
+
+BE4::PyrImageSpec - image specifications
+
+=head1 SYNOPSIS
+
+    use BE4::PyrImageSpec;
+  
+    # PyrImageSpec object creation
+    
+    # Basic constructor
+    my $objPIS = BE4::PyrImageSpec->new({
+        compression => "raw",
+        sampleformat => "uint",
+        bitspersample => 8,
+        samplesperpixel => 3,
+        photometric => "rgb",
+        compressionoption => "none",
+        interpolation => "bicubic",
+        gamma  => 1
+    });
+    
+    # From a code
+    my $objPIS = BE4::PyrImageSpec->new({
+        formatCode => "TIFF_RAW_INT8",
+        samplesperpixel => 3,
+        photometric => "rgb",
+        compressionoption => "none",
+        interpolation => "bicubic",
+        gamma  => 1
+    });
+
+=head1 DESCRIPTION
+
+=head2 ATTRIBUTES
+
+=over 4
+
+=item pixel
+
+A Pixel object
+
+=item compression
+
+Possible values : raw, jpg, png, lzw, zip. 
+
+=item compressionoption
+
+Possible values : none, crop.
+
+=item interpolation
+
+Possible values : nn, bicubic, linear, lanczos
+
+=item gamma
+
+A float between 0 and 1, 1 by default. Use by merge4tiff to make dark gray images.
+
+=item formatCode
+
+Use in the pyramid's descriptor. Format is : TIFF_<COMPRESSION>_<SAMPLEFORMAT><BITSPERSAMPLE> (TIFF_RAW_INT8)
+
+=back
+
+=head1 SEE ALSO
+
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">BE4 NaturalDocs</A>
+
+=end html
+
+=head1 AUTHOR
+
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut
