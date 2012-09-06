@@ -56,6 +56,12 @@ use constant FALSE => 0;
 
 ################################################################################
 
+####################################################################################################
+#                                      Index Returning Functions                                   #
+####################################################################################################
+
+# Group: Index Returning Functions
+
 #
 =begin nd
 method: minArrayIndex
@@ -84,6 +90,12 @@ sub minArrayIndex {
 
     return $minIndex;
 }
+
+####################################################################################################
+#                                      Value Returning Functions                                   #
+####################################################################################################
+
+# Group: Value Returning Functions
 
 #
 =begin nd
@@ -114,3 +126,41 @@ sub maxArrayValue {
 
 1;
 __END__
+
+=head1 NAME
+
+BE4::Array - Array Manipulation tools
+
+=head1 SYNOPSIS
+
+    use BE4::Array;
+    my @array = (1,3,5,9);
+    my $minIndex = BE4::Arrray->minArrayIndex(@array); # return 0
+    my $maxArrayValue = BE4::Array->maxArrayValue($array); # return 9
+    
+=head1 DESCRIPTION
+
+Provide functios to compute the max value or the min index of an array
+
+=head1 SEE ALSO
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head1 AUTHOR
+
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
+Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

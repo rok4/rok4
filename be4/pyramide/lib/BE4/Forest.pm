@@ -96,6 +96,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         pyramid     => undef,
+        process     => undef,
         graphs  => []
     };
 
