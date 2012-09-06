@@ -227,16 +227,14 @@ sub setCode {
 sub getBBox {
     my $self = shift;
     
-    my @Bbox = $self->{tm}->indicesToBBox(
+    my ($xMin,$yMin,$xMax,$yMax) = $self->{tm}->indicesToBBox(
         $self->{i},
         $self->{j},
         $self->{graph}->getPyramid->getTilesPerWidth,
         $self->{graph}->getPyramid->getTilesPerHeight
     );
     
-    #ALWAYS(sprintf "BBOX : %s",Dumper(@Bbox)); #TEST#
-    
-    return @Bbox;
+    return ($xMin,$yMin,$xMax,$yMax);
 }
 
 sub getCode {
@@ -279,16 +277,12 @@ sub to_mergentif_string {
     
     TRACE;
     
-    my @Bbox = $self->getBBox;
+    my ($xMin,$yMin,$xMax,$yMax) = $self->getBBox;
     
     my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $filePath,
-        $Bbox[0],
-        $Bbox[3],
-        $Bbox[2],
-        $Bbox[1],
-        $self->getTM->getResolution(),
-        $self->getTM->getResolution();
+        $xMin, $yMin, $xMax, $yMax,
+        $self->getTM->getResolution(), $self->getTM->getResolution();
     
     return $output;
 }

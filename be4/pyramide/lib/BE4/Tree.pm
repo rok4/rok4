@@ -488,7 +488,7 @@ sub computeWholeTree {
     
     foreach my $topNode (@topLevelNodeList) {
         if (! $self->computeBranch($topNode,$NEWLIST)) {
-            ERROR(sprintf "Can not compute the node of the top level '%s'!", Dumper($topNode));
+            ERROR(sprintf "Can not compute the node of the top level '%s'!", $topNode->getWorkBaseName);
             return FALSE;
         }
     }
@@ -576,22 +576,21 @@ sub computeBranch {
     my @childList = $self->getChildren($node);
     if (scalar @childList == 0){
         if (! $self->computeBottomImage($node)) {
-            ERROR(sprintf "Cannot compute the bottom image : %s_%s, level %s)",
-                  $node->getCol, $node->getRow, $node->getLevel);
+            ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkName);
             return FALSE;
         }
         return TRUE;
     }
     foreach my $n (@childList){
         if (! $self->computeBranch($n,$NEWLIST)) {
-            ERROR(sprintf "Cannot compute the branch from node %s)", $node->getWorkBaseName);
+            ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName);
             return FALSE;
         }
         $weight += $n->getAccumulatedWeight;
     }
 
     if (! $self->computeAboveImage($node)) {
-        ERROR(sprintf "Cannot compute the above image : %s)", $node->getWorkBaseName);
+        ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkName);
         return FALSE;
     }
 
@@ -613,8 +612,6 @@ Treat a bottom node : determine code and weight.
 Parameter:
     node - bottom level's node, to treat.
     
-See Also:
-    <wms2work>, <Process:cache2work>, <mergeNtiff>, <work2cache>
 =cut
 sub computeBottomImage {
     
@@ -632,6 +629,11 @@ sub computeBottomImage {
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
         ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+        if (! defined $c) {
+            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+            return FALSE;
+        }
+        
         $code .= $c;
         $weight += $w;
     } else {    
@@ -724,13 +726,18 @@ sub computeAboveImage {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $bg.=" -b $workBgPath";
                     ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+                    if (! defined $c) {
+                        ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
+                        return FALSE;
+                    }
+                        
                     $code .= $c;
                     $weight += $w;
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $bg.=" -b $workBgPath";
-                ($c,$w) = $self->{process}->cache2work($node);
+                ($c,$w) = $self->{process}->cache2work($node,"bgImg");
                 $code .= $c;
                 $weight += $w;
             }

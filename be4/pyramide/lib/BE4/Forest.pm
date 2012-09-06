@@ -45,10 +45,8 @@ use List::Util qw(min max);
 use Data::Dumper;
 use Geo::GDAL;
 
-# My module
 use BE4::Tree;
 use BE4::Process;
-use BE4::Pyramid;
 use BE4::DataSourceLoader;
 use BE4::DataSource;
 
@@ -95,6 +93,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         pyramid     => undef,
+        process     => undef,
         trees  => []
     };
 

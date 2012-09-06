@@ -585,7 +585,7 @@ sub doIt {
         return FALSE;
     }
       
-    DEBUG (sprintf "FOREST (dump) = %s", Dumper($objForest));
+    #DEBUG (sprintf "FOREST (dump) = %s", Dumper($objForest));
     
     return TRUE;
 }

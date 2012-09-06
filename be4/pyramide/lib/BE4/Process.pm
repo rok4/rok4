@@ -81,8 +81,9 @@ Wms2work () {
     local fmt=$2
     local imgSize=$3
     local nbTiles=$4
-    local url=$5
-    shift 5
+    local min_size=$5
+    local url=$6
+    shift 6
 
     local size=0
 
@@ -119,7 +120,6 @@ Wms2work () {
         montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096  $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        echo "mv $dir/img01.tif $dir.tif" 
         mv $dir/img01.tif $dir.tif
     fi
 
@@ -194,7 +194,6 @@ variable: $self
     * scripts => [], # name of each jobs (split and finisher)
     * streams => [], # strems to each jobs (split and finisher)
     * weights => [], # weight of each jobs (split and finisher)
-
 =cut
 
 ####################################################################################################
@@ -272,7 +271,7 @@ sub _init {
     # -------------------------------------------------------------------
     # We create directory for scripts
     if (! -d $self->getScriptDir) {
-        DEBUG (sprintf "Create the script directory'%s' !", $self->getScriptDir);
+        DEBUG (sprintf "Create the script directory '%s' !", $self->getScriptDir);
         eval { mkpath([$self->getScriptDir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $self->getScriptDir , $@);
@@ -282,7 +281,7 @@ sub _init {
 
     
     # -------------------------------------------------------------------
-    # We initialize scripts (name, weights) and open writting streams
+    # We initialize scripts (name, weights), make directories (tmp) and open writting streams
     
     my $functions = $self->configureFunctions();
     
@@ -291,10 +290,20 @@ sub _init {
         $scriptID = "SCRIPT_FINISHER" if ($i == 0);
         push @{$self->{scriptsID}},$scriptID;
         
+        # We create temporary directory
+        if (! -d $self->getScriptTmpDir) {
+            DEBUG (sprintf "Create the temporary directory '%s' !", $self->getScriptTmpDir);
+            eval { mkpath([$self->getScriptTmpDir]); };
+            if ($@) {
+                ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->getScriptTmpDir , $@);
+                return FALSE;
+            }
+        }
+        
         my $SCRIPT;
         my $scriptPath = $self->getScriptFile($scriptID);
         if ( ! (open $SCRIPT,">", $scriptPath)) {
-            ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
+            ERROR(sprintf "Can not open the script's stream '%s' !.", $scriptPath);
             return FALSE;
         }
         
@@ -364,26 +373,19 @@ sub wms2work {
     
     TRACE;
     
-    ALWAYS (sprintf "harvesting : %s",Dumper($harvesting)); #TEST#
-    
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
-    
-    ALWAYS (sprintf "img size : %s",Dumper(@imgSize)); #TEST#
+    my ($xMin,$yMin,$xMax,$yMax) = $node->getBBox;
     
     my $nodeName = $node->getWorkBaseName;
     my $cmd = $harvesting->getCommandWms2work({
-        inversion => $tms->getInversion,
-        dir       => "\${TMP_DIR}/".$nodeName,
-        srs       => $tms->getSRS,
-        bbox      => $node->getBBox,
-        imagesize => ($imgSize[0], $imgSize[1])
-    });    
-    
-    if (! defined $cmd) {
-        ERROR("Cannot harvest image for node $nodeName");
-        exit 4;
-    }
+        width => $imgSize[0],
+        height => $imgSize[1],
+        inversion => $tms->getInversion(),
+        dir => "\${TMP_DIR}/$nodeName",
+        srs => $tms->getSRS,
+        bbox => [$xMin,$yMin,$xMax,$yMax],
+    });
     
     return ($cmd,WGET_W);
 }
@@ -406,9 +408,11 @@ Parameters:
     node - BE4::Node object, whose image have to be transfered in the work directory.
 =cut
 sub cache2work {
-    my ($self, $node, $baseName) = @_;
+    my ($self, $node, $prefix) = @_;
 
-    $baseName = $node->getWorkBaseName if (! defined $baseName);
+    $prefix = "" if (! defined $prefix);
+    my $baseName = $prefix."_".$node->getWorkBaseName;
+    
     my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
 
@@ -457,7 +461,7 @@ sub work2cache {
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
     if ($rm) {
-        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
+        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n\n", $workImgName);
     }
     
     return ($cmd,TIFF2TILE_W);
@@ -499,7 +503,7 @@ sub mergeNtiff {
         $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
         $workBgPath = File::Spec->catfile($self->getScriptTmpDir,$workBgBaseName.".tif");
         # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-        ($c,$w) = $self->cache2work($node,$workBgBaseName);
+        ($c,$w) = $self->cache2work($node,"bgImg");
         $code .= $c;
         $weight += $w;
     }
@@ -507,8 +511,19 @@ sub mergeNtiff {
     my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir, "mergeNtiff");
     my $mergNtiffConfFilename = join("_","mergeNtiffConfig", $node->getWorkBaseName).".txt";
     my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
-    my $mergNtiffConfFileForScript = File::Spec->catfile('${ROOT_TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
+    my $mergNtiffConfFileForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
 
+    # We create the directory for mergeNtiff configurations
+    if (! -d $mergNtiffConfDir) {
+        DEBUG (sprintf "Create the mergeNtiff configurations directory '%s' !", $mergNtiffConfDir);
+        eval { mkpath([$mergNtiffConfDir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the mergeNtiff configurations directory '%s' : %s !",
+                  $mergNtiffConfDir, $@);
+            return FALSE;
+        }
+    }
+    
     if (! open CFGF, ">", $mergNtiffConfFile ){
         ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
         return ("",-1);

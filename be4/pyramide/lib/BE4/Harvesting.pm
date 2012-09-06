@@ -105,7 +105,7 @@ sub new {
         FORMAT   => undef,
         LAYERS    => undef,
         OPTIONS    => "STYLES=",
-        min_size => undef,
+        min_size => 0,
         max_width => undef,
         max_height => undef
     };
@@ -178,7 +178,7 @@ sub _init {
             ERROR("If 'min_size' is given, it must be strictly positive.");
             return FALSE ;
         }
-        $self->{min_size} .= int($params->{min_size});
+        $self->{min_size} = int($params->{min_size});
     }
 
     # Other parameters are mandatory
@@ -241,18 +241,18 @@ sub _init {
 
 #
 =begin nd
-   method: doRequestUrl
+method: doRequestUrl
 
-   From an bbox, determine the request to send to obtain what we want.
+From an bbox, determine the request to send to obtain what we want.
 
-   Parameters (hash):
-      srs - bbox's SRS
-      inversion - boolean, to know if we have to reverse coordinates in the request.
-      bbox - extent of the harvested image
-      imagesize - pixel size of the harvested image
+Parameters (hash):
+    srs - bbox's SRS
+    inversion - boolean, to know if we have to reverse coordinates in the request.
+    bbox - extent of the harvested image
+    width,height - pixel size of the harvested image
 
-   Returns:
-      An url
+Returns:
+    An url
 =cut
 sub doRequestUrl {
     my $self = shift;
@@ -263,7 +263,8 @@ sub doRequestUrl {
 
     my $srs       = $args->{srs}          || ( ERROR ("'srs' parameter required !") && return undef );
     my $bbox      = $args->{bbox}         || ( ERROR ("'bbox' parameter required !") && return undef );
-    my $imagesize = $args->{imagesize}    || ( ERROR ("'imagesize' parameter required !") && return undef );
+    my $image_width = $args->{width} || ( ERROR ("'width' parameter required !") && return undef );
+    my $image_height = $args->{height} || ( ERROR ("'height' parameter required !") && return undef );
 
     my $inversion = $args->{inversion};
     if (! defined $inversion) {
@@ -272,7 +273,6 @@ sub doRequestUrl {
     }
 
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
-    my ($image_width, $image_height) = @{$imagesize};
 
     my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s",
                         $self->url(),
@@ -304,7 +304,7 @@ Parameters:
     srs - bbox's SRS
     inversion - boolean, to know if we have to reverse coordinates in the BBoxes.
     bbox - extent of the final harvested image
-    imagesize - pixel size of the final harvested image
+    width,height - pixel size of the harvested image
 
 Returns:
     A string, which contain the BBoxes array and the "Wms2work" call:
@@ -335,19 +335,19 @@ sub getCommandWms2work {
 
     TRACE;
 
-    my $dir       = $args->{dir}       || ( ERROR ("'dir' parameter required !") && return undef );
-    my $srs       = $args->{srs}       || ( ERROR ("'srs' parameter required !") && return undef );
-    my $bbox      = $args->{bbox}      || ( ERROR ("'bbox' parameter required !") && return undef );
-    my $imagesize = $args->{imagesize} || ( ERROR ("'imagesize' parameter required !") && return undef );
-
+    my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return undef );
+    my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return undef );
+    my $bbox = $args->{bbox} || ( ERROR ("'bbox' parameter required !") && return undef );
+    my $max_width = $args->{width} || ( ERROR ("'width' parameter required !") && return undef );
+    my $max_height = $args->{height} || ( ERROR ("'height' parameter required !") && return undef );
+    
     my $inversion = $args->{inversion};
     if (! defined $inversion) {
         ERROR ("'inversion' parameter required !");
         return undef;
     }
     
-    my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
-    my ($max_width, $max_height) = @{$imagesize};
+    my ($xmin, $ymin, $xmax, $ymax) = @$bbox;
     
     my $imagePerWidth = 1;
     my $imagePerHeight = 1;
@@ -408,11 +408,9 @@ sub getCommandWms2work {
     }
     $cmd .= sprintf " \"%sx%s\"",$max_width,$max_height;
     $cmd .= sprintf " \"%sx%s\"",$imagePerWidth,$imagePerHeight;
-    if (defined $self->{min_size}) {
-        $cmd .= sprintf " \"%s\"",$self->{min_size};
-    } else {
-        $cmd .= " \"0\"";
-    }
+
+    $cmd .= sprintf " \"%s\"",$self->{min_size};
+
     $cmd .= " \"$URL\"";
     $cmd .= " \$BBOXES\n";
     
