@@ -96,6 +96,7 @@ sub new {
     tileheight     => undef,
     matrixwidth    => undef,
     matrixheight   => undef,
+    targetstmid   => [],
   };
 
   bless($self, $class);
@@ -360,6 +361,24 @@ sub getTopLeftCornerY {
     my $self = shift;
     TRACE ("getTopLeftCornerY");
     return Math::BigFloat->new($self->{topleftcornery}); 
+}
+
+sub getTargetsTmId {
+    my $self = shift;
+    return $self->{targetstmid}
+}
+
+sub setTargetsTmId {
+    my $self = shift;
+    my @TmID = shift;
+    $self->{targetstmid} = [];
+    push($self->{targetstmid},@TmID);
+}
+
+sub addTargetsTmId {
+    my $self = shift;
+    my @TmID = shift;
+    push($self->{targetstmid},@TmID);
 }
 
 

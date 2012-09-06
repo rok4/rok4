@@ -76,6 +76,7 @@ variable: $self
     * w => 0,     # w = own node's weight  
     * W => 0,     # W = accumulated weight (childs' weights sum)
     * code => '',     # c = commands to generate this node (to write in a script)
+    * script_nb => undef, # number of the script in which the node is calculated
     * nodeSources => [], # list of BE4::Node from which this node is calculated
     * geoImages => [], # list of BE4::GeoImage from which this node is calculated
 =cut
@@ -99,6 +100,7 @@ sub new {
         w => 0,
         W => 0,
         code => '',
+        script_nb => undef,
         nodeSources => [],
         geoImages => [],
     };
@@ -154,6 +156,17 @@ sub _init {
 ####################################################################################################
 
 # Group: getters - setters
+
+sub getScriptNb {
+    my $self = shift;
+    return $self->{script_nb}
+}
+
+sub setScriptNb {
+    my $self = shift;
+    my $number = shift;
+    $self->{script_nb} = $number; 
+}
 
 sub getCol {
     my $self = shift;
@@ -227,14 +240,16 @@ sub setCode {
 sub getBBox {
     my $self = shift;
     
-    my ($xMin,$yMin,$xMax,$yMax) = $self->{tm}->indicesToBBox(
+    my @Bbox = $self->{tm}->indicesToBBox(
         $self->{i},
         $self->{j},
         $self->{graph}->getPyramid->getTilesPerWidth,
         $self->{graph}->getPyramid->getTilesPerHeight
     );
     
-    return ($xMin,$yMin,$xMax,$yMax);
+    #ALWAYS(sprintf "BBOX : %s",Dumper(@Bbox)); #TEST#
+    
+    return @Bbox;
 }
 
 sub getCode {
@@ -258,6 +273,34 @@ sub updateOwnWeight {
   $self->{w} += $weight;
 }
 
+sub exportNode {
+  my $self = shift ;
+  print "Objet Node :\n";
+  print "\tLevel : ".$self->getLevel()."\n";
+  print "\tTM Resolution : ".$self->getTM()->getResolution()."\n";
+  print "\tColonne : ".$self->getCol()."\n";
+  print "\tLigne : ".$self->getRow()."\n";
+  if (defined $self->getScriptNb()) {
+      print "\tScript NB : ".$self->getScriptNb()."\n";
+  } else {
+      print "\tScript NB undefined.\n";
+  }
+  printf "\t Noeud Source :\n";
+  foreach my $node_sup ( @{$self->getNodeSources()} ) {
+    printf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
+  }
+  printf "\t Geoimage Source :\n";
+  foreach my $img ( @{$self->getGeoImages()} ) {
+    printf "\t\tNom : %s\n",$img->getName();
+  }
+    
+}
+
+sub getScriptID {
+    my $self = shift;
+    return sprintf "LEVEL_%s-SCRIPT_%s",$self->getLevel(),$self->getScriptNb();
+}
+
 # method: setAccumulatedWeightOfNode
 #  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
 #  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
@@ -277,12 +320,16 @@ sub to_mergentif_string {
     
     TRACE;
     
-    my ($xMin,$yMin,$xMax,$yMax) = $self->getBBox;
+    my @Bbox = $self->getBBox;
     
     my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $filePath,
-        $xMin, $yMin, $xMax, $yMax,
-        $self->getTM->getResolution(), $self->getTM->getResolution();
+        $Bbox[0],
+        $Bbox[3],
+        $Bbox[2],
+        $Bbox[1],
+        $self->getTM()->getResolution(),
+        $self->getTM()->getResolution();
     
     return $output;
 }

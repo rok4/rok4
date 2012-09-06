@@ -81,9 +81,8 @@ Wms2work () {
     local fmt=$2
     local imgSize=$3
     local nbTiles=$4
-    local min_size=$5
-    local url=$6
-    shift 6
+    local url=$5
+    shift 5
 
     local size=0
 
@@ -120,6 +119,7 @@ Wms2work () {
         montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096  $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
+        echo "mv $dir/img01.tif $dir.tif" 
         mv $dir/img01.tif $dir.tif
     fi
 
@@ -192,8 +192,9 @@ variable: $self
     * path_shell => undef,
     
     * scripts => [], # name of each jobs (split and finisher)
-    * streams => [], # strems to each jobs (split and finisher)
+    * streams => [], # streams to each jobs (split and finisher)
     * weights => [], # weight of each jobs (split and finisher)
+
 =cut
 
 ####################################################################################################
@@ -268,55 +269,94 @@ sub _init {
         return FALSE;
     }
     
+    my $functions = $self->configureFunctions();
+    
     # -------------------------------------------------------------------
     # We create directory for scripts
     if (! -d $self->getScriptDir) {
-        DEBUG (sprintf "Create the script directory '%s' !", $self->getScriptDir);
+        DEBUG (sprintf "Create the script directory'%s' !", $self->getScriptDir);
         eval { mkpath([$self->getScriptDir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $self->getScriptDir , $@);
             return FALSE;
         }
     }
+    
+    ## Acting differently if QTREE or simple GRAPH
+    ## TODO : differences between Graph and Qtree should only be in their particular files (QTREE.pm and GRAPH.pm), not here
+    if ($pyr->getTileMatrixSet()->isQTree()) {
+        
+      #### QTREE CASE
+  
+      # -------------------------------------------------------------------
+      # We initialize scripts (name, weights) and open writting streams
+    
+      for (my $i = 0; $i <= $self->{job_number}; $i++) {
+          my $scriptID = sprintf "SCRIPT_%s",$i;
+          $scriptID = "SCRIPT_FINISHER" if ($i == 0);
+          push @{$self->{scriptsID}},$scriptID;
+          
+          my $SCRIPT;
+          my $scriptPath = $self->getScriptFile($scriptID);
+          if ( ! (open $SCRIPT,">", $scriptPath)) {
+              ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
+              return FALSE;
+          }
+          
+          # We write header (environment variables and bash functions)
+          my $header = $self->prepareScript($scriptID,$functions);
+          printf $SCRIPT "%s", $header;
+          # We store stream
+          push @{$self->{streams}},$SCRIPT;
+          
+          # We initialize weight for this script with 0
+          push @{$self->{weights}},0;
+      }
+    } else {
+    
+      #### GRAPH CASE
+      
+      # -------------------------------------------------------------------
+      # We initialize scripts (name, weights) and open writting streams
+      
+      
+      # Boucle sur les levels et sur le nb de scripts/jobs
+      # On termine par les finishers
+      my $tms = $self->{pyramid}->getTileMatrixSet();
+      for (my $i = $tms->getTMSBottomOrder(); $i <= $tms->getTMSTopOrder() + 1; $i++) {
+            
+        my @level_names ;
+        my @level_streams ;
+        my @level_weights ;
 
-    
-    # -------------------------------------------------------------------
-    # We initialize scripts (name, weights), make directories (tmp) and open writting streams
-    
-    my $functions = $self->configureFunctions();
-    
-    for (my $i = 0; $i <= $self->{job_number}; $i++) {
-        my $scriptID = sprintf "SCRIPT_%s",$i;
-        $scriptID = "SCRIPT_FINISHER" if ($i == 0);
-        push @{$self->{scriptsID}},$scriptID;
-        
-        # We create temporary directory
-        if (! -d $self->getScriptTmpDir) {
-            DEBUG (sprintf "Create the temporary directory '%s' !", $self->getScriptTmpDir);
-            eval { mkpath([$self->getScriptTmpDir]); };
-            if ($@) {
-                ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->getScriptTmpDir , $@);
-                return FALSE;
-            }
-        }
-        
-        my $SCRIPT;
-        my $scriptPath = $self->getScriptFile($scriptID);
-        if ( ! (open $SCRIPT,">", $scriptPath)) {
-            ERROR(sprintf "Can not open the script's stream '%s' !.", $scriptPath);
+        for (my $j = 0; $j < $self->{job_number}; $j++) {
+           
+          my $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$i,$j;
+          $scriptID = sprintf("FINISHER-SCRIPT_%s",$j) if ($i == $tms->getTMSTopOrder() + 1);
+          push(@level_names,$scriptID);
+            
+          my $scriptPath = $self->getScriptFile($scriptID);
+          my $SCRIPT;
+          if ( ! (open $SCRIPT,">", $scriptPath)) {
+            ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
             return FALSE;
-        }
-        
-        # We write header (environment variables and bash functions)
-        my $header = $self->prepareScript($scriptID,$functions);
-        printf $SCRIPT "%s", $header;
-        # We store stream
-        push @{$self->{streams}},$SCRIPT;
-        
-        # We initialize weight for this script with 0
-        push @{$self->{weights}},0;
-    }
+          }
+          # We write header (environment variables and bash functions)
+          my $header = $self->prepareScript($scriptID,$functions);
+          printf $SCRIPT "%s", $header;
+          push(@level_streams,$SCRIPT);
 
+          # Initialize Weight Array
+          push(@level_weights,0);
+          
+        }
+        push @{$self->{weights}},\@level_weights;
+        push @{$self->{streams}},\@level_streams;
+        push @{$self->{names}},\@level_names;
+        
+      }   
+      
+    }
     return TRUE;
 }
 
@@ -373,19 +413,26 @@ sub wms2work {
     
     TRACE;
     
+    ALWAYS (sprintf "harvesting : %s",Dumper($harvesting)); #TEST#
+    
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
-    my ($xMin,$yMin,$xMax,$yMax) = $node->getBBox;
+    
+    ALWAYS (sprintf "img size : %s",Dumper(@imgSize)); #TEST#
     
     my $nodeName = $node->getWorkBaseName;
     my $cmd = $harvesting->getCommandWms2work({
-        width => $imgSize[0],
-        height => $imgSize[1],
-        inversion => $tms->getInversion(),
-        dir => "\${TMP_DIR}/$nodeName",
-        srs => $tms->getSRS,
-        bbox => [$xMin,$yMin,$xMax,$yMax],
-    });
+        inversion => $tms->getInversion,
+        dir       => "\${TMP_DIR}/".$nodeName,
+        srs       => $tms->getSRS,
+        bbox      => $node->getBBox,
+        imagesize => ($imgSize[0], $imgSize[1])
+    });    
+    
+    if (! defined $cmd) {
+        ERROR("Cannot harvest image for node $nodeName");
+        exit 4;
+    }
     
     return ($cmd,WGET_W);
 }
@@ -408,11 +455,9 @@ Parameters:
     node - BE4::Node object, whose image have to be transfered in the work directory.
 =cut
 sub cache2work {
-    my ($self, $node, $prefix) = @_;
+    my ($self, $node, $baseName) = @_;
 
-    $prefix = "" if (! defined $prefix);
-    my $baseName = $prefix."_".$node->getWorkBaseName;
-    
+    $baseName = $node->getWorkBaseName if (! defined $baseName);
     my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
 
@@ -424,7 +469,7 @@ sub cache2work {
         my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName);
         return ($cmd,CACHE2WORK_PNG_W);
     } else {
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);### TODO : ist it a mistake ???
         return ($cmd,TIFFCP_W);
     }
 }
@@ -449,7 +494,47 @@ sub work2cache {
     
     $rm = FALSE if (! defined $rm);
 
-    my $workImgName  = $node->getWorkName;
+    my ($level,$script) = split('-',$node->getScriptID());
+    my $workImgName  = File::Spec->catfile($level,$script,$node->getWorkName);
+    my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
+    
+    # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
+    # complémentaire comme le quadrillage des dalles et le numéro du node, 
+    # ou celui des tuiles et leur identifiant.
+    
+    # Suppression du lien pour ne pas corrompre les autres pyramides.
+    my $cmd .= sprintf ("Work2cache \${ROOT_TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
+    
+    # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
+    if ($rm) {
+        $cmd .= sprintf ("rm -f \${ROOT_TMP_DIR}/%s\n", $workImgName);
+    }
+    
+    return ($cmd,TIFF2TILE_W);
+}
+
+#
+=begin nd
+method: work2cache_Graph
+
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
+
+Example:
+    Work2cache ${TMP_DIR}/19_395_3137.tif ${PYR_DIR}/IMAGE/19/02/AF/Z5.tif
+
+Parameter:
+    node - BE4::Node object, whose image have to be transfered in the cache.
+    rm - boolean, specify if image have to be removed after copy in the cache (false by default)
+=cut
+sub work2cache_Graph {
+    my $self = shift;
+    my $node = shift;
+    my $Finisher_Nb = shift;
+    my $rm = shift;
+    
+    $rm = FALSE if (! defined $rm);
+
+    my $workImgName  = sprintf "LEVEL_%s/SCRIPT_%s/%s",$node->getLevel(),$node->getScriptNb(),$node->getWorkName();
     my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
     
     # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
@@ -458,12 +543,10 @@ sub work2cache {
     
     # Suppression du lien pour ne pas corrompre les autres pyramides.
     my $cmd .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
-    
-    # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
-    if ($rm) {
-        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n\n", $workImgName);
-    }
-    
+ 
+    # On peut ensuite supprimer l'image source   
+    $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
+     
     return ($cmd,TIFF2TILE_W);
 }
 
@@ -493,7 +576,7 @@ sub mergeNtiff {
     my $workBgPath=undef;
     my $workBgBaseName=undef;
     my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
-    my $workImgPath = File::Spec->catfile($self->getScriptTmpDir, $node->getWorkName);
+    my $workImgPath = File::Spec->catfile($self->getScriptTmpDir($node->getScriptID),$node->getWorkName);
 
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
@@ -501,29 +584,18 @@ sub mergeNtiff {
     # correspondant dans la nouvelle pyramide.
     if ( -f $cacheImgPath ) {
         $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
-        $workBgPath = File::Spec->catfile($self->getScriptTmpDir,$workBgBaseName.".tif");
+        $workBgPath = File::Spec->catfile($self->getScriptTmpDir($node->getScriptID()),$workBgBaseName.".tif");
         # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-        ($c,$w) = $self->cache2work($node,"bgImg");
+        ($c,$w) = $self->cache2work($node,$workBgBaseName);
         $code .= $c;
         $weight += $w;
     }
 
-    my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir, "mergeNtiff");
+    my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir($node->getScriptID()), "mergeNtiff");
     my $mergNtiffConfFilename = join("_","mergeNtiffConfig", $node->getWorkBaseName).".txt";
     my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
     my $mergNtiffConfFileForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
 
-    # We create the directory for mergeNtiff configurations
-    if (! -d $mergNtiffConfDir) {
-        DEBUG (sprintf "Create the mergeNtiff configurations directory '%s' !", $mergNtiffConfDir);
-        eval { mkpath([$mergNtiffConfDir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the mergeNtiff configurations directory '%s' : %s !",
-                  $mergNtiffConfDir, $@);
-            return FALSE;
-        }
-    }
-    
     if (! open CFGF, ">", $mergNtiffConfFile ){
         ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
         return ("",-1);
@@ -541,6 +613,96 @@ sub mergeNtiff {
     my $listGeoImg = $node->getGeoImages;
     foreach my $img (@{$listGeoImg}){
         printf CFGF "%s", $img->to_string();
+    }
+    foreach my $nodesource ( @{$node->getNodeSources()} ) {
+        my $filepath = File::Spec->catfile($self->getScriptTmpDir($nodesource->getScriptID()), $nodesource->getWorkName);
+        printf CFGF "%s", $nodesource->to_mergentif_string($filepath);
+    }
+    close CFGF;
+    
+
+    $code .= "MergeNtiff image $mergNtiffConfFileForScript";
+    $weight += MERGENTIFF_W;
+    
+    if (defined $workBgPath) {
+        $code .= " $workBgPath\n";
+    } else {
+        $code .= "\n";
+    }
+
+    return ($code,$weight);
+}
+
+#
+=begin nd
+method: mergeNtiff_Graph
+
+Use the 'MergeNtiff' bash function for Graph TMS Configuration.
+
+Parameters:
+    node - a node object
+    
+Example:
+    MergeNtiff image ${ROOT_TMP_DIR}/mergeNtiff/mergeNtiffConfig_19_397_3134.txt
+=cut
+sub mergeNtiff_Graph {
+    my $self = shift;
+    my $node = shift;
+    my $Script_Nb = shift;
+    
+    my $Level = $node->getLevel();
+
+    TRACE;
+    
+    my ($c, $w);
+    my ($code, $weight) = ("",0);
+    
+    my $workBgPath=undef;
+    my $workBgBaseName=undef;
+    my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
+    my $workImgPath = File::Spec->catfile($self->getScriptTmpDir,"Level_".$Level,"Script_".$Script_Nb,$node->getWorkName);
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier 
+    # correspondant dans la nouvelle pyramide.
+    if ( -f $cacheImgPath ) {
+        $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
+        $workBgPath = File::Spec->catfile($self->getScriptTmpDir,$workBgBaseName.".tif");
+        # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
+        ($c,$w) = $self->cache2work($node,$workBgBaseName);
+        $code .= $c;
+        $weight += $w;
+    }
+
+    my $mergNtiffConfDir  = File::Spec->catdir($self->getScriptTmpDir,"Level_".$Level,"Script_".$Script_Nb,"mergeNtiff");
+    my $mergNtiffConfFilename = join("_","mergeNtiffConfig", $node->getWorkBaseName).".txt";
+    my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
+    my $mergNtiffConfFileForScript = File::Spec->catfile('${ROOT_TMP_DIR}',"Level_".$Level,"Script_".$Script_Nb,"mergeNtiff",$mergNtiffConfFilename);
+
+    if (! open CFGF, ">", $mergNtiffConfFile ){
+        ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
+        return ("",-1);
+    }
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    printf CFGF $node->to_mergentif_string($workImgPath);
+
+    # Maintenant les dalles en entrée:
+    # L'éventuel fond
+    if (defined $workBgPath){
+        # L'image de fond (qui est la dalle de la pyramide de base ou la dalle nodata si elle n'existe pas)
+        printf CFGF "%s", $node->to_mergentif_string($workBgPath);
+    }
+
+
+    # Les images source
+    my $listGeoImg = $node->getGeoImages;
+    foreach my $img (@{$listGeoImg}){
+        printf CFGF "%s", $img->to_string();
+    }
+    foreach my $nodesource ( @{$node->getNodeSources()} ) {
+        my $filepath = File::Spec->catfile($self->getScriptTmpDir,"Level_".$nodesource->getLevel(),"Script_".$nodesource->getScriptNb(),$nodesource->getWorkName);
+        printf CFGF "%s", $nodesource->to_mergentif_string($filepath);
     }
     close CFGF;
     
@@ -729,7 +891,7 @@ sub prepareScript {
     my $code = sprintf ("# Variables d'environnement\n");
     $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", $self->getRootTmpDir);
-    $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->getScriptTmpDir());
+    $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->getScriptTmpDir($scriptId));
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $self->{pyramid}->getNewDataDir());
     $code   .= "\n";
     
@@ -778,9 +940,16 @@ sub getRootTmpDir {
 
 sub getScriptTmpDir {
   my $self = shift;
-  return File::Spec->catdir($self->{path_temp}, $self->{pyramid}->getNewName);
-  #return File::Spec->catdir($self->{path_temp}, $self->{pyramid}->getNewName(), "\${SCRIPT_ID}/");
-  # ie .../TMP/PYRNAME/SCRIPT_X/
+  my $scriptID = shift;
+  
+  if ($self->getPyramid()->getTileMatrixSet()->isQTree()) {
+    return File::Spec->catdir($self->{path_temp}, $self->{pyramid}->getNewName);
+    #return File::Spec->catdir($self->{path_temp}, $self->{pyramid}->getNewName(), "\${SCRIPT_ID}/");
+    # ie .../TMP/PYRNAME/SCRIPT_X/
+  } else {
+     my ($level,$script) = split('-',$scriptID);
+    return File::Spec->catdir($self->{path_temp}, $self->{pyramid}->getNewName,$level,$script);
+  }
 }
 
 sub getScriptDir {
@@ -811,6 +980,16 @@ sub getWeights {
   return $self->{weights}; 
 }
 
+sub getStreams {
+  my $self = shift;
+  return $self->{streams}; 
+}
+
+sub getPyramid {
+  my $self = shift;
+  return $self->{pyramid};
+ }
+  
 1;
 __END__
 

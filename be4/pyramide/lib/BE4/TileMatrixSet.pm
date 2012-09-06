@@ -106,6 +106,8 @@ sub new {
     srs        => undef, # srs is casted in uppercase
     coordinates_inversion  => FALSE,
     tilematrix => {},
+    #
+    isQTree => undef, # boolean used to determine TMS which can be used with QTree
   };
 
   bless($self, $class);
@@ -234,40 +236,45 @@ sub _load {
     # tilematrix list sort by resolution
     my @tmList = $self->getTileMatrixByArray();
   
-    # Is TMS a QuadTree ? If not, we don't know how to do -> ERROR
-    
+    # Is TMS a QuadTree ? If not, we use a graph (less efficient for calculs)
+    $self->{isQTree} = TRUE; # default value
     if (scalar(@tmList) != 1) {
         my $epsilon = $tmList[0]->getResolution / 100 ;
         for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
             if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
-                ERROR(sprintf "Resolutions have to go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution,
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                #ERROR(sprintf "Resolutions have to go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
+                #    $tmList[$i]->{id},$tmList[$i+1]->getResolution,
+                #    $tmList[$i]->{id},$tmList[$i+1]->getResolution);
+                #return FALSE;
             }
             if ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
-                ERROR(sprintf "'topleftcornerx' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                #ERROR(sprintf "'topleftcornerx' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX,
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX);
+                #return FALSE;
             }
             if ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
-                ERROR(sprintf "'topleftcornery' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                #ERROR(sprintf "'topleftcornery' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY,
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY);
+                #return FALSE;
             }
             if ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
-                ERROR(sprintf "'tilewidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                #ERROR(sprintf "'tilewidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth,
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth);
+                #return FALSE;
             }
             if ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
-                ERROR(sprintf "'tileheight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                #ERROR(sprintf "'tileheight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight,
+                #    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight);
+                #return FALSE;
             }
         };
     };
@@ -277,6 +284,14 @@ sub _load {
     
     for (my $i=0; $i < scalar @tmList; $i++){
         $self->{levelIdx}{$tmList[$i]->getID()} = $i;
+    }
+    
+    ## Adding informations about child/parent in TM objects
+    for (my $i = 0; $i < scalar(@tmList) ;$i++) {
+      my $tmSource = $self->_computeTmSource($tmList[$i]);
+      if (defined $tmSource) {
+        push(@{$tmSource->{targetstmid}},$tmList[$i]->{id});
+      }
     }
     
     return TRUE;
@@ -334,11 +349,55 @@ sub getTileHeight {
   return $self->{tilematrix}->{$levelID}->getTileHeight;
 }
 
+sub isQTree {
+  my $self = shift;
+  return $self->{isQTree};
+}
+
 ####################################################################################################
 #                                    TILE MATRIX MANAGER                                           #
 ####################################################################################################
 
 # Group: tile matrix manager
+
+#
+=begin nd
+method: _computeTmSource
+
+Parameters:
+    tmTarget - a BE4::TileMatrix object.
+
+Returns:
+    The TM (obj) from which the TM (obj) in argument is calculated (undef if the argument TM is bottomLevel).
+=cut
+sub _computeTmSource {
+  my $self = shift;
+  my $tmTarget = shift;
+  
+  if ($tmTarget->{id} == $self->{levelbottom}) {
+    return undef;
+  }
+
+  my @tmList = $self->getTileMatrixByArray();
+  my $tmSource = undef; # The TM to be used to compute images in TM Parent
+  my $tmSource_resolution = 0; # Used for initialization
+  
+  # TODO : improve way to compute the best TM to use (for float)
+  foreach my $potentialTmSource(@tmList) {
+    if (
+      $potentialTmSource->{resolution} < $tmTarget->{resolution}
+      && $tmTarget->{resolution} % $potentialTmSource->{resolution} == 0
+      && $potentialTmSource->{resolution} > $tmSource_resolution
+    ) 
+    {
+      $tmSource_resolution = $potentialTmSource->{resolution};
+      $tmSource = $potentialTmSource;
+    }
+  }
+  #print "The source of Level Resolution : [".$tmParent->{resolution}."] is Level Resolution [".$tmChild->{resolution}."]\n";
+  return $tmSource;
+}
+
 
 #
 =begin nd
@@ -456,6 +515,20 @@ sub getOrderfromID {
     }
 }
 
+sub getTMSTopOrder {
+    my $self = shift ;
+    my @array = $self->getTileMatrixByArray();
+    my $topTMS = $array[-1];
+    return $self->getOrderfromID($topTMS->getID());
+
+};
+
+sub getTMSBottomOrder {
+    my $self = shift ;
+    my @array = $self->getTileMatrixByArray();
+    my $bottomTMS = $array[0];
+    return $self->getOrderfromID($bottomTMS->getID());
+};
 
 1;
 __END__
@@ -471,13 +544,13 @@ BE4::TileMatrixSet - load a file tilematrixset.
     my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
     my $objTMS = BE4::TileMatrixSet->new($filepath);
     
-    $objTMS->getTileMatrixCount()};  # ie 19
-    $objTMS->getTileMatrix(12);      # object TileMatrix with level id = 12
-    $objTMS->getSRS();               # ie 'IGNF:LAMB93'
-    $objTMS->getName();              # ie 'LAMB93_50cm'
-    $objTMS->getFile();              # ie 'LAMB93_50cm.tms'
-    $objTMS->getPath();              # ie '/home/ign/tms/'
-
+    $objTMS->getTileMatrixCount()};      # ie 19
+    $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
+    $objTMS->getSRS();                   # ie 'IGNF:LAMB93'
+    $objTMS->getName();                  # ie 'LAMB93_50cm'
+    $objTMS->getFile();                  # ie 'LAMB93_50cm.tms'
+    $objTMS->getPath();                  # ie '/home/ign/tms/'
+    
 =head1 DESCRIPTION
 
 =head2 ATTRIBUTES

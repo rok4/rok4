@@ -45,8 +45,11 @@ use List::Util qw(min max);
 use Data::Dumper;
 use Geo::GDAL;
 
-use BE4::Tree;
+# My module
+use BE4::QTree;
+use BE4::Graph;
 use BE4::Process;
+use BE4::Pyramid;
 use BE4::DataSourceLoader;
 use BE4::DataSource;
 
@@ -77,7 +80,7 @@ Group: variable
 variable: $self
     * pyramid => undef, # Pyramid object
     * process => undef, # Process object
-    * trees => [], # array of Tree objects
+    * graphs => [], # array of QTree or Graph objects
 =cut
 
 ####################################################################################################
@@ -93,8 +96,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         pyramid     => undef,
-        process     => undef,
-        trees  => []
+        graphs  => []
     };
 
     bless($self, $class);
@@ -107,7 +109,7 @@ sub new {
     # load. class
     return undef if (! $self->_load(@_));
     
-    INFO (sprintf "Trees' number : %s",scalar @{$self->{trees}});
+    INFO (sprintf "Graphs' number : %s",scalar @{$self->{graphs}});
 
     return $self;
 }
@@ -187,7 +189,7 @@ sub _load {
                 
                 if (! $datasource->hasHarvesting) {
                     ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s) for the base level %s",
-                        $pyr->getDataSource->getSRS, $pyr->getTileMatrixSet->getSRS,
+                        $datasource->getSRS, $TMS->getSRS,
                         $pyr->getCompression, $datasource->getBottomID);
                     return FALSE;
                 }
@@ -202,15 +204,22 @@ sub _load {
         
         # Now, if datasource contains a WMS service, we have to use it
         
-        my $tree = BE4::Tree->new($datasource, $pyr, $process);
-        
-        if (! defined $tree) {
-            ERROR(sprintf "Can not create a Tree object for datasource with bottom level %s !",
+        # Graph or QTree ?
+        # TODO : not do the same test for all members of the forest
+        my $graph = undef;
+        if ($TMS->isQTree()) {
+          $graph = BE4::QTree->new($datasource, $self->{pyramid}, $self->{process});
+        } else {
+          $graph = BE4::Graph->new($datasource, $self->{pyramid}, $self->{process});
+        };
+                
+        if (! defined $graph) {
+            ERROR(sprintf "Can not create nor QTree nor Graph object for datasource with bottom level %s !",
                   $datasource->getBottomID);
             return FALSE;
         }
         
-        push @{$self->{trees}},$tree;
+        push @{$self->{graphs}},$graph;
     }
 
     return TRUE;
@@ -228,7 +237,7 @@ sub containsNode {
     my $x = shift;
     my $y = shift;
     
-    foreach my $tree (@{$self->{trees}}) {
+    foreach my $tree (@{$self->{graphs}}) {
         return TRUE if ($tree->containsNode($level,$x,$y));
     }
     
@@ -257,8 +266,8 @@ sub computeTrees {
     }
     
     my $treeInd = 1;
-    my $treeNumber = scalar @{$self->{trees}};
-    foreach my $tree (@{$self->{trees}}) {
+    my $treeNumber = scalar @{$self->{graphs}};
+    foreach my $tree (@{$self->{graphs}}) { 
         if (! $tree->computeWholeTree($NEWLIST)) {
             ERROR(sprintf "Cannot compute tree $treeInd/$treeNumber");
             return FALSE;
@@ -279,7 +288,7 @@ sub computeTrees {
 
 sub getTrees {
     my $self = shift;
-    return $self->{trees}; 
+    return $self->{graphs}; 
 }
 
 1;
