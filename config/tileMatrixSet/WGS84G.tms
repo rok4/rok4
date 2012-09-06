@@ -13,7 +13,7 @@
   </tileMatrix>
   <tileMatrix>
     <id>1</id>
-    <resolution>0.33515625</resolution>
+    <resolution>0.3515625</resolution>
     <topLeftCornerX>-180</topLeftCornerX>
     <topLeftCornerY>90</topLeftCornerY>
     <tileWidth>256</tileWidth>

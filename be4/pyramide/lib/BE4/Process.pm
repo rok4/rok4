@@ -220,6 +220,14 @@ sub _init {
         $self->{pyramid}->getCompression() eq 'jpg')
     )) {
 
+        if (! defined $params_harvest) {
+            ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s)",
+                $self->{pyramid}->getDataSource()->getSRS(),
+                $self->{pyramid}->getTileMatrixSet()->getSRS(),
+                $self->{pyramid}->getCompression());
+            return FALSE;
+        }
+        
         $self->{harvesting} = BE4::Harvesting->new($params_harvest);
 
         if (! defined $self->{harvesting}) {
