@@ -1588,6 +1588,20 @@ sub getNodataValue {
 
 ################### Levels ##################
 
+sub getTopOrder {
+    my $self = shift;
+    
+    my @levels = sort {$a->getOrder <=> $b->getOrder} ( values %{$self->getLevels});
+    return $levels[-1]->getOrder;
+}
+
+sub getBottomOrder {
+    my $self = shift;
+    
+    my @levels = sort {$a->getOrder <=> $b->getOrder} ( values %{$self->getLevels});
+    return $levels[0]->getOrder;
+}
+
 sub getLevel {
     my $self = shift;
     my $levelID = shift;

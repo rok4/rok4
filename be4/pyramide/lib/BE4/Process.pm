@@ -81,8 +81,9 @@ Wms2work () {
     local fmt=$2
     local imgSize=$3
     local nbTiles=$4
-    local url=$5
-    shift 5
+    local min_size=$5
+    local url=$6
+    shift 6
 
     local size=0
 
@@ -119,7 +120,6 @@ Wms2work () {
         montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096  $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        echo "mv $dir/img01.tif $dir.tif" 
         mv $dir/img01.tif $dir.tif
     fi
 
@@ -286,77 +286,76 @@ sub _init {
     ## TODO : differences between Graph and Qtree should only be in their particular files (QTREE.pm and GRAPH.pm), not here
     if ($pyr->getTileMatrixSet()->isQTree()) {
         
-      #### QTREE CASE
-  
-      # -------------------------------------------------------------------
-      # We initialize scripts (name, weights) and open writting streams
-    
-      for (my $i = 0; $i <= $self->{job_number}; $i++) {
-          my $scriptID = sprintf "SCRIPT_%s",$i;
-          $scriptID = "SCRIPT_FINISHER" if ($i == 0);
-          push @{$self->{scriptsID}},$scriptID;
-          
-          my $SCRIPT;
-          my $scriptPath = $self->getScriptFile($scriptID);
-          if ( ! (open $SCRIPT,">", $scriptPath)) {
-              ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
-              return FALSE;
-          }
-          
-          # We write header (environment variables and bash functions)
-          my $header = $self->prepareScript($scriptID,$functions);
-          printf $SCRIPT "%s", $header;
-          # We store stream
-          push @{$self->{streams}},$SCRIPT;
-          
-          # We initialize weight for this script with 0
-          push @{$self->{weights}},0;
-      }
-    } else {
-    
-      #### GRAPH CASE
-      
-      # -------------------------------------------------------------------
-      # We initialize scripts (name, weights) and open writting streams
-      
-      
-      # Boucle sur les levels et sur le nb de scripts/jobs
-      # On termine par les finishers
-      my $tms = $self->{pyramid}->getTileMatrixSet();
-      for (my $i = $tms->getTMSBottomOrder(); $i <= $tms->getTMSTopOrder() + 1; $i++) {
-            
-        my @level_names ;
-        my @level_streams ;
-        my @level_weights ;
-
-        for (my $j = 0; $j < $self->{job_number}; $j++) {
-           
-          my $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$i,$j;
-          $scriptID = sprintf("FINISHER-SCRIPT_%s",$j) if ($i == $tms->getTMSTopOrder() + 1);
-          push(@level_names,$scriptID);
-            
-          my $scriptPath = $self->getScriptFile($scriptID);
-          my $SCRIPT;
-          if ( ! (open $SCRIPT,">", $scriptPath)) {
-            ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
-            return FALSE;
-          }
-          # We write header (environment variables and bash functions)
-          my $header = $self->prepareScript($scriptID,$functions);
-          printf $SCRIPT "%s", $header;
-          push(@level_streams,$SCRIPT);
-
-          # Initialize Weight Array
-          push(@level_weights,0);
-          
-        }
-        push @{$self->{weights}},\@level_weights;
-        push @{$self->{streams}},\@level_streams;
-        push @{$self->{names}},\@level_names;
+        #### QTREE CASE
         
-      }   
-      
+        # -------------------------------------------------------------------
+        # We initialize scripts (name, weights) and open writting streams
+        
+        for (my $i = 0; $i <= $self->{job_number}; $i++) {
+            my $scriptID = sprintf "SCRIPT_%s",$i;
+            $scriptID = "SCRIPT_FINISHER" if ($i == 0);
+            push @{$self->{scriptsID}},$scriptID;
+            
+            my $SCRIPT;
+            my $scriptPath = $self->getScriptFile($scriptID);
+            if ( ! (open $SCRIPT,">", $scriptPath)) {
+                ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
+                return FALSE;
+            }
+            
+            # We write header (environment variables and bash functions)
+            my $header = $self->prepareScript($scriptID,$functions);
+            printf $SCRIPT "%s", $header;
+            # We store stream
+            push @{$self->{streams}},$SCRIPT;
+            
+            # We initialize weight for this script with 0
+            push @{$self->{weights}},0;
+        }
+        
+    } else {
+        
+        #### GRAPH CASE
+        
+        # -------------------------------------------------------------------
+        # We initialize scripts (name, weights) and open writting streams
+        
+        
+        # Boucle sur les levels et sur le nb de scripts/jobs
+        # On termine par les finishers
+        my $tms = $self->{pyramid}->getTileMatrixSet();
+        for (my $i = $pyr->getBottomOrder; $i <= $pyr->getTopOrder + 1; $i++) {
+            my $levelID = $tms->getIDfromOrder($i);
+            my @level_names ;
+            my @level_streams ;
+            my @level_weights ;
+            
+            for (my $j = 0; $j < $self->{job_number}; $j++) {
+                my $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$levelID,$j;
+                $scriptID = sprintf("FINISHER-SCRIPT_%s",$j) if ($i == $pyr->getTopOrder + 1);
+                push(@level_names,$scriptID);
+                
+                my $scriptPath = $self->getScriptFile($scriptID);
+                my $SCRIPT;
+                if ( ! (open $SCRIPT,">", $scriptPath)) {
+                    ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
+                    return FALSE;
+                }
+                # We write header (environment variables and bash functions)
+                my $header = $self->prepareScript($scriptID,$functions);
+                printf $SCRIPT "%s", $header;
+                push(@level_streams,$SCRIPT);
+                
+                # Initialize Weight Array
+                push(@level_weights,0);
+            }
+            
+            push @{$self->{weights}},\@level_weights;
+            push @{$self->{streams}},\@level_streams;
+            push @{$self->{names}},\@level_names;
+        }   
     }
+
     return TRUE;
 }
 
@@ -1068,7 +1067,7 @@ Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-Tree.html">BE4::Tree</A></li>
+<li><A HREF="./lib-BE4-Tree.html">BE4::QTree</A></li>
 <li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>

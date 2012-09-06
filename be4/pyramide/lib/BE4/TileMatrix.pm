@@ -66,14 +66,15 @@ END {}
 Group: variable
 
 variable: $self
-    *    id             => undef,
-    *    resolution     => undef,
-    *    topleftcornerx => undef,
-    *    topleftcornery => undef,
-    *    tilewidth      => undef, # often 256
-    *    tileheight     => undef, # often 256
-    *    matrixwidth    => undef,
-    *    matrixheight   => undef,
+    * id
+    * resolution
+    * topLeftCornerX
+    * topLeftCornerY
+    * tileWidth
+    * tileHeight
+    * matrixWidth
+    * matrixHeight
+    * targetsTmId
 =cut
 
 ####################################################################################################
@@ -90,13 +91,13 @@ sub new {
   my $self = {
     id             => undef,
     resolution     => undef,
-    topleftcornerx => undef,
-    topleftcornery => undef,
-    tilewidth      => undef,
-    tileheight     => undef,
-    matrixwidth    => undef,
-    matrixheight   => undef,
-    targetstmid   => [],
+    topLeftCornerX => undef,
+    topLeftCornerY => undef,
+    tileWidth      => undef,
+    tileHeight     => undef,
+    matrixWidth    => undef,
+    matrixHeight   => undef,
+    targetsTmId   => [],
   };
 
   bless($self, $class);
@@ -121,24 +122,24 @@ sub _init {
     return FALSE if (! defined $params);
     
     # parameters mandatoy !
-    return FALSE if (! exists($params->{id})            || ! defined ($params->{id}));
-    return FALSE if (! exists($params->{resolution})    || ! defined ($params->{resolution}));
-    return FALSE if (! exists($params->{topleftcornerx})|| ! defined ($params->{topleftcornerx}));
-    return FALSE if (! exists($params->{topleftcornery})|| ! defined ($params->{topleftcornery}));
-    return FALSE if (! exists($params->{tilewidth})     || ! defined ($params->{tilewidth}));
-    return FALSE if (! exists($params->{tileheight})    || ! defined ($params->{tileheight}));
-    return FALSE if (! exists($params->{matrixwidth})   || ! defined ($params->{matrixwidth}));
-    return FALSE if (! exists($params->{matrixheight})  || ! defined ($params->{matrixheight}));
+    return FALSE if (! exists($params->{id}) || ! defined ($params->{id}));
+    return FALSE if (! exists($params->{resolution}) || ! defined ($params->{resolution}));
+    return FALSE if (! exists($params->{topLeftCornerX}) || ! defined ($params->{topLeftCornerX}));
+    return FALSE if (! exists($params->{topLeftCornerY}) || ! defined ($params->{topLeftCornerY}));
+    return FALSE if (! exists($params->{tileWidth}) || ! defined ($params->{tileWidth}));
+    return FALSE if (! exists($params->{tileHeight}) || ! defined ($params->{tileHeight}));
+    return FALSE if (! exists($params->{matrixWidth}) || ! defined ($params->{matrixWidth}));
+    return FALSE if (! exists($params->{matrixHeight}) || ! defined ($params->{matrixHeight}));
     
     # init. params
     $self->{id} = $params->{id};
     $self->{resolution} = $params->{resolution};
-    $self->{topleftcornerx} = $params->{topleftcornerx};
-    $self->{topleftcornery} = $params->{topleftcornery};
-    $self->{tilewidth} = $params->{tilewidth};
-    $self->{tileheight} = $params->{tileheight};
-    $self->{matrixwidth} = $params->{matrixwidth};
-    $self->{matrixheight} = $params->{matrixheight};
+    $self->{topLeftCornerX} = $params->{topLeftCornerX};
+    $self->{topLeftCornerY} = $params->{topLeftCornerY};
+    $self->{tileWidth} = $params->{tileWidth};
+    $self->{tileHeight} = $params->{tileHeight};
+    $self->{matrixWidth} = $params->{matrixWidth};
+    $self->{matrixHeight} = $params->{matrixHeight};
 
     return TRUE;
 }
@@ -337,48 +338,48 @@ sub getResolution {
 }
 sub getTileWidth {
     my $self = shift;
-    return $self->{tilewidth}; 
+    return $self->{tileWidth}; 
 }
 sub getTileHeight {
     my $self = shift;
-    return $self->{tileheight}; 
+    return $self->{tileHeight}; 
 }
 sub getMatrixWidth {
     my $self = shift;
-    return $self->{matrixwidth}; 
+    return $self->{matrixWidth}; 
 }
 sub getMatrixHeight {
     my $self = shift;
-    return $self->{matrixheight}; 
+    return $self->{matrixHeight}; 
 }
 
 sub getTopLeftCornerX {
     my $self = shift;
-    return Math::BigFloat->new($self->{topleftcornerx}); 
+    return Math::BigFloat->new($self->{topLeftCornerX}); 
 }
 
 sub getTopLeftCornerY {
     my $self = shift;
     TRACE ("getTopLeftCornerY");
-    return Math::BigFloat->new($self->{topleftcornery}); 
+    return Math::BigFloat->new($self->{topLeftCornerY}); 
 }
 
 sub getTargetsTmId {
     my $self = shift;
-    return $self->{targetstmid}
+    return $self->{targetsTmId}
 }
 
 sub setTargetsTmId {
     my $self = shift;
     my @TmID = shift;
-    $self->{targetstmid} = [];
-    push($self->{targetstmid},@TmID);
+    $self->{targetsTmId} = [];
+    push($self->{targetsTmId},@TmID);
 }
 
 sub addTargetsTmId {
     my $self = shift;
     my @TmID = shift;
-    push($self->{targetstmid},@TmID);
+    push($self->{targetsTmId},@TmID);
 }
 
 
@@ -396,12 +397,12 @@ BE4::TileMatrix - one level of a TileMatrixSet.
     my $params = {
         id             => "18",
         resolution     => 0.5,
-        topleftcornerx => 0,
-        topleftcornery => 12000000,
-        tilewidth      => 256,
-        tileheight     => 256,
-        matrixwidth    => 10080,
-        matrixheight   => 84081,
+        topLeftCornerX => 0,
+        topLeftCornerY => 12000000,
+        tileWidth      => 256,
+        tileHeight     => 256,
+        matrixWidth    => 10080,
+        matrixHeight   => 84081,
     };
     
     my $objTM = BE4::TileMatrix->new($params);
@@ -420,17 +421,21 @@ Identifiant of the level, a string.
 
 Ground size of a pixel, using unity of the SRS.
 
-=item topleftcornerx, topleftcornery
+=item topLeftCornerX, topLeftCornerY
 
 Coordinates of the upper left corner for the level, the grid's origin.
 
-=item tilewidth, tileheight
+=item tileWidth, tileHeight
 
 Pixel size of a tile (256 * 256).
 
-=item matrixwidth, matrixheight
+=item matrixWidth, matrixHeight
 
 Number of tile in the level, widthwise and heightwise.
+
+=item targetsTmId
+
+Array of BE4::TileMatrix objects, determine other levels which use this one to be generated. Empty if in a quad tree TMS.
 
 =back
 

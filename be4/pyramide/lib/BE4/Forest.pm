@@ -328,7 +328,7 @@ Metadata managing not yet implemented.
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::Tree</A></li>
+<li><A HREF="./lib-BE4-DataSource.html">BE4::QTree</A></li>
 </ul>
 
 =end html
