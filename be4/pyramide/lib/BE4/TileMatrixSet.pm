@@ -77,8 +77,8 @@ variable: $self
     * bottomResolution
     
     * srs - casted in uppercase
-    * coordinatesInversion : FALSE - boolean, to know if we have to reverse coordinates to harvest in this SRS
-    * tileMatrix : an hash of TileMatrix objects
+    * coordinatesInversion : boolean - to know if we have to reverse coordinates to harvest in this SRS
+    * tileMatrix : hash of BE4::TileMatrix
     * isQTree : boolean
 =cut
 

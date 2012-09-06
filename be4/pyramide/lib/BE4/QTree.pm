@@ -75,12 +75,12 @@ END {}
 Group: variable
 
 variable: $self
-    * pyramid    => undef, # object Pyramid !
-    * process    => undef, # object Process !
-    * datasource => undef, # object DataSource !
+    * pyramid : BE4::Pyramid
+    * process : BE4::Process
+    * datasource : BE4::DataSource
     
-    * bbox => [], # datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    * nodes => {},
+    * bbox - [xmin,ymin,xmax,ymax], in TMS' SRS
+    * nodes : hash
 |   level1 => {
 |      x1_y2 => n1,
 |      x2_y2 => n2,
@@ -89,11 +89,11 @@ variable: $self
 |      x1_y2 => n4,
 |      x2_y2 => n5, ...}
 |
-|   nX = BE4::Node object
+|   nX : BE4::Node
 
-    * cutLevelID    => undef, # top level for the parallele processing
-    * bottomID => undef, # first level under the source images resolution
-    * topID    => undef, # top level of the pyramid (ie of its tileMatrix)
+    * cutLevelID
+    * bottomID
+    * topID
 =cut
 
 ####################################################################################################
@@ -115,6 +115,7 @@ sub new {
         # out
         bbox => [],
         nodes => {},
+        # levels
         cutLevelID    => undef,
         bottomID => undef,
         topID    => undef,
