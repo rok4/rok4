@@ -580,7 +580,7 @@ sub doIt {
     
     ALWAYS(">>> Compute forest ...");
     
-    if (! $objForest->computeTrees()) {
+    if (! $objForest->computeGraphs()) {
         ERROR ("Can not compute forest !");
         return FALSE;
     }

@@ -341,8 +341,13 @@ sub _init {
             my @level_weights ;
             
             for (my $j = 0; $j < $self->{job_number}; $j++) {
-                my $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$levelID,$j;
-                $scriptID = sprintf("FINISHER-SCRIPT_%s",$j) if ($i == $pyr->getTopOrder + 1);
+                my $scriptID ;
+                if ($i == $pyr->getTopOrder + 1) {
+                    $scriptID = sprintf("FINISHER-SCRIPT_%s",$j)
+                } else {
+                    $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$levelID,$j;
+                $scriptID 
+                }
                 push(@level_names,$scriptID);
                 
                 my $scriptPath = $self->getScriptFile($scriptID);

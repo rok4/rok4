@@ -288,7 +288,7 @@ sub computeGraphs {
     my $graphNumber = scalar @{$self->{graphs}};
     foreach my $graph (@{$self->{graphs}}) { 
         if (! $graph->computeYourself($NEWLIST)) {
-            ERROR(sprintf "Cannot compute tree $treeInd/$treeNumber");
+            ERROR(sprintf "Cannot compute graph $graphInd/$graphNumber");
             return FALSE;
         }
         INFO("Graph $graphInd/$graphNumber computed")
