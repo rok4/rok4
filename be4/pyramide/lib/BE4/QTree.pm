@@ -1007,7 +1007,9 @@ sub getBottomOrder {
 method: containsNode
 
 Parameters:
-    level
+    level - level of the node we want to know if it is in the qtree.
+    x     - x coordinate of the node we want to know if it is in the qtree.
+    y     - y coordinate of the node we want to know if it is in the qtree.
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
@@ -1029,7 +1031,7 @@ sub containsNode {
 method: getPossibleChildren
 
 Parameters:
-    node - node we want to know children.
+    node - BE4::Node whose we want to know children.
 
 Returns:
     An array of the real children from a node (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
@@ -1064,7 +1066,7 @@ sub getPossibleChildren {
 method: getChildren
 
 Parameters:
-    node - node we want to know children.
+    node - BE4::Node whose we want to know children.
 
 Returns:
     An array of the real children from a node (max length = 4), an empty array if the node is a leaf.
@@ -1124,23 +1126,19 @@ __END__
 
 =head1 NAME
 
-BE4::QTree - representation of the final quad tree cache : cache image = node
+BE4::QTree - Representation of a quad tree cache : cache image = node
 
 =head1 SYNOPSIS
 
     use BE4::QTree;
-    
-    my $job_number = 4; # 4 split scripts + one finisher = 5 scripts
-  
+
     # QTree object creation
-    my $objQTree = BE4::QTree->new($objDataSource, $objPyramid, $job_number);
+    my $objQTree = BE4::QTree->new($objDataSource, $objPyramid, $objProcess);
     
     ...
     
-    # Determine cut level, after having weighted the tree
-    my @nodeRack;
-    my @weights;
-    $objQTree->shareNodesOnJobs(\@nodeRack,\@weights);
+    # Fill each node with computing code, weight, share job on scripts
+    $objQTree->computeYourself();
 
 =head1 DESCRIPTION
 
@@ -1168,28 +1166,15 @@ Array [xmin,ymin,xmax,ymax], bbox of datasource in the TMS' SRS.
 
 An hash, composition of each node in the tree (code to generate the node, own weight, accumulated weight):
 
-    {
-        bottomLevelID => {
-            if images as source
-            x1_y2 => [[objGeoImage1],w1,c1],
-            x2_y2 => [[objGeoImage2],w2,c2],
-            x3_y2 => [[objGeoImage3],w3,c3],...
-
-            or, if just a WMS service as source
-            x1_y2 => [0,w1,c1],
-            x2_y2 => [0,w2,c2],
-            x3_y2 => [0,w3,c3],...
-        }
-        aboveLevelID => {
-            x1_y2 => [w,W,c],
-            x2_y2 => [w',W',c'], ...
-        }
-    }
-    
-    with objGeoImage = GeoImage object
-    with w = own node's weight
-    with W = accumulated weight (own weight added to children's weights sum)
-    with c = commands to generate this node (to write in a script)
+    level1 => {
+        x1_y2 => n1,
+        x2_y2 => n2,
+        x3_y2 => n3, ...}
+    level2 => { 
+        x1_y2 => n4,
+        x2_y2 => n5, ...}
+        
+    nX : BE4::Node
 
 =item cutLevelID
 
@@ -1210,7 +1195,8 @@ Extrem levels identifiants of the tree.
 <ul>
 <li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>
+<li><A HREF="./lib-BE4-Node.html">BE4::Node</A></li>
 </ul>
 
 =end html

@@ -466,7 +466,7 @@ method: to_string
 
 Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
 
-Output is formated to can be used in mergeNtiff configuration
+Output is formated to be used in mergeNtiff configuration
 =cut
 sub to_string {
     my $self = shift;

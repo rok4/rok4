@@ -93,7 +93,6 @@ variable: $self
 |
 |   nX = BE4::Node object
 
-    * cutLevelID    => undef, # top level for the parallele processing
     * bottomID => undef, # first level under the source images resolution
     * topID    => undef, # top level of the pyramid (ie of its tileMatrix)
 =cut
@@ -103,6 +102,7 @@ variable: $self
 ####################################################################################################
 
 # Group: constructor
+
 sub new {
     my $this = shift;
 
@@ -116,7 +116,6 @@ sub new {
         # out
         bbox => [],
         nodes => {},
-        cutLevelID    => undef,
         bottomID => undef,
         topID    => undef,
     };
@@ -133,6 +132,16 @@ sub new {
     return $self;
 }
 
+=begin nd
+method: _init
+
+Check DataSource, Pyramid and Process parameters.
+
+Parameters :
+    objSrc - a BE4::DataSource object
+    objPyr - a BE4::Pyramid object
+    ObjProcess - a BE4::Process object
+=cut
 sub _init {
     my $self = shift;
     my $objSrc  = shift;
@@ -167,7 +176,12 @@ sub _init {
 =begin nd
 method: _load
 
-Determine all nodes from the bottom level to the top level, thanks to the dta source.
+Determine all nodes from the bottom level to the top level, thanks to the data source.
+
+Parameters :
+    objSrc - a BE4::DataSource object
+    objPyr - a BE4::Pyramid object
+    ObjProcess - a BE4::Process object
 =cut
 sub _load {
     my $self = shift;
@@ -277,14 +291,14 @@ sub _load {
 }
 
 ####################################################################################################
-#                                          COMPUTE METHODS                                         #
+#                                          GRAPH COMPUTING METHODS                                 #
 ####################################################################################################
 
-# Group: compute methods
+# Group: graph computing methods
 
 #
 =begin nd
-method: computeWholeTree
+method: computeYourself
 
 Determine codes and weights for each node of the current graph, and share work on scripts, so as to optimize execution time.
 
@@ -293,11 +307,8 @@ Only one step:
 
 Parameter:
     NEWLIST - stream to the cache's list, to add new images.
-    
-See Also:
-    <computeBranch>, <shareNodesOnJobs>, <writeBranchCode>, <writeTopCode>
 =cut
-sub computeWholeTree {
+sub computeYourself {
     my $self = shift;
     my $NEWLIST = shift;
     
@@ -354,20 +365,36 @@ sub computeWholeTree {
 
        }
    }
-
-   #$self->exportGraph();
-   
-   # on ferme tous les streams
-   #for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-   #  foreach my $stream (@{${$self->{process}->getWeights()}[$i]}){
-   #    close($stream);
-   #  }
-   #}
     
     TRACE;
     
     return TRUE;
 };
+
+#
+=begin nd
+method: containsNode
+
+Parameters:
+    level - level of the node we want to know if it is in the graph.
+    x     - x coordinate of the node we want to know if it is in the graph.
+    y     - y coordinate of the node we want to know if it is in the graph.
+
+Returns:
+    A boolean : TRUE if the node exists, FALSE otherwise.
+=cut
+sub containsNode {
+    my $self = shift;
+    my $level = shift;
+    my $x = shift;
+    my $y = shift;
+  
+    return FALSE if (! defined $level);
+    
+    my $nodeKey = $x."_".$y;
+    return (exists $self->{nodes}->{$level}->{$nodeKey});
+}
+
 
 ####################################################################################################
 #                                     BOTTOM LEVEL METHODS                                         #
@@ -518,6 +545,12 @@ sub identifyBottomTiles {
     return TRUE;  
 }
 
+####################################################################################################
+#                               GEOGRAPHIC TOOLS                                                   #
+####################################################################################################
+
+# Group: GEOGRAPHIC TOOLS
+
 #
 =begin nd
 method: updateBBox
@@ -540,12 +573,20 @@ sub updateBBox {
 }
 
 ####################################################################################################
-#                                         SCRIPT MANAGEMENT                                        #
+#                               TMP DIRECTORIES MANAGEMENT METHODS                                 #
 ####################################################################################################
 
+# Group: TMP DIRECTORIES MANAGEMENT METHODS
+
 # Prepare TMP repository for temp files
+=begin nd
+method: prepareTMP
+
+Create TMP directories.
+=cut
 sub prepareTMP {
     my $self = shift ;
+    
     my $src = $self->{datasource};
     
     # creation of tmp directories
@@ -579,7 +620,18 @@ sub prepareTMP {
 }
 
 # Creation of a directory
-# TODO : should be place in a Tools.pm file
+=begin nd
+method: createDirectory
+
+Create a directorie.
+
+Parameters:
+    directory - a new directory to create
+    
+Returns:
+    TRUE - if creation is OK
+    FALSE - otherwise
+=cut
 sub createDirectory {
     my $directory = shift ;
     
@@ -649,11 +701,6 @@ sub getNodesOfTopLevel {
     return $self->getNodesOfLevel($self->{topID});
 }
 
-sub getNodesOfCutLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{cutLevelID});
-}
-
 sub getNodesOfBottomLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{bottomID});
@@ -661,8 +708,10 @@ sub getNodesOfBottomLevel {
 
 
 ####################################################################################################
-#                                         DEBUG FUNCTIONS                                          #
+#                                         DEBUGGING METHODS                                        #
 ####################################################################################################
+
+# Group : DEBUGGING METHODS
 
 sub exportGraph {
     my $self = shift ;
@@ -684,3 +733,91 @@ sub exportGraph {
 
 1;
 __END__
+
+=head1 NAME
+
+BE4::Graph - representation of the cache as a graph : cache image = node
+
+=head1 SYNOPSIS
+
+    use BE4::Graph;
+    
+    my $job_number = 4; # 4 split scripts by level + 4 finisher = 4*(number_of_level +1) scripts
+  
+    # Graph object creation
+    my $objGraph = BE4::Graph->new($objDataSource, $objPyramid, $job_number);
+    
+
+=head1 DESCRIPTION
+
+=head2 ATTRIBUTES
+
+=over 4
+
+=item pyramid
+
+A Pyramid object.
+
+=item process
+
+A Process object.
+
+=item datasource
+
+A Datasource object.
+
+=item bbox
+
+Array [xmin,ymin,xmax,ymax], bbox of datasource in the TMS' SRS.
+
+=item nodes
+
+An hash, composition of each node in the tree (code to generate the node, own weight, accumulated weight):
+
+    {
+        levelID => { x1_y2 => objNode, ...}
+        ...
+    }
+    
+    with objNode = a BE4::Node object
+
+=item bottomID, topID
+
+Extrem levels identifiants of the graph.
+
+=back
+
+=head1 SEE ALSO
+
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head1 AUTHOR
+
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
+Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

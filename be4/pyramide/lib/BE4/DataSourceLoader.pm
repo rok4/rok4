@@ -114,6 +114,16 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _init
+
+Check the DataSource and Harvesting objects.
+
+Parameters:
+    datasource - a BE4::DataSource object.
+    harvesting - a BE4::Harvesting object
+=cut
 sub _init {
     my $self   = shift;
     my $datasource = shift;
@@ -141,6 +151,14 @@ sub _init {
     return TRUE;
 }
 
+#
+=begin nd
+method: _load
+
+Create BE4::PropertiesLoader and BE4::DataSource objects .
+
+Parameters:
+=cut
 sub _load {
     my $self   = shift;
 

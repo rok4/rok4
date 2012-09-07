@@ -128,6 +128,17 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _load
+
+Extract data from the hash with parameters.
+Create a BE4::Harvesting Object if required.
+
+Parameters:
+    level - a BE4::Level object.
+    params - srs, extent, path_image, path_metadata and optionally wms_layer, wms_url, wms_version, wms_request, wms_format, wms_style, wms_bgcolor, wms_transparent, min_size, max_width,maw_height from at from a hash
+=cut
 sub _load {
     my $self   = shift;
     my $level = shift;

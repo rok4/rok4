@@ -100,28 +100,29 @@ END {}
 Group: variable
 
 variable: $self
-    * new_pyramid => { 
-        name      => undef, # string name
-        desc_path     => undef, # path
-        data_path     => undef, # path
-        content_path  => undef,
-    },
-    * old_pyramid => { 
-        name      => undef, # string name
-        desc_path     => undef, # path
-        data_path     => undef, # path
-        content_path  => undef,
-    },
-    * dir_depth    => undef, # number
-    * dir_image    => undef, # dir name
-    * dir_nodata   => undef, # dir name
-    * dir_metadata => undef, # dir name
-    * image_width  => undef, # number
-    * image_height => undef, # number
-    * pyrImgSpec => undef,   # it's an PyrImageSpec object
-    * tms => undef,   # TileMatrixSet object
-    * nodata => undef,   # Nodata object
-    * levels => {},      # it's a hash of Level objects
+    * new_pyramid: 
+        * name
+        * desc_path
+        * data_path
+        * content_path
+        
+    * old_pyramid:
+        * name
+        * desc_path
+        * data_path
+        * content_path
+    
+    * dir_depth
+    * dir_image
+    * dir_nodata
+    * dir_metadata
+    * image_width
+    * image_height
+    
+    * pyrImgSpec : BE4::PyrImageSpec
+    * tms : BE4::TileMatrixSet
+    * nodata : BE4::Nodata
+    * levels : hash of BE4::Level
 =cut
 
 ####################################################################################################
@@ -148,30 +149,30 @@ sub new {
         #   2) if param is not null, it's an existing pyramid !
 
         new_pyramid => { 
-            name          => undef, # string name
-            desc_path     => undef, # path
-            data_path     => undef, # path
+            name          => undef,
+            desc_path     => undef,
+            data_path     => undef,
             content_path  => undef,
         },
         old_pyramid => { 
-            name          => undef, # string name
-            desc_path     => undef, # path
-            data_path     => undef, # path
+            name          => undef,
+            desc_path     => undef,
+            data_path     => undef,
             content_path  => undef,
         },
         #
-        dir_depth    => undef, # number
-        dir_image    => undef, # dir name
-        dir_nodata   => undef, # dir name
-        dir_metadata => undef, # dir name
-        image_width  => undef, # number
-        image_height => undef, # number
+        dir_depth    => undef,
+        dir_image    => undef,
+        dir_nodata   => undef,
+        dir_metadata => undef,
+        image_width  => undef,
+        image_height => undef,
 
         # OUT
-        pyrImgSpec => undef,   # it's an PyrImageSpec object
-        tms        => undef,   # TileMatrixSet object
-        nodata     => undef,   # Nodata object
-        levels     => {},      # it's a hash of Level objects
+        pyrImgSpec => undef,
+        tms        => undef,
+        nodata     => undef,
+        levels     => {},
     };
 
     bless($self, $class);
@@ -372,8 +373,7 @@ sub _load {
         # It's a new pyramid !
         return FALSE if (! $self->_fillToPyramid($params));
     } else {
-        # A new pyramid from existing pyramid !
-        #
+        # A pyramid with ancestor
         # init. process hasn't checked all parameters,
         # so, we must read file pyramid to initialyze them...
         return FALSE if (! $self->_fillFromPyramid($params,$path_temp));
@@ -381,9 +381,9 @@ sub _load {
 
     # create NoData !
     my $objNodata = BE4::NoData->new({
-        pixel            => $self->getPixel(),
-        value            => $params->{color},
-        nowhite          => $params->{nowhite}
+        pixel   => $self->getPixel(),
+        value   => $params->{color},
+        nowhite => $params->{nowhite}
     });
 
     if (! defined $objNodata) {
@@ -395,7 +395,6 @@ sub _load {
     DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
 
     return TRUE;
-  
 }
 
 ####################################################################################################
@@ -412,7 +411,6 @@ We generate a new pyramid (no ancestor). All information are in parameters:
 
 Parameters:
     params - All parameters for a new pyramid.
-
 =cut
 sub _fillToPyramid { 
     my $self  = shift;
@@ -505,7 +503,6 @@ sub _fillFromPyramid {
         }
     }
     
-
     return TRUE;
 }
 
@@ -1787,11 +1784,11 @@ BE4::Pyramid - describe a cache (image specifications, levels, ...)
         interpolation       => "bicubic",
     };
 
-    my $objPyr = BE4::Pyramid->new($params_options,$objProcess->{path_temp});
+    my $objPyr = BE4::Pyramid->new($params_options,$path_temp);
     
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-O.pyr
  
-    $objP->writeCachePyramid($objProcess->{trees});  # root directory is "/home/ign/ORTHO_RAW_LAMB93_D075-O/"
+    $objP->writeCachePyramid($objForest);  # root directory is "/home/ign/ORTHO_RAW_LAMB93_D075-O/"
     
     # 2. a update pyramid, with an ancestor
     
@@ -1810,7 +1807,7 @@ BE4::Pyramid - describe a cache (image specifications, levels, ...)
  
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-E.pyr
  
-    $objPyr->writeCachePyramid($objProcess->{trees});  # root directory is "/home/ign/ORTHO_RAW_LAMB93_D075-E/"
+    $objPyr->writeCachePyramid($objForest);  # root directory is "/home/ign/ORTHO_RAW_LAMB93_D075-E/"
 
 =head1 DESCRIPTION
 
