@@ -117,7 +117,7 @@ Wms2work () {
     fi
 
     if [ "$fmt" == "png" ]||[ "$nbTiles" != "1x1" ] ; then
-        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096  $dir.tif
+        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096 -compress Zip $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         mv $dir/img01.tif $dir.tif
@@ -274,7 +274,7 @@ sub _init {
     # -------------------------------------------------------------------
     # We create directory for scripts
     if (! -d $self->getScriptDir) {
-        DEBUG (sprintf "Create the script directory'%s' !", $self->getScriptDir);
+        DEBUG (sprintf "Create the script directory '%s' !", $self->getScriptDir);
         eval { mkpath([$self->getScriptDir]); };
         if ($@) {
             ERROR(sprintf "Can not create the script directory '%s' : %s !", $self->getScriptDir , $@);
@@ -289,12 +289,22 @@ sub _init {
         #### QTREE CASE
         
         # -------------------------------------------------------------------
-        # We initialize scripts (name, weights) and open writting streams
+        # We initialize scripts (name, weights), make directories (tmp) and open writting streams
         
         for (my $i = 0; $i <= $self->{job_number}; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
             $scriptID = "SCRIPT_FINISHER" if ($i == 0);
             push @{$self->{scriptsID}},$scriptID;
+            
+            # We create temporary directory
+            if (! -d $self->getScriptTmpDir) {
+                DEBUG (sprintf "Create the temporary directory '%s' !", $self->getScriptTmpDir);
+                eval { mkpath([$self->getScriptTmpDir]); };
+                if ($@) {
+                    ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->getScriptTmpDir , $@);
+                    return FALSE;
+                }
+            }
             
             my $SCRIPT;
             my $scriptPath = $self->getScriptFile($scriptID);
@@ -408,30 +418,23 @@ Parameters:
     harvesting - BE4::Harvesting object, to use to harvest image.
 =cut
 sub wms2work {
-    my ($self, $node, $harvesting) = @_;
+    my ($self, $node, $harvesting, $prefix) = @_;
     
     TRACE;
     
-    ALWAYS (sprintf "harvesting : %s",Dumper($harvesting)); #TEST#
-    
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
-    
-    ALWAYS (sprintf "img size : %s",Dumper(@imgSize)); #TEST#
-    
     my $nodeName = $node->getWorkBaseName;
+    $nodeName = $prefix."_".$nodeName if (defined $prefix);
+    my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox;
+    
     my $cmd = $harvesting->getCommandWms2work({
         inversion => $tms->getInversion,
         dir       => "\${TMP_DIR}/".$nodeName,
         srs       => $tms->getSRS,
-        bbox      => $node->getBBox,
+        bbox      => [$xMin, $yMin, $xMax, $yMax],
         imagesize => ($imgSize[0], $imgSize[1])
-    });    
-    
-    if (! defined $cmd) {
-        ERROR("Cannot harvest image for node $nodeName");
-        exit 4;
-    }
+    });
     
     return ($cmd,WGET_W);
 }
@@ -454,9 +457,11 @@ Parameters:
     node - BE4::Node object, whose image have to be transfered in the work directory.
 =cut
 sub cache2work {
-    my ($self, $node, $baseName) = @_;
+    my ($self, $node, $prefix) = @_;
 
-    $baseName = $node->getWorkBaseName if (! defined $baseName);
+    my $baseName = $node->getWorkBaseName;
+    $baseName = $prefix."_".$baseName if (defined $prefix);
+    
     my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
 
@@ -506,7 +511,7 @@ sub work2cache {
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
     if ($rm) {
-        $cmd .= sprintf ("rm -f \${ROOT_TMP_DIR}/%s\n", $workImgName);
+        $cmd .= sprintf ("rm -f \${ROOT_TMP_DIR}/%s\n\n", $workImgName);
     }
     
     return ($cmd,TIFF2TILE_W);
@@ -585,7 +590,7 @@ sub mergeNtiff {
         $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
         $workBgPath = File::Spec->catfile($self->getScriptTmpDir($node->getScriptID()),$workBgBaseName.".tif");
         # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-        ($c,$w) = $self->cache2work($node,$workBgBaseName);
+        ($c,$w) = $self->cache2work($node,"bgImg");
         $code .= $c;
         $weight += $w;
     }
@@ -595,6 +600,17 @@ sub mergeNtiff {
     my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
     my $mergNtiffConfFileForScript = File::Spec->catfile('${TMP_DIR}/mergeNtiff',$mergNtiffConfFilename);
 
+    # We create the directory for mergeNtiff configurations
+    if (! -d $mergNtiffConfDir) {
+        DEBUG (sprintf "Create the mergeNtiff configurations directory '%s' !", $mergNtiffConfDir);
+        eval { mkpath([$mergNtiffConfDir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the mergeNtiff configurations directory '%s' : %s !",
+                  $mergNtiffConfDir, $@);
+            return FALSE;
+        }
+    }
+    
     if (! open CFGF, ">", $mergNtiffConfFile ){
         ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
         return ("",-1);
@@ -669,7 +685,7 @@ sub mergeNtiff_Graph {
         $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
         $workBgPath = File::Spec->catfile($self->getScriptTmpDir,$workBgBaseName.".tif");
         # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-        ($c,$w) = $self->cache2work($node,$workBgBaseName);
+        ($c,$w) = $self->cache2work($node,"bgImg");
         $code .= $c;
         $weight += $w;
     }
@@ -745,6 +761,8 @@ sub merge4tiff {
   
   my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $self->{pyramid}->getGamma();
   
+  $cmd .= "-c zip ";
+  
   $cmd .= "$backGround ";
   $cmd .= "$childImgParam ";
   $cmd .= sprintf "%s\n%s",$resultImg, RESULT_TEST;
@@ -774,7 +792,8 @@ sub configureFunctions {
     my $configuredFunc = $BASHFUNCTIONS;
 
     # congigure mergeNtiff
-    my $conf_mNt = "";
+    # work compression : deflate
+    my $conf_mNt = "-c zip ";
 
     my $ip = $pyr->getInterpolation;
     $conf_mNt .= "-i $ip ";
@@ -808,7 +827,7 @@ sub configureFunctions {
     
     $conf_montageOut .= "-depth $bps ";
     
-    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s ",$self->{pyramid}->getCacheImageHeight;
+    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s -compress Zip ",$self->{pyramid}->getCacheImageHeight;
     if ($spp == 4) {
         $conf_montageOut .= "-background none ";
     }
@@ -819,7 +838,7 @@ sub configureFunctions {
     my $conf_tcp = "";
 
     my $imgS = $self->{pyramid}->getCacheImageHeight;
-    $conf_tcp .= "-s -r $imgS ";
+    $conf_tcp .= "-s -r $imgS -c zip";
 
     $configuredFunc =~ s/__tcp__/$conf_tcp/;
 

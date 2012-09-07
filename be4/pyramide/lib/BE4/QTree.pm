@@ -726,7 +726,7 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $bg.=" -b $workBgPath";
-                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,"bgImg");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
                         return FALSE;
