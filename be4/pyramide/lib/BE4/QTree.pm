@@ -102,6 +102,15 @@ variable: $self
 
 # Group: constructor
 
+#
+=begin nd
+method: new
+
+Parameters:
+    objSrc - BE4::DataSource, used to defined nodes
+    objPyr - BE4::Pyramid
+    objProcess - BE4::Process, used to compute tree
+=cut
 sub new {
     my $this = shift;
 
@@ -133,6 +142,15 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _init
+
+Parameters:
+    objSrc - BE4::DataSource, used to defined nodes
+    objPyr - BE4::Pyramid
+    objProcess - BE4::Process, used to compute tree
+=cut
 sub _init {
     my $self = shift;
     my $objSrc  = shift;
@@ -437,6 +455,9 @@ sub updateBBox {
 method: imgGroundSizeOfLevel
 
 Calculate terrain size (in SRS's units) of a cache image (do not mistake for a tile), for the supplied level.
+
+Parameter:
+    levelID - level for which we want to know groud size, in TMS' SRS' unity. 
 =cut
 sub imgGroundSizeOfLevel {
     my $self = shift;
@@ -460,14 +481,14 @@ sub imgGroundSizeOfLevel {
 
 #
 =begin nd
-method: writeScripts
+method: computeYourself
 
-Determine codes and weights for each node of the current tree, and share work on scripts, so as to optimize execution time.
+Determine codes and weights for each node of the current QTree, and share work on scripts, so as to optimize execution time.
 
 Three steps:
-    - browse tree : add weight and code to the nodes.
+    - browse QTree : add weight and code to the nodes.
     - determine the cut level, to distribute fairly work.
-    - browse the tree once again: we write commands in different scripts.
+    - browse the QTree once again: we write commands in different scripts.
 
 Parameter:
     NEWLIST - stream to the cache's list, to add new images.
@@ -475,7 +496,7 @@ Parameter:
 See Also:
     <computeBranch>, <shareNodesOnJobs>, <writeBranchCode>, <writeTopCode>
 =cut
-sub computeWholeTree {
+sub computeYourself {
     my $self = shift;
     my $NEWLIST = shift;
 
@@ -555,7 +576,7 @@ Recursive method, which allow to browse tree downward.
     - the node does not belong to the bottom level -> computeBranch on each child, and computeAboveImage
 
 Parameter:
-    node - node to treat.
+    node - BE4::Node, to treat.
     NEWLIST - stream to the cache's list, to add new images.
     
 See Also:
@@ -611,7 +632,7 @@ Treat a bottom node : determine code and weight.
     - reprojection or lossy compression or just a WMS service as data -> wget
 
 Parameter:
-    node - bottom level's node, to treat.
+    node - bottom level's BE4::Node, to treat.
     
 =cut
 sub computeBottomImage {
@@ -668,7 +689,7 @@ Treat an above node (different to the bottom level) : determine code and weight.
 To generate an above node, we use children (merge4tiff). If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
 
 Parameter:
-    node - above level's node, to treat.
+    node - above level's BE4::Node, to treat.
     
 See Also:
     <wms2work>, <cache2work>, <merge4tiff>, <work2cache>
@@ -699,11 +720,7 @@ sub computeAboveImage {
         # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
         # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
         # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
-        # (c'est qu'on a déjà tout ce qui faut avec les niveaux inférieurs).
-
-        # WARNING (TOS) cette solution n'est valable que si la structure de l'image (nombre de tuile dans l'image si
-        # tuilage il y a) est la même entre le cache moissonné et la pyramide en cours d'écriture.
-        # On a à l'heure actuelle du 16 sur 16 sur toute les pyramides et pas de JPEG 2000. 
+        # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
 
         my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
 
@@ -794,7 +811,7 @@ method: writeBranchCode
 Recursive method, which allow to browse tree (downward) and concatenate node's commands.
 
 Parameter:
-    node - node whose code is written.
+    node - BE4::Node whose code is written.
     ind - indice (integer) of the stream in which we want to write code.
 =cut
 sub writeBranchCode {
@@ -830,7 +847,7 @@ method: writeTopCode
 Recursive method, which allow to browse downward the tree, from the top, to the cut level and write commands in the script finisher.
 
 Parameter:
-    node - node whose code is written.
+    node - BE4::Node whose code is written.
 =cut
 sub writeTopCode {
     my $self = shift;
@@ -990,7 +1007,7 @@ sub getBottomOrder {
 method: containsNode
 
 Parameters:
-    node - node we want to know if it is in the tree.
+    level
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.

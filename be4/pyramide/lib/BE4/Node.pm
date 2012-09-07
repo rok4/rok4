@@ -69,16 +69,16 @@ END {}
 Group: variable
 
 variable: $self
-    * i => undef, # i colonne dans la matrice des images
-    * j => undef, # j ligne dans la matrice des images
-    * tm => undef, # BE4::TileMatrix object, to which node belong
-    * graph => undef, # BE4::Graph or BE4::QTree object, which contain the node
-    * w => 0,     # w = own node's weight  
-    * W => 0,     # W = accumulated weight (childs' weights sum)
-    * code => '',     # c = commands to generate this node (to write in a script)
-    * script_nb => undef, # number of the script in which the node is calculated
-    * nodeSources => [], # list of BE4::Node from which this node is calculated
-    * geoImages => [], # list of BE4::GeoImage from which this node is calculated
+    * i - colonne dans la matrice des images
+    * j - ligne dans la matrice des images
+    * tm : BE4::TileMatrix - to which node belong
+    * graph : BE4::Graph or BE4::QTree - which contain the node
+    * w - own node's weight  
+    * W - accumulated weight (childs' weights sum)
+    * code - commands to execute to generate this node (to write in a script)
+    * script_nb - number of the script in which the node is calculated
+    * nodeSources : list of BE4::Node - from which this node is calculated
+    * geoImages : list of BE4::GeoImage - from which this node is calculated
 =cut
 
 ####################################################################################################
