@@ -309,24 +309,38 @@ __END__
 
 =head1 NAME
 
-BE4::Forest - Create and compute graphs (including QTrees)
+BE4::Forest - Create and compute Graphs (including QTrees)
 
 =head1 SYNOPSIS
 
     use BE4::Forest
 
     # Forest object creation
-    my $objDataSource = BE4::DataSource->new({
-        filepath_conf => "/home/IGN/CONF/source.txt",
-    });
+        pyr - a BE4::Pyramid object.
+    DSL - a BE4::DataSourceLoader object
+    params_process - job_number, path_temp and path_shell.
+    
+    my $Forest = BE4::Forest->new(
+        $objPyramid, # a BE4::Pyramid object
+        $objDSL, # a BE4::DataSourceLoader object
+        $param_process, # a hash with following keys : job_number, path_temp and path_shell
+    );
 
 =head1 DESCRIPTION
 
 =over 4
 
-=item graphs
+=item objPyramid
 
-An array of Graph or QTree objects
+A BE4::Pyramid object.
+
+=item objDSL
+
+A BE4::DataSourceLoader object.
+
+=item param_process
+
+A hash with the following keys : job_number, path_temp and path_shell.
 
 =back
 
@@ -341,7 +355,8 @@ Metadata managing not yet implemented.
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::QTree</A></li>
+<li><A HREF="./lib-BE4-QTree.html">BE4::QTree</A></li>
+<li><A HREF="./lib-BE4-Graph.html">BE4::Graph</A></li>
 </ul>
 
 =end html
