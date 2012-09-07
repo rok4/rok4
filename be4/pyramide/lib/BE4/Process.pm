@@ -339,7 +339,7 @@ sub _init {
             my @level_names ;
             my @level_streams ;
             my @level_weights ;
-            
+                        
             for (my $j = 0; $j < $self->{job_number}; $j++) {
                 my $scriptID ;
                 if ($i == $pyr->getTopOrder + 1) {
