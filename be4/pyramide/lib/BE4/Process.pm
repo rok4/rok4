@@ -186,14 +186,14 @@ END {}
 Group: variable
 
 variable: $self
-    * pyramid    => undef, # Pyramid object
-    * job_number => undef,
-    * path_temp  => undef,
-    * path_shell => undef,
+    * pyramid : BE4::Pyramid
+    * job_number
+    * path_temp
+    * path_shell
     
-    * scripts => [], # name of each jobs (split and finisher)
-    * streams => [], # streams to each jobs (split and finisher)
-    * weights => [], # weight of each jobs (split and finisher)
+    * scripts - array of names of each jobs (split and finisher)
+    * streams - array of streams to each jobs (split and finisher)
+    * weights - array of weights of each jobs (split and finisher)
 
 =cut
 
@@ -210,11 +210,11 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # in
-        pyramid     => undef,
+        pyramid => undef,
         #
-        job_number  => undef,
-        path_temp   => undef,
-        path_shell  => undef,
+        job_number => undef,
+        path_temp => undef,
+        path_shell => undef,
         # out
         scripts => [],
         streams => [],
@@ -236,8 +236,8 @@ method: _init
 Load process' parameters, initialize weights and script (open streams and write headers)
 
 Parameters:
-    params_process - job_number, path_temp and path_shell.
-    pyr - Pyramid object.
+    params_process - hash with keys 'job_number', 'path_temp' and 'path_shell'.
+    pyr - BE4::Pyramid
 =cut
 sub _init {
     my ($self, $params_process, $pyr) = @_;
@@ -385,7 +385,6 @@ Writes commands in the wanted script.
 Parameter:
     code - code to write in the current script.
     ind - indice (integer) of the stream in which we want to write code.
-
 =cut
 sub printInScript {
     my $self = shift;
@@ -414,8 +413,9 @@ Example:
     Wms2work ${TMP_DIR}/18_8300_5638.tif "http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_D075-E&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:3857&BBOX=264166.3697535659936,6244599.462785762557312,266612.354658691633792,6247045.447690888197504&WIDTH=4096&HEIGHT=4096&STYLES="
 
 Parameters:
-    node - BE4::Node object, whose image have to be harvested.
-    harvesting - BE4::Harvesting object, to use to harvest image.
+    node - BE4::Node, whose image have to be harvested.
+    harvesting - BE4::Harvesting, to use to harvest image.
+    prefix - optionnal, prefix to add before the node's name ('bgImg' for example), seperated with an underscore.
 =cut
 sub wms2work {
     my ($self, $node, $harvesting, $prefix) = @_;
@@ -454,7 +454,8 @@ Examples:
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/bgImg_19_398_3136 (png)
     
 Parameters:
-    node - BE4::Node object, whose image have to be transfered in the work directory.
+    node - BE4::Node, whose image have to be transfered in the work directory.
+    prefix - optionnal, prefix to add before the node's name ('bgImg' for example), seperated with an underscore.
 =cut
 sub cache2work {
     my ($self, $node, $prefix) = @_;
@@ -558,12 +559,10 @@ sub work2cache_Graph {
 =begin nd
 method: mergeNtiff
 
-Use the 'MergeNtiff' bash function.
+Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
-Parameters:
-    confFile - complete absolute file path to the configuration (list of used images).
-    bg - Name of the eventual background (undefined if none).
-    dataType - 'data' or 'metadata'.
+Parameter:
+    node - BE4::Node to generate thanks to a 'mergeNtiff' command.
     
 Example:
     MergeNtiff image ${ROOT_TMP_DIR}/mergeNtiff/mergeNtiffConfig_19_397_3134.txt
@@ -655,7 +654,8 @@ method: mergeNtiff_Graph
 Use the 'MergeNtiff' bash function for Graph TMS Configuration.
 
 Parameters:
-    node - a node object
+    node - a BE4::Node object
+    Script_nb - script index, which will generate this node.
     
 Example:
     MergeNtiff image ${ROOT_TMP_DIR}/mergeNtiff/mergeNtiffConfig_19_397_3134.txt
@@ -781,7 +781,7 @@ sub merge4tiff {
 =begin nd
 method: configureFunctions
 
-Configure bash functions to write in scripts' header.
+Configure bash functions to write in scripts' header thanks to pyramid's components.
 =cut
 sub configureFunctions {
     my $self = shift;
@@ -1015,7 +1015,7 @@ __END__
 
 =head1 NAME
 
-BE4::Process - compose scripts to generate the cache
+BE4::Process - Compose commands to generate the cache
 
 =head1 SYNOPSIS
 
@@ -1027,43 +1027,29 @@ BE4::Process - compose scripts to generate the cache
         $objPyramid
     );
 
-    # Scripts generation
-    if (! $objProcess->computeTrees()) {
-        ERROR ("Can not compute process !");
-        return FALSE;
-    }
-
 =head1 DESCRIPTION
 
 =over 4
 
 =item pyramid
 
-A Pyramid object.
+A BE4::Pyramid object.
 
 =item nodata
 
-A NoData object.
-
-=item trees
-
-An array of Tree objects, one per data source.
+A BE4::NoData object.
 
 =item scripts
 
 Array of string, names of each jobs (split and finisher)
 
-=item codes
+=item streams
 
-Array of string, codes of each jobs (split and finisher)
+Array of streams, to each jobs (split and finisher)
 
 =item weights
 
 Array of integer, weights of each jobs (split and finisher)
-
-=item currentTree
-
-Integer, indice of the tree in process.
 
 =item job_number
 
@@ -1086,7 +1072,6 @@ Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-Tree.html">BE4::QTree</A></li>
 <li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>

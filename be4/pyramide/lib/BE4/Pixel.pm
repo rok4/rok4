@@ -98,10 +98,10 @@ sub new {
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        photometric => undef, # ie raw
-        sampleformat => undef, # ie uint
-        bitspersample => undef, # ie 8
-        samplesperpixel => undef, # ie 3
+        photometric => undef,
+        sampleformat => undef,
+        bitspersample => undef,
+        samplesperpixel => undef,
     };
 
     bless($self, $class);
