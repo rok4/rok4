@@ -156,7 +156,9 @@ sub _init {
 =begin nd
 method: _load
 
-Create a Tree object per data source and a Process object.
+Create a Graph or a QTree object per data source and a Process object.
+Using a QTree is faster but it does'nt match all cases.
+Graph is a more general case.
 
 Parameters:
     pyr - a BE4::Pyramid object.
@@ -180,7 +182,11 @@ sub _load {
     }
     $self->{process} = $process;
     
-    # TREES
+    # GRAPHS
+    
+    #Graph or QTree ?
+    my $isQTree = $TMS->isQTree();
+    
     foreach my $datasource (@{$dataSources}) {
         
         if ($datasource->hasImages) {
@@ -205,10 +211,8 @@ sub _load {
         
         # Now, if datasource contains a WMS service, we have to use it
         
-        # Graph or QTree ?
-        # TODO : not do the same test for all members of the forest
         my $graph = undef;
-        if ($TMS->isQTree()) {
+        if ($isQTree) {
           $graph = BE4::QTree->new($datasource, $self->{pyramid}, $self->{process});
         } else {
           $graph = BE4::Graph->new($datasource, $self->{pyramid}, $self->{process});
@@ -227,19 +231,27 @@ sub _load {
 }
 
 ####################################################################################################
-#                                          TREE TOOLS                                              #
+#                                          Graph TOOLS                                              #
 ####################################################################################################
 
-# Group: tree tools
+# Group: Graph and QTree tools
 
+# 
+=begin nd
+method: containsNode
+
+Check if a Graph (or a QTree) in the forest contain a particular node (x,y).
+See Also:
+    <computeWholeGraph>
+=cut
 sub containsNode {
     my $self = shift;
     my $level = shift;
     my $x = shift;
     my $y = shift;
     
-    foreach my $tree (@{$self->{graphs}}) {
-        return TRUE if ($tree->containsNode($level,$x,$y));
+    foreach my $graph (@{$self->{graphs}}) {
+        return TRUE if ($graph->containsNode($level,$x,$y));
     }
     
     return FALSE;
@@ -247,33 +259,33 @@ sub containsNode {
 
 #
 =begin nd
-method: computeTrees
+method: computeGraphs
 
-Initialize each script, compute each tree one after the other and save scripts to finish.
+Initialize each script, compute each graph or QTree one after the other and save scripts to finish.
 
 See Also:
-    <computeWholeTree>
+    <computeWholeGraph>
 =cut
-sub computeTrees {
+sub computeGraphs {
     my $self = shift;
 
     TRACE;
     
-    # We open stream to the new cache list, to add generated tile when we browse tree.    
+    # We open stream to the new cache list, to add generated tile when we browse graph.    
     my $NEWLIST;
     if (! open $NEWLIST, ">>", $self->{pyramid}->getNewListFile) {
         ERROR(sprintf "Cannot open new cache list file : %s",$self->{pyramid}->getNewListFile);
         return FALSE;
     }
     
-    my $treeInd = 1;
-    my $treeNumber = scalar @{$self->{graphs}};
-    foreach my $tree (@{$self->{graphs}}) { 
-        if (! $tree->computeWholeTree($NEWLIST)) {
+    my $graphInd = 1;
+    my $graphNumber = scalar @{$self->{graphs}};
+    foreach my $graph (@{$self->{graphs}}) { 
+        if (! $graph->computeYourself($NEWLIST)) {
             ERROR(sprintf "Cannot compute tree $treeInd/$treeNumber");
             return FALSE;
         }
-        INFO("Tree $treeInd/$treeNumber computed")
+        INFO("Graph $graphInd/$graphNumber computed")
     }
     
     close $NEWLIST;
@@ -287,7 +299,7 @@ sub computeTrees {
 
 # Group: getters - setters
 
-sub getTrees {
+sub getGraphs {
     my $self = shift;
     return $self->{graphs}; 
 }
@@ -297,13 +309,13 @@ __END__
 
 =head1 NAME
 
-BE4::Forest - Create and compute trees
+BE4::Forest - Create and compute graphs (including QTrees)
 
 =head1 SYNOPSIS
 
-    use BE4::DataSourceLoader
+    use BE4::Forest
 
-    # DataSourceLoader object creation
+    # Forest object creation
     my $objDataSource = BE4::DataSource->new({
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
@@ -312,9 +324,9 @@ BE4::Forest - Create and compute trees
 
 =over 4
 
-=item trees
+=item graphs
 
-An array of Tree objects
+An array of Graph or QTree objects
 
 =back
 
@@ -345,6 +357,7 @@ Metadata managing not yet implemented.
 =head1 AUTHOR
 
 Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
+Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -989,7 +989,9 @@ sub getBottomOrder {
 method: containsNode
 
 Parameters:
-    node - node we want to know if it is in the tree.
+    level - level of the node we want to know if it is in the qtree.
+    x     - x coordinate of the node we want to know if it is in the qtree.
+    y     - y coordinate of the node we want to know if it is in the qtree.
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.

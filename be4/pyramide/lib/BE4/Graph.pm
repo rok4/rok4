@@ -297,7 +297,7 @@ Parameter:
 See Also:
     <computeBranch>, <shareNodesOnJobs>, <writeBranchCode>, <writeTopCode>
 =cut
-sub computeWholeTree {
+sub computeYourself {
     my $self = shift;
     my $NEWLIST = shift;
     
@@ -354,20 +354,36 @@ sub computeWholeTree {
 
        }
    }
-
-   #$self->exportGraph();
-   
-   # on ferme tous les streams
-   #for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-   #  foreach my $stream (@{${$self->{process}->getWeights()}[$i]}){
-   #    close($stream);
-   #  }
-   #}
     
     TRACE;
     
     return TRUE;
 };
+
+#
+=begin nd
+method: containsNode
+
+Parameters:
+    level - level of the node we want to know if it is in the graph.
+    x     - x coordinate of the node we want to know if it is in the graph.
+    y     - y coordinate of the node we want to know if it is in the graph.
+
+Returns:
+    A boolean : TRUE if the node exists, FALSE otherwise.
+=cut
+sub containsNode {
+    my $self = shift;
+    my $level = shift;
+    my $x = shift;
+    my $y = shift;
+  
+    return FALSE if (! defined $level);
+    
+    my $nodeKey = $x."_".$y;
+    return (exists $self->{nodes}->{$level}->{$nodeKey});
+}
+
 
 ####################################################################################################
 #                                     BOTTOM LEVEL METHODS                                         #
