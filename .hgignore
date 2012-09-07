@@ -1,6 +1,6 @@
-
 syntax: glob
 .project
+*.komodoproject
 build
 build*
 *.komodoproject

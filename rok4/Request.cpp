@@ -252,6 +252,18 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             }
             pElem =  pElem->NextSiblingElement();
         }
+    
+    pElem = pElem->NextSiblingElement();
+    // "VendorOption"
+        while ( pElem ) {
+            if ( pElem->ValueStr().find ( "VendorOption" ) !=std::string::npos && pElem->Attribute("name") ) {
+                LOGGER_DEBUG ( "VendorOption" );
+                std::string vendorOpt = pElem->Attribute("name");
+                std::transform(vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower);
+                parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, (pElem->GetText()?pElem->GetText():"true") ) );
+            }
+            pElem =  pElem->NextSiblingElement();
+        }
 
 }
 

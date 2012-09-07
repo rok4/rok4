@@ -35,17 +35,19 @@
 
 package BE4::DataSource;
 
-# use strict;
+use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
+use Data::Dumper;
 use List::Util qw(min max);
 
 use Data::Dumper;
+use Geo::GDAL;
 
 # My module
 use BE4::ImageSource;
+use BE4::Harvesting;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -57,410 +59,481 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * bottomLevelID => undef, # this datasource will be used between bottomLevel and topLevel
+    * bottomLevelOrder => undef,
+    * topLevelID => undef,
+    * topLevelOrder => undef,
+    
+    * srs => undef,
+    * extent => undef, # OGR::Geometry object, in the previous SRS
+    * bbox => undef, # array of limits of the previous extent
+
+    * imageSource => undef, # an ImageSource object (can be undefined)
+
+    * harvesting => undef # an Harvesting object (can be undefined)
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $level = shift;
+    my $params = shift;
 
-  my $class= ref($this) || $this;
-  my $self = {
-    PATHIMG => undef, # path to images
-    PATHMTD => undef, # path to metadata
-    SRS     => undef, # 
-    #
-    images  => [],    # list of images sources
-    #
-    resolution => undef,
-    #
-    pixel => undef, #Pixel object
-  };
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    my $self = {
+        # Global information
+        bottomLevelID => undef,
+        bottomLevelOrder => undef,
+        topLevelID => undef,
+        topLevelOrder => undef,
+        bbox => undef,
+        extent => undef,
+        srs => undef,
+        # Image source
+        imageSource => undef,
+        # Harvesting
+        harvesting => undef
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  return $self;
+    bless($self, $class);
+
+    TRACE;
+
+    # load. class
+    return undef if (! $self->_load($level,$params));
+
+    return undef if (! $self->computeGlobalInfo());
+
+    return $self;
 }
 
-################################################################################
-# privates init.
-sub _init {
+sub _load {
     my $self   = shift;
+    my $level = shift;
     my $params = shift;
 
     TRACE;
     
     return FALSE if (! defined $params);
-    
-    # init. params    
-    $self->{PATHIMG}=$params->{path_image}    if (exists($params->{path_image})); 
-    $self->{PATHMTD}=$params->{path_metadata} if (exists($params->{path_metadata}));
-    $self->{SRS}=uc($params->{srs})               if (exists($params->{srs}));
-    
-    if (defined ($self->{PATHIMG}) && ! -d $self->{PATHIMG}) {
-        ERROR ("Directory image doesn't exist !");
+
+    if (! defined $level || $level eq "") {
+        ERROR("A data source have to be defined with a level !");
         return FALSE;
     }
-    
-    if (defined ($self->{PATHMTD}) && ! -d $self->{PATHMTD}) {
-        ERROR ("Directory metadata doesn't exist !");
+    $self->{bottomLevelID} = $level;
+
+    if (! exists $params->{srs} || ! defined $params->{srs}) {
+        ERROR("A data source have to be defined with the 'srs' parameter !");
         return FALSE;
     }
+    $self->{srs} = $params->{srs};
+
+    # bbox is optionnal if we have an ImageSource (checked in computeGlobalInfo)
+    if (exists $params->{extent} && defined $params->{extent}) {
+        $self->{extent} = $params->{extent};
+    }
+
+    # ImageSource is optionnal
+    my $imagesource = undef;
+    if (exists $params->{path_image}) {
+        $imagesource = BE4::ImageSource->new({
+            path_image => $params->{path_image},
+            path_metadata => $params->{path_metadata},
+        });
+        if (! defined $imagesource) {
+            ERROR("Cannot create the ImageSource object");
+            return FALSE;
+        }
+    }
+    $self->{imageSource} = $imagesource;
+
+    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
+    my $harvesting = undef;
+    if (exists $params->{wms_layer}) {
+        $harvesting = BE4::Harvesting->new({
+            wms_layer   => $params->{wms_layer},
+            wms_url     => $params->{wms_url},
+            wms_version => $params->{wms_version},
+            wms_request => $params->{wms_request},
+            wms_format  => $params->{wms_format},
+            wms_style => $params->{wms_style},
+            wms_bgcolor => $params->{wms_bgcolor},
+            wms_transparent  => $params->{wms_transparent},
+            min_size  => $params->{min_size},
+            max_width  => $params->{max_width},
+            max_height  => $params->{max_height}
+        });
+        if (! defined $harvesting) {
+            ERROR("Cannot create the Harvesting object");
+            return FALSE;
+        }
+    }
+    $self->{harvesting} = $harvesting;
     
-    if (! defined ($self->{SRS})) {
-        ERROR ("SRS undefined !");
+    if (! defined $harvesting && ! defined $imagesource) {
+        ERROR("A data source must have a ImageSource OR a Harvesting !");
         return FALSE;
     }
     
     return TRUE;
 }
 
-#
-# Group: public method
-#
+####################################################################################################
+#                                       PUBLIC METHODS                                             #
+####################################################################################################
 
-################################################################################
-# method: computeImageSource
-#   Load all image in a list of object BE4::ImageSource, determine the medium
-#   resolution of data, check components.
+# Group: public methods
 
-sub computeImageSource {
+#
+=begin nd
+    method: computeGlobalInfo
+
+    Read the srs, for the box or images.
+
+    Read the extent, 2 cases are possible :
+        - extent is a bbox, as xmin,ymin,xmax,ymax
+        - extent is a file path, file contains a complex polygon
+
+    We generate an OGR Geometry
+=cut
+sub computeGlobalInfo {
     my $self = shift;
 
     TRACE;
 
-    my %resDict;
+    # Bounding polygon
+    if (defined $self->{imageSource}) {
+        # We have real images for source, bbox will be calculated from them.
+        my ($xmin,$ymin,$xmax,$ymax);
 
-    my $lstImagesSources = $self->{images}; # it's a ref !
+        my @BBOX = $self->{imageSource}->computeBBox();
+        $xmin = $BBOX[0] if (! defined $xmin || $xmin < $BBOX[0]);
+        $ymin = $BBOX[1] if (! defined $ymin || $xmin < $BBOX[1]);
+        $xmax = $BBOX[2] if (! defined $xmax || $xmin > $BBOX[2]);
+        $ymax = $BBOX[3] if (! defined $ymax || $xmin > $BBOX[3]);
+        
+        $self->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
+    }    
 
-    my $badRefCtrl = 0;
-
-    my $search = $self->getListImages($self->{PATHIMG});
-    if (! defined $search) {
-        ERROR ("Can not load data source !");
-        return FALSE;
+    # Bounding polygon
+    if (! defined $self->{extent}) {
+        ERROR("'extent' required in the sources configuration file if no image source !");
+        return FALSE ;
     }
 
-    my @listSourcePath = @{$search->{images}};
-    if (! @listSourcePath) {
-        ERROR ("Can not load data source !");
-        return FALSE;
+    my $GMLextent;
+
+    $self->{extent} =~ s/ //;
+    my @limits = split (/,/,$self->{extent},-1);
+
+    if (scalar @limits == 4) {
+        # user supplied a BBOX
+        if ($limits[0] !~ m/[+-]?\d+\.?\d*/ || $limits[1] !~ m/[+-]?\d+\.?\d*/ ||
+            $limits[2] !~ m/[+-]?\d+\.?\d*/ || $limits[3] !~ m/[+-]?\d+\.?\d*/ ) {
+            ERROR(sprintf "If 'extent' is a bbox, value must be a string like 'xmin,ymin,xmax,ymax' : %s !",$self->{extent});
+            return FALSE ;
+        }
+
+        my $xmin = $limits[0];
+        my $ymin = $limits[1];
+        my $xmax = $limits[2];
+        my $ymax = $limits[3];
+
+        if ($xmax <= $xmin || $ymax <= $ymin) {
+            ERROR(sprintf "'box' value is not logical for a bbox (max < min) : %s !",$self->{extent});
+            return FALSE ;
+        }
+
+        $GMLextent = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
+            $xmin,$ymin,
+            $xmin,$ymax,
+            $xmax,$ymax,
+            $xmax,$ymin,
+            $xmin,$ymin;
     }
-
-    my $pixel = undef;
-
-    foreach my $filepath (@listSourcePath) {
-
-        my $objImageSource = BE4::ImageSource->new($filepath);
-
-        if (! defined $objImageSource) {
-            ERROR ("Can not load image source ('$filepath') !");
+    elsif (scalar @limits == 1) {
+        # user supplied a file which contains bounding polygon
+        if (! -f $self->{extent}) {
+            ERROR (sprintf "Shape file ('%s') doesn't exist !",$self->{extent});
+            return FALSE;
+        }
+        
+        if (! open SHAPE, "<", $self->{extent} ){
+            ERROR(sprintf "Cannot open the shape file %s.",$self->{extent});
             return FALSE;
         }
 
-        # images reading and analysis
-        my @imageInfo = $objImageSource->computeInfo();
-        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
-        if (! @imageInfo) {
-            ERROR ("Can not read image info ('$filepath') !");
-            return FALSE;
+        $GMLextent = '';
+        while( defined( my $line = <SHAPE> ) ) {
+            $GMLextent .= $line;
         }
-
-        if (! defined $pixel) {
-            # we have read the first image, components are empty. This first image will be the reference.
-            if ($imageInfo[0] == 1) {
-                WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
-                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 8
-                $imageInfo[0] = 8;
-            }
-            $pixel = BE4::Pixel->new({
-                bitspersample => $imageInfo[0],
-                photometric => $imageInfo[1],
-                sampleformat => $imageInfo[2],
-                samplesperpixel => $imageInfo[3]
-            });
-            if (! defined $pixel) {
-                ERROR ("Can not create Pixel object for DataSource !");
-                return FALSE;
-            }
-        } else {
-            if ($imageInfo[0] == 1) {
-                # bitspersample in the Pixel object is 3. we change artificially current value for 8
-                $imageInfo[0] = 8;
-            }
-            # we have already values. We must have the same components for all images
-            if (! ($pixel->{bitspersample} eq $imageInfo[0] && $pixel->{photometric} eq $imageInfo[1] &&
-                    $pixel->{sampleformat} eq $imageInfo[2] && $pixel->{samplesperpixel} eq $imageInfo[3])) {
-                ERROR ("All images must have same components. This image ('$filepath') is different !");
-                return FALSE;
-            }
-        }
-
-        if ($objImageSource->getXmin() == 0  && $objImageSource->getYmax == 0){
-            $badRefCtrl++;
-        }
-        if ($badRefCtrl>1){
-            ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
-            return FALSE;
-        }
-
-        # FIXME :
-        #  - resolution resx == resy ?
-        #  - unique resolution for all image !
-        my $xRes = $objImageSource->getXres();
-        $resDict{$xRes} = 1;
-        $self->{resolution} = $xRes;
-        #
-        push @$lstImagesSources, $objImageSource;
-    }
-
-    $self->{pixel} = $pixel;
-
-    if (!defined $lstImagesSources || ! scalar @$lstImagesSources) {
-        ERROR ("Can not found image source in '$self->{PATHIMG}' !");
+        close(SHAPE);
+    } else {
+        ERROR(sprintf "The value for 'extent' is not valid (must be a BBOX or a file with a GML shape) : %s.",
+            $self->{extent});
         return FALSE;
     }
 
-    # NV 2012-01-02 : Je ne pense pas que des resolution multiples posent problème à mergeNtiff.
-    #                 Je commente donc le bloc suivant qui ne permet pas de traiter les veilles bd-parcellaire.
-    # if (keys (%resDict) != 1) {
-    #   ERROR ("The resolution of image source is not unique !");
-    #   return FALSE;
-    # }
+    if (! defined $GMLextent) {
+        ERROR(sprintf "Cannot define the string from the parameter 'extent' (GML) => %s.",$self->{extent});
+        return FALSE;
+    }
+
+    # We use extent to define a GML string, Now, we store in this attribute the equivalent OGR Geometry
+    $self->{extent} = undef;
+
+    eval { $self->{extent} = Geo::OGR::Geometry->create(GML=>$GMLextent); };
+    if ($@) {
+        ERROR(sprintf "GML geometry (%s) is not valid : %s",$GMLextent,$@);
+        return FALSE;
+    }
+
+    if (! defined $self->{extent}) {
+        ERROR(sprintf "Cannot create a Geometry from the string : %s.",$GMLextent);
+        return FALSE;
+    }
+
+    my $bboxref = $self->{extent}->GetEnvelope();
+    my ($xmin,$xmax,$ymin,$ymax) = ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+    if (! defined $xmin) {
+        ERROR("Cannot calculate bbox from the OGR Geometry");
+        return FALSE;
+    }
+    $self->{bbox} = [$xmin,$ymin,$xmax,$ymax];
 
     return TRUE;
-}
-################################################################################
-# method: exportImageSource
-#   Export all informations of image in a file
-#
-#   Format :
-#     filename, xmin, ymax, xmax, ymin, xres, yres
-#
-#   Parameter:
-#    file - filepath of the export
-#
-sub exportImageSource {
-  my $self = shift;
-  my $file = shift; # pathfilename !
-  
-  TRACE;
 
-  my $lstImagesSources = $self->{images};
-  
-  if (! open (FILE, ">", $file)) {
-    ERROR ("Can not create file ('$file') !");
-    return FALSE;
-  }
-  
-  foreach my $objImage (@$lstImagesSources) {
-    # image xmin ymax xmax ymin resx resy
-    printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
-            # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
-            $objImage->{filename},
-            $objImage->{xmin},
-            $objImage->{ymax},
-            $objImage->{xmax},
-            $objImage->{ymin},
-            $objImage->{xres},
-            $objImage->{yres};
-  }
-  
-  close FILE;
-  
-  return TRUE;
-}
-################################################################################
-# method: computeBbox
-#   Bbox of data source
-#
-sub computeBbox {
-  my $self = shift;
-
-  TRACE;
-  
-  my $lstImagesSources = $self->{images};
-  
-  my @bbox;
-  
-  my $xmin = $lstImagesSources->[0]->{xmin};
-  my $xmax = $lstImagesSources->[0]->{xmax};
-  my $ymin = $lstImagesSources->[0]->{ymin};
-  my $ymax = $lstImagesSources->[0]->{ymax};
-  
-  foreach my $objImage (@$lstImagesSources) {
-    $xmin = min($xmin, $objImage->{xmin});
-    $xmax = max($xmax, $objImage->{xmax});
-    $ymin = min($ymin, $objImage->{ymin});
-    $ymax = max($ymax, $objImage->{ymax});
-  }
-
-  # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($xmin,$ymax,$xmax,$ymin);
-  
-  return @bbox;
 }
 
 
-################################################################################
-# method: getListImages
-#   Get the list of all path data image (image tiff only !)
-#   
-sub getListImages {
-  my $self      = shift;
-  my $directory = shift;
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
 
-  TRACE();
-  
-  my $search = {
-    images => [],
-  };
+# Group: getters - setters
 
-  if (! opendir (DIR, $directory)) {
-    ERROR(sprintf "Can not open directory cache (%s) ?",$directory);
-    return undef;
-  }
-
-  my $newsearch;
-  
-  foreach my $entry (readdir DIR) {
-    
-    next if ($entry =~ m/^\.{1,2}$/);
-    
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);      
-      # recursif
-      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
-      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
-    }
-
-    next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
-    
-    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
-  }
-  
-  return $search;
-}
-
-################################################################################
-# method: hasImages
-#   
-sub hasImages {
-  my $self = shift;
-  
-  return FALSE if (! defined ($self->{PATHIMG}));
-  return TRUE;
-}
-
-#
-# Group: get/set
-#
-sub getResolution {
-  my $self = shift;
-  return $self->{resolution};  
-}
-################################################################################
-# method: getImages
-#   Get the list of all object data image (BE4::ImageSource)
-#
-sub getImages {
-  my $self = shift;
-  # copy !
-  my @images;
-  foreach (@{$self->{images}}) {
-    push @images, $_;
-  }
-  return @images; 
-}
 sub getSRS {
-  my $self = shift;
-  
-  return $self->{SRS};
+    my $self = shift;
+    return $self->{srs};
 }
+
+sub getExtent {
+    my $self = shift;
+    return $self->{extent};
+}
+
+sub getHarvesting {
+    my $self = shift;
+    return $self->{harvesting};
+}
+
+sub getImages {
+    my $self = shift;
+    return $self->{imageSource}->getImages();
+}
+
+sub hasImages {
+    my $self = shift;
+    return (defined $self->{imageSource});
+}
+
+sub hasHarvesting {
+    my $self = shift;
+    return (defined $self->{harvesting});
+}
+
+sub removeHarvesting {
+    my $self = shift;
+    $self->{harvesting} = undef;
+}
+
+sub getBottomID {
+    my $self = shift;
+    return $self->{bottomLevelID};
+}
+
+sub getTopID {
+    my $self = shift;
+    return $self->{topLevelID};
+}
+
+sub getBottomOrder {
+    my $self = shift;
+    return $self->{bottomLevelOrder};
+}
+
+sub getTopOrder {
+    my $self = shift;
+    return $self->{topLevelOrder};
+}
+
+sub setBottomOrder {
+    my $self = shift;
+    my $bottomOrder = shift;
+    $self->{bottomLevelOrder} = $bottomOrder;
+}
+
+sub setTopOrder {
+    my $self = shift;
+    my $topOrder = shift;
+    $self->{topLevelOrder} = $topOrder;
+}
+
+sub setTopID {
+    my $self = shift;
+    my $topID = shift;
+    $self->{topLevelID} = $topID;
+}
+
 1;
 __END__
 
-=pod
-
 =head1 NAME
 
-  BE4::DataSource - Managing data sources
+BE4::DataSource - Managing a data source
 
 =head1 SYNOPSIS
 
-  use BE4::DataSource;
-  
-  my $objImplData = BE4::DataSource->new(path_image => $path,
-                                         path_metadata => $path,
-                                         srs => 'IGNF:LAMB93');
-  
-  $objImplData->computeImageSource();
-  $objImplData->exportImageSource($fileout);
-  
-  my @images = $objImplData->getListImages(); # path images tif !
-  my @bbox   = $objImplData->computeBBox();   # (xmin,ymax,xmax,ymin) !
-  my $srs    = $objImplData->getSRS();        # IGNF:LAMB93 !
-  my $res    = $objImplData->getResolution(); # 0.50 cm !
+    use BE4::DataSource;
+
+    # DataSource object creation : 3 cases
+    
+    # Real Data and no harvesting : native SRS and lossless compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+        }
+    );
+    
+    # No Data, just harvesting (here for a WMS vector)
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => IGNF:WGS84G,
+            extent => /home/ign/SHAPE/GMLPolygon.txt,
+            
+            wms_layer   => "tp:TRONCON_ROUTE",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format  => "image/png",
+            wms_bgcolor => "0xFFFFFF",
+            wms_transparent  => "FALSE",
+            wms_style  => "line",
+            min_size => 9560,
+            max_width => 1024,
+            max_height => 1024
+        }
+    );
+    
+    # Real Data and harvesting : reprojection or lossy compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+            wms_layer => "ORTHO_XXX",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format => "image/tiff"
+        }
+    );
 
 =head1 DESCRIPTION
 
-  This class allows to manage the data source :
-   - list of image
-   - get SRS
-   - get Resolution
-   - list of object BE4::ImageSource (get image info)
-   - get bbox of data source
-   - export data source in a file
-   - ...
+=head2 ATTRIBUTES
 
-  The SRS must be in the proj4 format.
+=over 4
   
-=head2 EXPORT
+=item bottomLevelID, bottomLevelOrder
 
-None by default.
+ID (in TMS) and order (integer) of the base level, from which this datasource is used.
+
+=item topLevelID, topLevelOrder
+
+ID (in TMS) and order (integer) of the top level, to which this datasource is used, calculated in relation to other datasource
+        
+=item extent
+
+An OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
+
+=item bbox
+
+Bbox of extent, an array [xmin,ymin,xmax,ymax].
+
+=item srs
+
+SRS of the bottom extent (and ImageSource objects if exists)
+    
+=item imageSource
+
+An ImageSource object, can be undefined
+    
+=item harvesting
+
+An Harvestingobject, can be undefined. If it is useless, it will be remove.
+
+=back
+
+'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
 
 =head1 LIMITATION & BUGS
 
-* Does not support data source multiple !
-
-* Select of data image only in the format tiff !
-
-* Does not implement the managing of metadata !
+Metadata managing not yet implemented.
 
 =head1 SEE ALSO
 
-  eg BE4::ImageSource
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
+<li><A HREF="./lib-BE4-ImageSource.html">BE4::ImageSource</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -108,7 +108,7 @@ void parseCommandLine(int argc, char* argv[],
                       exit(0);
                 case 'c': // compression
                       if(++i == argc) error("Error in -c option");
-                      if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                      if(strncmp(argv[i], "none",4) == 0 || strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
                       else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
                       else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
                       else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
