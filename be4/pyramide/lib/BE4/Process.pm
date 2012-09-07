@@ -45,6 +45,7 @@ use Data::Dumper;
 
 use BE4::Harvesting;
 use BE4::Level;
+use BE4::Script;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -187,14 +188,12 @@ Group: variable
 
 variable: $self
     * pyramid : BE4::Pyramid
+    
     * job_number
     * path_temp
     * path_shell
     
-    * scripts - array of names of each jobs (split and finisher)
-    * streams - array of streams to each jobs (split and finisher)
-    * weights - array of weights of each jobs (split and finisher)
-
+    * scripts - array of BE4::Script
 =cut
 
 ####################################################################################################
@@ -217,8 +216,6 @@ sub new {
         path_shell => undef,
         # out
         scripts => [],
-        streams => [],
-        weights => [],
     };
     bless($self, $class);
 
@@ -271,56 +268,28 @@ sub _init {
     
     my $functions = $self->configureFunctions();
     
-    # -------------------------------------------------------------------
-    # We create directory for scripts
-    if (! -d $self->getScriptDir) {
-        DEBUG (sprintf "Create the script directory '%s' !", $self->getScriptDir);
-        eval { mkpath([$self->getScriptDir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the script directory '%s' : %s !", $self->getScriptDir , $@);
-            return FALSE;
-        }
-    }
-    
     ## Acting differently if QTREE or simple GRAPH
     ## TODO : differences between Graph and Qtree should only be in their particular files (QTREE.pm and GRAPH.pm), not here
-    if ($pyr->getTileMatrixSet()->isQTree()) {
+    if ($pyr->getTileMatrixSet->isQTree) {
         
         #### QTREE CASE
-        
-        # -------------------------------------------------------------------
         # We initialize scripts (name, weights), make directories (tmp) and open writting streams
         
         for (my $i = 0; $i <= $self->{job_number}; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
             $scriptID = "SCRIPT_FINISHER" if ($i == 0);
-            push @{$self->{scriptsID}},$scriptID;
             
-            # We create temporary directory
-            if (! -d $self->getScriptTmpDir) {
-                DEBUG (sprintf "Create the temporary directory '%s' !", $self->getScriptTmpDir);
-                eval { mkpath([$self->getScriptTmpDir]); };
-                if ($@) {
-                    ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->getScriptTmpDir , $@);
-                    return FALSE;
-                }
-            }
+            my $script = BE4::Script->new({
+                id => $scriptID,
+                tempDir => $self->{path_temp},
+                scriptDir => $self->{path_shell}
+            });
             
-            my $SCRIPT;
-            my $scriptPath = $self->getScriptFile($scriptID);
-            if ( ! (open $SCRIPT,">", $scriptPath)) {
-                ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
-                return FALSE;
-            }
+            push @{$self->{streams}},$script;
             
             # We write header (environment variables and bash functions)
             my $header = $self->prepareScript($scriptID,$functions);
-            printf $SCRIPT "%s", $header;
-            # We store stream
-            push @{$self->{streams}},$SCRIPT;
-            
-            # We initialize weight for this script with 0
-            push @{$self->{weights}},0;
+            $script->print($header);
         }
         
     } else {
@@ -341,8 +310,12 @@ sub _init {
             my @level_weights ;
             
             for (my $j = 0; $j < $self->{job_number}; $j++) {
-                my $scriptID = sprintf "LEVEL_%s-SCRIPT_%s",$levelID,$j;
-                $scriptID = sprintf("FINISHER-SCRIPT_%s",$j) if ($i == $pyr->getTopOrder + 1);
+                my $scriptID ;
+                if ($i == $pyr->getTopOrder + 1) {
+                    $scriptID = sprintf "FINISHER-SCRIPT_%s", $j;
+                } else {
+                    $scriptID = sprintf "LEVEL_%s-SCRIPT_%s", $levelID, $j;
+                }
                 push(@level_names,$scriptID);
                 
                 my $scriptPath = $self->getScriptFile($scriptID);
@@ -393,8 +366,7 @@ sub printInScript {
 
     TRACE;
 
-    my $stream = $self->{streams}[$ind];
-    printf ($stream "%s", $code);
+    $self->{script}[$ind]->print($code);
 }
 
 ####################################################################################################
@@ -1041,15 +1013,7 @@ A BE4::NoData object.
 
 =item scripts
 
-Array of string, names of each jobs (split and finisher)
-
-=item streams
-
-Array of streams, to each jobs (split and finisher)
-
-=item weights
-
-Array of integer, weights of each jobs (split and finisher)
+Array of BE4::Script.
 
 =item job_number
 
@@ -1075,6 +1039,7 @@ Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2
 <li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
+<li><A HREF="./lib-BE4-Script.html">BE4::Script</A></li>
 </ul>
 
 =end html

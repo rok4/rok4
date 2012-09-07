@@ -76,7 +76,7 @@ variable: $self
     * w - own node's weight  
     * W - accumulated weight (childs' weights sum)
     * code - commands to execute to generate this node (to write in a script)
-    * script_nb - number of the script in which the node is calculated
+    * script - BE4::Script, in which the node is calculated
     * nodeSources : list of BE4::Node - from which this node is calculated
     * geoImages : list of BE4::GeoImage - from which this node is calculated
 =cut
@@ -100,7 +100,7 @@ sub new {
         w => 0,
         W => 0,
         code => '',
-        script_nb => undef,
+        script => undef,
         nodeSources => [],
         geoImages => [],
     };
@@ -157,15 +157,20 @@ sub _init {
 
 # Group: getters - setters
 
-sub getScriptNb {
+sub getScript {
     my $self = shift;
-    return $self->{script_nb}
+    return $self->{script}
 }
 
-sub setScriptNb {
+sub setScript {
     my $self = shift;
-    my $number = shift;
-    $self->{script_nb} = $number; 
+    my $script = shift;
+    
+    if (! defined $script || ref ($script) ne "BE4::Script") {
+        ERROR("We expect to a BE4::Script object.");
+    }
+    
+    $self->{script} = $script; 
 }
 
 sub getCol {
@@ -174,61 +179,61 @@ sub getCol {
 }
 
 sub getRow {
-  my $self = shift;
-  return $self->{j};
+    my $self = shift;
+    return $self->{j};
 }
 
 sub getWorkBaseName {
-  my $self = shift;
-  return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
+    my $self = shift;
+    return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
 }
 
 sub getWorkName {
-  my $self = shift;
-  return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
+    my $self = shift;
+    return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
 }
 
 sub getLevel {
-  my $self = shift;
-  return $self->{tm}->getID;
+    my $self = shift;
+    return $self->{tm}->getID;
 }
 
 sub getTM {
-  my $self = shift;
-  return $self->{tm};
+    my $self = shift;
+    return $self->{tm};
 }
 
 sub getGraph {
-  my $self = shift;
+    my $self = shift;
     return $self->{graph};
 }
 
 sub getNodeSources {
-  my $self = shift;
-  return $self->{nodeSources};
+    my $self = shift;
+    return $self->{nodeSources};
 }
 
 sub getGeoImages {
-  my $self = shift;
-  return $self->{geoImages};
+    my $self = shift;
+    return $self->{geoImages};
 }
 
 sub addNodeSources {
-  my $self = shift;
-  my @nodes = shift;
-  
-  push(@{$self->getNodeSources()},@nodes);
-  
-  return TRUE;
+    my $self = shift;
+    my @nodes = shift;
+    
+    push(@{$self->getNodeSources()},@nodes);
+    
+    return TRUE;
 }
 
 sub addGeoImages {
-  my $self = shift;
-  my @images = shift;
-  
-  push(@{$self->getGeoImages()},@images);
-  
-  return TRUE;
+    my $self = shift;
+    my @images = shift;
+    
+    push(@{$self->getGeoImages()},@images);
+    
+    return TRUE;
 }
 
 sub setCode {
@@ -258,47 +263,48 @@ sub getCode {
 }
 
 sub getOwnWeight {
-  my $self = shift;
-  return $self->{w};
+    my $self = shift;
+    return $self->{w};
 }
 
 sub getAccumulatedWeight {
-  my $self = shift;
-  return $self->{W};
+    my $self = shift;
+    return $self->{W};
 }
 
 sub updateOwnWeight {
-  my $self = shift;
-  my $weight = shift;
-  $self->{w} += $weight;
+    my $self = shift;
+    my $weight = shift;
+    $self->{w} += $weight;
 }
 
 sub exportNode {
-  my $self = shift ;
-  print "Objet Node :\n";
-  print "\tLevel : ".$self->getLevel()."\n";
-  print "\tTM Resolution : ".$self->getTM()->getResolution()."\n";
-  print "\tColonne : ".$self->getCol()."\n";
-  print "\tLigne : ".$self->getRow()."\n";
-  if (defined $self->getScriptNb()) {
-      print "\tScript NB : ".$self->getScriptNb()."\n";
-  } else {
-      print "\tScript NB undefined.\n";
-  }
-  printf "\t Noeud Source :\n";
-  foreach my $node_sup ( @{$self->getNodeSources()} ) {
-    printf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
-  }
-  printf "\t Geoimage Source :\n";
-  foreach my $img ( @{$self->getGeoImages()} ) {
-    printf "\t\tNom : %s\n",$img->getName();
-  }
+    my $self = shift ;
     
+    print "Objet Node :\n";
+    print "\tLevel : ".$self->getLevel()."\n";
+    print "\tTM Resolution : ".$self->getTM()->getResolution()."\n";
+    print "\tColonne : ".$self->getCol()."\n";
+    print "\tLigne : ".$self->getRow()."\n";
+    if (defined $self->getScript()) {
+        print "\tScript ID : ".$self->getScriptID()."\n";
+    } else {
+        print "\tScript undefined.\n";
+    }
+    printf "\t Noeud Source :\n";
+    foreach my $node_sup ( @{$self->getNodeSources()} ) {
+        printf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
+    }
+    printf "\t Geoimage Source :\n";
+    
+    foreach my $img ( @{$self->getGeoImages()} ) {
+        printf "\t\tNom : %s\n",$img->getName();
+    }
 }
 
 sub getScriptID {
     my $self = shift;
-    return sprintf "LEVEL_%s-SCRIPT_%s",$self->getLevel(),$self->getScriptNb();
+    return $self->{script}->getID;
 }
 
 # method: setAccumulatedWeightOfNode

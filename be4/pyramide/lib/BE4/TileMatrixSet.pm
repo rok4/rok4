@@ -277,18 +277,18 @@ sub _load {
     };
   
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-    TRACE("sort by ID...");
-    
     for (my $i=0; $i < scalar @tmList; $i++){
         $self->{levelsBind}{$tmList[$i]->getID()} = $i;
     }
     
     ## Adding informations about child/parent in TM objects
-    for (my $i = 0; $i < scalar(@tmList) ;$i++) {
-      my $tmSource = $self->_computeTmSource($tmList[$i]);
-      if (defined $tmSource) {
-        push(@{$tmSource->{targetstmid}},$tmList[$i]->{id});
-      }
+    if (! $self->isQTree) {
+        for (my $i = 0; $i < scalar(@tmList) ;$i++) {
+            my $tmSource = $self->computeTmSource($tmList[$i]);
+            if (defined $tmSource) {
+                push(@{$tmSource->{targetstmid}},$tmList[$i]->{id});
+            }
+        }
     }
     
     return TRUE;
@@ -347,8 +347,8 @@ sub getTileHeight {
 }
 
 sub isQTree {
-  my $self = shift;
-  return $self->{isQTree};
+    my $self = shift;
+    return $self->{isQTree};
 }
 
 ####################################################################################################
@@ -359,7 +359,7 @@ sub isQTree {
 
 #
 =begin nd
-method: _computeTmSource
+method: computeTmSource
 
 Parameters:
     tmTarget - a BE4::TileMatrix object.
@@ -367,7 +367,7 @@ Parameters:
 Returns:
     The TM (obj) from which the TM (obj) in argument is calculated (undef if the argument TM is bottomLevel).
 =cut
-sub _computeTmSource {
+sub computeTmSource {
   my $self = shift;
   my $tmTarget = shift;
   
