@@ -162,6 +162,11 @@ sub getScript {
     return $self->{script}
 }
 
+sub writeInScript {
+    my $self = shift;
+    $self->{script}->print($self->{code});
+}
+
 sub setScript {
     my $self = shift;
     my $script = shift;
@@ -272,13 +277,56 @@ sub getAccumulatedWeight {
     return $self->{W};
 }
 
-sub updateOwnWeight {
+sub setOwnWeight {
     my $self = shift;
     my $weight = shift;
-    $self->{w} += $weight;
+    $self->{w} = $weight;
 }
 
-sub exportNode {
+sub getScriptID {
+    my $self = shift;
+    return $self->{script}->getID;
+}
+
+# method: setAccumulatedWeightOfNode
+#  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
+#  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
+#------------------------------------------------------------------------------
+sub setAccumulatedWeight {
+    my $self = shift;
+    my $weight = shift;
+    $self->{W} = $weight + $self->getOwnWeight;
+}
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+# method: exportForMntConf
+# la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
+sub exportForMntConf {
+    my $self = shift;
+    my $filePath = shift;
+    
+    TRACE;
+    
+    my @Bbox = $self->getBBox;
+    
+    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $filePath,
+        $Bbox[0],
+        $Bbox[3],
+        $Bbox[2],
+        $Bbox[1],
+        $self->getTM()->getResolution(),
+        $self->getTM()->getResolution();
+    
+    return $output;
+}
+
+sub exportForDebug {
     my $self = shift ;
     
     print "Objet Node :\n";
@@ -300,44 +348,6 @@ sub exportNode {
     foreach my $img ( @{$self->getGeoImages()} ) {
         printf "\t\tNom : %s\n",$img->getName();
     }
-}
-
-sub getScriptID {
-    my $self = shift;
-    return $self->{script}->getID;
-}
-
-# method: setAccumulatedWeightOfNode
-#  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
-#  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
-#------------------------------------------------------------------------------
-sub setAccumulatedWeight {
-    my $self = shift;
-    my $weight = shift;
-    $self->{W} = $weight + $self->getOwnWeight;
-}
-
-# to_mergentif_string
-# la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
-#---------------------------------------------------------------------------------------------------
-sub to_mergentif_string {
-    my $self = shift;
-    my $filePath = shift;
-    
-    TRACE;
-    
-    my @Bbox = $self->getBBox;
-    
-    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $filePath,
-        $Bbox[0],
-        $Bbox[3],
-        $Bbox[2],
-        $Bbox[1],
-        $self->getTM()->getResolution(),
-        $self->getTM()->getResolution();
-    
-    return $output;
 }
 
 1;

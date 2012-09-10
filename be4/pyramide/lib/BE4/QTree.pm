@@ -75,6 +75,7 @@ END {}
 Group: variable
 
 variable: $self
+    * forest : BE4::Forest
     * pyramid : BE4::Pyramid
     * process : BE4::Process
     * datasource : BE4::DataSource
@@ -107,6 +108,7 @@ variable: $self
 method: new
 
 Parameters:
+    objForest - BE4::Forest in which this tree is.
     objSrc - BE4::DataSource, used to defined nodes
     objPyr - BE4::Pyramid
     objProcess - BE4::Process, used to compute tree
@@ -118,6 +120,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # in
+        forest    => undef,
         pyramid    => undef,
         process    => undef,
         datasource => undef,
@@ -147,12 +150,14 @@ sub new {
 method: _init
 
 Parameters:
+    objForest - BE4::Forest in which this tree is.
     objSrc - BE4::DataSource, used to defined nodes
     objPyr - BE4::Pyramid
     objProcess - BE4::Process, used to compute tree
 =cut
 sub _init {
     my $self = shift;
+    my $objForest = shift;
     my $objSrc  = shift;
     my $objPyr  = shift;
     my $objProcess  = shift;
@@ -160,6 +165,10 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
+    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
+        ERROR("Can not load Forest !");
+        return FALSE;
+    }
     if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
@@ -173,10 +182,11 @@ sub _init {
         return FALSE;
     }
 
-    # init. params    
+    # init. params   
+    $self->{forest} = $objForest; 
     $self->{pyramid} = $objPyr;
     $self->{datasource} = $objSrc; 
-    $self->{process} = $objProcess;    
+    $self->{process} = $objProcess;
 
     return TRUE;
 }
@@ -498,19 +508,16 @@ See Also:
 =cut
 sub computeYourself {
     my $self = shift;
-    my $NEWLIST = shift;
 
     TRACE;
     
-    # -------------------------------------------------------------------
-    # Pondération de l'arbre en fonction des opérations à réaliser,
-    # création du code script (ajouté aux noeuds de l'arbre) et mise à
-    # jour de la liste des fichiers du cache avec les nouvelles images.
     my @topLevelNodeList = $self->getNodesOfTopLevel;
     
+    # -------------------------------------------------------------------
+    # Pondération de l'arbre en fonction des opérations à réaliser.
     foreach my $topNode (@topLevelNodeList) {
-        if (! $self->computeBranch($topNode,$NEWLIST)) {
-            ERROR(sprintf "Can not compute the node of the top level '%s'!", $topNode->getWorkBaseName);
+        if (! $self->computeBranch($topNode,TRUE)) {
+            ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName);
             return FALSE;
         }
     }
@@ -520,44 +527,43 @@ sub computeYourself {
     # en tenant compte du fait qu'ils peuvent déjà contenir du travail, du fait
     # de la pluralité des arbres à traiter.
     
-    my @nodeRack;
-    
-    $self->shareNodesOnJobs(\@nodeRack,\@{$self->{process}->getWeights});
-    
-    if (! scalar @nodeRack) {
-        ERROR("Cut Level Node List is empty !");
+    $self->shareNodesOnJobs;
+
+    if (! defined $self->{cutLevelID}) {
+        ERROR("Impssible to determine the cut level !");
         return FALSE;
     }
     INFO (sprintf "CutLevel : %s", $self->{cutLevelID});
     
     # -------------------------------------------------------------------
-    # Split scripts
-    for (my $scriptCount = 1; $scriptCount <= $self->{process}->getJobNumber; $scriptCount++){
-
-        if (! defined($nodeRack[$scriptCount-1])) {
-            $self->{process}->printInScript("echo \"Nothing to do : not a problem.\"\n",$scriptCount);
-        } else {
-            foreach my $node (@{$nodeRack[$scriptCount-1]}) {
-                $self->{process}->printInScript(
-                    sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow)
-                    ,$scriptCount);
-                $self->writeBranchCode($node,$scriptCount);
-                # NOTE : pas d'image à collecter car non séparation par script du dossier temporaire, de travail
-                # A rétablir si possible
-                # on récupère l'image de travail finale pour le job de fin.
-                # $finishScriptCode .= $self->collectWorkImage($node, $scriptId, $finishScriptId);
-            }
+    # Création du code script (ajouté aux noeuds de l'arbre).
+    foreach my $topNode (@topLevelNodeList) {
+        if (! $self->computeBranch($topNode,FALSE)) {
+            ERROR(sprintf "Can not compute code for the node of the top level '%s'!", $topNode->getWorkBaseName);
+            return FALSE;
         }
+    }
+    
+    # -------------------------------------------------------------------
+    # Split scripts
+    my @cutLevelNodes = $self->getNodesOfCutLevel();
+    foreach my $node (@cutLevelNodes) {
+        $node->getScript->print(
+            sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow));
+        $self->writeBranchCode($node);
+        # on récupère l'image de travail finale pour le job de fin.
+        $self->{process}->collectWorkImage($node);
     }
     
     # -------------------------------------------------------------------
     # Final script    
     if ($self->getTopID eq $self->getCutLevelID){
         INFO("Final script will be empty");
-        $self->{process}->printInScript("echo \"Final script have nothing to do.\" \n",0);
+        $self->{forest}->printInFinisher("echo \"Final script have nothing to do.\" \n",0);
     } else {
         my @nodeList = $self->getNodesOfTopLevel;
         foreach my $node (@nodeList){
+            $node->setScript($self->{forest}->getFinisher);
             $self->writeTopCode($node);
         }
     }
@@ -573,11 +579,11 @@ Recursive method, which allow to browse tree downward.
 
 2 cases.
     - the node belong to the bottom level -> computeBottomImage
-    - the node does not belong to the bottom level -> computeBranch on each child, and computeAboveImage
+    - the node does not belong to the bottom level -> computeBranch on each child, then computeAboveImage
 
 Parameter:
     node - BE4::Node, to treat.
-    NEWLIST - stream to the cache's list, to add new images.
+    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 See Also:
     <computeBottomImage>, <computeAboveImage>
@@ -586,37 +592,36 @@ sub computeBranch {
     
     my $self = shift;
     my $node = shift;
-    my $NEWLIST = shift;
+    my $justWeight = shift;
+    $justWeight = FALSE if (! defined $justWeight);
 
     my $weight = 0;
 
     TRACE;
     
-    printf $NEWLIST "0/%s\n", $self->{pyramid}->getCacheNameOfImage($node,'data');
-    
     my $res = '';
     my @childList = $self->getChildren($node);
     if (scalar @childList == 0){
-        if (! $self->computeBottomImage($node)) {
+        if (! $self->computeBottomImage($node,$justWeight)) {
             ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkName);
             return FALSE;
         }
         return TRUE;
     }
-    foreach my $n (@childList){
-        if (! $self->computeBranch($n,$NEWLIST)) {
+    foreach my $n (@childList) {
+        if (! $self->computeBranch($n,$justWeight)) {
             ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName);
             return FALSE;
         }
         $weight += $n->getAccumulatedWeight;
     }
 
-    if (! $self->computeAboveImage($node)) {
+    if (! $self->computeAboveImage($node,$justWeight)) {
         ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkName);
         return FALSE;
     }
 
-    $node->setAccumulatedWeight($weight);
+    $node->setAccumulatedWeight($weight) if $justWeight;
 
     return TRUE;
 }
@@ -625,7 +630,7 @@ sub computeBranch {
 =begin nd
 method: computeBottomImage
 
-Treat a bottom node : determine code and weight.
+Treat a bottom node : determine code or weight.
 
 2 cases.
     - native projection, lossless compression and images as data -> mergeNtiff
@@ -633,12 +638,15 @@ Treat a bottom node : determine code and weight.
 
 Parameter:
     node - bottom level's BE4::Node, to treat.
+    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 =cut
 sub computeBottomImage {
     
     my $self = shift;
     my $node = shift;
+    my $justWeight = shift;
+    $justWeight = FALSE if (! defined $justWeight);
 
     TRACE;
     
@@ -650,7 +658,7 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting);
+        ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight);
         if (! defined $c) {
             ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
             return FALSE;
@@ -659,7 +667,7 @@ sub computeBottomImage {
         $code .= $c;
         $weight += $w;
     } else {    
-        ($c,$w) = $self->{process}->mergeNtiff($node);
+        ($c,$w) = $self->{process}->mergeNtiff($node,$justWeight);
         if ($w == -1) {
             ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
             return FALSE;
@@ -669,13 +677,16 @@ sub computeBottomImage {
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID));
+    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID),$justWeight);
     
     $code .= $c;
     $weight += $w;
 
-    $node->updateOwnWeight($weight);
-    $node->setCode($code);
+    if ($justWeight) {
+        $node->setOwnWeight($weight);
+    } else {
+        $node->setCode($code);
+    }
 
     return TRUE;
 }
@@ -684,12 +695,13 @@ sub computeBottomImage {
 =begin nd
 method: computeAboveImage
 
-Treat an above node (different to the bottom level) : determine code and weight.
+Treat an above node (different to the bottom level) : determine code or weight.
 
 To generate an above node, we use children (merge4tiff). If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
 
 Parameter:
     node - above level's BE4::Node, to treat.
+    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 See Also:
     <wms2work>, <cache2work>, <merge4tiff>, <work2cache>
@@ -698,6 +710,8 @@ sub computeAboveImage {
     
     my $self = shift;
     my $node = shift;
+    my $justWeight = shift;
+    $justWeight = FALSE if (! defined $justWeight);
 
     TRACE;
 
@@ -728,7 +742,6 @@ sub computeAboveImage {
         my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight();
         
         my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
-        my $workImgPath = File::Spec->catfile($self->{process}->getScriptTmpDir, $node->getWorkName);
 
         if (-f $cacheImgPath) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
@@ -743,7 +756,7 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $bg.=" -b $workBgPath";
-                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,"bgImg");
+                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight,"bgImg");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
                         return FALSE;
@@ -755,7 +768,7 @@ sub computeAboveImage {
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $bg.=" -b $workBgPath";
-                ($c,$w) = $self->{process}->cache2work($node,"bgImg");
+                ($c,$w) = $self->{process}->cache2work($node,$justWeight,"bgImg");
                 $code .= $c;
                 $weight += $w;
             }
@@ -773,7 +786,7 @@ sub computeAboveImage {
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $childNode->getWorkName;
         }
     }
-    ($c,$w) = $self->{process}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam);
+    ($c,$w) = $self->{process}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam,$justWeight);
     $code .= $c;
     $weight += $w;
 
@@ -788,12 +801,15 @@ sub computeAboveImage {
     }
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID));
+    ($c,$w) = $self->{process}->work2cache($node,($node->getLevel eq $self->getTopID),$justWeight);
     $code .= $c;
     $weight += $w;
-
-    $node->updateOwnWeight($weight);
-    $node->setCode($code);
+    
+    if ($justWeight) {
+        $node->setOwnWeight($weight);
+    } else {
+        $node->setCode($code);
+    }
 
     return TRUE;
 }
@@ -812,12 +828,10 @@ Recursive method, which allow to browse tree (downward) and concatenate node's c
 
 Parameter:
     node - BE4::Node whose code is written.
-    ind - indice (integer) of the stream in which we want to write code.
 =cut
 sub writeBranchCode {
     my $self = shift;
     my $node = shift;
-    my $ind = shift;
 
     TRACE;
 
@@ -826,16 +840,18 @@ sub writeBranchCode {
 
     # Le noeud est une feuille
     if (scalar @childList == 0){
-        $self->{process}->printInScript($node->getCode,$ind);
+        $node->writeInScript;
         return TRUE;
     }
 
     # Le noeud a des enfants
     foreach my $n (@childList){
-        $self->writeBranchCode($n,$ind);
+        # Children will be generated by the same script as their parent.
+        $n->setScript($node->getScript);
+        $self->writeBranchCode($n);
     }
     
-    $self->{process}->printInScript($node->getCode,$ind);
+    $node->writeInScript;
 
     return TRUE;
 }
@@ -860,10 +876,12 @@ sub writeTopCode {
 
     my @childList = $self->getChildren($node);
     foreach my $n (@childList){
+        # Children will be generated by the same script as their parent.
+        $n->setScript($node->getScript);
         $self->writeTopCode($n);
     }
     
-    $self->{process}->printInScript($node->getCode,0);
+    $node->writeInScript;
 
     return TRUE;
 }
@@ -880,23 +898,19 @@ method: shareNodesOnJobs
 
 Determine the cutLevel to optimize sharing into scripts and execution time.
 
-Parameters:
-    nodeRack - reference to array, to return nodes' sharing (length = number of jobs).
-    weights - reference to array, contains current weights (jobs are already filled if several data sources) and to return new weights (length = number of jobs + 1, the script finisher).
 =cut
 sub shareNodesOnJobs {
     my $self = shift;
-    my ($nodeRack,$weights) = @_;
 
     TRACE;
 
     my $tms = $self->{pyramid}->getTileMatrixSet;
-    my $jobNumber = $self->{process}->getJobNumber;
+    my $splitNumber = $self->{forest}->getSplitNumber;
+    ALWAYS (sprintf "nombre de splits : %s",$splitNumber); #TEST#
     
     my $optimalWeight = undef;
     my $cutLevelID = undef;
     
-    my @jobsSharing = undef;
     my @jobsWeights = undef;
 
     # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel
@@ -910,29 +924,27 @@ sub shareNodesOnJobs {
         my $levelID = $tms->getIDfromOrder($i);
         my @levelNodeList = $self->getNodesOfLevel($levelID);
         
-        if ($levelID ne $self->{bottomID} && scalar @levelNodeList < $jobNumber) {
+        if ($levelID ne $self->{bottomID} && scalar @levelNodeList < $splitNumber) {
             next;
         }
         
-        @levelNodeList =
-            sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
+        @levelNodeList = sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
 
         my @TMP_WEIGHTS;
         
-        for (my $j = 0; $j <= $jobNumber; $j++) {
+        for (my $j = 0; $j <= $splitNumber; $j++) {
             # On initialise les poids avec ceux des jobs
-            $TMP_WEIGHTS[$j] = $weights->[$j];
+            $TMP_WEIGHTS[$j] = $self->{forest}->getWeightOfScript($j);
         }
         
         my $finisherWeight = $wholeTreeWeight;
-        my @TMP_JOBS;
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $indexMin = BE4::Array->minArrayIndex(1,@TMP_WEIGHTS);
+            my $scriptInd = BE4::Array->minArrayIndex(1,@TMP_WEIGHTS);
             my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
-            $TMP_WEIGHTS[$indexMin] += $nodeWeight;
+            $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
-            push @{$TMP_JOBS[$indexMin-1]}, $levelNodeList[$j];
+            $levelNodeList[$j]->setScript($self->{forest}->getScript($scriptInd));
         }
         
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
@@ -946,23 +958,18 @@ sub shareNodesOnJobs {
         # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
         if (! defined $optimalWeight || $worstWeight < $optimalWeight) {
             $optimalWeight = $worstWeight;
-            $cutLevelID = $levelID;
-            @jobsSharing = @TMP_JOBS;            
+            $cutLevelID = $levelID;           
             @jobsWeights = @TMP_WEIGHTS;
             DEBUG (sprintf "New cutLevel found : %s (worstWeight : %s)",$levelID,$optimalWeight);
         }
     }
-
-    $self->{cutLevelID} = $cutLevelID;
     
     # We store results in array references
-    for (my $i = 0; $i < $jobNumber; $i++) {
-        $nodeRack->[$i] = $jobsSharing[$i];
-        $weights->[$i] = $jobsWeights[$i];
+    for (my $i = 0; $i <= $splitNumber; $i++) {
+        $self->{forest}->setWeightOfScript($i,$jobsWeights[$i]);
     }
-    # Weights' array is longer
-    $weights->[$jobNumber] = $jobsWeights[$jobNumber];
 
+    $self->{cutLevelID} = $cutLevelID;
 }
 
 
@@ -1133,7 +1140,7 @@ BE4::QTree - Representation of a quad tree cache : cache image = node
     use BE4::QTree;
 
     # QTree object creation
-    my $objQTree = BE4::QTree->new($objDataSource, $objPyramid, $objProcess);
+    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objProcess);
     
     ...
     
@@ -1146,17 +1153,21 @@ BE4::QTree - Representation of a quad tree cache : cache image = node
 
 =over 4
 
+=item forest
+
+A BE4::Forest object.
+
 =item pyramid
 
-A Pyramid object.
+A BE4::Pyramid object.
 
 =item process
 
-A Process object.
+A BE4::Process object.
 
 =item datasource
 
-A Datasource object.
+A BE4::Datasource object.
 
 =item bbox
 
@@ -1193,6 +1204,7 @@ Extrem levels identifiants of the tree.
 =begin html
 
 <ul>
+<li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
 <li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>

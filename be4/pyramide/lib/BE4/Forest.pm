@@ -50,6 +50,7 @@ use BE4::QTree;
 use BE4::Graph;
 use BE4::Process;
 use BE4::Pyramid;
+use BE4::Script;
 use BE4::DataSourceLoader;
 use BE4::DataSource;
 
@@ -78,9 +79,10 @@ END {}
 Group: variable
 
 variable: $self
-    * pyramid => undef, # Pyramid object
-    * process => undef, # Process object
-    * graphs => [], # array of QTree or Graph objects
+    * pyramid - BE4::Pyramid
+    * process - BE4::Process
+    * graphs - array of BE4::QTree or BE4::Graph
+    * scripts - array of BE4::Script
 =cut
 
 ####################################################################################################
@@ -97,7 +99,8 @@ sub new {
     my $self = {
         pyramid     => undef,
         process     => undef,
-        graphs  => []
+        graphs  => [],
+        scripts => [],
     };
 
     bless($self, $class);
@@ -172,9 +175,32 @@ sub _load {
 
     my $dataSources = $DSL->getDataSources;
     my $TMS = $pyr->getTileMatrixSet;
+    my $isQTree = $TMS->isQTree();
+    
+    ######### PARAM PROCESS ###########
+    
+    my $splitNumber = $params_process->{job_number}; 
+    my $tempDir = $params_process->{path_temp};
+    my $scriptDir = $params_process->{path_shell};
 
-    # PROCESS
-    my $process = BE4::Process->new($params_process, $pyr);
+    if (! defined $splitNumber) {
+        ERROR("Parameter required : 'job_number' in section 'Process' !");
+        return FALSE;
+    }
+
+    if (! defined $tempDir) {
+        ERROR("Parameter required : 'path_temp' in section 'Process' !");
+        return FALSE;
+    }
+
+    if (! defined $scriptDir) {
+        ERROR("Parameter required : 'path_shell' in section 'Process' !");
+        return FALSE;
+    }
+    
+    ############# PROCESS #############
+    
+    my $process = BE4::Process->new($pyr);
 
     if (! defined $process) {
         ERROR ("Can not load Process !");
@@ -182,11 +208,8 @@ sub _load {
     }
     $self->{process} = $process;
     
-    # GRAPHS
-    
-    #Graph or QTree ?
-    my $isQTree = $TMS->isQTree();
-    
+    ############# GRAPHS #############
+
     foreach my $datasource (@{$dataSources}) {
         
         if ($datasource->hasImages) {
@@ -213,7 +236,7 @@ sub _load {
         
         my $graph = undef;
         if ($isQTree) {
-          $graph = BE4::QTree->new($datasource, $self->{pyramid}, $self->{process});
+          $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{process});
         } else {
           $graph = BE4::Graph->new($datasource, $self->{pyramid}, $self->{process});
         };
@@ -225,6 +248,82 @@ sub _load {
         }
         
         push @{$self->{graphs}},$graph;
+    }
+    
+    
+    ############# SCRIPTS #############
+    
+    my $functions = $process->configureFunctions;
+    
+    if ($isQTree) {
+        
+        #### QTREE CASE
+        # We initialize scripts (name, weights), make directories (tmp) and open writting streams
+        
+        for (my $i = 0; $i <= $splitNumber; $i++) {
+            my $scriptID = sprintf "SCRIPT_%s",$i;
+            $scriptID = "SCRIPT_FINISHER" if ($i == 0);
+            
+            my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
+            my $scriptTempDir = File::Spec->catdir($rootTempDir,$scriptID);
+            $scriptTempDir = $rootTempDir if ($i == 0);
+            
+            my $script = BE4::Script->new({
+                id => $scriptID,
+                tempDir => $scriptTempDir,
+                scriptDir => $scriptDir,
+            });
+            
+            $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$functions);
+            
+            push @{$self->{scripts}},$script;
+        }
+        
+    } else {
+        
+        #### GRAPH CASE
+        
+        # -------------------------------------------------------------------
+        # We initialize scripts (name, weights) and open writting streams
+        
+        
+        # Boucle sur les levels et sur le nb de scripts/jobs
+        # On termine par les finishers
+        my $tms = $self->{pyramid}->getTileMatrixSet();
+        for (my $i = $pyr->getBottomOrder; $i <= $pyr->getTopOrder + 1; $i++) {
+            my $levelID = $tms->getIDfromOrder($i);
+            my @level_names ;
+            my @level_streams ;
+            my @level_weights ;
+                        
+            for (my $j = 0; $j < $self->{job_number}; $j++) {
+                my $scriptID ;
+                if ($i == $pyr->getTopOrder + 1) {
+                    $scriptID = sprintf "FINISHER-SCRIPT_%s", $j;
+                } else {
+                    $scriptID = sprintf "LEVEL_%s-SCRIPT_%s", $levelID, $j;
+                }
+                push(@level_names,$scriptID);
+                
+                my $scriptPath = $self->getScriptFile($scriptID);
+                my $SCRIPT;
+                if ( ! (open $SCRIPT,">", $scriptPath)) {
+                    ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
+                    return FALSE;
+                }
+                # We write header (environment variables and bash functions)
+                my $header = $self->prepareScript($scriptID,$functions);
+                printf $SCRIPT "%s", $header;
+                push(@level_streams,$SCRIPT);
+                
+                # Initialize Weight Array
+                push(@level_weights,0);
+            }
+            
+            push @{$self->{weights}},\@level_weights;
+            push @{$self->{streams}},\@level_streams;
+            push @{$self->{names}},\@level_names;
+        }   
     }
 
     return TRUE;
@@ -277,24 +376,19 @@ sub computeGraphs {
 
     TRACE;
     
-    # We open stream to the new cache list, to add generated tile when we browse graph.    
-    my $NEWLIST;
-    if (! open $NEWLIST, ">>", $self->{pyramid}->getNewListFile) {
-        ERROR(sprintf "Cannot open new cache list file : %s",$self->{pyramid}->getNewListFile);
-        return FALSE;
-    }
-    
     my $graphInd = 1;
     my $graphNumber = scalar @{$self->{graphs}};
     foreach my $graph (@{$self->{graphs}}) { 
-        if (! $graph->computeYourself($NEWLIST)) {
+        if (! $graph->computeYourself) {
             ERROR(sprintf "Cannot compute graph $graphInd/$graphNumber");
             return FALSE;
         }
         INFO("Graph $graphInd/$graphNumber computed")
     }
     
-    close $NEWLIST;
+    foreach my $script (@{$self->{scripts}}) {
+        $script->close;
+    }
     
     return TRUE;
 }
@@ -308,6 +402,50 @@ sub computeGraphs {
 sub getGraphs {
     my $self = shift;
     return $self->{graphs}; 
+}
+
+sub getScripts {
+    my $self = shift;
+    return $self->{scripts};
+}
+
+sub getScript {
+    my $self = shift;
+    my $ind = shift;
+    
+    return $self->{scripts}[$ind];
+}
+
+sub getWeightOfScript {
+    my $self = shift;
+    my $ind = shift;
+    
+    return $self->{scripts}[$ind]->getWeight;
+}
+
+sub setWeightOfScript {
+    my $self = shift;
+    my $ind = shift;
+    my $weight = shift;
+    
+    $self->{scripts}[$ind]->setWeight($weight);
+}
+
+sub getSplitNumber {
+    my $self = shift;
+    return (scalar @{$self->{scripts}} - 1);
+}
+
+sub getFinisher {
+    my $self = shift;
+    return $self->{scripts}[0]; 
+}
+
+sub printInFininsher {
+    my $self = shift;
+    my $text = shift;
+    
+    $self->{scripts}[0]->print(); 
 }
 
 1;
@@ -344,9 +482,13 @@ A BE4::Pyramid object.
 
 A BE4::DataSourceLoader object.
 
-=item param_process
+=item graphs
 
-A hash with the following keys : job_number, path_temp and path_shell.
+Array of BE4::QTree or BE4::Graph
+
+=item scripts
+
+Array of BE4::Script.
 
 =back
 

@@ -101,16 +101,16 @@ Group: variable
 
 variable: $self
     * new_pyramid: 
-        * name
-        * desc_path
-        * data_path
-        * content_path
+|        * name
+|        * desc_path
+|        * data_path
+|        * content_path
         
     * old_pyramid:
-        * name
-        * desc_path
-        * data_path
-        * content_path
+|        * name
+|        * desc_path
+|        * data_path
+|        * content_path
     
     * dir_depth
     * dir_image

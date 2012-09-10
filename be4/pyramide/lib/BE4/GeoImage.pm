@@ -455,20 +455,20 @@ sub getName {
 }
 
 ####################################################################################################
-#                                         EXPORT METHOD                                            #
+#                                         EXPORT METHODS                                           #
 ####################################################################################################
 
 # Group: export methods
 
 #
 =begin nd
-method: to_string
+method: exportForMntConf
 
 Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
 
 Output is formated to be used in mergeNtiff configuration
 =cut
-sub to_string {
+sub exportForMntConf {
     my $self = shift;
 
     TRACE;

@@ -59,9 +59,7 @@ use constant FALSE => 0;
 ################################################################################
 
 BEGIN {}
-
 INIT {}
-
 END {}
 
 ################################################################################
@@ -144,6 +142,17 @@ sub new {
         }
     }
     
+    # MergeNtiff configurations directory
+    if (! -d $self->{mntConfDir}) {
+        DEBUG (sprintf "Create the MergeNtiff configurations directory '%s' !", $self->{mntConfDir});
+        eval { mkpath([$self->{mntConfDir}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the MergeNtiff configurations directory '%s' : %s !",
+                $self->{mntConfDir}, $@);
+            return undef;
+        }
+    }
+    
     # Script's directory
     if (! -d $params->{scriptDir}) {
         DEBUG (sprintf "Create the script directory '%s' !", $params->{scriptDir});
@@ -176,11 +185,98 @@ sub getID {
     return $self->{id};
 }
 
+sub getTempDir {
+    my $self = shift;
+    return $self->{tempDir};
+}
+
+sub getMntConfDir {
+    my $self = shift;
+    return $self->{mntConfDir};
+}
+
+sub getWeight {
+    my $self = shift;
+    return $self->{weight};
+}
+
+sub setWeight {
+    my $self = shift;
+    my $weight = shift;
+    
+    $self->{weight} = $weight;
+}
+
 ####################################################################################################
 #                                       STREAM METHODS                                             #
 ####################################################################################################
 
 # Group: stream methods
+
+#
+=begin nd
+method: prepareScript
+
+Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
+
+Parameters:
+    rootTempDir - root temporary directory, present in be4 configuration.
+    pyrDir - cache root directory.
+    functions - Configured functions, used in the script (mergeNtiff, wget...).
+
+Example:
+|   # Variables d'environnement
+|   SCRIPT_ID="SCRIPT_1"
+|   ROOT_TMP_DIR="/home/TMP/ORTHO"
+|   TMP_DIR="/home/ign/TMP/ORTHO/SCRIPT_1"
+|   PYR_DIR="/home/ign/PYR/ORTHO"
+|
+|   # fonctions de factorisation
+|   Wms2work () {
+|     local img_dst=$1
+|     local url=$2
+|     local count=0; local wait_delay=60
+|     while :
+|     do
+|       let count=count+1
+|       wget --no-verbose -O $img_dst $url 
+|       if tiffck $img_dst ; then break ; fi
+|       echo "Failure $count : wait for $wait_delay s"
+|       sleep $wait_delay
+|       let wait_delay=wait_delay*2
+|       if [ 3600 -lt $wait_delay ] ; then 
+|         let wait_delay=3600
+|       fi
+|     done
+|   }
+=cut
+sub prepareScript {
+    my $self = shift;
+    my $rootTempDir = shift;
+    my $pyrDir = shift;
+    my $functions = shift;
+
+    TRACE;
+
+    # definition des variables d'environnement du script
+    my $code = sprintf ("# Variables d'environnement\n");
+    $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
+    $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", $rootTempDir);
+    $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
+    $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
+    $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
+    $code   .= "\n";
+    
+    # Fonctions
+    $code   .= "# Fonctions\n";
+    $code   .= "$functions\n";
+
+    # creation du répertoire de travail:
+    $code .= "# creation du repertoire de travail\n";
+    $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+    $self->print($code);
+}
 
 sub print {
     my $self = shift;
