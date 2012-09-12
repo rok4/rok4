@@ -286,7 +286,7 @@ sub _load {
         for (my $i = 0; $i < scalar(@tmList) ;$i++) {
             my $tmSource = $self->computeTmSource($tmList[$i]);
             if (defined $tmSource) {
-                push(@{$tmSource->{targetstmid}},$tmList[$i]->{id});
+                $tmSource->addTargetsTmId(($tmList[$i]->getID()));
             }
         }
     }
@@ -299,6 +299,11 @@ sub _load {
 ####################################################################################################
 
 # Group: getters - setters
+
+sub getPathFilename {
+    my $self = shift;
+    return $self->{PATHFILENAME};
+}
 
 sub getSRS {
   my $self = shift;
@@ -324,6 +329,26 @@ sub getFile {
 sub getLevelTop {
   my $self = shift;
   return $self->{topID};
+}
+
+sub getLevelsBind {
+  my $self = shift;
+  return $self->{levelsBind};
+}
+
+sub getLevelBottom {
+  my $self = shift;
+  return $self->{bottomID};
+}
+
+sub getLevelTopResolution {
+  my $self = shift;
+  return $self->{topResolution};
+}
+
+sub getLevelBottomResolution {
+  my $self = shift;
+  return $self->{bottomResolution};
 }
 
 # TileWidth TileHeight
@@ -382,16 +407,15 @@ sub computeTmSource {
   # TODO : improve way to compute the best TM to use (for float)
   foreach my $potentialTmSource(@tmList) {
     if (
-      $potentialTmSource->{resolution} < $tmTarget->{resolution}
-      && $tmTarget->{resolution} % $potentialTmSource->{resolution} == 0
-      && $potentialTmSource->{resolution} > $tmSource_resolution
+      $potentialTmSource->getResolution() < $tmTarget->getResolution()
+      && $tmTarget->getResolution() % $potentialTmSource->getResolution() == 0
+      && $potentialTmSource->getResolution() > $tmSource_resolution
     ) 
     {
-      $tmSource_resolution = $potentialTmSource->{resolution};
+      $tmSource_resolution = $potentialTmSource->getResolution();
       $tmSource = $potentialTmSource;
     }
   }
-  
   return $tmSource;
 }
 
@@ -510,6 +534,78 @@ sub getOrderfromID {
     } else {
         return undef;
     }
+}
+
+####################################################################################################
+#                                       DEBUG METHODS                                              #
+####################################################################################################
+
+# Group: DEBUG METHODS
+
+#
+=begin nd
+method: exportForDebug
+
+Print attributs of the TileMatrixSet
+
+=cut
+sub exportForDebug {
+    my $self = shift;
+    
+    my $output = "";
+    
+    $output .= sprintf "Export of Tile Matrix Set object :\n";
+    if (defined $self->getPathFilename() ) {
+        $output .= sprintf "\t %s : %s\n","PATHFILENAME",$self->getPathFilename();
+    };
+    if (defined $self->getName() ) {
+        $output .= sprintf "\t %s : %s\n","name",$self->getName();
+    };
+    if (defined $self->getPath() ) {
+        $output .= sprintf "\t %s : %s\n","filepath",$self->getPath();
+    };
+    if (defined $self->getFile() ) {
+        $output .= sprintf "\t %s : %s\n","filename",$self->getFile();
+    };
+    if (defined $self->getLevelTop() ) {
+        $output .= sprintf "\t %s : %s\n","topID",$self->getLevelTop();
+    };
+    if (defined $self->getLevelTopResolution() ) {
+        $output .= sprintf "\t %s : %s\n","topResolution",$self->getLevelTopResolution();
+    };
+    if (defined $self->getLevelBottom() ) {
+        $output .= sprintf "\t %s : %s\n","bottomID",$self->getLevelBottom();
+    };
+    if (defined $self->getLevelBottomResolution() ) {
+        $output .= sprintf "\t %s : %s\n","bottomResolution",$self->getLevelBottomResolution();
+    };
+    if (defined $self->getSRS() ) {
+        $output .= sprintf "\t %s : %s\n","SRS",$self->getSRS();
+    };
+    if (defined $self->getInversion() ) {
+        if ( $self->getInversion() ) {
+            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","TRUE";
+        } else {
+            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","FALSE";
+        }
+    };
+    if (defined $self->isQTree() ) {
+        if ( $self->isQTree() ) {
+            $output .= sprintf "\t %s value is %s\n","isQTree","TRUE";
+        } else {
+            $output .= sprintf "\t %s value is %s\n","isQTree","FALSE";
+        }
+    };
+    $output .= sprintf "\t levelsBind hash :\n";
+    foreach my $key (keys($self->getLevelsBind())) {
+        $output .= sprintf "\t\t ID : %s ; Order : %s .\n",$key,$self->getLevelsBind()->{$key};
+    }
+    $output .= sprintf "\t TileMatrix Array :\n";
+    foreach my $tm (@{$self->getTileMatrixByArray()}) {
+        $output .= sprintf "\t\t TM ID : %s, TM Resolution : %s .\n",$tm->getID(),$tm->getResolution();
+    }    
+    
+    return $output;
 }
 
 1;

@@ -306,6 +306,13 @@ sub setAccumulatedWeight {
 
 # method: exportForMntConf
 # la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
+#
+=begin nd
+method: exportForMntConf
+
+Export attributs of the Node for MergNTiff configuration files.
+
+=cut
 sub exportForMntConf {
     my $self = shift;
     my $filePath = shift;
@@ -326,28 +333,38 @@ sub exportForMntConf {
     return $output;
 }
 
+#
+=begin nd
+method: exportForDebug
+
+Export in a string the content of the node object
+
+=cut
 sub exportForDebug {
     my $self = shift ;
     
-    print "Objet Node :\n";
-    print "\tLevel : ".$self->getLevel()."\n";
-    print "\tTM Resolution : ".$self->getTM()->getResolution()."\n";
-    print "\tColonne : ".$self->getCol()."\n";
-    print "\tLigne : ".$self->getRow()."\n";
+    my $output = "";
+    
+    $output .= sprintf "Objet Node :\n";
+    $output .= sprintf "\tLevel : %s\n",$self->getLevel();
+    $output .= sprintf "\tTM Resolution : %s\n",$self->getTM()->getResolution();
+    $output .= sprintf "\tColonne : %s\n",$self->getCol();
+    $output .= sprintf "\tLigne : %s\n",$self->getRow();
     if (defined $self->getScript()) {
-        print "\tScript ID : ".$self->getScriptID()."\n";
+        $output .= sprintf "\tScript ID : %\n",$self->getScriptID();
     } else {
-        print "\tScript undefined.\n";
+        $output .= sprintf "\tScript undefined.\n";
     }
-    printf "\t Noeud Source :\n";
+    $output .= sprintf "\t Noeud Source :\n";
     foreach my $node_sup ( @{$self->getNodeSources()} ) {
-        printf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
+        $output .= sprintf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
     }
-    printf "\t Geoimage Source :\n";
+    $output .= sprintf "\t Geoimage Source :\n";
     
     foreach my $img ( @{$self->getGeoImages()} ) {
-        printf "\t\tNom : %s\n",$img->getName();
+        $output .= sprintf "\t\tNom : %s\n",$img->getName();
     }
+    rturn $output;
 }
 
 1;
