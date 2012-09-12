@@ -677,9 +677,9 @@ sub getScriptsOfLevel {
     my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
     my $numberOfFinisher = $self->getForest()->getSplitNumber();
     
-    my $start_index = $numberOfFinisher + ($self->getBottomOrder - $order) * $numberOfScriptByLevel ;
-    my $end_index = $start_index + $numberOfScriptByLevel ;
-    
+    my $start_index = $numberOfFinisher + ($order - $self->getBottomOrder) * $numberOfScriptByLevel ;
+    my $end_index = $start_index + $numberOfScriptByLevel - 1;
+
     return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
 };
 
