@@ -200,6 +200,13 @@ sub getWeight {
     return $self->{weight};
 }
 
+sub addWeight {
+    my $self = shift;
+    my $weight = shift;
+    
+    $self->{weight} += $weight;
+}
+
 sub setWeight {
     my $self = shift;
     my $weight = shift;

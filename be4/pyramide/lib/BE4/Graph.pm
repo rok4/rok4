@@ -77,9 +77,10 @@ END {}
 Group: variable
 
 variable: $self
-    * pyramid    => undef, # object Pyramid !
-    * process    => undef, # object Process !
-    * datasource => undef, # object DataSource !
+    * forest : BE4::Forest object
+    * pyramid : BE4::Pyramid object
+    * process : BE4::Process object
+    * datasource : BE4::DataSource object
     
     * bbox => [], # datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     * nodes => {},
@@ -103,6 +104,16 @@ variable: $self
 
 # Group: constructor
 
+#
+=begin nd
+method: new
+
+Parameters:
+    objForest - BE4::Forest in which this graph is.
+    objSrc - BE4::DataSource, used to defined nodes
+    objPyr - BE4::Pyramid
+    objProcess - BE4::Process, used to compute tree
+=cut
 sub new {
     my $this = shift;
 
@@ -110,6 +121,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # in
+        forest    => undef,
         pyramid    => undef,
         process    => undef,
         datasource => undef,
@@ -138,12 +150,14 @@ method: _init
 Check DataSource, Pyramid and Process parameters.
 
 Parameters :
+    objForest - a BE4::DataForest object
     objSrc - a BE4::DataSource object
     objPyr - a BE4::Pyramid object
     ObjProcess - a BE4::Process object
 =cut
 sub _init {
     my $self = shift;
+    my $objForest  = shift;
     my $objSrc  = shift;
     my $objPyr  = shift;
     my $objProcess  = shift;
@@ -151,6 +165,10 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
+    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
+        ERROR("Can not load Forest !");
+        return FALSE;
+    }
     if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
@@ -165,6 +183,7 @@ sub _init {
     }
 
     # init. params    
+    $self->{forest} = $objForest; 
     $self->{pyramid} = $objPyr;
     $self->{datasource} = $objSrc; 
     $self->{process} = $objProcess;    
@@ -178,10 +197,6 @@ method: _load
 
 Determine all nodes from the bottom level to the top level, thanks to the data source.
 
-Parameters :
-    objSrc - a BE4::DataSource object
-    objPyr - a BE4::Pyramid object
-    ObjProcess - a BE4::Process object
 =cut
 sub _load {
     my $self = shift;
@@ -313,51 +328,51 @@ sub computeYourself {
     my $NEWLIST = shift;
     
     my $src = $self->{datasource};
-
-    # Prepare TMP repository
-    if (! $self->prepareTMP() ) {
-         ERROR(sprintf "Cannot prepare the directories needed to write scripts.");
-        return FALSE;
-    }
+    my $tms = $self->getPyramid()->getTileMatrixSet();
+  
    #Initialisation
    my $Finisher_Index = 0;
    # boucle sur tous les niveaux en partant de ceux du bas
    for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
        # boucle sur tous les noeuds du niveau
-       foreach my $node ( $self->getNodesOfLevel($self->getPyramid()->getTileMatrixSet()->getIDfromOrder($i))) {
+       my $levelID = $tms->getIDfromOrder($i);
+       foreach my $node ($self->getNodesOfLevel($levelID)) {
            # on détermine dans quel script on l'écrit en se basant sur les poids
-           my $Script_Nb = BE4::Array->minArrayIndex(0,@{${$self->{process}->getWeights()}[$node->getLevel()]});
+           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
+           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
+           my $script_index = BE4::Array->minArrayIndex(0,@WeightsOfLevel);
+           my $script = $ScriptsOfLevel[$script_index];
            # on stocke l'information dans l'objet node
-           $node->setScriptNb($Script_Nb);
-            # on détermine le script à ecrire
-           my $code = "\n";
-           ### Pour l'instant seulement mergeNtiff
-           ### TODO : les autres cas que mergeNtiff
-           my ($c,$w) = $self->{process}->mergeNtiff($node);
-           if ($w == -1) {
-            ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
-            return FALSE;
+           $node->setScript($script);
+           # on détermine le script à ecrire
+           my ($c,$w) ;
+           if ($self->getDataSource->hasHarvesting) {
+               # Datasource has a WMS service : we have to use it
+               ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
+               if (! defined $c) {
+                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+                   return FALSE;
+               }
+           } else {
+               ($c,$w) = $self->{process}->mergeNtiff($node);
+               if ($w == -1) {
+                   ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
+                   return FALSE;
+               }
            }
-           $code .= $c ;
            # on met à jour les poids
-           ${${$self->{process}->getWeights()}[$node->getLevel()]}[$Script_Nb] += $w;
+           $script->addWeight($w);
            # on ecrit la commande dans le fichier
-           my $PRINT = ${${$self->{process}->getStreams()}[$node->getLevel()]}[$Script_Nb] ;
-           printf $PRINT "%s",$c;
-           
-           #TODO
-           # on met à jour NEWLIST
-           
+           $script->print($c);       
+                   
            # final script with all work2tile commands
            # on ecrit dans chacun des scripts de manière tournante
-           $code = "\n";
+           my $finisher = $self->getForest()->getScript($Finisher_Index);
            ($c,$w) = $self->{process}->work2cache($node,1);
-           $code .= $c ;
            # on ecrit la commande dans le fichier
-           $PRINT = ${${$self->{process}->getStreams()}[$src->getTopOrder + 1]}[$Finisher_Index] ;
-           printf $PRINT "%s",$c;
+           $finisher->print($c);
            #on met à jour l'index
-           if ($Finisher_Index == $self->{process}->getJobNumber() - 1) {
+           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
                $Finisher_Index = 0;
            } else {
                $Finisher_Index ++;
@@ -572,80 +587,6 @@ sub updateBBox {
     if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
-####################################################################################################
-#                               TMP DIRECTORIES MANAGEMENT METHODS                                 #
-####################################################################################################
-
-# Group: TMP DIRECTORIES MANAGEMENT METHODS
-
-# Prepare TMP repository for temp files
-=begin nd
-method: prepareTMP
-
-Create TMP directories.
-=cut
-sub prepareTMP {
-    my $self = shift ;
-    
-    my $src = $self->{datasource};
-    
-    # creation of tmp directories
-    my $TMP_path = $self->{process}->getRootTmpDir();
-    if ( ! BE4::Graph::createDirectory($TMP_path) ) {return FALSE;}
-    
-    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder + 1; $i++){
-        
-        ### creation of level sub-directory
-        my $Level_path = File::Spec->catfile($TMP_path,"LEVEL_".$i);
-        $Level_path = File::Spec->catfile($TMP_path,"FINISHER") if ($i eq $src->getTopOrder + 1);
-        
-        if ( ! BE4::Graph::createDirectory($Level_path) ) {return FALSE;}
-        
-        for (my $j = 0; $j < $self->{process}->getJobNumber(); $j++) {
-            
-          ### creation of script sub-directory
-          my $Script_path = File::Spec->catfile($Level_path,"SCRIPT_".$j);
-          if ( ! BE4::Graph::createDirectory($Script_path) ) {return FALSE;}
-          
-          if ($i ne $src->getTopOrder + 1) {
-            ### creation of mergeNtiff config sub-directory
-            my $Config_path = File::Spec->catfile($Script_path,"mergeNtiff");
-            if ( ! BE4::Graph::createDirectory($Config_path) ) {return FALSE;}
-        }
-            
-        }
-    }
-    return TRUE;
-    
-}
-
-# Creation of a directory
-=begin nd
-method: createDirectory
-
-Create a directorie.
-
-Parameters:
-    directory - a new directory to create
-    
-Returns:
-    TRUE - if creation is OK
-    FALSE - otherwise
-=cut
-sub createDirectory {
-    my $directory = shift ;
-    
-    if ( -d $directory) {return TRUE;} # il existe deja
-    
-    DEBUG (sprintf "Create the directory'%s' !", $directory);
-    eval { mkpath([$directory]); };
-    if ($@) {
-      ERROR(sprintf "Can not create the '%s' : %s !", $directory , $@);
-      return FALSE;
-    }
-    return TRUE;
-}
-
 
 ####################################################################################################
 #                                         GETTERS / SETTERS                                        #
@@ -653,14 +594,24 @@ sub createDirectory {
 
 # Group: getters - setters
 
-sub getDataSource{
-    my $self = shift;
-    return $self->{datasource};
-}
-
 sub getPyramid{
     my $self = shift;
     return $self->{pyramid};
+}
+
+sub getProcess{
+    my $self = shift;
+    return $self->{process};
+}
+
+sub getForest{
+    my $self = shift;
+    return $self->{forest};
+}
+
+sub getDataSource{
+    my $self = shift;
+    return $self->{datasource};
 }
 
 sub getTopID {
@@ -706,29 +657,66 @@ sub getNodesOfBottomLevel {
     return $self->getNodesOfLevel($self->{bottomID});
 }
 
+#
+=begin_nd
+method: getScriptsOfLevel
+
+Return the scripts for a given Level.
+
+Parameters:
+    - level : levelID 
+    
+Returns:
+    An array of BE4::Script
+=cut
+sub getScriptsOfLevel {
+    my $self = shift;
+    my $levelID = shift;
+    my $order =  $self->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
+    
+    my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
+    my $numberOfFinisher = $self->getForest()->getSplitNumber();
+    
+    my $start_index = $numberOfFinisher + ($self->getBottomOrder - $order) * $numberOfScriptByLevel ;
+    my $end_index = $start_index + $numberOfScriptByLevel ;
+    
+    return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
+};
+
 
 ####################################################################################################
-#                                         DEBUGGING METHODS                                        #
+#                                         EXPORT METHODS                                           #
 ####################################################################################################
 
-# Group : DEBUGGING METHODS
+# Group : EXPORT METHODS
 
-sub exportGraph {
+#
+=begin nd
+method: exportForDebug
+
+Export in a string the content of the graph object
+
+=cut
+sub exportForDebug {
     my $self = shift ;
     my $src = $self->{datasource};
     
+    my $output = "";
+    
    # boucle sur tous les niveaux en partant de ceux du bas
    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-       printf "Description du niveau '%s' : \n",$i;
+       $output .= sprintf "Description du niveau '%s' : \n",$i;
        # boucle sur tous les noeuds du niveau
        foreach my $node ( $self->getNodesOfLevel($i)) {
-         printf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
+         $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
          foreach my $node_sup ( @{$node->getNodeSources()} ) {
              #print Dumper ($node_sup);
-             printf "\t\t Noeud :%s_%s , TM Resolution : %s\n",$node_sup->getCol(),$node_sup->getRow(),$node_sup->getTM()->getResolution();
+             $output .= sprintf "\t\t Noeud :%s_%s , TM Resolution : %s\n",$node_sup->getCol(),$node_sup->getRow(),$node_sup->getTM()->getResolution();
          }
        }
    }
+   
+   return $output;
 }
 
 1;

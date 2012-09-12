@@ -382,6 +382,57 @@ sub addTargetsTmId {
     push($self->{targetsTmId},@TmID);
 }
 
+####################################################################################################
+#                                       EXPORT METHODS                                             #
+####################################################################################################
+
+# Group: DEBUG METHODS
+
+#
+=begin nd
+method: exportForDebug
+
+Export in a string the attributs of the TileMatrix
+
+=cut
+sub exportForDebug {
+    my $self = shift;
+    
+    my $output = "";
+    
+    $output .= sprintf "Tile Matrix Export :\n";
+    if (defined $self->getID()) {
+        $output .= sprintf "\t id : %s \n",$self->getID();
+    };
+    if (defined $self->getResolution()) {
+        $output .= sprintf "\t resolution : %s \n",$self->getResolution();
+    };
+    if (defined $self->getTopLeftCornerX()) {
+        $output .= sprintf "\t topLeftCornerX : %s \n",$self->getTopLeftCornerX();
+    };
+    if (defined $self->getTopLeftCornerY()) {
+        $output .= sprintf "\t topLeftCornerY : %s \n",$self->getTopLeftCornerY();
+    };
+    if (defined $self->getTileWidth()) {
+        $output .= sprintf "\t tileWidth : %s \n",$self->getTileWidth();
+    };
+    if (defined $self->getTileHeight()) {
+        $output .= sprintf "\t tileHeight : %s \n",$self->getTileHeight();
+    };
+    if (defined $self->getMatrixWidth()) {
+        $output .= sprintf "\t matrixWidth : %s \n",$self->getMatrixWidth();
+    };
+    if (defined $self->getMatrixHeight()) {
+        $output .= sprintf "\t matrixHeight : %s \n",$self->getMatrixHeight();
+    };
+    $output .= sprintf "\t targetstmid (size:%s) :\n",scalar(@{$self->getTargetsTmId()});
+    foreach my $tmId (@{$self->getTargetsTmId()}) {
+        $output .= sprintf "\t\t target tm id : %s \n",$tmId;
+    };
+    
+    return $output;  
+};
+
 
 1;
 __END__

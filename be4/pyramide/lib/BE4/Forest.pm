@@ -83,6 +83,8 @@ variable: $self
     * process - BE4::Process
     * graphs - array of BE4::QTree or BE4::Graph
     * scripts - array of BE4::Script
+    
+    * splitNumber - integer : the number of script used
 =cut
 
 ####################################################################################################
@@ -101,6 +103,8 @@ sub new {
         process     => undef,
         graphs  => [],
         scripts => [],
+        
+        splitNumber => undef,
     };
 
     bless($self, $class);
@@ -187,6 +191,7 @@ sub _load {
         ERROR("Parameter required : 'job_number' in section 'Process' !");
         return FALSE;
     }
+    $self->{splitNumber} = $splitNumber;
 
     if (! defined $tempDir) {
         ERROR("Parameter required : 'path_temp' in section 'Process' !");
@@ -234,11 +239,12 @@ sub _load {
         
         # Now, if datasource contains a WMS service, we have to use it
         
+        # Creation of QTree or Graph object
         my $graph = undef;
         if ($isQTree) {
           $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{process});
         } else {
-          $graph = BE4::Graph->new($datasource, $self->{pyramid}, $self->{process});
+          $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{process});
         };
                 
         if (! defined $graph) {
@@ -260,7 +266,7 @@ sub _load {
         #### QTREE CASE
         # We initialize scripts (name, weights), make directories (tmp) and open writting streams
         
-        for (my $i = 0; $i <= $splitNumber; $i++) {
+        for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
             $scriptID = "SCRIPT_FINISHER" if ($i == 0);
             
@@ -288,49 +294,38 @@ sub _load {
         
         
         # Boucle sur les levels et sur le nb de scripts/jobs
-        # On termine par les finishers
-        my $tms = $self->{pyramid}->getTileMatrixSet();
-        for (my $i = $pyr->getBottomOrder; $i <= $pyr->getTopOrder + 1; $i++) {
-            my $levelID = $tms->getIDfromOrder($i);
-            my @level_names ;
-            my @level_streams ;
-            my @level_weights ;
-                        
-            for (my $j = 0; $j < $self->{job_number}; $j++) {
+        # On commence par les finishers
+        # On continue avec les autres scripts, par level  
+        for (my $i = $pyr->getBottomOrder - 1; $i <= $pyr->getTopOrder; $i++) {
+            for (my $j = 1; $j <= $self->getSplitNumber; $j++) {
                 my $scriptID ;
-                if ($i == $pyr->getTopOrder + 1) {
-                    $scriptID = sprintf "FINISHER-SCRIPT_%s", $j;
+                if ($i == $pyr->getBottomOrder - 1) {
+                    $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
                 } else {
-                    $scriptID = sprintf "LEVEL_%s-SCRIPT_%s", $levelID, $j;
+                    my $levelID = $self->getPyramid()->getTileMatrixSet()->getIDfromOrder($i);
+                    $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
-                push(@level_names,$scriptID);
-                
-                my $scriptPath = $self->getScriptFile($scriptID);
-                my $SCRIPT;
-                if ( ! (open $SCRIPT,">", $scriptPath)) {
-                    ERROR(sprintf "Can not save the script '%s' !.", $scriptPath);
-                    return FALSE;
-                }
-                # We write header (environment variables and bash functions)
-                my $header = $self->prepareScript($scriptID,$functions);
-                printf $SCRIPT "%s", $header;
-                push(@level_streams,$SCRIPT);
-                
-                # Initialize Weight Array
-                push(@level_weights,0);
-            }
+                my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
+                my $scriptTempDir = File::Spec->catdir($rootTempDir,$scriptID);
+                my $script = BE4::Script->new({
+                    id => $scriptID,
+                    tempDir => $scriptTempDir,
+                    scriptDir => $scriptDir,
+                });
             
-            push @{$self->{weights}},\@level_weights;
-            push @{$self->{streams}},\@level_streams;
-            push @{$self->{names}},\@level_names;
+                $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$functions);
+            
+                push @{$self->{scripts}},$script;
+            }
         }   
     }
 
     return TRUE;
 }
 
+
 ####################################################################################################
-#                                          Graph TOOLS                                              #
+#                                          Graph TOOLS                                             #
 ####################################################################################################
 
 # Group: Graph and QTree tools
@@ -405,6 +400,11 @@ sub getGraphs {
     return $self->{graphs}; 
 }
 
+sub getPyramid {
+    my $self = shift;
+    return $self->{pyramid}; 
+}
+
 sub getScripts {
     my $self = shift;
     return $self->{scripts};
@@ -416,6 +416,8 @@ sub getScript {
     
     return $self->{scripts}[$ind];
 }
+
+
 
 sub getWeightOfScript {
     my $self = shift;
@@ -434,7 +436,7 @@ sub setWeightOfScript {
 
 sub getSplitNumber {
     my $self = shift;
-    return (scalar @{$self->{scripts}} - 1);
+    return $self->{splitNumber};
 }
 
 1;
