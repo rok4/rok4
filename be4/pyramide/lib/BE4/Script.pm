@@ -124,11 +124,17 @@ sub new {
     
     $self->{filePath} = File::Spec->catfile($params->{scriptDir},$self->{id}.".sh");
     
-    if ( ! exists $params->{tempDir} || ! defined $params->{tempDir}) {
-        ERROR ("'tempDir' mandatory to create a Script object !");
+    if ( ! exists $params->{rootTempDir} || ! defined $params->{rootTempDir}) {
+        ERROR ("'rootTempDir' mandatory to create a Script object !");
         return undef;
     }
-    $self->{tempDir} = $params->{tempDir};
+    
+    if ( exists $params->{rootAsTempDir} && $params->{rootAsTempDir}) {
+        # We don't want a sub directory named as the ID : we keep the root directory
+        $self->{tempDir} = $params->{rootTempDir};
+    } else {
+        $self->{tempDir} = File::Spec->catdir($params->{rootTempDir},$self->{id});
+    }
     
     $self->{mntConfDir} = File::Spec->catfile($self->{tempDir},"mergeNtiff");
     
@@ -236,7 +242,9 @@ Example:
 |   SCRIPT_ID="SCRIPT_1"
 |   ROOT_TMP_DIR="/home/TMP/ORTHO"
 |   TMP_DIR="/home/ign/TMP/ORTHO/SCRIPT_1"
+|   MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
 |   PYR_DIR="/home/ign/PYR/ORTHO"
+|   LIST_FILE="/home/ign/PYR/ORTHO.list"
 |
 |   # fonctions de factorisation
 |   Wms2work () {
@@ -261,6 +269,7 @@ sub prepareScript {
     my $self = shift;
     my $rootTempDir = shift;
     my $pyrDir = shift;
+    my $listFile = shift;
     my $functions = shift;
 
     TRACE;
@@ -272,6 +281,7 @@ sub prepareScript {
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
     $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
+    $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);    
     $code   .= "\n";
     
     # Fonctions

@@ -79,12 +79,11 @@ END {}
 Group: variable
 
 variable: $self
-    * pyramid - BE4::Pyramid
-    * process - BE4::Process
-    * graphs - array of BE4::QTree or BE4::Graph
-    * scripts - array of BE4::Script
-    
-    * splitNumber - integer : the number of script used
+    * pyramid : BE4::Pyramid
+    * process : BE4::Process
+    * graphs : array of BE4::QTree or BE4::Graph
+    * scripts : array of BE4::Script
+    * splitNumber : integer - the number of script used
 =cut
 
 ####################################################################################################
@@ -261,6 +260,8 @@ sub _load {
     
     my $functions = $process->configureFunctions;
     
+    my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
+    
     if ($isQTree) {
         
         #### QTREE CASE
@@ -268,19 +269,20 @@ sub _load {
         
         for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
-            $scriptID = "SCRIPT_FINISHER" if ($i == 0);
             
-            my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
-            my $scriptTempDir = File::Spec->catdir($rootTempDir,$scriptID);
-            $scriptTempDir = $rootTempDir if ($i == 0);
+            if ($i == 0) {
+                $scriptID = "SCRIPT_FINISHER";
+            }
             
             my $script = BE4::Script->new({
                 id => $scriptID,
-                tempDir => $scriptTempDir,
+                rootTempDir => $rootTempDir,
                 scriptDir => $scriptDir,
+                rootAsTempDir => ($i == 0),
             });
             
-            $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$functions);
+            my $listFile = $self->{pyramid}->getNewListFile;
+            $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
             
             push @{$self->{scripts}},$script;
         }
@@ -305,11 +307,10 @@ sub _load {
                     my $levelID = $self->getPyramid()->getTileMatrixSet()->getIDfromOrder($i);
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
-                my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
-                my $scriptTempDir = File::Spec->catdir($rootTempDir,$scriptID);
+                
                 my $script = BE4::Script->new({
                     id => $scriptID,
-                    tempDir => $scriptTempDir,
+                    rootTempDir => $rootTempDir,
                     scriptDir => $scriptDir,
                 });
             
@@ -379,7 +380,7 @@ sub computeGraphs {
             return FALSE;
         }
         INFO("Graph $graphInd/$graphNumber computed");
-        INFO($graph->exportForDebug);
+        DEBUG($graph->exportForDebug);
     }
     
     foreach my $script (@{$self->{scripts}}) {
@@ -416,8 +417,6 @@ sub getScript {
     
     return $self->{scripts}[$ind];
 }
-
-
 
 sub getWeightOfScript {
     my $self = shift;
@@ -480,6 +479,10 @@ Array of BE4::QTree or BE4::Graph
 =item scripts
 
 Array of BE4::Script.
+
+=item splitNumber
+
+Number of script used to divide works.
 
 =back
 
