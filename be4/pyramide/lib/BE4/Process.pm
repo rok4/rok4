@@ -149,15 +149,16 @@ Cache2work () {
 
 Work2cache () {
   local work=$1
-  local cache=$2
+  local cacheName=$2
   
-  local dir=`dirname $cache`
+  local dir=`dirname ${PYR_DIR}/$cacheName`
   
-  if [ -r $cache ] ; then rm -f $cache ; fi
+  if [ -r $cache ] ; then rm -f $cacheName ; fi
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
   if [ -f $work ] ; then
-    tiff2tile $work __t2t__  $cache
+    tiff2tile $work __t2t__  ${PYR_DIR}/$cacheName
+    echo "0/$cacheName" >> ${LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
 }
@@ -332,15 +333,17 @@ method: work2cache
 Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
 
 Example:
-    Work2cache ${TMP_DIR}/19_395_3137.tif ${PYR_DIR}/IMAGE/19/02/AF/Z5.tif
+    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
 
 Parameter:
     node - BE4::Node object, whose image have to be transfered in the cache.
+    workDir - Work image directory, can be an environment variable.
     rm - boolean, specify if image have to be removed after copy in the cache (false by default).
 =cut
 sub work2cache {
     my $self = shift;
     my $node = shift;
+    my $workDir = shift;
     my $rm = shift;
     $rm = FALSE if (! defined $rm);
     
@@ -352,11 +355,11 @@ sub work2cache {
     # ou celui des tuiles et leur identifiant.
     
     # Suppression du lien pour ne pas corrompre les autres pyramides.
-    my $cmd .= sprintf ("Work2cache \${TMP_DIR}/%s \${PYR_DIR}/%s\n", $workImgName, $cacheImgName);
+    my $cmd .= sprintf ("Work2cache %s/%s %s\n", $workDir, $workImgName, $cacheImgName);
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
     if ($rm) {
-        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
+        $cmd .= sprintf ("rm -f %s/%s\n", $workDir, $workImgName);
     }
     
     return ($cmd,TIFF2TILE_W);
@@ -404,7 +407,7 @@ sub mergeNtiff {
         return ("",$weight) if ($justWeight);
         
         $workBgBaseName = join("_","bgImg",$node->getWorkBaseName);
-        $workBgPath = File::Spec->catfile($self->getScriptTmpDir($node->getScriptID()),$workBgBaseName.".tif");
+        $workBgPath = File::Spec->catfile($node->getScript->getTempDir,$workBgBaseName.".tif");
     }
     
     # We just want to know weight.
@@ -581,22 +584,6 @@ sub configureFunctions {
     $configuredFunc =~ s/__t2t__/$conf_t2t/;
 
     return $configuredFunc;
-}
-
-
-# collectWorkImage
-# Récupère les images au format de travail dans les répertoires temporaires des
-# scripts de calcul du bas de la pyramide, pour les copier dans le répertoire
-# temporaire du script final.
-#--------------------------------------------------------------------------------------------
-sub collectWorkImage {
-  my $self = shift;
-  my $node = shift;
-  
-  TRACE;
-  
-  my $code = sprintf ("mv \${TMP_DIR}\/%s \${ROOT_TMP_DIR}\/ \n", $node->getWorkName);
-  return $code;
 }
 
 
