@@ -356,7 +356,7 @@ sub work2cache {
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
     if ($rm) {
-        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n\n", $workImgName);
+        $cmd .= sprintf ("rm -f \${TMP_DIR}/%s\n", $workImgName);
     }
     
     return ($cmd,TIFF2TILE_W);

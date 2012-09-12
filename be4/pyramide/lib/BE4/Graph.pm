@@ -338,7 +338,7 @@ sub computeYourself {
        my $levelID = $tms->getIDfromOrder($i);
        foreach my $node ($self->getNodesOfLevel($levelID)) {
            # on détermine dans quel script on l'écrit en se basant sur les poids
-           my @ScriptsOfLevel = $self->getForest()->getScriptsOfLevel($levelID);
+           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
            my $script_index = BE4::Array->minArrayIndex(0,@WeightsOfLevel);
            my $script = $ScriptsOfLevel[$script_index];
@@ -657,9 +657,35 @@ sub getNodesOfBottomLevel {
     return $self->getNodesOfLevel($self->{bottomID});
 }
 
+#
+=begin_nd
+method: getScriptsOfLevel
+
+Return the scripts for a given Level.
+
+Parameters:
+    - level : levelID 
+    
+Returns:
+    An array of BE4::Script
+=cut
+sub getScriptsOfLevel {
+    my $self = shift;
+    my $levelID = shift;
+    my $order =  $self->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
+    
+    my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
+    my $numberOfFinisher = $self->getForest()->getSplitNumber();
+    
+    my $start_index = $numberOfFinisher + ($self->getBottomOrder - $order) * $numberOfScriptByLevel ;
+    my $end_index = $start_index + $numberOfScriptByLevel ;
+    
+    return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
+};
+
 
 ####################################################################################################
-#                                         EXPORT METHODS                                        #
+#                                         EXPORT METHODS                                           #
 ####################################################################################################
 
 # Group : EXPORT METHODS

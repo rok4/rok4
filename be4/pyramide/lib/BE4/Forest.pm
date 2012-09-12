@@ -83,6 +83,8 @@ variable: $self
     * process - BE4::Process
     * graphs - array of BE4::QTree or BE4::Graph
     * scripts - array of BE4::Script
+    
+    * splitNumber - integer : the number of script used
 =cut
 
 ####################################################################################################
@@ -101,6 +103,8 @@ sub new {
         process     => undef,
         graphs  => [],
         scripts => [],
+        
+        splitNumber => undef,
     };
 
     bless($self, $class);
@@ -187,6 +191,7 @@ sub _load {
         ERROR("Parameter required : 'job_number' in section 'Process' !");
         return FALSE;
     }
+    $self->{splitNumber} = $splitNumber;
 
     if (! defined $tempDir) {
         ERROR("Parameter required : 'path_temp' in section 'Process' !");
@@ -261,7 +266,7 @@ sub _load {
         #### QTREE CASE
         # We initialize scripts (name, weights), make directories (tmp) and open writting streams
         
-        for (my $i = 0; $i <= $splitNumber; $i++) {
+        for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
             $scriptID = "SCRIPT_FINISHER" if ($i == 0);
             
@@ -292,7 +297,7 @@ sub _load {
         # On commence par les finishers
         # On continue avec les autres scripts, par level  
         for (my $i = $pyr->getBottomOrder - 1; $i <= $pyr->getTopOrder; $i++) {
-            for (my $j = 1; $j <= $splitNumber; $j++) {
+            for (my $j = 1; $j <= $self->getSplitNumber; $j++) {
                 my $scriptID ;
                 if ($i == $pyr->getBottomOrder - 1) {
                     $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
@@ -318,41 +323,9 @@ sub _load {
     return TRUE;
 }
 
-####################################################################################################
-#                                          Script TOOLS                                            #
-####################################################################################################
-
-# Group: Script Tools
-
-#
-=begin_nd
-method: getScriptsOfLevel
-
-Return the scripts for a given Level.
-Designed for Graph case.
-
-Parameters:
-    - level : the scripts worjing for node of this level will be returned
-    
-Returns:
-    An array of BE4::Script
-=cut
-sub getScriptsOfLevel {
-    my $self = shift;
-    my $level = shift;
-    my @return ;
-    foreach my $script (@{$self->getScripts()}) {
-        my $key = sprintf "LEVEL_%s",$level;
-        if ($script->getID() =~ m/$key/i) {
-            push @return,$script;
-        } ;
-    };
-    return @return;
-};
-
 
 ####################################################################################################
-#                                          Graph TOOLS                                              #
+#                                          Graph TOOLS                                             #
 ####################################################################################################
 
 # Group: Graph and QTree tools
@@ -443,6 +416,8 @@ sub getScript {
     return $self->{scripts}[$ind];
 }
 
+
+
 sub getWeightOfScript {
     my $self = shift;
     my $ind = shift;
@@ -460,7 +435,7 @@ sub setWeightOfScript {
 
 sub getSplitNumber {
     my $self = shift;
-    return (scalar @{$self->{scripts}} - 1);
+    return $self->{splitNumber};
 }
 
 sub getFinisher {
