@@ -373,7 +373,7 @@ Parameters:
     justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 Example:
-    MergeNtiff image ${ROOT_TMP_DIR}/mergeNtiff/mergeNtiffConfig_19_397_3134.txt
+    MergeNtiff image ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
 =cut
 sub mergeNtiff {
     my $self = shift;

@@ -304,7 +304,7 @@ BE4::Script - Describe a script, its weight and allowed to write in.
 
     use BE4::Script;
   
-    my $objC = BE4::Pixel->new({
+    my $objC = BE4::Script->new({
         id => "SCRIPT_1",
         tempDir => "/home/ign/TMP/SCRIPT_1",
         scriptDir => "/home/ign/SCRIPTS",

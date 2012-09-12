@@ -383,7 +383,8 @@ sub computeGraphs {
             ERROR(sprintf "Cannot compute graph $graphInd/$graphNumber");
             return FALSE;
         }
-        INFO("Graph $graphInd/$graphNumber computed")
+        INFO("Graph $graphInd/$graphNumber computed");
+        INFO($graph->exportForDebug);
     }
     
     foreach my $script (@{$self->{scripts}}) {
@@ -434,18 +435,6 @@ sub setWeightOfScript {
 sub getSplitNumber {
     my $self = shift;
     return (scalar @{$self->{scripts}} - 1);
-}
-
-sub getFinisher {
-    my $self = shift;
-    return $self->{scripts}[0]; 
-}
-
-sub printInFininsher {
-    my $self = shift;
-    my $text = shift;
-    
-    $self->{scripts}[0]->print(); 
 }
 
 1;
