@@ -281,13 +281,12 @@ sub _load {
         $self->{levelsBind}{$tmList[$i]->getID()} = $i;
     }
     
+    if ($self->isQTree) { return TRUE;}
     ## Adding informations about child/parent in TM objects
-    if (! $self->isQTree) {
-        for (my $i = 0; $i < scalar(@tmList) ;$i++) {
-            my $tmSource = $self->computeTmSource($tmList[$i]);
-            if (defined $tmSource) {
-                $tmSource->addTargetsTmId(($tmList[$i]->getID()));
-            }
+    for (my $i = 0; $i < scalar(@tmList) ;$i++) {
+        if (! $self->computeTmSource($tmList[$i])) {
+            ERROR(sprintf "Nor a QTree neither a Graph made for nearest neighbour generation. No source for level %s.",$tmList[$i]->getID());
+            return FALSE;
         }
     }
     
@@ -390,33 +389,50 @@ Parameters:
     tmTarget - a BE4::TileMatrix object.
 
 Returns:
-    The TM (obj) from which the TM (obj) in argument is calculated (undef if the argument TM is bottomLevel).
+    FALSE if there is no TM source for TM target (unless TM target is BotttomTM) 
+    TRUE if there is a TM source (obj) for the TM target (obj) in argument.
 =cut
 sub computeTmSource {
   my $self = shift;
   my $tmTarget = shift;
   
   if ($tmTarget->{id} == $self->{bottomID}) {
-    return undef;
+    return TRUE;
   }
 
-  my @tmList = $self->getTileMatrixByArray();
-  my $tmSource = undef; # The TM to be used to compute images in TM Parent
-  my $tmSource_resolution = 0; # Used for initialization
+  # The TM to be used to compute images in TM Parent
+  my $tmSource = undef;
   
-  # TODO : improve way to compute the best TM to use (for float)
-  foreach my $potentialTmSource(@tmList) {
-    if (
-      $potentialTmSource->getResolution() < $tmTarget->getResolution()
-      && $tmTarget->getResolution() % $potentialTmSource->getResolution() == 0
-      && $potentialTmSource->getResolution() > $tmSource_resolution
-    ) 
-    {
-      $tmSource_resolution = $potentialTmSource->getResolution();
+  # position du pixel en haut à gauche
+  my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLectCornerX() + 0.5 * $tmTarget->getResolution();
+  my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLectCornerY() - 0.5 * $tmTarget->getResolution();
+
+  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromId($self->getLevelBottom) ;$i--) {
+      my $potentialTmSource = $self->getTileMatrix($self->getIDfromOrder($i));
+      # la précision vaut 1/100 de la plus petit résolution du TMS
+      my $espilon = $self->getTileMatrix($self->getLevelBottom())->getResolution() / 100;
+      my $rapport = $tmTarget->getResolution() / $potentialTmSource->getResolution() ;
+      #on veut que le rapport soit (proche d') un entier
+      next if ( asb( int( $rapport + 0.5) - $rapport) > $epsilon );
+      # on veut que les pixels soient superposables (pour faire une interpolation nn)
+      # on regarde le pixel en haut à gauche de tmtarget
+      # on verfie qu'il y a bien un pixel correspondant dans tmpotentialsource
+      my $potential_xTopLeftCorner_CenterPixel = $tmPotentialSource->getTopLeftCornerX() + 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($xTopLeftCorner_CenterPixel - $potential_xTopLeftCorner_CenterPixel) > $epsilon );
+      my $potential_yTopLeftCorner_CenterPixel = $tmPotentialSource->getTopLeftCornerY() - 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($yTopLeftCorner_CenterPixel - $potential_yTopLeftCorner_CenterPixel) > $epsilon );
       $tmSource = $potentialTmSource;
-    }
+      last;
   }
-  return $tmSource;
+  
+  # si on n'a rien trouvé, on sort en erreur
+  if (!  defined $tmSource) {
+     return FALSE;
+  }
+  
+  $tmSource->addTargetsTmId($tmTarget);
+  
+  return TRUE;
 }
 
 

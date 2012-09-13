@@ -264,12 +264,22 @@ sub _load {
         # pyramid's limits update : we store data's limits in the pyramid's levels
         $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
 
+        # si un niveau est vide on a une erreur
+        if (scalar(@{$self->getNodesOfLevel($levelID)}) == 0) {
+            ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
+            return FALSE;
+        }
+        
+        # on n'a plus rien à calculer, on sort
+        last if ($k == $src->getTopOrder );
+        
         foreach my $node ( $self->getNodesOfLevel($levelID) ) {
             
             # On récupère la BBOX du noeud pour calculer les noeuds cibles
             my ($xMin,$yMax,$xMax,$yMin) = $node->getBBox();
             
             foreach my $targetTmID (@targetLevelsID) {
+                next if ($tms->getOrderfromID($targetTmID) > $src->getTopOrder());
                 my $targetTm = $tms->getTileMatrix($targetTmID);
                 my $iMin = $targetTm->xToColumn($xMin,$tilesPerWidth);
                 my $iMax = $targetTm->xToColumn($xMax,$tilesPerWidth);
