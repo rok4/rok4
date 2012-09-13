@@ -74,18 +74,17 @@ END {}
 Group: variable
 
 variable: $self
-    * bottomID => undef, # this datasource will be used between bottomLevel and topLevel
-    * bottomOrder => undef,
-    * topID => undef,
-    * topOrder => undef,
+    * bottomID : string - this datasource will be used between bottomLevel and topLevel
+    * bottomOrder : integer
+    * topID : string
+    * topOrder : integer
     
-    * srs => undef,
-    * extent => undef, # OGR::Geometry object, in the previous SRS
-    * bbox => undef, # array of limits of the previous extent
+    * srs
+    * extent : OGR::Geometry - in the previous SRS
+    * bbox - [$xmin,$ymin,$xmax,$ymax]
 
-    * imageSource => undef, # an ImageSource object (can be undefined)
-
-    * harvesting => undef # an Harvesting object (can be undefined)
+    * imageSource : BE4::ImageSource - can be undefined
+    * harvesting : BE4::Harvesting - can be undefined
 =cut
 
 ####################################################################################################
@@ -132,8 +131,7 @@ sub new {
 =begin nd
 method: _load
 
-Extract data from the hash with parameters.
-Create a BE4::Harvesting Object if required.
+Extract data from the hash with parameters. Create a BE4::Harvesting Object if required.
 
 Parameters:
     level - a BE4::Level object.
@@ -415,6 +413,36 @@ sub setTopID {
     my $self = shift;
     my $topID = shift;
     $self->{topID} = $topID;
+}
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\n Object BE4::DataSource :\n";
+    $export .= sprintf "\t Levels ID (order):\n";
+    $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
+    $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
+
+    $export .= sprintf "\t Data :\n";
+    $export .= sprintf "\t\t- SRS : %s\n",$self->{srs};
+    $export .= "\t\t- We have images\n" if (defined $self->{imageSource});
+    $export .= "\t\t- We have a WMS service\n" if (defined $self->{harvesting});
+    
+    $export .= "\t\t Bbox :\n";
+    $export .= sprintf "\t\t\t- xmin : %s\n",$self->{bbox}[0];
+    $export .= sprintf "\t\t\t- ymin : %s\n",$self->{bbox}[1];
+    $export .= sprintf "\t\t\t- xmax : %s\n",$self->{bbox}[2];
+    $export .= sprintf "\t\t\t- ymax : %s\n",$self->{bbox}[3];
+    
+    return $export;
 }
 
 1;

@@ -88,9 +88,10 @@ method: new
 Script constructor
 
 Parameters (hash keys):
-    id - string ID, like 'SCRIPT_1', used to name the file
-    scriptDir - directory, where to write the script
-    tempDir - directory, used for temporary file by the script
+    id - string ID, like 'SCRIPT_1', used to name the file.
+    scriptDir - directory, where to write the script.
+    rootAsTempDir - boolean, FALSE by default. If TRUE, 'rootTempDir' is used as own temporary directory.
+    rootTempDir - root directory, in which own temporary directory will be created.
 =cut
 sub new {
     my $this = shift;

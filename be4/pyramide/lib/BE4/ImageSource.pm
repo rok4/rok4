@@ -68,12 +68,12 @@ END {}
 Group: variable
 
 variable: $self
-    * PATHIMG => undef, # path to images
-    * PATHMTD => undef, # path to metadata, not implemented
-    * images  => [], # list of images sources
-    * bestResX => undef,
-    * bestResY => undef,
-    * pixel => undef, # Pixel object
+    * PATHIMG - path to images
+    * PATHMTD - path to metadata, not implemented
+    * images : array of BE4::GeoImage
+    * bestResX
+    * bestResY
+    * pixel : BE4::Pixel
 =cut
 
 ####################################################################################################
@@ -146,8 +146,9 @@ sub _init {
 
 #
 =begin nd
-    method: computeImageSource
-    Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
+method: computeImageSource
+
+Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
 =cut
 sub computeImageSource {
     my $self = shift;
@@ -298,7 +299,7 @@ method: computeBBox
 Calculate extrem limits of images, in the source SRS.
 
 Returns:
-    [xMin,yMin,xMax,yMax]
+    (xMin,yMin,xMax,yMax)
 =cut
 sub computeBBox {
     my $self = shift;
@@ -306,8 +307,6 @@ sub computeBBox {
     TRACE;
 
     my $lstGeoImages = $self->{images};
-
-    my @bbox;
 
     my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox;
 
@@ -318,9 +317,7 @@ sub computeBBox {
         $ymax = max($ymax, $objImage->getYmax);
     }
 
-    push @bbox, ($xmin,$ymin,$xmax,$ymax);
-
-    return @bbox;
+    return ($xmin,$ymin,$xmax,$ymax);
 }
 
 ####################################################################################################
@@ -351,47 +348,22 @@ sub getImages {
 
 # Group: export method
 
-#
-=begin nd
-method: exportImageSource
-
-Export all informations of image in a file.
-
-Parameter:
-    file - filepath of the export
+sub exportForDebug {
+    my $self = shift ;
     
-Return:
-    A string : filename, xmin, ymax, xmax, ymin, xres, yres
-=cut
-sub exportImageSource {
-  my $self = shift;
-  my $file = shift; # pathfilename !
-  
-  TRACE;
+    my $export = "";
+    
+    $export .= "\nObject BE4::ImageSource :\n";
+    $export .= sprintf "\t Image directory : %s\n", $self->{PATHIMG};
+    $export .= sprintf "\t Image number : %s\n", scalar @{$self->{images}};
 
-  my $lstGeoImages = $self->{images};
-  
-  if (! open (FILE, ">", $file)) {
-    ERROR ("Can not create file ('$file') !");
-    return FALSE;
-  }
-  
-  foreach my $objGeoImage (@$lstGeoImages) {
-    # image xmin ymax xmax ymin resx resy
-    printf FILE "%s\t %s\t %s\t %s\t %s\t %s\t %s\n",
-            # FIXME : File::Spec->catfile($objImage->{filepath}, $objImage->{filename}) ?
-            $objGeoImage->{filename},
-            $objGeoImage->{xmin},
-            $objGeoImage->{ymax},
-            $objGeoImage->{xmax},
-            $objGeoImage->{ymin},
-            $objGeoImage->{xres},
-            $objGeoImage->{yres};
-  }
-  
-  close FILE;
-  
-  return TRUE;
+    $export .= "\t Best resolution : \n";
+    $export .= sprintf "\t\t- x : %s\n", $self->{bestResX};
+    $export .= sprintf "\t\t- y : %s\n", $self->{bestResY};
+    
+    $export .= sprintf "\t Pixel : %s\n", $self->{pixel}->exportForDebug;
+    
+    return $export;
 }
 
 1;

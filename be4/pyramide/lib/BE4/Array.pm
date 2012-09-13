@@ -152,10 +152,10 @@ Provide functios to compute the max value or the min index of an array
 
 =end html
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

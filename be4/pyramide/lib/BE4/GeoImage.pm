@@ -67,19 +67,19 @@ END {}
 Group: variable
 
 variable: $self
-    * PATHFILENAME => undef,
-    * filename => undef,
-    * filepath => undef,
-    * xmin => undef,
-    * ymax => undef,
-    * xmax => undef,
-    * ymin => undef,
-    * xres => undef,
-    * yres => undef,
-    * xcenter => undef,
-    * ycenter => undef,
-    * height  => undef,
-    * width   => undef,
+    * PATHFILENAME
+    * filename
+    * filepath
+    * xmin
+    * ymax
+    * xmax
+    * ymin
+    * xres
+    * yres
+    * xcenter
+    * ycenter
+    * heigh
+    * width
 =cut
 
 ####################################################################################################
@@ -151,10 +151,9 @@ sub _init {
 
 #
 =begin nd
-    method: computeInfo
+method: computeInfo
 
-    Image parameters are checked (sample per pixel, bits per sample...) and return by the function. ImageSource can
-    verify if all images own same components and the compatibility with be4's configuration.
+Image parameters are checked (sample per pixel, bits per sample...) and return by the function. ImageSource can verify if all images own same components and the compatibility with be4's configuration.
 =cut
 sub computeInfo {
     my $self = shift;
@@ -277,8 +276,6 @@ sub computeInfo {
     $self->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
     $self->{height} = $dataset->{RasterYSize};
     $self->{width}  = $dataset->{RasterXSize};
-
-#   DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] size:[%s %s]\n",        $self->{xmin},$self->{xmax},$self->{ymin},$self->{ymax},$self->{xres},$self->{yres},       $self->{xcenter},$self->{ycenter},$self->{height},$self->{width});
 
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
@@ -483,6 +480,31 @@ sub exportForMntConf {
         $self->{yres},;
 
     return $output;
+}
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\nObject BE4::GeoImage :\n";
+    $export .= sprintf "\t Image path : %s\n",$self->{PATHFILENAME};
+
+    $export .= "\t Dimensions (in pixel) :\n";
+    $export .= sprintf "\t\t- width : %s\n",$self->{width};
+    $export .= sprintf "\t\t- height : %s\n",$self->{height};
+    
+    $export .= "\t Resolution (in SRS unity) :\n";
+    $export .= sprintf "\t\t- x : %s\n",$self->{xres};
+    $export .= sprintf "\t\t- y : %s\n",$self->{yres};
+    
+    $export .= "\t Bbox (in SRS unity) :\n";
+    $export .= sprintf "\t\t- xmin : %s\n",$self->{bbox}[0];
+    $export .= sprintf "\t\t- ymin : %s\n",$self->{bbox}[1];
+    $export .= sprintf "\t\t- xmax : %s\n",$self->{bbox}[2];
+    $export .= sprintf "\t\t- ymax : %s\n",$self->{bbox}[3];
+    
+    return $export;
 }
 
 1;

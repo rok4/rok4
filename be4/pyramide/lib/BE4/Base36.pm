@@ -194,7 +194,7 @@ Parameters:
     number - the base-10 integer to convert.
     
 Example:
-    BE4::Base36->b36PathToIndices("3E/42/01") returns [4032,18217].
+    BE4::Base36->b36PathToIndices("3E/42/01") returns (4032,18217).
         
 See also:
     <encodeB36toB10>
@@ -237,7 +237,7 @@ BE4::Base36 - Base 36 converting tools
     
 =head1 DESCRIPTION
 
-Provide functios to convert data to and from Base 36 format
+Provide functions to convert data to and from Base 36 format
 
 =head1 SEE ALSO
 
@@ -249,10 +249,10 @@ Provide functios to convert data to and from Base 36 format
 
 =end html
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

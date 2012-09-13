@@ -102,7 +102,6 @@ sub new {
         process     => undef,
         graphs  => [],
         scripts => [],
-        
         splitNumber => undef,
     };
 
@@ -162,9 +161,7 @@ sub _init {
 =begin nd
 method: _load
 
-Create a Graph or a QTree object per data source and a Process object.
-Using a QTree is faster but it does'nt match all cases.
-Graph is a more general case.
+Create a Graph or a QTree object per data source and a Process object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
 
 Parameters:
     pyr - a BE4::Pyramid object.
@@ -182,7 +179,7 @@ sub _load {
     
     ######### PARAM PROCESS ###########
     
-    my $splitNumber = $params_process->{job_number}; 
+    my $splitNumber = $params_process->{job_number};
     my $tempDir = $params_process->{path_temp};
     my $scriptDir = $params_process->{path_shell};
 
@@ -257,15 +254,14 @@ sub _load {
     
     
     ############# SCRIPTS #############
+    # We create BE4::Script objects and initialize them (header)
     
     my $functions = $process->configureFunctions;
     
     my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
     
     if ($isQTree) {
-        
         #### QTREE CASE
-        # We initialize scripts (name, weights), make directories (tmp) and open writting streams
         
         for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
             my $scriptID = sprintf "SCRIPT_%s",$i;
@@ -288,12 +284,7 @@ sub _load {
         }
         
     } else {
-        
         #### GRAPH CASE
-        
-        # -------------------------------------------------------------------
-        # We initialize scripts (name, weights) and open writting streams
-        
         
         # Boucle sur les levels et sur le nb de scripts/jobs
         # On commence par les finishers
@@ -335,12 +326,12 @@ sub _load {
 =begin nd
 method: containsNode
 
-Check if a Graph (or a QTree) in the forest contain a particular node (x,y).
+Check if a Graph (or a QTree) in the forest contain a particular node (level,x,y).
 
 Parameters:
-    level - level of the node we want to know if it is in the qtree.
-    x     - x coordinate of the node we want to know if it is in the qtree.
-    y     - y coordinate of the node we want to know if it is in the qtree.
+    level - level of the node we want to know if it is in the forest.
+    x     - x coordinate of the node we want to know if it is in the forest.
+    y     - y coordinate of the node we want to know if it is in the forest.
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
@@ -362,10 +353,10 @@ sub containsNode {
 =begin nd
 method: computeGraphs
 
-Initialize each script, compute each Graph or QTree one after the other and save scripts to finish.
+Compute each Graph or QTree one after the other and close scripts to finish.
 
 See Also:
-    <computeWholeGraph>
+    <computeYourself>
 =cut
 sub computeGraphs {
     my $self = shift;
@@ -438,6 +429,32 @@ sub getSplitNumber {
     return $self->{splitNumber};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\n Object BE4::Forest :\n";
+    $export .= sprintf "\t Levels ID (order):\n";
+    $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
+    $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
+
+    $export .= "\t Graph :\n";
+    $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$self->{graphs}};
+    
+    $export .= "\t Scripts :\n";
+    $export .= sprintf "\t Number of split : %s\n", $self->{splitNumber};
+    $export .= sprintf "\t Number of script : %s\n", scalar @{$self->{scripts}};
+    
+    return $export;
+}
+
 1;
 __END__
 
@@ -448,11 +465,6 @@ BE4::Forest - Create and compute Graphs (including QTrees)
 =head1 SYNOPSIS
 
     use BE4::Forest
-
-    # Forest object creation
-        pyr - a BE4::Pyramid object.
-    DSL - a BE4::DataSourceLoader object
-    params_process - job_number, path_temp and path_shell.
     
     my $Forest = BE4::Forest->new(
         $objPyramid, # a BE4::Pyramid object
@@ -464,17 +476,17 @@ BE4::Forest - Create and compute Graphs (including QTrees)
 
 =over 4
 
-=item objPyramid
+=item pyramid
 
 A BE4::Pyramid object.
 
-=item objDSL
+=item process
 
-A BE4::DataSourceLoader object.
+A BE4::Process object, to compose generating commands (mergeNtiff, tiff2tile...).
 
 =item graphs
 
-Array of BE4::QTree or BE4::Graph
+Array of BE4::QTree or BE4::Graph.
 
 =item scripts
 
@@ -486,10 +498,6 @@ Number of script used to divide works.
 
 =back
 
-=head1 LIMITATION & BUGS
-
-Metadata managing not yet implemented.
-
 =head1 SEE ALSO
 
 =head2 POD documentation
@@ -497,6 +505,8 @@ Metadata managing not yet implemented.
 =begin html
 
 <ul>
+<li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-QTree.html">BE4::QTree</A></li>
 <li><A HREF="./lib-BE4-Graph.html">BE4::Graph</A></li>
 </ul>
@@ -511,10 +521,10 @@ Metadata managing not yet implemented.
 
 =end html
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

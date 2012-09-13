@@ -74,8 +74,8 @@ END {}
 Group: variable
 
 variable: $self
-    * FILEPATH_DATACONF => undef, # path of data's configuration file
-    * dataSources  => [], # array of DataSource objects
+    * FILEPATH_DATACONF - path of data's configuration file
+    * dataSources : array of BE4::DataSource
 =cut
 
 ####################################################################################################
@@ -121,13 +121,11 @@ method: _init
 Check the DataSource and Harvesting objects.
 
 Parameters:
-    datasource - a BE4::DataSource object.
-    harvesting - a BE4::Harvesting object
+    datasource - BE4 configuration section 'datasource' = path_image + srs or filepath_conf
 =cut
 sub _init {
     my $self   = shift;
     my $datasource = shift;
-    my $harvesting = shift;
 
     TRACE;
     
@@ -371,6 +369,24 @@ sub getNumberDataSources {
     return scalar $self->{dataSources}; 
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\n Object BE4::DataSourceLoader :\n";
+    $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
+    $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{sources}};
+    
+    return $export;
+}
+
 1;
 __END__
 
@@ -383,9 +399,25 @@ BE4::DataSourceLoader - Load and validate data sources
     use BE4::DataSourceLoader
 
     # DataSourceLoader object creation
-    my $objDataSource = BE4::DataSource->new({
+    my $objDataSourceLoader = BE4::DataSourceLoader->new({
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
+    
+    # DataSourceLoader object creation for old configuration (just one data source)
+    my $objDataSourceLoader = BE4::DataSourceLoader->new(
+        { # datasource section
+            SRS         => "IGNF:LAMB93",
+            path_image  => "/home/IGN/DATA/IMAGES/",
+        },
+        { # harvesting section
+            wms_layer   => ORTHO_RAW_LAMB93_PARIS_OUEST
+            wms_url     => http://localhost/wmts/rok4
+            wms_version => 1.3.0
+            wms_request => getMap
+            wms_format  => image/tiff
+        },
+        $bottomLevel, # bottom level for this one data source
+    );
 
 =head1 DESCRIPTION
 

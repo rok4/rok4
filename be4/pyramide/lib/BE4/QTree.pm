@@ -80,7 +80,7 @@ variable: $self
     * process : BE4::Process
     * datasource : BE4::DataSource
     
-    * bbox - [xmin,ymin,xmax,ymax], in TMS' SRS
+    * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     * nodes : hash
 |   level1 => {
 |      x1_y2 => n1,
@@ -92,9 +92,9 @@ variable: $self
 |
 |   nX : BE4::Node
 
-    * cutLevelID
-    * bottomID
-    * topID
+    * cutLevelID : string
+    * bottomID : string
+    * topID : string
 =cut
 
 ####################################################################################################

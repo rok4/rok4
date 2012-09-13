@@ -76,15 +76,16 @@ END {}
 Group: variable
 
 variable: $self
-    * URL      => undef, # ie url of rok4 !
-    * VERSION  => undef, # ie 1.3.0
-    * REQUEST  => undef, # ie getMap
-    * FORMAT   => undef, # ie image/png
-    * LAYERS   => undef, # ie ORTHOPHOTO,ROUTE,...
-    * OPTIONS    => undef, # transparence, background color, style
-    * min_size => undef, # used to remove too small harvested images (bytes), can be undefined
-    * max_width => 4096, # max images size which will be harvested, can be undefined
-    * max_height => 4096
+    * URL - url of rok4
+    * VERSION - 1.3.0
+    * REQUEST - getMap
+    * FORMAT - ie image/png
+    * LAYERS - ORTHOPHOTO,ROUTE,...
+    * OPTIONS - transparence, background color, style
+    
+    * min_size : int - used to remove too small harvested images (bytes), can be zero (no limit)
+    * max_width : int - max images width which will be harvested, can be undefined
+    * max_height : int - max images width which will be harvested, can be undefined
 =cut
 
 ####################################################################################################
@@ -324,9 +325,10 @@ Returns:
     10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
     10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
     11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
+    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864
+    "
 
-    Wms2work "test_png_plusieurs" "png" "1024x1024" "4x4" "250000" "http://gpp3-wxs-i-ign-fr.aw.atosorigin.com/r1oldcvxu2ec7lmimd6ng4x7/geoportail/v/wms?LAYERS=NATURALEARTH_BDD_WLD_WM_20120704&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    Wms2work "test" "png" "1024x1024" "4x4" "250000" "http://gpp3-wxs-i-ign-fr.aw.atosorigin.com/r1oldcvxu2ec7lmimd6ng4x7/geoportail/v/wms?LAYERS=NATURALEARTH_BDD_WLD_WM_20120704&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
 =cut
 sub getCommandWms2work {
     my $self = shift;
@@ -484,6 +486,33 @@ sub getMaxHeight {
     return $self->{max_height};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Harvesting :\n";
+    $export .= sprintf "\t URL : %s\n",$self->{URL};
+    $export .= sprintf "\t VERSION : %s\n",$self->{VERSION};
+    $export .= sprintf "\t REQUEST : %s\n",$self->{REQUEST};
+    $export .= sprintf "\t FORMAT : %s\n",$self->{FORMAT};
+    $export .= sprintf "\t LAYERS : %s\n",$self->{LAYERS};
+    $export .= sprintf "\t OPTIONS : %s\n",$self->{OPTIONS};
+
+    $export .= "\t Limits : \n";
+    $export .= sprintf "\t\t- Size min : %s\n",$self->{min_size};
+    $export .= sprintf "\t\t- Max width (in pixel) : %s\n",$self->{max_width};
+    $export .= sprintf "\t\t- Max height (in pixel) : %s\n",$self->{max_height};
+    
+    return $export;
+}
+
 
 1;
 __END__
@@ -603,7 +632,7 @@ Contains style, background color and transparent parameters : STYLES=line&BGCOLO
 
 =item min_size
 
-Used in Process.pm to remove too short harvested images.
+Used in script to remove too short harvested images.
 
 =item max_width, max_height
 

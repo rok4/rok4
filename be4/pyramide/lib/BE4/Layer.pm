@@ -107,20 +107,20 @@ END {}
 Group: variable
 
 variable: $self
-    * title => undef, # manadatory !
-    * abstract => "", # by default (optional) !
-    * keywordlist => [], # by default (optional) !
-    * style => "normal", # by default !
-    * minres => 0.0, # by default !
-    * maxres => 0.0, # by default !
-    * opaque => 1, # by default !
-    * authority => "IGNF", # by default !
-    * srslist => [], # manadatory !
-    * resampling => "lanczos_4", # by default !
-    * geo_bbox => [], # manadatory: minx,miny,maxx,maxy !
-    * proj => undef, # by default first param srslist (optional) !
-    * proj_bbox => [], # manadatory: minx,miny,maxx,maxy !
-    * pyramid => undef, # manadatory: path of pyr. desc. !
+    * title
+    * abstract
+    * keywordlist : array of string
+    * style - "normal" by default
+    * minres : float - 0.0 by default
+    * maxres : float - 0.0 by default
+    * opaque - 1 by default
+    * authority : string - "IGNF" by default
+    * srslist : array of string
+    * resampling - "lanczos_4"  by default
+    * geo_bbox - [minx,miny,maxx,maxy] in WGS84G
+    * proj - by default first element of srslist
+    * proj_bbox - [minx,miny,maxx,maxy] in cache SRS
+    * pyramid
 =cut
 
 ####################################################################################################

@@ -65,10 +65,10 @@ END {}
 Group: variable
 
 variable: $self
-    * PRODUCT => undef,
-    * DATE    => undef,
-    * ZONE    => undef,
-    * COMMENT => undef,
+    * PRODUCT
+    * DATE
+    * ZONE
+    * COMMENT
 =cut
 
 ####################################################################################################
@@ -142,6 +142,20 @@ sub comment {
   my $self = shift;
   if (@_) { $self->{COMMENT} = shift }
   return $self->{COMMENT};
+}
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Information :\n";
+    $export .= sprintf "\t PRODUCT : %s\n",$self->{PRODUCT};
+    $export .= sprintf "\t DATE : %s\n",$self->{DATE};
+    $export .= sprintf "\t ZONE : %s\n",$self->{ZONE};
+    $export .= sprintf "\t COMMENT : %s\n",$self->{COMMENT};
+    
+    return $export;
 }
 
 1;

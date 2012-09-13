@@ -77,13 +77,13 @@ END {}
 Group: variable
 
 variable: $self
-    * forest : BE4::Forest object
-    * pyramid : BE4::Pyramid object
-    * process : BE4::Process object
-    * datasource : BE4::DataSource object
+    * forest : BE4::Forest
+    * pyramid : BE4::Pyramid
+    * process : BE4::Process
+    * datasource : BE4::DataSource
     
-    * bbox => [], # datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    * nodes => {},
+    * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
+    * nodes : hash
 |   level1 => {
 |      x1_y2 => n1,
 |      x2_y2 => n2,
@@ -92,10 +92,10 @@ variable: $self
 |      x1_y2 => n4,
 |      x2_y2 => n5, ...}
 |
-|   nX = BE4::Node object
+|   nX = BE4::Node
 
-    * bottomID => undef, # first level under the source images resolution
-    * topID    => undef, # top level of the pyramid (ie of its tileMatrix)
+    * bottomID : string
+    * topID : string
 =cut
 
 ####################################################################################################
@@ -797,10 +797,10 @@ Extrem levels identifiants of the graph.
 
 =end html
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
