@@ -534,10 +534,9 @@ sub doIt {
     DEBUG(sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
   
     # we cannot write the pyramid descriptor and cache now. We need data's limits
-    # which are calculated in the Process creation
   
     #######################
-    # create forest : load trees
+    # create forest : load graphs
     
     ALWAYS(">>> Load Forest ...");
   
@@ -576,7 +575,7 @@ sub doIt {
   
     
     #######################
-    # compute process
+    # compute graphs
     
     ALWAYS(">>> Compute forest ...");
     
@@ -957,8 +956,8 @@ Path to file environment of all pyramid, it's the common configuration. This opt
 <li><A HREF="./lib-BE4-PropertiesLoader.html">BE4::PropertiesLoader</A></li>
 <li><A HREF="./lib-BE4-DataSourceLoader.html">BE4::DataSourceLoader</A></li>
 <li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
+<li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>
 </ul>
 
 =end html

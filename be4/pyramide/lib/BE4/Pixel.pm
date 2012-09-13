@@ -81,8 +81,8 @@ Group: variable
 variable: $self
     * photometric
     * sampleformat
-    * bitspersample
-    * samplesperpixel
+    * bitspersample : integer
+    * samplesperpixel : integer
 =cut
 
 ####################################################################################################
@@ -232,6 +232,25 @@ sub getSamplesPerPixel {
     return $self->{samplesperpixel};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Pixel :\n";
+    $export .= sprintf "\t Bits per sample : %s\n", $self->{bitspersample};
+    $export .= sprintf "\t Photometric : %s\n", $self->{photometric};
+    $export .= sprintf "\t Sample format : %s\n", $self->{sampleformat};
+    $export .= sprintf "\t Samples per pixel : %s\n", $self->{samplesperpixel};
+    
+    return $export;
+}
 
 1;
 __END__

@@ -57,7 +57,7 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant CREATE_NODATA     => "createNodata";
+use constant CREATE_NODATA => "createNodata";
 
 ################################################################################
 
@@ -70,9 +70,9 @@ END {}
 Group: variable
 
 variable: $self
-    * pixel => undef, # Pixel object
-    * value => undef, # FF per sample or -99999 by default !
-    * nowhite => undef, # FALSE by default
+    * pixel : BE4::Pixel
+    * value - FF per sample or -99999 by default
+    * nowhite : boolean - FALSE by default
 =cut
 
 ####################################################################################################
@@ -87,9 +87,9 @@ sub new {
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        pixel           => undef, # Pixel object
-        value           => undef, # FF per sample or -99999 by default !
-        nowhite         => undef, # FALSE by default
+        pixel           => undef,
+        value           => undef,
+        nowhite         => undef,
     };
     
     bless($self, $class);
@@ -206,7 +206,7 @@ sub getNoWhite {
       nodataDirPath - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
       width - width in pixel of the tile (256)
       height - height in pixel of the tile (256)
-      compression - compression to apply : raw/none, png, pjg, lzw, zip.
+      compression - compression to apply : raw/none, png, jpg, lzw, zip, pkb.
 
    Returns:
       TRUE if the nodata tile is succefully written, FALSE otherwise.
@@ -232,7 +232,7 @@ sub createNodata {
     $cmd .= sprintf ( " %s", $nodataFilePath);
 
     if (! -d $nodataDirPath) {
-        #create folders
+        # create folders
         eval { mkpath([$nodataDirPath]); };
         if ($@) {
             ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodataDirPath , $@);
@@ -261,6 +261,30 @@ sub getNodataFilename {
     return "nd.tif";
 }
 
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::NoData :\n";
+    $export .= sprintf "\t Value : %s\n", $self->{value};
+    if ($self->{nowhite}) {
+        $export .= "\t'nowhite' option is on\n";
+    } else {
+        $export .= "\t'nowhite' option is off\n";
+    }
+    
+    return $export;
+}
+
+
 1;
 __END__
 
@@ -274,9 +298,9 @@ BE4::NoData - components of nodata
 
     # NoData object creation
     my $objNodata = BE4::NoData->new({
-            pixel            => objPixel,
-            color            => "FFFFFF",
-            nowhite          => TRUE
+            pixel   => $objPixel,
+            color   => "FFFFFF",
+            nowhite => TRUE
     });
 
 =head1 DESCRIPTION

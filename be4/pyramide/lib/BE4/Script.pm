@@ -229,7 +229,7 @@ sub setWeight {
 
 #
 =begin nd
-method: prepareScript
+method: prepare
 
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
@@ -266,7 +266,7 @@ Example:
 |     done
 |   }
 =cut
-sub prepareScript {
+sub prepare {
     my $self = shift;
     my $rootTempDir = shift;
     my $pyrDir = shift;
@@ -309,6 +309,27 @@ sub close {
     
     my $stream = $self->{stream};
     close $stream;
+}
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Script :\n";
+    $export .= sprintf "\t ID : %s\n", $self->{id};
+    $export .= sprintf "\t Script path : %s\n", $self->{filePath};
+    $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
+    $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $self->{mntConfDir};
+    $export .= sprintf "\t Weight : %s\n", $self->{weight};
+
+    return $export;
 }
 
 1;

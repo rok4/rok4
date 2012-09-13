@@ -69,16 +69,16 @@ END {}
 Group: variable
 
 variable: $self
-    * i - colonne dans la matrice des images
-    * j - ligne dans la matrice des images
+    * i : integer - column
+    * j : integer - row
     * tm : BE4::TileMatrix - to which node belong
     * graph : BE4::Graph or BE4::QTree - which contain the node
     * w - own node's weight  
     * W - accumulated weight (childs' weights sum)
     * code - commands to execute to generate this node (to write in a script)
-    * script - BE4::Script, in which the node is calculated
-    * nodeSources : list of BE4::Node - from which this node is calculated
-    * geoImages : list of BE4::GeoImage - from which this node is calculated
+    * script : BE4::Script - in which the node is calculated
+    * nodeSources : array of BE4::Node - from which this node is calculated
+    * geoImages : array of BE4::GeoImage - from which this node is calculated
 =cut
 
 ####################################################################################################
@@ -115,6 +115,15 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _init
+
+Load node's parameters
+
+Parameters:
+    params - a hash of parameters
+=cut
 sub _init {
     my $self = shift;
     my $params = shift ; # Hash
@@ -149,6 +158,59 @@ sub _init {
     $self->{code} = '';
     
     return TRUE;
+}
+
+####################################################################################################
+#                                       GEOGRAPHIC TOOLS                                           #
+####################################################################################################
+
+# Group: geographic tools
+
+=begin nd
+method: isPointInNodeBbox
+
+Return a boolean indicating if the point in parameter is inside the bbox of the node
+  
+Parameters:
+    x - the x coordinate of the point you want to know if it is in
+    x - the y coordinate of the point you want to know if it is in
+=cut
+sub isPointInNodeBbox {
+    my $self = shift;
+    my $x = shift;
+    my $y = shift;
+    
+    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $self->getBBox();
+    
+    if ( $xMinNode <= $x && $x <= $xMaxNode && $yMinNode <= $y && $y <= $yMaxNode ) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+=begin nd
+method: isBboxIntersectingNodeBbox
+
+Test if the Bbox  in parameter intersect the bbox of the node
+      
+Parameters:
+    Bbox - (xmin,ymin,xmax,ymax) : coordinates of the bbox
+=cut
+sub isBboxIntersectingNodeBbox {
+    my $self = shift;
+    my ($xMin,$yMin,$xMax,$yMax) = @_;
+    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $self->getBBox();
+    
+    #printf "Bbox $xMin,$yMin,$xMax,$yMax\n";
+    #printf "Bbox Node : $xMinNode,$yMinNode,$xMaxNode,$yMaxNode\n";
+    
+    if ($xMax > $xMinNode && $xMin < $xMaxNode && $yMax > $yMinNode && $yMin < $yMaxNode) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+    
 }
 
 ####################################################################################################
@@ -288,10 +350,12 @@ sub getScriptID {
     return $self->{script}->getID;
 }
 
-# method: setAccumulatedWeightOfNode
-#  Calcule le poids cumulé du noeud. Il ajoute le poids propre (déjà connu) du noeud à celui
-#  passé en paramètre. Ce dernier correspond à la somme des poids cumulé des fils.
-#------------------------------------------------------------------------------
+#
+=begin nd
+method: setAccumulatedWeight
+
+AccumulatedWeight = children's weights sum + own weight = provided weight + already store own weight.
+=cut
 sub setAccumulatedWeight {
     my $self = shift;
     my $weight = shift;
@@ -304,13 +368,10 @@ sub setAccumulatedWeight {
 
 # Group: export methods
 
-# method: exportForMntConf
-# la sortie est formatée pour pouvoir être utilisée dans le fichier de conf de mergeNtif
-#
 =begin nd
 method: exportForMntConf
 
-Export attributs of the Node for MergNTiff configuration files.
+Export attributs of the Node for mergNtiff configuration file.
 
 =cut
 sub exportForMntConf {
@@ -338,14 +399,13 @@ sub exportForMntConf {
 method: exportForDebug
 
 Export in a string the content of the node object
-
 =cut
 sub exportForDebug {
     my $self = shift ;
     
     my $output = "";
     
-    $output .= sprintf "Objet Node :\n";
+    $output .= sprintf "Object BE4::Node :\n";
     $output .= sprintf "\tLevel : %s\n",$self->getLevel();
     $output .= sprintf "\tTM Resolution : %s\n",$self->getTM()->getResolution();
     $output .= sprintf "\tColonne : %s\n",$self->getCol();
@@ -364,7 +424,8 @@ sub exportForDebug {
     foreach my $img ( @{$self->getGeoImages()} ) {
         $output .= sprintf "\t\tNom : %s\n",$img->getName();
     }
-    rturn $output;
+    
+    return $output;
 }
 
 1;

@@ -398,6 +398,30 @@ sub getFormatCode {
     return $self->{formatCode};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::PyrImageSpec :\n";
+    $export .= "\t Global information : \n";
+    $export .= sprintf "\t\t- Compression : %s\n", $self->{compression};
+    $export .= sprintf "\t\t- Compression option : %s\n", $self->{compressionoption};
+    $export .= sprintf "\t\t- Interpolation : %s\n", $self->{interpolation};
+    $export .= sprintf "\t\t- Gamma : %s\n", $self->{gamma};
+    $export .= sprintf "\t\t- Format code : %s\n", $self->{formatCode};
+    
+    $export .= sprintf "\t Pixel components : %s\n", $self->{pixel}->exportForDebug;
+    
+    return $export;
+}
+
 1;
 __END__
 

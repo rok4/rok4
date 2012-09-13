@@ -554,7 +554,7 @@ sub exportForDebug {
     
     my $output = "";
     
-    $output .= sprintf "Export of Tile Matrix Set object :\n";
+    $output .= sprintf "\nObject BE4::TileMatrixSet :\n";
     if (defined $self->getPathFilename() ) {
         $output .= sprintf "\t %s : %s\n","PATHFILENAME",$self->getPathFilename();
     };

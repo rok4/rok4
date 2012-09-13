@@ -1137,7 +1137,7 @@ sub writeConfPyramid {
 
     for (my $i = scalar @levels -1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        my $levelXML = $levels[$i]->getLevelToXML;
+        my $levelXML = $levels[$i]->exportToXML;
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     #
@@ -1736,6 +1736,49 @@ sub getCachePathOfImage {
     return File::Spec->catfile($self->getNewDataDir, $imageName); 
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Pyramid :\n";
+    $export .= "\t New cache : \n";
+    $export .= sprintf "\t\t- Name : %s\n", $self->{new_pyramid}->{name};
+    $export .= sprintf "\t\t- Descriptor path : %s\n", $self->{new_pyramid}->{desc_path};
+    $export .= sprintf "\t\t- Data path : %s\n", $self->{new_pyramid}->{data_path};
+    
+    if (defined $self->{old_pyramid}->{name}) {
+        $export .= "\t This pyramid is an update\n";
+        $export .= "\t Old cache : \n";
+        $export .= sprintf "\t\t- Name : %s\n", $self->{old_pyramid}->{name};
+        $export .= sprintf "\t\t- Descriptor path : %s\n", $self->{old_pyramid}->{desc_path};
+        $export .= sprintf "\t\t- Data path : %s\n", $self->{old_pyramid}->{data_path};
+    }
+
+    $export .= sprintf "\t Directories' name (depth = %s): \n", $self->{dir_depth};
+    $export .= sprintf "\t\t- Data : %s\n", $self->{dir_image};
+    $export .= sprintf "\t\t- Nodata : %s\n", $self->{dir_nodata};
+    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata};
+    
+    $export .= "\t Image size (in pixel):\n";
+    $export .= sprintf "\t\t- width : %s\n", $self->{image_width};
+    $export .= sprintf "\t\t- height : %s\n", $self->{image_height};
+    
+    $export .= sprintf "\t Image components : %s\n", $self->{pyrImgSpec}->exportForDebug;
+    
+    $export .= sprintf "\t TMS : %s\n", $self->{tms}->getName;
+    
+    $export .= sprintf "\t Number of levels : %s\n", scalar (keys $self->{levels});
+    
+    return $export;
+}
+
 1;
 __END__
 
@@ -1795,7 +1838,7 @@ BE4::Pyramid - describe a cache (image specifications, levels, ...)
         pyr_data_path       => "/home/ign/DATA",
     };
     
-    my $objPyr = BE4::Pyramid->new($params_options,$objProcess->{path_temp});
+    my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
  
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-E.pyr
  

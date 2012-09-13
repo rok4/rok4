@@ -95,16 +95,16 @@ END {}
 Group: variable
 
 variable: $self
-    * id                => undef, # (string, in the TMS)
-    * order             => undef, # (integer)
-    * dir_image         => undef,
-    * dir_nodata        => undef,
-    * dir_metadata      => undef,  # NOT IMPLEMENTED !
-    * compress_metadata => undef,  # NOT IMPLEMENTED !
-    * type_metadata     => undef,  # NOT IMPLEMENTED !
-    * size              => [],    # [width, height]
-    * dir_depth         => 0,     # ie 2
-    * limit             => [], # dim bbox [jmin,jmax,imin,imax] !!!
+    * id : string
+    * order : integer
+    * dir_image
+    * dir_nodata
+    * dir_metadata - NOT IMPLEMENTED
+    * compress_metadata - NOT IMPLEMENTED
+    * type_metadata - NOT IMPLEMENTED
+    * size - [width, height]
+    * dir_depth : integer
+    * limit - [rowMin,rowMax,colMin,colMax]
 =cut
 
 ####################################################################################################
@@ -261,16 +261,22 @@ sub updateExtremTiles {
     if (! defined $self->{limit}[3] || $iMax > $self->{limit}[3]) {$self->{limit}[3] = $iMax;}
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
 #
 =begin nd
-method: getLevelToXML
+method: exportToXML
 
 Insert Level's attributes in the XML template, write in the pyramid's descriptor.
 
 Returns:
    A string in XML format.
 =cut
-sub getLevelToXML {
+sub exportToXML {
     my $self = shift;
 
     my $levelXML = $STRLEVELTMPLT;
@@ -317,6 +323,31 @@ sub getLevelToXML {
     return $levelXML;
 }
 
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Level :\n";
+    $export .= sprintf "\t ID (string) : %s, and order (integer) : %s\n", $self->{id}, $self->{order};
+
+    $export .= sprintf "\t Directories (depth = %s): \n",$self->{dir_depth};
+    $export .= sprintf "\t\t- Images : %s\n",$self->{dir_image};
+    $export .= sprintf "\t\t- Nodata : %s\n",$self->{dir_nodata};
+    $export .= sprintf "\t\t- Metadata : %s\n",$self->{dir_metadata};
+    
+    $export .= "\t Tile limits : \n";
+    $export .= sprintf "\t\t- Column min : %s\n",$self->{limits}[2];
+    $export .= sprintf "\t\t- Column max : %s\n",$self->{limits}[3];
+    $export .= sprintf "\t\t- Row min : %s\n",$self->{limits}[0];
+    $export .= sprintf "\t\t- Row max : %s\n",$self->{limits}[1];
+    
+    $export .= "\t Tiles per image : \n";
+    $export .= sprintf "\t\t- widthwise : %s\n",$self->{size}[0];
+    $export .= sprintf "\t\t- heightwise : %s\n",$self->{size}[1];
+    
+    return $export;
+}
 
 1;
 __END__

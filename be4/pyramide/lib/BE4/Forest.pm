@@ -48,7 +48,7 @@ use Geo::GDAL;
 # My module
 use BE4::QTree;
 use BE4::Graph;
-use BE4::Process;
+use BE4::Commands;
 use BE4::Pyramid;
 use BE4::Script;
 use BE4::DataSourceLoader;
@@ -80,7 +80,7 @@ Group: variable
 
 variable: $self
     * pyramid : BE4::Pyramid
-    * process : BE4::Process
+    * commands : BE4::Commands
     * graphs : array of BE4::QTree or BE4::Graph
     * scripts : array of BE4::Script
     * splitNumber : integer - the number of script used
@@ -99,7 +99,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         pyramid     => undef,
-        process     => undef,
+        commands     => undef,
         graphs  => [],
         scripts => [],
         splitNumber => undef,
@@ -124,7 +124,7 @@ sub new {
 =begin nd
 method: _init
 
-Check the Pyramid and DataSourceLoader objects and Process parameters.
+Check the Pyramid and DataSourceLoader objects and Commands parameters.
 
 Parameters:
     pyr - a BE4::Pyramid object.
@@ -150,7 +150,7 @@ sub _init {
     }
 
     if (! defined $params_process) {
-        ERROR("We need Process' parameters !");
+        ERROR("We need process' parameters !");
         return FALSE;
     }
     
@@ -161,7 +161,7 @@ sub _init {
 =begin nd
 method: _load
 
-Create a Graph or a QTree object per data source and a Process object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
+Create a Graph or a QTree object per data source and a Commands object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
 
 Parameters:
     pyr - a BE4::Pyramid object.
@@ -201,13 +201,13 @@ sub _load {
     
     ############# PROCESS #############
     
-    my $process = BE4::Process->new($pyr);
+    my $commands = BE4::Commands->new($pyr);
 
-    if (! defined $process) {
-        ERROR ("Can not load Process !");
+    if (! defined $commands) {
+        ERROR ("Can not load Commands !");
         return FALSE;
     }
-    $self->{process} = $process;
+    $self->{commands} = $commands;
     
     ############# GRAPHS #############
 
@@ -238,9 +238,9 @@ sub _load {
         # Creation of QTree or Graph object
         my $graph = undef;
         if ($isQTree) {
-          $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{process});
+          $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
         } else {
-          $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{process});
+          $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{commands});
         };
                 
         if (! defined $graph) {
@@ -256,7 +256,7 @@ sub _load {
     ############# SCRIPTS #############
     # We create BE4::Script objects and initialize them (header)
     
-    my $functions = $process->configureFunctions;
+    my $functions = $commands->configureFunctions;
     
     my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
     
@@ -278,7 +278,7 @@ sub _load {
             });
             
             my $listFile = $self->{pyramid}->getNewListFile;
-            $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
+            $script->prepare($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
             
             push @{$self->{scripts}},$script;
         }
@@ -304,8 +304,9 @@ sub _load {
                     rootTempDir => $rootTempDir,
                     scriptDir => $scriptDir,
                 });
-            
-                $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$functions);
+                
+                my $listFile = $self->{pyramid}->getNewListFile;
+                $script->prepare($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
             
                 push @{$self->{scripts}},$script;
             }
@@ -480,9 +481,9 @@ BE4::Forest - Create and compute Graphs (including QTrees)
 
 A BE4::Pyramid object.
 
-=item process
+=item commands
 
-A BE4::Process object, to compose generating commands (mergeNtiff, tiff2tile...).
+A BE4::Commands object, to compose generating commands (mergeNtiff, tiff2tile...).
 
 =item graphs
 
@@ -505,7 +506,7 @@ Number of script used to divide works.
 =begin html
 
 <ul>
-<li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>
+<li><A HREF="./lib-BE4-Commands.html">BE4::Commands</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
 <li><A HREF="./lib-BE4-QTree.html">BE4::QTree</A></li>
 <li><A HREF="./lib-BE4-Graph.html">BE4::Graph</A></li>

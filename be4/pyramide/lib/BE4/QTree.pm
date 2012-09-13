@@ -77,7 +77,7 @@ Group: variable
 variable: $self
     * forest : BE4::Forest
     * pyramid : BE4::Pyramid
-    * process : BE4::Process
+    * commands : BE4::Commands
     * datasource : BE4::DataSource
     
     * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
@@ -111,7 +111,7 @@ Parameters:
     objForest - BE4::Forest in which this tree is.
     objSrc - BE4::DataSource, used to defined nodes
     objPyr - BE4::Pyramid
-    objProcess - BE4::Process, used to compute tree
+    objCommands - BE4::Commands, used to compute tree
 =cut
 sub new {
     my $this = shift;
@@ -122,7 +122,7 @@ sub new {
         # in
         forest    => undef,
         pyramid    => undef,
-        process    => undef,
+        commands    => undef,
         datasource => undef,
         # out
         bbox => [],
@@ -153,14 +153,14 @@ Parameters:
     objForest - BE4::Forest in which this tree is.
     objSrc - BE4::DataSource, used to defined nodes
     objPyr - BE4::Pyramid
-    objProcess - BE4::Process, used to compute tree
+    objCommands - BE4::Commands, used to compute tree
 =cut
 sub _init {
     my $self = shift;
     my $objForest = shift;
     my $objSrc  = shift;
     my $objPyr  = shift;
-    my $objProcess  = shift;
+    my $objCommands  = shift;
 
     TRACE;
 
@@ -177,8 +177,8 @@ sub _init {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
-    if (! defined $objProcess || ref ($objProcess) ne "BE4::Process") {
-        ERROR("Can not load Process !");
+    if (! defined $objCommands || ref ($objCommands) ne "BE4::Commands") {
+        ERROR("Can not load Commands !");
         return FALSE;
     }
 
@@ -186,7 +186,7 @@ sub _init {
     $self->{forest} = $objForest; 
     $self->{pyramid} = $objPyr;
     $self->{datasource} = $objSrc; 
-    $self->{process} = $objProcess;
+    $self->{commands} = $objCommands;
 
     return TRUE;
 }
@@ -669,7 +669,7 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight);
+        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight);
         if (! defined $c) {
             ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
             return FALSE;
@@ -678,7 +678,7 @@ sub computeBottomImage {
         $code .= $c;
         $weight += $w;
     } else {    
-        ($c,$w) = $self->{process}->mergeNtiff($node,$justWeight);
+        ($c,$w) = $self->{commands}->mergeNtiff($node,$justWeight);
         if ($w == -1) {
             ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
             return FALSE;
@@ -688,7 +688,7 @@ sub computeBottomImage {
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{process}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
     
     $code .= $c;
     $weight += $w;
@@ -767,7 +767,7 @@ sub computeAboveImage {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $bg.=" -b $workBgPath";
-                    ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight,"bgImg");
+                    ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight,"bgImg");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
                         return FALSE;
@@ -779,7 +779,7 @@ sub computeAboveImage {
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $bg.=" -b $workBgPath";
-                ($c,$w) = $self->{process}->cache2work($node,$justWeight,"bgImg");
+                ($c,$w) = $self->{commands}->cache2work($node,$justWeight,"bgImg");
                 $code .= $c;
                 $weight += $w;
             }
@@ -796,7 +796,7 @@ sub computeAboveImage {
             $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $childNode->getWorkName;
         }
     }
-    ($c,$w) = $self->{process}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam,$justWeight);
+    ($c,$w) = $self->{commands}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam,$justWeight);
     $code .= $c;
     $weight += $w;
 
@@ -811,7 +811,7 @@ sub computeAboveImage {
     }
 
     # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{process}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
     $code .= $c;
     $weight += $w;
     
@@ -1207,7 +1207,7 @@ BE4::QTree - Representation of a quad tree cache : cache image = node
     use BE4::QTree;
 
     # QTree object creation
-    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objProcess);
+    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
     
     ...
     
@@ -1228,9 +1228,9 @@ A BE4::Forest object.
 
 A BE4::Pyramid object.
 
-=item process
+=item commands
 
-A BE4::Process object.
+A BE4::Commands object.
 
 =item datasource
 
@@ -1274,7 +1274,7 @@ Extrem levels identifiants of the tree.
 <li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
 <li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
 <li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-Process.html">BE4::Process</A></li>
+<li><A HREF="./lib-BE4-Commands.html">BE4::Commands</A></li>
 <li><A HREF="./lib-BE4-Node.html">BE4::Node</A></li>
 </ul>
 

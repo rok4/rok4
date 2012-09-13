@@ -33,7 +33,7 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
-package BE4::Process;
+package BE4::Commands;
 
 use strict;
 use warnings;
@@ -203,7 +203,6 @@ sub new {
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        # in
         pyramid => undef,
     };
     bless($self, $class);
@@ -215,15 +214,6 @@ sub new {
     return $self;
 }
 
-#
-=begin nd
-method: _init
-
-Load process' parameters, initialize weights and script (open streams and write headers)
-
-Parameters:
-    pyr - BE4::Pyramid
-=cut
 sub _init {
     my ($self, $pyr) = @_;
 
@@ -248,7 +238,7 @@ sub _init {
 =begin nd
 method: wms2work
 
-Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current tree's datasource. Use the 'Wms2work' bash function.
+Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
 
 Example:
     Wms2work ${TMP_DIR}/18_8300_5638.tif "http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_D075-E&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:3857&BBOX=264166.3697535659936,6244599.462785762557312,266612.354658691633792,6247045.447690888197504&WIDTH=4096&HEIGHT=4096&STYLES="
@@ -595,7 +585,7 @@ sub configureFunctions {
 
 sub getNodata {
     my $self = shift;
-    return $self->{pyramid}->{nodata}; 
+    return $self->{pyramid}->getNodata; 
 }
 
 sub getPyramid {
@@ -610,14 +600,14 @@ __END__
 
 =head1 NAME
 
-BE4::Process - Compose commands to generate the cache
+BE4::Commands - Compose commands to generate the cache
 
 =head1 SYNOPSIS
 
-    use BE4::Process;
+    use BE4::Commands;
   
-    # Process object creation
-    my $objProcess = BE4::Process->new(
+    # Commands object creation
+    my $objCommands = BE4::Commands->new(
         $objPyramid # BE4::Pyramid object
     );
 
@@ -628,20 +618,6 @@ BE4::Process - Compose commands to generate the cache
 =item pyramid
 
 A BE4::Pyramid object.
-
-TODO : A DEGAGER
-
-=item job_number
-
-Number of split scripts. If job_number = 5 -> 5 split scripts (can run in parallel) + one finisher (when splits are finished) = 6 scripts. Splits generate cache from bottom level to cut level, and the finisher from the cut level to the top level.
-
-=item path_temp
-
-Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new>. This directory is used to store raw images (uncompressed and untiled). They are removed as and when we don't need them any more. We write in mergeNtiff configurations too.
-
-=item path_shell
-
-Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... and F<SCRIPT_FINISHER.sh> for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
 
 =back
 

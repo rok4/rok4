@@ -74,7 +74,7 @@ variable: $self
     * tileHeight
     * matrixWidth
     * matrixHeight
-    * targetsTmId
+    * targetsTmId : array of string
 =cut
 
 ####################################################################################################
@@ -400,7 +400,7 @@ sub exportForDebug {
     
     my $output = "";
     
-    $output .= sprintf "Tile Matrix Export :\n";
+    $output .= sprintf "\nObject BE4::TileMatrix :\n";
     if (defined $self->getID()) {
         $output .= sprintf "\t id : %s \n",$self->getID();
     };

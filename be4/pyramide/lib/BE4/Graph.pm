@@ -79,7 +79,7 @@ Group: variable
 variable: $self
     * forest : BE4::Forest
     * pyramid : BE4::Pyramid
-    * process : BE4::Process
+    * commands : BE4::Commands
     * datasource : BE4::DataSource
     
     * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
@@ -112,7 +112,7 @@ Parameters:
     objForest - BE4::Forest in which this graph is.
     objSrc - BE4::DataSource, used to defined nodes
     objPyr - BE4::Pyramid
-    objProcess - BE4::Process, used to compute tree
+    objCommands - BE4::Commands, used to compute tree
 =cut
 sub new {
     my $this = shift;
@@ -123,7 +123,7 @@ sub new {
         # in
         forest    => undef,
         pyramid    => undef,
-        process    => undef,
+        commands    => undef,
         datasource => undef,
         # out
         bbox => [],
@@ -147,20 +147,20 @@ sub new {
 =begin nd
 method: _init
 
-Check DataSource, Pyramid and Process parameters.
+Check DataSource, Pyramid and Commands parameters.
 
 Parameters :
     objForest - a BE4::DataForest object
     objSrc - a BE4::DataSource object
     objPyr - a BE4::Pyramid object
-    ObjProcess - a BE4::Process object
+    ObjCommands - a BE4::Commands object
 =cut
 sub _init {
     my $self = shift;
     my $objForest  = shift;
     my $objSrc  = shift;
     my $objPyr  = shift;
-    my $objProcess  = shift;
+    my $objCommands  = shift;
 
     TRACE;
 
@@ -177,8 +177,8 @@ sub _init {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
-    if (! defined $objProcess || ref ($objProcess) ne "BE4::Process") {
-        ERROR("Can not load Process !");
+    if (! defined $objCommands || ref ($objCommands) ne "BE4::Commands") {
+        ERROR("Can not load Commands !");
         return FALSE;
     }
 
@@ -186,7 +186,7 @@ sub _init {
     $self->{forest} = $objForest; 
     $self->{pyramid} = $objPyr;
     $self->{datasource} = $objSrc; 
-    $self->{process} = $objProcess;    
+    $self->{commands} = $objCommands;    
 
     return TRUE;
 }
@@ -288,11 +288,15 @@ sub _load {
                           tm => $targetTm,
                           graph => $self,
                         });
-                        $self->{nodes}->{$targetTmID}->{$idxkey} = $newnode ;
+                        ## intersection avec la bbox des données initiales
+                        if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
+                          $self->{nodes}->{$targetTmID}->{$idxkey} = $newnode ;
+                          $newnode->addNodeSources($node); 
+                        }
                       } else {
                         $newnode = $self->{nodes}->{$targetTmID}->{$idxkey};
-                      }
-                     $newnode->addNodeSources($node);              
+                        $newnode->addNodeSources($node); 
+                      }             
                    }
                }
 
@@ -348,13 +352,13 @@ sub computeYourself {
            my ($c,$w) ;
            if ($self->getDataSource->hasHarvesting) {
                # Datasource has a WMS service : we have to use it
-               ($c,$w) = $self->{process}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
+               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
                if (! defined $c) {
                    ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
                    return FALSE;
                }
            } else {
-               ($c,$w) = $self->{process}->mergeNtiff($node);
+               ($c,$w) = $self->{commands}->mergeNtiff($node);
                if ($w == -1) {
                    ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
                    return FALSE;
@@ -368,7 +372,7 @@ sub computeYourself {
            # final script with all work2tile commands
            # on ecrit dans chacun des scripts de manière tournante
            my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{process}->work2cache($node,1);
+           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID(),1);
            # on ecrit la commande dans le fichier
            $finisher->print($c);
            #on met à jour l'index
@@ -599,9 +603,9 @@ sub getPyramid{
     return $self->{pyramid};
 }
 
-sub getProcess{
+sub getCommands{
     my $self = shift;
-    return $self->{process};
+    return $self->{commands};
 }
 
 sub getForest{
@@ -657,6 +661,11 @@ sub getNodesOfBottomLevel {
     return $self->getNodesOfLevel($self->{bottomID});
 }
 
+sub getBbox {
+    my $self =shift;
+    return ($self->{bbox}[0],$self->{bbox}[1],$self->{bbox}[2],$self->{bbox}[3]);
+}
+
 #
 =begin_nd
 method: getScriptsOfLevel
@@ -677,9 +686,9 @@ sub getScriptsOfLevel {
     my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
     my $numberOfFinisher = $self->getForest()->getSplitNumber();
     
-    my $start_index = $numberOfFinisher + ($self->getBottomOrder - $order) * $numberOfScriptByLevel ;
-    my $end_index = $start_index + $numberOfScriptByLevel ;
-    
+    my $start_index = $numberOfFinisher + ($order - $self->getBottomOrder) * $numberOfScriptByLevel ;
+    my $end_index = $start_index + $numberOfScriptByLevel - 1;
+
     return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
 };
 
@@ -746,9 +755,9 @@ BE4::Graph - representation of the cache as a graph : cache image = node
 
 A Pyramid object.
 
-=item process
+=item commands
 
-A Process object.
+A Commands object.
 
 =item datasource
 
