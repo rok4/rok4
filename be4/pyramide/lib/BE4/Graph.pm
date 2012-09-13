@@ -288,11 +288,15 @@ sub _load {
                           tm => $targetTm,
                           graph => $self,
                         });
-                        $self->{nodes}->{$targetTmID}->{$idxkey} = $newnode ;
+                        ## intersection avec la bbox des données initiales
+                        if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
+                          $self->{nodes}->{$targetTmID}->{$idxkey} = $newnode ;
+                          $newnode->addNodeSources($node); 
+                        }
                       } else {
                         $newnode = $self->{nodes}->{$targetTmID}->{$idxkey};
-                      }
-                     $newnode->addNodeSources($node);              
+                        $newnode->addNodeSources($node); 
+                      }             
                    }
                }
 
@@ -368,7 +372,7 @@ sub computeYourself {
            # final script with all work2tile commands
            # on ecrit dans chacun des scripts de manière tournante
            my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{process}->work2cache($node,1);
+           ($c,$w) = $self->{process}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID(),1);
            # on ecrit la commande dans le fichier
            $finisher->print($c);
            #on met à jour l'index
@@ -655,6 +659,11 @@ sub getNodesOfTopLevel {
 sub getNodesOfBottomLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{bottomID});
+}
+
+sub getBbox {
+    my $self =shift;
+    return ($self->{bbox}[0],$self->{bbox}[1],$self->{bbox}[2],$self->{bbox}[3]);
 }
 
 #

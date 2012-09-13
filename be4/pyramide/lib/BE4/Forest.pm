@@ -313,8 +313,9 @@ sub _load {
                     rootTempDir => $rootTempDir,
                     scriptDir => $scriptDir,
                 });
-            
-                $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$functions);
+                
+                my $listFile = $self->{pyramid}->getNewListFile;
+                $script->prepareScript($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
             
                 push @{$self->{scripts}},$script;
             }
