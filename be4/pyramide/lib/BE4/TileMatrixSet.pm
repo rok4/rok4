@@ -404,23 +404,23 @@ sub computeTmSource {
   my $tmSource = undef;
   
   # position du pixel en haut à gauche
-  my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLectCornerX() + 0.5 * $tmTarget->getResolution();
-  my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLectCornerY() - 0.5 * $tmTarget->getResolution();
+  my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerX() + 0.5 * $tmTarget->getResolution();
+  my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerY() - 0.5 * $tmTarget->getResolution();
 
-  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromId($self->getLevelBottom) ;$i--) {
+  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromID($self->getLevelBottom) ;$i--) {
       my $potentialTmSource = $self->getTileMatrix($self->getIDfromOrder($i));
       # la précision vaut 1/100 de la plus petit résolution du TMS
-      my $espilon = $self->getTileMatrix($self->getLevelBottom())->getResolution() / 100;
+      my $epsilon = $self->getTileMatrix($self->getLevelBottom())->getResolution() / 100;
       my $rapport = $tmTarget->getResolution() / $potentialTmSource->getResolution() ;
       #on veut que le rapport soit (proche d') un entier
-      next if ( asb( int( $rapport + 0.5) - $rapport) > $epsilon );
+      next if ( abs( int( $rapport + 0.5) - $rapport) > $epsilon );
       # on veut que les pixels soient superposables (pour faire une interpolation nn)
       # on regarde le pixel en haut à gauche de tmtarget
       # on verfie qu'il y a bien un pixel correspondant dans tmpotentialsource
-      my $potential_xTopLeftCorner_CenterPixel = $tmPotentialSource->getTopLeftCornerX() + 0.5 * $potentialTmSource->getResolution() ;
-      next if (abs($xTopLeftCorner_CenterPixel - $potential_xTopLeftCorner_CenterPixel) > $epsilon );
-      my $potential_yTopLeftCorner_CenterPixel = $tmPotentialSource->getTopLeftCornerY() - 0.5 * $potentialTmSource->getResolution() ;
-      next if (abs($yTopLeftCorner_CenterPixel - $potential_yTopLeftCorner_CenterPixel) > $epsilon );
+      my $potentialTm_xTopLeftCorner_CenterPixel = $potentialTmSource->getTopLeftCornerX() + 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($xTopLeftCorner_CenterPixel - $potentialTm_xTopLeftCorner_CenterPixel) > $epsilon );
+      my $potentialTm_yTopLeftCorner_CenterPixel = $potentialTmSource->getTopLeftCornerY() - 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($yTopLeftCorner_CenterPixel - $potentialTm_yTopLeftCorner_CenterPixel) > $epsilon );
       $tmSource = $potentialTmSource;
       last;
   }
@@ -430,7 +430,7 @@ sub computeTmSource {
      return FALSE;
   }
   
-  $tmSource->addTargetsTmId($tmTarget);
+  $tmSource->addTargetsTm($tmTarget);
   
   return TRUE;
 }

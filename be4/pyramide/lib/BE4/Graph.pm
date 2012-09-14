@@ -258,29 +258,29 @@ sub _load {
     for (my $k = $src->getBottomOrder; $k <= $src->getTopOrder; $k++){
 
         my $levelID = $tms->getIDfromOrder($k);
-        my $sourceTm = $tms->getTileMatrix($levelID);
-        my @targetLevelsID = @{$sourceTm->getTargetsTmId()};
-        
         # pyramid's limits update : we store data's limits in the pyramid's levels
         $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
-
         # si un niveau est vide on a une erreur
-        if (scalar(@{$self->getNodesOfLevel($levelID)}) == 0) {
+        if ($self->isLevelEmpty($levelID)) {
             ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
             return FALSE;
         }
         
+        my $sourceTm = $tms->getTileMatrix($levelID);
+        
+        my @targetsTm = @{$sourceTm->getTargetsTm()};
+        next if (scalar(@targetsTm) == 0);
+               
         # on n'a plus rien à calculer, on sort
         last if ($k == $src->getTopOrder );
-        
+
         foreach my $node ( $self->getNodesOfLevel($levelID) ) {
             
             # On récupère la BBOX du noeud pour calculer les noeuds cibles
             my ($xMin,$yMax,$xMax,$yMin) = $node->getBBox();
             
-            foreach my $targetTmID (@targetLevelsID) {
-                next if ($tms->getOrderfromID($targetTmID) > $src->getTopOrder());
-                my $targetTm = $tms->getTileMatrix($targetTmID);
+            foreach my $targetTm (@targetsTm) {
+                next if ($tms->getOrderfromID($targetTm->getID()) > $src->getTopOrder());
                 my $iMin = $targetTm->xToColumn($xMin,$tilesPerWidth);
                 my $iMax = $targetTm->xToColumn($xMax,$tilesPerWidth);
                 my $jMin = $targetTm->yToRow($yMin,$tilesPerHeight);
@@ -291,7 +291,7 @@ sub _load {
                         
                       my $idxkey = sprintf "%s_%s",$i,$j;
                       my $newnode = undef;
-                      if (! defined $self->{nodes}->{$targetTmID}->{$idxkey}) {
+                      if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
                         $newnode = new BE4::Node({
                           i => $i,
                           j => $j,
@@ -300,11 +300,11 @@ sub _load {
                         });
                         ## intersection avec la bbox des données initiales
                         if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
-                          $self->{nodes}->{$targetTmID}->{$idxkey} = $newnode ;
+                          $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
                           $newnode->addNodeSources($node); 
                         }
                       } else {
-                        $newnode = $self->{nodes}->{$targetTmID}->{$idxkey};
+                        $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
                         $newnode->addNodeSources($node); 
                       }             
                    }
@@ -661,6 +661,19 @@ sub getNodesOfLevel {
     return values (%{$self->{nodes}->{$levelID}});
 }
 
+sub isLevelEmpty {
+    my $self = shift;
+    my $levelID= shift;
+    
+    if (! defined $levelID) {
+        ERROR("Undefined Level");
+        return undef;
+    }
+    
+    return FALSE if (scalar(keys(%{$self->{nodes}->{$levelID}})) > 0) ;
+    return TRUE;
+}
+
 sub getNodesOfTopLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{topID});
@@ -718,7 +731,9 @@ Export in a string the content of the graph object
 =cut
 sub exportForDebug {
     my $self = shift ;
-    my $src = $self->{datasource};
+    
+    my $src = $self->getDataSource;
+    my $tms = $self->getPyramid->getTileMatrixSet;
     
     my $output = "";
     
@@ -726,7 +741,7 @@ sub exportForDebug {
    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
        $output .= sprintf "Description du niveau '%s' : \n",$i;
        # boucle sur tous les noeuds du niveau
-       foreach my $node ( $self->getNodesOfLevel($i)) {
+       foreach my $node ( $self->getNodesOfLevel($tms->getIDfromOrder($i))) {
          $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
          foreach my $node_sup ( @{$node->getNodeSources()} ) {
              #print Dumper ($node_sup);

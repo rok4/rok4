@@ -74,7 +74,7 @@ variable: $self
     * tileHeight
     * matrixWidth
     * matrixHeight
-    * targetsTmId : array of string
+    * targetsTm : array of BE4::TileMatrix objects
 =cut
 
 ####################################################################################################
@@ -97,7 +97,7 @@ sub new {
     tileHeight     => undef,
     matrixWidth    => undef,
     matrixHeight   => undef,
-    targetsTmId   => [],
+    targetsTm   => [],
   };
 
   bless($self, $class);
@@ -364,22 +364,22 @@ sub getTopLeftCornerY {
     return Math::BigFloat->new($self->{topLeftCornerY}); 
 }
 
-sub getTargetsTmId {
+sub getTargetsTm {
     my $self = shift;
-    return $self->{targetsTmId}
+    return $self->{targetsTm}
 }
 
-sub setTargetsTmId {
+sub setTargetsTm {
     my $self = shift;
-    my @TmID = shift;
-    $self->{targetsTmId} = [];
-    push($self->{targetsTmId},@TmID);
+    my @Tm = shift;
+    $self->{targetsTm} = [];
+    push($self->{targetsTm},@Tm);
 }
 
-sub addTargetsTmId {
+sub addTargetsTm {
     my $self = shift;
-    my @TmID = shift;
-    push($self->{targetsTmId},@TmID);
+    my @Tm = shift;
+    push($self->{targetsTm},@Tm);
 }
 
 ####################################################################################################
@@ -425,9 +425,9 @@ sub exportForDebug {
     if (defined $self->getMatrixHeight()) {
         $output .= sprintf "\t matrixHeight : %s \n",$self->getMatrixHeight();
     };
-    $output .= sprintf "\t targetstmid (size:%s) :\n",scalar(@{$self->getTargetsTmId()});
-    foreach my $tmId (@{$self->getTargetsTmId()}) {
-        $output .= sprintf "\t\t target tm id : %s \n",$tmId;
+    $output .= sprintf "\t targetstm (size:%s) :\n",scalar(@{$self->getTargetsTm()});
+    foreach my $tm (@{$self->getTargetsTm()}) {
+        $output .= sprintf "\t\t target tm id : %s \n",$tm->getID();
     };
     
     return $output;  
@@ -484,7 +484,7 @@ Pixel size of a tile (256 * 256).
 
 Number of tile in the level, widthwise and heightwise.
 
-=item targetsTmId
+=item targetsTm
 
 Array of BE4::TileMatrix objects, determine other levels which use this one to be generated. Empty if in a quad tree TMS.
 
