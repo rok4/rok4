@@ -322,7 +322,7 @@ sub main {
     }
 
     # writting pyramid's configuration file
-    ALWAYS("> Write pyramid's descriptor and nodata tiles");
+    ALWAYS("> Write pyramid's descriptor");
     if (! $this{pyramid}->writeConfPyramid) {
         print STDERR "ERROR WRITE PYRAMID DESCRIPTOR !\n";
         exit 7;

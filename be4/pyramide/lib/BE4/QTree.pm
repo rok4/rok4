@@ -752,7 +752,7 @@ sub computeAboveImage {
         my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth();
         my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight();
         
-        my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
+        my $cacheImgPath = $self->{pyramid}->getCachePathOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
 
         if (-f $cacheImgPath) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
@@ -779,7 +779,7 @@ sub computeAboveImage {
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
                 $bg.=" -b $workBgPath";
-                ($c,$w) = $self->{commands}->cache2work($node,$justWeight,"bgImg");
+                ($c,$w) = $self->{commands}->cache2work($node,"bgImg");
                 $code .= $c;
                 $weight += $w;
             }
@@ -1051,8 +1051,8 @@ method: containsNode
 
 Parameters:
     level - level of the node we want to know if it is in the qtree.
-    x     - x coordinate of the node we want to know if it is in the qtree.
-    y     - y coordinate of the node we want to know if it is in the qtree.
+    x - x coordinate of the node we want to know if it is in the qtree.
+    y - y coordinate of the node we want to know if it is in the qtree.
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.

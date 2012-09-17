@@ -382,7 +382,7 @@ sub exportForDebug {
     
     $export .= sprintf "\n Object BE4::DataSourceLoader :\n";
     $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
-    $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{sources}};
+    $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
     
     return $export;
 }

@@ -331,8 +331,8 @@ Check if a Graph (or a QTree) in the forest contain a particular node (level,x,y
 
 Parameters:
     level - level of the node we want to know if it is in the forest.
-    x     - x coordinate of the node we want to know if it is in the forest.
-    y     - y coordinate of the node we want to know if it is in the forest.
+    x - x coordinate of the node we want to know if it is in the forest.
+    y - y coordinate of the node we want to know if it is in the forest.
 
 Returns:
     A boolean : TRUE if the node exists, FALSE otherwise.
@@ -442,9 +442,6 @@ sub exportForDebug {
     my $export = "";
     
     $export .= sprintf "\n Object BE4::Forest :\n";
-    $export .= sprintf "\t Levels ID (order):\n";
-    $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
-    $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
 
     $export .= "\t Graph :\n";
     $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$self->{graphs}};

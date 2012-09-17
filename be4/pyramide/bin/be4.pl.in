@@ -519,8 +519,6 @@ sub doIt {
         return FALSE;
     }
     
-    DEBUG(sprintf "DATASOURCES (dump) = %s", Dumper($objDSL));
-    
     #######################
     # update levels
     
@@ -531,9 +529,9 @@ sub doIt {
         return FALSE;
     }
 
-    DEBUG(sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
-  
-    # we cannot write the pyramid descriptor and cache now. We need data's limits
+    DEBUG (sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
+    
+    # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
   
     #######################
     # create forest : load graphs
@@ -552,28 +550,37 @@ sub doIt {
     }
 
     #######################
+    # write the pyramid list
+    
+    ALWAYS(">>> Write the pyramid's list ...");
+
+    if (! $objPyramid->writeListPyramid($objForest)) {
+        ERROR ("Can not write Pyramid list !");
+        return FALSE;
+    }
+    
+    #######################
     # write the pyramid cache
     
-    ALWAYS(">>> Write Cache Pyramid and the list ...");
+    ALWAYS(">>> Write the pyramid's cache ...");
 
-    if (! $objPyramid->writeCachePyramid($objForest)) {
-        ERROR ("Can not write Pyramid Cache or the list !");
+    if (! $objPyramid->writeCachePyramid) {
+        ERROR ("Can not write Pyramid Cache !");
         return FALSE;
     }
     
     #######################
     # write the pyramid descriptor
 
-    ALWAYS(">>> Write Configuration Pyramid ...");
+    ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if (! $objPyramid->writeConfPyramid()) {
-        ERROR ("Can not write Pyramid File !");
+    if (! $objPyramid->writeConfPyramid) {
+        ERROR ("Can not write Pyramid file !");
         return FALSE;
     }
   
-    DEBUG (sprintf "PYRAMID (dump) = %s", Dumper($objPyramid));
+    DEBUG (sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
   
-    
     #######################
     # compute graphs
     
@@ -583,8 +590,8 @@ sub doIt {
         ERROR ("Can not compute forest !");
         return FALSE;
     }
-      
-    #DEBUG (sprintf "FOREST (dump) = %s", Dumper($objForest));
+    
+    DEBUG (sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
     
     return TRUE;
 }

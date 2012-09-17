@@ -190,6 +190,19 @@ sub getNoWhite {
     return $self->{nowhite};
 }
 
+#
+=begin nd
+method: getNodataFilename
+
+Returns:
+    The name of the nodata tile : nd.tif
+=cut
+sub getNodataFilename {
+    my $self = shift;
+    
+    return "nd.tif";
+}
+
 ####################################################################################################
 #                                           COMMAND                                                #
 ####################################################################################################
@@ -198,18 +211,18 @@ sub getNoWhite {
 
 #
 =begin nd
-   method: createNodata
+method: createNodata
 
-   Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
+Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
 
-   Parameters:
-      nodataDirPath - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
-      width - width in pixel of the tile (256)
-      height - height in pixel of the tile (256)
-      compression - compression to apply : raw/none, png, jpg, lzw, zip, pkb.
+Parameters:
+    nodataDirPath - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
+    width - width in pixel of the tile (256)
+    height - height in pixel of the tile (256)
+    compression - compression to apply : raw/none, png, jpg, lzw, zip, pkb.
 
-   Returns:
-      TRUE if the nodata tile is succefully written, FALSE otherwise.
+Returns:
+    TRUE if the nodata tile is succefully written, FALSE otherwise.
 =cut
 sub createNodata {
     my $self = shift;
@@ -248,19 +261,6 @@ sub createNodata {
     return TRUE;
     
 }
-
-#
-=begin nd
-   method: getNodataName
-
-   Return the name of the nodata tile : nd.tif
-=cut
-sub getNodataFilename {
-    my $self = shift;
-    
-    return "nd.tif";
-}
-
 
 ####################################################################################################
 #                                          EXPORT METHODS                                          #

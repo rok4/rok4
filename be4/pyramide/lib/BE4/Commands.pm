@@ -153,7 +153,7 @@ Work2cache () {
   
   local dir=`dirname ${PYR_DIR}/$cacheName`
   
-  if [ -r $cache ] ; then rm -f $cacheName ; fi
+  if [ -r ${PYR_DIR}/$cacheName ] ; then rm -f ${PYR_DIR}/$cacheName ; fi
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
   if [ -f $work ] ; then
@@ -301,7 +301,7 @@ sub cache2work {
     $baseName = $prefix."_".$baseName if (defined $prefix);
     
     my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
-    my $cacheName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
+    my $cacheName = $self->{pyramid}->getCacheNameOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
 
     if ($self->{pyramid}->getCompression eq 'png') {
         # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
@@ -338,7 +338,7 @@ sub work2cache {
     $rm = FALSE if (! defined $rm);
     
     my $workImgName  = $node->getWorkName;
-    my $cacheImgName = $self->{pyramid}->getCacheNameOfImage($node, 'data');
+    my $cacheImgName = $self->{pyramid}->getCacheNameOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
     
     # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
     # complémentaire comme le quadrillage des dalles et le numéro du node, 
@@ -385,7 +385,7 @@ sub mergeNtiff {
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
     # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
-    my $cacheImgPath = $self->{pyramid}->getCachePathOfImage($node,'data');
+    my $cacheImgPath = $self->{pyramid}->getCachePathOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
     # correspondant dans la nouvelle pyramide.
     if ( -f $cacheImgPath ) {
         # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
