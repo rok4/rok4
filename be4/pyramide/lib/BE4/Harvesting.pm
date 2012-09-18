@@ -541,7 +541,8 @@ BE4::Harvesting - Declare WMS service
         inversion => TRUE,
         srs => "EPSG:4326",
         bbox => [5,47,6,48],
-        imagesize => [4096,4096]
+        width => 4096,
+        height =>4096
     );
     
     # $request =
@@ -573,7 +574,8 @@ BE4::Harvesting - Declare WMS service
         inversion => FALSE,
         srs => "WGS84",
         bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
-        imagesize => [4096,4096]
+        width => 4096,
+        height =>4096
     );
     
     # $cmd =

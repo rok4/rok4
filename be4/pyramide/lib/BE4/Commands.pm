@@ -270,7 +270,8 @@ sub wms2work {
         dir       => "\${TMP_DIR}/".$nodeName,
         srs       => $tms->getSRS,
         bbox      => [$xMin, $yMin, $xMax, $yMax],
-        imagesize => ($imgSize[0], $imgSize[1])
+        width => $imgSize[0],
+        height => $imgSize[1]
     });
     
     return ($cmd,WGET_W);
@@ -451,39 +452,117 @@ method: merge4tiff
 
 Compose the 'merge4tiff' command.
 
-Parameters:
-    resultImg - path to write 'merge4tiff' result.
-    backGround - a color or an image.
-    childImgParam - images to merge (and their places), from 1 to 4 ("-i1 img1.tif -i3 img2.tif -i4 img3.tif").
 |                   i1  i2
 | backGround    +              =  resultImg
 |                   i3  i4
+
+Parameters:
+    node - BE4::Node to generate thanks to a 'merge4tiff' command.
+    harvesting - BE4::Harvesting, to use to harvest background if necessary.
     justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
 
 Example:
-    merge4tiff -g 1 -n FFFFFF  -i1 $TMP_DIR/19_396_3134.tif -i2 $TMP_DIR/19_397_3134.tif -i3 $TMP_DIR/19_396_3135.tif -i4 $TMP_DIR/19_397_3135.tif $TMP_DIR/18_198_1567.tif
+    merge4tiff -g 1 -n FFFFFF  -i1 ${TMP_DIR}/19_396_3134.tif -i2 ${TMP_DIR}/19_397_3134.tif -i3 ${TMP_DIR}/19_396_3135.tif -i4 ${TMP_DIR}/19_397_3135.tif ${TMP_DIR}/18_198_1567.tif
 =cut
 sub merge4tiff {
     my $self = shift;
-    my $resultImg = shift;
-    my $backGround = shift;
-    my $childImgParam  = shift;
+    my $node = shift;
+    my $harvesting = shift;
     my $justWeight = shift;
     $justWeight = FALSE if (! defined $justWeight);
   
     TRACE;
     
-    my $cmd = sprintf "%s -g %s ", MERGE_4_TIFF, $self->{pyramid}->getGamma();
+    my ($c, $w);
+    my ($code, $weight) = ("",MERGE4TIFF_W);
     
-    $cmd .= "-c zip ";
-    
-    $cmd .= "$backGround ";
-    $cmd .= "$childImgParam ";
-    $cmd .= sprintf "%s\n%s",$resultImg, RESULT_TEST;
-    
-    return ($cmd,MERGE4TIFF_W);
-}
+    my $workBgPath=undef;
+    my $workBgName=undef;
 
+    # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
+    # si on a l'option nowhite
+    my $bg='-n ' . $self->{pyramid}->getNodata->getValue;
+    
+    my @childList = $node->getChildren;
+
+    if (scalar @childList != 4 || $self->{pyramid}->getNodata->getNoWhite) {
+        # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
+        # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
+        # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
+        # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
+
+        my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
+
+        my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
+        my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
+        
+        my $cacheImgPath = $self->{pyramid}->getCachePathOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
+
+        if (-f $cacheImgPath) {
+            # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
+            $workBgName = join("_","bgImg",$node->getWorkName);
+            $workBgPath = File::Spec->catfile('${TMP_DIR}',$workBgName);
+
+            if ($self->{pyramid}->getCompression eq 'jpg') {
+                # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
+                if ($tooWide || $tooHigh) {
+                    WARN(sprintf "The image would have been too high or too wide to harvest it (level %s)",
+                         $node->getLevel);
+                } else {
+                    # On peut et doit chercher l'image de fond sur le WMS
+                    $bg.=" -b $workBgPath";
+                    ($c,$w) = $self->wms2work($node,$harvesting,$justWeight,"bgImg");
+                    if (! defined $c) {
+                        ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
+                        return FALSE;
+                    }
+                        
+                    $code .= $c;
+                    $weight += $w;
+                }
+            } else {
+                # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
+                $bg.=" -b $workBgPath";
+                ($c,$w) = $self->cache2work($node,"bgImg");
+                $code .= $c;
+                $weight += $w;
+            }
+        }
+    }
+    
+    return ("",$weight) if ($justWeight);
+    
+    # Maintenant on constitue la liste des images à passer à merge4tiff.
+    my $childImgParam=''; 
+    my $imgCount=0;
+    
+    foreach my $childNode ($node->getPossibleChildren) {
+        $imgCount++;
+        if (defined $childNode){
+            $childImgParam.=' -i'.$imgCount.' ${TMP_DIR}/' . $childNode->getWorkName;
+        }
+    }
+    
+    $code .= sprintf "%s -g %s ", MERGE_4_TIFF, $self->{pyramid}->getGamma;
+    
+    $code .= "-c zip ";
+    
+    $code .= "$bg ";
+    $code .= "$childImgParam ";
+    $code .= sprintf "\${TMP_DIR}/%s\n%s",$node->getWorkName, RESULT_TEST;
+    
+    # Suppression des images de travail dont on a plus besoin.
+    foreach my $childNode (@childList){
+        $code .= sprintf "rm -f \${TMP_DIR}/%s \n", $childNode->getWorkName;
+    }
+
+    # Si on a copié une image pour le fond, on la supprime maintenant
+    if ( defined $workBgName ){
+        $code.= "rm -f $workBgPath \n";
+    }
+    
+    return ($code,$weight);
+}
 
 ####################################################################################################
 #                                        PUBLIC METHODS                                            #

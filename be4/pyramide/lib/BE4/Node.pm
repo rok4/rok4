@@ -362,6 +362,36 @@ sub setAccumulatedWeight {
     $self->{W} = $weight + $self->getOwnWeight;
 }
 
+#
+=begin nd
+method: getPossibleChildren
+
+Parameters:
+    node - BE4::Node whose we want to know children.
+
+Returns:
+    An array of the real children from a node (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+=cut
+sub getPossibleChildren {
+    my $self = shift;
+    return $self->{graph}->getPossibleChildren($self);
+}
+
+#
+=begin nd
+method: getChildren
+
+Parameters:
+    node - BE4::Node whose we want to know children.
+
+Returns:
+    An array of the real children from a node (max length = 4), an empty array if the node is a leaf.
+=cut
+sub getChildren {
+    my $self = shift;
+    return $self->{graph}->getChildren($self);
+}
+
 ####################################################################################################
 #                                          EXPORT METHODS                                          #
 ####################################################################################################

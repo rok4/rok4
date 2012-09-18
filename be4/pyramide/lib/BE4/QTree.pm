@@ -731,86 +731,17 @@ sub computeAboveImage {
     # Final weight and code
     my $weight  = 0;
     my $code  = "\n";
-
-    my $workBgPath=undef;
-    my $workBgName=undef;
-
-    # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
-    # si on a l'option nowhite
-    my $bg='-n ' . $self->{pyramid}->getNodata->getValue;
     
-    my @childList = $self->getChildren($node);
-
-    if (scalar @childList != 4 || $self->{pyramid}->getNodata->getNoWhite) {
-        # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
-        # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
-        # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
-        # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
-
-        my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
-
-        my $tooWide =  $tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth();
-        my $tooHigh =  $tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight();
-        
-        my $cacheImgPath = $self->{pyramid}->getCachePathOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
-
-        if (-f $cacheImgPath) {
-            # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-            $workBgName = join("_","bgImg",$node->getWorkName);
-            $workBgPath = File::Spec->catfile('${TMP_DIR}',$workBgName);
-
-            if ($self->{pyramid}->getCompression() eq 'jpg') {
-                # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
-                if ($tooWide || $tooHigh) {
-                    WARN(sprintf "The image would have been too high or too wide to harvest it (level %s)",
-                         $node->getLevel);
-                } else {
-                    # On peut et doit chercher l'image de fond sur le WMS
-                    $bg.=" -b $workBgPath";
-                    ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight,"bgImg");
-                    if (! defined $c) {
-                        ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
-                        return FALSE;
-                    }
-                        
-                    $code .= $c;
-                    $weight += $w;
-                }
-            } else {
-                # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $bg.=" -b $workBgPath";
-                ($c,$w) = $self->{commands}->cache2work($node,"bgImg");
-                $code .= $c;
-                $weight += $w;
-            }
-        }
-    }
-
     # Maintenant on constitue la liste des images à passer à merge4tiff.
-    my $childImgParam=''; 
-    my $imgCount=0;
-    
-    foreach my $childNode ($self->getPossibleChildren($node)) {
-        $imgCount++;
-        if (defined $childNode){
-            $childImgParam.=' -i'.$imgCount.' $TMP_DIR/' . $childNode->getWorkName;
-        }
+    ($c,$w) = $self->{commands}->merge4tiff($node,$self->getDataSource->getHarvesting,$justWeight);
+    if ($w == -1) {
+        ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName);
+        return FALSE;
     }
-    ($c,$w) = $self->{commands}->merge4tiff('$TMP_DIR/'.$node->getWorkName, $bg, $childImgParam,$justWeight);
     $code .= $c;
     $weight += $w;
 
-    # Suppression des images de travail dont on a plus besoin.
-    foreach my $node (@childList){
-        $code .= sprintf "rm -f \${TMP_DIR}/%s \n", $node->getWorkName;
-    }
-
-    # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined $workBgName ){
-        $code.= "rm -f $workBgPath \n";
-    }
-
-    # copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
+    # Copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
     ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
     $code .= $c;
     $weight += $w;
