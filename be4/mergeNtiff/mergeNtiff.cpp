@@ -127,7 +127,7 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
 
     char strnodata[10];
     
-    if (argc != 18 && argc != 19) {
+    if (argc != 19 && argc != 20) {
         LOGGER_ERROR(" Nombre de parametres incorrect");
         usage();
         return -1;
