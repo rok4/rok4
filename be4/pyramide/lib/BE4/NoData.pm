@@ -44,6 +44,8 @@ use File::Basename;
 use File::Spec;
 use File::Path;
 
+use BE4::Pixel;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -60,9 +62,34 @@ use constant FALSE => 0;
 use constant CREATE_NODATA => "createNodata";
 
 ################################################################################
+# Global
+my %HEX2DEC;
+
+################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+
+%HEX2DEC = (
+    0 => 0,
+    1 => 1,
+    2 => 2,
+    3 => 3,
+    4 => 4,
+    5 => 5,
+    6 => 6,
+    7 => 7,
+    8 => 8,
+    9 => 9,
+    A => 10,
+    B => 11,
+    C => 12,
+    D => 13,
+    E => 14,
+    F => 15,
+);
+
+}
 END {}
 
 ################################################################################
@@ -71,7 +98,7 @@ Group: variable
 
 variable: $self
     * pixel : BE4::Pixel
-    * value - FF per sample or -99999 by default
+    * value - 255 (uint) or -99999 (float) per sample
     * nowhite : boolean - FALSE by default
 =cut
 
@@ -80,6 +107,7 @@ variable: $self
 ####################################################################################################
 
 # Group: constructor
+
 
 sub new {
     my $this = shift;
@@ -111,11 +139,12 @@ sub _init {
     return FALSE if (! defined $params);
     
     # init. params
-    # All attributes have to be present in parameters and defined, except 'value' which could be undefined
+    # Mandatory : pixel
+    # Optionnal : nowhite and value
 
-    if (! exists  $params->{nowhite} || ! defined  $params->{nowhite}) {
-        ERROR ("Parameter 'nowhite' required !");
-        return FALSE;
+    # *** nowhite ***
+    if (! exists $params->{nowhite} || ! defined  $params->{nowhite}) {
+        $params->{nowhite} = 'false';
     }
     if (lc $params->{nowhite} eq 'true') {
         $self->{nowhite} = TRUE;
@@ -127,45 +156,74 @@ sub _init {
         return FALSE;
     }
 
+    # *** pixel ***
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
     $self->{pixel} = $params->{pixel};
 
-    if (! exists  $params->{value}) {
-        ERROR ("Parameter 'value' required !");
-        return FALSE;
-    }
-
-#   for nodata value, it has to be coherent with bitspersample/sampleformat :
-#       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
-#       - 8/uint -> a uint in hexadecimal format (FF for example. Just first two are used)
+    # *** value ***
+    # For nodata value, it has to be coherent with bitspersample/sampleformat :
+    #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
+    #       - 8/uint -> a uint in decimal format (255 for example)
     if (! exists $params->{value} || ! defined ($params->{value})) {
-        if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
-            WARN ("Parameter 'nodata value' has not been set. The default value is -99999");
-            $params->{value} = '-99999';
-        } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            WARN ("Parameter 'nodata value' has not been set. The default value is FFFFFF");
-            $params->{value} = 'FF'x($self->{pixel}->{samplesperpixel});
+        if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+            WARN ("Parameter 'nodata value' has not been set. The default value is -99999 per sample");
+            $params->{value} .= '-99999' . ',-99999'x($self->getPixel->getSamplesPerPixel - 1);
+        } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+            WARN ("Parameter 'nodata value' has not been set. The default value is 255 per sample");
+            $params->{value} = '255' . ',255'x($self->{pixel}->getSamplesPerPixel - 1);
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
         }
     } else {
-        if (int($self->{pixel}->{bitspersample}) == 32 && $self->{pixel}->{sampleformat} eq 'float') {
-            if (!($params->{value} =~ m/^[-+]?(\d)+$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for a float32 pixel's format (%s) !",$params->{value});
+
+        if ($self->{pixel}->getBitsPerSample == 8 &&
+            $self->{pixel}->getSampleFormat eq 'uint' &&
+            $params->{value} =~ m/^[0-9A-F]{2,}$/) {
+
+            WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
+                $params->{value});
+            # nodata is supplied in hexadecimal format, we convert it
+            my $valueDec = $self->hexToDec($params->{value});
+            if (! defined $valueDec) {
+                ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Impossible to convert",
+                    $params->{value});
                 return FALSE;
             }
-        } elsif (int($self->{pixel}->{bitspersample}) == 8 && $self->{pixel}->{sampleformat} eq 'uint') {
-            if (!($params->{value}=~m/^[A-Fa-f0-9]{2,}$/)) {
-                ERROR (sprintf "Incorrect parameter nodata for this int8 pixel's format (%s) !",$params->{value});
-                return FALSE;
-            }
-        } else {
-            ERROR ("sampleformat/bitspersample not supported !");
+            WARN (sprintf "Nodata value in hexadecimal format have been converted : %s ",$valueDec);
+            $params->{value} = $valueDec;
+        }
+
+        $params->{value} =~ s/ //;
+        my @nodata = split(/,/,$params->{value},-1);
+        if (scalar @nodata != $self->{pixel}->getSamplesPerPixel) {
+            ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), seperated by ',' !",
+                $params->{value},$self->{pixel}->getSamplesPerPixel);
             return FALSE;
+        }
+
+        foreach my $value (@nodata) {
+            if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+                if ( $value !~ m/^[-+]?[0-9]+$/ ) {
+                    ERROR (sprintf "Incorrect value for nodata for a float32 pixel's format (%s) !",$value);
+                    return FALSE;
+                }
+            } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+                if ( $value !~ m/^[0-9]+$/ ) {
+                    ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's in decimal format '%s' !",$value);
+                    return FALSE;
+                }
+                if ( $value > 255 ) {
+                    ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's format %s : greater than 255 !",$value);
+                    return FALSE;
+                }
+            } else {
+                ERROR ("sampleformat/bitspersample not supported !");
+                return FALSE;
+            }
         }
     }
     
@@ -258,8 +316,51 @@ sub createNodata {
         return FALSE;
     }
 
-    return TRUE;
-    
+    return TRUE; 
+}
+
+# Group: public methods
+
+=begin nd
+method: hexToDec
+
+From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are seperated by comma. Input string must have an even length (one sample <=> 2 character).
+
+Example : hexToDec("7BFF0300") = "123,255,3,0"
+=cut
+sub hexToDec {
+    my $self = shift;
+    my $hex = shift;
+
+    if (length($hex) % 2 != 0) {
+        ERROR ("Length of an hexadecimal nodata must be even");
+        return undef;
+    }
+
+    my $dec = "";
+
+    my $i = 0;
+    while ($i < length($hex)) {
+        $dec .= "," if ($i > 1);
+
+        if (! exists $HEX2DEC{substr($hex,$i,1)} ) {
+            ERROR (sprintf "A character in not valid in the hexadecimal value of nodata : %s", substr($hex,$i,1));
+            return undef;
+        }
+        
+        if (! exists $HEX2DEC{substr($hex,$i+1,1)} ) {
+            ERROR (sprintf "A character in not valid in the hexadecimal value of nodata : %s",substr($hex,$i,1));
+            return undef;
+        }
+        
+        my $b1 = $HEX2DEC{substr($hex,$i,1)};
+        my $b0 = $HEX2DEC{substr($hex,$i+1,1)};
+        $dec .= $b0 + 16*$b1;
+
+        $i += 2;
+    }
+
+    return $dec;
 }
 
 ####################################################################################################
@@ -284,7 +385,6 @@ sub exportForDebug {
     return $export;
 }
 
-
 1;
 __END__
 
@@ -299,9 +399,10 @@ BE4::NoData - components of nodata
     # NoData object creation
     my $objNodata = BE4::NoData->new({
             pixel   => $objPixel,
-            color   => "FFFFFF",
+            value   => "255,255,255",
             nowhite => TRUE
     });
+
 
 =head1 DESCRIPTION
 
@@ -315,7 +416,9 @@ A Pixel object, the same as the cache one.
 
 =item value
 
-For unsigned 8-bits integer sample : integer between 0 and 255 in hexadecimal format, for each sample (FFFFFF for white). For 32-bits float sample : an signed integer (-99999).
+The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+
+Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
 =item nowhite
 
