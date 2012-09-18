@@ -246,32 +246,37 @@ sub _load {
             if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
                 $self->{isQTree} = FALSE;
                 INFO(sprintf "Not a QTree : resolutions don't go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution,
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution);
+                    $tmList[$i]->{id},$tmList[$i]->getResolution,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getResolution);
+                last;
             }
-            if ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
+            elsif ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
                 $self->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'topleftcornerx' is not the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX);
+                    $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerX,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerX);
+                last;
             }
-            if ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
+            elsif ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
                 $self->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'topleftcornery' is not the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY);
+                    $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerY,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerY);
+                last;
             }
-            if ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
+            elsif ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
                 $self->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'tilewidth' is not the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth);
+                    $tmList[$i]->{id},$tmList[$i]->getTileWidth,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTileWidth);
+                last;
             }
-            if ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
+            elsif ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
                 $self->{isQTree} = FALSE;
                 INFO(sprintf "Not a QTree : 'tileheight' is not the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight);
+                    $tmList[$i]->{id},$tmList[$i]->getTileHeight,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTileHeight);
+                last;
             }
         };
     };

@@ -157,7 +157,7 @@ Work2cache () {
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
   if [ -f $work ] ; then
-    tiff2tile $work __t2t__  ${PYR_DIR}/$cacheName
+    tiff2tile $work __t2t__ ${PYR_DIR}/$cacheName
     echo "0/$cacheName" >> ${LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
@@ -173,6 +173,32 @@ MergeNtiff () {
   if [ $bg ] ; then
     rm -f $bg
   fi
+}
+
+Merge4tiff () {
+    local imgs=( $1 $2 $3 $4 $5 )
+    local bg=$6
+
+    local forM4T=''
+    local forRM=''
+
+    if [ $bg ] ; then
+        forRM="$bg"
+        bg="-b $bg"
+    fi
+
+    for i in `seq 1 4`;
+    do
+        if [ ${imgs[$i]} != '0' ] ; then
+            forM4T=`printf "$forM4T -i%.1d ${imgs[$i]}" $i`
+            forRM="$forRM ${imgs[$i]}"
+        fi
+    done
+    
+    merge4tiff __m4t__ $bg $forM4T ${imgs[0]}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    
+    rm -f $forRM
 }
 
 FUNCTIONS
@@ -475,13 +501,10 @@ sub merge4tiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",MERGE4TIFF_W);
-    
-    my $workBgPath=undef;
-    my $workBgName=undef;
 
     # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
     # si on a l'option nowhite
-    my $bg='-n ' . $self->{pyramid}->getNodata->getValue;
+    my $bg = FALSE;
     
     my @childList = $node->getChildren;
 
@@ -500,8 +523,6 @@ sub merge4tiff {
 
         if (-f $cacheImgPath) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-            $workBgName = join("_","bgImg",$node->getWorkName);
-            $workBgPath = File::Spec->catfile('${TMP_DIR}',$workBgName);
 
             if ($self->{pyramid}->getCompression eq 'jpg') {
                 # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
@@ -510,19 +531,19 @@ sub merge4tiff {
                          $node->getLevel);
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
-                    $bg.=" -b $workBgPath";
+                    $bg = TRUE;
                     ($c,$w) = $self->wms2work($node,$harvesting,$justWeight,"bgImg");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
                         return FALSE;
                     }
-                        
+                    
                     $code .= $c;
                     $weight += $w;
                 }
             } else {
                 # copie avec tiffcp ou untile+montage pour passer du format de cache au format de travail.
-                $bg.=" -b $workBgPath";
+                $bg = TRUE;
                 ($c,$w) = $self->cache2work($node,"bgImg");
                 $code .= $c;
                 $weight += $w;
@@ -532,35 +553,24 @@ sub merge4tiff {
     
     return ("",$weight) if ($justWeight);
     
-    # Maintenant on constitue la liste des images à passer à merge4tiff.
-    my $childImgParam=''; 
-    my $imgCount=0;
-    
+    # We compose hte 'Merge4tiff' call
+    #   - the ouput
+    $code .= sprintf "Merge4tiff \${TMP_DIR}/%s", $node->getWorkName;
+    #   - the inputs
     foreach my $childNode ($node->getPossibleChildren) {
-        $imgCount++;
         if (defined $childNode){
-            $childImgParam.=' -i'.$imgCount.' ${TMP_DIR}/' . $childNode->getWorkName;
+            $code .= sprintf " \${TMP_DIR}/%s", $childNode->getWorkName;
+        } else {
+            $code .= " 0";
         }
     }
-    
-    $code .= sprintf "%s -g %s ", MERGE_4_TIFF, $self->{pyramid}->getGamma;
-    
-    $code .= "-c zip ";
-    
-    $code .= "$bg ";
-    $code .= "$childImgParam ";
-    $code .= sprintf "\${TMP_DIR}/%s\n%s",$node->getWorkName, RESULT_TEST;
-    
-    # Suppression des images de travail dont on a plus besoin.
-    foreach my $childNode (@childList){
-        $code .= sprintf "rm -f \${TMP_DIR}/%s \n", $childNode->getWorkName;
+    #   - the background (if it exists)
+    if ( $bg ){
+        my $workBgName = join("_","bgImg",$node->getWorkName);
+        $code.= " \${TMP_DIR}/$workBgName";
     }
+    $code .= "\n";
 
-    # Si on a copié une image pour le fond, on la supprime maintenant
-    if ( defined $workBgName ){
-        $code.= "rm -f $workBgPath \n";
-    }
-    
     return ($code,$weight);
 }
 
@@ -607,6 +617,16 @@ sub configureFunctions {
     $conf_mNt .= "-n $nd ";
 
     $configuredFunc =~ s/__mNt__/$conf_mNt/;
+    
+    # congigure merge4tiff
+    # work compression : deflate
+    my $conf_m4t = "-c zip ";
+
+    my $gamma = $pyr->getGamma;
+    $conf_m4t .= "-g $gamma ";
+    $conf_m4t .= "-n $nd ";
+
+    $configuredFunc =~ s/__m4t__/$conf_m4t/;
 
     # configure montage
     my $conf_montageIn = "";
