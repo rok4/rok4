@@ -901,7 +901,7 @@ sub findImages {
             $cacheroots->{$root} = $rootID;
         }
 
-        printf $LIST "%s\n", File::Spec->catdir($rootID,$name);;
+        printf $LIST "%s\n", File::Spec->catdir($rootID,$name);
     }
     
     return TRUE;
@@ -1117,7 +1117,7 @@ sub writeConfPyramid {
     my $tmsname = $self->getTmsName();
     $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
     #
-    my $formatimg = $self->getCode(); # ie TIFF_RAW_INT8 !
+    my $formatimg = $self->getFormatCode; # ie TIFF_RAW_INT8 !
     $strpyrtmplt  =~ s/__FORMATIMG__/$formatimg/;
     #  
     my $channel = $self->getSamplesPerPixel();
@@ -1368,7 +1368,7 @@ method: writeCachePyramid
 Write the Cache Directory Structure (CDS).
 
 * create an image directory for each level.
-* create the nodata tile for each level, if not exists.
+* create the nodata tile for each level, if not exists (add in the list).
 =cut
 sub writeCachePyramid {
     my $self = shift;
@@ -1586,7 +1586,7 @@ sub getCompressionOption {
     return $self->{pyrImgSpec}->getCompressionOption;
 }
 
-sub getCode {
+sub getFormatCode {
     my $self = shift;
     return $self->{pyrImgSpec}->getFormatCode;
 }
@@ -1598,22 +1598,22 @@ sub getPixel {
 
 sub getSamplesPerPixel {
     my $self = shift;
-    return $self->getPixel->getSamplesPerPixel;
+    return $self->{pyrImgSpec}->getPixel->getSamplesPerPixel;
 }
 
 sub getPhotometric {
     my $self = shift;
-    return $self->getPixel->getPhotometric;
+    return $self->{pyrImgSpec}->getPixel->getPhotometric;
 }
 
 sub getBitsPerSample {
     my $self = shift;
-    return $self->getPixel->getBitsPerSample;
+    return $self->{pyrImgSpec}->getPixel->getBitsPerSample;
 }
 
 sub getSampleFormat {
     my $self = shift;
-    return $self->getPixel->getSampleFormat;
+    return $self->{pyrImgSpec}->getPixel->getSampleFormat;
 }
 
 ################## Nodata ###################

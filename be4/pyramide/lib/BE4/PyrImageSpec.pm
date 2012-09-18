@@ -385,17 +385,13 @@ sub getCompressionOption {
     my $self = shift;
     return $self->{compressionoption};
 }
-sub getCode {
+sub getFormatCode {
     my $self = shift;
     return $self->{formatCode};
 }
 sub getPixel {
     my $self = shift;
     return $self->{pixel};
-}
-sub getFormatCode {
-    my $self = shift;
-    return $self->{formatCode};
 }
 
 ####################################################################################################
