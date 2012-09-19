@@ -183,8 +183,8 @@ sub new {
 
     # a new pyramid or from existing pyramid !
     return undef if (! $self->_load($params,$path_temp));
-
-    return $self;
+    
+    return $self;   
 }
 
 #

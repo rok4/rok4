@@ -58,12 +58,11 @@ our @EXPORT      = qw();
 
 ################################################################################
 # Constantes
+
 # Booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
-# Commands
-use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
-use constant MERGE_4_TIFF     => "merge4tiff";
+
 # Commands' weights
 use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
@@ -76,6 +75,8 @@ use constant TIFFCP_W => 0;
 # Global
 
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
+
+declare -A RM_IMGS
 
 Wms2work () {
     local dir=$1
@@ -97,7 +98,7 @@ Wms2work () {
         while :
         do
             let count=count+1
-            wget --no-verbose -O $nameImg "$url&BBOX=$1"
+            wget --quiet -O $nameImg "$url&BBOX=$1" #TEST#
             if gdalinfo $nameImg 1>/dev/null ; then break ; fi
             
             echo "Failure $count : wait for $wait_delay s"
@@ -112,8 +113,9 @@ Wms2work () {
         shift
     done
     
-    if [ "$min_size" -ne "0" ]&&[ "$size" -le "$min_size" ] ; then
-        rm -rf $nodeName
+    if [ "$size" -le "$min_size" ] ; then
+        RM_IMGS["$dir.tif"]="1"
+        rm -rf $dir
         return
     fi
 
@@ -156,10 +158,10 @@ Work2cache () {
   if [ -r ${PYR_DIR}/$cacheName ] ; then rm -f ${PYR_DIR}/$cacheName ; fi
   if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
   
-  if [ -f $work ] ; then
+  if [[ ! ${RM_IMGS[$work]} ]] ; then
     tiff2tile $work __t2t__ ${PYR_DIR}/$cacheName
-    echo "0/$cacheName" >> ${LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$cacheName" >> ${LIST_FILE}
   fi
 }
 
@@ -187,16 +189,26 @@ Merge4tiff () {
         bg="-b $bg"
     fi
 
+    local nbImgs=0
     for i in `seq 1 4`;
     do
         if [ ${imgs[$i]} != '0' ] ; then
-            forM4T=`printf "$forM4T -i%.1d ${imgs[$i]}" $i`
-            forRM="$forRM ${imgs[$i]}"
+            if [[ ! ${RM_IMGS[${imgs[$i]}]} ]] ; then
+                forM4T=`printf "$forM4T -i%.1d ${imgs[$i]}" $i`
+                forRM="$forRM ${imgs[$i]}"
+                let nbImgs=$nbImgs+1
+            else
+                echo -e "Merge4tiff : on sait que ${imgs[$i]} a été supprimé normalement, on passe"
+            fi
         fi
     done
     
-    merge4tiff __m4t__ $bg $forM4T ${imgs[0]}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    if [ "$nbImgs" -gt 0 ] ; then
+        merge4tiff __m4t__ $bg $forM4T ${imgs[0]}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    else
+        RM_IMGS[${imgs[0]}]="1"
+    fi
     
     rm -f $forRM
 }
@@ -335,10 +347,10 @@ sub cache2work {
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName); #TEST#
         return ($cmd,CACHE2WORK_PNG_W);
     } else {
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);#TEST#
         return ($cmd,TIFFCP_W);
     }
 }
@@ -632,7 +644,7 @@ sub configureFunctions {
     my $conf_montageIn = "";
 
     $conf_montageIn .= sprintf "-geometry %sx%s",$self->{pyramid}->getTileWidth,$self->{pyramid}->getTileHeight;
-    $conf_montageIn .= sprintf "-tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
+    $conf_montageIn .= sprintf " -tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
     
     $configuredFunc =~ s/__montageIn__/$conf_montageIn/;
     
@@ -659,6 +671,7 @@ sub configureFunctions {
     my $conf_t2t = "";
 
     my $compression = $pyr->getCompression;
+    
     $conf_t2t .= "-c $compression ";
     if ($pyr->getCompressionOption eq 'crop') {
         $conf_t2t .= "-crop ";

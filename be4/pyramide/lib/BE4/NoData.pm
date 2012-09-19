@@ -179,10 +179,11 @@ sub _init {
             return FALSE;
         }
     } else {
+        $params->{value} =~ s/ //g;
 
         if ($self->{pixel}->getBitsPerSample == 8 &&
             $self->{pixel}->getSampleFormat eq 'uint' &&
-            $params->{value} =~ m/^[0-9A-F]{2,}$/) {
+            $params->{value} !~ m/^[0-9,]+$/) {
 
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{value});
@@ -196,8 +197,7 @@ sub _init {
             WARN (sprintf "Nodata value in hexadecimal format have been converted : %s ",$valueDec);
             $params->{value} = $valueDec;
         }
-
-        $params->{value} =~ s/ //;
+        
         my @nodata = split(/,/,$params->{value},-1);
         if (scalar @nodata != $self->{pixel}->getSamplesPerPixel) {
             ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), seperated by ',' !",
