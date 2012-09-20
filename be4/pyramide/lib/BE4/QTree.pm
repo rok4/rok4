@@ -696,6 +696,7 @@ sub computeBottomImage {
 
     if ($justWeight) {
         $node->setOwnWeight($weight);
+        $node->setAccumulatedWeight(0);
     } else {
         $node->setCode($code);
     }
@@ -877,25 +878,20 @@ sub shareNodesOnJobs {
         $wholeTreeWeight += $node->getAccumulatedWeight;
     }
     
-    ALWAYS (sprintf "Poids des script jusqu'ici :"); #TEST#
     for (my $j = 0; $j <= $splitNumber; $j++) {
         # On initialise les poids avec ceux des jobs
         $INIT_WEIGHTS[$j] = $self->{forest}->getWeightOfScript($j);
-        ALWAYS (sprintf "SCRIPT $j :  %s", $INIT_WEIGHTS[$j]); #TEST#
     }
 
     for (my $i = $self->getTopOrder(); $i >= $self->getBottomOrder(); $i--) {
         my $levelID = $tms->getIDfromOrder($i);
-        ALWAYS (sprintf "--------- Niveau testé : %s ---------", $levelID); #TEST#
         my @levelNodeList = $self->getNodesOfLevel($levelID);
         
         if ($levelID ne $self->{bottomID} && scalar @levelNodeList < $splitNumber) {
-            ALWAYS (sprintf "Pas assez de noeud à ce niveau : %s", scalar @levelNodeList); #TEST#
             next;
         }
         
         @levelNodeList = sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
-        ALWAYS (sprintf "Assez de noeud (ou bottom level) à ce niveau : %s", scalar @levelNodeList); #TEST#
 
         my @TMP_WEIGHTS = @INIT_WEIGHTS;
         
@@ -909,25 +905,16 @@ sub shareNodesOnJobs {
             $levelNodeList[$j]->setScript($self->{forest}->getScript($scriptInd));
         }
         
-
-        
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
-        ALWAYS (sprintf "Poids du finisher : %s", $finisherWeight); #TEST#
-        ALWAYS (sprintf "Poids qu'auraient les scripts :"); #TEST#
-        for (my $j = 0; $j <= $splitNumber; $j++) {
-            ALWAYS (sprintf "SCRIPT $j :  %s", $TMP_WEIGHTS[$j]); #TEST#
-        }
         my $worstWeight = BE4::Array->maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
-        ALWAYS (sprintf "Pire poids : %s", $worstWeight); #TEST#
         
         DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 
         # on compare ce pire des cas avec celui obtenu jusqu'ici. S'il est plus petit, on garde ce niveau comme
         # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
         if (! defined $optimalWeight || $worstWeight < $optimalWeight) {
-            ALWAYS (sprintf "C'est le nouveau cut level"); #TEST#
             $optimalWeight = $worstWeight;
             $cutLevelID = $levelID;
             @jobsWeights = @TMP_WEIGHTS;

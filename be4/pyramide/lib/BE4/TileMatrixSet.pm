@@ -287,6 +287,7 @@ sub _load {
     }
     
     if ($self->isQTree) { return TRUE;}
+    
     ## Adding informations about child/parent in TM objects
     for (my $i = 0; $i < scalar(@tmList) ;$i++) {
         if (! $self->computeTmSource($tmList[$i])) {

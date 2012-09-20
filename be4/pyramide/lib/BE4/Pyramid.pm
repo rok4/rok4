@@ -1734,6 +1734,11 @@ method: getCacheNameOfImage
 
 Return the image relative path, from the cache root directory (pyr_data_path). Tile's indices are convert in base 36, and split to give the path. Use BE4::Base36 tools.
 
+Example:
+    $objPyr->getCacheNameOfImage("data", "level_19", 4032, 18217)
+    
+    returns "IMAGE/level_19/3E/42/01.tif"
+
 Parameters:
     type - Tile type : "data", "metadata", "nodata".
     level - Level of the node we want to know path.
@@ -1767,6 +1772,11 @@ sub getCacheNameOfImage {
 method: getCachePathOfImage
 
 Return the image absolute path. Use method getCacheNameOfImage.
+
+Example:
+    $objPyr->getCachePathOfImage("data", "level_19", 4032, 18217)
+    
+    returns "/home/ign/BDORTHO/IMAGE/level_19/3E/42/01.tif"
 
 Parameters:
     type - Tile type : "data", "metadata", "nodata".

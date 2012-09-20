@@ -319,8 +319,6 @@ sub getBBox {
         $self->{graph}->getPyramid->getTilesPerHeight
     );
     
-    #ALWAYS(sprintf "BBOX : %s",Dumper(@Bbox)); #TEST#
-    
     return @Bbox;
 }
 
@@ -358,8 +356,8 @@ AccumulatedWeight = children's weights sum + own weight = provided weight + alre
 =cut
 sub setAccumulatedWeight {
     my $self = shift;
-    my $weight = shift;
-    $self->{W} = $weight + $self->getOwnWeight;
+    my $childrenWeight = shift;
+    $self->{W} = $childrenWeight + $self->getOwnWeight;
 }
 
 #

@@ -728,9 +728,9 @@ Default : none.
 
 =item color
 
-Value of nodata in the final cache. For unsigned 8-bits integer sample, it's a integer between 0 and 255, in hexdecimal format (2 characters per sample, FFFFFF for white in RGB). For 32-bits float sample, it's an signed integer.
+The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
 
-Default : FF or -99999 per sample (according to sample format).
+Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
 =item nowhite
 
@@ -758,7 +758,7 @@ Mandatory.
 
 =item samplesperpixel
 
-Possible values : 1, 3, 4.
+Possible values : 1, 3, 4. Have to be the same as source.
 
 Mandatory.
 

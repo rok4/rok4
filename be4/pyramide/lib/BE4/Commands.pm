@@ -98,7 +98,7 @@ Wms2work () {
         while :
         do
             let count=count+1
-            wget --quiet -O $nameImg "$url&BBOX=$1" #TEST#
+            wget --no-verbose -O $nameImg "$url&BBOX=$1"
             if gdalinfo $nameImg 1>/dev/null ; then break ; fi
             
             echo "Failure $count : wait for $wait_delay s"
@@ -347,10 +347,10 @@ sub cache2work {
         #       - la copie du fichier dans le dossier temporaire
         #       - le détuilage (untile)
         #       - la fusion de tous les png en un tiff
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName); #TEST#
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $cacheName , $baseName);
         return ($cmd,CACHE2WORK_PNG_W);
     } else {
-        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);#TEST#
+        my $cmd =  sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $cacheName ,$baseName);
         return ($cmd,TIFFCP_W);
     }
 }
