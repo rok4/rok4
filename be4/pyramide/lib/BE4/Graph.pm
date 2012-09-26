@@ -303,9 +303,7 @@ sub identifyBottomNodes {
             $self->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            ALWAYS(sprintf "coordinates bbox : %s, %s, %s, %s",$bbox[0], $bbox[1], $bbox[2], $bbox[3]); #TEST#
             my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bbox[0],$bbox[1],$bbox[2],$bbox[3],$TPW,$TPH);
-            ALWAYS("indices bbox : $iMin, $jMin, $iMax, $jMax"); #TEST#
             
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
