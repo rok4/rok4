@@ -171,3 +171,33 @@ void pj_get_spheroid_defn(projPJ defn, double *major_axis, double *eccentricity_
 	if ( eccentricity_squared )
 		*eccentricity_squared = defn->es;
 };
+
+
+/************************************************************************/
+/*                           pj_get_def_area()                          */
+/*                                                                      */
+/*      Fetch the projection area of definition. Note that              */
+/*      default value is : -90,-180,90,180                              */
+/************************************************************************/
+void pj_get_def_area(PJ* pj, double *xmin, double *ymin, double *xmax, double *ymax){
+	if( pj_param(pj->ctx, pj->params, "tarea_s").i ) {
+		*ymin = pj_param(pj->ctx, pj->params, "darea_s").f;
+	} else {
+		*ymin = -90;
+	}
+	if( pj_param(pj->ctx, pj->params, "tarea_w").i ) {
+		*xmin = pj_param(pj->ctx, pj->params, "darea_w").f;
+	} else {
+		*xmin = -180;
+	}
+	if( pj_param(pj->ctx, pj->params, "tarea_n").i ) {
+		*ymax = pj_param(pj->ctx, pj->params, "darea_n").f;
+	} else {
+		*ymax = 90;
+	}
+	if( pj_param(pj->ctx, pj->params, "tarea_e").i ) {
+		*xmax = pj_param(pj->ctx, pj->params, "darea_e").f;
+	} else {
+		*xmax = 180;
+	}
+}

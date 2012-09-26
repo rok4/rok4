@@ -105,6 +105,7 @@ const char *pj_get_release(void);
 void pj_acquire_lock(void);
 void pj_release_lock(void);
 void pj_cleanup_lock(void);
+void pj_get_def_area(projPJ pj, double *xmin, double *ymin, double *xmax, double *ymax);
 
 projCtx pj_get_default_ctx(void);
 projCtx pj_get_ctx( projPJ );

@@ -64,6 +64,22 @@ char hex2int ( unsigned char hex ) {
     return hex;
 }
 
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while(std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    return split(s, delim, elems);
+}
+
+
 void Request::url_decode ( char *src ) {
     unsigned char high, low;
     char* dst = src;
@@ -743,9 +759,9 @@ void stringSplit ( std::string str, std::string delim, std::vector<std::string> 
  * @return message d'erreur en cas d'erreur (NULL sinon)
  */
 
-DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer,
+DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                    BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                   Style*& style, std::map< std::string, std::string >& format_option ) {
+                                   std::vector<Style*>& styles, std::map< std::string, std::string >& format_option ) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
@@ -756,10 +772,20 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     std::string str_layer=getParam ( "layers" );
     if ( str_layer == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre LAYERS absent."),"wms" ) );
-    std::map<std::string, Layer*>::iterator it = layerList.find ( str_layer );
-    if ( it == layerList.end() )
-        return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_("Layer ")+str_layer+_(" inconnu."),"wms" ) );
-    layer = it->second;
+    //Split layer Element
+    std::vector<std::string> layersString = split(str_layer,',');
+    LOGGER_DEBUG(_("Nombre de couches demandees =") << layersString.size());
+    if (layersString.size() > servicesConf.getLayerLimit()) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Le nombre de couche demande excede la valeur du LayerLimit."),"wms" ) );
+    }
+    std::vector<std::string>::iterator itLayer = layersString.begin();
+    for ( ; itLayer != layersString.end(); itLayer++) {
+        std::map<std::string, Layer*>::iterator it = layerList.find ( *itLayer );
+        if ( it == layerList.end() )
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_("Layer ")+*itLayer+_(" inconnu."),"wms" ) );
+        layers.push_back(it->second);
+    }
+    LOGGER_DEBUG(_("Nombre de couches =") << layers.size());
     // WIDTH
     std::string strWidth=getParam ( "width" );
     if ( strWidth == "" )
@@ -786,7 +812,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     std::string str_crs=getParam ( "crs" );
     if ( str_crs == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre CRS absent."),"wms" ) );
-    // Existence du CRS dans la liste de CRS du layer TODO Implement GlobalCRS
+    // Existence du CRS dans la liste de CRS des layers
     crs.setRequestCode ( str_crs );
     bool crsNotFound = true;
     unsigned int k;
@@ -795,16 +821,18 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
             crsNotFound = false;
             break;
         }
-    if (crsNotFound) {
-        for ( k=0;k<layer->getWMSCRSList().size();k++ )
-            if ( crs.cmpRequestCode ( layer->getWMSCRSList().at ( k ).getRequestCode() ) ) {
-                crsNotFound = false;
-                break;
-            }
+    if ( crsNotFound ) {
+        for ( unsigned int j = 0; j < layers.size() ; j++ ) {
+            for ( k=0; k<layers.at(j)->getWMSCRSList().size(); k++ )
+                if ( crs.cmpRequestCode ( layers.at(j)->getWMSCRSList().at ( k ).getRequestCode() ) ) {
+                    crsNotFound = false;
+                    break;
+                }
+            if ( crsNotFound )
+                return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS " ) +str_crs+_ ( " (equivalent PROJ4 " ) +crs.getProj4Code() +_ ( " ) inconnu pour le layer " ) +layersString.at(j)+".","wms" ) );
+        }
+
     }
-    // FIXME : la methode vector::find plante (je ne comprends pas pourquoi)
-    if ( crsNotFound )
-        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_("CRS ")+str_crs+_(" (equivalent PROJ4 ")+crs.getProj4Code() +_(" ) inconnu pour le layer ")+str_layer+".","wms" ) );
 
     // FORMAT
     format=getParam ( "format" );
@@ -857,25 +885,27 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         bbox.ymax=bb[2];
     }
 
-
-    // SCALE DENOMINATORS
-
-    // Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
-
-    // Resolution en x et y en unites du CRS demande
-    double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
+//     if ( !(hasParam("disable_bbox_crs_check")) && !(crs.validateBBox(bbox))) {
+//         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Parametre BBOX invalide pour le CRS ")+str_crs+_("."),"wms" ) );
+//     }
+//     // Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
+// 
+//     // Resolution en x et y en unites du CRS demande
+//     double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
+// 
+    //double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
 
     // Resolution en x et y en m
     // Hypothese : les CRS en geographiques sont en degres
-    if ( crs.isLongLat() ) {
+    /*if ( crs.isLongLat() ) {
         resx*=111319;
         resy*=111319;
-    }
+    }*/
 
     // Le serveur ne doit pas renvoyer d'exception
     // Cf. WMS 1.3.0 - 7.2.4.6.9
 
-    double epsilon=0.0000001;   // Gestion de la precision de la division
+    /*double epsilon=0.0000001;   // Gestion de la precision de la division
     if ( resx>0. )
         if ( resx+epsilon<layer->getMinRes() ||resy+epsilon<layer->getMinRes() ) {
             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
@@ -883,28 +913,43 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( resy>0. )
         if ( resx>layer->getMaxRes() +epsilon||resy>layer->getMaxRes() +epsilon )
             ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
-
+    */
     // EXCEPTION
     std::string str_exception=getParam ( "exception" );
     if ( str_exception!=""&&str_exception!="XML" )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Format d'exception ")+str_exception+_(" non pris en charge"),"wms" ) );
-
+    
+    //STYLES
     if ( ! ( hasParam ( "styles" ) ) )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES absent."),"wms" ) );
-    std::string styles=getParam ( "styles" );
-    if ( styles == "" ) //TODO Gestion du style par défaut
-        styles= ( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
-    if ( layer->getStyles().size() != 0 ) {
-        for ( unsigned int i=0; i < layer->getStyles().size(); i++ ) {
-            if ( styles == layer->getStyles() [i]->getId() ) {
-                style = layer->getStyles() [i];
-            }
+    std::string str_styles=getParam ( "styles" );
+    if ( str_styles == "" ) {//TODO Gestion du style par défaut
+        str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+        for (int i = 1;  i < layers.size(); i++) {
+            str_styles.append(",");
+            str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
         }
     }
-    if ( ! ( style ) )
-        return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_("Le style ")+styles+_(" n'est pas gere pour la couche ")+str_layer,"wms" ) );
+    std::vector<std::string> stylesString = split(str_styles,',');
+    LOGGER_DEBUG(_("Nombre de styles demandes =") << layers.size());
+    if (stylesString.size() != layersString.size() ){
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES incomplet."),"wms" ) );
+    }
+    for (int k = 0 ; k  < stylesString.size(); k++ ) {
+        
+        if ( layers.at(k)->getStyles().size() != 0 ) {
+            for ( unsigned int i=0; i < layers.at(k)->getStyles().size(); i++ ) {
+                if ( stylesString.at(k) == layers.at(k)->getStyles() [i]->getId() ) {
+                    styles.push_back(layers.at(k)->getStyles() [i]);
+                }
+            }
+        }
 
-    std::string formatOptionString= getParam("format_options").c_str();
+        if ( styles.size() < k+1 ) 
+            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +stylesString.at(k)+_ ( " n'est pas gere pour la couche " ) +layersString.at(k),"wms" ) );
+    }
+    
+    std::string formatOptionString= getParam ( "format_options").c_str();
     char* formatOptionChar = new char[formatOptionString.size()+1];
     memset(formatOptionChar,0,formatOptionString.size()+1);
     memcpy(formatOptionChar,formatOptionString.c_str(),formatOptionString.size());

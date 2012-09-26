@@ -35,65 +35,60 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef STYLE_H
-#define STYLE_H
-#include <string>
-#include <vector>
-#include "LegendURL.h"
-#include "Palette.h"
+#include "Image.h"
 
+#ifndef MERGEIMAGE_H
+#define MERGEIMAGE_H
 
-class Style {
-private :
-    std::string id;
-    std::vector<std::string> titles;
-    std::vector<std::string> abstracts;
-    std::vector<std::string> keywords;
-    std::vector<LegendURL> legendURLs;
-    Palette palette;
-    //Estompage
-    bool estompage;
-    int angle;
-    float exaggeration;
-    uint8_t center;
+class MergeImage : public Image {
 public:
-    Style ( const std::string& id,const std::vector<std::string>& titles,
-            const std::vector<std::string>& abstracts,const  std::vector<std::string>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0);
-    inline std::string getId() {
-        return id;
-    }
-    inline std::vector<std::string> getTitles() {
-        return titles;
-    }
-    inline std::vector<std::string> getAbstracts() {
-        return abstracts;
-    }
-    inline std::vector<std::string> getKeywords() {
-        return keywords;
-    }
-    inline std::vector<LegendURL> getLegendURLs() {
-        return legendURLs;
-    }
-    inline Palette* getPalette() {
-        return &palette;
-    }
-    inline bool isEstompage() {
-        return estompage;
-    }
-    
-    inline int getAngle() {
-        return angle;
-    }
-    
-    inline float getExaggeration() {
-        return exaggeration;
-    }
-    
-    inline uint8_t getCenter() {
-        return center;
-    }
+    enum MergeType {
+        UNKNOWN = 0,
+        NORMAL = 1,
+        LIGHTEN = 2,
+        DARKEN = 3,
+        MULTIPLY = 4,
+        MULTIPLYOLD = 5
+    };
+
+
+private:
+    Image* backImage;
+    Image* frontImage;
+
+    MergeType composition;
+    float factor;
+    void mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front );
+    void mergeline ( float* buffer, uint8_t* back, uint8_t* front );
+
+public:
+    virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line );
+    MergeImage ( Image* backImage,Image* frontImage, MergeType composition = NORMAL, float factor = 1 );
+    virtual ~MergeImage();
 };
 
+class Pixel {
+public: 
+    float Sr, Sg, Sb, Sa;
+    float Sra, Sga, Sba;
+    // 3 Chan + Alpha
+    Pixel ( uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255): 
+                    Sr(r), Sb(b), Sg(g)
+                    {
+                        Sa  = a/255.;
+                        Sra = r * Sa;
+                        Sga = g * Sa;
+                        Sba = b * Sa;
+                    }
+    // 1 Chan + Alpha
+    Pixel ( uint8_t x, uint8_t a = 255):
+                    Sr(x/255), Sb(x/255), Sg(x/255), Sa(a/255)
+                    {
+                        Sra = Sr * Sa;
+                        Sga = Sra;
+                        Sba = Sra;
+                    }
+};
 
-#endif // STYLE_H
+#endif // MERGEIMAGE_H

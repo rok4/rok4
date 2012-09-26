@@ -69,6 +69,7 @@ private:
 
     // WMS std::string
     std::string name;
+    unsigned int layerLimit;
     unsigned int maxWidth;
     unsigned int maxHeight;
     unsigned int maxTileX;
@@ -87,14 +88,14 @@ private:
 public:
 
     ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
-                   std::string serviceProvider, std::string fee, std::string accessConstraint,
+                   std::string serviceProvider, std::string fee, std::string accessConstraint, unsigned int layerLimit,
                    unsigned int maxWidth, unsigned int maxHeight, unsigned int maxTileX, unsigned int maxTileY, std::vector<std::string> formatList,std::vector<CRS> globalCRSList ,  std::string serviceType,
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
                    std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0,bool fullStyling=0, bool inspire=0 ) :
             name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
-            serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ),
+            serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ), layerLimit(layerLimit),
             maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX(maxTileX), maxTileY(maxTileY) , formatList ( formatList ), globalCRSList(globalCRSList), serviceType ( serviceType ),
             serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
             individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
@@ -160,6 +161,9 @@ public:
         return electronicMailAddress;
     }
     // WMS
+    unsigned int inline getLayerLimit() const {
+        return layerLimit;
+    }
     unsigned int inline getMaxHeight() const {
         return maxHeight;
     }

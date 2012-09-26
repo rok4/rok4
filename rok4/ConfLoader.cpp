@@ -62,7 +62,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     std::map<double, Colour> colourMap;
     bool rgbContinuous = false;
     bool alphaContinuous = false;
-
+    int angle =-1;
+    float exaggeration=1;
+    int center=0;
     int errorCode;
 
     /*TiXmlDocument doc(fileName.c_str());
@@ -99,7 +101,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         title.push_back ( curtitle );
     }
     if ( title.size() ==0 ) {
-        LOGGER_ERROR ( _("Aucun Title trouvé dans le Style") << id <<_(" : il est invalide!!") );
+        LOGGER_ERROR ( _("Aucun Title trouve dans le Style") << id <<_(" : il est invalide!!") );
         return NULL;
     }
 
@@ -110,7 +112,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         abstract.push_back ( curAbstract );
     }
     if ( abstract.size() ==0 && inspire ) {
-        LOGGER_ERROR ( _("Aucun Abstract trouvé dans le Style") << id <<_(" : il est invalide au sens INSPIRE!!") );
+        LOGGER_ERROR ( _("Aucun Abstract trouve dans le Style") << id <<_(" : il est invalide au sens INSPIRE!!") );
         return NULL;
     }
 
@@ -131,36 +133,36 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
 
         if ( pElem->QueryStringAttribute ( "format",&format ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( _("Aucun format trouvé dans le LegendURL du Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("Aucun format trouve dans le LegendURL du Style ") << id <<_(" : il est invalide!!") );
             continue;
         }
 
         if ( pElem->QueryStringAttribute ( "xlink:href",&href ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( _("Aucun href trouvé dans le LegendURL du Style ") << id <<_(" : il est invalide!!" ));
+            LOGGER_ERROR ( _("Aucun href trouve dans le LegendURL du Style ") << id <<_(" : il est invalide!!" ));
             continue;
         }
 
         errorCode = pElem->QueryIntAttribute ( "width",&width );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _("L'attribut width doit être un entier dans le Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("L'attribut width doit etre un entier dans le Style ") << id <<_(" : il est invalide!!") );
             continue;
         }
 
         errorCode = pElem->QueryIntAttribute ( "height",&height );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _("L'attribut height doit être un entier dans le Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("L'attribut height doit etre un entier dans le Style ") << id <<_(" : il est invalide!!") );
             continue;
         }
 
         errorCode = pElem->QueryDoubleAttribute ( "minScaleDenominator",&minScaleDenominator );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _("L'attribut minScaleDenominator doit être un double dans le Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("L'attribut minScaleDenominator doit etre un double dans le Style ") << id <<_(" : il est invalide!!") );
             continue;
         }
 
         errorCode = pElem->QueryDoubleAttribute ( "maxScaleDenominator",&maxScaleDenominator );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _("L'attribut maxScaleDenominator doit être un double dans le Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("L'attribut maxScaleDenominator doit etre un double dans le Style ") << id <<_(" : il est invalide!!") );
             continue;
         }
 
@@ -168,7 +170,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     }
 
     if ( legendURLs.size() ==0 && inspire ) {
-        LOGGER_ERROR ( _("Aucun legendURL trouvé dans le Style ") << id <<_(" : il est invalide au sens INSPIRE!!") );
+        LOGGER_ERROR ( _("Aucun legendURL trouve dans le Style ") << id <<_(" : il est invalide au sens INSPIRE!!") );
         return NULL;
     }
 
@@ -183,7 +185,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
         errorCode = pElem->QueryStringAttribute ( "rgbContinuous",&continuousStr );
         if ( errorCode != TIXML_SUCCESS ) {
-            LOGGER_DEBUG ( _("L'attribut rgbContinuous n'a pas été trouvé dans la palette du Style ") << id <<_(" : Faux par défaut") );
+            LOGGER_DEBUG ( _("L'attribut rgbContinuous n'a pas ete trouve dans la palette du Style ") << id <<_(" : Faux par defaut") );
         } else {
             if (continuousStr.compare("true")==0)
                 rgbContinuous=true;
@@ -191,7 +193,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         
         errorCode = pElem->QueryStringAttribute ( "alphaContinuous",&continuousStr );
         if ( errorCode != TIXML_SUCCESS ) {
-            LOGGER_DEBUG ( _("L'attribut alphaContinuous n'a pas été trouvé dans la palette du Style ") << id <<_(" : Faux par défaut") );
+            LOGGER_DEBUG ( _("L'attribut alphaContinuous n'a pas ete trouve dans la palette du Style ") << id <<_(" : Faux par defaut") );
         } else {
             if (continuousStr.compare("true")==0)
                 alphaContinuous=true;
@@ -199,12 +201,12 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         
         errorCode = pElem->QueryDoubleAttribute ( "maxValue",&maxValue );
         if ( errorCode != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( _("L'attribut maxValue n'a pas été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+            LOGGER_ERROR ( _("L'attribut maxValue n'a pas ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
             return NULL;
         } else {
             LOGGER_DEBUG ( _("MaxValue ") << maxValue );
             /*if ( maxValue <= 0 ) {
-                LOGGER_ERROR ( "L'attribut maxValue est négatif ou nul " << id <<" : il est invalide!!" );
+                LOGGER_ERROR ( "L'attribut maxValue est negatif ou nul " << id <<" : il est invalide!!" );
                 return NULL;
             }*/
 
@@ -215,7 +217,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
                 LOGGER_DEBUG ( _("Value avant Couleur") << value );
                 errorCode = pElem->QueryDoubleAttribute ( "value",&value );
                 if ( errorCode == TIXML_WRONG_TYPE ) {
-                    LOGGER_ERROR ( _("Un attribut value invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+                    LOGGER_ERROR ( _("Un attribut value invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
                     continue;
                 } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
                     value=0;
@@ -227,37 +229,37 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
                 //Red
                 colourElem = cHdl.FirstChild ( "red" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
                     continue;
                 }
                 r = atoi ( colourElem->GetText() );
                 if ( r < 0 || r > 255 ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
                     continue;
                 }
 
                 //Green
                 colourElem = cHdl.FirstChild ( "green" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!" ));
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!" ));
                     continue;
                 }
 
                 g = atoi ( colourElem->GetText() );
                 if ( g < 0 || g > 255 ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
                     continue;
                 }
 
                 //Blue
                 colourElem = cHdl.FirstChild ( "blue" ).Element();
                 if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!") );
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!") );
                     continue;
                 }
                 b = atoi ( colourElem->GetText() );
                 if ( b < 0 || b > 255 ) {
-                    LOGGER_ERROR ( _("Un attribut colour invalide a été trouvé dans la palette du Style ") << id <<_(" : il est invalide!!" ));
+                    LOGGER_ERROR ( _("Un attribut colour invalide a ete trouve dans la palette du Style ") << id <<_(" : il est invalide!!" ));
                     continue;
                 }
 
@@ -272,17 +274,6 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
                 colourMap.insert ( std::pair<double,Colour> ( value, Colour ( r,g,b,a ) ) );
             }
 
-            /*
-            for (int k = 0; k < maxValue+1 ; ++k) {
-                std::map<double,Colour>::iterator nearestValue = paletteMap.upper_bound(k);
-                if ( nearestValue != paletteMap.begin()){
-                    nearestValue--;
-                }
-
-                Colour tmp = nearestValue->second;
-                colours.push_back ( Colour ( tmp.r,tmp.g,tmp.b, ( tmp.a==-1?k:tmp.a ) ) );
-            }*/
-
             if ( colourMap.size() == 0 ) {
                 LOGGER_ERROR ( _("Palette sans Couleur ") << id <<_(" : il est invalide!!") );
                 return NULL;
@@ -291,10 +282,31 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         }
     }
     Palette pal ( colourMap, rgbContinuous, alphaContinuous );
-    //std::map<double,Colour>* palMap = pal.getColoursMap();
-    //LOGGER_DEBUG ( "Png palette Size : " <<pal.getPalettePNGSize());
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal );
-    LOGGER_DEBUG ( _("Style Créé") );
+
+    pElem = hRoot.FirstChild ( "estompage" ).Element();
+    if ( pElem ) {
+        errorCode = pElem->QueryIntAttribute ( "angle",&angle );
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            angle=-1;
+        }
+        errorCode = pElem->QueryFloatAttribute ( "exaggeration",&exaggeration);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut exaggeration invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            exaggeration=1;
+        }
+
+        errorCode = pElem->QueryIntAttribute ( "center",&center );
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut center invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            center=0;
+        }
+    }
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal ,angle,exaggeration,center);
+    LOGGER_DEBUG ( _("Style Cree") );
     return style;
 
 }//parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire)
@@ -464,7 +476,7 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet ( TiXmlDocument* doc,std::string f
     }// boucle sur le TileMatrix
 
     if ( listTM.size() ==0 ) {
-        LOGGER_ERROR ( _("Aucun tileMatrix trouvé dans le tileMatrixSet") << id <<_(" : il est invalide!!") );
+        LOGGER_ERROR ( _("Aucun tileMatrix trouve dans le tileMatrixSet") << id <<_(" : il est invalide!!") );
         return NULL;
     }
     TileMatrixSet * tms = new TileMatrixSet ( id,title,abstract,keyWords,crs,listTM );
@@ -516,7 +528,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     pElem=hRoot.FirstChild ( "tileMatrixSet" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _("La pyramide [")<< fileName <<_("] n'a pas de TMS. C'est un problème.") );
+        LOGGER_ERROR ( _("La pyramide [")<< fileName <<_("] n'a pas de TMS. C'est un probleme.") );
         return NULL;
     }
     std::string tmsName= pElem->GetTextStr();
@@ -570,10 +582,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         TileMatrix *tm;
         //std::string id;
         //std::string baseDir;
-        int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
-        int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
-        int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
-        int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignée.
+        int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
         int tilesPerWidth;
         int tilesPerHeight;
         int pathDepth;
@@ -725,7 +737,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             TiXmlElement* pElemNoDataPath;
             pElemNoDataPath = hLvl.FirstChild ( "nodata" ).FirstChild ( "filePath" ).Element();
             if ( !pElemNoDataPath  || ! ( pElemNoDataPath->GetText() ) ) {
-                LOGGER_ERROR ( fileName <<_(" Level ")<< id <<_(" spécifiant une tuile NoData sans chemin") );
+                LOGGER_ERROR ( fileName <<_(" Level ")<< id <<_(" specifiant une tuile NoData sans chemin") );
                 return NULL;
             }
 
@@ -740,7 +752,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             /*if (noDataFilePath.empty()){
                 if (!pElemNoDataPath){
-                                    LOGGER_ERROR(fileName <<" Level "<< id <<" spécifiant une tuile NoData sans chemin");
+                                    LOGGER_ERROR(fileName <<" Level "<< id <<" specifiant une tuile NoData sans chemin");
                                     return NULL;
                                 }
             }*/
@@ -753,7 +765,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     }// boucle sur les levels
 
     if ( levels.size() ==0 ) {
-        LOGGER_ERROR ( _("Aucun level n'a pu être chargé pour la pyramide ")<< fileName );
+        LOGGER_ERROR ( _("Aucun level n'a pu etre charge pour la pyramide ")<< fileName );
         return NULL;
     }
 
@@ -859,7 +871,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         }
         std::map<std::string, Style*>::iterator styleIt= stylesList.find ( styleName );
         if ( styleIt == stylesList.end() ) {
-            LOGGER_ERROR ( _("Style ") << styleName << _("non défini") );
+            LOGGER_ERROR ( _("Style ") << styleName << _("non defini") );
             continue;
         }
         styles.push_back ( styleIt->second );
@@ -872,12 +884,12 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         if ( styleIt != stylesList.end() ) {
             styles.insert ( styles.begin(),styleIt->second );
         } else {
-            LOGGER_ERROR ( _("Style ") << styleName << _("non défini") );
+            LOGGER_ERROR ( _("Style ") << styleName << _("non defini") );
             return NULL;
         }
     }
     if ( styles.size() ==0 ) {
-        LOGGER_ERROR ( _("Pas de Style défini, Layer non valide") );
+        LOGGER_ERROR ( _("Pas de Style defini, Layer non valide") );
         return NULL;
     }
 
@@ -1014,7 +1026,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         }
     }
     if ( WMSCRSList.size() ==0 ) {
-        LOGGER_INFO ( fileName <<_( ": Aucun CRS spécifique autorisé pour la couche" ));
+        LOGGER_INFO ( fileName <<_( ": Aucun CRS specifique autorise pour la couche" ));
     }
 
     //DEPRECATED
@@ -1062,11 +1074,11 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         }
         pyramid = buildPyramid ( pyramidFilePath, tmsList );
         if ( !pyramid ) {
-            LOGGER_ERROR ( _("La pyramide ") << pyramidFilePath << _(" ne peut être chargée") );
+            LOGGER_ERROR ( _("La pyramide ") << pyramidFilePath << _(" ne peut etre chargee") );
             return NULL;
         }
     } else {
-        // FIXME: pas forcément critique si on a un cache d'une autre nature (jpeg2000 par exemple).
+        // FIXME: pas forcement critique si on a un cache d'une autre nature (jpeg2000 par exemple).
         LOGGER_ERROR ( _("Aucune pyramide associee au layer ")<< fileName );
         return NULL;
     }
@@ -1243,7 +1255,7 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     } else {
         styleDir = pElem->GetTextStr();
     }
-    // Définition de la variable PROJ_LIB à partir de la configuration
+    // Definition de la variable PROJ_LIB à partir de la configuration
     std::string projDir;
 
     bool absolut=true;
@@ -1270,7 +1282,7 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     }
 
     if ( setenv ( "PROJ_LIB",projDir.c_str(),1 ) !=0 ) {
-        std::cerr<<_("ERREUR FATALE : Impossible de définir le chemin pour proj ")<< projDir<<std::endl;
+        std::cerr<<_("ERREUR FATALE : Impossible de definir le chemin pour proj ")<< projDir<<std::endl;
         return false;
     }
     std::clog << _("Env : PROJ_LIB = ") << getenv ( "PROJ_LIB" ) << std::endl;
@@ -1278,16 +1290,16 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
 
     pElem=hRoot.FirstChild ( "serverPort" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_("Pas d'élément <serverPort> fonctionnement autonome impossible") <<std::endl;
+        std::cerr<<_("Pas d'element <serverPort> fonctionnement autonome impossible") <<std::endl;
         socket = "";
     } else {
-        std::cerr<<_("Élément <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)") <<std::endl;
+        std::cerr<<_("Element <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)") <<std::endl;
         socket = pElem->GetTextStr();
     }
 
     pElem=hRoot.FirstChild ( "serverBackLog" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::clog<<_("Pas d'élément <serverBackLog> valeur par défaut : 0") <<std::endl;
+        std::clog<<_("Pas d'element <serverBackLog> valeur par defaut : 0") <<std::endl;
         backlog = 0;
     } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
         std::cerr<<_("Le logFilePeriod [") << pElem->GetTextStr() <<_("]  is not an integer.")<<std::endl;
@@ -1320,6 +1332,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string serviceProvider="";
     std::string fee="";
     std::string accessConstraint="";
+    unsigned int layerLimit;
     unsigned int maxWidth;
     unsigned int maxHeight;
     unsigned int maxTileX;
@@ -1376,7 +1389,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     if ( pElem && pElem->GetText() ) {
         std::string postStr = pElem->GetTextStr();
         if ( postStr.compare ( "true" ) ==0 || postStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _("Requête POST autorisée") );
+            LOGGER_INFO ( _("Requete POST autorisee") );
             postMode = true;
         }
     }
@@ -1438,6 +1451,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     if ( pElem && pElem->GetText() )
         electronicMailAddress= pElem->GetTextStr();
 
+    pElem = hRoot.FirstChild ( "layerLimit" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        layerLimit=DEFAULT_LAYER_LIMIT;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&layerLimit ) ) {
+        LOGGER_ERROR ( servicesConfigFile << _("Le layerLimit est inexploitable:[") << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+    
     pElem = hRoot.FirstChild ( "maxWidth" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxWidth=MAX_IMAGE_WIDTH;
@@ -1451,7 +1472,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         maxHeight=MAX_IMAGE_HEIGHT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxHeight ) ) {
         LOGGER_ERROR ( servicesConfigFile << _("Le maxHeight est inexploitable:[") << pElem->GetTextStr() << "]" );
-//         return NULL;
+        return NULL;
     }
 
     pElem = hRoot.FirstChild ( "maxTileX" ).Element();
@@ -1593,7 +1614,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
@@ -1616,14 +1637,14 @@ bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& lo
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
     LOGGER_INFO ( _("CHARGEMENT DES STYLES") );
 
-    // lister les fichier du répertoire styleDir
+    // lister les fichier du repertoire styleDir
     std::vector<std::string> styleFiles;
     std::vector<std::string> styleName;
     std::string styleFileName;
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( styleDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _("Le répertoire des Styles ") << styleDir << _(" n'est pas accessible.") );
+        LOGGER_FATAL ( _("Le repertoire des Styles ") << styleDir << _(" n'est pas accessible.") );
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -1637,12 +1658,12 @@ bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, 
 
     if ( styleFiles.empty() ) {
         // FIXME:
-        // Aucun Style présents.
-        LOGGER_FATAL ( _("Aucun fichier *.stl dans le répertoire ") << styleDir );
+        // Aucun Style presents.
+        LOGGER_FATAL ( _("Aucun fichier *.stl dans le repertoire ") << styleDir );
         return false;
     }
 
-    // générer les styles décrits par les fichiers.
+    // generer les styles decrits par les fichiers.
     for ( unsigned int i=0; i<styleFiles.size(); i++ ) {
         Style * style;
         style = buildStyle ( styleFiles[i],inspire );
@@ -1654,7 +1675,7 @@ bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, 
     }
 
     if ( stylesList.size() ==0 ) {
-        LOGGER_FATAL ( _("Aucun Style n'a pu être chargé!") );
+        LOGGER_FATAL ( _("Aucun Style n'a pu etre charge!") );
         return false;
     }
 
@@ -1666,13 +1687,13 @@ bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, 
 bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList ) {
     LOGGER_INFO ( _("CHARGEMENT DES TMS") );
 
-    // lister les fichier du répertoire tmsDir
+    // lister les fichier du repertoire tmsDir
     std::vector<std::string> tmsFiles;
     std::string tmsFileName;
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( tmsDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _("Le répertoire des TMS ") << tmsDir << _(" n'est pas accessible.") );
+        LOGGER_FATAL ( _("Le repertoire des TMS ") << tmsDir << _(" n'est pas accessible.") );
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -1685,14 +1706,14 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
 
     if ( tmsFiles.empty() ) {
         // FIXME:
-        // Aucun TMS présents. Ce n'est pas nécessairement grave si le serveur
-        // ne sert pas pour le WMTS et qu'on exploite pas de cache tuilé.
-        // Cependant pour le moment (07/2010) on ne gère que des caches tuilés
-        LOGGER_FATAL ( _("Aucun fichier *.tms dans le répertoire ") << tmsDir );
+        // Aucun TMS presents. Ce n'est pas necessairement grave si le serveur
+        // ne sert pas pour le WMTS et qu'on exploite pas de cache tuile.
+        // Cependant pour le moment (07/2010) on ne gere que des caches tuiles
+        LOGGER_FATAL ( _("Aucun fichier *.tms dans le repertoire ") << tmsDir );
         return false;
     }
 
-    // générer les TMS décrits par les fichiers.
+    // generer les TMS decrits par les fichiers.
     for ( unsigned int i=0; i<tmsFiles.size(); i++ ) {
         TileMatrixSet * tms;
         tms = buildTileMatrixSet ( tmsFiles[i] );
@@ -1704,7 +1725,7 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
     }
 
     if ( tmsList.size() ==0 ) {
-        LOGGER_FATAL ( _("Aucun TMS n'a pu être chargé!") );
+        LOGGER_FATAL ( _("Aucun TMS n'a pu etre charge!") );
         return false;
     }
 
@@ -1715,13 +1736,13 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
 
 bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf ) {
     LOGGER_INFO ( _("CHARGEMENT DES LAYERS") );
-    // lister les fichier du répertoire layerDir
+    // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
     std::string layerFileName;
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( layerDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _("Le répertoire ") << layerDir << _(" n'est pas accessible.") );
+        LOGGER_FATAL ( _("Le repertoire ") << layerDir << _(" n'est pas accessible.") );
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -1733,12 +1754,12 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     closedir ( dir );
 
     if ( layerFiles.empty() ) {
-        LOGGER_ERROR ( _("Aucun fichier *.lay dans le répertoire ") << layerDir );
-        LOGGER_ERROR ( _("Le serveur n'a aucune données à servir. Dommage...") );
+        LOGGER_ERROR ( _("Aucun fichier *.lay dans le repertoire ") << layerDir );
+        LOGGER_ERROR ( _("Le serveur n'a aucune donnees à servir. Dommage...") );
         //return false;
     }
 
-    // générer les Layers décrits par les fichiers.
+    // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
         layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf );
@@ -1750,7 +1771,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     }
 
     if ( layers.size() ==0 ) {
-        LOGGER_ERROR ( _("Aucun layer n'a pu être chargé!") );
+        LOGGER_ERROR ( _("Aucun layer n'a pu etre charge!") );
         //return false;
     }
 
