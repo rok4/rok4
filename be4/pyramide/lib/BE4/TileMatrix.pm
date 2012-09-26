@@ -322,6 +322,33 @@ sub indicesToBBox {
     return ($xMin,$yMin,$xMax,$yMax);
 }
 
+#
+=begin nd
+method: bboxToIndices
+
+Return the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
+
+Parameters:
+    xMin,yMin,xMax,yMax - bounding box
+    tilesPerWidth,tilesPerHeight - Number of tile in the image, widthwise and heightwise.
+=cut
+sub bboxToIndices {
+    my $self = shift;
+    my $xMin = shift;
+    my $yMin = shift;
+    my $xMax = shift;
+    my $yMax = shift;
+    my $tilesPerWidth = shift;
+    my $tilesPerHeight = shift;
+    
+    my $iMin = $self->xToColumn($xMin,$tilesPerWidth);
+    my $iMax = $self->xToColumn($xMax,$tilesPerWidth);
+    my $jMin = $self->yToRow($yMax,$tilesPerHeight);
+    my $jMax = $self->yToRow($yMin,$tilesPerHeight);
+    
+    return ($iMin,$jMin,$iMax,$jMax);
+}
+
 ####################################################################################################
 #                                       GETTERS / SETTERS                                          #
 ####################################################################################################

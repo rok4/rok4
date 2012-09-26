@@ -367,14 +367,13 @@ Example:
 Parameter:
     node - BE4::Node object, whose image have to be transfered in the cache.
     workDir - Work image directory, can be an environment variable.
-    rm - boolean, specify if image have to be removed after copy in the cache (false by default).
+    after - string, specify if image have to be removed after copy in the cache ("rm"), move in the temporary directory root ("mv")
 =cut
 sub work2cache {
     my $self = shift;
     my $node = shift;
     my $workDir = shift;
-    my $rm = shift;
-    $rm = FALSE if (! defined $rm);
+    my $after = shift;
     
     my $workImgName  = $node->getWorkName;
     my $cacheImgName = $self->{pyramid}->getCacheNameOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
@@ -387,8 +386,12 @@ sub work2cache {
     my $cmd .= sprintf ("Work2cache %s/%s %s\n", $workDir, $workImgName, $cacheImgName);
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
-    if ($rm) {
-        $cmd .= sprintf ("rm -f %s/%s\n", $workDir, $workImgName);
+    if (defined $after) {
+        if ($after eq "rm") {
+            $cmd .= sprintf ("rm -f %s/%s\n", $workDir, $workImgName);
+        } elsif ($after eq "mv") {
+            $cmd .= sprintf ("mv %s/%s \${ROOT_TMP_DIR}/%s\n", $workDir, $workImgName, $workImgName);
+        }
     }
     
     return ($cmd,TIFF2TILE_W);
@@ -467,6 +470,7 @@ sub mergeNtiff {
     foreach my $img (@{$listGeoImg}){
         printf CFGF "%s", $img->exportForMntConf;
     }
+    # Les noeuds source
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
         my $filepath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName);
         printf CFGF "%s", $nodesource->exportForMntConf($filepath);

@@ -243,7 +243,7 @@ sub _load {
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
-    if (! $self->identifyBottomTiles($ct)) {
+    if (! $self->identifyBottomNodes($ct)) {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
     }
@@ -251,61 +251,31 @@ sub _load {
     INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
          $self->{bottomID},scalar keys(%{$self->{nodes}{$self->{bottomID}}}));
 
-    # Calcul des branches à partir des feuilles
-    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++){
-        my $levelID = $tms->getIDfromOrder($i);
-
-        # pyramid's limits update : we store data's limits in the pyramid's levels
-        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
-
-        foreach my $node ($self->getNodesOfLevel($levelID)) {
-            
-            if ($i != $src->getTopOrder) {
-                my $aboveLevelID = $tms->getIDfromOrder($i+1);
-                my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
-                if (exists $self->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
-                    # This Node already exists
-                    next;
-                }
-                # Create a new Node
-                my $node = BE4::Node->new({
-                    i => int($node->getCol/2),
-                    j => int($node->getRow/2),
-                    tm => $tms->getTileMatrix($aboveLevelID),
-                    graph => $self,
-                });
-                if (! defined $node) { 
-                    ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                          $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
-                    return FALSE;
-                }
-                $self->{nodes}->{$aboveLevelID}->{$parentNodeKey} = $node;
-            }
-        }
-
-        DEBUG(sprintf "Number of cache images by level (%s) : %d",
-              $levelID, scalar keys(%{$self->{nodes}{$levelID}}));
+    # identifier les noeuds des niveaux supérieurs
+    if (! $self->identifyAboveNodes) {
+        ERROR(sprintf "Cannot determine above levels' tiles.");
+        return FALSE;
     }
-
+         
     return TRUE;
 }
 
 ####################################################################################################
-#                                     BOTTOM LEVEL METHODS                                         #
+#                                 NODES DETERMINATION METHODS                                      #
 ####################################################################################################
 
-# Group: bottom level methods
+# Group: nodes determination methods
 
 #
 =begin nd
-method: identifyBottomTiles
+method: identifyBottomNodes
 
-Calculate all nodes concerned by the datasource (tiles which touch the data source extent).
+Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent).
 
 Parameters:
     ct - a Geo::OSR::CoordinateTransformation object, to convert data extent or images' bbox.
 =cut
-sub identifyBottomTiles {
+sub identifyBottomNodes {
     my $self = shift;
     my $ct = shift;
     
@@ -330,10 +300,7 @@ sub identifyBottomTiles {
             $self->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            my $iMin = $tm->xToColumn($bbox[0],$TPW);
-            my $iMax = $tm->xToColumn($bbox[2],$TPW);
-            my $jMin = $tm->yToRow($bbox[3],$TPH);
-            my $jMax = $tm->yToRow($bbox[1],$TPH);
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bbox[0],$bbox[1],$bbox[2],$bbox[3],$TPW,$TPH);
             
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
@@ -399,10 +366,8 @@ sub identifyBottomTiles {
         
         $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
         
-        my $iMin = $tm->xToColumn($bboxref->[0],$TPW);
-        my $iMax = $tm->xToColumn($bboxref->[1],$TPW);
-        my $jMin = $tm->yToRow($bboxref->[3],$TPH);
-        my $jMax = $tm->yToRow($bboxref->[2],$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
+            $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
@@ -441,46 +406,55 @@ sub identifyBottomTiles {
 
 #
 =begin nd
-method: updateBBox
+method: identifyAboveNodes
 
-Compare old extrems coordinates and update values.
-
-Parameters:
-    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+Calculate all nodes in above levels concerned by the datasource (tiles which touch the data source extent).
 =cut
-sub updateBBox {
+sub identifyAboveNodes {
     my $self = shift;
-    my ($xmin,$ymin,$xmax,$ymax) = @_;
+    
+    
+    # initialisation pratique:
+    my $tms = $self->{pyramid}->getTileMatrixSet;
+    my $src = $self->{datasource};
+    
+    # Calcul des branches à partir des feuilles
+    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++){
+        my $levelID = $tms->getIDfromOrder($i);
 
-    TRACE();
-    
-    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
-    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
-    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
-    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
-}
+        # pyramid's limits update : we store data's limits in the pyramid's levels
+        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
 
-#
-=begin nd
-method: imgGroundSizeOfLevel
+        foreach my $node ($self->getNodesOfLevel($levelID)) {
+            
+            if ($i != $src->getTopOrder) {
+                my $aboveLevelID = $tms->getIDfromOrder($i+1);
+                my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
+                if (exists $self->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
+                    # This Node already exists
+                    next;
+                }
+                # Create a new Node
+                my $node = BE4::Node->new({
+                    i => int($node->getCol/2),
+                    j => int($node->getRow/2),
+                    tm => $tms->getTileMatrix($aboveLevelID),
+                    graph => $self,
+                });
+                if (! defined $node) { 
+                    ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
+                          $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
+                    return FALSE;
+                }
+                $self->{nodes}->{$aboveLevelID}->{$parentNodeKey} = $node;
+            }
+        }
 
-Calculate terrain size (in SRS's units) of a cache image (do not mistake for a tile), for the supplied level.
-
-Parameter:
-    levelID - level for which we want to know groud size, in TMS' SRS' unity. 
-=cut
-sub imgGroundSizeOfLevel {
-    my $self = shift;
-    my $levelID = shift;
+        DEBUG(sprintf "Number of cache images by level (%s) : %d",
+              $levelID, scalar keys(%{$self->{nodes}{$levelID}}));
+    }
     
-    TRACE;
-    
-    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($levelID);
-    
-    my $imgGroundWidth = $tm->getImgGroundWidth($self->{pyramid}->getTilesPerWidth);
-    my $imgGroundHeight = $tm->getImgGroundHeight($self->{pyramid}->getTilesPerHeight);
-    
-    return ($imgGroundWidth,$imgGroundHeight);
+    return TRUE;  
 }
 
 ####################################################################################################
@@ -557,16 +531,12 @@ sub computeYourself {
         $node->getScript->print(
             sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow));
         $self->writeBranchCode($node);
-        # Work images have to be put in the final script temporary directory : the root
-        if ($self->getTopID ne $self->getCutLevelID) {
-            $node->getScript->print($self->collectWorkImage($node));
-        }
     }
     
     # Final script    
     if ($self->getTopID eq $self->getCutLevelID){
         INFO("Final script will be empty");
-        $self->printInFinisher("echo \"Final script have nothing to do.\" \n",0);
+        $self->printInFinisher("echo \"Final script have nothing to do.\" \n");
     } else {
         my @nodeList = $self->getNodesOfTopLevel;
         foreach my $node (@nodeList){
@@ -689,8 +659,14 @@ sub computeBottomImage {
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
-    
+    my $after = undef;
+    if (! $justWeight && $node->getLevel eq $self->getTopID) {
+        $after = "rm";
+    } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
+        # Work images have to be put in the final script temporary directory : the root
+        $after = "mv";
+    }
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
     $code .= $c;
     $weight += $w;
 
@@ -715,9 +691,6 @@ To generate an above node, we use children (merge4tiff). If we have not 4 childr
 Parameter:
     node - above level's BE4::Node, to treat.
     justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
-    
-See Also:
-    <wms2work>, <cache2work>, <merge4tiff>, <work2cache>
 =cut
 sub computeAboveImage {
     
@@ -744,7 +717,14 @@ sub computeAboveImage {
     $weight += $w;
 
     # Copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",($node->getLevel eq $self->getTopID));
+    my $after = undef;
+    if (! $justWeight && $node->getLevel eq $self->getTopID) {
+        $after = "rm";
+    } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
+        # Work images have to be put in the final script temporary directory : the root
+        $after = "mv";
+    }
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
     $code .= $c;
     $weight += $w;
     
@@ -755,25 +735,6 @@ sub computeAboveImage {
     }
 
     return TRUE;
-}
-
-#
-=begin nd
-method: collectWorkImage
-
-Récupère les images au format de travail dans les répertoires temporaires des scripts de calcul du bas de la pyramide, pour les copier dans le répertoire temporaire du script final (la racine).
-
-Parameter:
-    node - above level's BE4::Node, to treat.
-=cut
-sub collectWorkImage {
-    my $self = shift;
-    my $node = shift;
-    
-    TRACE;
-    
-    my $code = sprintf ("mv \${TMP_DIR}\/%s \${ROOT_TMP_DIR}/ \n", $node->getWorkName);
-    return $code;
 }
 
 ####################################################################################################
@@ -1001,6 +962,27 @@ sub containsNode {
     
     my $nodeKey = $x."_".$y;
     return (exists $self->{nodes}->{$level}->{$nodeKey});
+}
+
+#
+=begin nd
+method: updateBBox
+
+Compare old extrems coordinates and update values.
+
+Parameters:
+    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+=cut
+sub updateBBox {
+    my $self = shift;
+    my ($xmin,$ymin,$xmax,$ymax) = @_;
+
+    TRACE();
+    
+    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
+    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
+    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
+    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
 #

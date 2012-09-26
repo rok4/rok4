@@ -699,7 +699,7 @@ sub readConfPyramid {
             next;
         }
 
-        $self->{levels}->{$tagtm} = $objLevel;
+        $self->addLevel($tagtm,$objLevel);
 
         # same for each level
         $self->{dir_depth}  = $tagdirdepth;
@@ -963,6 +963,9 @@ sub createLevels {
         ERROR("We need a TMS to create levels.");
         return FALSE;
     }
+
+    my $tilesperwidth = $self->getTilesPerWidth();
+    my $tilesperheight = $self->getTilesPerHeight();
     
     # Create all level between the bottom and the top
     for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
@@ -977,9 +980,6 @@ sub createLevels {
             # this level already exists (from the old pyramid). We have not to remove informations (like extrem tiles)
             next;
         }
-
-        my $tilesperwidth = $self->getTilesPerWidth();
-        my $tilesperheight = $self->getTilesPerHeight();
 
         # base dir image
         my $baseimage = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $ID);
@@ -1011,7 +1011,7 @@ sub createLevels {
             return FALSE;
         }
 
-        $self->{levels}->{$ID} = $objLevel;
+        $self->addLevel($ID, $objLevel);
     }
 
     return TRUE;

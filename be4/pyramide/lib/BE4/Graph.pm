@@ -246,201 +246,39 @@ sub _load {
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
-    if (! $self->identifyBottomTiles($ct)) {
+    if (! $self->identifyBottomNodes($ct)) {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
     }
 
     INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
          $self->{bottomID},scalar keys(%{$self->{nodes}{$self->{bottomID}}}));
-
-    # Calcul des branches à partir des feuilles
-    for (my $k = $src->getBottomOrder; $k <= $src->getTopOrder; $k++){
-
-        my $levelID = $tms->getIDfromOrder($k);
-        # pyramid's limits update : we store data's limits in the pyramid's levels
-        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
-        # si un niveau est vide on a une erreur
-        if ($self->isLevelEmpty($levelID)) {
-            ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
-            return FALSE;
-        }
-        
-        my $sourceTm = $tms->getTileMatrix($levelID);
-        
-        my @targetsTm = @{$sourceTm->getTargetsTm()};
-        next if (scalar(@targetsTm) == 0);
-               
-        # on n'a plus rien à calculer, on sort
-        last if ($k == $src->getTopOrder );
-
-        foreach my $node ( $self->getNodesOfLevel($levelID) ) {
-            
-            # On récupère la BBOX du noeud pour calculer les noeuds cibles
-            my ($xMin,$yMax,$xMax,$yMin) = $node->getBBox();
-            
-            foreach my $targetTm (@targetsTm) {
-                next if ($tms->getOrderfromID($targetTm->getID()) > $src->getTopOrder());
-                my $iMin = $targetTm->xToColumn($xMin,$tilesPerWidth);
-                my $iMax = $targetTm->xToColumn($xMax,$tilesPerWidth);
-                my $jMin = $targetTm->yToRow($yMin,$tilesPerHeight);
-                my $jMax = $targetTm->yToRow($yMax,$tilesPerHeight);
-                
-                for (my $i = $iMin; $i < $iMax + 1; $i++){
-                    for (my $j = $jMin ; $j < $jMax +1 ; $j++) {
-                        
-                      my $idxkey = sprintf "%s_%s",$i,$j;
-                      my $newnode = undef;
-                      if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                        $newnode = new BE4::Node({
-                          i => $i,
-                          j => $j,
-                          tm => $targetTm,
-                          graph => $self,
-                        });
-                        ## intersection avec la bbox des données initiales
-                        if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
-                          $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                          $newnode->addNodeSources($node); 
-                        }
-                      } else {
-                        $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
-                        $newnode->addNodeSources($node); 
-                      }             
-                   }
-               }
-
-            }
-        }
-
-        DEBUG(sprintf "Number of cache images by level (%s) : %d",
-              $levelID, scalar keys(%{$self->{nodes}->{$levelID}}));
+    
+    # identifier les noeuds des niveaux supérieurs
+    if (! $self->identifyAboveNodes) {
+        ERROR(sprintf "Cannot determine above levels' tiles.");
+        return FALSE;
     }
+
     return TRUE;
 }
 
 ####################################################################################################
-#                                          GRAPH COMPUTING METHODS                                 #
+#                                 NODES DETERMINATION METHODS                                      #
 ####################################################################################################
 
-# Group: graph computing methods
+# Group: nodes determination methods
 
 #
 =begin nd
-method: computeYourself
+method: identifyBottomNodes
 
-Determine codes and weights for each node of the current graph, and share work on scripts, so as to optimize execution time.
-
-Only one step:
-    - browse graph and write commands in different scripts.
-
-Parameter:
-    NEWLIST - stream to the cache's list, to add new images.
-=cut
-sub computeYourself {
-    my $self = shift;
-    my $NEWLIST = shift;
-    
-    my $src = $self->{datasource};
-    my $tms = $self->getPyramid()->getTileMatrixSet();
-  
-   #Initialisation
-   my $Finisher_Index = 0;
-   # boucle sur tous les niveaux en partant de ceux du bas
-   for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-       # boucle sur tous les noeuds du niveau
-       my $levelID = $tms->getIDfromOrder($i);
-       foreach my $node ($self->getNodesOfLevel($levelID)) {
-           # on détermine dans quel script on l'écrit en se basant sur les poids
-           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
-           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = BE4::Array->minArrayIndex(0,@WeightsOfLevel);
-           my $script = $ScriptsOfLevel[$script_index];
-           # on stocke l'information dans l'objet node
-           $node->setScript($script);
-           # on détermine le script à ecrire
-           my ($c,$w) ;
-           if ($self->getDataSource->hasHarvesting) {
-               # Datasource has a WMS service : we have to use it
-               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
-               if (! defined $c) {
-                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
-                   return FALSE;
-               }
-           } else {
-               ($c,$w) = $self->{commands}->mergeNtiff($node);
-               if ($w == -1) {
-                   ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
-                   return FALSE;
-               }
-           }
-           # on met à jour les poids
-           $script->addWeight($w);
-           # on ecrit la commande dans le fichier
-           $script->print($c);       
-                   
-           # final script with all work2tile commands
-           # on ecrit dans chacun des scripts de manière tournante
-           my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID(),1);
-           # on ecrit la commande dans le fichier
-           $finisher->print($c);
-           #on met à jour l'index
-           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
-               $Finisher_Index = 0;
-           } else {
-               $Finisher_Index ++;
-           }
-
-       }
-   }
-    
-    TRACE;
-    
-    return TRUE;
-};
-
-#
-=begin nd
-method: containsNode
-
-Parameters:
-    level - level of the node we want to know if it is in the graph.
-    x     - x coordinate of the node we want to know if it is in the graph.
-    y     - y coordinate of the node we want to know if it is in the graph.
-
-Returns:
-    A boolean : TRUE if the node exists, FALSE otherwise.
-=cut
-sub containsNode {
-    my $self = shift;
-    my $level = shift;
-    my $x = shift;
-    my $y = shift;
-  
-    return FALSE if (! defined $level);
-    
-    my $nodeKey = $x."_".$y;
-    return (exists $self->{nodes}->{$level}->{$nodeKey});
-}
-
-
-####################################################################################################
-#                                     BOTTOM LEVEL METHODS                                         #
-####################################################################################################
-
-# Group: bottom level methods
-
-#
-=begin nd
-method: identifyBottomTiles
-
-Calculate all nodes concerned by the datasource (tiles which touch the data source extent).
+Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent).
 
 Parameters:
     ct - a Geo::OSR::CoordinateTransformation object, to convert data extent or images' bbox.
 =cut
-sub identifyBottomTiles {
+sub identifyBottomNodes {
     my $self = shift;
     my $ct = shift;
     
@@ -465,10 +303,7 @@ sub identifyBottomTiles {
             $self->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            my $iMin = $tm->xToColumn($bbox[0],$TPW);
-            my $iMax = $tm->xToColumn($bbox[2],$TPW);
-            my $jMin = $tm->yToRow($bbox[3],$TPH);
-            my $jMax = $tm->yToRow($bbox[1],$TPH);
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bbox[0],$bbox[1],$bbox[2],$bbox[3],$TPW,$TPH);
             
             for (my $i = $iMin; $i<= $iMax; $i++){
                 for (my $j = $jMin; $j<= $jMax; $j++){
@@ -534,10 +369,8 @@ sub identifyBottomTiles {
         
         $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
         
-        my $iMin = $tm->xToColumn($bboxref->[0],$TPW);
-        my $iMax = $tm->xToColumn($bboxref->[1],$TPW);
-        my $jMin = $tm->yToRow($bboxref->[3],$TPH);
-        my $jMax = $tm->yToRow($bboxref->[2],$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
+            $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
@@ -574,33 +407,189 @@ sub identifyBottomTiles {
     return TRUE;  
 }
 
+#
+=begin nd
+method: identifyAboveNodes
+
+Calculate all nodes in above levels concerned by the datasource (tiles which touch the data source extent).
+=cut
+sub identifyAboveNodes {
+    my $self = shift;
+    
+    # initialisation pratique:
+    my $tms = $self->{pyramid}->getTileMatrixSet;
+    my $src = $self->{datasource};
+    my $tilesPerWidth = $self->{pyramid}->getTilesPerWidth();
+    my $tilesPerHeight = $self->{pyramid}->getTilesPerHeight();
+    
+    # Calcul des branches à partir des feuilles
+    for (my $k = $src->getBottomOrder; $k <= $src->getTopOrder; $k++){
+
+        my $levelID = $tms->getIDfromOrder($k);
+        # pyramid's limits update : we store data's limits in the pyramid's levels
+        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
+        # si un niveau est vide on a une erreur
+        if ($self->isLevelEmpty($levelID)) {
+            ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
+            return FALSE;
+        }
+        
+        my $sourceTm = $tms->getTileMatrix($levelID);
+        
+        my @targetsTm = @{$sourceTm->getTargetsTm()};
+        next if (scalar(@targetsTm) == 0);
+               
+        # on n'a plus rien à calculer, on sort
+        last if ($k == $src->getTopOrder );
+
+        foreach my $node ( $self->getNodesOfLevel($levelID) ) {
+            
+            # On récupère la BBOX du noeud pour calculer les noeuds cibles
+            my ($xMin,$yMin,$xMax,$yMax) = $node->getBBox();
+            
+            foreach my $targetTm (@targetsTm) {
+                next if ($tms->getOrderfromID($targetTm->getID()) > $src->getTopOrder());
+                my ($iMin, $jMin, $iMax, $jMax) = $targetTm->bboxToIndices(
+                    $xMin,$yMin,$xMax,$yMax,$tilesPerWidth,$tilesPerHeight);
+                
+                for (my $i = $iMin; $i < $iMax + 1; $i++){
+                    for (my $j = $jMin ; $j < $jMax +1 ; $j++) {
+                        
+                      my $idxkey = sprintf "%s_%s",$i,$j;
+                      my $newnode = undef;
+                      if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
+                        $newnode = new BE4::Node({
+                          i => $i,
+                          j => $j,
+                          tm => $targetTm,
+                          graph => $self,
+                        });
+                        ## intersection avec la bbox des données initiales
+                        if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
+                          $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
+                          $newnode->addNodeSources($node); 
+                        }
+                      } else {
+                        $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
+                        $newnode->addNodeSources($node); 
+                      }             
+                   }
+               }
+
+            }
+        }
+
+        DEBUG(sprintf "Number of cache images by level (%s) : %d",
+              $levelID, scalar keys(%{$self->{nodes}->{$levelID}}));
+    }
+
+    return TRUE;  
+}
+
 ####################################################################################################
-#                               GEOGRAPHIC TOOLS                                                   #
+#                                          GRAPH COMPUTING METHODS                                 #
 ####################################################################################################
 
-# Group: GEOGRAPHIC TOOLS
+# Group: graph computing methods
 
 #
 =begin nd
-method: updateBBox
+method: computeYourself
 
-Compare old extrems coordinates and update values.
+Determine codes and weights for each node of the current graph, and share work on scripts, so as to optimize execution time.
+
+Only one step:
+    - browse graph and write commands in different scripts.
+
+Parameter:
+    NEWLIST - stream to the cache's list, to add new images.
+=cut
+sub computeYourself {
+    my $self = shift;
+    my $NEWLIST = shift;
+    
+    my $src = $self->{datasource};
+    my $tms = $self->getPyramid()->getTileMatrixSet();
+  
+   #Initialisation
+   my $Finisher_Index = 0;
+   # boucle sur tous les niveaux en partant de ceux du bas
+   for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
+       # boucle sur tous les noeuds du niveau
+       my $levelID = $tms->getIDfromOrder($i);
+       foreach my $node ($self->getNodesOfLevel($levelID)) {
+           # on détermine dans quel script on l'écrit en se basant sur les poids
+           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
+           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
+           my $script_index = BE4::Array->minArrayIndex(0,@WeightsOfLevel);
+           my $script = $ScriptsOfLevel[$script_index];
+           # on stocke l'information dans l'objet node
+           $node->setScript($script);
+           # on détermine le script à ecrire
+           my ($c,$w) ;
+           if ($self->getDataSource->hasHarvesting) {
+               # Datasource has a WMS service : we have to use it
+               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
+               if (! defined $c) {
+                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+                   return FALSE;
+               }
+           } else {
+               ($c,$w) = $self->{commands}->mergeNtiff($node);
+               if ($w == -1) {
+                   ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
+                   return FALSE;
+               }
+           }
+           # on met à jour les poids
+           $script->addWeight($w);
+           # on ecrit la commande dans le fichier
+           $script->print($c);       
+                   
+           # final script with all tiff2tile commands
+           # on ecrit dans chacun des scripts de manière tournante
+           my $finisher = $self->getForest()->getScript($Finisher_Index);
+           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID(),"rm");
+           # on ecrit la commande dans le fichier
+           $finisher->print($c);
+           #on met à jour l'index
+           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
+               $Finisher_Index = 0;
+           } else {
+               $Finisher_Index ++;
+           }
+
+       }
+   }
+    
+    TRACE;
+    
+    return TRUE;
+};
+
+#
+=begin nd
+method: containsNode
 
 Parameters:
-    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+    level - level of the node we want to know if it is in the graph.
+    x     - x coordinate of the node we want to know if it is in the graph.
+    y     - y coordinate of the node we want to know if it is in the graph.
+
+Returns:
+    A boolean : TRUE if the node exists, FALSE otherwise.
 =cut
-sub updateBBox {
+sub containsNode {
     my $self = shift;
-    my ($xmin,$ymin,$xmax,$ymax) = @_;
-
-    TRACE();
+    my $level = shift;
+    my $x = shift;
+    my $y = shift;
+  
+    return FALSE if (! defined $level);
     
-    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
-    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
-    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
-    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
+    my $nodeKey = $x."_".$y;
+    return (exists $self->{nodes}->{$level}->{$nodeKey});
 }
-
 
 ####################################################################################################
 #                                         GETTERS / SETTERS                                        #
@@ -687,6 +676,27 @@ sub getNodesOfBottomLevel {
 sub getBbox {
     my $self =shift;
     return ($self->{bbox}[0],$self->{bbox}[1],$self->{bbox}[2],$self->{bbox}[3]);
+}
+
+#
+=begin nd
+method: updateBBox
+
+Compare old extrems coordinates and update values.
+
+Parameters:
+    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+=cut
+sub updateBBox {
+    my $self = shift;
+    my ($xmin,$ymin,$xmax,$ymax) = @_;
+
+    TRACE();
+    
+    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
+    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
+    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
+    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
 #
