@@ -74,18 +74,17 @@ END {}
 Group: variable
 
 variable: $self
-    * bottomLevelID => undef, # this datasource will be used between bottomLevel and topLevel
-    * bottomLevelOrder => undef,
-    * topLevelID => undef,
-    * topLevelOrder => undef,
+    * bottomID : string - this datasource will be used between bottomLevel and topLevel
+    * bottomOrder : integer
+    * topID : string
+    * topOrder : integer
     
-    * srs => undef,
-    * extent => undef, # OGR::Geometry object, in the previous SRS
-    * bbox => undef, # array of limits of the previous extent
+    * srs
+    * extent : OGR::Geometry - in the previous SRS
+    * bbox - [$xmin,$ymin,$xmax,$ymax]
 
-    * imageSource => undef, # an ImageSource object (can be undefined)
-
-    * harvesting => undef # an Harvesting object (can be undefined)
+    * imageSource : BE4::ImageSource - can be undefined
+    * harvesting : BE4::Harvesting - can be undefined
 =cut
 
 ####################################################################################################
@@ -103,10 +102,10 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         # Global information
-        bottomLevelID => undef,
-        bottomLevelOrder => undef,
-        topLevelID => undef,
-        topLevelOrder => undef,
+        bottomID => undef,
+        bottomOrder => undef,
+        topID => undef,
+        topOrder => undef,
         bbox => undef,
         extent => undef,
         srs => undef,
@@ -128,6 +127,16 @@ sub new {
     return $self;
 }
 
+#
+=begin nd
+method: _load
+
+Extract data from the hash with parameters. Create a BE4::Harvesting Object if required.
+
+Parameters:
+    level - a BE4::Level object.
+    params - srs, extent, path_image, path_metadata and optionally wms_layer, wms_url, wms_version, wms_request, wms_format, wms_style, wms_bgcolor, wms_transparent, min_size, max_width,maw_height from at from a hash
+=cut
 sub _load {
     my $self   = shift;
     my $level = shift;
@@ -141,7 +150,7 @@ sub _load {
         ERROR("A data source have to be defined with a level !");
         return FALSE;
     }
-    $self->{bottomLevelID} = $level;
+    $self->{bottomID} = $level;
 
     if (! exists $params->{srs} || ! defined $params->{srs}) {
         ERROR("A data source have to be defined with the 'srs' parameter !");
@@ -370,40 +379,70 @@ sub removeHarvesting {
 
 sub getBottomID {
     my $self = shift;
-    return $self->{bottomLevelID};
+    return $self->{bottomID};
 }
 
 sub getTopID {
     my $self = shift;
-    return $self->{topLevelID};
+    return $self->{topID};
 }
 
 sub getBottomOrder {
     my $self = shift;
-    return $self->{bottomLevelOrder};
+    return $self->{bottomOrder};
 }
 
 sub getTopOrder {
     my $self = shift;
-    return $self->{topLevelOrder};
+    return $self->{topOrder};
 }
 
 sub setBottomOrder {
     my $self = shift;
     my $bottomOrder = shift;
-    $self->{bottomLevelOrder} = $bottomOrder;
+    $self->{bottomOrder} = $bottomOrder;
 }
 
 sub setTopOrder {
     my $self = shift;
     my $topOrder = shift;
-    $self->{topLevelOrder} = $topOrder;
+    $self->{topOrder} = $topOrder;
 }
 
 sub setTopID {
     my $self = shift;
     my $topID = shift;
-    $self->{topLevelID} = $topID;
+    $self->{topID} = $topID;
+}
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\n Object BE4::DataSource :\n";
+    $export .= sprintf "\t Levels ID (order):\n";
+    $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
+    $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
+
+    $export .= sprintf "\t Data :\n";
+    $export .= sprintf "\t\t- SRS : %s\n",$self->{srs};
+    $export .= "\t\t- We have images\n" if (defined $self->{imageSource});
+    $export .= "\t\t- We have a WMS service\n" if (defined $self->{harvesting});
+    
+    $export .= "\t\t Bbox :\n";
+    $export .= sprintf "\t\t\t- xmin : %s\n",$self->{bbox}[0];
+    $export .= sprintf "\t\t\t- ymin : %s\n",$self->{bbox}[1];
+    $export .= sprintf "\t\t\t- xmax : %s\n",$self->{bbox}[2];
+    $export .= sprintf "\t\t\t- ymax : %s\n",$self->{bbox}[3];
+    
+    return $export;
 }
 
 1;
@@ -469,11 +508,11 @@ BE4::DataSource - Managing a data source
 
 =over 4
   
-=item bottomLevelID, bottomLevelOrder
+=item bottomID, bottomOrder
 
 ID (in TMS) and order (integer) of the base level, from which this datasource is used.
 
-=item topLevelID, topLevelOrder
+=item topID, topOrder
 
 ID (in TMS) and order (integer) of the top level, to which this datasource is used, calculated in relation to other datasource
         

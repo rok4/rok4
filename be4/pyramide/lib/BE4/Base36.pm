@@ -56,6 +56,12 @@ use constant FALSE => 0;
 
 ################################################################################
 
+####################################################################################################
+#                                      B36 Returning Functions                                     #
+####################################################################################################
+
+# Group: B36 Returning Functions
+
 #
 =begin nd
 method: encodeB10toB36
@@ -97,32 +103,6 @@ sub encodeB10toB36 {
     }
     
     return $b36;
-}
-
-#
-=begin nd
-method: encodeB36toB10
-
-Convert a base-36 number into base-10 (int).
-
-Parameter:
-    number - the base-10 integer to convert.
-    
-Example:
-    BE4::Base36->encodeB10toB36("F4S6") returns 706038.
-=cut
-sub encodeB36toB10 {
-    my $class = shift ;
-    my $b36  = shift; # idx in base 36 !
-    
-    my $number = 0;
-    my $i = 0;
-    foreach(split //, reverse uc $b36) {
-        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
-        $number += $_ * (36 ** $i++);
-    }
-    
-    return $number;
 }
 
 #
@@ -173,6 +153,38 @@ sub indicesToB36Path {
     return $B36Path ;
 }
 
+####################################################################################################
+#                                      B10 Returning Functions                                     #
+####################################################################################################
+
+# Group: B10 Returning Functions
+
+#
+=begin nd
+method: encodeB36toB10
+
+Convert a base-36 number into base-10 (int).
+
+Parameter:
+    number - the base-10 integer to convert.
+    
+Example:
+    BE4::Base36->encodeB10toB36("F4S6") returns 706038.
+=cut
+sub encodeB36toB10 {
+    my $class = shift ;
+    my $b36  = shift; # idx in base 36 !
+    
+    my $number = 0;
+    my $i = 0;
+    foreach(split //, reverse uc $b36) {
+        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
+        $number += $_ * (36 ** $i++);
+    }
+    
+    return $number;
+}
+
 #
 =begin nd
 method: b36PathToIndices
@@ -183,7 +195,7 @@ Parameters:
     number - the base-10 integer to convert.
     
 Example:
-    BE4::Base36->b36PathToIndices("3E/42/01") returns [4032,18217].
+    BE4::Base36->b36PathToIndices("3E/42/01") returns (4032,18217).
         
 See also:
     <encodeB36toB10>
@@ -211,3 +223,42 @@ sub b36PathToIndices {
 
 1;
 __END__
+
+=head1 NAME
+
+BE4::Base36 - Base 36 converting tools
+
+=head1 SYNOPSIS
+
+    use BE4::Base36;
+    my ($i) = BE4::Base36->b36PathToIndices("E21") ; # returns 18217
+    my ($i,$j) = BE4::Base36->b36PathToIndices("3E/42/01") ; # returns [4032,18217]
+    my $b36 = BE4::Base36->encodeB10toB36(32674) ; # returns "P7M"
+    my $b36Path = BE4::Base36->indicesToB36Path(4032, 18217, 2) ; # returns "3E/42/01"
+    
+=head1 DESCRIPTION
+
+Provide functions to convert data to and from Base 36 format
+
+=head1 SEE ALSO
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head1 AUTHORS
+
+Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

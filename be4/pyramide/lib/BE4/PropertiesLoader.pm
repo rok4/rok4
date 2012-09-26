@@ -68,9 +68,9 @@ END {}
 Group: variable
 
 variable: $self
-    * CFGFILE   => undef,  # file properties
-    * HDLFILE   => undef,  # ref to file properties
-    * CFGPARAMS => {},     # stock params
+    * CFGFILE - file properties
+    * HDLFILE - ref to file properties
+    * CFGPARAMS - hash to stock params
 =cut
 
 ####################################################################################################
@@ -85,9 +85,9 @@ sub new {
   my $class= ref($this) || $this;
   # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-    CFGFILE   => undef, # file properties
-    HDLFILE   => undef, # ref to file properties
-    CFGPARAMS => {},    # stock params
+    CFGFILE   => undef,
+    HDLFILE   => undef,
+    CFGPARAMS => {},
   };
 
   bless($self, $class);

@@ -81,8 +81,8 @@ Group: variable
 variable: $self
     * photometric
     * sampleformat
-    * bitspersample
-    * samplesperpixel
+    * bitspersample : integer
+    * samplesperpixel : integer
 =cut
 
 ####################################################################################################
@@ -98,10 +98,10 @@ sub new {
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        photometric => undef, # ie raw
-        sampleformat => undef, # ie uint
-        bitspersample => undef, # ie 8
-        samplesperpixel => undef, # ie 3
+        photometric => undef,
+        sampleformat => undef,
+        bitspersample => undef,
+        samplesperpixel => undef,
     };
 
     bless($self, $class);
@@ -232,6 +232,25 @@ sub getSamplesPerPixel {
     return $self->{samplesperpixel};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Pixel :\n";
+    $export .= sprintf "\t Bits per sample : %s\n", $self->{bitspersample};
+    $export .= sprintf "\t Photometric : %s\n", $self->{photometric};
+    $export .= sprintf "\t Sample format : %s\n", $self->{sampleformat};
+    $export .= sprintf "\t Samples per pixel : %s\n", $self->{samplesperpixel};
+    
+    return $export;
+}
 
 1;
 __END__

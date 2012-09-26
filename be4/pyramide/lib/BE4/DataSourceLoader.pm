@@ -74,8 +74,8 @@ END {}
 Group: variable
 
 variable: $self
-    * FILEPATH_DATACONF => undef, # path of data's configuration file
-    * sources  => [], # array of DataSource objects
+    * FILEPATH_DATACONF - path of data's configuration file
+    * dataSources : array of BE4::DataSource
 =cut
 
 ####################################################################################################
@@ -91,7 +91,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
         FILEPATH_DATACONF => undef,
-        sources  => []
+        dataSources  => []
     };
 
     bless($self, $class);
@@ -108,14 +108,24 @@ sub new {
         # Old datasource definition
         return undef if (! $self->_loadOld(@_));
     }
+    
+    INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}});
 
     return $self;
 }
 
+#
+=begin nd
+method: _init
+
+Check the DataSource and Harvesting objects.
+
+Parameters:
+    datasource - BE4 configuration section 'datasource' = path_image + srs or filepath_conf
+=cut
 sub _init {
     my $self   = shift;
     my $datasource = shift;
-    my $harvesting = shift;
 
     TRACE;
     
@@ -139,6 +149,14 @@ sub _init {
     return TRUE;
 }
 
+#
+=begin nd
+method: _load
+
+Create BE4::PropertiesLoader and BE4::DataSource objects .
+
+Parameters:
+=cut
 sub _load {
     my $self   = shift;
 
@@ -158,7 +176,7 @@ sub _load {
         return FALSE;
     }
 
-    my $sources = $self->{sources};
+    my $sources = $self->{dataSources};
     my $nbSources = 0;
 
     while( my ($level,$params) = each(%$sourcesProperties) ) {
@@ -208,7 +226,7 @@ sub _loadOld {
     $params = { map %$_, grep ref $_ eq 'HASH', ($datasource, $params) };
     $params = { map %$_, grep ref $_ eq 'HASH', ($harvesting, $params) };
 
-    my $sources = $self->{sources};
+    my $sources = $self->{dataSources};
 
     my $objDataSource = BE4::DataSource->new($bottomId,$params);
     if (! defined $objDataSource) {
@@ -221,14 +239,152 @@ sub _loadOld {
 }
 
 ####################################################################################################
+#                                       DATASOURCES UPDATE                                         #
+####################################################################################################
+
+# Group: datasources update
+
+#
+=begin nd
+method: updateDataSources
+
+From data sources, TMS and parameters, we identify top and bottom.
+    - bottom level = the lowest level among data source base levels
+    - top level = levelID in parameters if defined, top level of TMS otherwise.
+
+For each datasource, we store the order and the ID of the higher level which use this datasource.
+The base level (from which datasource is used) is already known.
+
+Example (with 2 data sources):
+    - DataSource1: from level_18 (order 2) to level_16 (order 4)
+    - DataSource1: from level_15 (order 5) to level_12 (order 8)
+
+There are no superposition between data sources.
+
+Parameters:
+    TMS - a TileMatrixSet object, to know levels' orders
+    topID - optionnal, from the 'pyramid' section in the configuration file
+    
+Return:
+    Global bottom and top order, in a list : (bottomOrder,topOrder)
+=cut
+sub updateDataSources {
+    my $self = shift;
+    my $TMS = shift;
+    my $topID = shift;
+
+    TRACE();
+    
+    if (! defined $TMS || ref ($TMS) ne "BE4::TileMatrixSet") {
+        ERROR("We need a TileMatrixSet object to update data sources");
+        return (-1, -1);
+    }
+    
+    ######## DETERMINE GLOBAL TOP/BOTTOM LEVELS ########
+    
+    # Définition du topLevel :
+    #  - En priorité celui fourni en paramètre
+    #  - Par defaut, c'est le plus haut niveau du TMS,
+    my $topOrder = undef;
+    if (defined $topID) {
+        $topOrder = $TMS->getOrderfromID($topID);
+        if (! defined $topOrder) {
+            ERROR(sprintf "The top level defined in configuration ('%s') does not exist in the TMS !",$topID);
+            return (-1, -1);
+        }
+    } else {
+        $topID = $TMS->getLevelTop();
+        $topOrder = $TMS->getOrderfromID($topID);
+    }
+
+    # Définition du bottomLevel :
+    #  - celui fournit dans la configuration des sources : le niveau le plus bas de toutes les sources
+    # En plus :
+    #  - on vérifie la cohérence des niveaux défini dans la configuration des sources avec le niveau du haut
+    #  - on renseigne l'ordre du niveau du bas pour chaque source de données
+    my $bottomID = undef;
+    my $bottomOrder = undef;
+    
+    foreach my $datasource (@{$self->{dataSources}}) {
+        my $dsBottomID = $datasource->getBottomID;
+        my $dsBottomOrder = $TMS->getOrderfromID($dsBottomID);
+        if (! defined $dsBottomOrder) {
+            ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
+                $dsBottomID);
+            return (-1, -1);
+        }
+
+        if ($topOrder < $dsBottomOrder) {
+            ERROR(sprintf "A level in sources configuration (%s) is higher than the top level defined in the be4 configuration (%s).",$dsBottomID,$topID);
+            return (-1, -1);
+        }
+        
+        $datasource->setBottomOrder($dsBottomOrder);
+        
+        if (! defined $bottomOrder || $dsBottomOrder < $bottomOrder) {
+            $bottomID = $dsBottomID;
+            $bottomOrder = $dsBottomOrder;
+        }
+    }
+
+    if ($topOrder == $bottomOrder) {
+        INFO(sprintf "Top and bottom levels are identical (%s) : just one level will be generated",$bottomID);
+    }
+    
+    ######## DETERMINE FOR EACH DATASOURCE TOP/BOTTOM LEVELS ########
+    
+    @{$self->{dataSources}} = sort {$a->getBottomOrder <=> $b->getBottomOrder} ( @{$self->{dataSources}});
+    
+    for (my $i = 0; $i < scalar @{$self->{dataSources}} -1; $i++) {
+        my $dsTopOrder = $self->{dataSources}[$i+1]->getBottomOrder - 1;
+        $self->{dataSources}[$i]->setTopOrder($dsTopOrder);
+        $self->{dataSources}[$i]->setTopID($TMS->getIDfromOrder($dsTopOrder));
+    }
+    
+    $self->{dataSources}[-1]->setTopID($topID);
+    $self->{dataSources}[-1]->setTopOrder($TMS->getOrderfromID($topID));
+    
+    if ($topOrder < $bottomOrder) {
+        ERROR("Pas bon ça : c'est sens dessus dessous ($topOrder - $topID < $bottomOrder - $bottomID)");
+        ERROR("Et ça, ça c'est pas normal !");
+        return (-1, -1);
+    }
+    
+    return ($bottomOrder,$topOrder);
+}
+
+####################################################################################################
 #                                       GETTERS / SETTERS                                          #
 ####################################################################################################
 
 # Group: getters - setters
 
-sub getSources {
-  my $self = shift;
-  return $self->{sources}; 
+sub getDataSources {
+    my $self = shift;
+    return $self->{dataSources}; 
+}
+
+sub getNumberDataSources {
+    my $self = shift;
+    return scalar $self->{dataSources}; 
+}
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= sprintf "\n Object BE4::DataSourceLoader :\n";
+    $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
+    $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
+    
+    return $export;
 }
 
 1;
@@ -243,9 +399,25 @@ BE4::DataSourceLoader - Load and validate data sources
     use BE4::DataSourceLoader
 
     # DataSourceLoader object creation
-    my $objDataSource = BE4::DataSource->new({
+    my $objDataSourceLoader = BE4::DataSourceLoader->new({
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
+    
+    # DataSourceLoader object creation for old configuration (just one data source)
+    my $objDataSourceLoader = BE4::DataSourceLoader->new(
+        { # datasource section
+            SRS         => "IGNF:LAMB93",
+            path_image  => "/home/IGN/DATA/IMAGES/",
+        },
+        { # harvesting section
+            wms_layer   => ORTHO_RAW_LAMB93_PARIS_OUEST
+            wms_url     => http://localhost/wmts/rok4
+            wms_version => 1.3.0
+            wms_request => getMap
+            wms_format  => image/tiff
+        },
+        $bottomLevel, # bottom level for this one data source
+    );
 
 =head1 DESCRIPTION
 
@@ -255,9 +427,11 @@ BE4::DataSourceLoader - Load and validate data sources
 
 Complete file's path, which contain all informations about data sources
 
-=item sources
+=item dataSources
 
 An array of DataSource objects
+
+=back
 
 =head1 FILE CONFIGURATION
 

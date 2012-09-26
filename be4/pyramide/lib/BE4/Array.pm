@@ -33,12 +33,12 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
-package BE4::Information;
+package BE4::Array;
 
 use strict;
 use warnings;
 
-use Log::Log4perl qw(:easy);
+use Data::Dumper;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -56,106 +56,72 @@ use constant FALSE => 0;
 
 ################################################################################
 
-BEGIN {}
-INIT {}
-END {}
+####################################################################################################
+#                                      Index Returning Functions                                   #
+####################################################################################################
 
-################################################################################
+# Group: Index Returning Functions
+
+#
 =begin nd
-Group: variable
+method: minArrayIndex
 
-variable: $self
-    * PRODUCT
-    * DATE
-    * ZONE
-    * COMMENT
+Parameters:
+    first - integer, indice from which minimum is looked for.
+    array - numbers (floats or integers) array
+
+Returns:
+    Index of the smaller element in a array, begining with the element 'first'
 =cut
+sub minArrayIndex {
+    my $self = shift;
+    my $first = shift;
+    my @array = @_;
 
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
+    my $min = undef;
+    my $minIndex = undef;
 
-# Group: constructor
+    for (my $i = $first; $i < scalar @array; $i++){
+        if (! defined $minIndex || $min > $array[$i]) {
+            $min = $array[$i];
+            $minIndex = $i;
+        }
+    }
 
-sub new {
-  my $this = shift;
-
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    PRODUCT => undef,
-    DATE    => undef,
-    ZONE    => undef,
-    COMMENT => undef,
-  };
-
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  return $self;
-}
-
-sub _init {
-    my $self   = shift;
-    my $params = shift;
-
-    TRACE;
-    
-    return FALSE if (! defined $params);
-    
-    # init. params    
-    $self->{PRODUCT}=$params->{product};
-    $self->{DATE}   =$params->{date};
-    $self->{ZONE}   =$params->{zone};
-    $self->{COMMENT}=$params->{comment};
-    
-    return TRUE;
+    return $minIndex;
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                      Value Returning Functions                                   #
 ####################################################################################################
 
-# Group: getters - setters
+# Group: Value Returning Functions
 
-# FIXME : without control...
-sub product {
-  my $self = shift;
-  if (@_) { $self->{PRODUCT} = shift }
-  return $self->{PRODUCT};
-}
-sub date {
-  my $self = shift;
-  if (@_) { $self->{DATE} = shift }
-  return $self->{DATE};
-}
-sub zone {
-  my $self = shift;
-  if (@_) { $self->{ZONE} = shift }
-  return $self->{ZONE};
-}
-sub comment {
-  my $self = shift;
-  if (@_) { $self->{COMMENT} = shift }
-  return $self->{COMMENT};
-}
+#
+=begin nd
+method: maxArrayValue
 
-sub exportForDebug {
-    my $self = shift ;
-    
-    my $export = "";
-    
-    $export .= "\nObject BE4::Information :\n";
-    $export .= sprintf "\t PRODUCT : %s\n",$self->{PRODUCT};
-    $export .= sprintf "\t DATE : %s\n",$self->{DATE};
-    $export .= sprintf "\t ZONE : %s\n",$self->{ZONE};
-    $export .= sprintf "\t COMMENT : %s\n",$self->{COMMENT};
-    
-    return $export;
+Parameters:
+    first - integer, indice from which maximum is looked for.
+    array - numbers (floats or integers) array
+
+Returns:
+    The greater value in a array, begining with the element 'first'
+=cut
+sub maxArrayValue {
+    my $self = shift;
+    my $first = shift;
+    my @array = @_;
+
+    my $max = undef;
+
+    for (my $i = $first; $i < scalar @array; $i++){
+        if (! defined $max || $max < $array[$i]) {
+            $max = $array[$i];
+        }
+    }
+
+    return $max;
 }
 
 1;
@@ -163,35 +129,18 @@ __END__
 
 =head1 NAME
 
-BE4::Information - global information about a product
+BE4::Array - Array Manipulation tools
 
 =head1 SYNOPSIS
 
-    use BE4::Information;
-  
-    # Information object creation
-    my $objInfo = BE4::Information->new({
-        PRODUCT => "BDORTHO",
-        DATE    => 2012,
-        ZONE    => "FXX",
-        COMMENT => "Prise de vue aérienne",
-    });
-
+    use BE4::Array;
+    my @array = (1,3,5,9);
+    my $minIndex = BE4::Arrray->minArrayIndex(@array); # return 0
+    my $maxArrayValue = BE4::Array->maxArrayValue($array); # return 9
+    
 =head1 DESCRIPTION
 
-=head2 ATTRIBUTES
-
-=over 4
-
-=item PRODUCT
-
-=item DATE
-
-=item ZONE
-
-=item COMMENT
-
-=back
+Provide functios to compute the max value or the min index of an array
 
 =head1 SEE ALSO
 
@@ -203,13 +152,14 @@ BE4::Information - global information about a product
 
 =end html
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Bazonnais Jean Philippe, E<lt>jean-philippe@ign.frE<gt>
+Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 

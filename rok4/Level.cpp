@@ -429,18 +429,23 @@ Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
                               bbox, 0, 0, 0, 0, pixel_size );
 }
 
-int Level::getNoDataValue() {
+int* Level::getNoDataValue() {
     DataSource *nd =  getDecodedNoDataTile();
-    int nodatavalue = 0;
+    
+    int nodatavalue[this->channels];
+    memset(nodatavalue,0,this->channels*sizeof(int));
     size_t size;
     if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
-        
         const uint8_t * buffer = nd->getData(size);
         const float* fbuf =  (const float*) buffer;
-        nodatavalue = (int) *fbuf;
+        for (int pixel = 0; pixel < this->channels; pixel++) {
+            *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+        }
     } else {
         const uint8_t * buffer = nd->getData(size);
-        nodatavalue = *buffer;
+        for (int pixel = 0; pixel < this->channels; pixel++) {
+            *(nodatavalue + pixel)  = *(buffer + pixel);
+        }
     }
     return nodatavalue;
 }

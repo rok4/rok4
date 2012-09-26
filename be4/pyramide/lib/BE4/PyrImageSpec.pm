@@ -97,12 +97,12 @@ END {}
 Group: variable
 
 variable: $self
-    *  pixel (Pixel object)
-    *  compression
-    *  compressionoption
-    *  interpolation
-    *  gamma
-    *  formatCode
+    * pixel : BE4::Pixel
+    * compression
+    * compressionoption
+    * interpolation
+    * gamma
+    * formatCode
 =cut
 
 ####################################################################################################
@@ -118,11 +118,11 @@ sub new {
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        pixel    => undef, # object Pixel !
-        compression => undef, # param value !
-        compressionoption => undef, # param value !
-        interpolation => undef, # param value !
-        gamma  => undef, # param value !
+        pixel    => undef,
+        compression => undef,
+        compressionoption => undef,
+        interpolation => undef,
+        gamma  => undef,
         formatCode  => undef
     };
 
@@ -308,16 +308,15 @@ sub is_Interpolation {
 
 #
 =begin nd
-method: methodName
+method: decodeFormat
 
 Extract bits per sample, compression and sample format from a code (present in pyramid's descriptor)
 
-Parameters:
+Parameter:
     formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
 
 Returns:
     An array : [image format,compression,sample format,bits per sample] ( ["TIFF","png","uint",8] )
-
 =cut
 sub decodeFormat {
     my $self = shift;
@@ -386,7 +385,7 @@ sub getCompressionOption {
     my $self = shift;
     return $self->{compressionoption};
 }
-sub getCode {
+sub getFormatCode {
     my $self = shift;
     return $self->{formatCode};
 }
@@ -394,9 +393,29 @@ sub getPixel {
     my $self = shift;
     return $self->{pixel};
 }
-sub getFormatCode {
-    my $self = shift;
-    return $self->{formatCode};
+
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::PyrImageSpec :\n";
+    $export .= "\t Global information : \n";
+    $export .= sprintf "\t\t- Compression : %s\n", $self->{compression};
+    $export .= sprintf "\t\t- Compression option : %s\n", $self->{compressionoption};
+    $export .= sprintf "\t\t- Interpolation : %s\n", $self->{interpolation};
+    $export .= sprintf "\t\t- Gamma : %s\n", $self->{gamma};
+    $export .= sprintf "\t\t- Format code : %s\n", $self->{formatCode};
+    
+    $export .= sprintf "\t Pixel components : %s\n", $self->{pixel}->exportForDebug;
+    
+    return $export;
 }
 
 1;

@@ -73,11 +73,11 @@ END {}
 Group: variable
 
 variable: $self
-    * file => "STDOUT",  # by default !
-    * level => "WARN",# by default !
-    * layout => '[%M](%L): %m%n', # always by default !
-    * utf8 => 1, # always by default !
-    * category => ""# always rootlogger by default !
+    * file - "STDOUT" by default
+    * level - "WARN" by default
+    * layout = '[%M](%L): %m%n'
+    * utf8 = 1
+    * category = ""
 =cut
 
 ####################################################################################################
@@ -143,10 +143,10 @@ BE4::Logger -
 
 =head1 SYNOPSIS
 
-    use BE4::Process;
+    use BE4::Logger;
   
-    # Process object creation
-    my $objProcess = BE4::Process->new({
+    # Logger object creation
+    my $objLogger = BE4::Logger->new({
         level => "INFO",
         file => "log.txt",
         layout => "[%M](%L): %m%n",

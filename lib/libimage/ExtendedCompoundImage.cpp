@@ -62,7 +62,9 @@ template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
     int i;
 
-    for (i=0;i<width*channels;i++) {buffer[i]=(T)nodata;}
+    for (i=0;i<width*channels;i++) {
+        buffer[i]=(T)nodata[i%channels];
+    }
     
     double y=l2y(line);
     
@@ -166,7 +168,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  int channels, 
                                                                                  BoundingBox<double> bbox, 
                                                                                  std::vector<Image*>& images, 
-                                                                                 int nodata, 
+                                                                                 int* nodata, 
                                                                                  uint16_t sampleformat, 
                                                                                  uint mirrors,
                                                                                  bool nowhite = false)
@@ -193,7 +195,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
     return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors,nowhite);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
+ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int* nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
 {
     // TODO : controler que les images et les masques sont superposables a l'image
     return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors,nowhite);

@@ -65,18 +65,21 @@ use constant FALSE => 0;
 Group: variable
 
 variable: $self
-    * PATHFILENAME => undef,
-    * name     => undef,
-    * filename => undef,
-    * filepath => undef,
-    * levelIdx => undef, # hash binding Tile matrix identifiants (string) and order (integer) in ascending resolutions
-    * leveltop => undef,
-    * resworst => undef,
-    * levelbottom => undef,
-    * resbest  => undef,
-    * srs => undef, # srs is casted in uppercase
-    * coordinates_inversion => FALSE, # boolean, to know if we have to reverse coordinates to harvest in this SRS
-    * tilematrix => {}, # an hash of TileMatrix objects
+    * PATHFILENAME
+    * name
+    * filename
+    * filepath
+    
+    * levelsBind - hash binding Tile matrix identifiants (string) and order (integer) in ascending resolutions
+    * topID
+    * topResolution
+    * bottomID
+    * bottomResolution
+    
+    * srs - casted in uppercase
+    * coordinatesInversion : boolean - to know if we have to reverse coordinates to harvest in this SRS
+    * tileMatrix : hash of BE4::TileMatrix
+    * isQTree : boolean
 =cut
 
 ####################################################################################################
@@ -92,20 +95,21 @@ sub new {
   # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
     PATHFILENAME => undef,
-    #
     name     => undef,
     filename => undef,
     filepath => undef,
     #
-    levelIdx => undef, # hash associant les id de TM à leur indice dans le tableau du TMS (dans le sens croissant des résolutions)
-    leveltop => undef,
-    resworst => undef,
-    levelbottom => undef,
-    resbest  => undef,
+    levelsBind => undef,
+    topID => undef,
+    topResolution => undef,
+    bottomID => undef,
+    bottomResolution  => undef,
     #
-    srs        => undef, # srs is casted in uppercase
-    coordinates_inversion  => FALSE,
-    tilematrix => {},
+    srs        => undef,
+    coordinatesInversion  => FALSE,
+    tileMatrix => {},
+    #
+    isQTree => undef,
   };
 
   bless($self, $class);
@@ -165,24 +169,24 @@ sub _load {
         # we identify level max (with the best resolution, the smallest) and level min (with the 
         # worst resolution, the biggest)
         
-        if (! defined $self->{leveltop} || ! defined $self->{resworst} || $v->{resolution} > $self->{resworst}) {
-            $self->{leveltop} = $k;
-            $self->{resworst} = $v->{resolution};
+        if (! defined $self->{topID} || ! defined $self->{topResolution} || $v->{resolution} > $self->{topResolution}) {
+            $self->{topID} = $k;
+            $self->{topResolution} = $v->{resolution};
         }
-        if (! defined $self->{levelbottom} || ! defined $self->{resbest} || $v->{resolution} < $self->{resbest}) {
-            $self->{levelbottom} = $k;
-            $self->{resbest} = $v->{resolution};
+        if (! defined $self->{bottomID} || ! defined $self->{bottomResolution} || $v->{resolution} < $self->{bottomResolution}) {
+            $self->{bottomID} = $k;
+            $self->{bottomResolution} = $v->{resolution};
         }
         
         my $objTM = BE4::TileMatrix->new({
             id => $k,
             resolution     => $v->{resolution},
-            topleftcornerx => $v->{topLeftCornerX},
-            topleftcornery => $v->{topLeftCornerY},
-            tilewidth      => $v->{tileWidth},
-            tileheight     => $v->{tileHeight},
-            matrixwidth    => $v->{matrixWidth},
-            matrixheight   => $v->{matrixHeight},
+            topLeftCornerX => $v->{topLeftCornerX},
+            topLeftCornerY => $v->{topLeftCornerY},
+            tileWidth      => $v->{tileWidth},
+            tileHeight     => $v->{tileHeight},
+            matrixWidth    => $v->{matrixWidth},
+            matrixHeight   => $v->{matrixHeight},
         });
         
         if (! defined $objTM) {
@@ -190,12 +194,12 @@ sub _load {
             return FALSE;
         }
         
-        $self->{tilematrix}->{$k} = $objTM;
+        $self->{tileMatrix}->{$k} = $objTM;
         undef $objTM;
     }
     
     if (! $self->getCountTileMatrix()) {
-        ERROR (sprintf "No tilematrix loading from XML file TMS !");
+        ERROR (sprintf "No tile matrix loading from XML file TMS !");
         return FALSE;
     }
     
@@ -221,62 +225,75 @@ sub _load {
     my $authority = (split(":",$self->{srs}))[0];
     if ($sr->IsGeographic() && uc($authority) eq "EPSG") {
         INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
-        $self->{coordinates_inversion} = TRUE;
+        $self->{coordinatesInversion} = TRUE;
     } else {
         INFO(sprintf "Coordinates order will be kept in requests (SRS : %s)",$self->{srs});
-        $self->{coordinates_inversion} = FALSE;
+        $self->{coordinatesInversion} = FALSE;
     }
     
     # clean
     $xmltree = undef;
     $xmltms  = undef;
     
-    # tilematrix list sort by resolution
+    # tileMatrix list sort by resolution
     my @tmList = $self->getTileMatrixByArray();
   
-    # Is TMS a QuadTree ? If not, we don't know how to do -> ERROR
-    
+    # Is TMS a QuadTree ? If not, we use a graph (less efficient for calculs)
+    $self->{isQTree} = TRUE; # default value
     if (scalar(@tmList) != 1) {
         my $epsilon = $tmList[0]->getResolution / 100 ;
         for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
             if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
-                ERROR(sprintf "Resolutions have to go by twos : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution,
-                    $tmList[$i]->{id},$tmList[$i+1]->getResolution);
-                return FALSE;
+                $self->{isQTree} = FALSE;
+                INFO(sprintf "Not a QTree : resolutions don't go by twos : level '%s' (%s) and level '%s' (%s).",
+                    $tmList[$i]->{id},$tmList[$i]->getResolution,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getResolution);
+                last;
             }
-            if ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
-                ERROR(sprintf "'topleftcornerx' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerX);
-                return FALSE;
+            elsif ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
+                $self->{isQTree} = FALSE;
+                ERROR(sprintf "Not a QTree : 'topleftcornerx' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
+                    $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerX,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerX);
+                last;
             }
-            if ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
-                ERROR(sprintf "'topleftcornery' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTopLeftCornerY);
-                return FALSE;
+            elsif ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
+                $self->{isQTree} = FALSE;
+                ERROR(sprintf "Not a QTree : 'topleftcornery' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
+                    $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerY,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerY);
+                last;
             }
-            if ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
-                ERROR(sprintf "'tilewidth' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileWidth);
-                return FALSE;
+            elsif ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
+                $self->{isQTree} = FALSE;
+                ERROR(sprintf "Not a QTree : 'tilewidth' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
+                    $tmList[$i]->{id},$tmList[$i]->getTileWidth,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTileWidth);
+                last;
             }
-            if ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
-                ERROR(sprintf "'tileheight' have to be the same for all levels : level '%s' (%s) and level '%s' (%s) are not valid",
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight,
-                    $tmList[$i]->{id},$tmList[$i+1]->getTileHeight);
-                return FALSE;
+            elsif ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
+                $self->{isQTree} = FALSE;
+                INFO(sprintf "Not a QTree : 'tileheight' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
+                    $tmList[$i]->{id},$tmList[$i]->getTileHeight,
+                    $tmList[$i+1]->{id},$tmList[$i+1]->getTileHeight);
+                last;
             }
         };
     };
   
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-    TRACE("sort by ID...");
-    
     for (my $i=0; $i < scalar @tmList; $i++){
-        $self->{levelIdx}{$tmList[$i]->getID()} = $i;
+        $self->{levelsBind}{$tmList[$i]->getID()} = $i;
+    }
+    
+    if ($self->isQTree) { return TRUE;}
+    
+    ## Adding informations about child/parent in TM objects
+    for (my $i = 0; $i < scalar(@tmList) ;$i++) {
+        if (! $self->computeTmSource($tmList[$i])) {
+            ERROR(sprintf "Nor a QTree neither a Graph made for nearest neighbour generation. No source for level %s.",$tmList[$i]->getID());
+            return FALSE;
+        }
     }
     
     return TRUE;
@@ -288,13 +305,18 @@ sub _load {
 
 # Group: getters - setters
 
+sub getPathFilename {
+    my $self = shift;
+    return $self->{PATHFILENAME};
+}
+
 sub getSRS {
   my $self = shift;
   return $self->{srs};
 }
 sub getInversion {
   my $self = shift;
-  return $self->{coordinates_inversion};
+  return $self->{coordinatesInversion};
 }
 sub getName {
   my $self = shift;
@@ -311,7 +333,27 @@ sub getFile {
 
 sub getLevelTop {
   my $self = shift;
-  return $self->{leveltop};
+  return $self->{topID};
+}
+
+sub getLevelsBind {
+  my $self = shift;
+  return $self->{levelsBind};
+}
+
+sub getLevelBottom {
+  my $self = shift;
+  return $self->{bottomID};
+}
+
+sub getLevelTopResolution {
+  my $self = shift;
+  return $self->{topResolution};
+}
+
+sub getLevelBottomResolution {
+  my $self = shift;
+  return $self->{bottomResolution};
 }
 
 # TileWidth TileHeight
@@ -319,19 +361,24 @@ sub getTileWidth {
   my $self = shift;
   my $levelID = shift;
   
-  $levelID = $self->{levelbottom} if (! defined $levelID);
+  $levelID = $self->{bottomID} if (! defined $levelID);
   
   # size of tile in pixel !
-  return $self->{tilematrix}->{$levelID}->getTileWidth;
+  return $self->{tileMatrix}->{$levelID}->getTileWidth;
 }
 sub getTileHeight {
   my $self = shift;
   my $levelID = shift;
   
-  $levelID = $self->{levelbottom} if (! defined $levelID);
+  $levelID = $self->{bottomID} if (! defined $levelID);
   
   # size of tile in pixel !
-  return $self->{tilematrix}->{$levelID}->getTileHeight;
+  return $self->{tileMatrix}->{$levelID}->getTileHeight;
+}
+
+sub isQTree {
+    my $self = shift;
+    return $self->{isQTree};
 }
 
 ####################################################################################################
@@ -339,6 +386,61 @@ sub getTileHeight {
 ####################################################################################################
 
 # Group: tile matrix manager
+
+#
+=begin nd
+method: computeTmSource
+
+Parameters:
+    tmTarget - a BE4::TileMatrix object.
+
+Returns:
+    FALSE if there is no TM source for TM target (unless TM target is BotttomTM) 
+    TRUE if there is a TM source (obj) for the TM target (obj) in argument.
+=cut
+sub computeTmSource {
+  my $self = shift;
+  my $tmTarget = shift;
+  
+  if ($tmTarget->{id} == $self->{bottomID}) {
+    return TRUE;
+  }
+
+  # The TM to be used to compute images in TM Parent
+  my $tmSource = undef;
+  
+  # position du pixel en haut à gauche
+  my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerX() + 0.5 * $tmTarget->getResolution();
+  my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerY() - 0.5 * $tmTarget->getResolution();
+
+  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromID($self->getLevelBottom) ;$i--) {
+      my $potentialTmSource = $self->getTileMatrix($self->getIDfromOrder($i));
+      # la précision vaut 1/100 de la plus petit résolution du TMS
+      my $epsilon = $self->getTileMatrix($self->getLevelBottom())->getResolution() / 100;
+      my $rapport = $tmTarget->getResolution() / $potentialTmSource->getResolution() ;
+      #on veut que le rapport soit (proche d') un entier
+      next if ( abs( int( $rapport + 0.5) - $rapport) > $epsilon );
+      # on veut que les pixels soient superposables (pour faire une interpolation nn)
+      # on regarde le pixel en haut à gauche de tmtarget
+      # on verfie qu'il y a bien un pixel correspondant dans tmpotentialsource
+      my $potentialTm_xTopLeftCorner_CenterPixel = $potentialTmSource->getTopLeftCornerX() + 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($xTopLeftCorner_CenterPixel - $potentialTm_xTopLeftCorner_CenterPixel) > $epsilon );
+      my $potentialTm_yTopLeftCorner_CenterPixel = $potentialTmSource->getTopLeftCornerY() - 0.5 * $potentialTmSource->getResolution() ;
+      next if (abs($yTopLeftCorner_CenterPixel - $potentialTm_yTopLeftCorner_CenterPixel) > $epsilon );
+      $tmSource = $potentialTmSource;
+      last;
+  }
+  
+  # si on n'a rien trouvé, on sort en erreur
+  if (!  defined $tmSource) {
+     return FALSE;
+  }
+  
+  $tmSource->addTargetsTm($tmTarget);
+  
+  return TRUE;
+}
+
 
 #
 =begin nd
@@ -354,7 +456,7 @@ sub getTileMatrixByArray {
     
     my @levels;
 
-    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tilematrix}})) {
+    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tileMatrix}})) {
         push @levels, $k;
     }
 
@@ -376,9 +478,9 @@ sub getTileMatrix {
     return undef;
   }
   
-  return undef if (! exists($self->{tilematrix}->{$level}));
+  return undef if (! exists($self->{tileMatrix}->{$level}));
   
-  return $self->{tilematrix}->{$level};
+  return $self->{tileMatrix}->{$level};
 }
 
 #
@@ -391,7 +493,7 @@ Returns:
 sub getCountTileMatrix {
   my $self = shift;
 
-  return scalar (keys %{$self->{tilematrix}});
+  return scalar (keys %{$self->{tileMatrix}});
 }
 
 #
@@ -409,8 +511,8 @@ sub getIDfromOrder {
 
     TRACE;
 
-    foreach my $k (keys %{$self->{levelIdx}}) {
-        if ($self->{levelIdx}->{$k} == $order) {return $k;}
+    foreach my $k (keys %{$self->{levelsBind}}) {
+        if ($self->{levelsBind}->{$k} == $order) {return $k;}
     }
 
     return undef;
@@ -418,19 +520,19 @@ sub getIDfromOrder {
 
 #
 =begin nd
-method: getBelowTileMatrixID
+method: getBelowLevelID
 
 Return:
     The tile matrix ID below the given tile matrix (ID).
 =cut
-sub getBelowTileMatrixID {
+sub getBelowLevelID {
     my $self = shift;
     my $ID= shift; 
 
     TRACE;
     
-    return undef if (! exists $self->{levelIdx}->{$ID});
-    my $order = $self->{levelIdx}->{$ID};
+    return undef if (! exists $self->{levelsBind}->{$ID});
+    my $order = $self->{levelsBind}->{$ID};
     return undef if ($order == 0);
     return $self->getIDfromOrder($order-1);
 }
@@ -449,20 +551,91 @@ sub getOrderfromID {
 
     TRACE;
 
-    if (exists $self->{levelIdx}->{$ID}) {
-        return $self->{levelIdx}->{$ID};
+    if (exists $self->{levelsBind}->{$ID}) {
+        return $self->{levelsBind}->{$ID};
     } else {
         return undef;
     }
 }
 
+####################################################################################################
+#                                       DEBUG METHODS                                              #
+####################################################################################################
+
+# Group: DEBUG METHODS
+
+#
+=begin nd
+method: exportForDebug
+
+Print attributs of the TileMatrixSet
+
+=cut
+sub exportForDebug {
+    my $self = shift;
+    
+    my $output = "";
+    
+    $output .= sprintf "\nObject BE4::TileMatrixSet :\n";
+    if (defined $self->getPathFilename() ) {
+        $output .= sprintf "\t %s : %s\n","PATHFILENAME",$self->getPathFilename();
+    };
+    if (defined $self->getName() ) {
+        $output .= sprintf "\t %s : %s\n","name",$self->getName();
+    };
+    if (defined $self->getPath() ) {
+        $output .= sprintf "\t %s : %s\n","filepath",$self->getPath();
+    };
+    if (defined $self->getFile() ) {
+        $output .= sprintf "\t %s : %s\n","filename",$self->getFile();
+    };
+    if (defined $self->getLevelTop() ) {
+        $output .= sprintf "\t %s : %s\n","topID",$self->getLevelTop();
+    };
+    if (defined $self->getLevelTopResolution() ) {
+        $output .= sprintf "\t %s : %s\n","topResolution",$self->getLevelTopResolution();
+    };
+    if (defined $self->getLevelBottom() ) {
+        $output .= sprintf "\t %s : %s\n","bottomID",$self->getLevelBottom();
+    };
+    if (defined $self->getLevelBottomResolution() ) {
+        $output .= sprintf "\t %s : %s\n","bottomResolution",$self->getLevelBottomResolution();
+    };
+    if (defined $self->getSRS() ) {
+        $output .= sprintf "\t %s : %s\n","SRS",$self->getSRS();
+    };
+    if (defined $self->getInversion() ) {
+        if ( $self->getInversion() ) {
+            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","TRUE";
+        } else {
+            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","FALSE";
+        }
+    };
+    if (defined $self->isQTree() ) {
+        if ( $self->isQTree() ) {
+            $output .= sprintf "\t %s value is %s\n","isQTree","TRUE";
+        } else {
+            $output .= sprintf "\t %s value is %s\n","isQTree","FALSE";
+        }
+    };
+    $output .= sprintf "\t levelsBind hash :\n";
+    foreach my $key (keys($self->getLevelsBind())) {
+        $output .= sprintf "\t\t ID : %s ; Order : %s .\n",$key,$self->getLevelsBind()->{$key};
+    }
+    $output .= sprintf "\t TileMatrix Array :\n";
+    foreach my $tm (@{$self->getTileMatrixByArray()}) {
+        $output .= sprintf "\t\t TM ID : %s, TM Resolution : %s .\n",$tm->getID(),$tm->getResolution();
+    }    
+    
+    return $output;
+}
 
 1;
 __END__
 
 =head1 NAME
 
-BE4::TileMatrixSet - load a file tilematrixset.
+BE4::TileMatrixSet - load a file tile matrix set.
 
 =head1 SYNOPSIS
 
@@ -471,13 +644,13 @@ BE4::TileMatrixSet - load a file tilematrixset.
     my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
     my $objTMS = BE4::TileMatrixSet->new($filepath);
     
-    $objTMS->getTileMatrixCount()};  # ie 19
-    $objTMS->getTileMatrix(12);      # object TileMatrix with level id = 12
-    $objTMS->getSRS();               # ie 'IGNF:LAMB93'
-    $objTMS->getName();              # ie 'LAMB93_50cm'
-    $objTMS->getFile();              # ie 'LAMB93_50cm.tms'
-    $objTMS->getPath();              # ie '/home/ign/tms/'
-
+    $objTMS->getTileMatrixCount()};      # ie 19
+    $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
+    $objTMS->getSRS();                   # ie 'IGNF:LAMB93'
+    $objTMS->getName();                  # ie 'LAMB93_50cm'
+    $objTMS->getFile();                  # ie 'LAMB93_50cm.tms'
+    $objTMS->getPath();                  # ie '/home/ign/tms/'
+    
 =head1 DESCRIPTION
 
 =head2 ATTRIBUTES
@@ -492,25 +665,29 @@ Complete file path : /path/to/SRS_RES.tms
 
 Split PATHFILENAME : name : SRS_RES, filename : SRS_RES.tms, filepath : /path/to.
 
-=item levelIdx
+=item levelsBind
 
 Hash binding Tile matrix identifiant (string) and order (integer) in ascending resolutions.
 
-=item leveltop, resworst
+=item topID, topResolution
 
 Higher level ID and its resolution.
 
-=item levelbottom, resbest
+=item bottomID, bottomResolution
 
 Lower level ID and its resolution.
 
 =item srs
 
-=item coordinates_inversion
+=item isQTree
+
+TRUE if this TMS describe a quad tree, FALSE otherwise.
+
+=item coordinatesInversion
 
 For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
 
-=item tilematrix
+=item tileMatrix
 
 Hash of TileMatrix objects : levelID => objTileMatrix
 

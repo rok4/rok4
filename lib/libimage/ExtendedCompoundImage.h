@@ -75,9 +75,9 @@ private:
     // A partir du nombre total de miroirs, on peut donc determiner si une image est un miroir ou non
     uint mirrors;
 
-    int nodata;
+    int* nodata;
     
-    /* Il existe des données source qui contiennent du nodata, de valeur nodata_src. Lors de la superposition, on ne veut pas
+    /* Il existe des données source qui contiennent du nodata, blanc. Lors de la superposition, on ne veut pas
      * le garder. Ce filtre augmantant le temps du mergeNtiff, on veut que ce soit en option :
      *      - true : on retire le blanc
      *      - false : comme avant
@@ -99,7 +99,7 @@ protected:
       * Les Image sont detruites ensuite en meme temps que l'objet
       * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
      */
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int* nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
         Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         nodata(nodata),
@@ -107,7 +107,7 @@ protected:
         mirrors(mirrors),
         nowhite(nowhite) {}
 
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
+    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int* nodata, uint16_t sampleformat, uint mirrors, bool nowhite) :
         Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         masks(masks),
@@ -147,9 +147,9 @@ public:
 
 class extendedCompoundImageFactory {
 public:
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, int* nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
+    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int* nodata, uint16_t sampleformat, uint mirrors, bool nowhite);
 };
 
 /**
