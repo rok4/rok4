@@ -563,6 +563,8 @@ The directory which contain the image (/home/ign/DATA)
 
 =item height, width
 
+=back
+
 =head2 INFORMATIONS
 
 =over 4

@@ -654,9 +654,9 @@ If reprojection or lossy compression for an update, we need a WMS service.
 
 =head2 BE4 configuration, by section
 
-=over 4
-
 =head3 logger
+
+=over 4
 
 =item log_path
 
@@ -672,15 +672,21 @@ Log file: F<log_path/log_file>
 
 Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
 
+=back
 
 =head3 datasource
+
+=over 4
 
 =item filepath_conf
 
 Complete file path to configuration file for data sources (F</home/ign/SOURCE/sources.txt>)
 
+=back
 
 =head3 pyramid
+
+=over 4
 
 =item pyr_name_new
 
@@ -798,7 +804,11 @@ Directory, where to find the TMS file.
 
 Mandatory
 
+=back
+
 =head3 process
+
+=over 4
 
 =item job_number
 

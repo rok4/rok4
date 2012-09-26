@@ -431,6 +431,8 @@ Complete file's path, which contain all informations about data sources
 
 An array of DataSource objects
 
+=back
+
 =head1 FILE CONFIGURATION
 
 =over 4

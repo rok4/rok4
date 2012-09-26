@@ -1867,15 +1867,19 @@ Bounding boxes' SRS have to be the TMS' one.
 
 =head2 By section
 
-=over 4
-
 =head3 logger
+
+=over 4
 
 =item log_level
 
 Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
 
+=back
+
 =head3 pyramid
+
+=over 4
 
 =item pyr_name
 
@@ -1951,7 +1955,11 @@ Possible values : 'replace', 'transparency', 'multiply'.
 
 Mandatory.
 
+=back
+
 =head3 process
+
+=over 4
 
 =item job_number
 
