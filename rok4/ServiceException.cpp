@@ -39,7 +39,7 @@
 
 #include "ServiceException.h"
 #include "Logger.h"
-
+#include "config.h"
 
 std::string ServiceException::getCodeAsString ( ExceptionCode code ) {
     switch ( code ) {

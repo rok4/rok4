@@ -44,6 +44,8 @@
 #include <cstdlib>
 #include <algorithm>
 
+#include "intl.h"
+
 #include <cassert>
 // Pour déactiver tous les assert, décommenter la ligne suivante
 // #define NDEBUG
@@ -81,10 +83,5 @@
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";
-
-//Configuration de gettext
-#define DOMAINNAME "Rok4Server"
-#define _(string) dgettext(DOMAINNAME,string)
-
 
 #endif

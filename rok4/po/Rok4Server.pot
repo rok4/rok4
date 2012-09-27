@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-09-26 14:14+0200\n"
+"POT-Creation-Date: 2012-09-27 10:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -943,8 +943,8 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:191 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
-#: Rok4Api.cpp:160 Rok4Api.cpp:530
+#: main.cpp:191 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: Rok4Api.cpp:161 Rok4Api.cpp:531
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
@@ -964,16 +964,24 @@ msgstr ""
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:179
-msgid "CRS BBOX EXTENDEDCOMPOUND IMAGE"
+#: Pyramid.cpp:186
+msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
 #: Pyramid.cpp:190
-msgid "New width = "
+msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:190
+#: Pyramid.cpp:197
+msgid "New Width = "
+msgstr ""
+
+#: Pyramid.cpp:197
 msgid "New Height = "
+msgstr ""
+
+#: Pyramid.cpp:204
+msgid "Image decoupe valide"
 msgstr ""
 
 #: Request.cpp:129
@@ -1336,49 +1344,49 @@ msgstr ""
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 
-#: Rok4Api.cpp:99
+#: Rok4Api.cpp:100
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
 msgstr ""
 
-#: Rok4Api.cpp:124
+#: Rok4Api.cpp:125
 msgid "Envoi des messages dans la sortie du logger"
 msgstr ""
 
-#: Rok4Api.cpp:125
+#: Rok4Api.cpp:126
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr ""
 
-#: Rok4Api.cpp:128
+#: Rok4Api.cpp:129
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr ""
 
-#: Rok4Api.cpp:134
+#: Rok4Api.cpp:135
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr ""
 
-#: Rok4Api.cpp:142
+#: Rok4Api.cpp:143
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr ""
 
-#: Rok4Api.cpp:150
+#: Rok4Api.cpp:151
 msgid "Impossible de charger la conf des Styles"
 msgstr ""
 
-#: Rok4Api.cpp:159
+#: Rok4Api.cpp:160
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:278 Rok4Api.cpp:350 Rok4Server.cpp:475
+#: Rok4Api.cpp:279 Rok4Api.cpp:351 Rok4Server.cpp:475
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:458 Rok4Server.cpp:505
+#: Rok4Api.cpp:459 Rok4Server.cpp:505
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:458 Rok4Server.cpp:505 Rok4Server.cpp:516
+#: Rok4Api.cpp:459 Rok4Server.cpp:505 Rok4Server.cpp:516
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
