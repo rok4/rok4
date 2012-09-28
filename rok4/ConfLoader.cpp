@@ -861,7 +861,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         std::string keyword ( pElem->GetTextStr() );
         keyWords.push_back ( keyword );
     }
-
+    std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
     for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
         if ( !pElem || ! ( pElem->GetText() ) ) {
             LOGGER_ERROR ( _("Pas de style => style = ") << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
@@ -874,13 +874,17 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             LOGGER_ERROR ( _("Style ") << styleName << _("non defini") );
             continue;
         }
+        
+        if ( styleIt->second->getId().compare(DEFAULT_STYLE_INSPIRE_ID)==0 ) {
+            inspireStyleName = styleName;
+        }
         styles.push_back ( styleIt->second );
-        if ( inspire && ( styleName==DEFAULT_STYLE_INSPIRE ) ) {
+        if ( inspire && ( styleName==inspireStyleName ) ) {
             styles.pop_back();
         }
     }
     if ( inspire ) {
-        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( DEFAULT_STYLE_INSPIRE );
+        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( inspireStyleName );
         if ( styleIt != stylesList.end() ) {
             styles.insert ( styles.begin(),styleIt->second );
         } else {

@@ -924,10 +924,10 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES absent."),"wms" ) );
     std::string str_styles=getParam ( "styles" );
     if ( str_styles == "" ) {//TODO Gestion du style par défaut
-        str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+        str_styles.append( layers.at(0)->getDefaultStyle() );
         for (int i = 1;  i < layers.size(); i++) {
             str_styles.append(",");
-            str_styles.append( servicesConf.isInspire() ?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+            str_styles.append( layers.at(i)->getDefaultStyle() );
         }
     }
     std::vector<std::string> stylesString = split(str_styles,',');
