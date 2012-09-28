@@ -56,7 +56,9 @@ JPEGEncoder::JPEGEncoder(Image* image) : image(image), status(-1) {
         cinfo.input_components = image->channels;
         if(image->channels == 3) cinfo.in_color_space = JCS_RGB;
         else if(image->channels == 1) cinfo.in_color_space = JCS_GRAYSCALE;
-        //  else ERROR !!!!!
+        else if(image->channels == 4) cinfo.in_color_space = JCS_EXT_RGBX;
+        else cinfo.in_color_space = JCS_UNKNOWN;
+        
 
         jpeg_set_defaults(&cinfo);
 	
