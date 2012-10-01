@@ -88,7 +88,7 @@ int StyledImage::_getline ( uint8_t* buffer, int line ) {
         }
     }
 
-    delete source;
+    delete[] source;
     return i*sizeof ( uint8_t ) *channels;
 
 }
