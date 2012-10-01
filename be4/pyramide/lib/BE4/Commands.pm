@@ -658,7 +658,11 @@ sub configureFunctions {
     
     $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s -compress Zip ",$self->{pyramid}->getCacheImageHeight;
     if ($spp == 4) {
-        $conf_montageOut .= "-background none ";
+        $conf_montageOut .= "-type TrueColorMatte -background none ";
+    } elsif ($spp == 3) {
+        $conf_montageOut .= "-type TrueColor ";
+    } elsif ($spp == 1) {
+        $conf_montageOut .= "-type Grayscale ";
     }
 
     $configuredFunc =~ s/__montageOut__/$conf_montageOut/;
