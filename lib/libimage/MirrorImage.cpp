@@ -100,6 +100,8 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         ymax=pImageSrc->getymax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,3,mirrorSize);
+    } else {
+        return NULL;
     }
 
 }

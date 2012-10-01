@@ -48,13 +48,16 @@
 *
 */
 
-#include "TiffWhiteManager.h"
+#include "TiffNodataManager.h"
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
 #include "../be4version.h"
 
 using namespace std;
+
+uint8_t fastWhite[4] = {254,254,254,255};
+uint8_t white[4] = {255,255,255,255};
 
 void usage() {
     cerr << "removeWhite version "<< BE4_VERSION << endl;
@@ -75,13 +78,13 @@ int main(int argc, char* argv[]) {
         if(!input_file) input_file = argv[i];
         else if(!output_file) output_file = argv[i];
         else {
-            error("Error : argument must specify exactly one input file and one output file");
+            error("Error : argument must specify just one input file and one output file");
         }
     }
-    if(!output_file || !input_file) error("Error : argument must specify exactly one input file and one output file");
+    if(!output_file || !input_file) error("Error : input file or output file is missing");
     
-    TiffWhiteManager TWM(input_file,output_file,true,true);
-    if (! TWM.treatWhite()) {
+    TiffNodataManager TNM(4,white,fastWhite,white,true,true);
+    if (! TNM.treatNodata(input_file,output_file)) {
         error("Error : unable to treat white for this file : " + string(input_file));
     }
     

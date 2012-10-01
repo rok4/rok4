@@ -35,14 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _TIFFWHITEMANAGER_
-#define _TIFFWHITEMANAGER_
+#ifndef _TIFFNODATAMANAGER_
+#define _TIFFNODATAMANAGER_
 
 #include <stdint.h>
 #include <tiff.h>
 
 /**
-* @file TiffWhiteManager.h
+* @file TiffNodataManager.h
 * @brief Tool which remove white pixels in images and keep this color for nodata pixels (front pixels)
 * Pixels in images (which don't touch sides) : 'white' -> 'whiteForData
 * Front pixels (which touch sides) : 'white' -> 'whiteForNodata'
@@ -50,32 +50,30 @@
 * @author IGN
 */
 
-class TiffWhiteManager {
+class TiffNodataManager {
 private:
-      
-    char* input;
-    char* output;
-    uint8_t *IM;
-    
-    uint32 width , height, rowsperstrip;
-    uint16 bitspersample, sampleperpixel, photometric, compression , planarconfig, nb_extrasamples;
-    uint16 *extrasamples;
+    uint16 channels;
 
-    bool bRemoveWhite;
-    bool bAddNodataWhite;
+    uint8_t *targetValue;
+    uint8_t *dataValue;
+    uint8_t *nodataValue;
+
+    bool bRemoveTargetValue;
+    bool bAddNodataValue;
     
-    void addNodataWhite();
+    void addNodataValue(uint8_t* IM, uint32 width , uint32 height,uint16 samplesperpixel);
 
 public: 
 
-    /*
-     * Constrctor
-     * Configure the white manager
+    /**
+     * Constructor
+     * Configure the nodata manager
      */
-    TiffWhiteManager(char* input, char* output, bool bRemoveWhite, bool bAddNodataWhite);
+    TiffNodataManager(uint16 channels, uint8_t* targetValue, uint8_t* dataValue, uint8_t* nodataValue,
+                      bool bRemoveTargetValue, bool bAddNodataValue);
 
-    bool treatWhite();
+    bool treatNodata(char* input, char* output);
 
 };
 
-#endif // _TIFFWHITEMANAGER_
+#endif // _TIFFNODATAMANAGER_

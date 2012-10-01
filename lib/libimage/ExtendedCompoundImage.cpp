@@ -204,7 +204,8 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 /**
 @fn _getline(uint8_t* buffer, int line)
 @brief Remplissage iteratif d'une ligne
-@param le numero de la ligne
+@param buffer la ligne de l'image voulue
+@param line le numero de la ligne
 @return le nombre d'octets de la ligne
 */
 

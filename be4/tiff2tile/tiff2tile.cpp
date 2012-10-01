@@ -41,8 +41,11 @@
 #include "tiffio.h"
 #include "TiffReader.h"
 #include "TiledTiffWriter.h"
-#include "TiffWhiteManager.h"
+#include "TiffNodataManager.h"
 #include "../be4version.h"
+
+uint8_t fastWhite[4] = {254,254,254,255};
+uint8_t white[4] = {255,255,255,255};
 
 void usage() {
     std::cerr << "tiff2tile version "<< BE4_VERSION << std::endl;
@@ -56,7 +59,7 @@ int main(int argc, char **argv) {
     uint16_t compression = COMPRESSION_NONE;
     uint16_t photometric = PHOTOMETRIC_RGB;
     uint32_t bitspersample = 8;
-    uint16_t sampleperpixel = 3;
+    uint16_t samplesperpixel = 3;
     bool crop = false;
     uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
     int quality = -1;
@@ -110,11 +113,11 @@ int main(int argc, char **argv) {
                     else if (strncmp(argv[i],"float",5)==0) {sampleformat = SAMPLEFORMAT_IEEEFP;}
                     else {std::cerr << "Error in -a option. Possibilities are uint or float." << std::endl; exit(2);}
                     break;
-                case 's': // sampleperpixel
+                case 's': // samplesperpixel
                     if ( ++i == argc ) {std::cerr << "Error in -s option" << std::endl; exit(2);}
-                    if ( strncmp ( argv[i], "1",1 ) == 0 ) sampleperpixel = 1 ;
-                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) sampleperpixel = 3 ;
-                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) sampleperpixel = 4 ;
+                    if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
                     else {std::cerr << "Error in -s option. Possibilities are 1,3 or 4." << std::endl; exit(2);}
                     break;
                 case 'b':
@@ -144,8 +147,10 @@ int main(int argc, char **argv) {
     
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if (crop) {
-        TiffWhiteManager TWM(input,input,true,true);
-        if (! TWM.treatWhite()) {
+        
+        TiffNodataManager TNM(samplesperpixel,white,fastWhite,white,true,true);
+
+        if (! TNM.treatNodata(input,input)) {
             std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
             exit(2);
         }
@@ -155,7 +160,7 @@ int main(int argc, char **argv) {
 
     uint32_t width = R.getWidth();
     uint32_t length = R.getLength();  
-    TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,sampleperpixel,sampleformat);
+    TiledTiffWriter W(output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat);
 
     if(width % tilewidth || length % tilelength) {
         std::cerr << "Image size must be a multiple of tile size" << std::endl;
