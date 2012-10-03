@@ -399,7 +399,7 @@ sub getTargetsTm {
 sub addTargetTm {
     my $self = shift;
     my $tm = shift;
-    push($self->{targetsTm},$tm);
+    push @{$self->{targetsTm}}, $tm;
 }
 
 ####################################################################################################
