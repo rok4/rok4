@@ -619,11 +619,12 @@ sub exportForDebug {
         }
     };
     $output .= sprintf "\t levelsBind hash :\n";
-    foreach my $key (keys($self->getLevelsBind())) {
-        $output .= sprintf "\t\t ID : %s ; Order : %s .\n",$key,$self->getLevelsBind()->{$key};
+    my %levelsBind = %{$self->{levelsBind}};
+    foreach my $key (keys %levelsBind ) {
+        $output .= sprintf "\t\t ID : %s ; Order : %s .\n",$key,$levelsBind{$key};
     }
     $output .= sprintf "\t TileMatrix Array :\n";
-    foreach my $tm (@{$self->getTileMatrixByArray()}) {
+    foreach my $tm ( $self->getTileMatrixByArray ) {
         $output .= sprintf "\t\t TM ID : %s, TM Resolution : %s .\n",$tm->getID(),$tm->getResolution();
     }    
     
