@@ -149,7 +149,7 @@ public:
 
     Image* getNoDataTile ( BoundingBox<double> bbox );
     
-    int getNoDataValue();
+    int* getNoDataValue( int* nodatavalue );
     uint16_t getSampleFormat();
     
     void setNoData ( const std::string& file ) ;

@@ -49,7 +49,7 @@
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
@@ -78,7 +78,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
             LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
-        
+
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
         if ( minRes > d ) {
@@ -161,64 +161,61 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         Grid* grid = new Grid ( width, height, bbox );
 
 
-        LOGGER_DEBUG ( _("debut pyramide") );
+        LOGGER_DEBUG ( _ ( "debut pyramide" ) );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
             error=1;
             return 0;
         }
-        grid->bbox.print();
-        LOGGER_DEBUG ( _("fin pyramide") );
+        LOGGER_DEBUG ( _ ( "fin pyramide" ) );
 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
     }
     std::string l = best_level ( resolution_x, resolution_y );
-    LOGGER_DEBUG ( _("best_level=") << l << _(" resolution requete=") << resolution_x << " " << resolution_y );
-    
-
-
-        if ( tms.getCrs() == dst_crs ){
-            return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
-        }
-        else {
-            if ( dst_crs.validateBBox ( bbox ) ) {
+    LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
+    if ( tms.getCrs() == dst_crs ) {
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
+    } else {
+        if ( dst_crs.validateBBox ( bbox ) ) {
             return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
         } else {
             extendedCompoundImageFactory facto;
             std::vector<Image*> images;
-            LOGGER_DEBUG(_("BBox en dehors de la definition du CRS"));
+            LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
             BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
 
             if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-                LOGGER_DEBUG(_("BBox decoupe incorrect"));
+                LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
             } else {
-                
+
                 double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
                 int newWidth = width * ratio_x;
                 int newHeigth = height * ratio_y;
-                LOGGER_DEBUG(_("New Width = ") << newWidth << " " << _("New Height = ") << newHeigth);
+                LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
                 Image* tmp = 0;
                 int cropError = 0;
-                if ( newWidth > 0 && newHeigth > 0 ){
-                        tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
-                } 
+                if ( newWidth > 0 && newHeigth > 0 ) {
+                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+                }
                 if ( tmp != 0 ) {
-                    LOGGER_DEBUG(_("Image decoupe valide"));
+                    LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
                     images.push_back ( tmp );
                 }
             }
-            
-            if (images.empty()) {
+
+            if ( images.empty() ) {
                 images.push_back ( levels[l]->getNoDataTile ( bbox ) );
             }
-            
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,levels[l]->getNoDataValue(),levels[l]->getSampleFormat(),0, false );
+            int ndvalue[this->channels];
+            memset(ndvalue,0,this->channels*sizeof(int));
+            levels[l]->getNoDataValue(ndvalue);
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,levels[l]->getSampleFormat(),0, false );
         }
-    }
 
+    }
 }
 
 Pyramid::~Pyramid() {

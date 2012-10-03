@@ -36,23 +36,27 @@
  */
 
 #include <string>
-
+#ifdef dox_FR
 /**
-\class LibProjet
-\brief Template Hello World
-Un projet template pour s'approprier CMake
-@author IGN
-*/
+ * \class LibProjet
+ * \brief Template Hello World
+ * Un projet template pour s'approprier CMake
+ * @author IGN
+ */
+#endif
 class LibProjet {
 public:
 	
 	LibProjet();
 	virtual ~LibProjet();
-
+        #ifdef dox_FR
 	/** Le message */
+        #endif
 	std::string message;
 	
+        #ifdef dox_FR
 	/** affiche le message sur la sortie standard*/
+        #endif
 	virtual void sayHello();
 
 };

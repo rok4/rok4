@@ -27,6 +27,8 @@
                 <xs:element name="fee" type="xs:string"/>
                 <!-- Info sur les contraintes d’accès -->
                 <xs:element name="accessConstraint" type="xs:string"/>
+                <!-- Nombre maximum de couches en une requête -->
+                <xs:element name="layerLimit" type="xs:positiveInteger"/>
                 <!-- Largeur maximum des images requêtées -->
                 <xs:element name="maxWidth"         type="xs:positiveInteger"/>
                 <!-- Hauteur maximum des images requêtées -->

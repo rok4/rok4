@@ -39,6 +39,7 @@
 #define REQUEST_H_
 
 #include <map>
+#include <vector>
 #include "BoundingBox.h"
 #include "Data.h"
 #include "CRS.h"
@@ -64,7 +65,7 @@ public:
     std::string scheme;
     std::map<std::string, std::string> params;
     DataSource* getTileParam ( ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, bool& noDataError );
-    DataStream* getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, Layer*& layer, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, Style*& style,std::map <std::string, std::string >& format_option );
+    DataStream* getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles,std::map <std::string, std::string >& format_option );
     
     DataStream* getCapWMSParam ( ServicesConf& servicesConf, std::string& version);
     DataStream* getCapWMTSParam ( ServicesConf& servicesConf, std::string& version);

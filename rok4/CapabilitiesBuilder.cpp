@@ -46,7 +46,7 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-#include <libintl.h>
+#include "intl.h"
 /**
  * Conversion de int en std::string.
  */
@@ -86,7 +86,7 @@ void Rok4Server::buildWMSCapabilities() {
     TiXmlDocument doc;
     TiXmlDeclaration * decl = new TiXmlDeclaration ( "1.0", "UTF-8", "" );
     doc.LinkEndChild ( decl );
-
+    std::ostringstream os;
 
     TiXmlElement * capabilitiesEl = new TiXmlElement ( "WMS_Capabilities" );
     capabilitiesEl->SetAttribute ( "version","1.3.0" );
@@ -156,7 +156,10 @@ void Rok4Server::buildWMSCapabilities() {
 
     serviceEl->LinkEndChild ( buildTextNode ( "Fees",servicesConf.getFee() ) );
     serviceEl->LinkEndChild ( buildTextNode ( "AccessConstraints",servicesConf.getAccessConstraint() ) );
-    serviceEl->LinkEndChild ( buildTextNode ( "LayerLimit","1" ) );
+    
+    os << servicesConf.getLayerLimit();
+    serviceEl->LinkEndChild ( buildTextNode ( "LayerLimit",os.str() ) );
+    os.str("");
     serviceEl->LinkEndChild ( buildTextNode ( "MaxWidth",numToStr ( servicesConf.getMaxWidth() ) ) );
     serviceEl->LinkEndChild ( buildTextNode ( "MaxHeight",numToStr ( servicesConf.getMaxHeight() ) ) );
 
@@ -311,7 +314,8 @@ void Rok4Server::buildWMSCapabilities() {
             }
             // GeographicBoundingBox
             TiXmlElement * gbbEl = new TiXmlElement ( "EX_GeographicBoundingBox" );
-            std::ostringstream os;
+            
+            os.str ( "" );
             os<<childLayer->getGeographicBoundingBox().minx;
             gbbEl->LinkEndChild ( buildTextNode ( "westBoundLongitude", os.str() ) );
             os.str ( "" );
@@ -338,7 +342,8 @@ void Rok4Server::buildWMSCapabilities() {
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
                     floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
-
+                    
+                    os.str ( "" );
                     os<< std::fixed << std::setprecision ( floatprecision );
                     os<<bbox.xmin;
                     bbEl->SetAttribute ( "minx",os.str() );
@@ -363,7 +368,7 @@ void Rok4Server::buildWMSCapabilities() {
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
                     floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
                     floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
-
+                    os.str ( "" );
                     os<< std::fixed << std::setprecision ( floatprecision );
                     os<<bbox.xmin;
                     bbEl->SetAttribute ( "minx",os.str() );
@@ -708,6 +713,7 @@ void Rok4Server::buildWMTSCapabilities() {
 
         TiXmlElement * wgsBBEl = new TiXmlElement ( "ows:WGS84BoundingBox" );
         std::ostringstream os;
+        os.str ( "" );
         os<<layer->getGeographicBoundingBox().minx;
         os<<" ";
         os<<layer->getGeographicBoundingBox().miny;

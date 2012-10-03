@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nom_projet \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-06-26 18:30+0200\n"
+"POT-Creation-Date: 2012-08-07 17:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: libprojet.cpp:45
+#: libprojet.cpp:46
 msgid "Hello World!"
 msgstr ""

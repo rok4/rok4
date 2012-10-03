@@ -52,7 +52,7 @@
 #include "Pyramid.h"
 #include "PaletteDataSource.h"
 #include "format.h"
-#include "libintl.h"
+#include "intl.h"
 #include "config.h"
 
 
@@ -300,7 +300,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 std::string Level::getFilePath ( int tilex, int tiley ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( _("Indice de tuile négatif") );
+        LOGGER_ERROR ( _("Indice de tuile negatif") );
         return "";
     }
 
@@ -429,18 +429,21 @@ Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
                               bbox, 0, 0, 0, 0, pixel_size );
 }
 
-int Level::getNoDataValue() {
+int* Level::getNoDataValue(int* nodatavalue) {
     DataSource *nd =  getDecodedNoDataTile();
-    int nodatavalue = 0;
+    
     size_t size;
     if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
-        
         const uint8_t * buffer = nd->getData(size);
         const float* fbuf =  (const float*) buffer;
-        nodatavalue = (int) *fbuf;
+        for (int pixel = 0; pixel < this->channels; pixel++) {
+            *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+        }
     } else {
         const uint8_t * buffer = nd->getData(size);
-        nodatavalue = *buffer;
+        for (int pixel = 0; pixel < this->channels; pixel++) {
+            *(nodatavalue + pixel)  = *(buffer + pixel);
+        }
     }
     delete nd;
     return nodatavalue;

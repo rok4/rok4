@@ -51,10 +51,15 @@ private :
     std::vector<std::string> keywords;
     std::vector<LegendURL> legendURLs;
     Palette palette;
+    //Estompage
+    bool estompage;
+    int angle;
+    float exaggeration;
+    uint8_t center;
 public:
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<std::string>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0);
     inline std::string getId() {
         return id;
     }
@@ -73,6 +78,22 @@ public:
     inline Palette* getPalette() {
         return &palette;
     }
+    inline bool isEstompage() {
+        return estompage;
+    }
+    
+    inline int getAngle() {
+        return angle;
+    }
+    
+    inline float getExaggeration() {
+        return exaggeration;
+    }
+    
+    inline uint8_t getCenter() {
+        return center;
+    }
 };
+
 
 #endif // STYLE_H

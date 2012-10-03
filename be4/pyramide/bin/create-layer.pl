@@ -236,7 +236,7 @@ my ($imin,$imax,$jmin,$jmax);
 
 foreach my $v (@levels) {
     my $ID = $v->findvalue('tileMatrix');
-    my $order = $objTMS->getTileMatrixOrder($ID);
+    my $order = $objTMS->getOrderfromID($ID);
     
     if (! defined $bottomOrder || $order < $bottomOrder) {
         $bottomOrder = $order;
@@ -257,16 +257,10 @@ foreach my $v (@levels) {
 
 my $bottomTM = $objTMS->getTileMatrix($bottomID);
 
-my $res = $bottomTM->getResolution();
-my $X0 = $bottomTM->getTopLeftCornerX();
-my $Y0 = $bottomTM->getTopLeftCornerY();
-my $tileWidth = $bottomTM->getTileWidth();
-my $tileHeight = $bottomTM->getTileHeight();
-
-my $xmin = $X0 + $imin * $res * $tileWidth;
-my $ymax = $Y0 - $jmin * $res * $tileHeight;
-my $xmax = $X0 + ($imax+1) * $res * $tileWidth;
-my $ymin = $Y0 - ($jmax+1) * $res * $tileHeight;
+my $xmin = $bottomTM->columnToX($imin);
+my $ymax = $bottomTM->rowToY($jmin);
+my $xmax = $bottomTM->columnToX($imax+1);
+my $ymin = $bottomTM->rowToY($jmax+1);
 
 ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
 
@@ -280,7 +274,7 @@ my $auth = (split(":", $srs))[0];
 # TODO ajouter une liste par defaut
 my @lstsrs;
 push @lstsrs, $srs; # Toujour en 1er !!!
-push @lstsrs, "CR:84";
+push @lstsrs, "CRS:84";
 push @lstsrs, "IGNF:WGS84G";
 push @lstsrs, "EPSG:3857";
 push @lstsrs, "EPSG:4258";
@@ -293,7 +287,7 @@ my $srsini= new Geo::OSR::SpatialReference;
 eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
 
 if ($@) {
-  ERROR(sprintf "Erreur de projection : %s !", $@);
+  ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
   exit -41;
 }
     
@@ -301,7 +295,7 @@ my $srsfin= new Geo::OSR::SpatialReference;
 eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
     
 if ($@) {
-  ERROR(sprintf "Erreur de projection : %s !", $@);
+  ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
   exit -42;
 }
 
@@ -371,36 +365,32 @@ END {}
 
 =head1 NAME
 
-  create-layer - Outil orienté maintenance qui permet de construire un layer pour Rok4, sur
-  la pyramide du fichier de configuration.
+create-layer - Outil orienté maintenance qui permet de construire un layer pour Rok4, sur la pyramide du descripteur.
 
 =head1 SYNOPSIS
 
-  ORIENTÉ MAINTENANCE !
-  perl create-layer.pl --properties=path
-                      [--resampling="" --opaque --style=""  ]
-  perl create-layer.pl --conf=path
+    ORIENTÉ MAINTENANCE !
+    perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/
+                        [--resampling="" --opaque --style=""  ]
+    perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/ --layerdir=/home/ign/layers/
                       [--r="" --opaque --s=""  ] 
 
 =head1 DESCRIPTION
 
-  ORIENTÉ MAINTENANCE !
-  
-  Pas de conf. d'environement..., donc mettre les parametres suivants dans la
-  conf de la pyramide :
-    - pyr_desc_path
-    - tms_path
-    - log_path
-    - log_file
-    
-  Par defaut, la liste des SRS sont les suivantes :
-  - la projection des données sources,
-  - "CR:84",
-  - "IGNF:WGS84G",
-  - "epsg:3857",
-  - "epsg:4258",
+ORIENTÉ MAINTENANCE !
 
-  Le nom du layer est le nom de la pyramide !
+Pas de fichier de configuration, création du layer uniquement grâce au descripteur de pyramide et tu TMS utilisé.
+    --pyr
+    --tmsdir
+  
+Par defaut, la liste des SRS sont les suivantes :
+    - la projection des données sources,
+    - "CR:84",
+    - "IGNF:WGS84G",
+    - "EPSG:3857",
+    - "EPSG:4258",
+
+Le nom du layer est le nom de la pyramide !
 
 =head1 OPTIONS
 
@@ -440,15 +430,13 @@ Optionnel, par defaut opaque = 1.
 
 =head1 DIAGNOSTICS
 
-Ecriture du fichier "layer-<nom de la pyramide>.lay" à l'emplacement des logs
-ou dans le repertoire courant !
+Ecriture du fichier "<nom de la pyramide>.lay" dans le répertoire courant ou dans le dossier précisé (--layerdir).
 
 =head1 REQUIRES
 
 =over
 
 =item * LIB EXTERNAL
-
 
 =item * MODULES (CPAN)
 
@@ -460,24 +448,31 @@ ou dans le repertoire courant !
 
 =item * MODULES (owner)
 
-    use BE4::PropertiesLoader;
-    use BE4::Pyramid;
-    use BE4::DataSource;
+    use BE4::TileMatrixSet;
     use BE4::Layer;
 
 =back
 
-=head1 BUGS AND LIMITATIONS
+=head1 SEE ALSO
 
-=over
+=head2 POD documentation
 
-=item * FIXME
+=begin html
 
-=item * TODO
+<ul>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Layer.html">BE4::Layer</A></li>
+</ul>
 
-=back
+=end html
 
-=head1 SEE ASLO
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
 
 =head1 AUTHOR
 

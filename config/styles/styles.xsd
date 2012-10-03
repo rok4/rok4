@@ -2,64 +2,75 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:wmts="http://www.opengis.net/wmts/1.0">
 <xs:import namespace="http://www.w3.org/1999/xlink" schemaLocation="http://schemas.opengis.net/xlink/1.0.0/xlinks.xsd"/>
 <xs:import namespace="http://www.opengis.net/wmts/1.0" schemaLocation="http://schemas.opengis.net/wmts/1.0/wmts.xsd"/>
-	<xs:element name="style">
-		<xs:complexType>
-			<xs:sequence>
-			<!-- l'identifiant du style au sens WMTS (équivalement à Name en WMS) -->
-			<xs:element name="Identifier"    type="xs:string"/>
-			<!-- Un nom plus explicite que celui du fichier. -->
-			<xs:element name="Title"    type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-			<!-- Une description -->
-			<xs:element name="Abstract" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-			<!-- Liste des mots clefs -->
-			<xs:element name="Keywords" minOccurs="0" maxOccurs="unbounded">
-				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="Keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-				</xs:sequence>
-				</xs:complexType>
-			</xs:element>
-			<!-- Elément LegendURL WMTS -->
-			<xs:element ref="wmts:LegendURL" minOccurs="0" maxOccurs="unbounded">
-			<!-- Définition de la palette de couleur à utiliser -->
-			<xs:element name="palette" minOccurs="0" maxOccurs="1">
-				<xs:complexType>
-					<xs:complexContent>
-					<!-- valeur maximale des pixel de données -->
-					<xs:attribute name="maxValue" type="xs:decimal" use="required"/>
+        <xs:element name="style">
+                <xs:complexType>
+                        <xs:sequence>
+                        <!-- l'identifiant du style au sens WMTS (équivalement à Name en WMS) -->
+                        <xs:element name="Identifier"    type="xs:string"/>
+                        <!-- Un nom plus explicite que celui du fichier. -->
+                        <xs:element name="Title"    type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                        <!-- Une description -->
+                        <xs:element name="Abstract" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                        <!-- Liste des mots clefs -->
+                        <xs:element name="Keywords" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                <xs:sequence>
+                                        <xs:element name="Keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                                </xs:sequence>
+                                </xs:complexType>
+                        </xs:element>
+                        <!-- Elément LegendURL WMTS -->
+                        <xs:element ref="wmts:LegendURL" minOccurs="0" maxOccurs="unbounded">
+                        <!-- Définition de la palette de couleur à utiliser -->
+                        <xs:element name="palette" minOccurs="0" maxOccurs="1">
+                                <xs:complexType>
+                                        <xs:complexContent>
+                                        <!-- valeur maximale des pixel de données -->
+                                        <xs:attribute name="maxValue" type="xs:decimal" use="required"/>
                                         <xs:attribute name="rgbContinuous" type="xs:boolean" default="false"/>
                                         <xs:attribute name="alphaContinuous" type="xs:boolean" default="false"/>
-					<xs:sequence>
-						<!-- Couleur à appliquer pour les pixel de valeur "value" jusqu'au pixel de valeur "value"-1 de la couleur suivante -->
-						<xs:element name="colour" minOccurs="1" maxOccurs="unbounded">
-							<xs:complexType>
-								<xs:complexContent>
-								<xs:attribute name="value" type="xs:decimal" default="0"/>
-								<xs:sequence>
-									<xs:element name="red" type="xs:unsignedByte"/>
-									<xs:element name="green" type="xs:unsignedByte"/>
-									<xs:element name="blue" type="xs:unsignedByte"/>
-                                                                        <!-- DEPRECATED Si négatif alors dégradé alpha : alpha = value remplacé par l'attribut alphaContinuous -->
-									<xs:element name="alpha" type="xs:alphachannel" default="0"/>
-								</xs:sequence>
-								</xs:complexContent>
-							</xs:complexType>
-						</xs:element>
-					</xs:sequence>
-					</xs:complexContent>
-				</xs:complexType>
-			</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-	
-        <!--DEPRECATED-->
-	<xs:simpleType name="alphachannel">
-		<xs:restriction base="xs:integer">
-			 <xs:minInclusive value="-1"/>
-			 <xs:maxInclusive value="255"/>
-		</xs:restriction>
-	</xs:simpleType>
+                                        <xs:sequence>
+                                                <!-- Couleur à appliquer pour les pixel de valeur "value" jusqu'au pixel de valeur "value"-1 de la couleur suivante -->
+                                                <xs:element name="colour" minOccurs="1" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                                <xs:complexContent>
+                                                                <xs:attribute name="value" type="xs:decimal" default="0"/>
+                                                                <xs:sequence>
+                                                                        <xs:element name="red" type="xs:unsignedByte"/>
+                                                                        <xs:element name="green" type="xs:unsignedByte"/>
+                                                                        <xs:element name="blue" type="xs:unsignedByte"/>
+                                                                        <xs:element name="alpha" type="xs:unsignedByte" default="0"/>
+                                                                </xs:sequence>
+                                                                </xs:complexContent>
+                                                        </xs:complexType>
+                                                </xs:element>
+                                        </xs:sequence>
+                                        </xs:complexContent>
+                                </xs:complexType>
+                        </xs:element>
+                        <!-- Définition de la palette de couleur à utiliser -->
+                        <xs:element name="estompage" minOccurs="0" maxOccurs="1">
+                            <xs:complexType>
+                                        <xs:complexContent>
+                                        <!-- angle de l'éclairement -->
+                                        <xs:attribute name="angle" type="angleindegree" use="required"/>
+                                        <!-- Exagération de la pente -->
+                                        <xs:attribute name="exaggeration" type="xs:decimal" use="required"/>
+                                        <!-- Valeur du pixel sans pente -->
+                                        <xs:attribute name="center" type="xs:unsignedByte" use="required"/>
+                                        </xs:complexContent>
+                                </xs:complexType>
+                        </xs:element>
+                        </xs:sequence>
+                </xs:complexType>
+        </xs:element>
+        
+        <xs:simpleType name="angleindegree">
+                <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="0"/>
+                        <xs:maxInclusive value="359"/>
+                </xs:restriction>
+        </xs:simpleType>
 
 </xs:schema>
 

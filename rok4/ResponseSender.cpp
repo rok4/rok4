@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <string.h> // pour strlen
 #include <sstream> // pour les stringstream
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 /**
  * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
@@ -122,7 +122,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         // Taille ecrite dans le flux de sortie
         int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), buffer_size,request->out );
         if ( w < 0 ) {
-            LOGGER_ERROR ( _("Echec d'écriture dans le flux de sortie de la requête FCGI ") << request->requestId );
+            LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
             displayFCGIError ( FCGX_GetError ( request->out ) );
             delete source;
             //delete[] buffer;
@@ -171,7 +171,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             // Taille ecrite dans le flux de sortie
             int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), read_size,request->out );
             if ( w < 0 ) {
-                LOGGER_ERROR ( _("Echec d'écriture dans le flux de sortie de la requête FCGI ") << request->requestId );
+                LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
                 displayFCGIError ( FCGX_GetError ( request->out ) );
                 delete stream;
                 delete[] buffer;

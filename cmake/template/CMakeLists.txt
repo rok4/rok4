@@ -67,7 +67,7 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-set(GettextTranslate_ALL 1)
+set(GettextTranslate_ALL 0)
 set(GettextTranslate_GMO_BINARY 1)
 include(GettextTranslate)
 add_subdirectory(po)
@@ -82,49 +82,15 @@ add_subdirectory(po)
 # Vérifier les bibliothèques liées au lanceur de tests
 #Activé uniquement si la variable UNITTEST est vraie
 if(UNITTEST)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-  ENABLE_TESTING()
-
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
-    # Exécution des tests unitaires CppUnit
-    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
-  "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp)
-    #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-    FOREACH(test ${UnitTests_SRCS})
-          MESSAGE("  - adding test ${test}")
-          GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-          ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
-    ENDFOREACH(test)
-  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
-  #Transformation des sorties Xml CppUnit en Xml Junit
-    find_package(Xsltproc)
-    if(XSLTPROC_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl @ONLY) 
-    add_custom_command(OUTPUT ${PROJECT_NAME}-junit-xml COMMAND $<TARGET_FILE:UnitTester-${PROJECT_NAME}>
-                COMMAND ${XSLTPROC_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/cppunit2junit.xsl ${CMAKE_CURRENT_BINARY_DIR}/cpptestresults.xml > ${CMAKE_BINARY_DIR}/testresult-${PROJECT_NAME}.xml )
-
-    add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
-    endif(XSLTPROC_FOUND)
-
+  include(CppUnitConfig)
 endif(UNITTEST)
 
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
 if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc ALL
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-  endif(DOXYGEN_FOUND)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+include(DoxygenConfig)
+
 endif(BUILD_DOC)
 
 
@@ -152,14 +118,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
   INSTALL(FILES README 
     DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-if(BUILD_DOC)
-  if(DOXYGEN_FOUND)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
 INSTALL(FILES LICENCE
     DESTINATION doc/${PROJECT_NAME})
 

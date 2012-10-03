@@ -50,7 +50,8 @@
 
 void usage() {
     std::cerr << "createNodata version "<< BE4_VERSION << std::endl;
-    std::cerr << "createNodata -n nodata -c [none/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
+    std::cerr << "createNodata -n nodata -c [none/raw/png/jpg/lzw/zip] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] -s [1/3/4] output_file"<< std::endl;
+    std::cerr << "  - nodata : one value per sample, seperated by comma"<< std::endl;
 }
 
 void error(std::string message) {
@@ -59,34 +60,15 @@ void error(std::string message) {
     exit(1);
 }
 
-
-/**
-*@fn int h2i(char s)
-* Hexadecimal -> int
-*/
-
-int h2i(char s)
-{
-    if('0' <= s && s <= '9')
-        return (s - '0');
-    if('a' <= s && s <= 'f')
-        return (s - 'a' + 10);
-    if('A' <= s && s <= 'F')
-        return (10 + s - 'A');
-    else
-        return -1; /* invalid input! */
-}
-
 int main(int argc, char* argv[]) {
     char* output = 0;
     uint32_t imagewidth = 256, imageheight = 256;
     uint16_t compression = COMPRESSION_NONE;
     uint16_t photometric = PHOTOMETRIC_RGB;
     char* strnodata;
-    int nodata;
     uint32_t bitspersample = 8;
     uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
-    uint16_t sampleperpixel = 3;
+    uint16_t samplesperpixel = 3;
     int quality = -1;
     
 //  Nodata image dimensions are precised in parameters and image contains a single tile
@@ -96,7 +78,7 @@ int main(int argc, char* argv[]) {
             switch(argv[i][1]) {
                 case 'c': // compression
                     if(++i == argc) {std::cerr << "Error in -c option" << std::endl; exit(2);}
-                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    if(strncmp(argv[i], "none",4) == 0 || strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
                     else if(strncmp(argv[i], "png",3) == 0) {
                         compression = COMPRESSION_PNG;
                         if(argv[i][3] == ':') quality = atoi(argv[i]+4);
@@ -146,9 +128,9 @@ int main(int argc, char* argv[]) {
                     break;
                 case 's':
                     if ( ++i == argc ) {std::cerr << "Error in -s option" << std::endl; exit(2);}
-                    if ( strncmp ( argv[i], "1",1 ) == 0 ) sampleperpixel = 1 ;
-                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) sampleperpixel = 3 ;
-                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) sampleperpixel = 4 ;
+                    if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
                     else {std::cerr << "Error in -s option. Possibilities are 1,3 or 4." << std::endl; exit(2);}
                     break;
                 default: usage();
@@ -165,60 +147,45 @@ int main(int argc, char* argv[]) {
 
 
     // nodata treatment
+    if (strnodata == 0) {
+        error("Nodata parameter is missing !");
+    }
+    int nodata[samplesperpixel];
+    char* charValue = strtok(strnodata,",");
+    if(charValue == NULL) {
+        error("Error with option -n : a value for nodata is missing");
+    }
+    nodata[0] = atoi(charValue);
+    for(int i = 1; i < samplesperpixel; i++) {
+        charValue = strtok (NULL, ",");
+        if(charValue == NULL) {
+            error("Error with option -n : a value for nodata is missing");
+        }
+        nodata[i] = atoi(charValue);
+    }
+    
     // input data creation : the same value (nodata) everywhere
-    int bytesperpixel = sampleperpixel*bitspersample/8;
+    int bytesperpixel = samplesperpixel*bitspersample/8;
     uint8_t* data = new uint8_t[imageheight*imagewidth*bytesperpixel];
     uint8_t *pdata = data;
     
     // Case float32
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
-    
-        float nodata;
-        if (strnodata != 0) {
-            nodata = atoi(strnodata);
-            if (nodata == 0 && strcmp(strnodata,"0")!=0) error("invalid nodata value for this sampleformat/bitspersample couple : it must be a decimal format number");
-        } else {
-            nodata = -99999;
-        }
-        
-        for (int i = 0; i<imageheight*imagewidth*sampleperpixel; i++) {
-            *((float*) (pdata)) = nodata;
+        for (int i = 0; i<imageheight*imagewidth*samplesperpixel; i++) {
+            *((float*) (pdata)) = (float) nodata[i % samplesperpixel];
             pdata += 4;
         }
     }
     // Case int8
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
-        
-        if (strnodata != 0 && strlen(strnodata) < 2*sampleperpixel) {
-            error("Nodata parameter is too short");
-        }
-    
-        uint8_t nodataColor[sampleperpixel];
-        
-        if (strnodata != 0) {
-            uint8_t nodata;
-            for (int i=0; i<sampleperpixel; i++) {
-                int a1 = h2i(strnodata[i*2]);
-                int a0 = h2i(strnodata[i*2+1]);
-                if (a1 < 0 || a0 < 0) error("invalid nodata value for this sampleformat/bitspersample couple : it must be hexadecimal format number");
-                nodata = 16*a1+a0;
-                nodataColor[i] = nodata;
-            }
-        } else {
-            for (int i=0; i<sampleperpixel; i++) {
-                nodataColor[i] = 255;
-            }
-        }
-        
-        for (int i = 0; i<imageheight*imagewidth*sampleperpixel; i++) {
-            *((uint8_t*) (pdata)) = nodataColor[i % sampleperpixel];
+        for (int i = 0; i<imageheight*imagewidth*samplesperpixel; i++) {
+            *((uint8_t*) (pdata)) = (uint8_t) nodata[i % samplesperpixel];
             pdata++;
         }
     }
-    
     else {error("sampleformat/bitspersample not supported (float/32 or uint/8)");}
     
-    TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,sampleperpixel,sampleformat);
+    TiledTiffWriter W(output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,samplesperpixel,sampleformat);
 
     if(W.WriteTile(0, 0, data) < 0) {std::cerr << "Error while writting tile of nodata" << std::endl; return 2;}
     if(W.close() < 0) {std::cerr << "Error while writting index" << std::endl; return 2;}

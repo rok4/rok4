@@ -3,8 +3,9 @@
 
 BE4_BIN=$(BE4_ENV)/bin
 BE4_LIB=$(BE4_ENV)/lib
-BE4_CONF=$(BE4_ENV)/conf
+BE4_CONF=$(BE4_ENV)/config/be4
 BE4_HTML=$(BE4_ENV)/html
+BE4_DOC=$(BE4_ENV)/doc
 BE4_MAN=$(BE4_ENV)/man
 BE4_SHARE=$(BE4_ENV)/share
 
@@ -21,7 +22,6 @@ buildlib:
 buildbin: \
 ./bin/be4.pl \
 ./bin/joinCache.pl \
-./bin/export-tree.pl \
 ./bin/create-layer.pl
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \
@@ -95,12 +95,12 @@ buildhtml:
 	@(for f in `find lib -name "*.pm"` ;\
             do \
               h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-              pod2html --title=$$f --infile=$$f  > docs/Html/$$h ;\
+              pod2html --index --title=$$f --header --infile=$$f --outfile=docs/Html/$$h ;\
           done)
 	@(for f in `find bin -name "*.pl"` ;\
           do \
             h=`echo $$f | sed -e 's/\.pl/\.html/' -e 's!/!-!g'` ;\
-            pod2html --title=$$f --infile=$$f > docs/Html/$$h ;\
+            pod2html --index --title=$$f --header --infile=$$f --outfile=docs/Html/$$h ;\
           done)
 	@( echo "> Ok, Man2Html !" ) ;
 
@@ -143,12 +143,12 @@ help:
 	@echo " "
 	@echo " Information install :"
 	@echo " "
-	@echo "     prefix    : $(BE4_ENV)"
-	@echo "     bin       : $(BE4_BIN)" 
-	@echo "     lib       : $(BE4_LIB)" 
-	@echo "     conf      : $(BE4_CONF)"
-	@echo "     share     : $(BE4_SHARE)"
-	@echo "     man       : $(BE4_MAN)"
-	@echo "     html      : $(BE4_HTML)"
+	@echo "     prefix      : $(BE4_ENV)"
+	@echo "     bin         : $(BE4_BIN)" 
+	@echo "     lib         : $(BE4_LIB)" 
+	@echo "     config/be4  : $(BE4_CONF)"
+	@echo "     share       : $(BE4_SHARE)"
+	@echo "     man         : $(BE4_MAN)"
+	@echo "     html        : $(BE4_HTML)"
 	@echo " "
 

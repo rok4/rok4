@@ -51,11 +51,7 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -64,7 +60,7 @@ use constant FALSE => 0;
 my %PIXEL;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {
 
@@ -79,31 +75,33 @@ INIT {
 END {}
 
 ################################################################################
-# Group: variable
-#
+=begin nd
+Group: variable
 
-#
-# variable: $self
-#
-#    * photometric
-#    * sampleformat
-#    * bitspersample
-#    * samplesperpixel
-#
+variable: $self
+    * photometric
+    * sampleformat
+    * bitspersample : integer
+    * samplesperpixel : integer
+=cut
 
-################################################################################
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
 # Group: constructor
-#
+
 sub new {
     my $this = shift;
     my $params = shift;
 
     my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $self = {
-        photometric => undef, # ie raw
-        sampleformat => undef, # ie uint
-        bitspersample => undef, # ie 8
-        samplesperpixel => undef, # ie 3
+        photometric => undef,
+        sampleformat => undef,
+        bitspersample => undef,
+        samplesperpixel => undef,
     };
 
     bless($self, $class);
@@ -114,28 +112,28 @@ sub new {
 
     my $sampleformat = $params->{sampleformat};
     if ( ! defined $sampleformat || ! $self->is_SampleFormat($sampleformat)) {
-        ERROR ("'sampleformat' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
         return undef;
     }
     $self->{sampleformat} = $sampleformat;
 
     my $samplesperpixel = $params->{samplesperpixel};
     if (! defined $samplesperpixel || ! $self->is_SamplesPerPixel($samplesperpixel)) {
-        ERROR ("'samplesperpixel' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
         return undef;
     }
     $self->{samplesperpixel} = int($samplesperpixel);
 
     my $photometric = $params->{photometric};
     if (! defined $photometric || ! $self->is_Photometric($photometric)) {
-        ERROR ("'photometric' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
         return undef;
     }
     $self->{photometric} = $photometric;
 
     my $bitspersample = $params->{bitspersample};
     if (! defined $bitspersample || ! $self->is_BitsPerSample($bitspersample)) {
-        ERROR ("'bitspersample' is undefined or not valid !");
+        ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
         return undef;
     }
     $self->{bitspersample} = int($bitspersample);
@@ -144,9 +142,11 @@ sub new {
     return $self;
 }
 
-################################################################################
-# Group: public methods
-#
+####################################################################################################
+#                                     ATTRIBUTE TESTS                                              #
+####################################################################################################
+
+# Group: attribute tests
 
 sub is_SampleFormat {
     my $self = shift;
@@ -159,7 +159,6 @@ sub is_SampleFormat {
     foreach (@{$PIXEL{sampleformat}}) {
         return TRUE if ($sampleformat eq $_);
     }
-    ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
     return FALSE;
 }
 
@@ -176,7 +175,6 @@ sub is_BitsPerSample {
             return TRUE;
         }
     }
-    ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
     return FALSE;
 }
 
@@ -191,7 +189,6 @@ sub is_Photometric {
     foreach (@{$PIXEL{photometric}}) {
         return TRUE if ($photometric eq $_);
     }
-    ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
     return FALSE;
 }
 
@@ -206,13 +203,15 @@ sub is_SamplesPerPixel {
     foreach (@{$PIXEL{samplesperpixel}}) {
         return TRUE if ($samplesperpixel eq $_);
     }
-    ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
     return FALSE;
 }
 
-################################################################################
-# Group: get
-#
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
 sub getPhotometric {
     my $self = shift;
     return $self->{photometric};
@@ -223,63 +222,96 @@ sub getSampleFormat {
     return $self->{sampleformat};
 }
 
-sub getBitsperSample {
+sub getBitsPerSample {
     my $self = shift;
     return $self->{bitspersample};
 }
 
-sub getSamplesperPixels {
+sub getSamplesPerPixel {
     my $self = shift;
     return $self->{samplesperpixel};
 }
 
+####################################################################################################
+#                                          EXPORT METHODS                                          #
+####################################################################################################
+
+# Group: export methods
+
+sub exportForDebug {
+    my $self = shift ;
+    
+    my $export = "";
+    
+    $export .= "\nObject BE4::Pixel :\n";
+    $export .= sprintf "\t Bits per sample : %s\n", $self->{bitspersample};
+    $export .= sprintf "\t Photometric : %s\n", $self->{photometric};
+    $export .= sprintf "\t Sample format : %s\n", $self->{sampleformat};
+    $export .= sprintf "\t Samples per pixel : %s\n", $self->{samplesperpixel};
+    
+    return $export;
+}
 
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
- BE4::Pixel - components of a pixel in output images
+BE4::Pixel - components of a pixel in output images
 
 =head1 SYNOPSIS
-  
-  my $objC = BE4::Pixel->new("rgb","uint",8);
-  
 
-
-  # mode static 
-  my @info = BE4::Format->decodeFormat("TIFF_RAW_INT8");  #  ie 'tiff', 'raw', 'uint' , '8' !
+    use BE4::Pixel;
+  
+    my $objC = BE4::Pixel->new({
+        sampleformat => "uint",
+        photometric => "rgb",
+        samplesperpixel => 3,
+        bitspersample => 8,
+    });
 
 =head1 DESCRIPTION
 
-  Format {
-      compression       => raw/jpg/png/lzw (floatraw is deprecated, use raw instead)
-      sampleformat      => uint/float
-      bitspersample     => 8/32
-      code              => TIFF_RAW_INT8 for example
-  }
- 
-  'compression' is use for the program 'tiff2tile'.
-  'code' is written in the pyramid file, and it is useful for 'Rok4' !
+=head2 ATTRIBUTES
 
-=head2 EXPORT
+=over 4
 
-None by default.
+=item photometric
+
+Possible values : rgb, gray
+
+=item sampleformat
+
+Possible values : uint, float
+
+=item bitspersample
+
+Possible values : 8, 32
+
+=item samplesperpixel
+
+Possible values : 1, 3, 4
+
+=back
 
 =head1 SEE ALSO
 
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHOR
 
-Satabin Théo, E<lt>tsatabin@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut
