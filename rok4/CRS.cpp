@@ -39,7 +39,7 @@
 #include "Logger.h"
 #include "Grid.h"
 #include <proj_api.h>
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 
 #define NO_PROJ4_CODE "noProj4Code"

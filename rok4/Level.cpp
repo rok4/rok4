@@ -52,7 +52,7 @@
 #include "Pyramid.h"
 #include "PaletteDataSource.h"
 #include "format.h"
-#include "libintl.h"
+#include "intl.h"
 #include "config.h"
 
 

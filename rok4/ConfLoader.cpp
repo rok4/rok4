@@ -49,7 +49,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include "Interpolation.h"
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {

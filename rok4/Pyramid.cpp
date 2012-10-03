@@ -49,7 +49,7 @@
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {

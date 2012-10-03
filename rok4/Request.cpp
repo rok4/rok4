@@ -47,7 +47,7 @@
 #include "tinystr.h"
 #include "config.h"
 #include <algorithm>
-#include <libintl.h>
+#include "intl.h"
 
 /* converts hex char (0-9, A-Z, a-z) to decimal.
  * returns 0xFF on invalid input.
