@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <string.h> // pour strlen
 #include <sstream> // pour les stringstream
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 /**
  * Methode commune pour generer l'entete HTTP en fonction du status code HTTP

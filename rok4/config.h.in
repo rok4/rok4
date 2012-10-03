@@ -76,6 +76,7 @@
 #define DEFAULT_PROJ_DIR   "../config/proj"
 #define DEFAULT_STYLE      "normal"   //FIXME: nom du fichier de style par défaut
 #define DEFAULT_STYLE_INSPIRE     "inspire"//FIXME nom du fichier de style inspire par défaut "inspire_common:DEFAULT"
+#define DEFAULT_STYLE_INSPIRE_ID  "inspire_common:DEFAULT"
 #define DEFAULT_OPAQUE     true
 #define DEFAULT_RESAMPLING "lanczos_2"
 #define DEFAULT_CHANNELS   3
