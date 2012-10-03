@@ -49,12 +49,13 @@
 *
 * Parametres d'entree :
 * 1. Un fichier texte contenant les images source et l image finale avec leur georeferencement (resolution, emprise)
-* 2. Un mode d'interpolation
-* 3. Une couleur de NoData
-* 4. Un type d image (Data/Metadata)
-* 5. Le nombre de canaux des images
-* 6. Nombre d'octets par canal
-* 7. La colorimetrie
+* 2. Une compression pour le fichier de sortie
+* 3. Un mode d'interpolation
+* 4. Une couleur de NoData
+* 5. Un type d image (Data/Metadata)
+* 6. Le nombre de canaux des images
+* 7. Nombre d'octets par canal
+* 8. La colorimetrie
 *
 * En sortie, un fichier TIFF au format dit de travail brut non compressé entrelace
 * Ou, erreurs (voir dans le main)
@@ -140,7 +141,10 @@ int parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolati
                 case 't': // type
                     if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
                     if(strncmp(argv[i], "image",5) == 0) type = 1 ;
-                    else if(strncmp(argv[i], "mtd",3) == 0) type = 0 ;
+                    else if(strncmp(argv[i], "mtd",3) == 0) {
+                        LOGGER_ERROR("Le type mtd n'est pas pris en compte");
+                        return -1;
+                    }
                     else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
                     break;
                 case 's': // sampleperpixel
@@ -259,19 +263,51 @@ int saveImage(Image *pImage, char* pName, int sampleperpixel, uint16_t bitspersa
 
 /**
 * @fn int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
-* Lecture d une ligne du fichier de la liste d images source
+* Lecture d une ligne du fichier de la liste d images source et de la suivante si celle si contient le tag du masque
+* Retourne -1 si la fin du fichier est atteinte
+* Retourne 8 si une image et ses informations (dont masque) ont été bien lue
+* Retourne un autre entier positif si une ligne est mal formattée.
 */
 
-int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height, double* resx, double* resy)
+int readFileLine(std::ifstream& file, char* imageFileName, char* maskFileName, BoundingBox<double>* bbox, int* width, int* height, double* resx, double* resy)
 {
     std::string str;
+
+    if (file.eof()) {
+        LOGGER_DEBUG("Fin du fichier de configuration atteinte");
+        return -1;
+    }
+    
     std::getline(file,str);
     int nb;
+    int pos;
 
-    if ( (nb=sscanf(str.c_str(),"%s %lf %lf %lf %lf %lf %lf",filename, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) ==7) {
+    char type[3];
+
+    if ( (nb=std::sscanf(str.c_str(),"%s %s %lf %lf %lf %lf %lf %lf",
+        type, imageFileName, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) == 8) {
+        if (memcmp(type,"IMG",3)) {
+            LOGGER_ERROR("We have to read an image information at first.");
+            return 0;
+        }
         // Arrondi a la valeur entiere la plus proche
         *width = lround((bbox->xmax - bbox->xmin)/(*resx));    
         *height = lround((bbox->ymax - bbox->ymin)/(*resy));
+
+        pos = file.tellg();
+    
+        // Récupération d'un éventuel masque
+        std::getline(file,str);
+        if ((std::sscanf(str.c_str(),"%s %s", type, maskFileName)) == 2) {
+            if (memcmp(type,"MSK",3)) {
+                /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
+                 * C'est en fait l'image suivante. On doit donc remettre le pointeur de
+                 * manière à ce que cette image soit lue au prochain appel de readFileLine
+                 */
+                file.seekg(pos);
+            }
+        }
+        
     }
 
     return nb;
@@ -282,9 +318,10 @@ int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox,
 * Chargement des images depuis le fichier texte donné en parametre
 */
 
-int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
+int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<LibtiffImage*>* pImageIn, std::vector<LibtiffImage*>* pMaskIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
 {
-    char filename[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char imageFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char maskFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     BoundingBox<double> bbox(0.,0.,0.,0.);
     int width, height;
     double resx, resy;
@@ -300,31 +337,57 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
     }
 
     // Lecture et creation de l image de sortie
-    if (readFileLine(file,filename,&bbox,&width,&height,&resx,&resy)<0){
-        LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne 0");
+    if (readFileLine(file,imageFileName,maskFileName,&bbox,&width,&height,&resx,&resy) != 8) {
+        LOGGER_ERROR("Erreur lecture des premières lignes du fichier de parametres: " << imageListFilename);
         return -1;
     }
 
-    *ppImageOut=factory.createLibtiffImage(filename, bbox, width, height,resx, resy, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
+    *ppImageOut=factory.createLibtiffImage(imageFileName, bbox, width, height,resx, resy, sampleperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
     if (*ppImageOut==NULL) {
-        LOGGER_ERROR("Impossible de creer " << filename);
+        LOGGER_ERROR("Impossible de creer l'image " << imageFileName);
         return -1;
     }
 
+    *ppMaskOut=factory.createLibtiffImage(maskFileName, bbox, width, height,resx, resy, 1, 8, PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE,16);
+
+    if (*ppMaskOut==NULL) {
+        LOGGER_ERROR("Impossible de creer le masque " << maskFileName);
+        return -1;
+    }
+
+    int lig=3;
+
     // Lecture et creation des images source
-    int nb=0,i;
-    while ((nb=readFileLine(file,filename,&bbox,&width,&height,&resx,&resy))==7){
-        LibtiffImage* pImage=factory.createLibtiffImage(filename, bbox, resx, resy);
+    int nb=0;
+    while ((nb=readFileLine(file,imageFileName,maskFileName,&bbox,&width,&height,&resx,&resy)) == 8) {
+        LibtiffImage* pImage=factory.createLibtiffImage(imageFileName, bbox, resx, resy);
         if (pImage==NULL){
-            LOGGER_ERROR("Impossible de creer une image a partir de " << filename);
+            LOGGER_ERROR("Impossible de creer une image a partir de " << imageFileName);
             return -1;
         }
+        lig++;
         pImageIn->push_back(pImage);
-        i++;
+
+        if (maskFileName != NULL) {
+            lig++;
+            LibtiffImage* pMask=factory.createLibtiffImage(maskFileName, bbox, resx, resy);
+            if (pMask==NULL){
+                LOGGER_ERROR("Impossible de creer un masque a partir de " << maskFileName);
+                return -1;
+            }
+            pMaskIn->push_back(pMask);
+        } else {
+            /* Attention, on ajoute des pointeurs nuls dans le cas où le masque n'existe pas
+             * pour garder une correspondance entre les deux tableau pImageIn et pMaskIn.
+             * Il faudra bien faire attention par la suite. En fait, lorsque le masque sera nul,
+             * on considérera que l'image est pleine.
+             */
+            pMaskIn->push_back(NULL);
+        }
     }
-    if (nb>=0 && nb!=7){
-        LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << i);
+    if (nb != -1) {
+        LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << lig);
         return -1;
     }
 
@@ -336,21 +399,21 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<I
 
 
 /**
-* @fn int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
+* @fn int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
 * @brief Controle des images
 * TODO : ajouter des controles
 */
 
-int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
+int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
 {
     for (unsigned int i=0;i<ImageIn.size();i++) {
         if (ImageIn.at(i)->getresx()*ImageIn.at(i)->getresy()==0.) {    
             LOGGER_ERROR("Resolution de l image source " << i+1 << " sur " << ImageIn.size() << " egale a 0");
-                    return -1;
+            return -1;
         }
-        if (ImageIn.at(i)->channels!=pImageOut->channels){
+        if (ImageIn.at(i)->channels != pImageOut->channels){
             LOGGER_ERROR("Nombre de canaux de l image source " << i+1 << " sur " << ImageIn.size() << " differente de l image de sortie");
-                        return -1;
+            return -1;
         }
     }
     if (pImageOut->getresx()*pImageOut->getresy()==0.){
@@ -359,7 +422,38 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
     }
     if (pImageOut->getbitspersample()!=8 && pImageOut->getbitspersample()!=32){
         LOGGER_ERROR("Nombre de bits par sample de l image de sortie " << pImageOut->getfilename() << " non gere");
-                return -1;
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+* @fn int checkMasks(LibtiffImage* pMaskOut, std::vector<LibtiffImage*>& MaskIn)
+* @brief Controle des masques
+* TODO : ajouter des controles
+*/
+
+int checkMasks(LibtiffImage* pMaskOut, std::vector<LibtiffImage*>& MaskIn)
+{
+    for (unsigned int i=0;i<MaskIn.size();i++) {
+        if (MaskIn.at(i)->channels != 1){
+            LOGGER_ERROR("Nombre de canaux du masque " << i+1 << " sur " << MaskIn.size() << " différent de 1 : " << MaskIn.at(i)->channels);
+            return -1;
+        }
+        if (MaskIn.at(i)->getbitspersample() != 8){
+            LOGGER_ERROR("Nombre de bits du canal du masque " << i+1 << " sur " << MaskIn.size() << " différent de 8 : " << MaskIn.at(i)->getbitspersample());
+            return -1;
+        }
+    }
+
+    if (pMaskOut->channels != 1){
+        LOGGER_ERROR("Nombre de canaux du masque de sortie différent de 1 : " << pMaskOut->channels);
+        return -1;
+    }
+    if (pMaskOut->getbitspersample() != 8){
+        LOGGER_ERROR("Nombre de bits du canal du masque de sortie différent de 8 : " << pMaskOut->getbitspersample());
+        return -1;
     }
 
     return 0;
@@ -372,25 +466,46 @@ int checkImages(LibtiffImage* pImageOut, std::vector<Image*>& ImageIn)
 * @return 0 en cas de succes, -1 sinon
 */
 
-int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
+int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> MaskIn,
+               std::vector<std::vector<Image*> >* pTabImageIn, std::vector<std::vector<Image*> >* pTabMaskIn)
 {
-    std::vector<Image*> vTmp;
-    std::vector<Image*>::iterator itini = ImageIn.begin();
 
-    // we create consistent images' vectors (X/Y resolution and X/Y phases)
+    if (ImageIn.size() != MaskIn.size()) {
+        LOGGER_ERROR("Masks' and images' arrays must thave the same size.");
+        return 1;
+    }
+    
+    std::vector<Image*> vTmpImg;
+    std::vector<Image*> vTmpMask;
+    std::vector<LibtiffImage*>::iterator itiniImg = ImageIn.begin();
+    std::vector<LibtiffImage*>::iterator itiniMask = MaskIn.begin();
 
-    for (std::vector<Image*>::iterator it = ImageIn.begin(); it < ImageIn.end()-1;it++) {
-        if (! (*it)->isCompatibleWith(*(it+1))) {
+    /* we create consistent images' vectors (X/Y resolution and X/Y phases)
+     * Masks are moved in parallel with images
+     */
+    for (std::vector<LibtiffImage*>::iterator itImg = ImageIn.begin(), itMask = ImageIn.begin();
+        itImg < ImageIn.end()-1, itMask < MaskIn.end()-1;
+        itImg++, itMask++) {
+        if (! (*itImg)->isCompatibleWith(*(itImg+1))) {
             // two following images are not compatible, we split images' vector
-            vTmp.assign(itini,it+1);
-            itini = it+1;
-            pTabImageIn->push_back(vTmp);
+            // images
+            vTmpImg.assign(itiniImg,itImg+1);
+            itiniImg = itImg+1;
+            pTabImageIn->push_back(vTmpImg);
+            // masks
+            vTmpMask.assign(itiniMask,itMask+1);
+            itiniMask = itMask+1;
+            pTabMaskIn->push_back(vTmpMask);
         }
     }
     
     // we don't forget to store last images in pTabImageIn
-    vTmp.assign(itini,ImageIn.end());
-    pTabImageIn->push_back(vTmp);
+    // images
+    vTmpImg.assign(itiniImg,ImageIn.end());
+    pTabImageIn->push_back(vTmpImg);
+    // masks
+    vTmpMask.assign(itiniMask,MaskIn.end());
+    pTabMaskIn->push_back(vTmpMask);
 
     return 0;
 }
@@ -402,7 +517,7 @@ int sortImages(std::vector<Image*> ImageIn, std::vector<std::vector<Image*> >* p
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,int* nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
+ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vector< Image*> & TabMaskIn,int* nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
 {
     if (TabImageIn.empty()) {
         LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
@@ -530,7 +645,10 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, int* nodata, bool nowhite, uint16_t sampleformat)
+int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
+                   std::vector<std::vector<Image*> >& TabImageIn, std::vector<std::vector<Image*> >& TabMaskIn, // Entrée
+                   ExtendedCompoundImage** ppECImage, // Résultat du merge
+                   Interpolation::KernelType& interpolation, int* nodata, bool nowhite, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
     std::vector<Image*> pOverlayedImage;
@@ -544,7 +662,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
         // Mise en superposition du paquet d'images en 2 etapes
 
         // Etape 1 : Creation d'une image composite
-        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata,nowhite,sampleformat,0);
+        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),TabMaskIn.at(i),nodata,nowhite,sampleformat,0);
         ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
 
         if (pECI==NULL) {
@@ -556,7 +674,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
         //saveImage(pECI,"test0.tif",3,8,1,PHOTOMETRIC_RGB);
 
         if (pImageOut->isCompatibleWith(pECI)){
-            /* les images sources et finale ont la meme res et la meme phase
+            /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImage.push_back(pECI);
             mask = new ExtendedCompoundMaskImage(pECI);
@@ -565,7 +683,7 @@ int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& T
             //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB);
             //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK);
         } else {
-            // Etape 2 : Reechantillonnage de l'image composite si necessaire
+            // Etape 2 : Reechantillonnage de l'image composite necessaire
             int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
             int mirrors = addMirrors(pECI,mirrorSize);
             
@@ -632,8 +750,11 @@ int main(int argc, char **argv) {
     Interpolation::KernelType interpolation;
 
     LibtiffImage* pImageOut ;
-    std::vector<Image*> ImageIn;
+    LibtiffImage* pMaskOut ;
+    std::vector<LibtiffImage*> ImageIn;
+    std::vector<LibtiffImage*> MaskIn;
     std::vector<std::vector<Image*> > TabImageIn;
+    std::vector<std::vector<Image*> > TabMaskIn;
     ExtendedCompoundImage* pECImage;
 
     /* Initialisation des Loggers */
@@ -647,7 +768,7 @@ int main(int argc, char **argv) {
     Logger::setAccumulator(FATAL, acc);
 
     std::ostream &logd = LOGGER(DEBUG);
-          logd.precision(16);
+    logd.precision(16);
     logd.setf(std::ios::fixed,std::ios::floatfield);
 
     std::ostream &logw = LOGGER(WARN);
@@ -656,12 +777,13 @@ int main(int argc, char **argv) {
     
     LOGGER_DEBUG("Parse");
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc,argv,imageListFilename,interpolation,strnodata,nowhite,type,samplesperpixel,bitspersample,sampleformat,photometric,compression)<0 ){
+    if (parseCommandLine(argc, argv, imageListFilename, interpolation, strnodata, nowhite, type, samplesperpixel, bitspersample, sampleformat, photometric, compression) < 0){
         LOGGER_ERROR("Echec lecture ligne de commande");
         sleep(1);
         return -1;
     }
-    
+
+    // Conversion string->int[] du paramètre nodata
     LOGGER_DEBUG("Nodata interpretation");
     int nodata[samplesperpixel];
     
@@ -680,32 +802,33 @@ int main(int argc, char **argv) {
         nodata[i] = atoi(charValue);
     }
 
-    // TODO : gérer le type mtd !!
-    if (type==0) {
-        LOGGER_ERROR("Le type mtd n'est pas pris en compte");
-        sleep(1);
-        return -1;
-    }
-
     LOGGER_DEBUG("Load");
     // Chargement des images
-    if (loadImages(imageListFilename,&pImageOut,&ImageIn,samplesperpixel,bitspersample,photometric)<0){
+    if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn,&MaskIn,samplesperpixel,bitspersample,photometric)<0){
         LOGGER_ERROR("Echec chargement des images"); 
         sleep(1);
         return -1;
     }
 
-    LOGGER_DEBUG("Check");
+    LOGGER_DEBUG("Check images");
     // Controle des images
     if (checkImages(pImageOut,ImageIn)<0){
         LOGGER_ERROR("Echec controle des images");
         sleep(1);
         return -1;
     }
+
+    LOGGER_DEBUG("Check masks");
+    // Controle des images
+    if (checkMasks(pMaskOut,MaskIn)<0){
+        LOGGER_ERROR("Echec controle des masques");
+        sleep(1);
+        return -1;
+    }
     
     LOGGER_DEBUG("Sort");
     // Tri des images
-    if (sortImages(ImageIn, &TabImageIn)<0){
+    if (sortImages(ImageIn, MaskIn, &TabImageIn, &TabMaskIn)<0){
         LOGGER_ERROR("Echec tri des images");
         sleep(1);
         return -1;
@@ -713,11 +836,14 @@ int main(int argc, char **argv) {
     
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
-    if (mergeTabImages(pImageOut, TabImageIn, &pECImage, interpolation,nodata,nowhite,sampleformat) < 0){
+    if (mergeTabImages(pImageOut, pMaskOut, TabImageIn, TabMaskIn, &pECImage, interpolation,nodata,nowhite,sampleformat) < 0){
         LOGGER_ERROR("Echec fusion des paquets d images");
         sleep(1);
         return -1;
     }
+
+    LOGGER_INFO("Sortie prématurée");
+    return -1;
     
     LOGGER_DEBUG("Save");
     // Enregistrement de l image fusionnee
