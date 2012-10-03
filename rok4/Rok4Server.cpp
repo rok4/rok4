@@ -47,8 +47,8 @@
 #include <cstring>
 #include <proj_api.h>
 #include <csignal>
-#include <libintl.h>
 
+#include "intl.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"

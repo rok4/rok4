@@ -46,7 +46,7 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-#include <libintl.h>
+#include "intl.h"
 /**
  * Conversion de int en std::string.
  */

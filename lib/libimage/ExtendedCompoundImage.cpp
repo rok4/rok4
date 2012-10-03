@@ -89,18 +89,7 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         images[i]->getline(buffer_t,images[i]->y2l(y));
 
         if (masks.empty()) {
-            if (nowhite) {
-                // Dans le cas de canaux entier, on veut éviter de prendre en compte les pixels blanc, on va donc les filter
-                // Dans le cas d'un canal flottant, on veut éviter de prendre en compte les valeurs inférieures à un seuil (en dur dans le code)
-                for (int j = 0; j < (c1-c0); j++) {
-                    if (! isNodata(&buffer_t[(c2+j)*channels])) {
-                        // Ce pixel n'est pas de nodata, on peut le stocker dans le buffer
-                        memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],channels*sizeof(T));
-                    }
-                }
-            } else {
-                memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
-            }
+            memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
         } else {
             
             uint8_t* buffer_m = new uint8_t[masks[i]->width];
@@ -114,11 +103,6 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
                         LOGGER_ERROR("ExtendedCompoundImage : test de dépassement de ligne");
                         continue;
                     }
-                    
-                    if (nowhite && isNodata(&buffer_t[(c2+j)*channels])) {
-                        continue;
-                    }
-                    
                     memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],sizeof(T)*channels);
                 }
             }
@@ -159,6 +143,19 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
     else {           //float
         return _getline(buffer, line);
     }
+}
+
+BoundingBox<double> ExtendedCompoundImage::getRealBbox() {
+    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
+    
+    for (uint i = mirrors; i < images.size(); i++) {
+        if (images.at(i)->getxmin()<xmin)  xmin=images.at(i)->getxmin();
+        if (images.at(i)->getxmax()>xmax)  xmax=images.at(i)->getxmax();
+        if (images.at(i)->getymin()<ymin)  ymin=images.at(i)->getymin();
+        if (images.at(i)->getymax()>ymax)  ymax=images.at(i)->getymax();
+    }
+
+    return BoundingBox<double>(xmin,ymin,xmax,ymax);
 }
 
 #define epsilon 0.001
@@ -212,7 +209,7 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
   memset(buffer,0,width*channels);
   // Rappel de l'hypothese : les miroirs sont rangés en premier parmi les images de l'ECI
-  for (uint i = ECI->getmirrors(); i < ECI->getimages()->size(); i++){
+  for (uint i = ECI->getMirrors(); i < ECI->getimages()->size(); i++){
 
     // On ecarte les images qui ne se trouvent pas sur la ligne
     // On evite de comparer des coordonnees terrain (comparaison de flottants)
@@ -229,7 +226,13 @@ int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
     // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
     int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
 
-    memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+    if (ECI->getmasks()->at(i) == NULL) {
+        memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+    } else {
+        // ECI->getmasks()->at(i)->getline(?)
+        double y=l2y(line);
+        memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+    }
   }
   return width*channels*sizeof(uint8_t);
 }

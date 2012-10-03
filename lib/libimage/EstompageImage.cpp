@@ -114,7 +114,7 @@ EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, ui
 
 EstompageImage::~EstompageImage() {
     delete origImage;
-    if (estompage) delete estompage;
+    if (estompage) delete[] estompage;
 }
 
 int EstompageImage::_getline ( float* buffer, int line ) {
@@ -163,7 +163,7 @@ void EstompageImage::generate() {
         nextBuffer = (nextBuffer+1)%3;
     }
     generateLine(line,lineBuffer[nextBuffer], lineBuffer[(nextBuffer+1)%3],lineBuffer[(nextBuffer+1)%3]);
-    delete buffer;
+    delete[] buffer;
 }
 
 void EstompageImage::generateLine ( int line, float* line1, float* line2, float* line3 ) {

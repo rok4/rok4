@@ -52,7 +52,7 @@
 #include "Pyramid.h"
 #include "PaletteDataSource.h"
 #include "format.h"
-#include "libintl.h"
+#include "intl.h"
 #include "config.h"
 
 
@@ -429,11 +429,9 @@ Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
                               bbox, 0, 0, 0, 0, pixel_size );
 }
 
-int* Level::getNoDataValue() {
+int* Level::getNoDataValue(int* nodatavalue) {
     DataSource *nd =  getDecodedNoDataTile();
     
-    int nodatavalue[this->channels];
-    memset(nodatavalue,0,this->channels*sizeof(int));
     size_t size;
     if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
         const uint8_t * buffer = nd->getData(size);
@@ -447,6 +445,7 @@ int* Level::getNoDataValue() {
             *(nodatavalue + pixel)  = *(buffer + pixel);
         }
     }
+    delete nd;
     return nodatavalue;
 }
 

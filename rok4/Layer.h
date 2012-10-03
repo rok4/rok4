@@ -69,6 +69,7 @@ private:
     std::vector<std::string> keyWords;
     Pyramid* dataPyramid;
     // TODO Rajouter une metadataPyramid
+    std::string defaultStyle;
     std::vector<Style*> styles;
     double minRes;
     double maxRes;
@@ -110,6 +111,9 @@ public:
     Interpolation::KernelType getResampling() const {
         return resampling;
     }
+    std::string getDefaultStyle() const {
+        return defaultStyle;
+    }
     std::vector<Style*>      getStyles()     const {
         return styles;
     }
@@ -140,7 +144,7 @@ public:
             maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
             authority ( authority ),resampling ( resampling ),
             geographicBoundingBox ( geographicBoundingBox ),
-            boundingBox ( boundingBox ), metadataURLs ( metadataURLs ) {
+            boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle(styles.at(0)->getId()) {
     }
     ~Layer();
 };

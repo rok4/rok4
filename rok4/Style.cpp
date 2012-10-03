@@ -34,10 +34,10 @@
  *
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
-
+ 
 #include "Style.h"
 #include "Logger.h"
-#include <libintl.h>
+#include "intl.h"
 #include "config.h"
 
 Style::Style ( const std::string& id,const std::vector<std::string>& titles,

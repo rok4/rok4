@@ -56,6 +56,7 @@
 #include "Pyramid.h"
 #include "TileMatrixSet.h"
 #include "TileMatrix.h"
+#include "intl.h"
 #include <cfloat>
 #include <libintl.h>
 
@@ -121,7 +122,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         log.precision ( 8 );
         log.setf ( std::ios::fixed,std::ios::floatfield );
 
-        std::cout<<_ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
+        std::cout<< _( "Envoi des messages dans la sortie du logger" ) << std::endl;
         LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
         loggerInitialised=true;
     } else {

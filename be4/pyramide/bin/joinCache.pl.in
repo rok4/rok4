@@ -70,7 +70,6 @@ use BE4::Base36;
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant RESULT_TEST => "if [ \$? != 0 ] ; then echo \$0 : Erreur a la ligne \$(( \$LINENO - 1)) >&2 ; exit 1; fi\n";
 
 ################################################################################
 # Pas de bufferisation des sorties.
@@ -82,18 +81,6 @@ my $VERSION = '@VERSION_TEXT@';
 
 ################################################################################
 # Global
-my $STRPYRTMPLT   = <<"TPYR";
-<?xml version='1.0' encoding='US-ASCII'?>
-<Pyramid>
-    <tileMatrixSet>__TMSNAME__</tileMatrixSet>
-    <format>__FORMATIMG__</format>
-    <channels>__CHANNEL__</channels>
-    <nodataValue>__NODATAVALUE__</nodataValue>
-    <interpolation>__INTERPOLATION__</interpolation>
-    <photometric>__PHOTOMETRIC__</photometric>
-<!-- __LEVELS__ -->
-</Pyramid>
-TPYR
 
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 

@@ -43,7 +43,7 @@
 #include <bits/signum.h>
 #include <sys/time.h>
 #include <locale>
-#include <libintl.h>
+#include "intl.h"
 #include <limits>
 #include "config.h"
 /* Usage de la ligne de commande */

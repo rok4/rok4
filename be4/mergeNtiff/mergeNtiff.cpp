@@ -520,7 +520,7 @@ int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> Ma
 ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vector< Image*> & TabMaskIn,int* nodata, bool nowhite, uint16_t sampleformat, uint mirrors)
 {
     if (TabImageIn.empty()) {
-        LOGGER_ERROR("Assemblage d'un tableau d images de taille nulle");
+        LOGGER_ERROR("Assemblage d'un tableau d'images de taille nulle");
         return NULL;
     }
 
@@ -533,9 +533,13 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vec
         if (TabImageIn.at(j)->getymax()>ymax)  ymax=TabImageIn.at(j)->getymax();
     }
 
+    int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5);
+    int h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
+    
     extendedCompoundImageFactory ECImgfactory ;
-    int w=(int)((xmax-xmin)/(*TabImageIn.begin())->getresx()+0.5), h=(int)((ymax-ymin)/(*TabImageIn.begin())->getresy()+0.5);
-    ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax), TabImageIn,nodata,sampleformat,mirrors,nowhite);
+    ExtendedCompoundImage* pECI = ECImgfactory.createExtendedCompoundImage(
+        w,h,(*TabImageIn.begin())->channels, BoundingBox<double>(xmin,ymin,xmax,ymax),
+        TabImageIn, TabMaskIn,nodata,sampleformat,mirrors,nowhite);
 
     return pECI ;
 }
@@ -550,12 +554,11 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vec
 * @return : le nombre de miroirs ajoutes
 */
 
-int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
+bool addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    uint nbMirrors=0;
-
     mirrorImageFactory MIFactory;
     std::vector< Image*>  mirrors;
+    std::vector< Image*>  masks;
 
     int i = 0;
     while (i<pECI->getimages()->size()) {
@@ -564,17 +567,19 @@ int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
             MirrorImage* mirror=MIFactory.createMirrorImage(pECI->getimages()->at(i),pECI->getSampleformat(),j,mirrorSize);
             if (mirror == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors");
-                return -1;
+                return false;
             }
             mirrors.push_back(mirror);
-            nbMirrors++;
+            masks.push_back(NULL);
+            pECI->incrMirrors();
         }
         i++;
     }
 
     pECI->getimages()->insert(pECI->getimages()->begin(),mirrors.begin(),mirrors.end());
+    pECI->getmasks()->insert(pECI->getmasks()->begin(),masks.begin(),masks.end());
 
-    return nbMirrors;
+    return true;
 }
 
 
@@ -585,17 +590,22 @@ int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
+ResampledImage* resampleImages(ResampledImage*& resampledMask, LibtiffImage* pImageOut,
+                               ExtendedCompoundImage* pECI, ExtendedCompoundMaskImage* pECMI,
+                               Interpolation::KernelType& interpolation)
 {
-    const Kernel& K = Kernel::getInstance(interpolation);
-
-    double xmin_src=pECI->getxmin(), ymin_src=pECI->getymin(), xmax_src=pECI->getxmax(), ymax_src=pECI->getymax();
-    double resx_src=pECI->getresx(), resy_src=pECI->getresy(), resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
+    double xmin_src=pECI->getxmin(), ymin_src=pECI->getymin();
+    double xmax_src=pECI->getxmax(), ymax_src=pECI->getymax();
+    
+    double resx_src=pECI->getresx(), resy_src=pECI->getresy();
+    double resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
+    
     double ratio_x=resx_dst/resx_src, ratio_y=resy_dst/resy_src;
 
     /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
      * (sans compter les miroirs, d'où le passége d'une bbox source)
      */
+    BoundingBox<double> bbox_src = pECI->getRealBbox();
     double xmin_dst=__max(bbox_src.xmin,pImageOut->getxmin());
     double xmax_dst=__min(bbox_src.xmax,pImageOut->getxmax());
     double ymin_dst=__max(bbox_src.ymin,pImageOut->getymin());
@@ -625,12 +635,15 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     double off_x=(xmin_dst-xmin_src)/resx_src,off_y=(ymax_src-ymax_dst)/resy_src;
 
     BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
+
+    // On commence par réechantillonner le masque : TOUJOURS EN PPV
+    resampledMask = new ResampledImage( pECMI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, Interpolation::NEAREST_NEIGHBOUR, bbox_dst);
+    
     // Reechantillonnage
     ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
 
     // saveImage(pRImage,nom,1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK);
-    // Reechantillonage du masque
-    resampledMask = new ResampledImage( mask, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    
     
     return pRImage;
 }
@@ -651,8 +664,8 @@ int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
                    Interpolation::KernelType& interpolation, int* nodata, bool nowhite, uint16_t sampleformat)
 {
     extendedCompoundImageFactory ECImgfactory ;
-    std::vector<Image*> pOverlayedImage;
-    std::vector<Image*> pMask;
+    std::vector<Image*> pOverlayedImages;
+    std::vector<Image*> pOverlayedMasks;
     
     const Kernel& K = Kernel::getInstance(interpolation);
 
@@ -661,9 +674,9 @@ int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
         // Mise en superposition du paquet d'images en 2 etapes
 
-        // Etape 1 : Creation d'une image composite
+        // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
         ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),TabMaskIn.at(i),nodata,nowhite,sampleformat,0);
-        ExtendedCompoundMaskImage* mask;// = new ExtendedCompoundMaskImage(pECI);
+        ExtendedCompoundMaskImage* pECMI = new ExtendedCompoundMaskImage(pECI);
 
         if (pECI==NULL) {
             LOGGER_ERROR("Impossible d'assembler les images");
@@ -676,26 +689,23 @@ int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
         if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
-            pOverlayedImage.push_back(pECI);
-            mask = new ExtendedCompoundMaskImage(pECI);
-            pMask.push_back(mask);
+            pOverlayedImages.push_back(pECI);
+            pOverlayedMasks.push_back(pECMI);
             /*TEST*/
             //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB);
             //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK);
         } else {
             // Etape 2 : Reechantillonnage de l'image composite necessaire
+
+            // Ajout des miroirs
             int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
-            int mirrors = addMirrors(pECI,mirrorSize);
-            
-            if (mirrors < 0){
+            if (! addMirrors(pECI,mirrorSize)) {
                 LOGGER_ERROR("Unable to add mirrors");
                 return -1;
             }
 
-            ExtendedCompoundImage* pECI_withMirrors=compoundImages((*pECI->getimages()), nodata,nowhite,sampleformat,mirrors);
-            
-            if (pECI_withMirrors==NULL) {
-                LOGGER_ERROR("Impossible d'assembler images et miroirs");
+            if (pECI->getimages()->size() != pECI->getmasks()->size()) {
+                LOGGER_ERROR("Masks' and images' arrays must thave the same size in a ExtendedCompoundImage.");
                 return -1;
             }
             
@@ -706,17 +716,15 @@ int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
                 saveImage(pECI_withMirrors,"pECI_non_compat_withMirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB);
             }*/
 
-            mask = new ExtendedCompoundMaskImage(pECI_withMirrors);
-
             ResampledImage* pResampledMask;
-            
-            ResampledImage* pRImage = resampleImages(pImageOut, pECI_withMirrors, pECI->getbbox(), interpolation, mask, pResampledMask);
+            ResampledImage* pRImage = resampleImages(pResampledMask, pImageOut, pECI, pECMI, interpolation);
             if (pRImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
             }
-            pOverlayedImage.push_back(pRImage);
-            pMask.push_back(pResampledMask);
+            
+            pOverlayedImages.push_back(pRImage);
+            pOverlayedMasks.push_back(pResampledMask);
             
             /*TEST*/
             //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB);
@@ -728,7 +736,7 @@ int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     if ( (*ppECImage = ECImgfactory.createExtendedCompoundImage(pImageOut->width, pImageOut->height,
-        pImageOut->channels, pImageOut->getbbox(), pOverlayedImage,pMask,nodata,sampleformat,0,nowhite))==NULL) {
+        pImageOut->channels, pImageOut->getbbox(), pOverlayedImages,pOverlayedMasks,nodata,sampleformat,0,nowhite))==NULL) {
         LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
         return -1;
     }
