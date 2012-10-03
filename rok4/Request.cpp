@@ -939,6 +939,9 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         
         if ( layers.at(k)->getStyles().size() != 0 ) {
             for ( unsigned int i=0; i < layers.at(k)->getStyles().size(); i++ ) {
+                if (stylesString.at(k) == "") {
+                    stylesString.at(k).append( layers.at(k)->getDefaultStyle() );
+                }
                 if ( stylesString.at(k) == layers.at(k)->getStyles() [i]->getId() ) {
                     styles.push_back(layers.at(k)->getStyles() [i]);
                 }
