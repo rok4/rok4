@@ -443,7 +443,7 @@ sub _fillToPyramid {
     }
     
     $self->{tms} = $objTMS;
-    ALWAYS (sprintf "TMS = %s", $objTMS->exportForDebug);
+    DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
 
     return TRUE;
 }
