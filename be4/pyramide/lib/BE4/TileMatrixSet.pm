@@ -436,7 +436,7 @@ sub computeTmSource {
      return FALSE;
   }
   
-  $tmSource->addTargetsTm($tmTarget);
+  $tmSource->addTargetTm($tmTarget);
   
   return TRUE;
 }
