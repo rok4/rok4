@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-10-03 16:45+0200\n"
+"POT-Creation-Date: 2012-10-05 09:40+0200\n"
 "PO-Revision-Date: 2012-08-27 16:49+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -209,7 +209,7 @@ msgstr "            The root element is not a TileMatrixSet."
 #: ConfLoader.cpp:415 ConfLoader.cpp:419 ConfLoader.cpp:425 ConfLoader.cpp:429
 #: ConfLoader.cpp:435 ConfLoader.cpp:439 ConfLoader.cpp:445 ConfLoader.cpp:449
 #: ConfLoader.cpp:455 ConfLoader.cpp:459 ConfLoader.cpp:465 ConfLoader.cpp:469
-#: Request.cpp:690
+#: Request.cpp:691
 msgid "TileMatrixSet "
 msgstr "TileMatrixSet "
 
@@ -1108,207 +1108,207 @@ msgstr "POST request with invalid content"
 msgid "Cannot retrieve XML root element"
 msgstr "Cannot retrieve XML root element"
 
-#: Request.cpp:673 Request.cpp:768
+#: Request.cpp:674 Request.cpp:769
 msgid "Parametre VERSION absent."
 msgstr ""
 
-#: Request.cpp:675
+#: Request.cpp:676
 msgid "Valeur du parametre VERSION invalide (doit contenir "
 msgstr ""
 
-#: Request.cpp:675
+#: Request.cpp:676
 msgid ")"
 msgstr ""
 
-#: Request.cpp:679
+#: Request.cpp:680
 msgid "Parametre LAYER absent."
 msgstr ""
 
-#: Request.cpp:682 Request.cpp:785
+#: Request.cpp:683 Request.cpp:786
 msgid "Layer "
 msgstr "Layer "
 
-#: Request.cpp:682 Request.cpp:690 Request.cpp:785
+#: Request.cpp:683 Request.cpp:691 Request.cpp:786
 msgid " inconnu."
 msgstr ""
 
-#: Request.cpp:687
+#: Request.cpp:688
 msgid "Parametre TILEMATRIXSET absent."
 msgstr ""
 
-#: Request.cpp:695
+#: Request.cpp:696
 msgid "Parametre TILEMATRIX absent."
 msgstr ""
 
-#: Request.cpp:700
+#: Request.cpp:701
 msgid "TileMatrix "
 msgstr "TileMatrix "
 
-#: Request.cpp:700
+#: Request.cpp:701
 msgid " inconnu pour le TileMatrixSet "
 msgstr ""
 
-#: Request.cpp:705
+#: Request.cpp:706
 msgid "Parametre TILEROW absent."
 msgstr ""
 
-#: Request.cpp:707
+#: Request.cpp:708
 msgid "La valeur du parametre TILEROW est incorrecte."
 msgstr ""
 
-#: Request.cpp:711
+#: Request.cpp:712
 msgid "Parametre TILECOL absent."
 msgstr ""
 
-#: Request.cpp:713
+#: Request.cpp:714
 msgid "La valeur du parametre TILECOL est incorrecte."
 msgstr ""
 
-#: Request.cpp:718
+#: Request.cpp:719
 msgid "format requete : "
 msgstr ""
 
-#: Request.cpp:718
+#: Request.cpp:719
 msgid " format pyramide : "
 msgstr ""
 
-#: Request.cpp:720 Request.cpp:840
+#: Request.cpp:721 Request.cpp:841
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:723 Rok4Server.cpp:455
+#: Request.cpp:724 Rok4Server.cpp:455
 msgid "Le format "
 msgstr ""
 
-#: Request.cpp:723 Request.cpp:736 Request.cpp:952
+#: Request.cpp:724 Request.cpp:737 Request.cpp:953
 msgid " n'est pas gere pour la couche "
 msgstr ""
 
-#: Request.cpp:727
+#: Request.cpp:728
 msgid "Parametre STYLE absent."
 msgstr ""
 
-#: Request.cpp:736 Request.cpp:952
+#: Request.cpp:737 Request.cpp:953
 msgid "Le style "
 msgstr ""
 
-#: Request.cpp:770 Request.cpp:995
+#: Request.cpp:771 Request.cpp:996
 msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr ""
 
-#: Request.cpp:774
+#: Request.cpp:775
 msgid "Parametre LAYERS absent."
 msgstr ""
 
-#: Request.cpp:777
+#: Request.cpp:778
 msgid "Nombre de couches demandees ="
 msgstr ""
 
-#: Request.cpp:779
+#: Request.cpp:780
 msgid "Le nombre de couche demande excede la valeur du LayerLimit."
 msgstr ""
 
-#: Request.cpp:788
+#: Request.cpp:789
 msgid "Nombre de couches ="
 msgstr ""
 
-#: Request.cpp:792
+#: Request.cpp:793
 msgid "Parametre WIDTH absent."
 msgstr ""
 
-#: Request.cpp:795
+#: Request.cpp:796
 msgid "La valeur du parametre WIDTH n'est pas une valeur entiere."
 msgstr ""
 
-#: Request.cpp:797
+#: Request.cpp:798
 msgid "La valeur du parametre WIDTH est negative."
 msgstr ""
 
-#: Request.cpp:799
+#: Request.cpp:800
 msgid ""
 "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee "
 "par le service."
 msgstr ""
 
-#: Request.cpp:803
+#: Request.cpp:804
 msgid "Parametre HEIGHT absent."
 msgstr ""
 
-#: Request.cpp:806
+#: Request.cpp:807
 msgid "La valeur du parametre HEIGHT n'est pas une valeur entiere."
 msgstr ""
 
-#: Request.cpp:808
+#: Request.cpp:809
 msgid "La valeur du parametre HEIGHT est negative."
 msgstr ""
 
-#: Request.cpp:810
+#: Request.cpp:811
 msgid ""
 "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee "
 "par le service."
 msgstr ""
 
-#: Request.cpp:814
+#: Request.cpp:815
 msgid "Parametre CRS absent."
 msgstr ""
 
-#: Request.cpp:832
+#: Request.cpp:833
 msgid "CRS "
 msgstr ""
 
-#: Request.cpp:832
+#: Request.cpp:833
 msgid " (equivalent PROJ4 "
 msgstr ""
 
-#: Request.cpp:832
+#: Request.cpp:833
 msgid " ) inconnu pour le layer "
 msgstr ""
 
-#: Request.cpp:847
+#: Request.cpp:848
 msgid "Format "
 msgstr ""
 
-#: Request.cpp:847
+#: Request.cpp:848
 msgid " non gere par le service."
 msgstr ""
 
-#: Request.cpp:852
+#: Request.cpp:853
 msgid "Parametre BBOX absent."
 msgstr ""
 
-#: Request.cpp:856 Request.cpp:860 Request.cpp:863
+#: Request.cpp:857 Request.cpp:861 Request.cpp:864
 msgid "Parametre BBOX incorrect."
 msgstr ""
 
-#: Request.cpp:920
+#: Request.cpp:921
 msgid "Format d'exception "
 msgstr ""
 
-#: Request.cpp:920
+#: Request.cpp:921
 msgid " non pris en charge"
 msgstr ""
 
-#: Request.cpp:924
+#: Request.cpp:925
 msgid "Parametre STYLES absent."
 msgstr ""
 
-#: Request.cpp:934
+#: Request.cpp:935
 msgid "Nombre de styles demandes ="
 msgstr ""
 
-#: Request.cpp:936
+#: Request.cpp:937
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:986 Request.cpp:1007 Rok4Server.cpp:527
+#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:527
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:986 Request.cpp:1007 Rok4Server.cpp:527
+#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:527
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
-#: Request.cpp:1015
+#: Request.cpp:1016
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr ""
 

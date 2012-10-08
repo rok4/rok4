@@ -547,9 +547,10 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
  * @param path webserver path to the ROK4 Server
  * @param https https request if defined
  */
-Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ) {
+Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://") {
     LOGGER_DEBUG ( "QUERY="<<strquery );
-    scheme = ( https?"https://":"http://" );
+    if (https) 
+        scheme = ( strcmp(https,"on") == 0 || strcmp(https,"ON")==0?"https://":"http://" );
     url_decode ( strquery );
 
     for ( int pos = 0; strquery[pos]; ) {
