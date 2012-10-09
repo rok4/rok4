@@ -48,6 +48,7 @@
 #include <proj_api.h>
 #include <csignal>
 
+#include "config.h"
 #include "intl.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
@@ -512,6 +513,8 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "getmap" ) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
+    } else if ( request->request == "getversion" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
     }

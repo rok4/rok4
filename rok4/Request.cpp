@@ -547,9 +547,10 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
  * @param path webserver path to the ROK4 Server
  * @param https https request if defined
  */
-Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ) {
+Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://") {
     LOGGER_DEBUG ( "QUERY="<<strquery );
-    scheme = ( https?"https://":"http://" );
+    if (https) 
+        scheme = ( strcmp(https,"on") == 0 || strcmp(https,"ON")==0?"https://":"http://" );
     url_decode ( strquery );
 
     for ( int pos = 0; strquery[pos]; ) {
@@ -923,7 +924,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( ! ( hasParam ( "styles" ) ) )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre STYLES absent."),"wms" ) );
     std::string str_styles=getParam ( "styles" );
-    if ( str_styles == "" ) {//TODO Gestion du style par défaut
+    if ( str_styles == "" ) {
         str_styles.append( layers.at(0)->getDefaultStyle() );
         for (int i = 1;  i < layers.size(); i++) {
             str_styles.append(",");
@@ -939,7 +940,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         
         if ( layers.at(k)->getStyles().size() != 0 ) {
             for ( unsigned int i=0; i < layers.at(k)->getStyles().size(); i++ ) {
-                if (stylesString.at(k) == "") {
+                if ( stylesString.at(k) == "") {
                     stylesString.at(k).append( layers.at(k)->getDefaultStyle() );
                 }
                 if ( stylesString.at(k) == layers.at(k)->getStyles() [i]->getId() ) {
