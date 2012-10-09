@@ -59,14 +59,14 @@ protected:
     std::string id0;
     std::vector<std::string> titles0;
     std::vector<std::string> abstracts0;
-    std::vector<std::string> keywords0;
+    std::vector<Keyword> keywords0;
     std::vector<LegendURL> legendURLs0;
 
     //One element
     std::string id1;
     std::vector<std::string> titles1;
     std::vector<std::string> abstracts1;
-    std::vector<std::string> keywords1;
+    std::vector<Keyword> keywords1;
     LegendURL* legendURL1;
     std::vector<LegendURL> legendURLs1;
 
@@ -74,7 +74,7 @@ protected:
     std::string id2;
     std::vector<std::string> titles2;
     std::vector<std::string> abstracts2;
-    std::vector<std::string> keywords2;
+    std::vector<Keyword> keywords2;
     LegendURL* legendURL2;
     LegendURL* legendURL3;
     std::vector<LegendURL> legendURLs2;
@@ -105,7 +105,7 @@ void CppUnitStyle::setUp() {
     id1 = "one";
     titles1.push_back ( "Title1" );
     abstracts1.push_back ( "Abstract1" );
-    keywords1.push_back ( "Keyword1" );
+    keywords1.push_back ( Keyword("Keyword1",std::map<std::string,std::string>()) );
     legendURL1 = new LegendURL ( "image/jpeg","http://ign.fr",400,400,25000,100000 );
     legendURLs1.push_back ( *legendURL1 );
 
@@ -114,8 +114,8 @@ void CppUnitStyle::setUp() {
     titles2.push_back ( "Title3" );
     abstracts2.push_back ( "Abstract2" );
     abstracts2.push_back ( "Abstract3" );
-    keywords2.push_back ( "Keyword2" );
-    keywords2.push_back ( "Keyword3" );
+    keywords2.push_back ( Keyword("Keyword2",std::map<std::string,std::string>()) );
+    keywords2.push_back ( Keyword("Keyword3",std::map<std::string,std::string>()) );
     legendURL2 = new LegendURL ( "image/jpeg","http://ign.fr",400,400,25000,100000 );
     legendURL3 = new LegendURL ( "image/jpeg","http://ign.fr",200,200,50000,200000 );
     legendURLs2.push_back ( *legendURL2 );
@@ -161,7 +161,7 @@ void CppUnitStyle::getters() {
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getId().compare ( id0 ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getTitles().size() ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getAbstracts().size() ==0 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getKeywords().size() ==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getKeywords()->size() ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getLegendURLs().size() ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getPalette()->getPalettePNGSize() ==0 );
 
@@ -176,8 +176,8 @@ void CppUnitStyle::getters() {
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getTitles[0]",style->getTitles().at ( 0 ).compare ( "Title1" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getAbstracts",style->getAbstracts().size() ==1 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getAbstracts[0]",style->getAbstracts().at ( 0 ).compare ( "Abstract1" ) ==0 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with one element getKeywords",style->getKeywords().size() ==1 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with one element getKeywords[0]",style->getKeywords().at ( 0 ).compare ( "Keyword1" ) ==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with one element getKeywords",style->getKeywords()->size() ==1 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with one element getKeywords[0]",style->getKeywords()->at ( 0 ).getContent().compare ( "Keyword1" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getLegendURLs",style->getLegendURLs().size() ==1 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getLegendURLs[0]",style->getLegendURLs().at ( 0 ) ==*legendURL1 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getPalette",* ( style->getPalette() ) !=*palette0 );
@@ -195,9 +195,9 @@ void CppUnitStyle::getters() {
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getAbstracts",style->getAbstracts().size() ==2 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getAbstracts[0]",style->getAbstracts().at ( 0 ).compare ( "Abstract2" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getAbstracts[0]",style->getAbstracts().at ( 1 ).compare ( "Abstract3" ) ==0 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords",style->getKeywords().size() ==2 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords[0]",style->getKeywords().at ( 0 ).compare ( "Keyword2" ) ==0 );
-    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords[0]",style->getKeywords().at ( 1 ).compare ( "Keyword3" ) ==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords",style->getKeywords()->size() ==2 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords[0]",style->getKeywords()->at ( 0 ).getContent().compare ( "Keyword2" ) ==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getKeywords[0]",style->getKeywords()->at ( 1 ).getContent().compare ( "Keyword3" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getLegendURLs",style->getLegendURLs().size() ==2 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getLegendURLs[0]",style->getLegendURLs().at ( 0 ) ==*legendURL2 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getLegendURLs[0]",style->getLegendURLs().at ( 1 ) ==*legendURL3 );

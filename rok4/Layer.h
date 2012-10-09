@@ -46,6 +46,7 @@
 #include "MetadataURL.h"
 #include "ServicesConf.h"
 #include "Interpolation.h"
+#include "Keyword.h"
 
 struct GeographicBoundingBoxWMS {
 public:
@@ -66,7 +67,7 @@ private:
     std::string id;
     std::string title;
     std::string abstract;
-    std::vector<std::string> keyWords;
+    std::vector<Keyword> keyWords;
     Pyramid* dataPyramid;
     // TODO Rajouter une metadataPyramid
     std::string defaultStyle;
@@ -93,8 +94,8 @@ public:
     std::string              getAuthority()  const {
         return authority;
     }
-    std::vector<std::string> getKeyWords()   const {
-        return keyWords;
+    std::vector<Keyword>* getKeyWords() {
+        return &keyWords;
     }
     double                   getMaxRes()     const {
         return maxRes;
@@ -134,7 +135,7 @@ public:
     }
 
     Layer ( std::string id, std::string title, std::string abstract,
-            std::vector<std::string> & keyWords, Pyramid*& dataPyramid,
+            std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
             std::vector<Style*> & styles, double minRes, double maxRes,
             std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,

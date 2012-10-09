@@ -13,11 +13,19 @@
                         <xs:element name="Abstract" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
                         <!-- Liste des mots clefs -->
                         <xs:element name="Keywords" minOccurs="0" maxOccurs="unbounded">
-                                <xs:complexType>
+                            <xs:complexType>
                                 <xs:sequence>
-                                        <xs:element name="Keyword" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                                    <xs:element name="Keyword" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:complexType>
+                                        <xs:simpleContent>
+                                            <xs:extension base="xs:string">
+                                            <xs:anyAttribute/>
+                                            </xs:extension>
+                                        </xs:simpleContent>
+                                        </xs:complexType>
+                                    </xs:element>
                                 </xs:sequence>
-                                </xs:complexType>
+                            </xs:complexType>
                         </xs:element>
                         <!-- Elément LegendURL WMTS -->
                         <xs:element ref="wmts:LegendURL" minOccurs="0" maxOccurs="unbounded">

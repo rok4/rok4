@@ -35,63 +35,38 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef TILEMATRIXSET_H_
-#define TILEMATRIXSET_H_
-
+#ifndef KEYWORD_H
+#define KEYWORD_H
 #include <string>
-#include <vector>
 #include <map>
-#include "TileMatrix.h"
-#include "CRS.h"
-#include "Keyword.h"
 
-/**
-* @class TileMatrixSet
-* @brief Implementation des TMS du WMTS
-*/
+typedef std::pair<std::string,std::string> attribute;
 
-class TileMatrixSet {
+class Keyword {
 private:
-    std::string id;
-    std::string title;
-    std::string abstract;
-    std::vector<Keyword> keyWords;
-    CRS crs;
-    std::map<std::string, TileMatrix> tmList;
+    std::string content;
+    std::map<std::string,std::string> attributes;
 public:
-    std::map<std::string, TileMatrix>* getTmList();
-    std::string getId();
-    std::string getTitle() {
-        return title;
+    Keyword ( std::string content, std::map<std::string,std::string> attributes );
+    Keyword ( const Keyword &origKW );
+    Keyword& operator= (Keyword const& other);
+    
+    inline const std::string getContent() const {
+        return content;
     }
-    std::string getAbstract() {
-        return abstract;
+    inline const std::map<std::string,std::string>* getAttributes() const {
+        return &attributes;
     }
-    std::vector<Keyword>* getKeyWords() {
-        return &keyWords;
+    
+    inline bool hasAttributes() const {
+        return !(attributes.empty());
     }
-    CRS getCrs() const {
-        return crs;
-    }
-    //TODO
-    int best_scale ( double resolution_x, double resolution_y );
+    
+    bool operator== ( const Keyword& other ) const;
+    bool operator!= ( const Keyword& other ) const;
 
-    TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
-            id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
+    virtual ~Keyword();
 
-
-    bool operator== ( const TileMatrixSet& other ) const;
-    bool operator!= ( const TileMatrixSet& other ) const;
-
-    TileMatrixSet ( const TileMatrixSet& t ) {
-        id=t.id;
-        title=t.title;
-        abstract=t.abstract;
-        keyWords=t.keyWords;
-        crs=t.crs;
-        tmList=t.tmList;
-    }
-    ~TileMatrixSet() {}
 };
 
-#endif /* TILEMATRIXSET_H_ */
+#endif // KEYWORD_H

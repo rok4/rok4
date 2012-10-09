@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 #include "LegendURL.h"
+#include "Keyword.h"
 #include "Palette.h"
 
 
@@ -48,7 +49,7 @@ private :
     std::string id;
     std::vector<std::string> titles;
     std::vector<std::string> abstracts;
-    std::vector<std::string> keywords;
+    std::vector<Keyword> keywords;
     std::vector<LegendURL> legendURLs;
     Palette palette;
     //Estompage
@@ -58,7 +59,7 @@ private :
     uint8_t center;
 public:
     Style ( const std::string& id,const std::vector<std::string>& titles,
-            const std::vector<std::string>& abstracts,const  std::vector<std::string>& keywords,
+            const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
             const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0);
     inline std::string getId() {
         return id;
@@ -69,8 +70,8 @@ public:
     inline std::vector<std::string> getAbstracts() {
         return abstracts;
     }
-    inline std::vector<std::string> getKeywords() {
-        return keywords;
+    inline std::vector<Keyword>* getKeywords() {
+        return &keywords;
     }
     inline std::vector<LegendURL> getLegendURLs() {
         return legendURLs;
