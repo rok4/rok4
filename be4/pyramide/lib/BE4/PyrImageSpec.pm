@@ -221,10 +221,6 @@ sub _init {
         WARN ("Given value for gamma is negative : 0 is used !");
         $params->{gamma} = 0;
     }
-    if ($params->{gamma} > 1) {
-        WARN ("Given value for gamma is greater than 1 : 1 is used !");
-        $params->{gamma} = 1;
-    }
     $self->{gamma} = $params->{gamma};
 
     # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
