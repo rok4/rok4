@@ -856,6 +856,32 @@ void Rok4Server::buildWMTSCapabilities() {
 
         TiXmlElement * tmsEl=new TiXmlElement ( "TileMatrixSet" );
         tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms.getId() ) );
+        if (!(tms.getTitle().empty())){
+            tmsEl->LinkEndChild ( buildTextNode ( "ows:Title", tms.getTitle().c_str() ) );
+        }
+        
+        if (!(tms.getAbstract().empty())){
+            tmsEl->LinkEndChild ( buildTextNode ( "ows:Abstract", tms.getAbstract().c_str() ) );
+        }
+       
+        if ( tms.getKeyWords()->size() != 0 ) {
+            TiXmlElement * kwlEl = new TiXmlElement ( "ows:Keywords" );
+            TiXmlElement * kwEl;
+            for ( unsigned int i=0; i < tms.getKeyWords()->size(); i++ ) {
+                kwEl = new TiXmlElement ( "ows:Keyword" );
+                kwEl->LinkEndChild ( new TiXmlText ( tms.getKeyWords()->at ( i ).getContent() ) );
+                const std::map<std::string,std::string>* attributes = tms.getKeyWords()->at ( i ).getAttributes();
+                for ( std::map<std::string,std::string>::const_iterator it = attributes->begin(); it !=attributes->end(); it++ ) {
+                    kwEl->SetAttribute ( ( *it ).first, ( *it ).second );
+                }
+
+                kwlEl->LinkEndChild ( kwEl );
+            }
+            //kwlEl->LinkEndChild ( buildTextNode ( "ows:Keyword", ROK4_INFO ) );
+            tmsEl->LinkEndChild ( kwlEl );
+        }
+        
+        
         tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms.getCrs().getRequestCode() ) );
         std::map<std::string, TileMatrix>* tmList = tms.getTmList();
 
