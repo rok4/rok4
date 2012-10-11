@@ -192,8 +192,7 @@ sub _init {
     $self->{compression} = $params->{compression};
 
     if (! exists $params->{compressionoption} || ! defined $params->{compressionoption}) {
-        ERROR ("'compressionoption' is required !");
-        return FALSE;
+        $params->{compressionoption} = "none";
     }
     if (! $self->is_CompressionOption($params->{compressionoption})) {
         ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
@@ -206,6 +205,11 @@ sub _init {
         ERROR ("'interpolation' is required !");
         return FALSE;
     }
+    # to remove when interpolation 'bicubique' will be remove
+    if ($params->{interpolation} eq 'bicubique') {
+        WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
+        $params->{interpolation} = 'bicubic';
+    }
     if (! $self->is_Interpolation($params->{interpolation})) {
         ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
@@ -213,17 +217,17 @@ sub _init {
     $self->{interpolation} = $params->{interpolation};
 
     # Gamma parameter
-    if (! exists $params->{gamma} || ! defined $params->{interpolation}) {
+    if (! exists $params->{gamma} || ! defined $params->{gamma}) {
         ERROR ("'gamma' is undefined !");
+        return FALSE;
+    }
+    if ($params->{gamma} !~ /^-?\d+\.?\d*$/) {
+        ERROR ("'gamma' is not a number !");
         return FALSE;
     }
     if ($params->{gamma} < 0) {
         WARN ("Given value for gamma is negative : 0 is used !");
         $params->{gamma} = 0;
-    }
-    if ($params->{gamma} > 1) {
-        WARN ("Given value for gamma is greater than 1 : 1 is used !");
-        $params->{gamma} = 1;
     }
     $self->{gamma} = $params->{gamma};
 
@@ -359,7 +363,7 @@ sub decodeFormat {
 
     my $bitspersample = $2;
     
-    return (lc $value[0], lc $value[1], $sampleformat, $bitspersample);
+    return ($value[0], lc $value[1], $sampleformat, $bitspersample);
     
 }
 

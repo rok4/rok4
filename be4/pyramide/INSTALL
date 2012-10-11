@@ -55,6 +55,7 @@ This module requires these other modules and libraries:
                 "HTTP::Request"    => 0,
                 "LWP"              => 0,
                 "Math::BigFloat"   => 0,
+                "Test::More"   => 0,
   
   
   * Binding perl to Gdal !

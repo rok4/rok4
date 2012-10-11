@@ -304,11 +304,6 @@ sub _init {
         WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubic'");
         $params->{interpolation} = 'bicubic';
     }
-    # to remove when interpolation 'bicubique' will be remove
-    if ($params->{interpolation} eq 'bicubique') {
-        WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
-        $params->{interpolation} = 'bicubic';
-    }
     #
     if (! exists($params->{photometric})) {
         WARN ("Parameter 'photometric' has not been set. The default value is 'rgb'");
@@ -602,15 +597,6 @@ sub readConfPyramid {
     if ($tagformat eq '') {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
-    }
-    # TODO : to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-    if ($tagformat eq 'TIFF_INT8') {
-        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-        $tagformat = 'TIFF_RAW_INT8';
-    }
-    if ($tagformat eq 'TIFF_FLOAT32') {
-        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-        $tagformat = 'TIFF_RAW_FLOAT32';
     }
 
     # SAMPLESPERPIXEL  
