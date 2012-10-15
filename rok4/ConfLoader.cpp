@@ -939,7 +939,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         if ( !pElem  || ! ( pElem->GetText() ) ) {
             LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
             return NULL;
-        } else if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
+        } 
+	if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
             LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
             return NULL;
         }
