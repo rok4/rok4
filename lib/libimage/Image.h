@@ -73,6 +73,9 @@ class Image {
         const int channels;
 
     private:
+        /** Masque de l'image */
+        Image* mask;
+        
         /** 
          * BoundingBox de l'image dans son système de coordonnées. Celle-ci correspond 
          * aux coordonnées du coin suppérieur gauche et du coin inférieur droit de l'image.
@@ -80,9 +83,8 @@ class Image {
          */
         BoundingBox<double> bbox;
 
-        /** Resolution en x de l'image*/
+        /** Resolutions en x et y de l'image */
         double resx;
-        /** Resolution en y de l'image*/
         double resy;
         /** Calcul des resolutions en x et en y, calculées à partir des dimensions et de la BoudingBox **/
         void computeResxy() {
@@ -90,21 +92,35 @@ class Image {
             resy=(bbox.ymax - bbox.ymin)/double(height);
         }
 
-    public:
-        /** Affectation d'une bbox
-         * Necessite la mise a jour des emprises 
-         */
-        inline void setbbox(BoundingBox<double> box) {bbox=box;computeResxy();}
 
-        inline double getresx() const {return resx;}
-        inline double getresy() const {return resy;}
+    public:
+        
+        /** Bounding box */
+        inline void setbbox(BoundingBox<double> box) {
+            bbox = box;
+            computeResxy();
+        }
+        BoundingBox<double> inline getbbox() const {return bbox;}
 
         double inline getxmin() const {return bbox.xmin;}
         double inline getymax() const {return bbox.ymax;}
         double inline getxmax() const {return bbox.xmax;}
         double inline getymin() const {return bbox.ymin;}
 
-        BoundingBox<double> inline getbbox() const {return bbox;}
+        /** Resolutions */
+        inline double getresx() const {return resx;}
+        inline double getresy() const {return resy;}
+
+        /** Masque */
+        Image* getMask() {return mask;}
+        bool setMask(Image* newMask) {
+            if (newMask->width != width || newMask->height != height || newMask->channels != 1) {
+                LOGGER_ERROR("Unvalid mask");
+                return false;
+            }
+            mask = newMask;
+            return true;
+        }
 
         /** Fonctions de passage terrain <-> image */
         int inline x2c(double x) {return lround((x-bbox.xmin)/resx);}
@@ -116,20 +132,18 @@ class Image {
         double inline getPhasex() {
             double intpart;
             double phi=modf( bbox.xmin/resx, &intpart);
-            if (phi > 0.5) {phi -= 1.0;}
-            if (phi < -0.5) {phi += 1.0;}
+            if (phi < 0.) {phi += 1.0;}
             return phi;
         }
 
         double inline getPhasey() {
             double intpart;
             double phi=modf(bbox.ymax/resy, &intpart);
-            if (phi > 0.5) {phi -= 1.0;}
-            if (phi < -0.5) {phi += 1.0;}
+            if (phi < 0.) {phi += 1.0;}
             return phi;
         }
         
-        /* Teste si 2 images sont superposables : compatibilité en phase/résolution X/Y*/
+        /** Teste si 2 images sont superposables : compatibilité en phase/résolution X/Y */
         bool isCompatibleWith(Image* pImage) {
             double epsilon_x=__min(getresx(), pImage->getresx())/100.;
             double epsilon_y=__min(getresy(), pImage->getresy())/100.;
@@ -145,11 +159,11 @@ class Image {
         
         /** Constructeurs */
         Image(int width, int height, double resx, double resy, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
-            width(width), height(height), resx(resx), resy(resy), channels(channels), bbox(bbox) {
+            width(width), height(height), resx(resx), resy(resy), channels(channels), bbox(bbox), mask(NULL) {
             }
             
         Image(int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.)) :
-            width(width), height(height), channels(channels), bbox(bbox) {
+            width(width), height(height), channels(channels), bbox(bbox), mask(NULL) {
                     computeResxy();
             }
             
@@ -186,6 +200,20 @@ class Image {
          * lors de la destruction d'un pointeur Image.
          */
         virtual ~Image() {};
+
+        /** Fonction d'export des informations sur l'image (pour le débug) */
+        void print() {
+            LOGGER_INFO("------ Image export ------");
+            LOGGER_INFO("width = " << width << ", height = " << height);
+            LOGGER_INFO("samples per pixel = " << channels);
+            LOGGER_INFO("bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax);
+            LOGGER_INFO("x resolution = " << resx << ", y resolution = " << resy);
+            if (mask == NULL) {
+                LOGGER_INFO("no mask\n");
+            } else {
+                LOGGER_INFO("own a mask\n");
+            }
+        }
 };
 
 

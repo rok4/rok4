@@ -181,7 +181,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         if ( dst_crs.validateBBox ( bbox ) ) {
             return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
         } else {
-            extendedCompoundImageFactory facto;
+            ExtendedCompoundImageFactory facto;
             std::vector<Image*> images;
             LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
             BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
@@ -212,7 +212,8 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
             int ndvalue[this->channels];
             memset(ndvalue,0,this->channels*sizeof(int));
             levels[l]->getNoDataValue(ndvalue);
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,levels[l]->getSampleFormat(),0, false );
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,
+                                                       levels[l]->getSampleFormat(),0);
         }
 
     }

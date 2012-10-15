@@ -46,10 +46,6 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-uint8_t white[4] = {255,255,255,255};
-uint8_t uintNodataAverage = 254;
-float floatNodataLimit = -80000;
-
 /**
 @fn _getline(T* buffer, int line)
 @brief Remplissage iteratif d'une ligne
@@ -66,9 +62,9 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         buffer[i]=(T)nodata[i%channels];
     }
     
-    double y=l2y(line);
+    double y = l2y(line);
     
-    for (i=0;i<(int)images.size();i++){
+    for (i=0; i < (int)images.size(); i++){
         // On ecarte les images qui ne se trouvent pas sur la ligne
         // On evite de comparer des coordonnees terrain (comparaison de flottants)
         // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
@@ -88,15 +84,15 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         LOGGER_DEBUG(i<<" "<<line<<" "<<images[i]->y2l(y));
         images[i]->getline(buffer_t,images[i]->y2l(y));
 
-        if (masks.empty()) {
-            memcpy(&buffer[c0*channels],&buffer_t[c2*channels],(c1-c0)*channels*sizeof(T));
+        if (masks[i] == NULL) {
+            memcpy(&buffer[c0*channels], &buffer_t[c2*channels], (c1-c0)*channels*sizeof(T));
         } else {
             
             uint8_t* buffer_m = new uint8_t[masks[i]->width];
-
             masks[i]->getline(buffer_m,masks[i]->y2l(y));
-            for (int j=0;j<c1-c0;j++) {
-                if (buffer_m[c2+j]>=127) {  // Seuillage subjectif du masque
+            
+            for (int j=0; j < c1-c0; j++) {
+                if (buffer_m[c2+j]) {  // Seuillage subjectif du masque
                     if (c2+j >= images[i]->width) {
                         // On dépasse la largeur de l'image courante (arrondis). On passe.
                         // Une sortie pour vérifier si ce cas se représente malgré les corrections
@@ -114,18 +110,6 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
     return width*channels*sizeof(T);
 }
 
-bool ExtendedCompoundImage::isNodata(uint8_t* pixel) {
-    int average = 0;
-    for (int i = 0; i<channels; i++) {
-        average += pixel[i];
-    }
-    return ((float)average/channels > (float)uintNodataAverage);
-}
-
-bool ExtendedCompoundImage::isNodata(float* pixel) {
-    if (channels > 1) return false;
-    return (pixel[0] < floatNodataLimit);
-}
 
 /** Implementation de getline pour les uint8_t */
 int ExtendedCompoundImage::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
@@ -133,42 +117,24 @@ int ExtendedCompoundImage::getline(uint8_t* buffer, int line) { return _getline(
 /** Implementation de getline pour les float */
 int ExtendedCompoundImage::getline(float* buffer, int line)
 {
-    if (sampleformat==1){     //uint8_t
+    if (sampleformat == 1) { //uint8_t
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline(buffer_t,line);
         convert(buffer,buffer_t,width*channels);
         delete [] buffer_t;
         return width*channels;
     }
-    else {           //float
+    else { //float
         return _getline(buffer, line);
     }
 }
 
-BoundingBox<double> ExtendedCompoundImage::getRealBbox() {
-    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
-    
-    for (uint i = mirrors; i < images.size(); i++) {
-        if (images.at(i)->getxmin()<xmin)  xmin=images.at(i)->getxmin();
-        if (images.at(i)->getxmax()>xmax)  xmax=images.at(i)->getxmax();
-        if (images.at(i)->getymin()<ymin)  ymin=images.at(i)->getymin();
-        if (images.at(i)->getymax()>ymax)  ymax=images.at(i)->getymax();
-    }
-
-    return BoundingBox<double>(xmin,ymin,xmax,ymax);
-}
-
 #define epsilon 0.001
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, 
-                                                                                 int height, 
-                                                                                 int channels, 
-                                                                                 BoundingBox<double> bbox, 
-                                                                                 std::vector<Image*>& images, 
-                                                                                 int* nodata, 
-                                                                                 uint16_t sampleformat, 
-                                                                                 uint mirrors,
-                                                                                 bool nowhite = false)
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(std::vector<Image*>& images,
+                                                                                 int* nodata, uint16_t sampleformat,
+                                                                                 uint mirrors)
 {
     uint i;
 
@@ -189,13 +155,85 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
         }
     }
 
-    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors,nowhite);
+    // Rectangle englobant des images d entree
+    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
+    for (unsigned int j=0;j<images.size();j++) {
+        if (images.at(j)->getxmin()<xmin)  xmin=images.at(j)->getxmin();
+        if (images.at(j)->getymin()<ymin)  ymin=images.at(j)->getymin();
+        if (images.at(j)->getxmax()>xmax)  xmax=images.at(j)->getxmax();
+        if (images.at(j)->getymax()>ymax)  ymax=images.at(j)->getymax();
+    }
+
+    int w=(int)((xmax-xmin)/(*images.begin())->getresx()+0.5);
+    int h=(int)((ymax-ymin)/(*images.begin())->getresy()+0.5);
+
+    return new ExtendedCompoundImage(w,h,images.at(0)->channels,BoundingBox<double>(xmin,ymin,xmax,ymax),
+                                     images,nodata,sampleformat, mirrors);
 }
 
-ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks, int* nodata, uint16_t sampleformat, uint mirrors,bool nowhite = false)
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(std::vector<Image*>& images,
+                                                                                 std::vector<Image*>& masks,
+                                                                                 int* nodata, uint16_t sampleformat,
+                                                                                 uint mirrors)
 {
-    // TODO : controler que les images et les masques sont superposables a l'image
-    return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat,mirrors,nowhite);
+    // TODO vérifier la correspondance entre les masques et les images : BBOX
+    
+    uint i;
+
+    if (images.size()==0){
+        LOGGER_ERROR("Creation d'une image composite sans image");
+        return NULL;
+    }
+
+    for (i=0;i<images.size()-1;i++)
+    {
+        if (! images[i]->isCompatibleWith(images[i+1])) {
+            LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
+                "- image " << i << " : " << images[i]->getresx() << "," << images[i]->getresy() << " " << images[i]->getPhasex() << " " << images[i]->getPhasey() << "\n" <<
+                "- image " << i+1 << " : " << images[i+1]->getresx() << "," << images[i+1]->getresy() << " " << images[i+1]->getPhasex() << " " << images[i+1]->getPhasey() << "\n"
+
+            );
+            return NULL;
+        }
+    }
+
+    // Rectangle englobant des images d entree
+    double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
+    for (unsigned int j=0;j<images.size();j++) {
+        if (images.at(j)->getxmin()<xmin)  xmin=images.at(j)->getxmin();
+        if (images.at(j)->getymin()<ymin)  ymin=images.at(j)->getymin();
+        if (images.at(j)->getxmax()>xmax)  xmax=images.at(j)->getxmax();
+        if (images.at(j)->getymax()>ymax)  ymax=images.at(j)->getymax();
+    }
+
+    int w=(int)((xmax-xmin)/(*images.begin())->getresx()+0.5);
+    int h=(int)((ymax-ymin)/(*images.begin())->getresy()+0.5);
+    
+    return new ExtendedCompoundImage(w,h,images.at(0)->channels,BoundingBox<double>(xmin,ymin,xmax,ymax),
+                                     images,masks,nodata,sampleformat, mirrors);
+}
+
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(int width,
+                                                                                 int height,
+                                                                                 int channels,
+                                                                                 BoundingBox<double> bbox,
+                                                                                 std::vector<Image*>& images,
+                                                                                 int* nodata,
+                                                                                 uint16_t sampleformat,
+                                                                                 uint mirrors)
+{
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat, mirrors);
+}
+
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(int width,
+                                                                                 int height,
+                                                                                 int channels,
+                                                                                 BoundingBox<double> bbox, std::vector<Image*>& images, std::vector<Image*>& masks,
+                                                                                 int* nodata,
+                                                                                 uint16_t sampleformat,
+                                                                                 uint mirrors)
+{
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,masks,nodata,sampleformat, mirrors);
 }
 
 /**
@@ -207,34 +245,47 @@ ExtendedCompoundImage* extendedCompoundImageFactory::createExtendedCompoundImage
 */
 
 int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
-  memset(buffer,0,width*channels);
-  // Rappel de l'hypothese : les miroirs sont rangés en premier parmi les images de l'ECI
-  for (uint i = ECI->getMirrors(); i < ECI->getimages()->size(); i++){
+    
+    memset(buffer,0,width);
+    
+    // Rappel : les miroirs sont rangés en premier parmi les images de l'ECI
+    for (uint i = ECI->getMirrors(); i < ECI->getmasks()->size(); i++) {
+        /* On ecarte les images qui ne se trouvent pas sur la ligne
+         * On evite de comparer des coordonnees terrain (comparaison de flottants)
+         * Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
+         */
+        if (y2l(ECI->getmasks()->at(i)->getymin()) <= line || y2l(ECI->getmasks()->at(i)->getymax()) > line){
+            continue;
+        }
+        if (ECI->getmasks()->at(i)->getxmin() >= getxmax() || ECI->getmasks()->at(i)->getxmax() <= getxmin()){
+            continue;
+        }
 
-    // On ecarte les images qui ne se trouvent pas sur la ligne
-    // On evite de comparer des coordonnees terrain (comparaison de flottants)
-    // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
-    if (y2l(ECI->getimages()->at(i)->getymin()) <= line || y2l(ECI->getimages()->at(i)->getymax()) > line){
-      continue;
-    }
-    if (ECI->getimages()->at(i)->getxmin() >= getxmax() || ECI->getimages()->at(i)->getxmax() <= getxmin()){
-      continue;
-    }
+        // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+        int c0=__max(0,x2c(ECI->getmasks()->at(i)->getxmin()));
+        // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+        int c1=__min(width,x2c(ECI->getmasks()->at(i)->getxmax()));
+        
+        // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
+        int c2=-(__min(0,x2c(ECI->getmasks()->at(i)->getxmin())));
 
-    // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-    int c0=__max(0,x2c(ECI->getimages()->at(i)->getxmin()));
-    // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-    int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
-
-    if (ECI->getmasks()->at(i) == NULL) {
-        memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
-    } else {
-        // ECI->getmasks()->at(i)->getline(?)
-        double y=l2y(line);
-        memset(&buffer[c0*channels],255,(c1-c0)*channels*sizeof(uint8_t));
+        if (ECI->getmasks()->at(i) == NULL) {
+            memset(&buffer[c0], 255, c1-c0);
+        } else {
+            // Récupération du masque de l'image courante de l'ECI.
+            uint8_t* buffer_m = new uint8_t[ECI->getmasks()->at(i)->width];
+            ECI->getmasks()->at(i)->getline(buffer_m,ECI->getmasks()->at(i)->y2l(l2y(line)));
+            // On ajoute au masque actuel (on écrase si la valeur est différente de 0)
+            for (int j = 0; j < c1-c0; j++) {
+                if (buffer_m[c2+j]) {
+                    memcpy(&buffer[c0+j],&buffer_m[c2+j],1);
+                }
+            }
+            delete buffer_m;
+        }
     }
-  }
-  return width*channels*sizeof(uint8_t);
+    
+    return width;
 }
 
 /** Implementation de getline pour les uint8_t */
