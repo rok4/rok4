@@ -58,3 +58,5 @@ my $script = BE4::Script->new({
 ok (defined $script, "Script Object created");
 
 ######################################################
+
+done_testing();

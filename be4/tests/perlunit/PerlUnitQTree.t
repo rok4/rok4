@@ -63,3 +63,5 @@ my $qtree = BE4::QTree->new({
 ok (defined $qtree, "QTree Object created");
 
 ######################################################
+
+done_testing();

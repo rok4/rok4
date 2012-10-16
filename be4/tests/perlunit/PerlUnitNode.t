@@ -74,3 +74,5 @@ my $node = BE4::Node->new({
 ok (defined $node, "Node Object created");
 
 ######################################################
+
+done_testing();

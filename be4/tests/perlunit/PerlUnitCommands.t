@@ -56,3 +56,5 @@ my $commands = BE4::Commands->new($pyramid);
 ok (defined $commands, "Commands Object created");
 
 ######################################################
+
+done_testing();

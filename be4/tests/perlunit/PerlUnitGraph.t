@@ -65,3 +65,5 @@ my $graph = BE4::Graph->new([
 ok (defined $graph, "Graph Object created");
 
 ######################################################
+
+done_testing();

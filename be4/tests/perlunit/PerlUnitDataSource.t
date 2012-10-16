@@ -36,34 +36,65 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+
 use Test::More;
 use Test::Output qw( stdout_is );
 
 # My tested class
-use BE4::Forest;
-
-#Other Used Class
-use BE4::Graph;
-use BE4::Pyramid;
-use BE4::Commands;
-use BE4::Script;
+use BE4::DataSource;
 
 ######################################################
 
-# Forest Object Creation
+# DataSource creation
 
-my $pyramid = BE4::Pyramid->new();
-my $commands = BE4::Commands->new();
-my $graph = BE4::Graph->new();
-my $script = BE4::Script->new();
+my $objDSimage = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../images/BDORTHO/"
+    }
+);
+ok (defined $objDSimage, "DataSource (just image) created");
 
-my $forest = BE4::Forest->new({
-});
+my $objDSharvest = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:WGS84G",
+        extent =>  $Bin."/../shape/Polygon.txt",
+        wms_layer   => "layer",
+        wms_url => "http://url/wms/",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff",
+    }
+);
+ok (defined $objDSharvest, "DataSource (just harvesting) created");
 
-ok (defined $forest, "Forest Object created");
+######################################################
+
+# Bad parameters
+
+my $error = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../images/"
+    }
+);
+ok (! defined $error, "Wrong data source detected");
+undef $error;
+
+$error = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+    }
+);
+ok (! defined $error, "No data source detected");
+undef $error;
 
 ######################################################
 
 done_testing();
-
 
