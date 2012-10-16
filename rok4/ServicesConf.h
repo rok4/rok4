@@ -42,13 +42,14 @@
 #include <vector>
 #include "MetadataURL.h"
 #include "CRS.h"
+#include "Keyword.h"
 
 class ServicesConf {
 private:
     // WMS & WMTS
     std::string title;
     std::string abstract;
-    std::vector<std::string> keyWords;
+    std::vector<Keyword> keyWords;
     std::string serviceProvider;
     std::string fee;
     std::string accessConstraint;
@@ -87,7 +88,7 @@ private:
   
 public:
 
-    ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<std::string> keyWords,
+    ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<Keyword> keyWords,
                    std::string serviceProvider, std::string fee, std::string accessConstraint, unsigned int layerLimit,
                    unsigned int maxWidth, unsigned int maxHeight, unsigned int maxTileX, unsigned int maxTileY, std::vector<std::string> formatList,std::vector<CRS> globalCRSList ,  std::string serviceType,
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
@@ -111,8 +112,8 @@ public:
     std::string inline getFee() const {
         return fee;
     }
-    std::vector<std::string> inline getKeyWords() const {
-        return keyWords;
+    std::vector<Keyword> * getKeyWords() {
+        return &keyWords;
     }
     bool inline isPostEnabled() {
         return postMode;

@@ -48,6 +48,7 @@
 #include <proj_api.h>
 #include <csignal>
 
+#include "config.h"
 #include "intl.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"

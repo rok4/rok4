@@ -45,7 +45,7 @@ configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
 add_subdirectory(po)
 
-set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -108,8 +108,6 @@ if(UNITTEST)
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
     endif(XSLTPROC_FOUND)
     
-
-
 endif(UNITTEST)
 
 

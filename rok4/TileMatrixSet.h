@@ -43,6 +43,7 @@
 #include <map>
 #include "TileMatrix.h"
 #include "CRS.h"
+#include "Keyword.h"
 
 /**
 * @class TileMatrixSet
@@ -54,7 +55,7 @@ private:
     std::string id;
     std::string title;
     std::string abstract;
-    std::vector<std::string> keyWords;
+    std::vector<Keyword> keyWords;
     CRS crs;
     std::map<std::string, TileMatrix> tmList;
 public:
@@ -66,7 +67,7 @@ public:
     std::string getAbstract() {
         return abstract;
     }
-    std::vector<std::string>* getKeyWords() {
+    std::vector<Keyword>* getKeyWords() {
         return &keyWords;
     }
     CRS getCrs() const {
@@ -75,7 +76,7 @@ public:
     //TODO
     int best_scale ( double resolution_x, double resolution_y );
 
-    TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<std::string> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
+    TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
             id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
 
 
