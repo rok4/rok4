@@ -233,12 +233,15 @@ sub getDirImage {
     return $self->{dir_image};
 }
 
-
 sub getDirNodata {
     my $self = shift;
     return $self->{dir_nodata};
 }
 
+sub getLimits {
+    my $self = shift;
+    return ($self->{limit}[0],$self->{limit}[1],$self->{limit}[2],$self->{limit}[3]);
+}
 
 #
 =begin nd

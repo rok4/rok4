@@ -44,6 +44,8 @@ WriteMakefile(
                 "LWP"              => 0,
                 #
                 "Math::BigFloat"   => 0,
+                #
+                "Test::More"   => 0,
                 }
     );
 # notes :

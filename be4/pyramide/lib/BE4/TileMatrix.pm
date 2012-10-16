@@ -121,7 +121,7 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    # parameters mandatoy !
+    # parameters mandatory !
     return FALSE if (! exists($params->{id}) || ! defined ($params->{id}));
     return FALSE if (! exists($params->{resolution}) || ! defined ($params->{resolution}));
     return FALSE if (! exists($params->{topLeftCornerX}) || ! defined ($params->{topLeftCornerX}));

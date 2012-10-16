@@ -108,8 +108,6 @@ if(UNITTEST)
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
     endif(XSLTPROC_FOUND)
     
-
-
 endif(UNITTEST)
 
 
