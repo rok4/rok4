@@ -1153,7 +1153,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1230,18 +1230,55 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         return false;
     }
 
-    pElem=hRoot.FirstChild ( "reprojectionCapability" ).Element();
+    pElem=hRoot.FirstChild ( "WMTSSupport" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de reprojectionCapability => reprojectionCapability = true" ) <<std::endl;
-        reprojectionCapability = true;
+        std::cerr<<_ ( "Pas de WMTSSupport => supportWMTS = true" ) <<std::endl;
+        supportWMTS = true;
     } else {
         std::string strReprojection ( pElem->GetText() );
-        if ( strReprojection=="true" ) reprojectionCapability=true;
-        else if ( strReprojection=="false" ) reprojectionCapability=false;
+        if ( strReprojection=="true" ) supportWMTS=true;
+        else if ( strReprojection=="false" ) supportWMTS=false;
         else {
-            std::cerr<<_ ( "Le reprojectionCapability [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            std::cerr<<_ ( "Le WMTSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
             return false;
         }
+    }
+    
+    pElem=hRoot.FirstChild ( "WMSSupport" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de WMSSupport => supportWMS = true" ) <<std::endl;
+        supportWMS = true;
+    } else {
+        std::string strReprojection ( pElem->GetText() );
+        if ( strReprojection=="true" ) supportWMS=true;
+        else if ( strReprojection=="false" ) supportWMS=false;
+        else {
+            std::cerr<<_ ( "Le WMSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            return false;
+        }
+    }
+    
+    if (!supportWMS && !supportWMTS) {
+        std::cerr<<_ ( "WMTS et WMS desactives, extinction du serveur" ) <<std::endl;
+        return false;
+    }
+    
+    if (supportWMS) {
+        pElem=hRoot.FirstChild ( "reprojectionCapability" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            std::cerr<<_ ( "Pas de reprojectionCapability => reprojectionCapability = true" ) <<std::endl;
+            reprojectionCapability = true;
+        } else {
+            std::string strReprojection ( pElem->GetText() );
+            if ( strReprojection=="true" ) reprojectionCapability=true;
+            else if ( strReprojection=="false" ) reprojectionCapability=false;
+            else {
+                std::cerr<<_ ( "Le reprojectionCapability [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+                return false;
+            }
+        }
+    } else {
+        reprojectionCapability = false;
     }
 
     pElem=hRoot.FirstChild ( "servicesConfigFile" ).Element();
@@ -1647,16 +1684,16 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
 }
 
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
-                                     int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& reprojectionCapability,
-                                     std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
-                                     std::string &styleDir, std::string& socket, int& backlog ) {
+                                     int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
+                                     bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, 
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {

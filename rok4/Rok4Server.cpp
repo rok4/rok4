@@ -145,15 +145,19 @@ void* Rok4Server::thread_loop ( void* arg ) {
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog ) :
+                         std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ) {
+    running ( false ), notFoundError ( NULL ), supportWMTS(supportWMTS), supportWMS(supportWMS) {
 
-    LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
-    buildWMSCapabilities();
-    LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
-    buildWMTSCapabilities();
+    if (supportWMS) {
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
+        buildWMSCapabilities();
+    }
+    if (supportWMTS) {
+        LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
+        buildWMTSCapabilities();
+    }
 }
 
 Rok4Server::~Rok4Server() {
@@ -232,7 +236,9 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
 
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
-
+    if (!supportWMS) {
+        // Return Error 
+    }
     std::string version;
     DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
     if ( errorResp ) {
@@ -253,7 +259,9 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 }
 
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
-
+    if (!supportWMTS) {
+        // Return Error
+    }
     std::string version;
     DataStream* errorResp = request->getCapWMTSParam ( servicesConf,version );
     if ( errorResp ) {
@@ -502,6 +510,8 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "gettile" ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
+    } else if ( request->request == "getversion" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
@@ -522,9 +532,9 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 /** Separe les requetes WMS et WMTS */
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if ( request->service == "wms" ) {
+    if ( request->service == "wms" && supportWMS ) {
         processWMS ( request, fcgxRequest );
-    } else if ( request->service=="wmts" ) {
+    } else if ( request->service=="wmts" && supportWMTS ) {
         processWMTS ( request, fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
