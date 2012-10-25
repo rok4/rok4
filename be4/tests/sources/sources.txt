@@ -1,0 +1,56 @@
+[ level_6 ]
+
+srs = EPSG:3857
+extent = -19981848,-12932243,19981848,12932243
+
+wms_layer   = LAYER1
+wms_url     = http://url/server/wms
+wms_version = 1.3.0
+wms_request = getMap
+wms_format  = image/tiff
+wms_style  = line
+wms_bgcolor  = 0x80BBDA
+wms_transparent  = false
+min_size = 256000
+
+[ level_5 ]
+
+srs = EPSG:3857
+extent = -19981848,-12932243,19981848,12932243
+
+wms_layer   = LAYER2
+wms_url     = http://url/server/wms
+wms_version = 1.3.0
+wms_request = getMap
+wms_format  = image/png
+
+[ level_11 ]
+
+srs = EPSG:3857
+extent = -19981848,-12932243,19981848,12932243
+
+wms_layer   = LAYER3
+wms_url     = http://url/server/wms
+wms_version = 1.3.0
+wms_request = getMap
+wms_format  = image/png
+wms_style  = line
+wms_bgcolor  = 0x80BBDA
+wms_transparent  = false
+min_size = 256000
+max_width = 1024
+max_height = 1024
+
+[ level_8 ]
+
+srs = EPSG:3857
+extent = -19981848,-12932243,19981848,12932243
+
+wms_layer   = LAYER4
+wms_url     = http://url/server/wms
+wms_version = 1.3.0
+wms_request = getMap
+wms_format  = image/png
+min_size = 256000
+max_width = 1024
+max_height = 1024

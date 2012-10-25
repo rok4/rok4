@@ -666,6 +666,10 @@ sub readConfPyramid {
                                            $tagtm );
         #
         my $levelOrder = $self->getOrderfromID($tagtm);
+        if (! defined $levelOrder) {
+            ERROR ("Level ID in the old pyramid's descriptor unknown by the TMS");
+            return FALSE;
+        }
         my $objLevel = BE4::Level->new({
             id                => $tagtm,
             order             => $levelOrder,
