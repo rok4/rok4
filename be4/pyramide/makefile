@@ -95,7 +95,7 @@ buildhtml:
 	@(for f in `find lib -name "*.pm"` ;\
             do \
               h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-              pod2html --index --title=$$f --header --infile=$$f --outfile=docs/Html/$$h ;\
+              pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
           done)
 	@(for f in `find bin -name "*.pl"` ;\
           do \
