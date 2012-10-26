@@ -119,7 +119,7 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[162]  = {
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
     82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
-    83,1,   3, 0,   3, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 3      | 1 (Int8)
+    83,1,   3, 0,   4, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 4      | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0,                  // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
     1, 0,   1, 0,   1, 0,   1, 0                   // 154| 4x 8 sur 16 bits (pointés par les samplesperpixels)
@@ -195,7 +195,7 @@ static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[162]  = {
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
     82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
-    83,1,   3, 0,   3, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 3      | 1 (Int8)
+    83,1,   3, 0,   4, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 4      | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0,                  // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
     1, 0,   1, 0,   1, 0,   1, 0                   // 154| 4x 8 sur 16 bits (pointés par les samplesperpixels)
@@ -268,7 +268,7 @@ static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[162]  = {
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
     82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
-    83,1,   3, 0,   3, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 3      | 1 (Int8)
+    83,1,   3, 0,   4, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 4      | 1 (Int8)
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0,                  // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
     1, 0,   1, 0,   1, 0,   1, 0                   // 154| 4x 8 sur 16 bits (pointés par les samplesperpixels)
@@ -341,7 +341,7 @@ static const uint8_t TIFF_HEADER_PKB_INT8_RGBA[162]  = {
     22,1,   4, 0,   1, 0, 0, 0,   255,255,255,255, // 94 | ROWSPERSTRIP    (278)| LONG  (4) | 1      | 2^32-1 = single strip tiff
     23,1,   4, 0,   1, 0, 0, 0,   0, 0, 4, 0,      // 106| STRIPBYTECOUNTS (279)| LONG  (4) | 1      | 256 * 256 * 4
     82,1,   3, 0,   1, 0, 0, 0,   1, 0, 0, 0,      // 118| EXTRASAMPLES    (338)| SHORT (3) |        | 1 (ASSOCALPHA)
-    83,1,   3, 0,   3, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 3      | pointeur vers un bloc mémoire 1,1,1,1
+    83,1,   3, 0,   4, 0, 0, 0,   154, 0, 0, 0,    // 130| SAMPLEFORMAT    (339)| SHORT (3) | 4      | pointeur vers un bloc mémoire 1,1,1,1
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0,                  // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
     1, 0,   1, 0,   1, 0,   1, 0                   // 154| 4x 8 sur 16 bits (pointés par les samplesperpixels)
