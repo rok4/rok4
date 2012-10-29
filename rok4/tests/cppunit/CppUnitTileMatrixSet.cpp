@@ -67,8 +67,8 @@ protected:
     std::string id;
     std::string title;
     std::string abstract;
-    std::vector<std::string> keyWords;
-    std::vector<std::string> keyWords2;
+    std::vector<Keyword> keyWords;
+    std::vector<Keyword> keyWords2;
     CRS* crs;
     std::map<std::string,TileMatrix> tmList;
     std::map<std::string,TileMatrix> tmList2;
@@ -100,9 +100,9 @@ void CppUnitTileMatrixSet::setUp() {
     id="LAMB93_10cm";
     title="Lambert93 10cm";
     abstract="En Lambert93 couche la plus basse résolution 10cm";
-    keyWords.push_back ( "Lambert93" );
-    keyWords.push_back ( "10cm" );
-    keyWords2.push_back ( "Lambert93" );
+    keyWords.push_back ( Keyword("Lambert93",std::map<std::string,std::string>()) );
+    keyWords.push_back ( Keyword("10cm",std::map<std::string,std::string>()));
+    keyWords2.push_back ( Keyword("Lambert93",std::map<std::string,std::string>()));
     crs = new CRS ( "IGNF:LAMB93" );
     tmList.insert ( std::pair<std::string, TileMatrix> ( tm1->getId(),*tm1 ) );
     tmList.insert ( std::pair<std::string, TileMatrix> ( tm2->getId(),*tm2 ) );
