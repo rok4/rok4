@@ -60,6 +60,7 @@ my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
         <tileMatrix>__ID__</tileMatrix>
         <baseDir>__DIRIMG__</baseDir>
+<!-- __MASK__ -->
 <!-- __MTD__ -->
         <tilesPerWidth>__TILEW__</tilesPerWidth>
         <tilesPerHeight>__TILEH__</tilesPerHeight>
@@ -77,11 +78,17 @@ my $STRLEVELTMPLT = <<"TLEVEL";
 <!-- __LEVELS__ -->
 TLEVEL
 
+my $STRLEVELTMPLTMASK = <<"TMASK";
+        <mask>
+            <baseDir>__DIRMASK__</baseDir>
+        </mask>
+TMASK
+
 my $STRLEVELTMPLTMORE = <<"TMTD";
-            <metadata type='INT32_DB_LZW'>
-                <baseDir>__DIRMTD__</baseDir>
-                <format>__FORMATMTD__</format>
-            </metadata>
+        <metadata type='INT32_DB_LZW'>
+            <baseDir>__DIRMTD__</baseDir>
+            <format>__FORMATMTD__</format>
+        </metadata>
 TMTD
 
 ################################################################################
@@ -307,6 +314,16 @@ sub exportToXML {
     my $maxcol   =  $self->{limit}[3];
     $levelXML =~ s/__MAXCOL__/$maxcol/;
 
+    # mask
+    if (defined $self->{dir_mask}) {
+        $levelXML =~ s/<!-- __MASK__ -->/$STRLEVELTMPLTMASK/;
+
+        my $dirmask   = $self->{dir_mask};
+        $levelXML =~ s/__DIRMASK__/$dirmask/;
+    } else {
+        $levelXML =~ s/<!-- __MASK__ -->\n//;
+    }
+    
     # metadata
     if (defined $self->{dir_metadata}) {
         $levelXML =~ s/<!-- __MTD__ -->/$STRLEVELTMPLTMORE/;

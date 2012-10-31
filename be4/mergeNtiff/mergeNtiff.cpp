@@ -300,14 +300,13 @@ int readFileLine(std::ifstream& file, char* imageFileName, char* maskFileName, B
     
         // Récupération d'un éventuel masque
         std::getline(file,str);
-        if ((std::sscanf(str.c_str(),"%s %s", type, maskFileName)) == 2) {
-            if (memcmp(type,"MSK",3)) {
-                /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
-                 * C'est en fait l'image suivante. On doit donc remettre le pointeur de
-                 * manière à ce que cette image soit lue au prochain appel de readFileLine
-                 */
-                file.seekg(pos);
-            }
+        if ((std::sscanf(str.c_str(),"%s %s", type, maskFileName)) != 2 || memcmp(type,"MSK",3)) {
+            /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
+             * C'est en fait l'image suivante (ou une erreur. On doit donc remettre le
+             * pointeur de manière à ce que cette image soit lue au prochain appel de
+             * readFileLine
+             */
+            file.seekg(pos);
         }
         
     }
@@ -320,9 +319,8 @@ int readFileLine(std::ifstream& file, char* imageFileName, char* maskFileName, B
 * Chargement des images depuis le fichier texte donné en parametre
 */
 
-int loadImages(char* imageListFilename,
-               LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
-               std::vector<LibtiffImage*>* pImageIn, std::vector<LibtiffImage*>* pMaskIn)
+int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
+               std::vector<LibtiffImage*>* pImageIn)
 {
     char imageFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     char maskFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
@@ -346,14 +344,14 @@ int loadImages(char* imageListFilename,
         return -1;
     }
 
-    *ppImageOut=factory.createLibtiffImage(imageFileName, bbox, width, height,resx, resy, samplesperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
+    *ppImageOut = factory.createLibtiffImage(imageFileName, bbox, width, height,resx, resy, samplesperpixel, bitspersample, photometric,COMPRESSION_NONE,16);
 
-    if (*ppImageOut==NULL) {
+    if (*ppImageOut == NULL) {
         LOGGER_ERROR("Impossible de creer l'image " << imageFileName);
         return -1;
     }
 
-    *ppMaskOut=factory.createLibtiffImage(maskFileName, bbox, width, height,resx, resy, 1, 8, PHOTOMETRIC_MASK,COMPRESSION_NONE,16);
+    *ppMaskOut = factory.createLibtiffImage(maskFileName, bbox, width, height,resx, resy, 1, 8, PHOTOMETRIC_MASK,COMPRESSION_NONE,16);
 
     if (*ppMaskOut==NULL) {
         LOGGER_ERROR("Impossible de creer le masque " << maskFileName);
@@ -371,7 +369,6 @@ int loadImages(char* imageListFilename,
             return -1;
         }
         lig++;
-        pImageIn->push_back(pImage);
 
         if (maskFileName != NULL) {
             lig++;
@@ -380,16 +377,16 @@ int loadImages(char* imageListFilename,
                 LOGGER_ERROR("Impossible de creer un masque a partir de " << maskFileName);
                 return -1;
             }
-            pMaskIn->push_back(pMask);
-        } else {
-            /* Attention, on ajoute des pointeurs nuls dans le cas où le masque n'existe pas
-             * pour garder une correspondance entre les deux tableau pImageIn et pMaskIn.
-             * Il faudra bien faire attention par la suite. En fait, lorsque le masque sera nul,
-             * on considérera que l'image est pleine.
-             */
-            pMaskIn->push_back(NULL);
+            
+            if (! pImage->setMask(pMask)) {
+                LOGGER_ERROR("Cannot add mask to the input LibTiffImage");
+                return -1;
+            }
         }
+        
+        pImageIn->push_back(pImage);
     }
+    
     if (nb != -1) {
         LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << lig);
         return -1;
@@ -412,51 +409,25 @@ int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
 {
     for (unsigned int i=0; i < ImageIn.size(); i++) {
         if (ImageIn.at(i)->getresx()*ImageIn.at(i)->getresy()==0.) {    
-            LOGGER_ERROR("Resolution de l image source " << i+1 << " sur " << ImageIn.size() << " egale a 0");
+            LOGGER_ERROR("Source image " << i+1 << " is not valid (resolutions)");
+            ImageIn.at(i)->print();
             return -1;
         }
         if (ImageIn.at(i)->channels != pImageOut->channels){
-            LOGGER_ERROR("Nombre de canaux de l image source " << i+1 << " sur " << ImageIn.size() << " differente de l image de sortie");
+            LOGGER_ERROR(
+                "Source image " << i+1 << " is not valid (samples per pixel have to be " << pImageOut->channels << ")");
+            ImageIn.at(i)->print();
             return -1;
         }
     }
     if (pImageOut->getresx()*pImageOut->getresy()==0.){
-        LOGGER_ERROR("Resolution de l image de sortie egale a 0 " << pImageOut->getfilename());
+        LOGGER_ERROR("Output image (" << pImageOut->getfilename() << ") is not valid (resolutions)");
+        pImageOut->print();
         return -1;
     }
     if (pImageOut->getbitspersample()!=8 && pImageOut->getbitspersample()!=32){
-        LOGGER_ERROR("Nombre de bits par sample de l image de sortie " << pImageOut->getfilename() << " non gere");
-        return -1;
-    }
-
-    return 0;
-}
-
-/**
-* @fn int checkMasks(LibtiffImage* pMaskOut, std::vector<LibtiffImage*>& MaskIn)
-* @brief Controle des masques
-* TODO : ajouter des controles
-*/
-
-int checkMasks(LibtiffImage* pMaskOut, std::vector<LibtiffImage*>& MaskIn)
-{
-    for (unsigned int i=0;i<MaskIn.size();i++) {
-        if (MaskIn.at(i)->channels != 1){
-            LOGGER_ERROR("Nombre de canaux du masque " << i+1 << " sur " << MaskIn.size() << " différent de 1 : " << MaskIn.at(i)->channels);
-            return -1;
-        }
-        if (MaskIn.at(i)->getbitspersample() != 8){
-            LOGGER_ERROR("Nombre de bits du canal du masque " << i+1 << " sur " << MaskIn.size() << " différent de 8 : " << MaskIn.at(i)->getbitspersample());
-            return -1;
-        }
-    }
-
-    if (pMaskOut->channels != 1){
-        LOGGER_ERROR("Nombre de canaux du masque de sortie différent de 1 : " << pMaskOut->channels);
-        return -1;
-    }
-    if (pMaskOut->getbitspersample() != 8){
-        LOGGER_ERROR("Nombre de bits du canal du masque de sortie différent de 8 : " << pMaskOut->getbitspersample());
+        LOGGER_ERROR("Unvalid samples per pixels for the output image " << pImageOut->getfilename());
+        pImageOut->print();
         return -1;
     }
 
@@ -470,26 +441,15 @@ int checkMasks(LibtiffImage* pMaskOut, std::vector<LibtiffImage*>& MaskIn)
 * @return 0 en cas de succes, -1 sinon
 */
 
-int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> MaskIn,
-               std::vector<std::vector<Image*> >* pTabImageIn, std::vector<std::vector<Image*> >* pTabMaskIn)
-{
-
-    if (ImageIn.size() != MaskIn.size()) {
-        LOGGER_ERROR("Masks' and images' arrays must thave the same size.");
-        return 1;
-    }
-    
+int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
+{    
     std::vector<Image*> vTmpImg;
-    std::vector<Image*> vTmpMask;
     std::vector<LibtiffImage*>::iterator itiniImg = ImageIn.begin();
-    std::vector<LibtiffImage*>::iterator itiniMask = MaskIn.begin();
 
     /* we create consistent images' vectors (X/Y resolution and X/Y phases)
      * Masks are moved in parallel with images
      */
-    for (std::vector<LibtiffImage*>::iterator itImg = ImageIn.begin(), itMask = MaskIn.begin();
-        itImg < ImageIn.end()-1 || itMask < MaskIn.end()-1;
-        itImg++, itMask++) {
+    for (std::vector<LibtiffImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end()-1; itImg++) {
         
         if (! (*itImg)->isCompatibleWith(*(itImg+1))) {
             // two following images are not compatible, we split images' vector
@@ -497,10 +457,6 @@ int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> Ma
             vTmpImg.assign(itiniImg,itImg+1);
             itiniImg = itImg+1;
             pTabImageIn->push_back(vTmpImg);
-            // masks
-            vTmpMask.assign(itiniMask,itMask+1);
-            itiniMask = itMask+1;
-            pTabMaskIn->push_back(vTmpMask);
         }
     }
     
@@ -508,9 +464,6 @@ int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> Ma
     // images
     vTmpImg.assign(itiniImg,ImageIn.end());
     pTabImageIn->push_back(vTmpImg);
-    // masks
-    vTmpMask.assign(itiniMask,MaskIn.end());
-    pTabMaskIn->push_back(vTmpMask);
 
     return 0;
 }
@@ -522,7 +475,7 @@ int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<LibtiffImage*> Ma
 * @return Image composee de type ExtendedCompoundImage
 */
 
-ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vector< Image*> & TabMaskIn,int* nodata,uint mirrors)
+ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn, int* nodata)
 {
     if (TabImageIn.empty()) {
         LOGGER_ERROR("Assemblage d'un tableau d'images de taille nulle");
@@ -530,7 +483,7 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vec
     }
     
     ExtendedCompoundImageFactory ECIF ;
-    ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage(TabImageIn, TabMaskIn,nodata,sampleformat,mirrors);
+    ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage(TabImageIn,nodata,sampleformat);
 
     return pECI ;
 }
@@ -544,43 +497,43 @@ ExtendedCompoundImage* compoundImages(std::vector< Image*> & TabImageIn,std::vec
 * @param pECI : l'image à completer
 * @return : le nombre de miroirs ajoutes
 */
-
+/*
 ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
     mirrorImageFactory MIFactory;
     std::vector< Image*>  mirrorImages;
-    std::vector< Image*>  mirrorMasks;
 
     uint i = 0;
     while (i<pECI->getimages()->size()) {
         for (int j=0; j<4; j++) {
-            MirrorImage* mirrorImage = MIFactory.createMirrorImage(pECI->getimages()->at(i),
+            MirrorImage* mirrorImage = MIFactory.createMirrorImage(pECI->getImage(i),
                                                                    pECI->getSampleformat(),j,mirrorSize);
             if (mirrorImage == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors' image");
                 return NULL;
             }
 
-            MirrorImage* mirrorMask = MIFactory.createMirrorImage(pECI->getmasks()->at(i),
+            MirrorImage* mirrorMask = MIFactory.createMirrorImage(pECI->getMask(i),
                                                                   SAMPLEFORMAT_UINT,j,mirrorSize);
             if (mirrorMask == NULL){
                 LOGGER_ERROR("Unable to calculate mirrors' mask");
                 return NULL;
             }
+
+            mirrorImage->setMask(mirrorMask);
+            
             mirrorImages.push_back(mirrorImage);
-            mirrorMasks.push_back(mirrorMask);
         }
         i++;
     }
 
     mirrorImages.insert(mirrorImages.end(),pECI->getimages()->begin(),pECI->getimages()->end());
-    mirrorMasks.insert(mirrorMasks.end(), pECI->getmasks()->begin(),pECI->getmasks()->end());
 
-    ExtendedCompoundImage* pECI_mirrors = compoundImages(mirrorImages,mirrorMasks,pECI->getNodata(), i*4);
+    ExtendedCompoundImage* pECI_mirrors = compoundImages(mirrorImages,pECI->getNodata(), i*4);
 
     return pECI_mirrors;
 }
-
+*/
 
 /**
 * @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
@@ -589,13 +542,11 @@ ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 * @return Image reechantillonnee legerement plus petite
 */
 
-ResampledImage* resampleImages(ResampledImage*& resampledMask, LibtiffImage* pImageOut,
-                               ExtendedCompoundImage* pECI_mirrors, ExtendedCompoundMaskImage* pECMI,
-                               BoundingBox<double> realBbox)
+ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI)
 {
-    double resx_src=pECI_mirrors->getresx(), resy_src=pECI_mirrors->getresy();
+    double resx_src=pECI->getresx(), resy_src=pECI->getresy();
     // Extrêmes en comptant les miroirs
-    double xmin_src=pECI_mirrors->getxmin(), ymax_src=pECI_mirrors->getymax();
+    double xmin_src=pECI->getxmin(), ymax_src=pECI->getymax();
     
     double resx_dst=pImageOut->getresx(), resy_dst=pImageOut->getresy();
     
@@ -604,10 +555,10 @@ ResampledImage* resampleImages(ResampledImage*& resampledMask, LibtiffImage* pIm
     /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
      * (sans compter les miroirs)
      */
-    double xmin_dst=__max(realBbox.xmin,pImageOut->getxmin());
-    double xmax_dst=__min(realBbox.xmax,pImageOut->getxmax());
-    double ymin_dst=__max(realBbox.ymin,pImageOut->getymin());
-    double ymax_dst=__min(realBbox.ymax,pImageOut->getymax());
+    double xmin_dst=__max(pECI->getbbox().xmin,pImageOut->getxmin());
+    double xmax_dst=__min(pECI->getbbox().xmax,pImageOut->getxmax());
+    double ymin_dst=__max(pECI->getbbox().ymin,pImageOut->getymin());
+    double ymax_dst=__min(pECI->getbbox().ymax,pImageOut->getymax());
 
     /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie (c'est la seule raison d'être du réechantillonnage). Il faut donc modifier la bounding box
@@ -658,10 +609,23 @@ ResampledImage* resampleImages(ResampledImage*& resampledMask, LibtiffImage* pIm
     BoundingBox<double> bbox_dst(xmin_dst, ymin_dst, xmax_dst, ymax_dst);
 
     // On commence par réechantillonner le masque : TOUJOURS EN PPV
-    resampledMask = new ResampledImage( pECMI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, Interpolation::NEAREST_NEIGHBOUR, bbox_dst);
+    ResampledImage* resampledMask = new ResampledImage(pECI->Image::getMask(), width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, Interpolation::NEAREST_NEIGHBOUR, bbox_dst);
+
+    LOGGER_ERROR("On enregistre le masque rééchantillonné"); /*TEST*/
+    resampledMask->print(); /*TEST*/
+    saveImage(resampledMask,"resampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
     
     // Reechantillonnage
-    ResampledImage* pRImage = new ResampledImage(pECI_mirrors, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+    ResampledImage* pRImage = new ResampledImage(pECI, width_dst, height_dst,resx_dst,resy_dst, off_x, off_y, ratio_x, ratio_y, interpolation, bbox_dst);
+
+    if (! pRImage->setMask(resampledMask)) {
+        LOGGER_ERROR("Cannot add mask to the Resampled Image");
+        return NULL;
+    }
+
+    LOGGER_ERROR("On enregistre l'image rééchantillonnée"); /*TEST*/
+    pRImage->print(); /*TEST*/
+    saveImage(pRImage,"pResampledImage.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
 
     return pRImage;
 }
@@ -676,117 +640,103 @@ ResampledImage* resampleImages(ResampledImage*& resampledMask, LibtiffImage* pIm
 * @return 0 en cas de succes, -1 sinon
 */
 
-int mergeTabImages(LibtiffImage* pImageOut, LibtiffImage* pMaskOut, // Sortie
-                   std::vector<std::vector<Image*> >& TabImageIn, std::vector<std::vector<Image*> >& TabMaskIn, // Entrée
-                   ExtendedCompoundImage** ppECIout, ExtendedCompoundMaskImage** ppECMIout,// Résultat du merge
+int mergeTabImages(LibtiffImage* pImageOut, // Sortie
+                   std::vector<std::vector<Image*> >& TabImageIn, // Entrée
+                   ExtendedCompoundImage** ppECIout, // Résultat du merge
                    int* nodata)
 {
-    ExtendedCompoundImageFactory ECImgfactory ;
+    ExtendedCompoundImageFactory ECIF ;
     std::vector<Image*> pOverlayedImages;
-    std::vector<Image*> pOverlayedMasks;
 
     // Valeurs utilisées pour déterminer la taille des miroirs en pixel (taille optimale en fonction du noyau utilisé)
-    const Kernel& K = Kernel::getInstance(interpolation);
-    double resx_dst=pImageOut->getresx();
+    /*const Kernel& K = Kernel::getInstance(interpolation);
+    double resx_dst = pImageOut->getresx();*/
     
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
         // Mise en superposition du paquet d'images en 2 etapes
 
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
-        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),TabMaskIn.at(i),nodata,0);
-        ExtendedCompoundMaskImage* pECMI;
-
+        ExtendedCompoundImage* pECI = compoundImages(TabImageIn.at(i),nodata);
         if (pECI==NULL) {
             LOGGER_ERROR("Impossible d'assembler les images");
             return -1;
         }
-
-        /*TEST : sortie des images (masques) temporaires*/
-        //saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-        //saveImage(pECMI,"pECMI.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-        //saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-        //saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK,COMPRESSION_NONE);
-        /*
-        if (sampleformat == SAMPLEFORMAT_IEEEFP) {
-            saveImage(pECI,"pECI_non_compat_withMirrors.tif",1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-        } else {
-            saveImage(pECI,"pECI_non_compat_withMirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-        }*/
-        //saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-        //saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-        //saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+        
+        ExtendedCompoundMaskImage* pECMI = new ExtendedCompoundMaskImage(pECI);
+        if (! pECI->setMask(pECMI)) {
+            LOGGER_ERROR("Cannot add mask to the Image's pack " << i);
+            return -1;
+        }
         
         if (pImageOut->isCompatibleWith(pECI)){
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back(pECI);
-            pECMI = new ExtendedCompoundMaskImage(pECI);
-            pOverlayedMasks.push_back(pECMI);
-
-            LOGGER_ERROR("On enregistre le paquet d'images " << i); /*TEST*/
-            saveImage(pECI,"pECI.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-            LOGGER_ERROR("On enregistre le masque du paquet d'images " << i); /*TEST*/
-            saveImage(pECMI,"pECMI.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
             
         } else {
             // Etape 2 : Reechantillonnage de l'image composite necessaire
             
-            // Ajout des miroirs
-            int mirrorSize = 100;//ceil(K.size(resx_dst/pECI->getresx())) + 1;
+            /*// Ajout des miroirs
+            int mirrorSize = ceil(K.size(resx_dst/pECI->getresx())) + 1;
             ExtendedCompoundImage* pECI_mirrors = addMirrors(pECI,mirrorSize);
             if (pECI_mirrors == NULL) {
                 LOGGER_ERROR("Unable to add mirrors");
                 return -1;
-            }
+            }*/
 
-            if (pECI_mirrors->getimages()->size() != pECI_mirrors->getmasks()->size()) {
-                LOGGER_ERROR("Masks' and images' arrays must thave the same size in a ExtendedCompoundImage (with mirrors).");
-                return -1;
-            }
-
-            LOGGER_ERROR("On enregistre le paquet d'images avec miroirs"); /*TEST*/
-            saveImage(pECI_mirrors,"pECI_mirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-
-            pECMI = new ExtendedCompoundMaskImage(pECI_mirrors);
-
-            LOGGER_ERROR("On enregistre le masque du paquet d'images avec miroirs"); /*TEST*/
-            saveImage(pECMI,"pECMI_mirrors.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-
-            ResampledImage* pResampledMask;
-            ResampledImage* pResampledImage = resampleImages(pResampledMask, pImageOut,
-                                                             pECI_mirrors, pECMI, pECI->getbbox());
+            ResampledImage* pResampledImage = resampleImages(pImageOut, pECI);
             if (pResampledImage==NULL) {
                 LOGGER_ERROR("Impossible de reechantillonner les images");
                 return -1;
             }
             
             pOverlayedImages.push_back(pResampledImage);
-            pOverlayedMasks.push_back(pResampledMask);
-
-            LOGGER_ERROR("On enregistre le paquet d'images " << i); /*TEST*/
-            saveImage(pResampledImage,"pResampledImage.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-            LOGGER_ERROR("On enregistre le masque du paquet d'images " << i); /*TEST*/
-            saveImage(pResampledMask,"pResampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-        
+            
         }
 
-        
     }
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
-    *ppECIout = ECImgfactory.createExtendedCompoundImage(
+    *ppECIout = ECIF.createExtendedCompoundImage(
         pImageOut->width, pImageOut->height, pImageOut->channels, pImageOut->getbbox(),
-        pOverlayedImages, pOverlayedMasks, nodata, sampleformat,0);
+        pOverlayedImages, nodata, sampleformat);
     
     if ( *ppECIout == NULL) {
         LOGGER_ERROR("Erreur lors de la fabrication de l image finale");
         return -1;
     }
     // Masque
-    *ppECMIout = new ExtendedCompoundMaskImage(*ppECIout);
+    ExtendedCompoundMaskImage* pECMIout = new ExtendedCompoundMaskImage(*ppECIout);
+
+    if (! (*ppECIout)->setMask(pECMIout)) {
+        LOGGER_ERROR("Cannot add mask to the main Extended Compound Image");
+        return -1;
+    }
 
     return 0;
 }
+
+/*TEST : sortie des images (masques) temporaires
+saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+saveImage(pECMI,"pECMI.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK,COMPRESSION_NONE);
+saveImage(pECI,"pECI_non_compat_withMirrors.tif",1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+saveImage(pECI,"pECI_non_compat_withMirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+LOGGER_ERROR("On enregistre le paquet d'images " << i);
+saveImage(pECI,"pECI.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+LOGGER_ERROR("On enregistre le masque du paquet d'images " << i);
+saveImage(pECMI,"pECMI.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+LOGGER_ERROR("On enregistre le paquet d'images avec miroirs");
+saveImage(pECI_mirrors,"pECI_mirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+LOGGER_ERROR("On enregistre le masque du paquet d'images avec miroirs");
+saveImage(pECMI,"pECMI_mirrors.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+LOGGER_ERROR("On enregistre le masque rééchantillonné");
+saveImage(resampledMask,"pResampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
+*/
 
 /**
 * @fn int main(int argc, char **argv)
@@ -798,11 +748,8 @@ int main(int argc, char **argv) {
     LibtiffImage* pImageOut ;
     LibtiffImage* pMaskOut ;
     std::vector<LibtiffImage*> ImageIn;
-    std::vector<LibtiffImage*> MaskIn;
     std::vector<std::vector<Image*> > TabImageIn;
-    std::vector<std::vector<Image*> > TabMaskIn;
     ExtendedCompoundImage* pECI;
-    ExtendedCompoundMaskImage* pECMI;
 
     /* Initialisation des Loggers */
     Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
@@ -851,7 +798,7 @@ int main(int argc, char **argv) {
 
     LOGGER_DEBUG("Load");
     // Chargement des images
-    if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn,&MaskIn) < 0) {
+    if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn) < 0) {
         LOGGER_ERROR("Echec chargement des images"); 
         sleep(1);
         return -1;
@@ -864,18 +811,10 @@ int main(int argc, char **argv) {
         sleep(1);
         return -1;
     }
-
-    LOGGER_DEBUG("Check masks");
-    // Controle des images
-    if (checkMasks(pMaskOut,MaskIn) < 0) {
-        LOGGER_ERROR("Echec controle des masques");
-        sleep(1);
-        return -1;
-    }
     
     LOGGER_DEBUG("Sort");
     // Tri des images
-    if (sortImages(ImageIn, MaskIn, &TabImageIn, &TabMaskIn) < 0) {
+    if (sortImages(ImageIn, &TabImageIn) < 0) {
         LOGGER_ERROR("Echec tri des images");
         sleep(1);
         return -1;
@@ -883,7 +822,7 @@ int main(int argc, char **argv) {
     
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
-    if (mergeTabImages(pImageOut, pMaskOut, TabImageIn, TabMaskIn, &pECI, &pECMI, nodata) < 0) {
+    if (mergeTabImages(pImageOut, TabImageIn, &pECI, nodata) < 0) {
         LOGGER_ERROR("Echec fusion des paquets d images");
         sleep(1);
         return -1;
@@ -900,7 +839,7 @@ int main(int argc, char **argv) {
 
     LOGGER_DEBUG("Save mask");
     // Enregistrement du masque fusionné
-    if (saveImage(pECMI,pMaskOut->getfilename(),pMaskOut->channels,
+    if (saveImage(pECI->Image::getMask(),pMaskOut->getfilename(),1,
         8, SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE) < 0) {
         LOGGER_ERROR("Echec enregistrement du masque final");
         sleep(1);
@@ -909,10 +848,10 @@ int main(int argc, char **argv) {
     
     LOGGER_DEBUG("Clean");
     // Nettoyage
+    delete acc;
+    delete pECI;
     delete pImageOut;
     delete pMaskOut;
-    delete pECI;
-    delete pECMI;
 
     return 0;
 }

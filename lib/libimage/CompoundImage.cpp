@@ -74,9 +74,3 @@ CompoundImage::CompoundImage(std::vector< std::vector<Image*> >& images) :
         top(0),
         y(0) {}
 
-/** D */
-CompoundImage::~CompoundImage() {
-	for(int y = 0; y < images.size(); y++)
-		for(int x = 0; x < images[y].size(); x++)
-			delete images[y][x];
-}

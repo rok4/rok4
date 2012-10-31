@@ -106,7 +106,7 @@ class MirrorImage : public Image {
     int getline(float* buffer, int line);
 
     /** Destructeur */
-    ~MirrorImage();
+    ~MirrorImage() {}
 };
 
 class mirrorImageFactory {

@@ -42,35 +42,40 @@
 #include <vector>
 
 class CompoundImage : public Image { 
-	private:
+    private:
 
-		static int compute_width (std::vector<std::vector<Image*> > &images);
-		static int compute_height(std::vector<std::vector<Image*> > &images);
+        static int compute_width (std::vector<std::vector<Image*> > &images);
+        static int compute_height(std::vector<std::vector<Image*> > &images);
 
-		std::vector<std::vector<Image*> > images;
+        std::vector<std::vector<Image*> > images;
 
-		/** Indice y des tuiles courantes */
-		int y;
+        /** Indice y des tuiles courantes */
+        int y;
 
-		/** ligne correspondant au haut des tuiles courantes*/
-		int top;
+        /** ligne correspondant au haut des tuiles courantes*/
+        int top;
 
-		template<typename T> 
-			inline int _getline(T* buffer, int line);
+        template<typename T>
+        inline int _getline(T* buffer, int line);
 
-	public:
+    public:
 
-		/** D */
-		int getline(uint8_t* buffer, int line);
+        /** D */
+        int getline(uint8_t* buffer, int line);
 
-		/** D */
-		int getline(float* buffer, int line);
+        /** D */
+        int getline(float* buffer, int line);
 
-		/** D */
-		CompoundImage(std::vector< std::vector<Image*> >& images);
+        /** D */
+        CompoundImage(std::vector< std::vector<Image*> >& images);
 
-		/** D */
-		virtual ~CompoundImage();
+        /** D */
+        ~CompoundImage() {
+            std::cerr << "Delete CompoundImage" << std::endl; /*TEST*/
+            for(int y = 0; y < images.size(); y++)
+                for(int x = 0; x < images[y].size(); x++)
+                    delete images[y][x];
+        }
 
 };
 

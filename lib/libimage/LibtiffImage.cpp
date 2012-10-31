@@ -160,10 +160,3 @@ int LibtiffImage::getline(float* buffer, int line)
     return _getline(buffer,line);
 }
 
-LibtiffImage::~LibtiffImage()
-{
-//    if (tif)
-//        TIFFClose(tif);
-//    LOGGER_DEBUG("Destructeur LibtiffImage");
-    delete [] filename;
-}

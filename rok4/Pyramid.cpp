@@ -213,7 +213,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
             memset(ndvalue,0,this->channels*sizeof(int));
             levels[l]->getNoDataValue(ndvalue);
             return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,
-                                                       levels[l]->getSampleFormat(),0);
+                                                       levels[l]->getSampleFormat());
         }
 
     }

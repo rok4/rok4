@@ -160,6 +160,8 @@ int MirrorImage::_getline(T* buffer, int line)
 
     }
 
+    delete [] buf0;
+
     return width*channels*sizeof(T);
 }
 
@@ -181,9 +183,4 @@ int MirrorImage::getline(float* buffer, int line)
     else {           //float
         return _getline(buffer, line);
     }
-}
-
-
-MirrorImage::~MirrorImage()
-{
 }

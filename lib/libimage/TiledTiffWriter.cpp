@@ -159,48 +159,48 @@ TiledTiffWriter::TiledTiffWriter(const char *filename, uint32_t width, uint32_t 
         *((uint32_t*) (p += 4)) = compression;         //
     }
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_PHOTOMETRIC;     //
-    *((uint16_t*) (p += 2)) = TIFF_SHORT;              //
-    *((uint32_t*) (p += 2)) = 1;                       //
-    *((uint32_t*) (p += 4)) = photometric;             //
+    *((uint16_t*) (p += 4)) = TIFFTAG_PHOTOMETRIC;
+    *((uint16_t*) (p += 2)) = TIFF_SHORT;
+    *((uint32_t*) (p += 2)) = 1;
+    *((uint32_t*) (p += 4)) = photometric;
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_SAMPLESPERPIXEL; //
-    *((uint16_t*) (p += 2)) = TIFF_SHORT;              //
-    *((uint32_t*) (p += 2)) = 1;                       //
-    *((uint32_t*) (p += 4)) = samplesperpixel;         //
+    *((uint16_t*) (p += 4)) = TIFFTAG_SAMPLESPERPIXEL;
+    *((uint16_t*) (p += 2)) = TIFF_SHORT;
+    *((uint32_t*) (p += 2)) = 1;
+    *((uint32_t*) (p += 4)) = samplesperpixel;
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_TILEWIDTH;       //
-    *((uint16_t*) (p += 2)) = TIFF_LONG;               //
-    *((uint32_t*) (p += 2)) = 1;                       //
-    *((uint32_t*) (p += 4)) = tilewidth;               //
+    *((uint16_t*) (p += 4)) = TIFFTAG_TILEWIDTH;
+    *((uint16_t*) (p += 2)) = TIFF_LONG;
+    *((uint32_t*) (p += 2)) = 1;
+    *((uint32_t*) (p += 4)) = tilewidth;
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_TILELENGTH;      //
-    *((uint16_t*) (p += 2)) = TIFF_LONG;               //
-    *((uint32_t*) (p += 2)) = 1;                       //
-    *((uint32_t*) (p += 4)) = tilelength;              //
+    *((uint16_t*) (p += 4)) = TIFFTAG_TILELENGTH;
+    *((uint16_t*) (p += 2)) = TIFF_LONG;
+    *((uint32_t*) (p += 2)) = 1;
+    *((uint32_t*) (p += 4)) = tilelength;
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_TILEOFFSETS;     //
-    *((uint16_t*) (p += 2)) = TIFF_LONG;               //
-    *((uint32_t*) (p += 2)) = tilex*tiley;             //
+    *((uint16_t*) (p += 4)) = TIFFTAG_TILEOFFSETS;
+    *((uint16_t*) (p += 2)) = TIFF_LONG;
+    *((uint32_t*) (p += 2)) = tilex*tiley;
     if (tilex * tiley == 1) {
         /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
          * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
          * Voilà pourquoi on ajoute 8 à RESERVED_SIZE : 4 pour le TileOffset et 4 pour le TileByteCount.
          */
-        *((uint32_t*) (p += 4)) = RESERVED_SIZE+8;           //
+        *((uint32_t*) (p += 4)) = RESERVED_SIZE+8;
     } else {
-        *((uint32_t*) (p += 4)) = RESERVED_SIZE;           //
+        *((uint32_t*) (p += 4)) = RESERVED_SIZE;
     }
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_TILEBYTECOUNTS;  //
-    *((uint16_t*) (p += 2)) = TIFF_LONG;               //
-    *((uint32_t*) (p += 2)) = tilex*tiley;             //
-    *((uint32_t*) (p += 4)) = RESERVED_SIZE + 4*tilex*tiley;//
+    *((uint16_t*) (p += 4)) = TIFFTAG_TILEBYTECOUNTS;
+    *((uint16_t*) (p += 2)) = TIFF_LONG;
+    *((uint32_t*) (p += 2)) = tilex*tiley;
+    *((uint32_t*) (p += 4)) = RESERVED_SIZE + 4*tilex*tiley;
 
-    *((uint16_t*) (p += 4)) = TIFFTAG_SAMPLEFORMAT;  //
-    *((uint16_t*) (p += 2)) = TIFF_SHORT;            //
-    *((uint32_t*) (p += 2)) = 1;             //
-    *((uint32_t*) (p += 4)) = sampleformat;//
+    *((uint16_t*) (p += 4)) = TIFFTAG_SAMPLEFORMAT;
+    *((uint16_t*) (p += 2)) = TIFF_SHORT;
+    *((uint32_t*) (p += 2)) = 1;
+    *((uint32_t*) (p += 4)) = sampleformat;
 
     if (photometric == PHOTOMETRIC_YCBCR) {
         *((uint16_t*) (p += 4)) = TIFFTAG_YCBCRSUBSAMPLING;  //

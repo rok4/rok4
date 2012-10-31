@@ -82,7 +82,7 @@ protected:
 
     /**
      * Initialise le tableau des coefficient avec en échantillonnant la fonction kernel_function.
-     * Cette fonction doit typiquement être apellée à la fin du constructeur des classe filles
+     * Cette fonction doit typiquement être apellée à la fin du constructeur des classes filles
      * (pour des raisons d'ordre d'initialisation des instances mère/fille).
      */
     void init() {
@@ -130,7 +130,7 @@ public:
      * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
      * indiquer le nombre réel de coefficients écrits dans W.
      */
-    virtual double weight(float* W, int &length, double x, double ratio) const;
+    virtual double weight(float* W, int &length, double x, double ratio, int max) const;
 
 };
 

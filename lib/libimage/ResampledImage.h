@@ -41,66 +41,78 @@
 #include "Image.h"
 #include "Kernel.h"
 #include "Interpolation.h"
-
+#include <mm_malloc.h>
 
 class ResampledImage : public Image {
-  private:
-  // Image source à rééchantilloner.
-  Image* image;
+    private:
+        // Image source à rééchantilloner.
+        Image* image;
 
-  // Noyau de la méthode d'interpolation à utiliser.
-  const Kernel& K;
+        // Noyau de la méthode d'interpolation à utiliser.
+        const Kernel& K;
 
-  // Nombre maximal de pixels sources pris en compte pour une interpolation en x.
-  int Kx;
-  
-  // Nombre maximal de pixels sources pris en compte pour une interpolation en y.
-  int Ky;
+        // Nombre maximal de pixels sources pris en compte pour une interpolation en x.
+        int Kx;
+        // Nombre maximal de pixels sources pris en compte pour une interpolation en y.
+        int Ky;
 
-  // Ratio de rééchantillonage en x = résolution x source / résolution x cible
-  double ratio_x;
+        // Ratio de rééchantillonage en x = résolution x source / résolution x cible
+        double ratio_x;
+        // Ratio de rééchantillonage en y = résolution y source / résolution y cible
+        double ratio_y;
 
-  // Ratio de rééchantillonage en y = résolution y source / résolution y cible
-  double ratio_y;
+        // Offset en y du haut de l'image rééchantillonée par rapport à l'image source (en nombre de pixels source)
+        double top;
+        // Offset en x de bord gauche l'image rééchantillonée par rapport à l'image source (en nombre de pixels source)
+        double left;
 
-  // Offset en y du haut de l'image rééchantillonée par rapport à l'image source (en nombre de pixels source)
-  double top;
+        float* __buffer;
 
-  // Offset en x de bord gauche l'image rééchantillonée par rapport à l'image source (en nombre de pixels source)
-  double left;
+        // Buffers de travail en float
+        float* src_line_buffer[4];
+        float* mux_src_line_buffer;
+
+        float* src_mask_buffer[4];
+        float* mux_src_mask_buffer;
+
+        // Nombre de lignes rééchantillonnée mémorisées : image et masque
+        int memorize_line;
+
+        float* mux_resampled_line;
+        float** resampled_line;
+
+        float* mux_resampled_mask;
+        float** resampled_mask;
+        
+        int* resampled_line_index;
+
+        float *dst_line_buffer;
+        float *weight_buffer;
+        
+        /**
+        * Rééchantillonne une ligne source selon les x.
+        *
+        * @param line Indice de la ligne de l'image source
+        * @return pointeur vers la ligne rééchantillonnée de width pixels.
+        */
+        int resample_src_line( int line );
 
 
-  float* __buffer;  
-  
-  // Buffers de travail en float
-  float* src_line_buffer[4];
-  float* mux_src_line_buffer;
-  float* mux_resampled_line;
+        float* Wx;
+        int* xmin;
 
-
-  float** resampled_line;
-  float *dst_line_buffer;
-  int* resampled_line_index;
-
-
-
-/**
- * Rééchantillone une ligne source selon les x.
- *
- * @param line Indice de la ligne de l'image source
- * @return pointeur vers la ligne rééchantillonnée de width pixels.
- */
-  float* resample_src_line(int line);
-
-
-  float* Wx;
-  int* xmin;
-
-  public:
-  ResampledImage(Image *image, int width, int height, double resx, double resy, double left, double top, double ratio_x, double ratio_y, Interpolation::KernelType KT = Interpolation::LANCZOS_3, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
-  ~ResampledImage();
-  int getline(float* buffer, int line);
-  int getline(uint8_t* buffer, int line);
+    public:
+        ResampledImage(Image *image, int width, int height, double resx, double resy, double left, double top, double ratio_x, double ratio_y, Interpolation::KernelType KT = Interpolation::LANCZOS_3, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
+        
+        ~ResampledImage() {
+            //std::cerr << "Delete ResampledImage" << std::endl; /*TEST*/
+            _mm_free(__buffer);
+            delete[] resampled_line_index;
+            delete image;
+        }
+        
+        int getline(float* buffer, int line);
+        int getline(uint8_t* buffer, int line);
 
 };
 

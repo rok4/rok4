@@ -66,20 +66,8 @@ class ExtendedCompoundImage : public Image {
 
 private:
 
-    // Vecteur contenant les images (comptaibles) représentant l'ECI. Les miroirs sont en premier.
+    // Vecteur contenant les images (compatibles) représentant l'ECI.
     std::vector<Image*> images;
-    
-    /* Vecteur contenant les masques. Un par image et dans le même ordre.
-     * Les masques des miroirs sont des pointeurs NULL (juste pour conserver la correspondance avec les images)
-     */
-    std::vector<Image*> masks;
-
-    /* Certaines images peuvent etre des miroirs (MirrorImage)
-     * Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage.
-     * Hypothese : ces images sont stockees en premier
-     * De plus, la bbox de l'ECI ne prend pas en compte les miroirs
-     */
-    uint mirrors;
 
     int* nodata;
     
@@ -97,27 +85,17 @@ protected:
      */
     ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
                           std::vector<Image*>& images,
-                          int* nodata, uint16_t sampleformat, uint mirrors) :
+                          int* nodata, uint16_t sampleformat) :
         Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
         images(images),
         nodata(nodata),
-        sampleformat(sampleformat),
-        mirrors(mirrors) {}
-
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                          std::vector<Image*>& images, std::vector<Image*>& masks,
-                          int* nodata, uint16_t sampleformat, uint mirrors) :
-        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
-        images(images),
-        masks(masks),
-        nodata(nodata),
-        sampleformat(sampleformat),
-        mirrors(mirrors) {}
+        sampleformat(sampleformat) {}
 
 public:
     std::vector<Image*>* getimages() {return &images;}
-    std::vector<Image*>* getmasks() {return &masks;}
-    uint getMirrors() {return mirrors;}
+    Image* getImage(int i) {return images.at(i);}
+    Image* getMask(int i) {return images.at(i)->getMask();}
+    
     uint16_t getSampleformat() {return sampleformat;}
     int* getNodata() {return nodata;}
 
@@ -130,8 +108,11 @@ public:
     /** Destructeur
       Suppression des images */
     virtual ~ExtendedCompoundImage() {
-        for(uint i=0; i < images.size(); i++) {delete images[i];}
-        for(uint i=0; i < masks.size(); i++) {delete masks[i];}
+        //std::cerr << "Delete ExtendedCompoundImage" << std::endl; /*TEST*/
+        for(uint i=0; i < images.size(); i++) {
+            //std::cerr << "    - image " << i << std::endl; /*TEST*/
+            delete images[i];
+        }
     }
 
 };
@@ -148,18 +129,11 @@ public:
 class ExtendedCompoundImageFactory {
 public:
     ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, int* nodata,
-                                                       uint16_t sampleformat, uint mirrors);
-
-    ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, std::vector<Image*>& masks,
-                                                       int* nodata, uint16_t sampleformat, uint mirrors);
-    
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                                                       std::vector<Image*>& images, int* nodata, uint16_t sampleformat,
-                                                       uint mirrors);
+                                                       uint16_t sampleformat);
 
     ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                                                       std::vector<Image*>& images, std::vector<Image*>& masks,
-                                                       int* nodata, uint16_t sampleformat, uint mirrors);
+                                                       std::vector<Image*>& images, int* nodata,
+                                                       uint16_t sampleformat);
 };
 
 /**

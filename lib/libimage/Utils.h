@@ -39,6 +39,7 @@
 #define UTILS_H
 
 #include <cstring>
+#include <iostream>
 #include <stdint.h>
 
 
@@ -195,8 +196,10 @@ inline void convert(uint8_t* to, const float* from, int length) {
  * @param from Tableau de flottants de destination
  * @param length Nombre d'éléments dans le tableau
  */
-
+/*
 #ifdef __SSE2__
+
+// Sans masque
 inline void mult(float* to, const float* from, const float w, int length) {
   while( (intptr_t)to & 0x0f && length) {--length; *to++ = w * *from++;}    // On aligne to sur 128bits
   while(length & 0x03) {--length; to[length] = w * from[length];} // On s'arrange pour avoir un multiple de 4 d'éléments à traiter.
@@ -209,13 +212,34 @@ inline void mult(float* to, const float* from, const float w, int length) {
   else // cas from aligné
     for(int i = 0; i < length; ++i) _mm_store_ps(to + 4*i, _mm_mul_ps(W, _mm_load_ps(from + 4*i)));  
 }
-#else // Version non SSE 
-inline void mult(float* to, const float* from, const float w, int length) {
-  for(int i = 0; i < length; i++) to[i] = from[i] * w;
+
+// Avec masque
+
+#else // Version non SSE
+*/
+// Sans masque
+inline void mult(float* to, const float* from, const float w, int length)
+{
+    for(int i = 0; i < length; i++) to[i] = from[i] * w;
 }
-#endif
 
+// Avec masque
+inline void mult(float* outImg,float* weightSum, const float* inImg, const float* inMask,
+                 const float weight, int width, int channels)
+{
+    for(int w = 0; w < width; w++) {
+        if (inMask[w] < 127) {
+            weightSum[w] = 0.;
+        } else {
+            weightSum[w] = weight;
+            for(int c = 0; c < channels; c++) {
+                outImg[w*channels + c] = inImg[w*channels + c] * weight;
+            }
+        }
+    }
+}
 
+//#endif
 
 
 /**
@@ -224,8 +248,10 @@ inline void mult(float* to, const float* from, const float w, int length) {
  * @param from Tableau de flottants de destination
  * @param length Nombre d'éléments dans le tableau
  */
-
+/*
 #ifdef __SSE2__
+
+// Sans masque
 inline void add_mult(float* to, const float* from, const float w, int length) {
   while( (intptr_t)to & 0x0f && length) {--length; *to++ += w * *from++;}    // On aligne to sur 128bits
   while(length & 0x03) {--length; to[length] += w * from[length];} // On s'arrange pour avoir un multiple de 4 d'éléments à traiter.
@@ -238,13 +264,50 @@ inline void add_mult(float* to, const float* from, const float w, int length) {
   else // cas from aligné
     for(int i = 0; i < length; ++i) _mm_store_ps(to + 4*i, _mm_add_ps(_mm_load_ps(to + 4*i), _mm_mul_ps(W, _mm_load_ps(from + 4*i))));  
 }
-#else // Version non SSE 
-inline void add_mult(float* to, const float* from, const float w, int length) {
-  while( (intptr_t)to & 0x0f && length--) *to++ += (float) w * *from++;
 
+// Avec masque
+
+#else // Version non SSE*/
+
+// Sans masque
+inline void add_mult(float* to, const float* from, const float w, int length)
+{
+  while( (intptr_t)to & 0x0f && length--) *to++ += (float) w * *from++;
   for(int i = 0; i < length; i++) to[i] += from[i] * w;
 }
-#endif
+
+// Avec masque
+inline void add_mult(float* outImg,float* weightSum, const float* inImg, const float* inMask,
+                     const float weight, int width, int channels)
+{
+    int length = width*channels;
+    while( (intptr_t)outImg & 0x0f && length--) *outImg++ += (float) weight * *inImg++;
+
+    for(int w = 0; w < width; w++) {
+        if (inMask[w] < 127) continue;
+        
+        weightSum[w] += weight;
+        for(int c = 0; c < channels; c++) {
+            outImg[w*channels + c] += inImg[w*channels + c] * weight;
+        }
+    }
+}
+//#endif
+
+// Version non SSE*/
+
+inline void normalize(float* toNormalize, const float* coefficients, const float width, int channels)
+{
+    for(int w = 0; w < width; w++) {
+        if (coefficients[w] == 0.) {
+            memset(toNormalize + w*channels, 0, channels*sizeof(float));
+        } else {
+            for(int c = 0; c < channels; c++) {
+                toNormalize[w*channels + c] /= coefficients[w];
+            }
+        }
+    }
+}
 
 
 
@@ -362,7 +425,9 @@ inline void demultiplex(float* T1, float* T2, float* T3, float* T4, const float*
  * 
  *
  */
-#ifdef __SSE2__
+/*#ifdef __SSE2__
+
+// Sans masque
 template<int C> 
 inline void dot_prod(int K, float* to, const float* from, const float* W) {
   __m128 w = _mm_load_ps(W);
@@ -376,19 +441,98 @@ inline void dot_prod(int K, float* to, const float* from, const float* W) {
 
   for(int c = 0; c < C; c++) _mm_store_ps(to + 4*c, T[c]);
 }
-#else // Version non SSE 
-template<int C> 
-inline void dot_prod(int K, float* to, const float* from, const float* W) {
-  float T[4*C];
-  for(int c = 0; c < 4*C; c++) T[c] = W[c%4] * from[c];
+
+// Avec masque
+template<int C>
+inline void dot_prod(int K, float* to, float* toMask, const float* from, const float* mask, const float* W) {
+  __m128 w = _mm_load_ps(W);
+  __m128 T[C];
+  for(int c = 0; c < C; c++) T[c] = _mm_mul_ps(w, _mm_load_ps(from + 4*c));
 
   for(int i = 1; i < K; i++) {
-    for(int c = 0; c < 4*C; c++) T[c] += W[4*i+c%4] * from[4*C*i + c];
+    w = _mm_load_ps(W+4*i);
+    for(int c = 0; c < C; c++) T[c] = _mm_add_ps(T[c], _mm_mul_ps(w, _mm_load_ps(from + 4*C*i + 4*c)));
   }
-  for(int c = 0; c < 4*C; c++) to[c] = T[c];  
-}
-#endif
 
+  for(int c = 0; c < C; c++) _mm_store_ps(to + 4*c, T[c]);
+}
+
+#else // Version non SSE */
+
+// Avec masque
+template<int C> 
+inline void dot_prod(int K, float* outImg, float* outMask, const float* inImg, const float* inMask, const float* W) {
+    float T[4*C];
+    float weightSum[4] = {0.,0.,0.,0.};
+
+    for (int lig = 0; lig < 4; lig++) {
+        if (inMask[lig] < 127) continue;
+        weightSum[lig] =  W[lig];
+
+        for(int c = 0; c < C; c++) {
+            T[lig + c*4] = W[lig] * inImg[lig + c*4];
+        }
+    }
+
+    for(int i = 1; i < K; i++) {
+        
+        for (int lig = 0; lig < 4; lig++) {
+            if (inMask[4*i + lig] < 127) continue;
+            weightSum[lig] +=  W[4*i + lig];
+            
+            for(int c = 0; c < C; c++) {
+                T[lig + c*4] += W[4*i + lig] * inImg[4*C*i + lig + c*4];
+            }
+        }
+    }
+    
+    for(int lig = 0; lig < 4; lig++) {
+        if (weightSum[lig] == 0.) {
+            for(int c = 0; c < C; c++) {
+                outImg[lig + c*4] = 0.;
+            }
+            outMask[lig] = 0.;
+        } else {
+            for(int c = 0; c < C; c++) {
+                // Normalisation des valeurs
+                outImg[lig + c*4] = T[lig + c*4]/weightSum[lig];
+            }
+            outMask[lig] = 255.;
+        }
+    }
+}
+
+// Sans masque
+template<int C>
+inline void dot_prod(int K, float* to, const float* from, const float* W) {
+    float T[4*C];
+
+    for(int c = 0; c < 4*C; c++) {
+        T[c] = W[c%4] * from[c];
+    }
+
+    for(int i = 1; i < K; i++) {
+        for(int c = 0; c < 4*C; c++) {
+            T[c] += W[4*i+c%4] * from[4*C*i + c];
+        }
+    }
+    for(int c = 0; c < 4*C; c++) {
+        to[c] = T[c];
+    }
+}
+//#endif
+
+// Avec masque
+inline void dot_prod(int C, int K, float* to, float* toMask, const float* from, const float* mask, const float* W) {
+ switch(C) {
+   case 1: dot_prod<1>(K, to, toMask, from, mask, W); break;
+   case 2: dot_prod<2>(K, to, toMask, from, mask, W); break;
+   case 3: dot_prod<3>(K, to, toMask, from, mask, W); break;
+   case 4: dot_prod<4>(K, to, toMask, from, mask, W); break;
+ }
+}
+
+// Sans masque
 inline void dot_prod(int C, int K, float* to, const float* from, const float* W) {
  switch(C) {
    case 1: dot_prod<1>(K, to, from, W); break;
@@ -397,10 +541,6 @@ inline void dot_prod(int C, int K, float* to, const float* from, const float* W)
    case 4: dot_prod<4>(K, to, from, W); break;
  }
 }
-
-
-
-
 
 #endif
 

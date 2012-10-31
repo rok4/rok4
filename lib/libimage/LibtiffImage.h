@@ -83,7 +83,12 @@ class LibtiffImage : public Image {
         uint32_t inline getrowsperstrip() {return rowsperstrip;}
         
         /** Destructeur */
-        ~LibtiffImage();
+        ~LibtiffImage() {
+            //std::cerr << "Delete LibtiffImage" << std::endl; /*TEST*/
+            delete [] filename;
+            delete [] strip_buffer;
+            if (tif) TIFFClose(tif);
+        }
 };
 
 class libtiffImageFactory {

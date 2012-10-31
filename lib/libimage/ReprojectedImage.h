@@ -42,6 +42,7 @@
 #include "Grid.h"
 #include "Kernel.h"
 #include "Interpolation.h"
+#include <mm_malloc.h>
 
 class ReprojectedImage : public Image {
   private:
@@ -94,7 +95,13 @@ class ReprojectedImage : public Image {
 
   int getline(uint8_t* buffer, int line);
 
-  ~ReprojectedImage();
+    ~ReprojectedImage() {
+        std::cerr << "Delete ReprojectedImage" << std::endl; /*TEST*/
+        delete image;
+        delete grid;
+        _mm_free(__buffer);
+        delete[] src_line_buffer;
+    }
 
 };
 

@@ -38,15 +38,18 @@
 #include <cmath>
 #include "Kernel.h"
 #include "Logger.h"
-double Kernel::weight(float* W, int &length, double x, double ratio) const {
+double Kernel::weight(float* W, int &length, double x, double ratio, int max) const {
     double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
     double step = 1024. / Ks;
     int xmin = ceil(x - Ks + 1e-7);
     if (length < 2*Ks) {
         xmin = ceil(x - length*0.5 + 1e-9);
     }
-    double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
-    double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
+    if (xmin < 0) xmin = 0;             // On ne sort pas de l'image à interpoler
+    if (xmin + length > max) xmin = max - length;
+    
+    double sum = 0;                     // somme des poids pour normaliser en fin de calcul.
+    double indf = (x - xmin) * step;    // index flottant dans le tableau coeff
 
     int i = 0;
     for (;indf >= 0; indf -= step) {

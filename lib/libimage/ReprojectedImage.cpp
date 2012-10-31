@@ -42,7 +42,6 @@
 #include "Grid.h"
 #include "Logger.h"
 #include "Kernel.h"
-#include <mm_malloc.h>
 
 #include "Utils.h"
 #include <cmath>
@@ -111,8 +110,8 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 
 		for(int i = 0; i < 1024; i++) {
 			int nbx = Kx, nby = Ky;
-			xmin[i] = K.weight(Wx[i], nbx, 1./2048. + double(i)/1024., ratio_x);
-			ymin[i] = K.weight(Wy[i], nby, 1./2048. + double(i)/1024., ratio_y);
+			xmin[i] = K.weight(Wx[i], nbx, 1./2048. + double(i)/1024., ratio_x, image->width);
+			ymin[i] = K.weight(Wy[i], nby, 1./2048. + double(i)/1024., ratio_y, image->height);
 		}
 
 		// TODO : ne pas charger toute l'image source au démarrage.
@@ -163,7 +162,7 @@ float* ReprojectedImage::compute_dst_line(int line) {
 					Kx * channels);
 			dot_prod(channels, Kx, TMP2 + 4*j*channels, TMP1, WWx);
 		}
-		dot_prod(channels, Ky, mux_dst_line_buffer + 4*x*channels, TMP2, WWy);        
+		dot_prod(channels, Ky, mux_dst_line_buffer + 4*x*channels, TMP2, WWy);
 	}
 	demultiplex(dst_line_buffer[0], dst_line_buffer[1], dst_line_buffer[2], dst_line_buffer[3], mux_dst_line_buffer, width*channels);
 	return dst_line_buffer[line%4]; 
@@ -179,14 +178,6 @@ int ReprojectedImage::getline(float* buffer, int line) {
 	const float* dst_line = compute_dst_line(line);
 	convert(buffer, dst_line, width*channels);
 	return width*channels;
-}
-
-ReprojectedImage::~ReprojectedImage() {
-	delete image;
-	delete grid;
-	_mm_free(__buffer);
-	delete[] src_line_buffer;
-
 }
 
 

@@ -43,6 +43,7 @@
 #endif
 
 #include <stdint.h>
+#include <typeinfo>
 #include "BoundingBox.h"
 #include "math.h"    // Pour lround
 
@@ -199,7 +200,10 @@ class Image {
          * Destructeur virtuel. Permet de lancer les destructeurs des classes filles
          * lors de la destruction d'un pointeur Image.
          */
-        virtual ~Image() {};
+        virtual ~Image() {
+            //std::cerr << "Delete Image" << std::endl; /*TEST*/
+            //if (mask != NULL) delete mask;
+        }
 
         /** Fonction d'export des informations sur l'image (pour le débug) */
         void print() {
@@ -214,20 +218,6 @@ class Image {
                 LOGGER_INFO("own a mask\n");
             }
         }
-};
-
-
-/**
- * Classe permettant de faire une copie d'une image. 
- * Cette copie pouvant être détruite sans que l'original le soit
- */
-class ImageCopy : public Image {
-    private:
-        Image& image;
-    public:
-        ImageCopy(Image& image) : Image(image), image(image) {}
-        int getline(uint8_t *buffer, int line) {return image.getline(buffer, line);}
-        int getline(float *buffer, int line)   {return image.getline(buffer, line);}
 };
 
 #endif
