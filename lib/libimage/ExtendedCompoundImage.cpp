@@ -92,11 +92,11 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
             getMask(i)->getline(buffer_m,getMask(i)->y2l(y));
             
             for (int j=0; j < c1-c0; j++) {
-                if (buffer_m[c2+j]) {  // Seuillage subjectif du masque
+                if (buffer_m[c2+j]) {
                     if (c2+j >= images[i]->width) {
                         // On dépasse la largeur de l'image courante (arrondis). On passe.
                         // Une sortie pour vérifier si ce cas se représente malgré les corrections
-                        LOGGER_ERROR("ExtendedCompoundImage : test de dépassement de ligne");
+                        LOGGER_ERROR("Dépassement : demande la colonne "<<c2+j+1<<" sur "<<images[i]->width);
                         continue;
                     }
                     memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],sizeof(T)*channels);
@@ -133,16 +133,15 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
 #define epsilon 0.001
 
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(std::vector<Image*>& images,
-                                                                                 int* nodata, uint16_t sampleformat)
+                                                                                 int* nodata, uint16_t sampleformat,
+                                                                                 uint mirrors)
 {
-    uint i;
-
     if (images.size()==0){
         LOGGER_ERROR("Creation d'une image composite sans image");
         return NULL;
     }
 
-    for (i=0;i<images.size()-1;i++)
+    for (int i=0;i<images.size()-1;i++)
     {  
         if (! images[i]->isCompatibleWith(images[i+1])) {
             LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
@@ -167,7 +166,7 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     int h=(int)((ymax-ymin)/(*images.begin())->getresy()+0.5);
 
     return new ExtendedCompoundImage(w,h,images.at(0)->channels,BoundingBox<double>(xmin,ymin,xmax,ymax),
-                                     images,nodata,sampleformat);
+                                     images,nodata,sampleformat,mirrors);
 }
 
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(int width,
@@ -176,9 +175,27 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  BoundingBox<double> bbox,
                                                                                  std::vector<Image*>& images,
                                                                                  int* nodata,
-                                                                                 uint16_t sampleformat)
+                                                                                 uint16_t sampleformat,
+                                                                                 uint mirrors)
 {
-    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat);
+    if (images.size()==0){
+        LOGGER_ERROR("Creation d'une image composite sans image");
+        return NULL;
+    }
+
+    for (int i=0;i<images.size()-1;i++)
+    {
+        if (! images[i]->isCompatibleWith(images[i+1])) {
+            LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
+                "- image " << i << " : " << images[i]->getresx() << "," << images[i]->getresy() << " " << images[i]->getPhasex() << " " << images[i]->getPhasey() << "\n" <<
+                "- image " << i+1 << " : " << images[i+1]->getresx() << "," << images[i+1]->getresy() << " " << images[i+1]->getPhasex() << " " << images[i+1]->getPhasey() << "\n"
+
+            );
+            return NULL;
+        }
+    }
+    
+    return new ExtendedCompoundImage(width,height,channels,bbox,images,nodata,sampleformat,mirrors);
 }
 
 /**
@@ -193,25 +210,25 @@ int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
     
     memset(buffer,0,width);
     
-    for (uint i = 0; i < ECI->getimages()->size(); i++) {
+    for (uint i = ECI->getMirrorsNumber(); i < ECI->getImages()->size(); i++) {
         /* On ecarte les images qui ne se trouvent pas sur la ligne
          * On evite de comparer des coordonnees terrain (comparaison de flottants)
          * Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
          */
-        if (y2l(ECI->getimages()->at(i)->getymin()) <= line || y2l(ECI->getimages()->at(i)->getymax()) > line){
+        if (y2l(ECI->getImages()->at(i)->getymin()) <= line || y2l(ECI->getImages()->at(i)->getymax()) > line){
             continue;
         }
-        if (ECI->getimages()->at(i)->getxmin() >= getxmax() || ECI->getimages()->at(i)->getxmax() <= getxmin()){
+        if (ECI->getImages()->at(i)->getxmin() >= getxmax() || ECI->getImages()->at(i)->getxmax() <= getxmin()){
             continue;
         }
 
         // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max(0,x2c(ECI->getimages()->at(i)->getxmin()));
+        int c0=__max(0,x2c(ECI->getImages()->at(i)->getxmin()));
         // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min(width,x2c(ECI->getimages()->at(i)->getxmax()));
+        int c1=__min(width,x2c(ECI->getImages()->at(i)->getxmax()));
         
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=-(__min(0,x2c(ECI->getimages()->at(i)->getxmin())));
+        int c2=-(__min(0,x2c(ECI->getImages()->at(i)->getxmin())));
 
         if (ECI->getMask(i) == NULL) {
             memset(&buffer[c0], 255, c1-c0);

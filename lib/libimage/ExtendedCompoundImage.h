@@ -45,6 +45,7 @@
 */
 
 #include "Image.h"
+#include "MirrorImage.h"
 #include <vector>
 #include <cstring>
 #include "Logger.h"
@@ -64,57 +65,85 @@ class ExtendedCompoundImage : public Image {
 
     friend class ExtendedCompoundImageFactory;
 
-private:
+    private:
 
-    // Vecteur contenant les images (compatibles) représentant l'ECI.
-    std::vector<Image*> images;
+        // Vecteur contenant les images (compatibles) représentant l'ECI.
+        std::vector<Image*> images;
 
-    int* nodata;
-    
-    uint16_t sampleformat;
+        /* Certaines images peuvent etre des miroirs (MirrorImage)
+        * Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage.
+        * Hypothese : ces images sont stockees en premier.
+        */
+        uint mirrors;
 
-    template<typename T>
-    int _getline(T* buffer, int line);
+        int* nodata;
 
-protected:
+        uint16_t sampleformat;
 
-    /** Constructeur
-      * Appelé via une fabrique de type extendedCompoundImageFactory
-      * Les Image sont detruites ensuite en meme temps que l'objet
-      * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
-     */
-    ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                          std::vector<Image*>& images,
-                          int* nodata, uint16_t sampleformat) :
-        Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
-        images(images),
-        nodata(nodata),
-        sampleformat(sampleformat) {}
+        template<typename T>
+        int _getline(T* buffer, int line);
 
-public:
-    std::vector<Image*>* getimages() {return &images;}
-    Image* getImage(int i) {return images.at(i);}
-    Image* getMask(int i) {return images.at(i)->getMask();}
-    
-    uint16_t getSampleformat() {return sampleformat;}
-    int* getNodata() {return nodata;}
+    protected:
 
-    /** Implementation de getline pour les uint8_t */
-    int getline(uint8_t* buffer, int line);
+        /** Constructeur
+          * Appelé via une fabrique de type extendedCompoundImageFactory
+          * Les Image sont detruites ensuite en meme temps que l'objet
+          * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
+         */
+        ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
+                              std::vector<Image*>& images,
+                              int* nodata, uint16_t sampleformat, uint mirrors) :
+            Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
+            images(images),
+            nodata(nodata),
+            sampleformat(sampleformat),
+            mirrors(mirrors) {}
 
-    /** Implementation de getline pour les float */
-    int getline(float* buffer, int line);
-
-    /** Destructeur
-      Suppression des images */
-    virtual ~ExtendedCompoundImage() {
-        //std::cerr << "Delete ExtendedCompoundImage" << std::endl; /*TEST*/
-        for(uint i=0; i < images.size(); i++) {
-            //std::cerr << "    - image " << i << std::endl; /*TEST*/
-            delete images[i];
+    public:
+        std::vector<Image*>* getImages() {return &images;}
+        
+        bool useMasks() {
+            for(uint i=0; i < images.size(); i++) {
+                if (getMask(i)) return true;
+            }
+            return false;
         }
-    }
+        
+        Image* getMask(int i) {return images.at(i)->getMask();}
+        Image* getImage(int i) {return images.at(i);}
 
+        uint getMirrorsNumber() {return mirrors;}
+
+        uint16_t getSampleformat() {return sampleformat;}
+        int* getNodata() {return nodata;}
+
+        /** Implementation de getline pour les uint8_t */
+        int getline(uint8_t* buffer, int line);
+
+        /** Implementation de getline pour les float */
+        int getline(float* buffer, int line);
+
+        /** Destructeur
+          Suppression des images */
+        virtual ~ExtendedCompoundImage() {
+            //std::cerr << "Delete ExtendedCompoundImage" << std::endl; /*TEST*/
+            for(uint i=0; i < images.size(); i++) {
+                //std::cerr << "    - image " << i << std::endl; /*TEST*/
+                delete images[i];
+            }
+        }
+
+        /** Fonction d'export des informations sur l'image (pour le débug) */
+        void print() {
+            LOGGER_INFO("");
+            LOGGER_INFO("------ ExtendedCompoundImage -------");
+            Image::print();
+            LOGGER_INFO("\t- Number of images = " << images.size());
+            LOGGER_INFO("\t- Number of mirrors = " << mirrors);
+            LOGGER_INFO("\t- Sampleformat " << sampleformat);
+            LOGGER_INFO("\t- Nodata value " << nodata);
+            LOGGER_INFO("");
+        }
 };
 
 /**
@@ -129,11 +158,11 @@ public:
 class ExtendedCompoundImageFactory {
 public:
     ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, int* nodata,
-                                                       uint16_t sampleformat);
+                                                       uint16_t sampleformat, uint mirrors);
 
     ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
                                                        std::vector<Image*>& images, int* nodata,
-                                                       uint16_t sampleformat);
+                                                       uint16_t sampleformat, uint mirrors);
 };
 
 /**

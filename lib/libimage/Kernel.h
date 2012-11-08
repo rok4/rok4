@@ -39,6 +39,7 @@
 #define KERNEL_H
 
 #include "Interpolation.h"
+#include <iostream>
 
 /**
  * Classe mère définissant l'interface d'appel d'un noyau de rééchantillonnage en 1 dimension.
@@ -86,7 +87,9 @@ protected:
      * (pour des raisons d'ordre d'initialisation des instances mère/fille).
      */
     void init() {
-        for (int i = 0; i <= 1024; i++) coeff[i] = kernel_function(i * kernel_size / 1024.);
+        for (int i = 0; i <= 1024; i++) {
+            coeff[i] = kernel_function(i * kernel_size / 1024.);
+        }
     }
 
     /**
@@ -130,7 +133,7 @@ public:
      * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
      * indiquer le nombre réel de coefficients écrits dans W.
      */
-    virtual double weight(float* W, int &length, double x, double ratio, int max) const;
+    virtual int weight( float* W, int length, double x, int max ) const;
 
 };
 

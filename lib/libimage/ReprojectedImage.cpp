@@ -109,9 +109,8 @@ ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid
 		TMP2 = B; B += 4*channels*sz5;
 
 		for(int i = 0; i < 1024; i++) {
-			int nbx = Kx, nby = Ky;
-			xmin[i] = K.weight(Wx[i], nbx, 1./2048. + double(i)/1024., ratio_x, image->width);
-			ymin[i] = K.weight(Wy[i], nby, 1./2048. + double(i)/1024., ratio_y, image->height);
+			xmin[i] = K.weight(Wx[i], Kx, 1./2048. + double(i)/1024., image->width);
+			ymin[i] = K.weight(Wy[i], Ky, 1./2048. + double(i)/1024., image->height);
 		}
 
 		// TODO : ne pas charger toute l'image source au démarrage.

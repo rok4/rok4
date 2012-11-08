@@ -54,6 +54,7 @@ class LibtiffImage : public Image {
         uint16_t bitspersample;
         uint16_t photometric;
         uint16_t compression;
+        uint16_t sampleformat;
         uint16_t rowsperstrip;
 
         size_t strip_size;
@@ -65,7 +66,7 @@ class LibtiffImage : public Image {
 
     protected:
         /** Constructeur */
-        LibtiffImage(int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif, char* filename, int bitspersample, int photometric, int compression, int rowsperstrip);
+        LibtiffImage( int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name, int bitspersample, int sampleformat, int photometric, int compression, int rowsperstrip );
 
     public:
 
@@ -80,7 +81,8 @@ class LibtiffImage : public Image {
         uint16_t inline getbitspersample() {return bitspersample;}
         uint16_t inline getphotometric() {return photometric;}
         uint16_t inline getcompression() {return compression;}
-        uint32_t inline getrowsperstrip() {return rowsperstrip;}
+        uint16_t inline getrowsperstrip() {return rowsperstrip;}
+        uint16_t inline getsampleformat() {return sampleformat;}
         
         /** Destructeur */
         ~LibtiffImage() {
@@ -89,12 +91,26 @@ class LibtiffImage : public Image {
             delete [] strip_buffer;
             if (tif) TIFFClose(tif);
         }
+
+        /** Fonction d'export des informations sur l'image (pour le débug) */
+        void print() {
+            LOGGER_INFO("");
+            LOGGER_INFO("---------- LibTiffImage ------------");
+            Image::print();
+            LOGGER_INFO("\t- File name : " << filename);
+            LOGGER_INFO("\t- Compression : " << compression);
+            LOGGER_INFO("\t- Photometric : " << photometric);
+            LOGGER_INFO("\t- Bits per sample : " << bitspersample);
+            LOGGER_INFO("\t- Sample format : " << sampleformat);
+            LOGGER_INFO("\t- Rows per strip : " << rowsperstrip);
+            LOGGER_INFO("");
+        }
 };
 
 class libtiffImageFactory {
     public:
-        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, double resx, double resy);
-        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip);
+        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int calcWidth, int calcHeight, double resx, double resy);
+        LibtiffImage* createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip );
 };
 
 

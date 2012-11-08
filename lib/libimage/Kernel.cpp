@@ -38,31 +38,36 @@
 #include <cmath>
 #include "Kernel.h"
 #include "Logger.h"
-double Kernel::weight(float* W, int &length, double x, double ratio, int max) const {
-    double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
-    double step = 1024. / Ks;
-    int xmin = ceil(x - Ks + 1e-7);
-    if (length < 2*Ks) {
-        xmin = ceil(x - length*0.5 + 1e-9);
-    }
-    if (xmin < 0) xmin = 0;             // On ne sort pas de l'image à interpoler
-    if (xmin + length > max) xmin = max - length;
-    
-    double sum = 0;                     // somme des poids pour normaliser en fin de calcul.
-    double indf = (x - xmin) * step;    // index flottant dans le tableau coeff
+int Kernel::weight(float* W, int length, double x, int max) const {
 
+    double rayon = (double)length/2.;
+    int xmin = ceil(x - rayon - 1E-7);
+    
+    // On ne sort pas de l'image à interpoler
+    if (xmin < 0) xmin = 0;
+    if (xmin + length > max) xmin = max - length;
+
+    double step = 1024. / rayon;
+    double sum = 0;              // somme des poids pour normaliser en fin de calcul.
+    double indf = (x - xmin)*step;    // index flottant dans le tableau coeff
     int i = 0;
+    
     for (;indf >= 0; indf -= step) {
         int ind = (int) indf;
-        sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
         // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
+        sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
     }
+    
     for (indf = -indf; indf < 1024. && i < length; indf += step) {
         int ind = (int) indf;
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
     }
-    length = i;
-    while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
+
+    // On remplit le reste du tableau des poids avec des zéros (on veut toujours avoir "length" éléments
+    while (i < length) W[i++] = 0.;
+
+    while (i--) {W[i] /= sum;}    // On normalise pour que la somme des poids fasse 1.
+
     return xmin;
 }
 
@@ -95,35 +100,9 @@ class NearestNeighbour : public Kernel {
         if (d > 0.5) return 0.;
         else return 1.;
     }
-    NearestNeighbour() : Kernel(0.6, true) {
+    NearestNeighbour() : Kernel(0.5, true) {
         init();
     }
-
-    double weight(float* W, int &length, double x, double ratio) const {
-        double Ks = size(ratio);                  // Taille du noyau prenant compte le ratio du réchantillonnage.
-        double step = 1024. / Ks;
-        double xmin = x - Ks;
-        if (length < 2*Ks) {
-            xmin = x - length*0.5 ;
-        }
-        double sum = 0;                           // somme des poids pour normaliser en fin de calcul.
-        double indf = (x - xmin) * step;          // index flottant dans le tableau coeff
-
-        int i = 0;
-        for (;indf >= 0; indf -= step) {
-            int ind = (int) indf;
-            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
-            // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
-        }
-        for (indf = -indf; indf < 1024. && i < length; indf += step) {
-            int ind = (int) indf;
-            sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
-        }
-        length = i;
-        while (i--) W[i] /= sum;    // On normalise pour que la somme des poids fasse 1.
-        return xmin;
-
-    };
 };
 
 
@@ -190,24 +169,31 @@ const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
 
     switch (T) {
     case Interpolation::NEAREST_NEIGHBOUR:
+        LOGGER_DEBUG("Noyau PPV"); /*TEST*/
         return nearest_neighbour;
         break;
     case Interpolation::LINEAR:
+        LOGGER_DEBUG("Noyau linéaire"); /*TEST*/
         return linear;
         break;
     case Interpolation::CUBIC:
+        LOGGER_DEBUG("Noyau bicubique"); /*TEST*/
         return catrom;
         break;
     case Interpolation::LANCZOS_2:
+        LOGGER_DEBUG("Noyau Lanczos 2"); /*TEST*/
         return lanczos_2;
         break;
     case Interpolation::LANCZOS_3:
+        LOGGER_DEBUG("Noyau Lanczos 3"); /*TEST*/
         return lanczos_3;
         break;
     case Interpolation::LANCZOS_4:
+        LOGGER_DEBUG("Noyau Lanczos 4"); /*TEST*/
         return lanczos_4;
         break;
     }
+    LOGGER_DEBUG("Noyau par défaut : Lanczos 3"); /*TEST*/
     return lanczos_3;
 }
 

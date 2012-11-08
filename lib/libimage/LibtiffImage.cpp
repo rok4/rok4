@@ -44,61 +44,83 @@ Creation d'une LibtiffImage a partir d un fichier TIFF filename
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, double resx, double resy)
+LibtiffImage* libtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int calcWidth, int calcHeight, double resx, double resy )
 {
-    int width=0,height=0,channels=0,planarconfig=0,bitspersample=0,photometric=0,compression=0,rowsperstrip=0; 
+    int width=0,height=0,channels=0,planarconfig=0,bitspersample=0,
+        sampleformat=0,photometric=0,compression=0,rowsperstrip=0;
     TIFF* tif=TIFFOpen(filename, "r");
     
     if (tif==NULL) {
-        LOGGER_DEBUG( "Impossible d ouvrir " << filename);
+        LOGGER_ERROR( "Impossible d ouvrir " << filename);
         return NULL;
     } else {
         
         if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width)<1) {
-            LOGGER_DEBUG( "Impossible de lire la largeur de " << filename);
+            LOGGER_ERROR( "Impossible de lire la largeur de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height)<1) {
-            LOGGER_DEBUG( "Impossible de lire la hauteur de " << filename);
+            LOGGER_ERROR( "Impossible de lire la hauteur de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL,&channels)<1) {
-            LOGGER_DEBUG( "Impossible de lire le nombre de canaux de " << filename);
+            LOGGER_ERROR( "Impossible de lire le nombre de canaux de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG,&planarconfig)<1) {
-            LOGGER_DEBUG( "Impossible de lire la configuration des plans de " << filename);
+            LOGGER_ERROR( "Impossible de lire la configuration des plans de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE,&bitspersample)<1) {
-            LOGGER_DEBUG( "Impossible de lire le nombre bits par canal de " << filename);
+            LOGGER_ERROR( "Impossible de lire le nombre bits par canal de " << filename);
             return NULL;
+        }
+
+        if (TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT,&sampleformat)<1) {
+            if (bitspersample == 8) {
+                sampleformat = 1;
+            } else if (bitspersample == 32) {
+                sampleformat = 3;
+            } else {
+                LOGGER_ERROR( "Impossible de déterminer le format du canal de " << filename);
+                return NULL;
+            }
         }
         
         if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC,&photometric)<1) {
-            LOGGER_DEBUG( "Impossible de lire la photometrie de " << filename);
+            LOGGER_ERROR( "Impossible de lire la photometrie de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_COMPRESSION,&compression)<1) {
-            LOGGER_DEBUG( "Impossible de lire la compression de " << filename);
+            LOGGER_ERROR( "Impossible de lire la compression de " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP,&rowsperstrip)<1) {
-            LOGGER_DEBUG( "Impossible de lire le nombre de lignes par bande de " << filename);
+            LOGGER_ERROR( "Impossible de lire le nombre de lignes par bande de " << filename);
             return NULL;
         }
     }
 
-    if (width*height*channels!=0 && planarconfig!=PLANARCONFIG_CONTIG && tif!=NULL)
+    if (width*height*channels!=0 && planarconfig!=PLANARCONFIG_CONTIG && tif!=NULL) {
         return NULL;
+    }
 
-    return new LibtiffImage(width, height, resx, resy, channels, bbox, tif, filename, bitspersample, photometric, compression, rowsperstrip);
+    // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+    if (calcWidth != width || calcHeight != height) {
+        LOGGER_ERROR("Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent");
+        LOGGER_ERROR("Height is " << height << " and calculation give " << calcHeight);
+        LOGGER_ERROR("Width is " << width << " and calculation give " << calcWidth);
+        return NULL;
+    }
+    
+    return new LibtiffImage(width, height, resx, resy, channels, bbox, tif, filename, bitspersample, sampleformat,
+                            photometric, compression, rowsperstrip);
 }
 
 /**
@@ -106,17 +128,18 @@ Creation d'une LibtiffImage en vue de creer un nouveau fichier TIFF
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage(char* filename, BoundingBox<double> bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t photometric, uint16_t compressioni, uint16_t rowsperstrip)
+LibtiffImage* libtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
 {
     if (width<0||height<0)
         return NULL;
         if (width*height*channels==0)
                 return NULL;
 
-    return new LibtiffImage(width,height,resx,resy,channels,bbox,NULL,filename,bitspersample,photometric, compressioni,rowsperstrip);
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,NULL,filename,bitspersample,sampleformat,photometric,
+                            compression,rowsperstrip);
 }
 
-LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif,char* name, int bitspersample, int photometric, int compression, int rowsperstrip) : Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
+LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif,char* name, int bitspersample, int sampleformat, int photometric, int compression, int rowsperstrip) : Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), sampleformat(sampleformat), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
 {
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy(filename,name);

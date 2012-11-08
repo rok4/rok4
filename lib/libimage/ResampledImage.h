@@ -48,6 +48,9 @@ class ResampledImage : public Image {
         // Image source à rééchantilloner.
         Image* image;
 
+        // A-t-on besoin de tenir compte des masques dans l'interpolation (lourd)
+        bool bUseMask;
+
         // Noyau de la méthode d'interpolation à utiliser.
         const Kernel& K;
 
@@ -69,8 +72,8 @@ class ResampledImage : public Image {
         float* __buffer;
 
         // Buffers de travail en float
-        float* src_line_buffer[4];
-        float* mux_src_line_buffer;
+        float* src_image_buffer[4];
+        float* mux_src_image_buffer;
 
         float* src_mask_buffer[4];
         float* mux_src_mask_buffer;
@@ -78,15 +81,16 @@ class ResampledImage : public Image {
         // Nombre de lignes rééchantillonnée mémorisées : image et masque
         int memorize_line;
 
-        float* mux_resampled_line;
-        float** resampled_line;
+        float* mux_resampled_image;
+        float** resampled_image;
 
         float* mux_resampled_mask;
         float** resampled_mask;
+        float* own_mask_buffer;
         
         int* resampled_line_index;
 
-        float *dst_line_buffer;
+        float *dst_image_buffer;
         float *weight_buffer;
         
         /**
@@ -95,14 +99,17 @@ class ResampledImage : public Image {
         * @param line Indice de la ligne de l'image source
         * @return pointeur vers la ligne rééchantillonnée de width pixels.
         */
-        int resample_src_line( int line );
+        int resampleSourceLine(int line);
 
 
         float* Wx;
         int* xmin;
 
     public:
-        ResampledImage(Image *image, int width, int height, double resx, double resy, double left, double top, double ratio_x, double ratio_y, Interpolation::KernelType KT = Interpolation::LANCZOS_3, BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
+        ResampledImage(Image *image, int width, int height, double resx, double resy, double left, double top,
+                       double ratio_x, double ratio_y, bool bUseMask = false,
+                       Interpolation::KernelType KT = Interpolation::LANCZOS_3,
+                       BoundingBox<double> bbox = BoundingBox<double>(0.,0.,0.,0.));
         
         ~ResampledImage() {
             //std::cerr << "Delete ResampledImage" << std::endl; /*TEST*/
@@ -114,6 +121,20 @@ class ResampledImage : public Image {
         int getline(float* buffer, int line);
         int getline(uint8_t* buffer, int line);
 
+        /** Fonction d'export des informations sur l'image (pour le débug) */
+        void print() {
+            LOGGER_INFO("");
+            LOGGER_INFO("--------- ResampledImage -----------");
+            Image::print();
+            LOGGER_INFO("\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky);
+            LOGGER_INFO("\t- Offsets, dx = " << left << ", dy = " << top);
+            if (bUseMask) {
+                LOGGER_INFO("\t- Use mask in interpolation");
+            } else {
+                LOGGER_INFO("\t- Doesn't use mask in interpolation");
+            }
+            LOGGER_INFO("");
+        }
 };
 
 #endif

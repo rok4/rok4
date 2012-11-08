@@ -43,6 +43,7 @@
 #endif
 
 #include <stdint.h>
+#include <string.h>
 #include <typeinfo>
 #include "BoundingBox.h"
 #include "math.h"    // Pour lround
@@ -146,8 +147,8 @@ class Image {
         
         /** Teste si 2 images sont superposables : compatibilité en phase/résolution X/Y */
         bool isCompatibleWith(Image* pImage) {
-            double epsilon_x=__min(getresx(), pImage->getresx())/100.;
-            double epsilon_y=__min(getresy(), pImage->getresy())/100.;
+            double epsilon_x=__min(getresx(), pImage->getresx())/1000.;
+            double epsilon_y=__min(getresy(), pImage->getresy())/1000.;
 
             if (fabs(getresx()-pImage->getresx()) > epsilon_x) {return false;}
             if (fabs(getresy()-pImage->getresy()) > epsilon_y) {return false;}
@@ -206,17 +207,17 @@ class Image {
         }
 
         /** Fonction d'export des informations sur l'image (pour le débug) */
-        void print() {
-            LOGGER_INFO("------ Image export ------");
-            LOGGER_INFO("width = " << width << ", height = " << height);
-            LOGGER_INFO("samples per pixel = " << channels);
-            LOGGER_INFO("bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax);
-            LOGGER_INFO("x resolution = " << resx << ", y resolution = " << resy);
-            if (mask == NULL) {
-                LOGGER_INFO("no mask\n");
+        virtual void print() {
+            LOGGER_INFO("\t- width = " << width << ", height = " << height);
+            LOGGER_INFO("\t- samples per pixel = " << channels);
+            LOGGER_INFO("\t- bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax);
+            LOGGER_INFO("\t- x resolution = " << resx << ", y resolution = " << resy);
+            if (mask) {
+                LOGGER_INFO("\t- Own a mask");
             } else {
-                LOGGER_INFO("own a mask\n");
+                LOGGER_INFO("\t- No mask");
             }
+            LOGGER_INFO("");
         }
 };
 

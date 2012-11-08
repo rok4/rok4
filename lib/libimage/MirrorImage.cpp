@@ -59,6 +59,11 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
     int hLeftRight = pImageSrc->height;
     
     double xmin,ymin,xmax,ymax;
+
+    if (pImageSrc == NULL) {
+        LOGGER_ERROR("Source imageis NULL");
+        return NULL;
+    }
     
     if (mirrorSize > pImageSrc->width || mirrorSize > pImageSrc->height) {
         LOGGER_ERROR("Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)");

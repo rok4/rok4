@@ -149,7 +149,7 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
         LOGGER_DEBUG(_("Image invalid !"));
         return 0;
     }
-    return new ResampledImage ( imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, interpolation, bbox );
+    return new ResampledImage(imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, false, interpolation, bbox );
 }
 
 

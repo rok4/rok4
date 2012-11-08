@@ -42,26 +42,26 @@
 #include <cmath>
 #include <cstring>
 
-ResampledImage::ResampledImage(Image *image, int width, int height, double resx, double resy, double lefttmp, double toptmp, double ratio_x, double ratio_y,  Interpolation::KernelType KT, BoundingBox<double> bbox) :
-Image(width, height,resx,resy, image->channels, bbox), image(image) , left(lefttmp), top(toptmp), ratio_x(ratio_x), ratio_y(ratio_y), K(Kernel::getInstance(KT))
+ResampledImage::ResampledImage( Image* image, int width, int height, double resx, double resy, double lefttmp,
+                                double toptmp, double ratio_x, double ratio_y, bool mask,
+                                Interpolation::KernelType KT, BoundingBox< double > bbox ) :
+                                
+                                Image(width, height,resx,resy, image->channels, bbox),
+                                image(image) , left(lefttmp), top(toptmp), ratio_x(ratio_x), ratio_y(ratio_y),
+                                K(Kernel::getInstance(KT)), bUseMask(mask)
 {
-    left += 0.5*ratio_x - 0.5; // Pour prendre en compte que les échantillons 
-    top  += 0.5*ratio_y - 0.5; // sont positionnés aux centres des pixels
+    // Pour considérer les valeurs comme celles aux centres des pixels, on ramène les coordonnées au centre
+    left += 0.5*ratio_x - 0.5;
+    top  += 0.5*ratio_y - 0.5;
 
-    Kx = ceil(2 * K.size(ratio_x));
-    Ky = ceil(2 * K.size(ratio_y));
+    // On calcule le nombre de pixels sources à considérer dans l'interpolation, dans le sens des x et des y
+    Kx = ceil(2 * K.size(ratio_x)-1E-7);
+    Ky = ceil(2 * K.size(ratio_y)-1E-7);
 
-    // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
-    int sz1 = 4*((image->width*channels + 3)/4);
-    int sz1mask = 4*((image->width + 3)/4);
-    
-    // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
-    int sz2 = 4*((width*channels + 3)/4);
-    int sz2mask = 4*((width + 3)/4);
+    if (! image->getMask()) bUseMask = false;
 
-    // nombre de poids dans Wx
-    int sz3 = 4*width*Kx;
-    int sz4 = 4*((width+3)/4);
+    if (bUseMask) LOGGER_INFO("Réechantillonnage avec utilisation des masques");
+    else LOGGER_INFO("Réechantillonnage sans utilisation des masques");
 
     /* On veut mémoriser un certain nombre de lignes pour ne pas refaire un travail déjà fait.
      * On va travailler les lignes 4 par 4 (pour l'utilisation des instructions SSE). On va donc mémoriser
@@ -71,12 +71,31 @@ Image(width, height,resx,resy, image->channels, bbox), image(image) , left(leftt
      */
     memorize_line = 4*((Ky+3)/4);
 
-    int sz = 8 * sz1 * sizeof(float)        // place pour src_line_buffer et mux_src_line_buffer;
-      + 8 * sz1mask * sizeof(float)        // place pour src_mask_buffer et mux_src_mask_buffer;
-      + sz2 * (memorize_line + 4 + 1) * sizeof(float)    // place pour memorize_line lignes de resampled_line + dst_line_buffer
-      + sz2mask * (memorize_line + 4 + 1) * sizeof(float)    // place pour memorize_line lignes de resampled_mask + dst_weight_buffer
-      + sz3 * sizeof(float)                 // place pour Wx
-      + sz4 * sizeof(int);                  // place pour le tableau xmin
+    /* -------------------- PLACE MEMOIRE ------------------- */
+
+    // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
+    int srcImgSize = 4*((image->width*channels + 3)/4);
+    int srcMskSize = 4*((image->width + 3)/4);
+    
+    // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
+    int outImgSize = 4*((width*channels + 3)/4);
+    int outMskSize = 4*((width + 3)/4);
+
+    // nombre de poids dans Wx
+    int xWeightSize = 4*width*Kx;
+    int xMinSize = 4*((width+3)/4);
+
+    int sz = 8 * srcImgSize * sizeof(float)   // src_image_buffer + mux_src_image_buffer;
+            // resampled_line ("memorize_line" lignes) + mux_resampled_line + dst_image_buffer
+            + outImgSize * (memorize_line + 4 + 1) * sizeof(float)
+            + xWeightSize * sizeof(float)                 // place pour Wx
+            + xMinSize * sizeof(int);                  // place pour le tableau xmin
+
+    if (bUseMask) {
+        sz += 8 * srcMskSize * sizeof(float)        // src_mask_buffer + mux_src_mask_buffer;
+            // resampled_mask ("memorize_line" lignes) + mux_resampled_mask + weight_buffer + own_mask_buffer
+            + outMskSize * (memorize_line + 4 + 1 + 1) * sizeof(float);
+    }
 
 
     /* Allocation de la mémoire pour tous les buffers en une seule fois :
@@ -88,59 +107,65 @@ Image(width, height,resx,resy, image->channels, bbox), image(image) , left(leftt
     
     float* B = (float*) __buffer;
 
+    /* -------------------- PARTIE IMAGE -------------------- */
+
     // Lignes source d'image
     for(int i = 0; i < 4; i++) {
-        src_line_buffer[i] = B; B += sz1;
+        src_image_buffer[i] = B; B += srcImgSize;
     }
-    mux_src_line_buffer = B; B += 4*sz1;
-
-    // Lignes source de masque
-    for(int i = 0; i < 4; i++) {
-        src_mask_buffer[i] = B; B += sz1mask;
-    }
-    mux_src_mask_buffer = B; B += 4*sz1mask;
+    mux_src_image_buffer = B; B += 4*srcImgSize;
 
     // Ligne d'image rééchantillonnée
-    resampled_line = new float*[Ky+4];
+    resampled_image = new float*[memorize_line];
     resampled_line_index = new int[memorize_line];
     
-    mux_resampled_line = B; B += 4*sz2;
+    mux_resampled_image = B; B += 4*outImgSize;
     for(int i = 0; i < memorize_line; i++) {
-            resampled_line[i] = B; B += sz2;
+            resampled_image[i] = B; B += outImgSize;
             resampled_line_index[i] = -1;
     }
-    dst_line_buffer = B; B += sz2;
-    weight_buffer = B; B += sz2mask;
+    dst_image_buffer = B; B += outImgSize;
 
-    // Ligne de masque rééchantillonnée
-    resampled_mask = new float*[Ky+4];
-    mux_resampled_mask = B; B += 4*sz2mask;
-    
-    for(int i = 0; i < memorize_line; i++) {
-            resampled_mask[i] = B; B += sz2mask;
+    /* -------------------- PARTIE MASQUE ------------------- */
+
+    if (bUseMask) {
+        // Lignes source de masque
+        for(int i = 0; i < 4; i++) {
+            src_mask_buffer[i] = B; B += srcMskSize;
+        }
+        mux_src_mask_buffer = B; B += 4*srcMskSize;
+
+        weight_buffer = B; B += outMskSize;
+        own_mask_buffer = B; B += outMskSize;
+
+        // Ligne de masque rééchantillonnée
+        resampled_mask = new float*[memorize_line];
+        mux_resampled_mask = B; B += 4*outMskSize;
+
+        for(int i = 0; i < memorize_line; i++) {
+                resampled_mask[i] = B; B += outMskSize;
+        }
     }
 
-    Wx = B; B += sz3;
-    xmin = (int*) B; B += sz4;
+    /* -------------------- PARTIE POIDS -------------------- */
 
-    memset(Wx, 0, sz3 * sizeof(float));
+    Wx = B; B += xWeightSize;
+    xmin = (int*) B; B += xMinSize;
+
+    memset(Wx, 0, xWeightSize * sizeof(float));
     float* W = Wx;
     for(int x = 0; x < width; x++) {
-        int nb = Kx;
-        xmin[x] = K.weight(W, nb, left + x * ratio_x, ratio_x, image->width);
+        xmin[x] = K.weight(W, Kx, left + x * ratio_x, image->width);
         // On copie chaque poids en 4 exemplaires.
-        for(int i = nb-1; i >= 0; i--) for(int j = 0; j < 4; j++) W[4*i + j] = W[i];
+        for(int i = Kx-1; i >= 0; i--) for(int j = 0; j < 4; j++) W[4*i + j] = W[i];
         W += 4*Kx;
     }
 }
 
-
-
-int ResampledImage::resample_src_line(int line)
+int ResampledImage::resampleSourceLine( int line )
 {
-    /* Comme on travaille les lignes 4 par 4, et qu'on en mémorise Ky+4 (une ligne étant utilisée pour
-     * réechantillonner jusqu'à Ky lignes), on a potentiellement déjà calculé la ligne demandée
-     * On vérifie dans le tableau des index si c'est le cas
+    /* Vu que l'on calcule les lignes 4 par 4 et qu'on les mémorise, on a potentiellement déjà en mémoire la ligne
+     * demandée. On vérifie dans le tableau des index si c'est le cas.
      */
     if(resampled_line_index[line % memorize_line] == line) {
         return (line % memorize_line);
@@ -151,13 +176,8 @@ int ResampledImage::resample_src_line(int line)
      */
     for(int i = 0; i < 4; i++) {
         if(4*(line/4) + i < image->height) {
-            image->getline(src_line_buffer[i], 4*(line/4) + i);
-            if (image->getMask() == NULL) {
-                for (int w = 0; w < image->width ; w++) {
-                    src_mask_buffer[i][w] = 255.;
-                }
-                //memset(src_mask_buffer[i],254.,image->width*sizeof(float));
-            } else {
+            image->getline(src_image_buffer[i], 4*(line/4) + i);
+            if (bUseMask) {
                 image->getMask()->getline(src_mask_buffer[i], 4*(line/4) + i);
             }
         }
@@ -175,35 +195,47 @@ int ResampledImage::resample_src_line(int line)
      *       on "lit" colonne par colonne
      *    Multiplexé = R1 R2 R3 R4 G1 G2 G3 G4 B1 B2 B3 B4 R1 R2 R3 R4 G1 G2 G3 G4 B1 B2 B3 B4 ...
      */
-    multiplex(mux_src_line_buffer,
-              src_line_buffer[0], src_line_buffer[1], src_line_buffer[2], src_line_buffer[3],
+    multiplex(mux_src_image_buffer,
+              src_image_buffer[0], src_image_buffer[1], src_image_buffer[2], src_image_buffer[3],
               image->width*image->channels);
 
-    multiplex(mux_src_mask_buffer,
-              src_mask_buffer[0], src_mask_buffer[1], src_mask_buffer[2], src_mask_buffer[3],
-              image->width);
-
-    for(int x = 0; x < width; x++) {
-        dot_prod(channels, Kx,
-                 mux_resampled_line + 4*x*channels,
-                 mux_resampled_mask + 4*x,
-                 mux_src_line_buffer + 4*xmin[x]*channels,
-                 mux_src_mask_buffer + 4*xmin[x],
-                 Wx + 4*Kx*x);
-
+    
+    if (bUseMask) {
+        multiplex(mux_src_mask_buffer,
+                  src_mask_buffer[0], src_mask_buffer[1], src_mask_buffer[2], src_mask_buffer[3],
+                  image->width);
     }
 
-    demultiplex(resampled_line[(4*(line/4)) % memorize_line],
-                resampled_line[(4*(line/4)+1) % memorize_line],
-                resampled_line[(4*(line/4)+2) % memorize_line],
-                resampled_line[(4*(line/4)+3) % memorize_line],
-                mux_resampled_line, width*channels);
+    for(int x = 0; x < width; x++) {
+        if (bUseMask) {
+            dot_prod(channels, Kx,
+                     mux_resampled_image + 4*x*channels,
+                     mux_resampled_mask + 4*x,
+                     mux_src_image_buffer + 4*xmin[x]*channels,
+                     mux_src_mask_buffer + 4*xmin[x],
+                     Wx + 4*Kx*x);
+        } else {
+            dot_prod(channels, Kx,
+                     mux_resampled_image + 4*x*channels,
+                     mux_src_image_buffer + 4*xmin[x]*channels,
+                     Wx + 4*Kx*x);
+        }
+    }
 
-    demultiplex(resampled_mask[(4*(line/4)) % memorize_line],
-                resampled_mask[(4*(line/4)+1) % memorize_line],
-                resampled_mask[(4*(line/4)+2) % memorize_line],
-                resampled_mask[(4*(line/4)+3) % memorize_line],
-                mux_resampled_mask, width);
+    demultiplex(resampled_image[(4*(line/4)) % memorize_line],
+                resampled_image[(4*(line/4)+1) % memorize_line],
+                resampled_image[(4*(line/4)+2) % memorize_line],
+                resampled_image[(4*(line/4)+3) % memorize_line],
+                mux_resampled_image, width*channels);
+
+    
+    if (bUseMask) {
+        demultiplex(resampled_mask[(4*(line/4)) % memorize_line],
+                    resampled_mask[(4*(line/4)+1) % memorize_line],
+                    resampled_mask[(4*(line/4)+2) % memorize_line],
+                    resampled_mask[(4*(line/4)+3) % memorize_line],
+                    mux_resampled_mask, width);
+    }
 
     // Mise à jour des index des lignes mémorisées
     for(int i = 0; i < 4; i++) {
@@ -217,36 +249,41 @@ int ResampledImage::resample_src_line(int line)
 int ResampledImage::getline(float* buffer, int line)
 {
     float weights[Ky];
-    float mask[width];
-    int nb_weights = Ky;
     
     // On calcule les coefficient d'interpolation
-    int ymin = K.weight(weights, nb_weights, top + line * ratio_y, ratio_y, image->height);
+    int ymin = K.weight(weights, Ky, top + line * ratio_y, image->height);
 
-    int index = resample_src_line(ymin);
-    //mult(buffer, weight_buffer, resampled_line[index], resampled_mask[index], weights[0], width, channels);
-    mult(buffer, resampled_line[index], weights[0], width*channels);
-    
-    for(int y = 1; y < nb_weights; y++) {
-        index = resample_src_line(ymin+y);
-        //add_mult(buffer, weight_buffer, resampled_line[index], resampled_mask[index], weights[0], width, channels);
-        add_mult(buffer, resampled_line[index], weights[y], width*channels);
+    int index = resampleSourceLine(ymin);
+    if (bUseMask) {
+        mult(buffer, weight_buffer, resampled_image[index], resampled_mask[index], weights[0], width, channels);
+    } else {
+        mult(buffer, resampled_image[index], weights[0], width*channels);
     }
-/*
-    if (getMask()) {
-        getMask()->getline(mask,line);
-        for(int y = 0; y < width; y++) {
-            if (mask[y] < 127.) weight_buffer[y] = 0.;
+    
+    for(int y = 1; y < Ky; y++) {
+        index = resampleSourceLine(ymin+y);
+        if (bUseMask) {
+            add_mult(buffer, weight_buffer, resampled_image[index], resampled_mask[index], weights[y], width, channels);
+        } else {
+            add_mult(buffer, resampled_image[index], weights[y], width*channels);
+        }
+    }
+
+    if (bUseMask) {
+        if (getMask()) {
+            getMask()->getline(own_mask_buffer,line);
+            for(int y = 0; y < width; y++) {
+                if (own_mask_buffer[y] < 127.) weight_buffer[y] = 0.;
+            }
         }
         normalize(buffer, weight_buffer, width, channels);
-    }*/
+    }
 
-    
     return width*channels;
 }
 
 int ResampledImage::getline(uint8_t* buffer, int line) {
-    int nb = getline(dst_line_buffer, line);
-    convert(buffer, dst_line_buffer, nb);
+    int nb = getline(dst_image_buffer, line);
+    convert(buffer, dst_image_buffer, nb);
     return nb;
 }
