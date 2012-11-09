@@ -76,24 +76,32 @@ void error(std::string message) {
 
 double gammaM4t;
 char* strnodata;
-float* nodataFloat;
-int epsilon = 0.01; // pour comparer les valeurs avec celle de nodata
+float* nodataFloat32;
 uint8_t* nodataUInt8;
+
+// Chemins des images
+char* backgroundImage;
+char* backgroundMask;
+char* inputImages[4];
+char* inputMasks[4];
+char* outputImage;
+char* outputMask;
+
 uint32_t width,height,rowsperstrip;
 uint16_t compression,bitspersample,samplesperpixel,sampleformat,photometric,planarconfig;
 
-void parseCommandLine(int argc, char* argv[],
-        char*& backgroundImage,
-        char** inputImages,
-        char*& outputImage)
+void parseCommandLine(int argc, char* argv[])
 {
+    // Initialisation
     gammaM4t = 1.;
     strnodata = 0;
     compression = -1;
     rowsperstrip = -1;
     backgroundImage = 0;
-    for (int i=0;i<4;i++) inputImages[i] = 0;
+    backgroundMask = 0;
+    for (int i=0;i<4;i++) {inputImages[i] = 0; inputMasks[i] = 0;}
     outputImage = 0;
+    outputMask = 0;
 
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
@@ -131,16 +139,41 @@ void parseCommandLine(int argc, char* argv[],
                     if(++i == argc) error("Missing parameter in -i argument");
                     switch(argv[i-1][2]){
                         case '1':
-                            inputImages[0]=argv[i];
+                            inputImages[0] = argv[i];
                             break;
                         case '2':
-                            inputImages[1]=argv[i];
+                            inputImages[1] = argv[i];
                             break;
                         case '3':
-                            inputImages[2]=argv[i];
+                            inputImages[2] = argv[i];
                             break;
                         case '4':
-                            inputImages[3]=argv[i];
+                            inputImages[3] = argv[i];
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case 'm': // associated masks
+                    if(++i == argc) error("Missing parameter in -m argument");
+                    switch(argv[i-1][2]){
+                        case '1':
+                            inputMasks[0] = argv[i];
+                            break;
+                        case '2':
+                            inputMasks[1] = argv[i];
+                            break;
+                        case '3':
+                            inputMasks[2] = argv[i];
+                            break;
+                        case '4':
+                            inputMasks[3] = argv[i];
+                            break;
+                        case 'b':
+                            backgroundMask = argv[i];
+                            break;
+                        case 'o':
+                            outputMask = argv[i];
                             break;
                         default:
                             break;
@@ -161,144 +194,259 @@ void parseCommandLine(int argc, char* argv[],
 
 }
 
-
-void checkImages(char* backgroundImage,char** inputImages,char* outputImage,
-                 TIFF* INPUT[2][2],TIFF*& BACKGROUND,TIFF*& OUTPUT)
-{    
+void checkComponents(TIFF* image, bool isMask)
+{
     uint32_t _width,_height,_rowsperstrip;
-    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_compression,_planarconfig;     
+    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_compression,_planarconfig;
+
+    if(width == 0) { // read the parameters of the first input file
+        if( ! TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &width)                   ||
+        ! TIFFGetField(image, TIFFTAG_IMAGELENGTH, &height)                     ||
+        ! TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
+        ! TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &photometric)                ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
+        error(std::string("Error reading input file: ") + TIFFFileName(image));
+
+        if (compression == (uint16)(-1)) TIFFGetField(image, TIFFTAG_COMPRESSION, &compression);
+        if (rowsperstrip == (uint32)(-1)) TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
+        if (planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
+        if (width%2 || height%2) error ("Sorry : only even dimensions for input images are supported");
+
+        return;
+    }
+    
+    if( ! TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &_width)                         ||
+        ! TIFFGetField(image, TIFFTAG_IMAGELENGTH, &_height)                       ||
+        ! TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &_bitspersample)              ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_PLANARCONFIG, &_planarconfig)       ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
+        ! TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &_photometric)                  ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
+        error(std::string("Error reading file ") + TIFFFileName(image));
+
+    if (isMask) {
+        if (! (_width == width && _height == height && _bitspersample == 8 && _planarconfig == planarconfig &&
+                _photometric == PHOTOMETRIC_MINISBLACK && _samplesperpixel == 1)) {
+            error(std::string("Error : all input masks must have the same parameters (width, height, etc...) : ")
+                + TIFFFileName(image));
+        }
+    } else {
+        if (! (_width == width && _height == height && _bitspersample == bitspersample &&
+                _planarconfig == planarconfig && _photometric == photometric && _samplesperpixel == samplesperpixel)) {
+            error(std::string("Error : all input images must have the same parameters (width, height, etc...) : ")
+                + TIFFFileName(image));
+        }
+    }
+}
+
+void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
+                 TIFF*& BGI,TIFF*& BGM,
+                 TIFF*& OUTPUTI,TIFF*& OUTPUTM)
+{
     width=0;    
 
     for(int i = 0; i < 4; i++) {
-        if (inputImages[i]==0){
-            INPUT[i/2][i%2] = 0;
+        INPUTM[i/2][i%2] = NULL;
+        if (inputImages[i] == 0){
+            INPUTI[i/2][i%2] = NULL;
             continue;
         }
-        TIFF *input = TIFFOpen(inputImages[i], "r");
-        if(input == NULL) error("Unable to open input file: " + std::string(inputImages[i]));
-        INPUT[i/2][i%2] = input;
+        
+        TIFF *inputi = TIFFOpen(inputImages[i], "r");
+        if(inputi == NULL) error("Unable to open input image: " + std::string(inputImages[i]));
+        INPUTI[i/2][i%2] = inputi;
 
-        if(width == 0) { // read the parameters of the first input file
-              if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &width)                   ||
-              ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &height)                     ||
-              ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
-              ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &photometric)                ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
-                error("Error reading input file: " + std::string(inputImages[i]));
-                
-            if(compression == (uint16)(-1)) TIFFGetField(input, TIFFTAG_COMPRESSION, &compression);
-            if(rowsperstrip == (uint32)(-1)) TIFFGetField(input, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
-            if(planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
-            if (width%2!=0 || height%2) error ("Sorry : only even dimensions for input images are supported");
-        }
-    
-        else { // check if the others input files have compatible parameters
-            if( ! TIFFGetField(input, TIFFTAG_IMAGEWIDTH, &_width)                        ||
-              ! TIFFGetField(input, TIFFTAG_IMAGELENGTH, &_height)                      ||
-              ! TIFFGetField(input, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_PLANARCONFIG, &_planarconfig)      ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
-              ! TIFFGetField(input, TIFFTAG_PHOTOMETRIC, &_photometric)                 ||
-              ! TIFFGetFieldDefaulted(input, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
-                error("Error reading file " + std::string(inputImages[i]));
+        std::cerr << "Check image " << i << std::endl;
+        checkComponents(inputi, false);
 
-            if(_width != width || _height != height || _bitspersample != bitspersample 
-                || _planarconfig != planarconfig || _photometric != photometric || _samplesperpixel != samplesperpixel) 
-                error("Error : all input files must have the same parameters (width, height, etc...)");
+        if (inputMasks[i] != 0){
+            TIFF *inputm = TIFFOpen(inputMasks[i], "r");
+            if(inputm == NULL) error("Unable to open input mask: " + std::string(inputMasks[i]));
+            INPUTM[i/2][i%2] = inputm;
+
+            std::cerr << "Check mask " << i << std::endl;
+            checkComponents(inputm, true);
         }
+        
     }
 
-    BACKGROUND=0;
+    std::cerr << "Le fond..." << std::endl;
 
-    if (inputImages[0] && inputImages[1] && inputImages[2] && inputImages[3])
+    BGI = 0;
+    BGM = 0;
+
+    // Si on a quatre image et pas de masque (images considérées comme pleines), le fond est inutile
+    if (inputImages[0] && inputImages[1] && inputImages[2] && inputImages[3] &&
+        ! inputMasks[0] && ! inputMasks[1] && ! inputMasks[2] && ! inputMasks[3])
         backgroundImage=0;
 
-    if (backgroundImage){
-        BACKGROUND=TIFFOpen(backgroundImage, "r");
-        if (BACKGROUND==NULL) error("Unable to open background image: "+std::string(backgroundImage));
-        if( ! TIFFGetField(BACKGROUND, TIFFTAG_IMAGEWIDTH, &_width)                        ||
-            ! TIFFGetField(BACKGROUND, TIFFTAG_IMAGELENGTH, &_height)                      ||
-            ! TIFFGetField(BACKGROUND, TIFFTAG_BITSPERSAMPLE, &_bitspersample)             ||
-            ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_PLANARCONFIG, &_planarconfig)      ||
-            ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
-            ! TIFFGetField(BACKGROUND, TIFFTAG_PHOTOMETRIC, &_photometric)                 ||
-            ! TIFFGetFieldDefaulted(BACKGROUND, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
-                    error("Error reading file " + std::string(backgroundImage));
-        if(_width != width || _height != height || _bitspersample != bitspersample || _planarconfig != planarconfig
-            || _photometric != photometric || _samplesperpixel != samplesperpixel)
-                error("Error : all input files must have the same parameters (width, height, etc...)");
-    }
-
-    OUTPUT = TIFFOpen(outputImage, "w");
-    if(OUTPUT == NULL) error("Unable to open output file: " + std::string(outputImage));
-    if(! TIFFSetField(OUTPUT, TIFFTAG_IMAGEWIDTH, width)               ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_IMAGELENGTH, height)             ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_BITSPERSAMPLE, bitspersample)    ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_PHOTOMETRIC, photometric)        ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_PLANARCONFIG, planarconfig)      ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_COMPRESSION, compression)        ||
-         ! TIFFSetField(OUTPUT, TIFFTAG_SAMPLEFORMAT, sampleformat))
-        error("Error writting output file: " + std::string(outputImage));     
-}
-
-bool isData(float* pixel) {
-    
-    for (int i = 0; i<samplesperpixel; i++) {
-        if (pixel[i] < nodataFloat[i] - epsilon || pixel[i] > nodataFloat[i] + epsilon) {
-            return true;
+    if (backgroundImage) {
+        BGI=TIFFOpen(backgroundImage, "r");
+        if (BGI == NULL) error("Unable to open background image: " + std::string(backgroundImage));
+        std::cerr << "Check background image " << std::endl;
+        checkComponents(BGI,false);
+        
+        if (backgroundMask) {
+            BGM = TIFFOpen(backgroundMask, "r");
+            if (BGM == NULL) error("Unable to open background mask: " + std::string(backgroundMask));
+            std::cerr << "Check background mask " << std::endl;
+            checkComponents(BGM,true);
         }
     }
-    return false;
+
+    OUTPUTI = TIFFOpen(outputImage, "w");
+    if(OUTPUTI == NULL) error("Unable to open output image: " + std::string(outputImage));
+    if(! TIFFSetField(OUTPUTI, TIFFTAG_IMAGEWIDTH, width) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_IMAGELENGTH, height) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_BITSPERSAMPLE, bitspersample) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_PHOTOMETRIC, photometric) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_ROWSPERSTRIP, rowsperstrip) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_PLANARCONFIG, planarconfig) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_COMPRESSION, compression) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLEFORMAT, sampleformat))
+        error("Error writting output image: " + std::string(outputImage));
+
+    if (outputMask) {
+        OUTPUTM = TIFFOpen(outputMask, "w");
+        if(OUTPUTM == NULL) error("Unable to open output mask: " + std::string(outputImage));
+        if(! TIFFSetField(OUTPUTM, TIFFTAG_IMAGEWIDTH, width) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_IMAGELENGTH, height) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_BITSPERSAMPLE, 8) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_SAMPLESPERPIXEL, 1) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_ROWSPERSTRIP, rowsperstrip) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_PLANARCONFIG, planarconfig) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_COMPRESSION, COMPRESSION_PACKBITS) ||
+             ! TIFFSetField(OUTPUTM, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT))
+            error("Error writting output mask: " + std::string(outputMask));
+    }
 }
 
-int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
-    int nbsamples = width * samplesperpixel;
-    float  line_background[nbsamples];
-    float  line1[2*nbsamples];
-    float  line2[2*nbsamples];
-    float  line_out[nbsamples];
+
+int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
+
+    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
+    
+    if (MASK) {
+        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
+        for (int w = 0; w < width; w++) {
+            if (mask[w] < 127) {
+                memcpy(image + w*samplesperpixel,nodataFloat32,samplesperpixel*sizeof(float));
+            }
+        }
+    }
+
+    return 0;
+}
+
+int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
+
+    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
+
+    if (MASK) {
+        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
+        for (int w = 0; w < width; w++) {
+            if (mask[w] < 127) {
+                memcpy(image + w*samplesperpixel,nodataUInt8,samplesperpixel);
+            }
+        }
+    }
+
+    return 0;
+}
+
+int merge4float32(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM) {
+    /*int nbsamples = width * samplesperpixel;
     int left,right;
     
+    float line_bgI[nbsamples];
+    uint8_t line_bgM[width];
+    
+    float line_1I[2*nbsamples];
+    uint8_t line_1M[2*width];
+    
+    float line_2I[2*nbsamples];
+    uint8_t line_2M[2*width];
+    
+    float line_outI[nbsamples];
+    uint8_t line_outM[width];
+    
     for (int i = 0; i < nbsamples ; i++) {
-        line_background[i] = nodataFloat[i%samplesperpixel];
+        line_bgI[i] = nodataFloat32[i%samplesperpixel];
     }
     
     for(int y = 0; y < 2; y++){
-        if (INPUT[y][0]) left=0; else left=nbsamples/2;
-        if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
+        if (INPUTI[y][0]) left = 0; else left = width/2;
+        if (INPUTI[y][1]) right = width; else right = width/2;
+
+        bool useMask = INPUTM[y][0] && INPUTM[y][1];
+        
         for(uint32 h = 0; h < height/2; h++) {
-            if (BACKGROUND) {
-                if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+
+            int line = y*height/2 + h;
+
+            // On traite le fond éventuel
+            if (BGI)
+                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
+                    error("Unable to read background line");
+
+            if (left == right) {
+                // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
+                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
+                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
+
+                continue;
             }
             
-            for (int i = 0; i<2*nbsamples; i++) {
-                line1[i] = nodataFloat[i%samplesperpixel];
-                line2[i] = nodataFloat[i%samplesperpixel];
+            memcpy(line_outI,line_bgI,sizeof(float)*nbsamples);
+            memcpy(line_outM,line_bgM,width);
+            
+            if (INPUTI[y][0]) {
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
+            }
+                
+            if (INPUTI[y][1]) {
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
             }
 
-            if (INPUT[y][0])
-                if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
-            if (INPUT[y][1])
-                if (TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)==-1) error("Unable to read data");
-            if (INPUT[y][0])
-                if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
-            if (INPUT[y][1])
-                if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");  
+            memset(line_1M,255,2*width);
+            memset(line_2M,255,2*width);
+
+            if (INPUTM[y][0]) {
+                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            if (INPUTM[y][1]) {
+                if (TIFFReadScanline(INPUTM[y][1], line_1M + nbsamples, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][1], line_2M + nbsamples, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            for (int pixOut = left; pixOut < right; pixOut++) {
+                float sum[] = 0.;
+                int nbData = 0;
                 
-            memcpy(line_out,line_background,sizeof(float)*nbsamples);
+                if (line_1M[pixOut*2] >= 127) {nbData++; sum += line_1I[pixOut*2*samplesperpixel];}
+                if (line_1M[pixOut*2] >= 127) {nbData++; sum += line_1I[(pixOut*2+1)*samplesperpixel];}
+                if (line_2M[pixOut*2] >= 127) {nbData++; sum += line_2I[pixOut*2*samplesperpixel];}
+                if (line_2M[pixOut*2] >= 127) {nbData++; sum += line_2I[(pixOut*2+1)*samplesperpixel];}
+
+                if (nbData>1) {
+            }
             
             for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += 2*samplesperpixel) {
                 // we eliminate nodata pixels
                 float* data[4];
                 int nbData = 0;
-                if ( isData(&line1[pos_in]) ) data[nbData++]=&line1[pos_in];
-                if ( isData(&line1[pos_in + samplesperpixel]) ) data[nbData++]=&line1[pos_in + samplesperpixel];
-                if ( isData(&line2[pos_in]) ) data[nbData++]=&line2[pos_in];
-                if ( isData(&line2[pos_in + samplesperpixel]) ) data[nbData++]=&line2[pos_in + samplesperpixel];
+                if ( isData(&line_1I[pos_in]) ) data[nbData++]=&line_1I[pos_in];
+                if ( isData(&line_1I[pos_in + samplesperpixel]) ) data[nbData++]=&line_1I[pos_in + samplesperpixel];
+                if ( isData(&line_2I[pos_in]) ) data[nbData++]=&line_2I[pos_in];
+                if ( isData(&line_2I[pos_in + samplesperpixel]) ) data[nbData++]=&line_2I[pos_in + samplesperpixel];
                     
                 if (nbData>1) {
                     // we have 2 or more data pixels to calculate the data pixel
@@ -307,98 +455,219 @@ int merge4float32(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
                         for (int p = 0; p < nbData; p++) {
                             value += data[p][s];
                         }
-                        line_out[pos_out] = value/(float)nbData;
+                        line_outI[pos_out] = value/(float)nbData;
                         pos_out++;
                     }
                 }else {
                     // we have just 1 or no data pixel : result is a nodata pixel
-                    memcpy(&line_out[pos_out],nodataFloat,samplesperpixel*sizeof(float));
+                    memcpy(&line_outI[pos_out],nodataFloat32,samplesperpixel*sizeof(float));
                     pos_out += samplesperpixel;
                 }
             }
             
-            if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
+            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write data");
             
         }
     }
-    if (BACKGROUND) TIFFClose(BACKGROUND);
-    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
-    TIFFClose(OUTPUT);
+    
+    if (BGI) TIFFClose(BGI);
+    
+    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUTI[i][j]) TIFFClose(INPUTI[i][j]);
+    
+    TIFFClose(OUTPUTI);
+    */
     return 0;
 };
 
 
 
-int merge4uint8(TIFF* BACKGROUND, TIFF* INPUT[2][2], TIFF* OUTPUT) {
-    
+int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
+{    
     uint8 MERGE[1024];
     for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
 
     int nbsamples = width * samplesperpixel;
-    uint8  line_background[nbsamples];
-    uint8  line1[2*nbsamples];
-    uint8  line2[2*nbsamples];
-    uint8  line_out[nbsamples];
     int left,right;
-    
+
+    uint8_t line_bgI[nbsamples];
+    uint8_t line_bgM[width];
+
+    int nbData;
+    float pix[samplesperpixel];
+
+    uint8_t line_1I[2*nbsamples];
+    uint8_t line_1M[2*width];
+
+    uint8_t line_2I[2*nbsamples];
+    uint8_t line_2M[2*width];
+
+    uint8_t line_outI[nbsamples];
+    uint8_t line_outM[width];
+
     for (int i = 0; i < nbsamples ; i++) {
-        line_background[i] = nodataUInt8[i%samplesperpixel];
+        line_bgI[i] = nodataUInt8[i%samplesperpixel];
     }
 
-    for(int y = 0; y < 2; y++){
-        if (INPUT[y][0]) left=0; else left=nbsamples/2;
-        if (INPUT[y][1]) right=nbsamples; else right=nbsamples/2;
-        for(uint32 h = 0; h < height/2; h++) {
-            if (BACKGROUND)
-            if (TIFFReadScanline(BACKGROUND, line_background,y*height/2 + h)==-1) error("Unable to read data");
+    memset(line_bgM,255,width);
 
-            for (int i = 0; i<2*nbsamples; i++) {
-                line1[i] = nodataUInt8[i%samplesperpixel];
-                line2[i] = nodataUInt8[i%samplesperpixel];
+    for(int y = 0; y < 2; y++){
+        if (INPUTI[y][0]) left = 0; else left = width;
+        if (INPUTI[y][1]) right = 2*width; else right = width;
+
+        for(uint32 h = 0; h < height/2; h++) {
+
+            int line = y*height/2 + h;
+
+            // ------------ le fond -----------
+            if (BGI)
+                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
+                    error("Unable to read background line");
+
+            if (left == right) {
+                // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
+                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
+                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
+
+                continue;
             }
 
-            if (INPUT[y][0])
-                if (TIFFReadScanline(INPUT[y][0], line1, 2*h)==-1) error("Unable to read data");
-            if (INPUT[y][1])
-                if (TIFFReadScanline(INPUT[y][1], line1 + nbsamples, 2*h)==-1) error("Unable to read data");
-            if (INPUT[y][0])
-                if (TIFFReadScanline(INPUT[y][0], line2, 2*h+1)==-1) error("Unable to read data");
-            if (INPUT[y][1])
-                if (TIFFReadScanline(INPUT[y][1], line2 + nbsamples, 2*h+1)==-1) error("Unable to read data");
+            memcpy(line_outI,line_bgI,sizeof(float)*nbsamples);
+            memcpy(line_outM,line_bgM,width);
 
-            memcpy(line_out,line_background,nbsamples);
+            // ---------- les images ----------
+            if (INPUTI[y][0]) {
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
+            }
 
-            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += samplesperpixel)
-                for(int j = samplesperpixel; j--; pos_in++) 
-                    line_out[pos_out++] = MERGE[((int)line1[pos_in] + (int)line1[pos_in + samplesperpixel]) + ((int)line2[pos_in] + (int)line2[pos_in + samplesperpixel])];
+            if (INPUTI[y][1]) {
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
+            }
 
-            if(TIFFWriteScanline(OUTPUT, line_out, y*height/2 + h) == -1) error("Unable to write data");
+            // ---------- les masques ---------
+            memset(line_1M,255,2*width);
+            memset(line_2M,255,2*width);
+
+            if (INPUTM[y][0]) {
+                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            if (INPUTM[y][1]) {
+                if (TIFFReadScanline(INPUTM[y][1], line_1M + width, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][1], line_2M + width, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            // ---------- la moyenne ---------
+            for (int pixIn = left, sampleIn = left * samplesperpixel; pixIn < right;
+                 pixIn += 2, sampleIn += 2*samplesperpixel) {
+
+                memset(pix,0,samplesperpixel*sizeof(float));
+                nbData = 0;
+
+                if (line_1M[pixIn] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_1I[sampleIn+c];
+                }
+
+                if (line_1M[pixIn+1] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_1I[sampleIn+samplesperpixel+c];
+                }
+
+                if (line_2M[pixIn] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_2I[sampleIn+c];
+                }
+
+                if (line_2M[pixIn+1] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_2I[sampleIn+samplesperpixel+c];
+                }
+
+                if (nbData > 1) {
+                    line_outM[pixIn/2] = 255;
+                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = (uint8_t)(pix[c]/(float)nbData);
+                } else {
+                    line_outM[pixIn/2] = 0;
+                }
+            }
+
+            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
+            if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
+
         }
     }
     
-    if (BACKGROUND) TIFFClose(BACKGROUND);
+    /*
+    for (int i = 0; i < nbsamples ; i++) {
+        line_bgI[i] = nodataUInt8[i%samplesperpixel];
+    }
+
+    for(int y = 0; y < 2; y++){
+        
+        if (INPUTI[y][0]) left=0; else left=nbsamples/2;
+        if (INPUTI[y][1]) right=nbsamples; else right=nbsamples/2;
+        
+        for(uint32 h = 0; h < height/2; h++) {
+            if (BGI) if (TIFFReadScanline(BGI, line_bgI,y*height/2 + h)==-1) error("Unable to read data");
+
+            for (int i = 0; i<2*nbsamples; i++) {
+                line_1I[i] = nodataUInt8[i%samplesperpixel];
+                line_2I[i] = nodataUInt8[i%samplesperpixel];
+            }
+
+            if (INPUTI[y][0])
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h)==-1) error("Unable to read data");
+            if (INPUTI[y][1])
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h)==-1) error("Unable to read data");
+            if (INPUTI[y][0])
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1)==-1) error("Unable to read data");
+            if (INPUTI[y][1])
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1)==-1) error("Unable to read data");
+
+            if (BGM) {
+                
+            } else {
+                memcpy(line_outI,line_bgI,nbsamples);
+            }
+
+            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += samplesperpixel)
+                for(int j = samplesperpixel; j--; pos_in++) 
+                    line_outI[pos_out++] = MERGE[((int)line_1I[pos_in] + (int)line_1I[pos_in + samplesperpixel]) + ((int)line_2I[pos_in] + (int)line_2I[pos_in + samplesperpixel])];
+
+            if(TIFFWriteScanline(OUTPUTI, line_outI, y*height/2 + h) == -1) error("Unable to write data");
+        }
+    }*/
     
-    for(int i = 0; i < 2; i++)
-        for(int j = 0; j < 2; j++)
-            if (INPUT[i][j]) TIFFClose(INPUT[i][j]);
-                TIFFClose(OUTPUT);
+    if (BGI) TIFFClose(BGI);
+    if (BGM) TIFFClose(BGM);
+    
+    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) {
+        if (INPUTI[i][j]) TIFFClose(INPUTI[i][j]);
+        if (INPUTM[i][j]) TIFFClose(INPUTM[i][j]);
+    }
+    
+    TIFFClose(OUTPUTI);
+    if (OUTPUTM) TIFFClose(OUTPUTM);
             
     return 0;
 }
 
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+    TIFF* INPUTI[2][2];
+    TIFF* INPUTM[2][2];
+    TIFF* BGI;
+    TIFF* BGM;
+    TIFF* OUTPUTI;
+    TIFF* OUTPUTM;
 
-    char* backgroundImage;
-    char* inputImages[4];
-    char* outputImage;
-    TIFF* INPUT[2][2];
-    TIFF* BACKGROUND;
-    TIFF* OUTPUT;
-
-    parseCommandLine(argc, argv,backgroundImage,inputImages,outputImage);
+    parseCommandLine(argc, argv);
     
-    checkImages(backgroundImage,inputImages,outputImage,INPUT,BACKGROUND,OUTPUT);
+    checkImages(INPUTI,INPUTM,BGI,BGM,OUTPUTI,OUTPUTM);
     
     if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) || 
         (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
@@ -422,15 +691,15 @@ int main(int argc, char* argv[]) {
     
     // Cas MNT
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
-        nodataFloat = new float[samplesperpixel];
-        for(int i = 0; i < samplesperpixel; i++) nodataFloat[i] = (float) nodata[i];
-        return merge4float32(BACKGROUND,INPUT,OUTPUT);
+        nodataFloat32 = new float[samplesperpixel];
+        for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodata[i];
+        return merge4float32(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM);
     }
     // Cas images
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
         nodataUInt8 = new uint8_t[samplesperpixel];
         for(int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodata[i];
-        return merge4uint8(BACKGROUND,INPUT,OUTPUT);
+        return merge4uint8(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM);
     }
 }
 

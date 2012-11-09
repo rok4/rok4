@@ -413,7 +413,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
 
     if (hasMask) {
         *ppMaskOut = factory.createLibtiffImage(maskFileName, bbox, width, height,resx, resy, 1, 8, 1,
-                                                PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE,16);
+                                                PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
 
         if (*ppMaskOut == NULL) {
             LOGGER_ERROR("Impossible de creer le masque " << maskFileName);
