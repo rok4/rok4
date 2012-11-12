@@ -337,178 +337,36 @@ int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int
                 memcpy(image + w*samplesperpixel,nodataFloat32,samplesperpixel*sizeof(float));
             }
         }
-    }
-
-    return 0;
-}
-
-int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
-
-    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
-
-    if (MASK) {
-        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
-        for (int w = 0; w < width; w++) {
-            if (mask[w] < 127) {
-                memcpy(image + w*samplesperpixel,nodataUInt8,samplesperpixel);
-            }
-        }
+    } else {
+        memset(mask,255,width);
     }
 
     return 0;
 }
 
 int merge4float32(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM) {
-    /*int nbsamples = width * samplesperpixel;
+int nbsamples = width * samplesperpixel;
     int left,right;
-    
+
     float line_bgI[nbsamples];
-    uint8_t line_bgM[width];
-    
-    float line_1I[2*nbsamples];
-    uint8_t line_1M[2*width];
-    
-    float line_2I[2*nbsamples];
-    uint8_t line_2M[2*width];
-    
-    float line_outI[nbsamples];
-    uint8_t line_outM[width];
-    
-    for (int i = 0; i < nbsamples ; i++) {
-        line_bgI[i] = nodataFloat32[i%samplesperpixel];
-    }
-    
-    for(int y = 0; y < 2; y++){
-        if (INPUTI[y][0]) left = 0; else left = width/2;
-        if (INPUTI[y][1]) right = width; else right = width/2;
-
-        bool useMask = INPUTM[y][0] && INPUTM[y][1];
-        
-        for(uint32 h = 0; h < height/2; h++) {
-
-            int line = y*height/2 + h;
-
-            // On traite le fond éventuel
-            if (BGI)
-                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
-                    error("Unable to read background line");
-
-            if (left == right) {
-                // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
-                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
-                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
-
-                continue;
-            }
-            
-            memcpy(line_outI,line_bgI,sizeof(float)*nbsamples);
-            memcpy(line_outM,line_bgM,width);
-            
-            if (INPUTI[y][0]) {
-                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
-            }
-                
-            if (INPUTI[y][1]) {
-                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
-            }
-
-            memset(line_1M,255,2*width);
-            memset(line_2M,255,2*width);
-
-            if (INPUTM[y][0]) {
-                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
-            }
-
-            if (INPUTM[y][1]) {
-                if (TIFFReadScanline(INPUTM[y][1], line_1M + nbsamples, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][1], line_2M + nbsamples, 2*h+1) == -1) error("Unable to read data line");
-            }
-
-            for (int pixOut = left; pixOut < right; pixOut++) {
-                float sum[] = 0.;
-                int nbData = 0;
-                
-                if (line_1M[pixOut*2] >= 127) {nbData++; sum += line_1I[pixOut*2*samplesperpixel];}
-                if (line_1M[pixOut*2] >= 127) {nbData++; sum += line_1I[(pixOut*2+1)*samplesperpixel];}
-                if (line_2M[pixOut*2] >= 127) {nbData++; sum += line_2I[pixOut*2*samplesperpixel];}
-                if (line_2M[pixOut*2] >= 127) {nbData++; sum += line_2I[(pixOut*2+1)*samplesperpixel];}
-
-                if (nbData>1) {
-            }
-            
-            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += 2*samplesperpixel) {
-                // we eliminate nodata pixels
-                float* data[4];
-                int nbData = 0;
-                if ( isData(&line_1I[pos_in]) ) data[nbData++]=&line_1I[pos_in];
-                if ( isData(&line_1I[pos_in + samplesperpixel]) ) data[nbData++]=&line_1I[pos_in + samplesperpixel];
-                if ( isData(&line_2I[pos_in]) ) data[nbData++]=&line_2I[pos_in];
-                if ( isData(&line_2I[pos_in + samplesperpixel]) ) data[nbData++]=&line_2I[pos_in + samplesperpixel];
-                    
-                if (nbData>1) {
-                    // we have 2 or more data pixels to calculate the data pixel
-                    for (int s = 0; s < samplesperpixel ; s++) {
-                        float value = 0.;
-                        for (int p = 0; p < nbData; p++) {
-                            value += data[p][s];
-                        }
-                        line_outI[pos_out] = value/(float)nbData;
-                        pos_out++;
-                    }
-                }else {
-                    // we have just 1 or no data pixel : result is a nodata pixel
-                    memcpy(&line_outI[pos_out],nodataFloat32,samplesperpixel*sizeof(float));
-                    pos_out += samplesperpixel;
-                }
-            }
-            
-            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write data");
-            
-        }
-    }
-    
-    if (BGI) TIFFClose(BGI);
-    
-    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) if (INPUTI[i][j]) TIFFClose(INPUTI[i][j]);
-    
-    TIFFClose(OUTPUTI);
-    */
-    return 0;
-};
-
-
-
-int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
-{    
-    uint8 MERGE[1024];
-    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
-
-    int nbsamples = width * samplesperpixel;
-    int left,right;
-
-    uint8_t line_bgI[nbsamples];
     uint8_t line_bgM[width];
 
     int nbData;
     float pix[samplesperpixel];
 
-    uint8_t line_1I[2*nbsamples];
+    float line_1I[2*nbsamples];
     uint8_t line_1M[2*width];
 
-    uint8_t line_2I[2*nbsamples];
+    float line_2I[2*nbsamples];
     uint8_t line_2M[2*width];
 
-    uint8_t line_outI[nbsamples];
+    float line_outI[nbsamples];
     uint8_t line_outM[width];
 
     for (int i = 0; i < nbsamples ; i++) {
-        line_bgI[i] = nodataUInt8[i%samplesperpixel];
+        line_bgI[i] = nodataFloat32[i%samplesperpixel];
     }
-
-    memset(line_bgM,255,width);
+    memset(line_bgM,0,width);
 
     for(int y = 0; y < 2; y++){
         if (INPUTI[y][0]) left = 0; else left = width;
@@ -527,7 +385,6 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
                 // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
                 if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
                 if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
-
                 continue;
             }
 
@@ -568,29 +425,27 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
 
                 if (line_1M[pixIn] >= 127) {
                     nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_1I[sampleIn+c];
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+c];
                 }
 
                 if (line_1M[pixIn+1] >= 127) {
                     nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_1I[sampleIn+samplesperpixel+c];
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+samplesperpixel+c];
                 }
 
                 if (line_2M[pixIn] >= 127) {
                     nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_2I[sampleIn+c];
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+c];
                 }
 
                 if (line_2M[pixIn+1] >= 127) {
                     nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += (float)line_2I[sampleIn+samplesperpixel+c];
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+samplesperpixel+c];
                 }
 
                 if (nbData > 1) {
                     line_outM[pixIn/2] = 255;
-                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = (uint8_t)(pix[c]/(float)nbData);
-                } else {
-                    line_outM[pixIn/2] = 0;
+                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = pix[c]/(float)nbData;
                 }
             }
 
@@ -599,47 +454,156 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
 
         }
     }
-    
-    /*
+
+    if (BGI) TIFFClose(BGI);
+    if (BGM) TIFFClose(BGM);
+
+    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) {
+        if (INPUTI[i][j]) TIFFClose(INPUTI[i][j]);
+        if (INPUTM[i][j]) TIFFClose(INPUTM[i][j]);
+    }
+
+    TIFFClose(OUTPUTI);
+    if (OUTPUTM) TIFFClose(OUTPUTM);
+
+    return 0;
+};
+
+int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
+
+    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
+
+    if (MASK) {
+        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
+        for (int w = 0; w < width; w++) {
+            if (mask[w] < 127) {
+                memcpy(image + w*samplesperpixel,nodataUInt8,samplesperpixel);
+            }
+        }
+    } else {
+        memset(mask,255,width);
+    }
+
+    return 0;
+}
+
+int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
+{    
+    uint8 MERGE[1024];
+    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
+
+    int nbsamples = width * samplesperpixel;
+    int left,right;
+
+    uint8_t line_bgI[nbsamples];
+    uint8_t line_bgM[width];
+
+    int nbData;
+    int pix[samplesperpixel];
+
+    uint8_t line_1I[2*nbsamples];
+    uint8_t line_1M[2*width];
+
+    uint8_t line_2I[2*nbsamples];
+    uint8_t line_2M[2*width];
+
+    uint8_t line_outI[nbsamples];
+    uint8_t line_outM[width];
+
+    // ----------- initialisation du fond -----------
     for (int i = 0; i < nbsamples ; i++) {
         line_bgI[i] = nodataUInt8[i%samplesperpixel];
     }
+    memset(line_bgM,0,width);
 
     for(int y = 0; y < 2; y++){
-        
-        if (INPUTI[y][0]) left=0; else left=nbsamples/2;
-        if (INPUTI[y][1]) right=nbsamples; else right=nbsamples/2;
-        
+        if (INPUTI[y][0]) left = 0; else left = width;
+        if (INPUTI[y][1]) right = 2*width; else right = width;
+
         for(uint32 h = 0; h < height/2; h++) {
-            if (BGI) if (TIFFReadScanline(BGI, line_bgI,y*height/2 + h)==-1) error("Unable to read data");
 
-            for (int i = 0; i<2*nbsamples; i++) {
-                line_1I[i] = nodataUInt8[i%samplesperpixel];
-                line_2I[i] = nodataUInt8[i%samplesperpixel];
+            int line = y*height/2 + h;
+
+            // ------------------- le fond ------------------
+            if (BGI)
+                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
+                    error("Unable to read background line");
+
+            if (left == right) {
+                // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
+                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
+                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
+
+                continue;
             }
 
-            if (INPUTI[y][0])
-                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h)==-1) error("Unable to read data");
-            if (INPUTI[y][1])
-                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h)==-1) error("Unable to read data");
-            if (INPUTI[y][0])
-                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1)==-1) error("Unable to read data");
-            if (INPUTI[y][1])
-                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1)==-1) error("Unable to read data");
+            // -- initilaisation de la sortie avec le fond --
+            memcpy(line_outI,line_bgI,nbsamples);
+            memcpy(line_outM,line_bgM,width);
 
-            if (BGM) {
-                
-            } else {
-                memcpy(line_outI,line_bgI,nbsamples);
+            // ----------------- les images -----------------
+            if (INPUTI[y][0]) {
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
             }
 
-            for(int pos_in = 2*left, pos_out = left; pos_out < right; pos_in += samplesperpixel)
-                for(int j = samplesperpixel; j--; pos_in++) 
-                    line_outI[pos_out++] = MERGE[((int)line_1I[pos_in] + (int)line_1I[pos_in + samplesperpixel]) + ((int)line_2I[pos_in] + (int)line_2I[pos_in + samplesperpixel])];
+            if (INPUTI[y][1]) {
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
+            }
 
-            if(TIFFWriteScanline(OUTPUTI, line_outI, y*height/2 + h) == -1) error("Unable to write data");
+            // ----------------- les masques ----------------
+            memset(line_1M,255,2*width);
+            memset(line_2M,255,2*width);
+
+            if (INPUTM[y][0]) {
+                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            if (INPUTM[y][1]) {
+                if (TIFFReadScanline(INPUTM[y][1], line_1M + width, 2*h) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][1], line_2M + width, 2*h+1) == -1) error("Unable to read data line");
+            }
+
+            // ----------------- la moyenne ----------------
+            for (int pixIn = left, sampleIn = left * samplesperpixel; pixIn < right;
+                 pixIn += 2, sampleIn += 2*samplesperpixel) {
+
+                memset(pix,0,samplesperpixel*sizeof(int));
+                nbData = 0;
+
+                if (line_1M[pixIn] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+c];
+                }
+
+                if (line_1M[pixIn+1] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+samplesperpixel+c];
+                }
+
+                if (line_2M[pixIn] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+c];
+                }
+
+                if (line_2M[pixIn+1] >= 127) {
+                    nbData++;
+                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+samplesperpixel+c];
+                }
+
+                if (nbData > 1) {
+                    line_outM[pixIn/2] = 255;
+                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = MERGE[pix[c]*4/nbData];
+                }
+            }
+
+            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
+            if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
+
         }
-    }*/
+    }
     
     if (BGI) TIFFClose(BGI);
     if (BGM) TIFFClose(BGM);
