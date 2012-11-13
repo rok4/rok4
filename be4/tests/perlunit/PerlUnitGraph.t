@@ -37,7 +37,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
 use BE4::Graph;
@@ -52,15 +52,61 @@ use BE4::DataSource;
 
 # Graph Object Creation
 
-my $forest = BE4::Forest->new();
-my $pyramid = BE4::Pyramid->new();
-my $commands = BE4::Commands->new();
-my $datasource = BE4::DataSource->new();
+my $pyramid = BE4::Pyramid->new({
 
-my $graph = BE4::Graph->new([
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_1M_MNT.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "8",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 32,
+    sampleformat => "float32",
+    photometric => "gray",
+    samplesperpixel => 1,
+    interpolation => "nn",
+
+    color => "-999999"
+});
+
+my $commands = BE4::Commands->new($pyramid);
+
+my $datasource = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../images/BDALTI/"
+    }
+);
+
+my $DSL = BE4::DataSourceLoader->new({
+    filepath_conf => $Bin."/../sources/sources.txt"
+});
+
+my $job_number = 16;
+my $path_temp = $Bin."/../temp/";
+my $path_shell = $Bin."/../temp";
 
 
-]);
+my $forest = BE4::Forest->new($DSL,$pyramid,{
+	job_number => $job_number,
+	path_temp => $path_temp,
+	path_shell => $path_shell,
+});
+
+my $graph = BE4::Graph->new($forest,$datasource,$pyramid,$commands);
 
 ok (defined $graph, "Graph Object created");
 

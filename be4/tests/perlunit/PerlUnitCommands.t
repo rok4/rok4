@@ -37,19 +37,46 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
 use BE4::Commands;
 
-#Other Used Class
+#Other BE4 Used Class
 use BE4::Pyramid;
 
 ######################################################
 
 # Commands Object Creation
 
-my $pyramid = BE4::Pyramid->new();
+my $pyramid = BE4::Pyramid->new({
+
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_10cm.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "19",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 8,
+    sampleformat => "uint",
+    photometric => "rgb",
+    samplesperpixel => 3,
+    interpolation => "bicubic",
+
+    color => "FFFFFF"
+});
 
 my $commands = BE4::Commands->new($pyramid);
 

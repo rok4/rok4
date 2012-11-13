@@ -37,21 +37,77 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
 use BE4::Node;
 
 #Other Used Class
-use BE4::Graph;
+use BE4::Pyramid;
 use BE4::TileMatrix;
+use BE4::DataSource;
+use BE4::DataSourceLoader;
+use BE4::Commands;
 
 ######################################################
 
 # Node Object Creation
 
-my $graph = BE4::Graph->new({
+my $pyramid = BE4::Pyramid->new({
+
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_10cm.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "19",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 8,
+    sampleformat => "uint",
+    photometric => "rgb",
+    samplesperpixel => 3,
+    interpolation => "bicubic",
+
+    color => "FFFFFF"
 });
+
+my $commands = BE4::Commands->new($pyramid);
+
+my $datasource = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../images/BDORTHO/"
+    }
+);
+
+my $DSL = BE4::DataSourceLoader->new({
+    filepath_conf => $Bin."/../sources/sources.txt"
+});
+
+my $job_number = 16;
+my $path_temp = $Bin."/../temp/";
+my $path_shell = $Bin."/../temp";
+
+
+my $forest = BE4::Forest->new($DSL,$pyramid,{
+	job_number => $job_number,
+	path_temp => $path_temp,
+	path_shell => $path_shell,
+});
+
+my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
 
 my $tm = BE4::TileMatrix->new({
     id             => "level4",
@@ -65,10 +121,10 @@ my $tm = BE4::TileMatrix->new({
 });
 
 my $node = BE4::Node->new({
-    "i" => ,
-    "j" => ,
-    "tm" => undef,
-    "graph" => undef,
+    "i" => 13,
+    "j" => 25,
+    "tm" => $tm,
+    "graph" => $qtree,
 });
 
 ok (defined $node, "Node Object created");

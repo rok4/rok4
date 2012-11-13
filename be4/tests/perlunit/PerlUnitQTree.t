@@ -37,7 +37,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
 use BE4::QTree;
@@ -52,13 +52,68 @@ use BE4::DataSource;
 
 # QTree Object Creation
 
-my $forest = BE4::Forest->new();
-my $pyramid = BE4::Pyramid->new();
-my $commands = BE4::Commands->new();
-my $datasource = BE4::DataSource->new();
+my $pyramid = BE4::Pyramid->new({
 
-my $qtree = BE4::QTree->new({
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_10cm.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "19",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 8,
+    sampleformat => "uint",
+    photometric => "rgb",
+    samplesperpixel => 3,
+    interpolation => "bicubic",
+
+    color => "FFFFFF"
 });
+
+my $commands = BE4::Commands->new($pyramid);
+
+my $datasource = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../images/BDORTHO/"
+    }
+);
+
+my $DSL = BE4::DataSourceLoader->new({
+    path_image => $Bin."/../images/BDORTHO",
+    srs => "IGNF:LAMB93",
+},{
+    wms_layer   => "LAYER",
+    wms_url     => "http://url/server/wms",
+    wms_version => "1.3.0",
+    wms_request => "getMap",
+    wms_format  => "image/tiff"
+}, "18");
+
+my $job_number = 16;
+my $path_temp = $Bin."/../temp/";
+my $path_shell = $Bin."/../temp";
+
+
+my $forest = BE4::Forest->new($DSL,$pyramid,{
+	job_number => $job_number,
+	path_temp => $path_temp,
+	path_shell => $path_shell,
+});
+
+my $qtree = BE4::Graph->new($forest,$datasource,$pyramid,$commands);
 
 ok (defined $qtree, "QTree Object created");
 

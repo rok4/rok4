@@ -37,7 +37,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
+
 use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
