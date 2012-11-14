@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2012-10-23 10:50+0200\n"
+"POT-Creation-Date: 2012-11-14 08:52+0100\n"
 "PO-Revision-Date: 2012-10-23 11:30+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1327,11 +1327,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:540
+#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:543
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:540
+#: Request.cpp:987 Request.cpp:1008 Rok4Server.cpp:543
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 

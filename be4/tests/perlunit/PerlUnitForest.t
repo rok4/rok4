@@ -37,7 +37,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
+use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 
 # My tested class
 use BE4::Forest;
@@ -80,33 +80,25 @@ my $pyramid = BE4::Pyramid->new({
     color => "FFFFFF"
 });
 
-ok (defined $pyramid, "Pyramid Object created");
+my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources.txt" });
 
-my $DSL = BE4::DataSourceLoader->new({
-    path_image => $Bin."/../images/BDORTHO",
-    srs => "IGNF:LAMB93",
-},{
-    wms_layer   => "LAYER",
-    wms_url     => "http://url/server/wms",
-    wms_version => "1.3.0",
-    wms_request => "getMap",
-    wms_format  => "image/tiff"
-}, "18");
-
-ok (defined $DSL, "DSL Object created");
-
-my $job_number = 16;
-my $path_temp = $Bin."/../temp/";
-my $path_shell = $Bin."/../temp";
-
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Pyramid's levels created");
 
 my $forest = BE4::Forest->new($pyramid,$DSL,{
-	job_number => $job_number,
-	path_temp => $path_temp,
-	path_shell => $path_shell,
+	job_number => 16,
+	path_temp => $Bin."/../temp/",
+	path_shell => $Bin."/../temp",
 });
 
 ok (defined $forest, "Forest Object created");
+
+is (scalar @{$forest->getGraphs}, 4, "Forest contains 4 graphs");
+
+######################################################
+
+# Cleaning
+
+# We remove all script files created by Forest constructor
 
 ######################################################
 

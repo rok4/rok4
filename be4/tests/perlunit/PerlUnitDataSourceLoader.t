@@ -57,15 +57,16 @@ ok (defined $newDSL, "DataSourceLoader created");
 is ($newDSL->getNumberDataSources(), 4, "All expected data sources are created");
 
 my $oldDSL = BE4::DataSourceLoader->new({
-    path_image => $Bin."/../images/BDORTHO",
-    srs => "IGNF:LAMB93",
-},{
-    wms_layer   => "LAYER",
-    wms_url     => "http://url/server/wms",
-    wms_version => "1.3.0",
-    wms_request => "getMap",
-    wms_format  => "image/tiff"
-}, "18");
+        path_image => $Bin."/../images/BDORTHO",
+        srs => "IGNF:LAMB93",
+    },{
+        wms_layer   => "LAYER",
+        wms_url     => "http://url/server/wms",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff"
+    }, "18"
+);
 ok (defined $oldDSL, "DataSourceLoader created with old configuration");
 
 ######################################################
