@@ -84,4 +84,13 @@ ok (defined $commands, "Commands Object created");
 
 ######################################################
 
+# Testing Split Header Creation
+my $header = $commands->configureFunctions();
+ok (defined $header && $header ne "", "Header created with configureFunctions method.");
+ok ($header =~ m/Wms2work/, "Header contains Wms2work function.");
+ok ($header =~ m/Cache2work/, "Header contains Cache2work function.");
+ok ($header =~ m/MergeNtiff/, "Header contains MergeNtiff function.");
+ok ($header =~ m/Merge4tiff/, "Header contains Merge4tiff function.");
+ok ($header =~ m/Work2cache/, "Header contains Work2cache function.");
+
 done_testing();

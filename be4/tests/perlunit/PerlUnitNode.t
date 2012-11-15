@@ -126,5 +126,13 @@ my $node = BE4::Node->new({
 ok (defined $node, "Node Object created");
 
 ######################################################
+# testing Geometric function
+
+ok (! $node->isPointInNodeBbox(20000000,0), "the point isn't in the bbox.");
+ok (! $node->isPointInNodeBbox(0,0), "the point is in the bbox.");
+ok (! $node->isPointInNodeBbox(20000000,-20000000,30000000,-30000000), "bbox isn't intersecting node bbox.");
+ok (! $node->isPointInNodeBbox(0,0,1,1), "bbox is intersecting node bbox.");
+
+
 
 done_testing();

@@ -143,6 +143,7 @@ is (scalar @{$forest->getGraphs}, 2, "Graph Forest contains 2 graphs");
 # Cleaning
 
 # We remove all script files created by Forest constructor
+`rm -fr $Bin./../temp/* `;
 
 ######################################################
 
