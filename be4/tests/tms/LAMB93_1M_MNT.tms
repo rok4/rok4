@@ -1,7 +1,7 @@
 <tileMatrixSet>
 	<crs>IGNF:LAMB93</crs>
 	<tileMatrix>
-		<id>0</id>
+		<id>level_0</id>
 		<resolution>1000</resolution>
 		<topLeftCornerX>-500</topLeftCornerX>
 		<topLeftCornerY>12000500</topLeftCornerY>
@@ -11,7 +11,7 @@
 		<matrixHeight>23</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>1</id>
+		<id>level_1</id>
 		<resolution>500</resolution>
 		<topLeftCornerX>-250</topLeftCornerX>
 		<topLeftCornerY>12000250</topLeftCornerY>
@@ -21,7 +21,7 @@
 		<matrixHeight>46</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>2</id>
+		<id>level_2</id>
 		<resolution>250</resolution>
 		<topLeftCornerX>-125</topLeftCornerX>
 		<topLeftCornerY>12000125</topLeftCornerY>
@@ -31,7 +31,7 @@
 		<matrixHeight>92</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>3</id>
+		<id>level_3</id>
 		<resolution>100</resolution>
 		<topLeftCornerX>-50</topLeftCornerX>
 		<topLeftCornerY>12000050</topLeftCornerY>
@@ -41,7 +41,7 @@
 		<matrixHeight>230</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>4</id>
+		<id>level_4</id>
 		<resolution>75</resolution>
 		<topLeftCornerX>-37.5</topLeftCornerX>
 		<topLeftCornerY>12000037.5</topLeftCornerY>
@@ -51,7 +51,7 @@
 		<matrixHeight>307</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>5</id>
+		<id>level_5</id>
 		<resolution>50</resolution>
 		<topLeftCornerX>-25</topLeftCornerX>
 		<topLeftCornerY>12000025</topLeftCornerY>
@@ -61,7 +61,7 @@
 		<matrixHeight>460</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>6</id>
+		<id>level_6</id>
 		<resolution>25</resolution>
 		<topLeftCornerX>-12.5</topLeftCornerX>
 		<topLeftCornerY>12000012.5</topLeftCornerY>
@@ -71,7 +71,7 @@
 		<matrixHeight>920</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>7</id>
+		<id>level_7</id>
 		<resolution>5</resolution>
 		<topLeftCornerX>-2.5</topLeftCornerX>
 		<topLeftCornerY>12000002.5</topLeftCornerY>
@@ -81,7 +81,7 @@
 		<matrixHeight>4600</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
-		<id>8</id>
+		<id>level_8</id>
 		<resolution>1</resolution>
 		<topLeftCornerX>-0.5</topLeftCornerX>
 		<topLeftCornerY>12000000.5</topLeftCornerY>

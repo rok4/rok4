@@ -409,7 +409,7 @@ sub computeTmSource {
   my $self = shift;
   my $tmTarget = shift;
   
-  if ($tmTarget->{id} == $self->{bottomID}) {
+  if ($tmTarget->{id} eq $self->{bottomID}) {
     return TRUE;
   }
 

@@ -49,7 +49,7 @@ use BE4::Pyramid;
 
 ######################################################
 
-# Forest Object Creation
+# Forest Object Creation (with QTree)
 
 my $pyramid = BE4::Pyramid->new({
 
@@ -82,7 +82,7 @@ my $pyramid = BE4::Pyramid->new({
 
 my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources.txt" });
 
-ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Pyramid's levels created");
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
 my $forest = BE4::Forest->new($pyramid,$DSL,{
 	job_number => 16,
@@ -90,9 +90,53 @@ my $forest = BE4::Forest->new($pyramid,$DSL,{
 	path_shell => $Bin."/../temp",
 });
 
-ok (defined $forest, "Forest Object created");
+ok (defined $forest, "Forest Object containing QTree created");
 
-is (scalar @{$forest->getGraphs}, 4, "Forest contains 4 graphs");
+is (scalar @{$forest->getGraphs}, 4, "QTree Forest contains 4 graphs");
+
+# Forest Object Creation (with Graph)
+
+$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources_Graph.txt" });
+$pyramid = BE4::Pyramid->new({
+
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_1M_MNT.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "6",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 32,
+    sampleformat => "float",
+    photometric => "gray",
+    samplesperpixel => 1,
+    interpolation => "bicubic",
+
+    color => "-99999"
+});
+
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
+
+$forest = BE4::Forest->new($pyramid,$DSL,{
+	job_number => 16,
+	path_temp => $Bin."/../temp/",
+	path_shell => $Bin."/../temp",
+});
+
+ok (defined $forest, "Forest Object containing Graph  created");
+
+is (scalar @{$forest->getGraphs}, 2, "Graph Forest contains 2 graphs");
 
 ######################################################
 

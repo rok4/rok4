@@ -81,36 +81,31 @@ my $pyramid = BE4::Pyramid->new({
 
     color => "FFFFFF"
 });
+ok (defined $pyramid,"pyramid ok.");
+
+my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources.txt" });
+ok (defined $DSL,"DSL ok.");
 
 my $commands = BE4::Commands->new($pyramid);
+ok (defined $commands,"commands ok.");
 
-my $datasource = BE4::DataSource->new(
-    "19",
-    {
-        srs => "IGNF:LAMB93",
-        path_image => $Bin."/../images/BDORTHO/"
-    }
-);
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
+my $datasource = ${$DSL->getDataSources()}[0];
+ok (defined $datasource,"datasource ok.");
 
-my $DSL = BE4::DataSourceLoader->new({
-    filepath_conf => $Bin."/../sources/sources.txt"
+my $forest = BE4::Forest->new($pyramid,$DSL,{
+	job_number => 16,
+	path_temp => $Bin."/../temp/",
+	path_shell => $Bin."/../temp",
 });
-
-my $job_number = 16;
-my $path_temp = $Bin."/../temp/";
-my $path_shell = $Bin."/../temp";
-
-
-my $forest = BE4::Forest->new($DSL,$pyramid,{
-	job_number => $job_number,
-	path_temp => $path_temp,
-	path_shell => $path_shell,
-});
+ok (defined $forest,"forest ok.");
+print "\n".$datasource->exportForDebug()."\n";
 
 my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
+ok (defined $qtree,"qtree ok.");
 
 my $tm = BE4::TileMatrix->new({
-    id             => "level4",
+    id             => "level_4",
     resolution     => 0.324,
     topLeftCornerX => 0,
     topLeftCornerY => 12000,
@@ -119,6 +114,7 @@ my $tm = BE4::TileMatrix->new({
     matrixWidth    => 100,
     matrixHeight   => 47
 });
+ok (defined $tm,"tm ok.");
 
 my $node = BE4::Node->new({
     "i" => 13,
