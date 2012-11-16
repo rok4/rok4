@@ -522,10 +522,11 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 /** Separe les requetes WMS et WMTS */
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if ( request->service == "wms" ) {
-        processWMS ( request, fcgxRequest );
-    } else if ( request->service=="wmts" ) {
+    if (supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
+        //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
+    } else if (supportWMS && (request->service=="wms" || request->request == "getmap") ) {
+        processWMS ( request, fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
