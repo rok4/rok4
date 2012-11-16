@@ -106,6 +106,7 @@ variable: $self
     * order : integer
     * dir_image
     * dir_nodata
+    * dir_mask
     * dir_metadata - NOT IMPLEMENTED
     * compress_metadata - NOT IMPLEMENTED
     * type_metadata - NOT IMPLEMENTED
@@ -121,34 +122,35 @@ variable: $self
 # Group: constructor
 
 sub new {
-  my $this = shift;
-
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
+    my $this = shift;
+    
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    my $self = {
         id                => undef,
         order             => undef,
         dir_image         => undef,
         dir_nodata        => undef,
+        dir_mask          => undef,
         dir_metadata      => undef,
         compress_metadata => undef,
         type_metadata     => undef,
         size              => [],
         dir_depth         => 0,
         limit             => [undef,undef,undef,undef]
-  };
-
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  if (! $self->_init(@_)) {
-    ERROR ("One parameter is missing !");
-    return undef;
-  }
-  
-  return $self;
+    };
+    
+    bless($self, $class);
+    
+    TRACE;
+    
+    # init. class
+    if (! $self->_init(@_)) {
+        ERROR ("One parameter is missing !");
+        return undef;
+    }
+    
+    return $self;
 }
 
 sub _init {
@@ -161,51 +163,55 @@ sub _init {
     
     # init. params
     
-    # parameters mandatoy !
+    # parameters mandatory !
     if (! exists($params->{id})) {
-      ERROR ("key/value required to 'id' !");
-      return FALSE;
+        ERROR ("key/value required to 'id' !");
+        return FALSE;
     }
     if (! exists($params->{order})) {
-      ERROR ("key/value required to 'order' !");
-      return FALSE;
+        ERROR ("key/value required to 'order' !");
+        return FALSE;
     }
     if (! exists($params->{dir_image})) {
-      ERROR ("key/value required to 'dir_image' !");
-      return FALSE;
+        ERROR ("key/value required to 'dir_image' !");
+        return FALSE;
     }
     if (! exists($params->{dir_nodata})) {
-      ERROR ("key/value required to 'dir_nodata' !");
-      return FALSE;
+        ERROR ("key/value required to 'dir_nodata' !");
+        return FALSE;
     }
     if (! exists($params->{size})) {
-      ERROR ("key/value required to 'size' !");
-      return FALSE;
+        ERROR ("key/value required to 'size' !");
+        return FALSE;
     }
     if (! exists($params->{dir_depth})) {
-      ERROR ("key/value required to 'dir_depth' !");
-      return FALSE;
+        ERROR ("key/value required to 'dir_depth' !");
+        return FALSE;
     }
     if (! exists($params->{limit})) {
-      ERROR ("key/value required to 'limit' !");
-      return FALSE;
+        ERROR ("key/value required to 'limit' !");
+        return FALSE;
     }
 
     # check type ref
     if (! scalar ($params->{size})){
-      ERROR("List empty to 'size' !");
-      return FALSE;
+        ERROR("List empty to 'size' !");
+        return FALSE;
     }
     if (! $params->{dir_depth}){
-      ERROR("Value not informed to 'dir_depth' !");
-      return FALSE;
+        ERROR("Value not valid for 'dir_depth' (0 or undef) !");
+        return FALSE;
     }
     if (! scalar (@{$params->{limit}})){
-      ERROR("List empty to 'limit' !");
-      return FALSE;
+        ERROR("List empty to 'limit' !");
+        return FALSE;
     }
     
     # parameters optional !
+    if (exists $params->{dir_mask} && defined $params->{dir_mask}){
+        $self->{dir_mask} = $params->{dir_mask};
+    }
+    
     # TODO : metadata 
     
     $self->{id}             = $params->{id};
@@ -240,10 +246,14 @@ sub getDirImage {
     return $self->{dir_image};
 }
 
-
 sub getDirNodata {
     my $self = shift;
     return $self->{dir_nodata};
+}
+
+sub getDirMask {
+    my $self = shift;
+    return $self->{dir_mask};
 }
 
 
@@ -382,6 +392,7 @@ BE4::Level - Describe a level in a pyramid.
         order             => 12,
         dir_image         => "./BDORTHO/IMAGE/level_5/",
         dir_nodata        => "./BDORTHO/NODATA/level_5/",
+        dir_mask        => "./BDORTHO/MASK/level_5/",
         dir_metadata      => undef,
         compress_metadata => undef,
         type_metadata     => undef,
@@ -410,6 +421,10 @@ Relative images' directory path for this level, from the pyramid's descriptor.
 
 Relative nodata's directory path for this level, from the pyramid's descriptor..
 
+=item dir_mask
+
+Relative mask' directory path for this level, from the pyramid's descriptor.
+
 =item dir_metadata, compress_metadata, type_metadata
 
 Relative metadata's directory path for this level, from the pyramid's descriptor.. NOT IMPLEMENTED.
@@ -433,6 +448,9 @@ Extrems tiles indices of data in this level : [jmin,jmax,imin,imax].
     <level>
         <tileMatrix>level_5</tileMatrix>
         <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <mask>
+            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+        </mask>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>

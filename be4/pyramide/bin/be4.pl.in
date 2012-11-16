@@ -413,10 +413,6 @@ sub checkParams {
         ERROR ("Parameters Datasource can not be null !");
         return FALSE;
     }
-    # harvesting
-    if (defined $harvesting) {
-        WARN("Use the 'harvesting' section is deprecated !");
-    }
     
     # process
     if (! defined $process) {

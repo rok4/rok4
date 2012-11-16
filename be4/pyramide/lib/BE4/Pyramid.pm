@@ -114,6 +114,7 @@ variable: $self
     * dir_depth
     * dir_image
     * dir_nodata
+    * dir_mask
     * dir_metadata
     * image_width
     * image_height
@@ -163,6 +164,7 @@ sub new {
         dir_depth    => undef,
         dir_image    => undef,
         dir_nodata   => undef,
+        dir_mask     => undef,
         dir_metadata => undef,
         image_width  => undef,
         image_height => undef,
@@ -320,7 +322,7 @@ sub _init {
         $params->{gamma} = 1;
     }
     
-    # Directories names : data, nodata and metadata
+    # Directories names : data, nodata, mask and metadata
     if (! exists($params->{dir_image})) {
         WARN ("Parameter 'dir_image' has not been set. The default value is 'IMAGE'");
         $params->{dir_image} = 'IMAGE';
@@ -333,11 +335,16 @@ sub _init {
     }
     $self->{dir_nodata} = $params->{dir_nodata};
     #
-    if (! exists($params->{dir_metadata})) {
-        WARN ("Parameter 'dir_metadata' has not been set. The default value is 'METADATA'");
-        $params->{dir_nodata} = 'METADATA';
+    if (exists $params->{dir_mask} && defined $params->{dir_mask}) {
+        INFO ("We want to generate mask");
+        $self->{dir_mask} = $params->{dir_mask};
     }
-    $self->{dir_metadata} = $params->{dir_metadata};
+    #
+    if (exists $params->{dir_metadata} && defined $params->{dir_metadata}) {
+        WARN ("Metadatas are not implemented !");
+        # INFO ("We want to generate metadata");
+        # $self->{dir_metadata} = $params->{dir_metadata};
+    }
     
     return TRUE;
 }
@@ -671,20 +678,24 @@ sub readConfPyramid {
                             $v->findvalue('TMSLimits/maxTileCol')
                           );
         #
-        my $baseimage = File::Spec->catdir($self->getNewDataDir(),
-                                           $self->getDirImage(),
-                                           $tagtm );
+        my $baseimage = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $tagtm );
         #
-        my $basenodata = File::Spec->catdir($self->getNewDataDir(),
-                                           $self->getDirNodata(),
-                                           $tagtm );
+        my $basenodata = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $tagtm );
+        #
+        my $dirMask = undef;
+        if (defined $self->getDirMask()) {
+            my $basemask = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $tagtm );
+            $dirMask = File::Spec->abs2rel($basemask, $self->getNewDescriptorDir);
+        }
         #
         my $levelOrder = $self->getOrderfromID($tagtm);
+            
         my $objLevel = BE4::Level->new({
             id                => $tagtm,
             order             => $levelOrder,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->{new_pyramid}->{desc_path}),
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->{new_pyramid}->{desc_path}),
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getNewDescriptorDir),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getNewDescriptorDir),
+            dir_mask          => $dirMask, # Can be undefined
             dir_metadata      => undef,      # TODO !
             compress_metadata => undef,      # TODO !
             type_metadata     => undef,      # TODO !
@@ -986,6 +997,12 @@ sub createLevels {
 
         # base dir nodata
         my $basenodata = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $ID);
+        
+        my $dirMask = undef;
+        if (defined $self->getDirMask()) {
+            my $basemask = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $ID );
+            $dirMask = File::Spec->abs2rel($basemask, $self->getNewDescriptorDir);
+        }
 
         # TODO : metadata
         #   compression, type ...
@@ -995,11 +1012,11 @@ sub createLevels {
         my $params = {
             id                => $ID,
             order             => $order,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->{new_pyramid}->{desc_path}),
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->{new_pyramid}->{desc_path}),
-            dir_metadata      => undef,           # TODO,
-            compress_metadata => undef,           # TODO  : raw  => TIFF_RAW_INT8,
-            type_metadata     => "INT32_DB_LZW",  # FIXME : type => INT32_DB_LZW,
+            dir_image         => File::Spec->abs2rel($baseimage, $self->getNewDescriptorDir),
+            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getNewDescriptorDir),
+            dir_metadata      => undef, # TODO
+            compress_metadata => undef, # TODO
+            type_metadata     => undef, # TODO
             size              => [$tilesperwidth, $tilesperheight],
             dir_depth         => $self->getDirDepth(),
             limit             => [undef, undef, undef, undef], # computed
@@ -1399,6 +1416,17 @@ sub writeCachePyramid {
             }
         }
         
+        if (defined $self->getDirMask) {
+            my $maskDir = File::Spec->rel2abs($objLevel->getDirMask, $self->getNewDescriptorDir);
+            if (! -d $maskDir) {
+                eval { mkpath([$maskDir]); };
+                if ($@) {
+                    ERROR(sprintf "Can not create the mask directory '%s' : %s !", $maskDir , $@);
+                    return FALSE;
+                }
+            }
+        }
+        
         #my $metadataDir = File::Spec->rel2abs($objLevel->getDirMetadata, $self->getNewDescriptorDir);
         #if (! -d $metadataDir) {
         #    eval { mkpath([$metadataDir]); };
@@ -1542,7 +1570,7 @@ sub getTileMatrixSet {
     return $self->{tms};
 }
 
-################ Directories ################
+############## Directories names #############
 
 sub getDirImage {
     my $self = shift;
@@ -1551,6 +1579,10 @@ sub getDirImage {
 sub getDirNodata {
     my $self = shift;
     return $self->{dir_nodata};
+}
+sub getDirMask{
+    my $self = shift;
+    return $self->{dir_mask};
 }
 sub getDirMetadata {
     my $self = shift;

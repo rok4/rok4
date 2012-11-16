@@ -67,9 +67,10 @@ END {}
 Group: variable
 
 variable: $self
-    * PATHFILENAME
+    * completePath
     * filename
     * filepath
+    * maskCompletePath
     * xmin
     * ymax
     * xmax
@@ -94,9 +95,10 @@ sub new {
   my $class= ref($this) || $this;
   # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-    PATHFILENAME => undef,
+    completePath => undef,
     filename => undef,
     filepath => undef,
+    maskCompletePath => undef,
     xmin => undef,
     ymax => undef,
     xmax => undef,
@@ -134,11 +136,19 @@ sub _init {
     }
     
     # init. params    
-    $self->{PATHFILENAME}=$param;
+    $self->{completePath} = $param;
     
     #
     $self->{filepath} = File::Basename::dirname($param);
     $self->{filename} = File::Basename::basename($param);
+    
+    my $maskPath = $param;
+    $maskPath =~ s/\.(tif|TIF|tiff|TIFF)$/\.msk/;
+    
+    if (-f $maskPath) {
+        INFO(sprintf "We have a mask associated to the image '%s' :\n\t%s",$param,$maskPath);
+        $self->{maskCompletePath} = $maskPath;
+    }
     
     return TRUE;
 }
@@ -163,7 +173,7 @@ sub computeInfo {
     DEBUG(sprintf "compute '%s'", $image);
 
     my $dataset;
-    eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
+    eval { $dataset= Geo::GDAL::Open($self->{completePath}, 'ReadOnly'); };
     if ($@) {
         ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
         return ();
@@ -488,7 +498,7 @@ sub exportForDebug {
     my $export = "";
     
     $export .= sprintf "\nObject BE4::GeoImage :\n";
-    $export .= sprintf "\t Image path : %s\n",$self->{PATHFILENAME};
+    $export .= sprintf "\t Image path : %s\n",$self->{completePath};
 
     $export .= "\t Dimensions (in pixel) :\n";
     $export .= sprintf "\t\t- width : %s\n",$self->{width};
@@ -543,17 +553,21 @@ BE4::GeoImage - Describe a georeferenced image and enable to know its components
 
 =over 4
 
-=item PATHFILENAME
+=item completePath
 
 Complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
 
 =item filename
 
-Just the image name (XXXXX_YYYYY.tif)
+Just the image name, with file extension (XXXXX_YYYYY.tif).
 
 =item filepath
 
 The directory which contain the image (/home/ign/DATA)
+
+=item maskCompletePath
+
+Complete path of associated mask, if exists (undef otherwise).
 
 =item xmin, ymin, xmax, ymax
 
