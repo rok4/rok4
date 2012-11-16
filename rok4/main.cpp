@@ -169,6 +169,9 @@ int main ( int argc, char** argv ) {
         reload = false;
         std::cout<< _("Lancement du serveur rok4") << "["<< getpid()<<"]" <<std::endl;
         W=rok4InitServer ( serverConfigFile.c_str() );
+        if (!W) {
+            return 1;
+        }
         if ( firstStart ) {
             W->initFCGI();
             firstStart = false;

@@ -145,15 +145,19 @@ void* Rok4Server::thread_loop ( void* arg ) {
 */
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog ) :
+                         std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ) {
+    running ( false ), notFoundError ( NULL ), supportWMTS(supportWMTS), supportWMS(supportWMS) {
 
-    LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
-    buildWMSCapabilities();
-    LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
-    buildWMTSCapabilities();
+    if (supportWMS) {
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
+        buildWMSCapabilities();
+    }
+    if (supportWMTS) {
+        LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
+        buildWMTSCapabilities();
+    }
 }
 
 Rok4Server::~Rok4Server() {
@@ -232,7 +236,9 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
 
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
-
+    if (!supportWMS) {
+        // Return Error 
+    }
     std::string version;
     DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
     if ( errorResp ) {
@@ -253,7 +259,9 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 }
 
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
-
+    if (!supportWMTS) {
+        // Return Error
+    }
     std::string version;
     DataStream* errorResp = request->getCapWMTSParam ( servicesConf,version );
     if ( errorResp ) {
@@ -272,12 +280,11 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
     return new MessageDataStream ( capa,"application/xml" );
 }
 
-/*
+/**
  * Traitement d'une requete GetMap
  * @return Un pointeur sur le flux de donnees resultant
  * @return Un message d'erreur en cas d'erreur
  */
-
 DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
@@ -456,12 +463,11 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 
-/*
+/**
  * Traitement d'une requete GetTile
  * @return Un pointeur sur la source de donnees de la tuile requetee
  * @return Un message d'erreur en cas d'erreur
  */
-
 DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
@@ -502,6 +508,8 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "gettile" ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
+    } else if ( request->request == "getversion" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
