@@ -280,12 +280,11 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
     return new MessageDataStream ( capa,"application/xml" );
 }
 
-/*
+/**
  * Traitement d'une requete GetMap
  * @return Un pointeur sur le flux de donnees resultant
  * @return Un message d'erreur en cas d'erreur
  */
-
 DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
@@ -464,12 +463,11 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 
-/*
+/**
  * Traitement d'une requete GetTile
  * @return Un pointeur sur la source de donnees de la tuile requetee
  * @return Un message d'erreur en cas d'erreur
  */
-
 DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
@@ -532,13 +530,11 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 /** Separe les requetes WMS et WMTS */
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if (supportWMS && request->request == "getmap"){
-        request->service = "wms";
-    }
-    if (supportWMS && request->service == "wms" ) {
-        processWMS ( request, fcgxRequest );
-    } else if (supportWMTS && request->service=="wmts") {
+    if (supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
+        //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
+    } else if (supportWMS && (request->service=="wms" || request->request == "getmap") ) {
+        processWMS ( request, fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
