@@ -288,7 +288,6 @@ sub identifyBottomNodes {
     my $tm = $self->getPyramid()->getTileMatrixSet()->getTileMatrix($bottomID);
     if (! defined $tm) {
         ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug());
-printf "\n\nImpossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.\n\n",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug();
         return FALSE;
     };
     my $datasource = $self->{datasource};

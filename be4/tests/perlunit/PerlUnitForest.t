@@ -143,7 +143,11 @@ is (scalar @{$forest->getGraphs}, 2, "Graph Forest contains 2 graphs");
 # Cleaning
 
 # We remove all script files created by Forest constructor
-`rm -fr $Bin./../temp/* `;
+my $delete_command = "rm -fr $Bin/../temp/*";
+if ( system($delete_command) == 0) {
+    print "\n[ERROR] : Echec lors de la suppression des fichiers temporaires.\n" ;
+}
+
 
 ######################################################
 
