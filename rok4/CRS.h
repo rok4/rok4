@@ -41,15 +41,30 @@
 #include <string>
 #include "BoundingBox.h"
 /**
-* @class CRS
-* @brief Gestion des CRS
-*/
+ * \file CRS.h
+ * \~french
+ * \brief Définition de la de gestion des systèmes de référence
+ * \~english
+ * \brief Define the reference systems handler
+ */
 
 
 class CRS {
 private:
-    std::string requestCode;    // Code du CRS tel qu'il est ecrit dans la requete WMS
-    std::string proj4Code;      // Code du CRS dans la base proj4
+    /**
+     * \~french \brief Code du CRS tel qu'il est ecrit dans la requete WMS
+     * \~english \brief CRS identifier from the WMS request
+     */
+    std::string requestCode;    
+    /**
+     * \~french \brief Code du CRS dans la base proj4
+     * \~english \brief CRS identifier from Proj registry 
+     */
+    std::string proj4Code;
+    /**
+     * \~french \brief Emprise de définition du CRS
+     * \~english \brief CRS's definition area
+     */
     BoundingBox<double> definitionArea;
 public:
     CRS();
@@ -69,16 +84,34 @@ public:
     bool operator== ( const CRS& crs ) const;
     bool operator!= ( const CRS& crs ) const;
     ~CRS() {};
+    
+    /**
+     * \~french
+     * \brief Retourne le code du CRS tel qu'il est ecrit dans la requete WMS
+     * \return code du CRS
+     * \~english
+     * \brief Return the CRS identifier from the WMS request
+     * \return CRS identifier
+     */
     std::string inline getRequestCode() {
         return requestCode;
     }
+    
+    /**
+     * \~french
+     * \brief Retourne le code du CRS dans la base proj4
+     * \return code du CRS
+     * \~english
+     * \brief Return the CRS identifier from Proj registry 
+     * \return CRS identifier
+     */
     std::string inline getProj4Code() {
         return proj4Code;
     }
     BoundingBox<double> boundingBoxFromGeographic ( BoundingBox<double> geographicBBox );
     BoundingBox<double> boundingBoxFromGeographic ( double minx, double miny, double maxx, double maxy );
     
-    BoundingBox<double> boundingBoxToGeographic ( BoundingBox<double> geographicBBox );
+    BoundingBox<double> boundingBoxToGeographic ( BoundingBox<double> projectedBBox );
     BoundingBox<double> boundingBoxToGeographic ( double minx, double miny, double maxx, double maxy );
 
     bool validateBBox ( BoundingBox< double > BBox );
