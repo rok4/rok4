@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file LegendURL.cpp
+ * \~french
+ * \brief Implémentation de la classe LegendURL gérant les éléments de légendes des documents de capacités
+ * \~english
+ * \brief Implement the LegendURL Class handling capabilities legends elements
+ */
+
 #include "LegendURL.h"
 
 LegendURL::LegendURL ( std::string format, std::string href, int width, int height,

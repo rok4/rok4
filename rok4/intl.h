@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file intl.h
+ * \~french \brief Fonctions d'internationalisation
+ * \todo internationalisation des messages clients 
+ * \~english \brief Internationalization functions
+ * \todo handle internationalized messages
+ */
+
 #ifndef _INTL_
 #define _INTL_
 
