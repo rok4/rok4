@@ -818,7 +818,11 @@ Mandatory.
 
 =item path_temp
 
-Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new/>.
+Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new/SCRIPT_X>.
+
+=item path_temp_common
+
+Temporary directory path in which we create a directory named like the new cache : temporary files which have to be shared between several scripts are written in F<path_temp_common/pyr_name_new/COMMON>.
 
 Mandatory.
 
@@ -842,7 +846,9 @@ TMS file: F<tms_path/tms_name>
 
 Scripts: F<path_shell/SCRIPT_X.sh>
 
-Temporary directory: F<path_temp/pyr_name_new/>
+Temporary directory: F<path_temp/pyr_name_new/SCRIPT_X>
+
+Common temporary directory: F<path_temp_common/pyr_name_new/COMMON>
 
 =head2 DataSource configuration
 

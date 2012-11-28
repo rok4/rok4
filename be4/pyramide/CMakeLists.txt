@@ -55,10 +55,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_B
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
-add_custom_command(OUTPUT install/lib COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+add_custom_command(OUTPUT install_be4 COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 
-add_custom_target(be4-build ALL DEPENDS install/lib)
+add_custom_target(be4-build ALL DEPENDS install_be4)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -76,18 +76,21 @@ if(UNITTEST)
     ENABLE_TESTING()
     add_definitions(-DUNITTEST)
 
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../tests/perlunit)
-    # Exécution des tests unitaires PerlUnit
-    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "../tests/perlunit/PerlUnit*.t" )
-    #ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} ../tests/cppunit/main.pl ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
+        # Exécution des tests unitaires PerlUnit
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/PerlUnit*.t" )
+        
+        FOREACH(test ${UnitTests_SRCS})
+            MESSAGE("  - adding test ${test}")
+            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
+            ADD_TEST(NAME ${TestName} COMMAND perl -I install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+        ENDFOREACH(test)
 
-    FOREACH(test ${UnitTests_SRCS})
-        MESSAGE("  - adding test ${test}")
-        GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-        ADD_TEST(NAME ${TestName} COMMAND perl -I install/lib/perl5 ${CMAKE_CURRENT_SOURCE_DIR}/${test})
-    ENDFOREACH(test)
+        # Nettoyage du dossier temporaire
+        MESSAGE("  - adding cleaning")
+        ADD_TEST(NAME "Cleaning" COMMAND rm -r ${CMAKE_CURRENT_BINARY_DIR}/src/tests/temp)
 
-    endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../tests/perlunit)
+    endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
   
 endif(UNITTEST)
 

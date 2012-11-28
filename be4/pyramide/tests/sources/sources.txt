@@ -1,7 +1,7 @@
 [ level_6 ]
 
 srs = EPSG:3857
-extent = -19981848,-12932243,19981848,12932243
+extent = 247100,6239325,283942,6268942
 
 wms_layer   = LAYER1
 wms_url     = http://url/server/wms
@@ -16,7 +16,7 @@ min_size = 256000
 [ level_5 ]
 
 srs = EPSG:3857
-extent = -19981848,-12932243,19981848,12932243
+extent = 247100,6239325,283942,6268942
 
 wms_layer   = LAYER2
 wms_url     = http://url/server/wms
@@ -27,7 +27,7 @@ wms_format  = image/png
 [ level_11 ]
 
 srs = EPSG:3857
-extent = -19981848,-12932243,19981848,12932243
+extent = 247100,6239325,283942,6268942
 
 wms_layer   = LAYER3
 wms_url     = http://url/server/wms
@@ -44,7 +44,7 @@ max_height = 1024
 [ level_8 ]
 
 srs = EPSG:3857
-extent = -19981848,-12932243,19981848,12932243
+extent = 247100,6239325,283942,6268942
 
 wms_layer   = LAYER4
 wms_url     = http://url/server/wms
