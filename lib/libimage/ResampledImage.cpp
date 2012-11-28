@@ -60,9 +60,6 @@ ResampledImage::ResampledImage( Image* image, int width, int height, double resx
 
     if (! image->getMask()) bUseMask = false;
 
-    if (bUseMask) LOGGER_INFO("Réechantillonnage avec utilisation des masques");
-    else LOGGER_INFO("Réechantillonnage sans utilisation des masques");
-
     /* On veut mémoriser un certain nombre de lignes pour ne pas refaire un travail déjà fait.
      * On va travailler les lignes 4 par 4 (pour l'utilisation des instructions SSE). On va donc mémoriser
      * un multiple de 4 lignes.

@@ -50,64 +50,65 @@ LibtiffImage* libtiffImageFactory::createLibtiffImage( char* filename, BoundingB
         sampleformat=0,photometric=0,compression=0,rowsperstrip=0;
     TIFF* tif=TIFFOpen(filename, "r");
     
-    if (tif==NULL) {
-        LOGGER_ERROR( "Impossible d ouvrir " << filename);
+    if (tif == NULL) {
+        LOGGER_ERROR( "Unable to open " << filename);
         return NULL;
     } else {
         
         if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width)<1) {
-            LOGGER_ERROR( "Impossible de lire la largeur de " << filename);
+            LOGGER_ERROR( "Unable to read pixel width for file " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height)<1) {
-            LOGGER_ERROR( "Impossible de lire la hauteur de " << filename);
+            LOGGER_ERROR( "Unable to read pixel height for file " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL,&channels)<1) {
-            LOGGER_ERROR( "Impossible de lire le nombre de canaux de " << filename);
+            LOGGER_ERROR( "Unable to read number of samples per pixel for file " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG,&planarconfig)<1) {
-            LOGGER_ERROR( "Impossible de lire la configuration des plans de " << filename);
+            LOGGER_ERROR( "Unable to read planar configuration for file " << filename);
             return NULL;
         }
         
         if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE,&bitspersample)<1) {
-            LOGGER_ERROR( "Impossible de lire le nombre bits par canal de " << filename);
+            LOGGER_ERROR( "Unable to read number of bits per sample for file " << filename);
             return NULL;
         }
 
-        if (TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT,&sampleformat)<1) {
+        if (TIFFGetField(tif, TIFFTAG_SAMPLEFORMAT,&sampleformat) < 1) {
             if (bitspersample == 8) {
-                sampleformat = 1;
+                sampleformat = SAMPLEFORMAT_UINT;
             } else if (bitspersample == 32) {
-                sampleformat = 3;
+                sampleformat = SAMPLEFORMAT_IEEEFP;
             } else {
-                LOGGER_ERROR( "Impossible de déterminer le format du canal de " << filename);
+                LOGGER_ERROR( "Unable to determine sample format for file " << filename);
                 return NULL;
             }
         }
         
-        if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC,&photometric)<1) {
-            LOGGER_ERROR( "Impossible de lire la photometrie de " << filename);
+        if (TIFFGetField(tif, TIFFTAG_PHOTOMETRIC,&photometric) < 1) {
+            LOGGER_ERROR( "Unable to read photometric for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_COMPRESSION,&compression)<1) {
-            LOGGER_ERROR( "Impossible de lire la compression de " << filename);
+        if (TIFFGetField(tif, TIFFTAG_COMPRESSION,&compression) < 1) {
+            LOGGER_ERROR( "Unable to read compression for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP,&rowsperstrip)<1) {
-            LOGGER_ERROR( "Impossible de lire le nombre de lignes par bande de " << filename);
+        if (TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP,&rowsperstrip) < 1) {
+            LOGGER_ERROR( "Unable to read number of rows per strip for file " << filename);
             return NULL;
         }
     }
 
-    if (width*height*channels!=0 && planarconfig!=PLANARCONFIG_CONTIG && tif!=NULL) {
+    if (tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG) {
+        LOGGER_ERROR( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename);
         return NULL;
     }
 

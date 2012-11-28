@@ -201,7 +201,7 @@ sub _load {
     
     ############# PROCESS #############
     
-    my $commands = BE4::Commands->new($pyr);
+    my $commands = BE4::Commands->new($pyr,$params_process->{use_masks});
 
     if (! defined $commands) {
         ERROR ("Can not load Commands !");

@@ -71,6 +71,7 @@ Group: variable
 variable: $self
     * i : integer - column
     * j : integer - row
+    * pyramidName : string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
     * tm : BE4::TileMatrix - to which node belong
     * graph : BE4::Graph or BE4::QTree - which contain the node
     * w - own node's weight  
@@ -95,6 +96,7 @@ sub new {
     my $self = {
         i => undef,
         j => undef,
+        pyramidName => undef,
         tm => undef,
         graph => undef,
         w => 0,
@@ -157,6 +159,11 @@ sub _init {
     $self->{W} = 0;
     $self->{code} = '';
     
+    my $base36path = BE4::Base36->indicesToB36Path($params->{i},$params->{j},
+                                                   $self->getGraph->getPyramid->getDirDepth()+1);
+    
+    $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");;
+    
     return TRUE;
 }
 
@@ -201,9 +208,6 @@ sub isBboxIntersectingNodeBbox {
     my $self = shift;
     my ($xMin,$yMin,$xMax,$yMax) = @_;
     my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $self->getBBox();
-    
-    #printf "Bbox $xMin,$yMin,$xMax,$yMax\n";
-    #printf "Bbox Node : $xMinNode,$yMinNode,$xMaxNode,$yMaxNode\n";
     
     if ($xMax > $xMinNode && $xMin < $xMaxNode && $yMax > $yMinNode && $yMin < $yMaxNode) {
         return TRUE;
@@ -250,13 +254,28 @@ sub getRow {
     return $self->{j};
 }
 
+sub getPyramidName {
+    my $self = shift;
+    return $self->{pyramidName};
+}
+
 sub getWorkBaseName {
     my $self = shift;
+    my $suffix = shift;
+    
+    # si un prefixe est préciser
+    return (sprintf "%s_%s_%s_%s", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
+    # si pas de prefixe
     return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
 }
 
 sub getWorkName {
     my $self = shift;
+    my $suffix = shift;
+    
+    # si un prefixe est préciser
+    return (sprintf "%s_%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
+    # si pas de prefixe
     return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
 }
 
@@ -404,20 +423,21 @@ Export attributs of the Node for mergNtiff configuration file.
 =cut
 sub exportForMntConf {
     my $self = shift;
-    my $filePath = shift;
+    my $imagePath = shift;
+    my $maskPath = shift;
     
     TRACE;
     
     my @Bbox = $self->getBBox;
     
-    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $filePath,
-        $Bbox[0],
-        $Bbox[3],
-        $Bbox[2],
-        $Bbox[1],
-        $self->getTM()->getResolution(),
-        $self->getTM()->getResolution();
+    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $imagePath,
+        $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+    
+    if (defined $maskPath) {
+        $output .= sprintf "MSK %s\n", $maskPath;
+    }
     
     return $output;
 }

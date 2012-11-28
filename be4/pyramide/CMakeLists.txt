@@ -55,10 +55,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_B
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
-add_custom_command(OUTPUT install/lib COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+add_custom_command(OUTPUT install_be4 COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 
-add_custom_target(be4-build ALL DEPENDS install/lib)
+add_custom_target(be4-build ALL DEPENDS install_be4)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

@@ -336,12 +336,12 @@ sub _init {
     $self->{dir_nodata} = $params->{dir_nodata};
     #
     if (exists $params->{dir_mask} && defined $params->{dir_mask}) {
-        INFO ("We want to generate mask");
+        INFO ("We want to generate masks");
         $self->{dir_mask} = $params->{dir_mask};
     }
     #
     if (exists $params->{dir_metadata} && defined $params->{dir_metadata}) {
-        WARN ("Metadatas are not implemented !");
+        WARN ("We want to generate metadatas, but it is not implemented !");
         # INFO ("We want to generate metadata");
         # $self->{dir_metadata} = $params->{dir_metadata};
     }
@@ -1014,6 +1014,7 @@ sub createLevels {
             order             => $order,
             dir_image         => File::Spec->abs2rel($baseimage, $self->getNewDescriptorDir),
             dir_nodata        => File::Spec->abs2rel($basenodata, $self->getNewDescriptorDir),
+            dir_mask          => $dirMask,
             dir_metadata      => undef, # TODO
             compress_metadata => undef, # TODO
             type_metadata     => undef, # TODO
@@ -1113,7 +1114,7 @@ Export the Pyramid object to XML format, write the pyramid's descriptor (pyr_des
 
 =cut
 sub writeConfPyramid {
-    my $self    = shift;
+    my $self = shift;
 
     TRACE;
     
@@ -1153,13 +1154,10 @@ sub writeConfPyramid {
         my $levelXML = $levels[$i]->exportToXML;
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
-    #
+    
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
     $strpyrtmplt =~ s/^$//g;
     $strpyrtmplt =~ s/^\n$//g;
-    #
-
-    # TODO check the new template !
   
     my $filepyramid = $self->getNewDescriptorFile();    
 
@@ -1167,7 +1165,6 @@ sub writeConfPyramid {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
         return FALSE;
     }
-    #
     
     my $dir = dirname($filepyramid);
     if (! -d $dir) {
@@ -1448,7 +1445,7 @@ sub writeCachePyramid {
                 return FALSE;
             }
             
-            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->getCacheNameOfImage("nodata",$objLevel->getID));
+            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->getDirNodata,$objLevel->getID);
         }
     }
     
@@ -1463,6 +1460,18 @@ sub writeCachePyramid {
 ####################################################################################################
 
 # Group: getters - setters
+
+###################### Outputs ######################
+
+sub ownMasks {
+    my $self = shift;
+    return (defined $self->{dir_mask});
+}
+
+sub ownMetadata {
+    my $self = shift;
+    return (defined $self->{dir_metadata});
+}
 
 #################### New pyramid ####################
 
@@ -1762,73 +1771,40 @@ sub getTilesPerHeight {
 
 #
 =begin nd
-method: getCacheNameOfImage
+method: getRootPerType
 
-Return the image relative path, from the cache root directory (pyr_data_path). Tile's indices are convert in base 36, and split to give the path. Use BE4::Base36 tools.
+Return the pyramid root for the provided type.
 
-Example:
-    $objPyr->getCacheNameOfImage("data", "level_19", 4032, 18217)
+Examples:
+    $objPyr->getRootPerType("data",TRUE) returns "/home/ign/PYRAMID/IMAGE"
+    $objPyr->getRootPerType("mask",FALSE) returns "MASK"
     
-    returns "IMAGE/level_19/3E/42/01.tif"
-
 Parameters:
-    type - Tile type : "data", "metadata", "nodata".
-    level - Level of the node we want to know path.
-    col - Column of the node we want to know path (useless if "nodata").
-    row - Row of the node we want to know path (useless if "nodata").
+    type - Tile type : "data", "metadata", "nodata", "mask". Otherwise, use "data".
+    absolute - Boolean, if we want complete directory path.
 =cut
-sub getCacheNameOfImage {
+sub getRootPerType {
     my $self = shift;
     my $type = shift;
-    my $level = shift;
-    my $col = shift;
-    my $row = shift;
+    my $absolute = shift;
     
-    my $typeDir;
+    my $dir;
     if ($type eq "metadata"){
-        $typeDir=$self->getDirMetadata;
+        $dir = $self->getDirMetadata;
+    } elsif ($type eq "mask") {
+        $dir = $self->getDirMask;
     } elsif ($type eq "nodata") {
-        $typeDir=$self->getDirNodata;
-        return File::Spec->catfile($typeDir, $level, $self->{nodata}->getNodataFilename);
+        $dir = $self->getDirNodata;
     } else {
-        $typeDir=$self->getDirImage;
+        $dir = $self->getDirImage;
     }
     
-    my $base36path = BE4::Base36->indicesToB36Path($col,$row,$self->getDirDepth()+1);
+    if (! defined $absolute || $absolute) {
+        return File::Spec->catfile($self->getNewDataDir, $dir);   
+    } else {
+        return $dir;
+    }
     
-    return File::Spec->catfile($typeDir, $level, $base36path.".tif");
-}
-
-#
-=begin nd
-method: getCachePathOfImage
-
-Return the image absolute path. Use method getCacheNameOfImage.
-
-Example:
-    $objPyr->getCachePathOfImage("data", "level_19", 4032, 18217)
-    
-    returns "/home/ign/BDORTHO/IMAGE/level_19/3E/42/01.tif"
-
-Parameters:
-    type - Tile type : "data", "metadata", "nodata".
-    level - Level of the node we want to know path.
-    col - Column of the node we want to know path (useless if "nodata").
-    row - Row of the node we want to know path (useless if "nodata").
-    
-See also:
-    <getCacheNameOfImage>
-=cut
-sub getCachePathOfImage {
-    my $self = shift;
-    my $type = shift;
-    my $level = shift;
-    my $col = shift;
-    my $row = shift;
-
-    my $imageName = $self->getCacheNameOfImage($type, $level, $col, $row);
-
-    return File::Spec->catfile($self->getNewDataDir, $imageName); 
 }
 
 ####################################################################################################
@@ -1859,7 +1835,8 @@ sub exportForDebug {
     $export .= sprintf "\t Directories' name (depth = %s): \n", $self->{dir_depth};
     $export .= sprintf "\t\t- Data : %s\n", $self->{dir_image};
     $export .= sprintf "\t\t- Nodata : %s\n", $self->{dir_nodata};
-    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata};
+    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata} if (defined $self->{dir_metadata});
+    $export .= sprintf "\t\t- Mask : %s\n", $self->{dir_mask} if (defined $self->{dir_mask});
     
     $export .= "\t Image size (in pixel):\n";
     $export .= sprintf "\t\t- width : %s\n", $self->{image_width};
@@ -1899,7 +1876,8 @@ BE4::Pyramid - describe a cache (image specifications, levels, ...)
         #
         dir_depth    => 2,
         dir_image    => "IMAGE",
-        dir_nodata    => "NODATA",
+        dir_nodata   => "NODATA",
+        dir_mask     => "MASK",
         #
         image_width  => 16, 
         image_height => 16,
@@ -1957,9 +1935,9 @@ Hash which contains informations about the old pyramid (can be undefined). Keys 
 
 Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
 
-=item dir_image, dir_nodata, dir_metadata
+=item dir_image, dir_nodata, dir_mask, dir_metadata
 
-Directories' name for images (data), nodata tiles and metadata (not implemented).
+Directories' name for images (data), nodata tiles, masks and metadata (not implemented). If "dir_mask" is not defined, masks will not be generated.
 
 =item image_width, image_height
 
@@ -2011,6 +1989,9 @@ And details about each level.
     <level>
         <tileMatrix>level_5</tileMatrix>
         <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <mask>
+            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+        </mask>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
@@ -2167,11 +2148,11 @@ All levels must be continuous and unique !
 
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 

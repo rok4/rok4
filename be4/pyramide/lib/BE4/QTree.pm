@@ -569,7 +569,6 @@ sub computeBranch {
     my $self = shift;
     my $node = shift;
     my $justWeight = shift;
-    $justWeight = FALSE if (! defined $justWeight);
 
     my $weight = 0;
 
@@ -628,7 +627,6 @@ sub computeBottomImage {
     my $self = shift;
     my $node = shift;
     my $justWeight = shift;
-    $justWeight = FALSE if (! defined $justWeight);
 
     TRACE;
     
@@ -640,9 +638,9 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight);
+        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight,"I");
         if (! defined $c) {
-            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName("I"));
             return FALSE;
         }
         
@@ -659,12 +657,12 @@ sub computeBottomImage {
     }
 
     # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    my $after = undef;
+    my $after = "none";
     if (! $justWeight && $node->getLevel eq $self->getTopID) {
-        $after = "rm";
+        $after = "remove";
     } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
         # Work images have to be put in the final script temporary directory : the root
-        $after = "mv";
+        $after = "move";
     }
     ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
     $code .= $c;
@@ -717,12 +715,12 @@ sub computeAboveImage {
     $weight += $w;
 
     # Copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    my $after = undef;
+    my $after = "none";
     if (! $justWeight && $node->getLevel eq $self->getTopID) {
-        $after = "rm";
+        $after = "remove";
     } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
         # Work images have to be put in the final script temporary directory : the root
-        $after = "mv";
+        $after = "move";
     }
     ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
     $code .= $c;

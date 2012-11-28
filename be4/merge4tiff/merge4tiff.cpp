@@ -258,7 +258,6 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
         if(inputi == NULL) error("Unable to open input image: " + std::string(inputImages[i]));
         INPUTI[i/2][i%2] = inputi;
 
-        std::cerr << "Check image " << i << std::endl;
         checkComponents(inputi, false);
 
         if (inputMasks[i] != 0){
@@ -266,13 +265,10 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
             if(inputm == NULL) error("Unable to open input mask: " + std::string(inputMasks[i]));
             INPUTM[i/2][i%2] = inputm;
 
-            std::cerr << "Check mask " << i << std::endl;
             checkComponents(inputm, true);
         }
         
     }
-
-    std::cerr << "Le fond..." << std::endl;
 
     BGI = 0;
     BGM = 0;
@@ -285,13 +281,11 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
     if (backgroundImage) {
         BGI=TIFFOpen(backgroundImage, "r");
         if (BGI == NULL) error("Unable to open background image: " + std::string(backgroundImage));
-        std::cerr << "Check background image " << std::endl;
         checkComponents(BGI,false);
         
         if (backgroundMask) {
             BGM = TIFFOpen(backgroundMask, "r");
             if (BGM == NULL) error("Unable to open background mask: " + std::string(backgroundMask));
-            std::cerr << "Check background mask " << std::endl;
             checkComponents(BGM,true);
         }
     }

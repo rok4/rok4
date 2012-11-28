@@ -456,9 +456,20 @@ sub getYres {
   my $self = shift;
   return $self->{yres};  
 }
+
 sub getName {
   my $self = shift;
   return $self->{filename}; 
+}
+
+sub getMask {
+  my $self = shift;
+  return $self->{maskCompletePath}; 
+}
+
+sub hasMask {
+  my $self = shift;
+  return (defined $self->{maskCompletePath}); 
 }
 
 ####################################################################################################
@@ -471,23 +482,31 @@ sub getName {
 =begin nd
 method: exportForMntConf
 
-Export a GeoImage object as a string : filepath+filename xmin ymax xmax ymin xres yres.
+Export a GeoImage object as a string.
+Output is formated to be used in mergeNtiff configuration.
 
-Output is formated to be used in mergeNtiff configuration
+Example:
+|    IMG completePath xmin ymax xmax ymin xres yres
+|    MSK maskCompletePath
+
+Parameter:
+    useMasks - Boolean, specify if we want to export mask (if present).
 =cut
 sub exportForMntConf {
     my $self = shift;
+    my $useMasks = shift;
+    $useMasks = TRUE if (! defined $useMasks);
 
     TRACE;
 
-    my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-    File::Spec->catfile($self->{filepath}, $self->{filename}),
-        $self->{xmin},
-        $self->{ymax},
-        $self->{xmax},
-        $self->{ymin},
-        $self->{xres},
-        $self->{yres},;
+    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $self->{completePath},
+        $self->{xmin}, $self->{ymax}, $self->{xmax}, $self->{ymin},
+        $self->{xres}, $self->{yres};
+        
+    if ($useMasks && defined $self->{maskCompletePath}) {
+        $output .= sprintf "MSK %s\n", $self->{maskCompletePath};
+    }
 
     return $output;
 }
@@ -499,6 +518,7 @@ sub exportForDebug {
     
     $export .= sprintf "\nObject BE4::GeoImage :\n";
     $export .= sprintf "\t Image path : %s\n",$self->{completePath};
+    $export .= sprintf "\t Mask path : %s\n",$self->{maskCompletePath} if (defined $self->{maskCompletePath});
 
     $export .= "\t Dimensions (in pixel) :\n";
     $export .= sprintf "\t\t- width : %s\n",$self->{width};

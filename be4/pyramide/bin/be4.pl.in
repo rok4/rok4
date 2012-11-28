@@ -824,6 +824,12 @@ Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2
 
 Mandatory.
 
+=item use_masks
+
+To avoid some proble (data removing), we can use mask during generation, to know precisely where is data, in images. Tis behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use.
+
+Optionnal.
+
 =back
 
 =head2 Paths in brief.

@@ -326,7 +326,7 @@ sub exportToXML {
 
     # mask
     if (defined $self->{dir_mask}) {
-        $levelXML =~ s/<!-- __MASK__ -->/$STRLEVELTMPLTMASK/;
+        $levelXML =~ s/<!-- __MASK__ -->\n/$STRLEVELTMPLTMASK/;
 
         my $dirmask   = $self->{dir_mask};
         $levelXML =~ s/__DIRMASK__/$dirmask/;
@@ -361,7 +361,8 @@ sub exportForDebug {
     $export .= sprintf "\t Directories (depth = %s): \n",$self->{dir_depth};
     $export .= sprintf "\t\t- Images : %s\n",$self->{dir_image};
     $export .= sprintf "\t\t- Nodata : %s\n",$self->{dir_nodata};
-    $export .= sprintf "\t\t- Metadata : %s\n",$self->{dir_metadata};
+    $export .= sprintf "\t\t- Metadata : %s\n",$self->{dir_metadata} if (defined $self->{dir_metadata});
+    $export .= sprintf "\t\t- Mask : %s\n",$self->{dir_mask} if (defined $self->{dir_mask});
     
     $export .= "\t Tile limits : \n";
     $export .= sprintf "\t\t- Column min : %s\n",$self->{limits}[2];

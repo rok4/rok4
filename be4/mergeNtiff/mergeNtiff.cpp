@@ -66,6 +66,7 @@
 */
 
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,11 +102,19 @@ Interpolation::KernelType interpolation;
 * @fn void usage()
 * Usage de la ligne de commande
 */
-
 void usage() {
-    LOGGER_INFO("mergeNtiff version "<< BE4_VERSION);
-    LOGGER_INFO(" Usage :  mergeNtiff -f [fichier liste des images source] -c [none/png/jpg/lzw/zip/pkb] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] ");
-    LOGGER_INFO(" Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
+    LOGGER_INFO(
+    "mergeNtiff version "<< BE4_VERSION << std::endl <<
+    " Usage :  mergeNtiff -f [fichier liste des images source] -c [none/png/jpg/lzw/zip/pkb] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] " << std::endl << 
+    " Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
+}
+
+void error(std::string message) {
+    LOGGER_ERROR(message);
+    LOGGER_ERROR("Configuration file : " << imageListFilename);
+    usage();
+    sleep(1);
+    exit(-1);
 }
 
 /**
@@ -117,7 +126,6 @@ int parseCommandLine(int argc, char** argv) {
     
     if (argc != 19) {
         LOGGER_ERROR(" Nombre de parametres incorrect");
-        usage();
         return -1;
     }
 
@@ -184,7 +192,7 @@ int parseCommandLine(int argc, char** argv) {
                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
                    else compression = COMPRESSION_NONE;
                    break;
-                default: usage(); return -1;
+                default: return -1;
             }
         }
     }
@@ -323,12 +331,13 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
 {
     std::string str;
 
-    if (file.eof()) {
-        LOGGER_DEBUG("Fin du fichier de configuration atteinte");
-        return -1;
+    while (str.empty()) {
+        if (file.eof()) {
+            LOGGER_DEBUG("Fin du fichier de configuration atteinte");
+            return -1;
+        }
+        std::getline(file,str);
     }
-    
-    std::getline(file,str);
     
     int pos;
     int nb;
@@ -351,19 +360,22 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
         return 1;
     }
 
-    if (file.eof()) {
-        *hasMask = false;
-        return 0;
-    }
+    str.clear();
     
     // Récupération d'un éventuel masque
-    std::getline(file,str);
+    while (str.empty()) {
+        if (file.eof()) {
+            *hasMask = false;
+            return 0;
+        }
+        std::getline(file,str);
+    }
     
     if ((std::sscanf(str.c_str(),"%s %s", type, maskFileName)) != 2 || memcmp(type,"MSK",3)) {
         /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
          * C'est en fait l'image suivante (ou une erreur). On doit donc remettre le
          * pointeur de manière à ce que cette image soit lue au prochain appel de
-         * readFileLine et remettre à NULL maskFileName.
+         * readFileLine.
          */
         *hasMask = false;
         file.seekg(pos);
@@ -702,7 +714,6 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
     double resx_dst = pImageOut->getresx();
     
     for (unsigned int i=0; i<TabImageIn.size(); i++) {
-        LOGGER_INFO("Pack " << i);
         // Mise en superposition du paquet d'images en 2 etapes
         
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
@@ -830,9 +841,7 @@ int main(int argc, char **argv) {
     LOGGER_DEBUG("Parse");
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc, argv) < 0){
-        LOGGER_ERROR("Echec lecture ligne de commande");
-        sleep(1);
-        return -1;
+        error("Echec lecture ligne de commande");
     }
 
     // Conversion string->int[] du paramètre nodata
@@ -841,15 +850,13 @@ int main(int argc, char **argv) {
     
     char* charValue = strtok(strnodata,",");
     if(charValue == NULL) {
-        LOGGER_ERROR("Error with option -n : a value for nodata is missing");
-        return -1;
+        error("Error with option -n : a value for nodata is missing");
     }
     nodata[0] = atoi(charValue);
     for(int i = 1; i < samplesperpixel; i++) {
         charValue = strtok (NULL, ",");
         if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -n : a value for nodata is missing");
-            return -1;
+            error("Error with option -n : a value for nodata is missing");
         }
         nodata[i] = atoi(charValue);
     }
@@ -857,49 +864,37 @@ int main(int argc, char **argv) {
     LOGGER_DEBUG("Load");
     // Chargement des images
     if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn) < 0) {
-        LOGGER_ERROR("Echec chargement des images"); 
-        sleep(1);
-        return -1;
+        error("Echec chargement des images");
     }
 
     LOGGER_DEBUG("Check images");
     // Controle des images
     if (checkImages(pImageOut,ImageIn) < 0) {
-        LOGGER_ERROR("Echec controle des images");
-        sleep(1);
-        return -1;
+        error("Echec controle des images");
     }
     
     LOGGER_DEBUG("Sort");
     // Tri des images
     if (sortImages(ImageIn, &TabImageIn) < 0) {
-        LOGGER_ERROR("Echec tri des images");
-        sleep(1);
-        return -1;
+        error("Echec tri des images");
     }
     
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
     if (mergeTabImages(pImageOut, TabImageIn, &pECI, nodata) < 0) {
-        LOGGER_ERROR("Echec fusion des paquets d images");
-        sleep(1);
-        return -1;
+        error("Echec fusion des paquets d images");
     }
     
     LOGGER_DEBUG("Save image");
     // Enregistrement de l'image fusionnée
     if (saveImage(pImageOut,pECI) < 0) {
-        LOGGER_ERROR("Echec enregistrement de l image finale");
-        sleep(1);
-        return -1;
+        error("Echec enregistrement de l image finale");
     }
 
     LOGGER_DEBUG("Save mask");
     // Enregistrement du masque fusionné, si demandé
     if (pMaskOut != NULL && saveImage(pMaskOut,pECI->Image::getMask()) < 0) {
-        LOGGER_ERROR("Echec enregistrement du masque final");
-        sleep(1);
-        return -1;
+        error("Echec enregistrement du masque final");
     }
     
     LOGGER_DEBUG("Clean");

@@ -118,6 +118,9 @@ class Image {
         bool setMask(Image* newMask) {
             if (newMask->width != width || newMask->height != height || newMask->channels != 1) {
                 LOGGER_ERROR("Unvalid mask");
+                LOGGER_ERROR("\t - channels have to be 1, it is " << newMask->channels);
+                LOGGER_ERROR("\t - width have to be " << width << ", it is " << newMask->width);
+                LOGGER_ERROR("\t - height have to be " << height << ", it is " << newMask->height);
                 return false;
             }
             mask = newMask;
