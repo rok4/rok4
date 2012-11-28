@@ -82,16 +82,16 @@ public:
     /**
      * \~french
      * \brief Crée un LegendURL à partir des ses éléments constitutifs
-     * \param[in] format format de la légende (cf ResourceLocator)
-     * \param[in] href lien vers la légende
+     * \param[in] format type mime de la légende (cf ResourceLocator::format)
+     * \param[in] href lien vers la légende (cf ResourceLocator::href)
      * \param[in] width largeur de l'image
      * \param[in] height hauteur de l'image
      * \param[in] minScaleDenominator échelle minimum à laquelle s'applique la légende
      * \param[in] maxScaleDenominator échelle maximum à laquelle s'applique la légende
      * \~english
      * \brief Create a LegendURL
-     * \param[in] format image format (see ResourceLocator)
-     * \param[in] href link to the legend image (see ResourceLocator)
+     * \param[in] format image format (see ResourceLocator::format)
+     * \param[in] href link to the legend image (see ResourceLocator::href)
      * \param[in] width image width
      * \param[in] height image height
      * \param[in] minScaleDenominator minimum scale at which the legend is applicable
@@ -125,7 +125,7 @@ public:
      * \return true if all their attributes are identical
      */
     bool operator== ( const LegendURL& other ) const;
-/**
+    /**
      * \~french
      * \brief Test d'inégalite de 2 LegendURLs
      * \return true s'ils ont un attribut différent, false sinon
