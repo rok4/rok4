@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ResourceLocator.cpp
+ * \~french
+ * \brief Implémentation de la classe RessourceLocator gérant les liens vers les ressources externe dans les documents de capacités
+ * \~english
+ * \brief Implement the LegendURL Class handling capabilities external link elements
+ */
+
 #include "ResourceLocator.h"
 
 ResourceLocator::ResourceLocator ( std::string format, std::string href ) : format ( format ), href ( href ) {
