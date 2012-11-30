@@ -36,11 +36,10 @@ install: builddir.inst buildconf.inst buildinstall.inst
 	@ echo "> Ok, Install $* !" ;
 
 buildconf: \
-./conf/nodata \
 ./conf/params.properties \
 ./conf/be4.properties
 	@(for p in $^ ; do \
-                res=`echo $$p | sed -e 's/conf\///'` ;\
+                res=`echo $$p | sed -e 's/config\/be4\///'` ;\
                 if [ `echo $$res|grep -E 'properties'` ] ; then \
                         cp $$p $(BE4_CONF) ;\
                 fi; \
