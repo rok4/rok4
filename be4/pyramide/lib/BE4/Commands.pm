@@ -222,7 +222,7 @@ Merge4tiff () {
     local masks=( $1 $3 $5 $7 $9 )
     shift 9
     local bgI=$1
-    local bgM=$1
+    local bgM=$2
 
     local forRM=''
 
@@ -244,7 +244,6 @@ Merge4tiff () {
         if [ ${imgs[$i]} != '0' ] ; then
             if [[ ! ${RM_IMGS[${imgs[$i]}]} ]] ; then
                 inM4T=`printf "$inM4T -i%.1d ${imgs[$i]}" $i`
-                
                 if [ ${masks[$i]} != '0' ] ; then
                     inM4T=`printf "$inM4T -m%.1d ${masks[$i]}" $i`
                     forRM="$forRM ${masks[$i]}"

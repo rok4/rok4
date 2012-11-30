@@ -299,12 +299,12 @@ sub config {
         if(exists ($ENV{BE4_ENV}) &&
         defined($ENV{BE4_ENV}) ) {
             INFO("Use environment variable 'BE4_ENV' to determined the global configuration !");
-            $fenv = File::Spec->catfile($ENV{BE4_ENV}, "conf", "be4.properties");
+            $fenv = File::Spec->catfile($ENV{BE4_ENV}, "config/be4", "be4.properties");
         }
         # if not, by default, we take the file env in the install directory !
         else {
             INFO("Use path runtime to determined the configuration !");
-            $fenv = File::Spec->catfile($Bin, "..", "conf", "be4.properties");
+            $fenv = File::Spec->catfile($Bin, "..", "config/be4", "be4.properties");
         }
     }
   

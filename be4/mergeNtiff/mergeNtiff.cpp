@@ -587,30 +587,42 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf(xmin_dst/resx_dst, &intpart);
     if (phi < 0.) {phi += 1.0;}
-    phaseDiff = phaseX - phi;
-    if (phaseDiff < 0.) {phaseDiff += 1.0;}
-    xmin_dst += phaseDiff*resx_dst;
+    
+    if (fabs(phi-phaseX) > 0.01 && fabs(phi-phaseX) < 0.99) {
+        phaseDiff = phaseX - phi;
+        if (phaseDiff < 0.) {phaseDiff += 1.0;}
+        xmin_dst += phaseDiff*resx_dst;
+    }
 
     // Mise en phase de xmax (sans que celui ci puisse être plus grand)
     phi = modf(xmax_dst/resx_dst, &intpart);
     if (phi < 0.) {phi += 1.0;}
-    phaseDiff = phaseX - phi;
-    if (phaseDiff > 0.) {phaseDiff -= 1.0;}
-    xmax_dst += phaseDiff*resx_dst;
+
+    if (fabs(phi-phaseX) > 0.01 && fabs(phi-phaseX) < 0.99) {
+        phaseDiff = phaseX - phi;
+        if (phaseDiff > 0.) {phaseDiff -= 1.0;}
+        xmax_dst += phaseDiff*resx_dst;
+    }
 
     // Mise en phase de ymin (sans que celui ci puisse être plus petit)
     phi = modf(ymin_dst/resy_dst, &intpart);
     if (phi < 0.) {phi += 1.0;}
-    phaseDiff = phaseY - phi;
-    if (phaseDiff < 0.) {phaseDiff += 1.0;}
-    ymin_dst += phaseDiff*resy_dst;
+    
+    if (fabs(phi-phaseY) > 0.01 && fabs(phi-phaseX) < 0.99) {
+        phaseDiff = phaseY - phi;
+        if (phaseDiff < 0.) {phaseDiff += 1.0;}
+        ymin_dst += phaseDiff*resy_dst;
+    }
 
     // Mise en phase de ymax (sans que celui ci puisse être plus grand)
     phi = modf(ymax_dst/resy_dst, &intpart);
     if (phi < 0.) {phi += 1.0;}
-    phaseDiff = phaseY - phi;
-    if (phaseDiff > 0.) {phaseDiff -= 1.0;}
-    ymax_dst += phaseDiff*resy_dst;
+    
+    if (fabs(phi-phaseY) > 0.01 && fabs(phi-phaseX) < 0.99) {
+        phaseDiff = phaseY - phi;
+        if (phaseDiff > 0.) {phaseDiff -= 1.0;}
+        ymax_dst += phaseDiff*resy_dst;
+    }
 
     LOGGER_DEBUG("Image rééchantillonnée : bbox après rephasage : "
         << xmin_dst << "," << ymin_dst << "," << xmax_dst << "," << ymax_dst);

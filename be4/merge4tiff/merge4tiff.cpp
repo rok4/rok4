@@ -235,6 +235,7 @@ void checkComponents(TIFF* image, bool isMask)
     } else {
         if (! (_width == width && _height == height && _bitspersample == bitspersample &&
                 _planarconfig == planarconfig && _photometric == photometric && _samplesperpixel == samplesperpixel)) {
+            
             error(std::string("Error : all input images must have the same parameters (width, height, etc...) : ")
                 + TIFFFileName(image));
         }
@@ -289,6 +290,9 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
             checkComponents(BGM,true);
         }
     }
+
+    OUTPUTI = 0;
+    OUTPUTM = 0;
 
     OUTPUTI = TIFFOpen(outputImage, "w");
     if(OUTPUTI == NULL) error("Unable to open output image: " + std::string(outputImage));
@@ -444,7 +448,7 @@ int nbsamples = width * samplesperpixel;
             }
 
             if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
-            if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
+            if (OUTPUTM) if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
 
         }
     }
@@ -531,19 +535,24 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
                 continue;
             }
 
-            // -- initilaisation de la sortie avec le fond --
+            // -- initialisation de la sortie avec le fond --
             memcpy(line_outI,line_bgI,nbsamples);
             memcpy(line_outM,line_bgM,width);
 
             // ----------------- les images -----------------
             if (INPUTI[y][0]) {
-                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1)
+                    error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1)
+                    error("Unable to read data line");
             }
 
+
             if (INPUTI[y][1]) {
-                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1)
+                    error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1)
+                    error("Unable to read data line");
             }
 
             // ----------------- les masques ----------------
@@ -592,10 +601,9 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
                     for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = MERGE[pix[c]*4/nbData];
                 }
             }
-
+            
             if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
-            if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
-
+            if (OUTPUTM) if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
         }
     }
     

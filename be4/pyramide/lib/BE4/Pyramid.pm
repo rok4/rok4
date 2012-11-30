@@ -653,15 +653,23 @@ sub readConfPyramid {
     my @directories = File::Spec->splitdir($level->findvalue('baseDir'));
     # <baseDir> : rel_datapath_from_desc/dir_image/level
     #                                       -2      -1
-    my $dir_image = $directories[-2];
-    $self->{dir_image} = $dir_image;
+    $self->{dir_image} = $directories[-2];
+
+    # read mask directory name in the old pyramid, using a level, if exists
+    my $maskPath = $level->findvalue('mask/baseDir');
+    if (defined $maskPath) {
+        @directories = File::Spec->splitdir($maskPath);
+        # <baseDir> : rel_datapath_from_desc/dir_mask/level
+        #                                       -2      -1
+        $self->{dir_mask} = $directories[-2];
+        INFO("Updated pyramid contains masks, new one will use them and generate masks too");
+    }
     
     # read nodata directory name in the old pyramid, using a level
     @directories = File::Spec->splitdir($level->findvalue('nodata/filePath'));
     # <filePath> : rel_datapath_from_desc/dir_nodata/level/nd.tif
     #                                        -3       -2     -1
-    my $dir_nodata = $directories[-3];
-    $self->{dir_nodata} = $dir_nodata;
+    $self->{dir_nodata} = $directories[-3];
 
     foreach my $v (@levels) {
 
@@ -1193,19 +1201,19 @@ sub writeConfPyramid {
 =begin nd
 method: writeListPyramid
 
-Write the cache list.
+Write the pyramid list.
 
 If ancestor:
-* transpose old cache directories in the new cache (using the cache list).
-* create symbolic links toward old cache tiles.
-* create the new cache list (just with unchanged images).
+* transpose old pyramid directories in the new pyramid (using the pyramid list).
+* create symbolic links toward old pyramid tiles.
+* create the new pyramid list (just with unchanged images).
 * remove roots which are no longer used
 
 If new pyramid:
-* create the new cache list (just with unchanged images).
+* create the new pyramid list (just with unchanged images).
 
 Parameter:
-    forest - forest to generate, to test if an image is present in the new cache.
+    forest - forest to generate, to test if an image is present in the new pyramid.
 =cut
 sub writeListPyramid {
     my $self = shift;
@@ -1217,16 +1225,16 @@ sub writeListPyramid {
     
     my $newcachelist = $self->getNewListFile;
     if (-f $newcachelist) {
-        ERROR(sprintf "New cache list ('%s') exist, can not overwrite it ! ", $newcachelist);
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newcachelist);
         return FALSE;
     }
     
     my $dir = dirname($newcachelist);
     if (! -d $dir) {
-        DEBUG (sprintf "Create the cache list directory '%s' !", $dir);
+        DEBUG (sprintf "Create the pyramid list directory '%s' !", $dir);
         eval { mkpath([$dir]); };
         if ($@) {
-            ERROR(sprintf "Can not create the cache list directory '%s' : %s !", $dir , $@);
+            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
             return FALSE;
         }
     }
@@ -1234,7 +1242,7 @@ sub writeListPyramid {
     my $NEWLIST;
 
     if (! open $NEWLIST, ">", $newcachelist) {
-        ERROR(sprintf "Cannot open new cache list file : %s",$newcachelist);
+        ERROR(sprintf "Cannot open new pyramid list file : %s",$newcachelist);
         return FALSE;
     }
     
@@ -1245,13 +1253,13 @@ sub writeListPyramid {
     # Hash to count root's uses (to remove useless roots)
     my %newCacheRootsUse;
     
-    # search and create link for only new cache tile
+    # search and create link for only new pyramid tile
     if (! $self->isNewPyramid) {
         
         my $OLDLIST;
 
         if (! open $OLDLIST, "<", $self->getOldListFile) {
-            ERROR(sprintf "Cannot open old cache list file : %s",$self->getOldListFile);
+            ERROR(sprintf "Cannot open old pyramid list file : %s",$self->getOldListFile);
             return FALSE;
         }
         
@@ -1266,7 +1274,7 @@ sub writeListPyramid {
             my @Root = split(/=/,$cacheRoot,-1);
             
             if (scalar @Root != 2) {
-                ERROR(sprintf "Wrong formatted cache list (root definition) : %s",$cacheRoot);
+                ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$cacheRoot);
                 return FALSE;
             }
             
@@ -1309,13 +1317,13 @@ sub writeListPyramid {
             
             # We replace root ID with the root path, to obtain a real path.
             if (! exists $newCacheRoots{$directories[0]}) {
-                ERROR(sprintf "Old cache list uses an undefined root ID : %s",$directories[0]);
+                ERROR(sprintf "Old pyramid list uses an undefined root ID : %s",$directories[0]);
                 return FALSE;
             }
             $directories[0] = $newCacheRoots{$directories[0]};
             $oldtile = File::Spec->catdir(@directories);
             
-            # We remove the root to replace it by the new cache root
+            # We remove the root to replace it by the new pyramid root
             shift @directories;
             my $newtile = File::Spec->catdir($newcachepyramid,@directories);
 
@@ -1325,13 +1333,13 @@ sub writeListPyramid {
             if (! -d $dir) {
                 eval { mkpath([$dir]); };
                 if ($@) {
-                    ERROR(sprintf "Can not create the cache directory '%s' : %s !",$dir, $@);
+                    ERROR(sprintf "Can not create the pyramid directory '%s' : %s !",$dir, $@);
                     return FALSE;
                 }
             }
 
             if (! -f $oldtile || -l $oldtile) {
-                ERROR(sprintf "File path in the cache list does not exist or is a link : %s.",$oldtile);
+                ERROR(sprintf "File path in the pyramid list does not exist or is a link : %s",$oldtile);
                 return FALSE;
             }
             
@@ -1351,7 +1359,7 @@ sub writeListPyramid {
     # We write at the top of the list file, caches' roots, using Tie library
     my @NEWLIST;
     if (! tie @NEWLIST, 'Tie::File', $newcachelist) {
-        ERROR(sprintf "Cannot write the header of new cache list file : %s",$newcachelist);
+        ERROR(sprintf "Cannot write the header of new pyramid list file : %s",$newcachelist);
         return FALSE;
     }
     
@@ -1360,11 +1368,11 @@ sub writeListPyramid {
             # Used roots are written in the header
             unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
         } else {
-            INFO (sprintf "The old cache '%s' is no longer used.", $root)
+            INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
         }
     }
     
-    # Root of the new cache (first position)
+    # Root of the new pyramid (first position)
     unshift @NEWLIST,"0=$newcachepyramid\n";
     
     untie @NEWLIST;
@@ -1389,14 +1397,14 @@ sub writeCachePyramid {
     my $newcachelist = $self->getNewListFile;
     
     if (! -f $newcachelist) {
-        ERROR(sprintf "New cache list ('%s') doesn't exist. We have to write list (header and links) before write cache pyramid.", $newcachelist);
+        ERROR(sprintf "New pyramid list ('%s') doesn't exist. We have to write list (header and links) before write pyramid.", $newcachelist);
         return FALSE;
     }
     
     my $NEWLIST;
 
     if (! open $NEWLIST, ">>", $newcachelist) {
-        ERROR(sprintf "Cannot open new cache list file : %s",$newcachelist);
+        ERROR(sprintf "Cannot open new pyramid list file : %s",$newcachelist);
         return FALSE;
     }
     
@@ -1445,7 +1453,8 @@ sub writeCachePyramid {
                 return FALSE;
             }
             
-            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->getDirNodata,$objLevel->getID);
+            printf $NEWLIST "%s\n", File::Spec->catdir(
+                "0",$self->getDirNodata,$objLevel->getID,$self->{nodata}->getNodataFilename);
         }
     }
     
