@@ -37,21 +37,19 @@ use strict;
 use warnings;
 
 use Test::More;
-use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
+use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Node;
+use BE4::Forest;
 
 #Other Used Class
-use BE4::Pyramid;
-use BE4::TileMatrix;
-use BE4::DataSource;
 use BE4::DataSourceLoader;
-use BE4::Commands;
+use BE4::Pyramid;
+
 
 ######################################################
 
-# Node Object Creation
+# Forest Object Creation (with QTree)
 
 my $pyramid = BE4::Pyramid->new({
 
@@ -79,60 +77,71 @@ my $pyramid = BE4::Pyramid->new({
     samplesperpixel => 3,
     interpolation => "bicubic",
 
-    color => "FFFFFF"
+    color => "255,255,255"
 });
-ok (defined $pyramid,"pyramid ok.");
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources.txt" });
-ok (defined $DSL,"DSL ok.");
+my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources_Forest.txt" });
 
-my $commands = BE4::Commands->new($pyramid);
-ok (defined $commands,"commands ok.");
-
-ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
-my $datasource = ${$DSL->getDataSources()}[0];
-ok (defined $datasource,"datasource ok.");
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
 my $forest = BE4::Forest->new($pyramid,$DSL,{
-	job_number => 16,
-	path_temp => $Bin."/../temp/",
-	path_shell => $Bin."/../temp",
-});
-ok (defined $forest,"forest ok.");
-print "\n".$datasource->exportForDebug()."\n";
-
-my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
-ok (defined $qtree,"qtree ok.");
-
-my $tm = BE4::TileMatrix->new({
-    id             => "level_4",
-    resolution     => 0.324,
-    topLeftCornerX => 0,
-    topLeftCornerY => 12000,
-    tileWidth      => 256,
-    tileHeight     => 128,
-    matrixWidth    => 100,
-    matrixHeight   => 47
-});
-ok (defined $tm,"tm ok.");
-
-my $node = BE4::Node->new({
-    "i" => 13,
-    "j" => 25,
-    "tm" => $tm,
-    "graph" => $qtree,
+    job_number => 16,
+    path_temp => $Bin."/../temp/",
+    path_temp_common => $Bin."/../temp/",
+    path_shell => $Bin."/../temp",
 });
 
-ok (defined $node, "Node Object created");
+ok (defined $forest, "Forest Object containing QTree created");
+
+is (scalar @{$forest->getGraphs}, 2, "QTree Forest contains 2 graphs");
+
+# Forest Object Creation (with Graph)
+
+$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources_Forest.txt" });
+$pyramid = BE4::Pyramid->new({
+
+    tms_path => $Bin."/../tms",
+    tms_name => "LAMB93_1M_MNT.tms",
+
+    dir_depth => 2,
+
+    pyr_data_path => $Bin."/../pyramid",
+    pyr_desc_path => $Bin."/../pyramid",
+    pyr_name_new => "newPyramid",
+
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
+
+    pyr_level_bottom => "6",
+
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 32,
+    sampleformat => "float",
+    photometric => "gray",
+    samplesperpixel => 1,
+    interpolation => "bicubic",
+
+    color => "-99999"
+});
+
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
+
+$forest = BE4::Forest->new($pyramid,$DSL,{
+    job_number => 16,
+    path_temp => $Bin."/../temp/",
+    path_temp_common => $Bin."/../temp/",
+    path_shell => $Bin."/../temp",
+});
+
+ok (defined $forest, "Forest Object containing Graph created");
+
+is (scalar @{$forest->getGraphs}, 2, "Graph Forest contains 2 graphs");
 
 ######################################################
-# testing Geometric function
-
-ok (! $node->isPointInNodeBbox(20000000,0), "the point isn't in the bbox.");
-ok (! $node->isPointInNodeBbox(0,0), "the point is in the bbox.");
-ok (! $node->isPointInNodeBbox(20000000,-20000000,30000000,-30000000), "bbox isn't intersecting node bbox.");
-ok (! $node->isPointInNodeBbox(0,0,1,1), "bbox is intersecting node bbox.");
-
-
 
 done_testing();
+
+

@@ -1817,7 +1817,7 @@ sub exportForDebug {
     $export .= sprintf "\t Directories' name (depth = %s): \n", $self->{dir_depth};
     $export .= sprintf "\t\t- Data : %s\n", $self->{dir_image};
     $export .= sprintf "\t\t- Nodata : %s\n", $self->{dir_nodata};
-    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata};
+    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata} if (defined $self->{dir_metadata});
     
     $export .= "\t Image size (in pixel):\n";
     $export .= sprintf "\t\t- width : %s\n", $self->{image_width};

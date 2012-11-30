@@ -41,6 +41,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use File::Path;
+use File::Basename;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -70,6 +71,7 @@ variable: $self
     * id
     * filePath
     * tempDir
+    * commonTempDir
     * mntConfDir
     * weight
     * stream
@@ -90,8 +92,8 @@ Script constructor
 Parameters (hash keys):
     id - string ID, like 'SCRIPT_1', used to name the file.
     scriptDir - directory, where to write the script.
-    rootAsTempDir - boolean, FALSE by default. If TRUE, 'rootTempDir' is used as own temporary directory.
-    rootTempDir - root directory, in which own temporary directory will be created.
+    tempDir - root directory, in which own temporary directory will be created.
+    commonTempDir - common temporary directory, to allowed scripts to share files
 =cut
 sub new {
     my $this = shift;
@@ -103,6 +105,7 @@ sub new {
         id => undef,
         filePath => undef,
         tempDir => undef,
+        commonTempDir => undef,
         mntConfDir => undef,
         weight => 0,
         stream => undef,
@@ -112,32 +115,43 @@ sub new {
 
     TRACE;
 
+    ########## ID
+
     if ( ! exists $params->{id} || ! defined $params->{id}) {
         ERROR ("'id' mandatory to create a Script object !");
         return undef;
     }
     $self->{id} = $params->{id};
+
+    ########## Chemin d'écriture du script
     
     if ( ! exists $params->{scriptDir} || ! defined $params->{scriptDir}) {
         ERROR ("'scriptDir' mandatory to create a Script object !");
         return undef;
     }
-    
     $self->{filePath} = File::Spec->catfile($params->{scriptDir},$self->{id}.".sh");
+
+    ########## Dossier temporaire dédié à ce script
     
-    if ( ! exists $params->{rootTempDir} || ! defined $params->{rootTempDir}) {
-        ERROR ("'rootTempDir' mandatory to create a Script object !");
+    if ( ! exists $params->{tempDir} || ! defined $params->{tempDir}) {
+        ERROR ("'tempDir' mandatory to create a Script object !");
         return undef;
     }
-    
-    if ( exists $params->{rootAsTempDir} && $params->{rootAsTempDir}) {
-        # We don't want a sub directory named as the ID : we keep the root directory
-        $self->{tempDir} = $params->{rootTempDir};
-    } else {
-        $self->{tempDir} = File::Spec->catdir($params->{rootTempDir},$self->{id});
+    $self->{tempDir} = File::Spec->catdir($params->{tempDir},$self->{id});
+
+    ########## Dossier commun à tous les scripts
+
+    if ( ! exists $params->{commonTempDir} || ! defined $params->{commonTempDir}) {
+        ERROR ("'commonTempDir' mandatory to create a Script object !");
+        return undef;
     }
+    $self->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
+
+    ########## Dossier des configurations des mergeNtiff pour ce script
     
     $self->{mntConfDir} = File::Spec->catfile($self->{tempDir},"mergeNtiff");
+
+    ########## Tests et création de l'ensemble des dossiers
     
     # Temporary directory
     if (! -d $self->{tempDir}) {
@@ -145,6 +159,16 @@ sub new {
         eval { mkpath([$self->{tempDir}]); };
         if ($@) {
             ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->{tempDir}, $@);
+            return undef;
+        }
+    }
+
+    # Common directory
+    if (! -d $self->{commonTempDir}) {
+        DEBUG (sprintf "Create the common temporary directory '%s' !", $self->{commonTempDir});
+        eval { mkpath([$self->{commonTempDir}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $self->{commonTempDir}, $@);
             return undef;
         }
     }
@@ -241,8 +265,9 @@ Parameters:
 Example:
 |   # Variables d'environnement
 |   SCRIPT_ID="SCRIPT_1"
-|   ROOT_TMP_DIR="/home/TMP/ORTHO"
-|   TMP_DIR="/home/ign/TMP/ORTHO/SCRIPT_1"
+|   COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
+|   ROOT_TMP_DIR="/tmp/ORTHO/"
+|   TMP_DIR="/tmp/ORTHO/SCRIPT_1"
 |   MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
 |   PYR_DIR="/home/ign/PYR/ORTHO"
 |   LIST_FILE="/home/ign/PYR/ORTHO.list"
@@ -268,7 +293,6 @@ Example:
 =cut
 sub prepare {
     my $self = shift;
-    my $rootTempDir = shift;
     my $pyrDir = shift;
     my $listFile = shift;
     my $functions = shift;
@@ -278,7 +302,8 @@ sub prepare {
     # definition des variables d'environnement du script
     my $code = sprintf ("# Variables d'environnement\n");
     $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
-    $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", $rootTempDir);
+    $code   .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $self->{commonTempDir});
+    $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($self->{tempDir}));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
     $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
@@ -326,6 +351,8 @@ sub exportForDebug {
     $export .= sprintf "\t ID : %s\n", $self->{id};
     $export .= sprintf "\t Script path : %s\n", $self->{filePath};
     $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
+    $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};
+    $export .= sprintf "\t Personnal temporary directory root : %s\n", File::Spec->dirname($self->{tempDir});
     $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $self->{mntConfDir};
     $export .= sprintf "\t Weight : %s\n", $self->{weight};
 
@@ -345,7 +372,8 @@ BE4::Script - Describe a script, its weight and allowed to write in.
   
     my $objC = BE4::Script->new({
         id => "SCRIPT_1",
-        tempDir => "/home/ign/TMP/SCRIPT_1",
+        tempDir => "/home/ign/TMP/",
+        commonTempDir => "/home/ign/TMP/",
         scriptDir => "/home/ign/SCRIPTS",
     });
 
@@ -364,6 +392,10 @@ Complete absolute file path.
 item tempDir
 
 Directory used to write temporary images.
+
+item commonTempDir
+
+Directory used to write temporary images which have to be shared between different scripts.
 
 item mntConfDir
 

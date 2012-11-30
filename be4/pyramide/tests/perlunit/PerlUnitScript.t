@@ -50,9 +50,8 @@ use BE4::Script;
 my $script = BE4::Script->new({
     id => "test",
     scriptDir => "$Bin/../temp",
-    rootTempDir => "$Bin/../temp",
-    rootAsTempDir => 0,
-    mntConfDir => "$Bin/../temp/MergeNTiff_ConfDir",
+    tempDir => "$Bin/../temp",
+    commonTempDir => "$Bin/../temp"
 });
 
 ok (defined $script, "Script Object created");

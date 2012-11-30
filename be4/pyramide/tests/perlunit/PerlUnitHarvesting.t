@@ -79,7 +79,7 @@ my $request = $objHarvesting->doRequestUrl({
 is ($request, "http://localhost/wmts/rok4?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=IGNF:LAMB93&BBOX=0,200,1000,1200&WIDTH=500&HEIGHT=600&STYLES=line&BGCOLOR=0xFFFFFF",
     "Well formated request");
 
-my $request = $objHarvesting->doRequestUrl({
+$request = $objHarvesting->doRequestUrl({
     srs =>"IGNF:LAMB93",
     inversion => 1,
     bbox => [0,200,1000,1200],
