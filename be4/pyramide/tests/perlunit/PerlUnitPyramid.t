@@ -132,38 +132,38 @@ ok (! defined $badUpdatePyr, "Wrong level ID in hte old pyramid's descriptor det
 # Getters
 
 is ($updatePyr->getTmsName(), "LAMB93_10cm",
-    "TMS in the old pyramid's descriptor take precedence overconfiguration");
+    "TMS in the old pyramid's descriptor take precedence over configuration");
 
 is ($updatePyr->getNodataValue(), "0,255,255",
-    "Nodata value in the old pyramid's descriptor take precedence overconfiguration");
+    "Nodata value in the old pyramid's descriptor take precedence over configuration");
 
 is ($updatePyr->getDirImage(), "IMG",
-    "Image directory name in the old pyramid's descriptor take precedence overconfiguration");
+    "Image directory name in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getDirNodata(), "NDT",
-    "Nodata directory name in the old pyramid's descriptor take precedence overconfiguration");
+    "Nodata directory name in the old pyramid's descriptor take precedence over configuration");
 
 is ($updatePyr->getDirDepth(), 2,
-    "Directory depth in the old pyramid's descriptor take precedence overconfiguration");
+    "Directory depth in the old pyramid's descriptor take precedence over configuration");
 
 is ($updatePyr->getInterpolation(), "linear",
-    "Interpolation in the old pyramid's descriptor take precedence overconfiguration");
+    "Interpolation in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getCompression(), "png",
-    "Compression in the old pyramid's descriptor take precedence overconfiguration");
+    "Compression in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getFormatCode(), "TIFF_PNG_INT8",
-    "Format code in the old pyramid's descriptor take precedence overconfiguration");
+    "Format code in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getSamplesPerPixel(), 3,
-    "Samples per pixel in the old pyramid's descriptor take precedence overconfiguration");
+    "Samples per pixel in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getPhotometric(), "rgb",
-    "Photometric in the old pyramid's descriptor take precedence overconfiguration");
+    "Photometric in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getBitsPerSample(), 8,
-    "Bits per sample in the old pyramid's descriptor take precedence overconfiguration");
+    "Bits per sample in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getSampleFormat(), "uint",
-    "Sample format in the old pyramid's descriptor take precedence overconfiguration");
+    "Sample format in the old pyramid's descriptor take precedence over configuration");
 
 is ($updatePyr->getTilesPerWidth(), 16,
-    "Tiles per width in the old pyramid's descriptor take precedence overconfiguration");
+    "Tiles per width in the old pyramid's descriptor take precedence over configuration");
 is ($updatePyr->getTilesPerHeight(), 16,
-    "Tiles per height in the old pyramid's descriptor take precedence overconfiguration");
+    "Tiles per height in the old pyramid's descriptor take precedence over configuration");
 
 is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyramid's descriptor");
 
