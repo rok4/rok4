@@ -62,3 +62,7 @@ Style::Style ( const std::string& id,const std::vector<std::string>& titles,
         estompage = true;
     }
 }
+
+Style::~Style() {
+
+}

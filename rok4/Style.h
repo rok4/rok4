@@ -57,11 +57,13 @@
  * Une instance Style représente la façon d'afficher une couche et la métadonnées associée.
  * Il est possible de définir une table de correspondance valeur/couleur ou un estompage.
  * Un style peut contenir uniquement des métadonnées ou définir plusieurs traitements.
+ * 
  * Exemple de fichier de style complet :
  * \brief Gestion des styles (affichages et métadonnées)
  * \~english
  * A Style represent the way to display a layer and its associated metadata.
  * Two types of data treatment are available, Lookup table to define a value/colour equivalence and relief shading
+ * 
  * Style file sample : 
  * \brief Style handler (display and metadata)
  * \details \~ \code{.xml}
@@ -294,6 +296,13 @@ public:
     inline uint8_t getCenter() {
         return center;
     }
+    /**
+     * \~french
+     * \brief Destructeur par défaut
+     * \~english
+     * \brief Default destructor
+     */
+    virtual ~Style();
 };
 
 

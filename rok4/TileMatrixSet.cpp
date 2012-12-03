@@ -35,6 +35,15 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file TileMatrix.cpp
+ * \~french
+ * \brief Implémentation de la classe TileMatrixSet gérant une pyramide de matrices (Cf TileMatrix)
+ * \~english
+ * \brief Implement the TileMatrixSet Class handling a pyramid of matrix (See TileMatrix)
+ */
+
+
 #include "TileMatrixSet.h"
 
 std::string TileMatrixSet::getId() {
@@ -44,10 +53,7 @@ std::map<std::string, TileMatrix>* TileMatrixSet::getTmList() {
     return &tmList;
 }
 
-/**
- * Rapid comparison of two TileMatrixSet, Keywords and TileMatrix are not verified
- * @return true if attributes are equal and if lists have the same size
- */
+
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
     return ( this->keyWords.size() ==other.keyWords.size()
              && this->tmList.size() ==other.tmList.size()
