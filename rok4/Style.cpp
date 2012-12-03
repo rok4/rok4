@@ -34,6 +34,14 @@
  *
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
+
+/**
+ * \file Style.cpp
+ * \~french
+ * \brief Implémentation de la classe Style modélisant les styles.
+ * \~english
+ * \brief Implement the Style Class handling style definition
+ */
  
 #include "Style.h"
 #include "Logger.h"

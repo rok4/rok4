@@ -129,6 +129,7 @@ public:
     inline const std::string getFormat() const {
         return format;
     }
+    
     /**
      * \~french
      * \brief Retourne le lien vers le fichier sous la forme d'une URL
@@ -137,7 +138,6 @@ public:
      * \brief Return the file link in URL format
      * \return height
      */
-    
     inline const std::string getHRef() const {
         return href;
     }
