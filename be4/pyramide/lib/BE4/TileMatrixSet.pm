@@ -39,8 +39,8 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use XML::LibXML;
 
-use XML::Simple;
 use Data::Dumper;
 use Geo::OSR;
 
@@ -156,45 +156,52 @@ sub _load {
     
     TRACE;
     
-    my $xmltms  = new XML::Simple(KeepRoot => 0, SuppressEmpty => 1, ContentKey => '-content');
-    my $xmltree = eval { $xmltms->XMLin($self->{PATHFILENAME}); };
-    
-    if ($@) {
+    # read xml pyramid
+    my $parser  = XML::LibXML->new();
+    my $xmltree =  eval { $parser->parse_file($self->{PATHFILENAME}); };
+
+    if (! defined ($xmltree) || $@) {
         ERROR (sprintf "Can not read the XML file TMS : %s !", $@);
         return FALSE;
     }
+
+    my $root = $xmltree->getDocumentElement;
+
+    my @TMs = $root->getElementsByTagName('tileMatrix');
   
     # load tileMatrix
-    while (my ($k,$v) = each %{$xmltree->{tileMatrix}}) {
+    foreach my $tm (@TMs) {
         # we identify level max (with the best resolution, the smallest) and level min (with the 
         # worst resolution, the biggest)
+        my $id = $tm->findvalue('id');
+        my $res = $tm->findvalue('resolution');
         
-        if (! defined $self->{topID} || ! defined $self->{topResolution} || $v->{resolution} > $self->{topResolution}) {
-            $self->{topID} = $k;
-            $self->{topResolution} = $v->{resolution};
+        if (! defined $self->{topID} || $res > $self->{topResolution}) {
+            $self->{topID} = $id;
+            $self->{topResolution} = $res;
         }
-        if (! defined $self->{bottomID} || ! defined $self->{bottomResolution} || $v->{resolution} < $self->{bottomResolution}) {
-            $self->{bottomID} = $k;
-            $self->{bottomResolution} = $v->{resolution};
+        if (! defined $self->{bottomID} || $res < $self->{bottomResolution}) {
+            $self->{bottomID} = $id;
+            $self->{bottomResolution} = $res;
         }
         
         my $objTM = BE4::TileMatrix->new({
-            id => $k,
-            resolution     => $v->{resolution},
-            topLeftCornerX => $v->{topLeftCornerX},
-            topLeftCornerY => $v->{topLeftCornerY},
-            tileWidth      => $v->{tileWidth},
-            tileHeight     => $v->{tileHeight},
-            matrixWidth    => $v->{matrixWidth},
-            matrixHeight   => $v->{matrixHeight},
+            id => $id,
+            resolution     => $res,
+            topLeftCornerX => $tm->findvalue('topLeftCornerX'),
+            topLeftCornerY => $tm->findvalue('topLeftCornerY'),
+            tileWidth      => $tm->findvalue('tileWidth'),
+            tileHeight     => $tm->findvalue('tileHeight'),
+            matrixWidth    => $tm->findvalue('matrixWidth'),
+            matrixHeight   => $tm->findvalue('matrixHeight'),
         });
         
         if (! defined $objTM) {
-            ERROR(sprintf "Cannot create the TileMatrix object for the level '%s'",$k);
+            ERROR(sprintf "Cannot create the TileMatrix object for the level '%s'",$id);
             return FALSE;
         }
         
-        $self->{tileMatrix}->{$k} = $objTM;
+        $self->{tileMatrix}->{$id} = $objTM;
         undef $objTM;
     }
     
@@ -204,11 +211,12 @@ sub _load {
     }
     
     # srs (== crs)
-    if (! exists ($xmltree->{crs}) || ! defined ($xmltree->{crs})) {
-        ERROR (sprintf "Can not determine parameter 'srs' in the XML file TMS !");
+    my $crs = $root->findnodes('crs');
+    if (! defined $crs) {
+        ERROR (sprintf "Can not determine parameter 'crs' in the XML file TMS !");
         return FALSE;
     }
-    $self->{srs} = uc($xmltree->{crs}); # srs is cast in uppercase in order to ease comparisons
+    $self->{srs} = uc($crs); # srs is cast in uppercase in order to ease comparisons
     
     # Have coodinates to be reversed ?
     my $sr= new Geo::OSR::SpatialReference;
@@ -233,7 +241,6 @@ sub _load {
     
     # clean
     $xmltree = undef;
-    $xmltms  = undef;
     
     # tileMatrix list sort by resolution
     my @tmList = $self->getTileMatrixByArray();
@@ -402,7 +409,7 @@ sub computeTmSource {
   my $self = shift;
   my $tmTarget = shift;
   
-  if ($tmTarget->{id} == $self->{bottomID}) {
+  if ($tmTarget->{id} eq $self->{bottomID}) {
     return TRUE;
   }
 

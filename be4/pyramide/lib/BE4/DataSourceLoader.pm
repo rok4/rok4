@@ -366,7 +366,7 @@ sub getDataSources {
 
 sub getNumberDataSources {
     my $self = shift;
-    return scalar $self->{dataSources}; 
+    return scalar @{$self->{dataSources}}; 
 }
 
 ####################################################################################################

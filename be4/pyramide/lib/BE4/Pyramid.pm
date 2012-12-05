@@ -76,7 +76,7 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my $STRPYRTMPLT   = <<"TPYR";
-<?xml version='1.0' encoding='US-ASCII'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <Pyramid>
     <tileMatrixSet>__TMSNAME__</tileMatrixSet>
     <format>__FORMATIMG__</format>
@@ -302,11 +302,6 @@ sub _init {
     #
     if (! exists($params->{interpolation})) {
         WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubic'");
-        $params->{interpolation} = 'bicubic';
-    }
-    # to remove when interpolation 'bicubique' will be remove
-    if ($params->{interpolation} eq 'bicubique') {
-        WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
         $params->{interpolation} = 'bicubic';
     }
     #
@@ -603,15 +598,6 @@ sub readConfPyramid {
         ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
         return FALSE;
     }
-    # TODO : to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-    if ($tagformat eq 'TIFF_INT8') {
-        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-        $tagformat = 'TIFF_RAW_INT8';
-    }
-    if ($tagformat eq 'TIFF_FLOAT32') {
-        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-        $tagformat = 'TIFF_RAW_FLOAT32';
-    }
 
     # SAMPLESPERPIXEL  
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
@@ -680,6 +666,10 @@ sub readConfPyramid {
                                            $tagtm );
         #
         my $levelOrder = $self->getOrderfromID($tagtm);
+        if (! defined $levelOrder) {
+            ERROR ("Level ID in the old pyramid's descriptor unknown by the TMS");
+            return FALSE;
+        }
         my $objLevel = BE4::Level->new({
             id                => $tagtm,
             order             => $levelOrder,
@@ -1827,7 +1817,7 @@ sub exportForDebug {
     $export .= sprintf "\t Directories' name (depth = %s): \n", $self->{dir_depth};
     $export .= sprintf "\t\t- Data : %s\n", $self->{dir_image};
     $export .= sprintf "\t\t- Nodata : %s\n", $self->{dir_nodata};
-    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata};
+    $export .= sprintf "\t\t- Metadata : %s\n", $self->{dir_metadata} if (defined $self->{dir_metadata});
     
     $export .= "\t Image size (in pixel):\n";
     $export .= sprintf "\t\t- width : %s\n", $self->{image_width};

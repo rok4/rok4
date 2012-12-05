@@ -83,7 +83,6 @@ sub encodeB10toB36 {
     my $padlength = shift;
     
     my $b36 = ""; # in base 36 !
-    $b36 = "000" if $number == 0;
     
     while ( $number ) {
         my $v = $number % 36;
@@ -101,6 +100,8 @@ sub encodeB10toB36 {
     if (defined $padlength && $padlength > length $b36) {
         $b36 = "0"x($padlength - length $b36).$b36;
     }
+
+    $b36 = "0" if ($b36 eq "");
     
     return $b36;
 }
@@ -116,7 +117,7 @@ Parameters:
     pathlength - number of subdirectories + the file.
     
 Examples:
-    BE4::Base36->indicesToB36Path(4032, 18217, 2) returns "3E/42/01".
+    BE4::Base36->indicesToB36Path(4032, 18217, 3) returns "3E/42/01".
     
 See also:
     <encodeB10toB36>

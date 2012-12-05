@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file CRS.cpp
+ * \~french
+ * \brief Implémente de la de gestion des systèmes de référence
+ * \~english
+ * \brief implement the reference systems handler
+ */
+
 #include "CRS.h"
 #include "Logger.h"
 #include "Grid.h"
@@ -42,18 +50,36 @@
 #include "intl.h"
 #include "config.h"
 
+/**
+ * \~french \brief Code utilisé en cas de non correspondance avec les référentiel de Proj
+ * \~english \brief Used code when no corresponding Proj code is found
+ */
 #define NO_PROJ4_CODE "noProj4Code"
 
+/**
+ * \~french \brief Transforme la chaîne fournie en minuscule
+ * \~english \brief Transform the string to lowercase
+ */
 std::string toLowerCase ( std::string str ) {
     std::string lc_str=str;
     for ( int i = 0; str[i]; i++ ) lc_str[i] = tolower ( str[i] );
     return lc_str;
 }
+
+/**
+ * \~french \brief Transforme la chaîne fournie en majuscule
+ * \~english \brief Transform the string to uppercase
+ */
 std::string toUpperCase ( std::string str ) {
     std::string uc_str=str;
     for ( int i = 0; str[i]; i++ ) uc_str[i] = toupper ( str[i] );
     return uc_str;
 }
+
+/**
+ * \~french \brief Teste si la chaîne fournie est un CRS compatible avec les registres de Proj
+ * \~english \brief Test whether the string represent a Proj compatible CRS
+ */
 bool isCrsProj4Compatible ( std::string crs ) {
     projCtx ctx = pj_ctx_alloc();
     projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + crs +" +wktext" ).c_str() );
@@ -72,6 +98,10 @@ bool isCrsProj4Compatible ( std::string crs ) {
     return isCompatible;
 }
 
+/**
+ * \~french \brief Teste si la chaîne fournie est un CRS géographique
+ * \~english \brief Test whether the string represent a geographic CRS
+ */
 bool isCrsLongLat ( std::string crs ) {
     projCtx ctx = pj_ctx_alloc();
     projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + crs +" +wktext" ).c_str() );
@@ -88,18 +118,9 @@ bool isCrsLongLat ( std::string crs ) {
     return isLongLat;
 }
 
-/**
- * Default constructor
- */
 CRS::CRS() : definitionArea(-90.0,-180.0,90.0,180.0) {
     proj4Code = NO_PROJ4_CODE;
 }
-
-
-
-/*
-* Contructeur
-*/
 
 CRS::CRS ( std::string crs_code ) : definitionArea(-90.0,-180.0,90.0,180.0) {
     requestCode=crs_code;
@@ -107,15 +128,12 @@ CRS::CRS ( std::string crs_code ) : definitionArea(-90.0,-180.0,90.0,180.0) {
     fetchDefinitionArea();
 }
 
-/**
-* Contructeur de copie
-*/
-
 CRS::CRS ( const CRS& crs ) : definitionArea(crs.definitionArea) {
     requestCode=crs.requestCode;
     proj4Code=crs.proj4Code;
     fetchDefinitionArea();
 }
+
 
 CRS& CRS::operator= ( const CRS& other ) {
     if (this != &other) {
@@ -125,6 +143,7 @@ CRS& CRS::operator= ( const CRS& other ) {
     }
     return *this;
 }
+
 
 void CRS::fetchDefinitionArea() {
     projCtx ctx = pj_ctx_alloc();
@@ -144,11 +163,6 @@ void CRS::fetchDefinitionArea() {
 }
 
 
-
-/*
-* Determine a partir du code du CRS passe dans la requete le code Proj4 correspondant
-*/
-
 void CRS::buildProj4Code() {
     proj4Code=NO_PROJ4_CODE;
     if ( isCrsProj4Compatible ( requestCode ) )
@@ -164,13 +178,16 @@ void CRS::buildProj4Code() {
         proj4Code="epsg:4326";
 }
 
+
 bool CRS::isProj4Compatible() {
     return proj4Code!=NO_PROJ4_CODE;
 }
 
+
 bool CRS::isLongLat() {
     return isCrsLongLat ( proj4Code );
 }
+
 
 long double CRS::getMetersPerUnit() {
     // Hypothese : un CRS en long/lat est en degres
@@ -181,15 +198,18 @@ long double CRS::getMetersPerUnit() {
         return 1.0;
 }
 
+
 void CRS::setRequestCode ( std::string crs ) {
     requestCode=crs;
     buildProj4Code();
     fetchDefinitionArea();
 }
 
+
 bool CRS::cmpRequestCode ( std::string crs ) {
     return toLowerCase ( requestCode ) ==toLowerCase ( crs );
 }
+
 
 std::string CRS::getAuthority() {
     size_t pos=requestCode.find ( ':' );
@@ -200,6 +220,7 @@ std::string CRS::getAuthority() {
     return ( requestCode.substr ( 0,pos ) );
 }
 
+
 std::string CRS::getIdentifier() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
@@ -209,29 +230,19 @@ std::string CRS::getIdentifier() {
     return ( requestCode.substr ( pos+1 ) );
 }
 
-/**
-* Test d'egalite de 2 CRS
-* @return true s'ils ont le meme code Proj4, false sinon
-*/
 
 bool CRS::operator== ( const CRS& crs ) const {
     return ( proj4Code==crs.proj4Code );
 }
 
 
-/**
-* Test d'inegalite de 2 CRS
-* @return false s'ils ont le meme code Proj4, true sinon
-*/
+
 bool CRS::operator!= ( const CRS& crs ) const {
     return ! ( *this == crs );
 }
 
 
-/**
- * Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
- * @return La BoundingBox en projection
- */
+
 BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geographicBBox ) {
     Grid* grid = new Grid ( 256,256,geographicBBox );
     grid->reproject ( "epsg:4326",proj4Code );
@@ -241,20 +252,14 @@ BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geogr
     return bbox;
 }
 
-/**
- * Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
- * @return La BoundingBox en projection
- */
+
 BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny, double maxx, double maxy ) {
     return boundingBoxFromGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
-/**
- * Calcule la BoundingBox en géographique à partir de la BoundingBox dans le CRS courant
- * @return La BoundingBox en projection
- */
-BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > geographicBBox ) {
-    Grid* grid = new Grid ( 256,256,geographicBBox );
+
+BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > projectedBBox ) {
+    Grid* grid = new Grid ( 256,256,projectedBBox );
     grid->reproject ( proj4Code,"epsg:4326" );
     BoundingBox<double> bbox = grid->bbox;
     delete grid;
@@ -262,34 +267,22 @@ BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > geograp
     return bbox;
 }
 
-/**
- * Calcule la BoundingBox en géographique à partir de la BoundingBox dans le CRS courant
- * @return La BoundingBox en projection
- */
+
 BoundingBox<double> CRS::boundingBoxToGeographic ( double minx, double miny, double maxx, double maxy ) {
     return boundingBoxToGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
-/**
- * Vérifie que la BoundingBox est dans le domaine de définition de la projection
- * @return true si incluse, false sinon
- */
+
 bool CRS::validateBBox ( BoundingBox< double > BBox ) {
     return validateBBoxGeographic(boundingBoxToGeographic( BBox));
 }
 
-/**
- * Vérifie que la BoundingBox est dans le domaine de définition de la projection
- * @return true si incluse, false sinon
- */
+
 bool CRS::validateBBox ( double minx, double miny, double maxx, double maxy ) {
     return validateBBoxGeographic( boundingBoxToGeographic ( minx,miny,maxx,maxy ) );
 }
 
-/**
- * Vérifie que la BoundingBox est dans le domaine de définition de la projection
- * @return true si incluse, false sinon
- */
+
 bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
     bool valid = true;
     if (BBox.xmin > definitionArea.xmax || BBox.xmin < definitionArea.xmin ||
@@ -303,10 +296,7 @@ bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
     return valid;
 }
 
-/**
- * Vérifie que la BoundingBox est dans le domaine de définition de la projection
- * @return true si incluse, false sinon
- */
+
 bool CRS::validateBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
     return validateBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
@@ -341,3 +331,7 @@ BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, dou
     return cropBBox( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
+
+CRS::~CRS() {
+
+}

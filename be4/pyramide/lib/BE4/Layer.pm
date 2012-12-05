@@ -59,7 +59,7 @@ use constant FALSE => 0;
 # Global
 
 my $STRLYRTMPLT   = <<"TLYR";
-<?xml version='1.0' encoding='US-ASCII'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <layer>
     <title>__TITLE__</title>
     <abstract>__ABSTRACT__</abstract>

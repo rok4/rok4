@@ -1,0 +1,224 @@
+<tileMatrixSet>
+	<crs>IGNF:LAMB93</crs>
+	<tileMatrix>
+		<id>level_0</id>
+		<resolution>209715.2</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>1</matrixHeight>
+		
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_1</id>
+		<resolution>104857.6</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>1</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_2</id>
+		<resolution>52428.8</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>1</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_3</id>
+		<resolution>26214.4</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>2</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_4</id>
+		<resolution>13107.2</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>4</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_5</id>
+		<resolution>6553.6</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>7</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_6</id>
+		<resolution>3276.8</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>2</matrixWidth>
+		<matrixHeight>13</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_7</id>
+		<resolution>1638.4</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>4</matrixWidth>
+		<matrixHeight>26</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_8</id>
+		<resolution>819.2</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>7</matrixWidth>
+		<matrixHeight>52</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>level_9</id>
+		<resolution>409.6</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>13</matrixWidth>
+		<matrixHeight>103</matrixHeight>
+	</tileMatrix>
+        <tileMatrix>
+                <id>level_10</id>
+                <resolution>204.8</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>25</matrixWidth>
+                <matrixHeight>206</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_11</id>
+                <resolution>102.4</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>50</matrixWidth>
+                <matrixHeight>411</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_12</id>
+                <resolution>51.2</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>99</matrixWidth>
+                <matrixHeight>822</matrixHeight>
+        </tileMatrix>
+	<tileMatrix>
+                <id>level_13</id>
+                <resolution>25.6</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>197</matrixWidth>
+                <matrixHeight>1643</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_14</id>
+                <resolution>12.8</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>394</matrixWidth>
+                <matrixHeight>3285</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_15</id>
+                <resolution>6.4</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>788</matrixWidth>
+                <matrixHeight>6569</matrixHeight>
+        </tileMatrix>
+	<tileMatrix>
+                <id>level_16</id>
+                <resolution>3.2</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>1575</matrixWidth>
+                <matrixHeight>13138</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_17</id>
+                <resolution>1.6</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>3150</matrixWidth>
+                <matrixHeight>26276</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_18</id>
+                <resolution>0.8</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>6300</matrixWidth>
+                <matrixHeight>52552</matrixHeight>
+        </tileMatrix>
+	<tileMatrix>
+                <id>level_19</id>
+                <resolution>0.4</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>12600</matrixWidth>
+                <matrixHeight>105102</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_20</id>
+                <resolution>0.2</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>25200</matrixWidth>
+                <matrixHeight>210205</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>level_21</id>
+                <resolution>0.1</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>50400</matrixWidth>
+                <matrixHeight>420409</matrixHeight>
+        </tileMatrix>
+</tileMatrixSet>

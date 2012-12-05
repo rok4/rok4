@@ -55,39 +55,43 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_B
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
-add_custom_command(OUTPUT install/lib COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
+add_custom_command(OUTPUT install_be4 COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 
-add_custom_target(be4-build ALL DEPENDS install/lib)
+add_custom_target(be4-build ALL DEPENDS install_be4)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
-# Gestion des tests unitaires (CPPUnit)
-# Les fichiers tests doivent être dans le répertoire tests/cppunit
-# Les fichiers tests doivent être nommés CppUnitNOM_DU_TEST.cpp
-# le lanceur de test doit être dans le répertoire tests/cppunit
-# le lanceur de test doit être nommés main.cpp (disponible dans cmake/template)
-# L'éxecutable "UnitTester-Nom_Projet" sera généré pour lancer tous les tests
-# Vérifier les bibliothèques liées au lanceur de tests
-#Activé uniquement si la variable UNITTEST est vraie
-if(UNITTEST)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
-  ENABLE_TESTING()
 
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
-    # Exécution des tests unitaires CppUnit
-    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
-  "tests/cppunit/CppUnit*.cpp" )
-    ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
-    #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
-    FOREACH(test ${UnitTests_SRCS})
-          MESSAGE("  - adding test ${test}")
-          GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-          ADD_TEST(${TestName} UnitTester-${PROJECT_NAME} ${TestName})
-    ENDFOREACH(test)
-  endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
+# Gestion des tests unitaires (PerlUnit)
+# Les fichiers tests doivent être dans le répertoire ../tests/perlunit
+# Les fichiers tests doivent être nommés PerlUnitCLASSE_TESTEE.t
+# le lanceur de test doit être dans le répertoire ../tests/perlunit
+# L'éxecutable "UnitTester-Nom_Projet" sera généré pour lancer tous les tests
+# Activé uniquement si la variable UNITTEST est vraie
+
+if(UNITTEST)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CPPUNIT_INCLUDE_DIR})
+    ENABLE_TESTING()
+    add_definitions(-DUNITTEST)
+
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
+        # Exécution des tests unitaires PerlUnit
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/PerlUnit*.t" )
+        
+        FOREACH(test ${UnitTests_SRCS})
+            MESSAGE("  - adding test ${test}")
+            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
+            ADD_TEST(NAME ${TestName} COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+        ENDFOREACH(test)
+
+        # Nettoyage du dossier temporaire
+        MESSAGE("  - adding cleaning")
+        ADD_TEST(NAME "Cleaning" COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/src/tests/temp)
+
+    endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
+  
 endif(UNITTEST)
 
 ########################################

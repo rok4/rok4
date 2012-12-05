@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file MetadataURL.cpp
+ * \~french
+ * \brief Implémentation de la classe MetadataURL gérant les liens vers les méta-données dans les documents de capacités
+ * \~english
+ * \brief Implement the MetadataURL Class handling capabilities metadata link elements
+ */
+
 #include "MetadataURL.h"
 
 MetadataURL::MetadataURL ( std::string format, std::string href,
@@ -54,6 +62,15 @@ MetadataURL& MetadataURL::operator= ( const MetadataURL& other ) {
     return *this;
 }
 
+bool MetadataURL::operator== ( const MetadataURL& other ) const {
+    return ( this->type.compare(other.type) == 0
+             && this->getFormat().compare ( other.getFormat() ) == 0
+             && this->getHRef().compare ( other.getHRef() ) == 0 );
+}
+
+bool MetadataURL::operator!= ( const MetadataURL& other ) const {
+    return ! ( *this == other );
+}
 
 MetadataURL::~MetadataURL() {
 

@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ConfLoader.h
+ * \~french
+ * \brief Définition des fonctions de chargement de la configuration
+ * \~english
+ * \brief Define configuration loader functions
+ */
+
 #ifndef CONFLOADER_H_
 #define CONFLOADER_H_
 

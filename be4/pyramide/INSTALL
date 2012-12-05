@@ -36,25 +36,27 @@ This module requires these other modules and libraries:
   * List of package perl !
   
   > find . -iname '*.p[m,l]' -exec scandeps.pl -RV '{}' \; | grep '\[module\]'
-                "POSIX"            => 0,
-                "Pod::Usage"       => 0,
-                "Getopt::Long"     => 0,
-                "Log::Log4perl"    => 0,
-                "Geo::GDAL"        => 0,
-                "Geo::OSR"         => 0,
-                "Cwd"              => 0,
-                "File::Spec"       => 0,
-                "File::Basename"   => 0,
-                "File::Path"       => 0,
-                "XML::LibXML"      => 0,
-                "Config::IniFiles "=> 0,
-                "Data::Dumper"     => 0,
-                "List::Util"       => 0,
-                "URI::URL"         => 0,
-                "URI::http"        => 0,
-                "HTTP::Request"    => 0,
-                "LWP"              => 0,
-                "Math::BigFloat"   => 0,
+                "POSIX"                 => 0,
+                "Pod::Usage"            => 0,
+                "Getopt::Long"          => 0,
+                "Log::Log4perl"         => 0,
+                "Geo::GDAL"             => 0, # libgdal-perl
+                "Geo::OSR"              => 0,
+                "Cwd"                   => 0,
+                "File::Spec"            => 0,
+                "File::Basename"        => 0,
+                "File::Path"            => 0,
+                "XML::LibXML"           => 0,
+                "Config::IniFiles "     => 0,
+                "Data::Dumper"          => 0,
+                "List::Util"            => 0,
+                "URI::URL"              => 0,
+                "URI::http"             => 0,
+                "HTTP::Request"         => 0,
+                "LWP"                   => 0,
+                "Math::BigFloat"        => 0, # libmath-bigint-perl
+                "TAP::Formatter::JUnit" => 0, # libtap-formatter-junit-perl
+                "Test::More"            => 0, # libtest-unit-perl
   
   
   * Binding perl to Gdal !

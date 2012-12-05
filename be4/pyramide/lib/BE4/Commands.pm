@@ -378,19 +378,16 @@ sub work2cache {
     my $workImgName  = $node->getWorkName;
     my $cacheImgName = $self->{pyramid}->getCacheNameOfImage("data",$node->getLevel,$node->getCol,$node->getRow);
     
-    # DEBUG: On pourra mettre ici un appel à convert pour ajouter des infos
-    # complémentaire comme le quadrillage des dalles et le numéro du node, 
-    # ou celui des tuiles et leur identifiant.
-    
-    # Suppression du lien pour ne pas corrompre les autres pyramides.
     my $cmd .= sprintf ("Work2cache %s/%s %s\n", $workDir, $workImgName, $cacheImgName);
     
     # Si on est au niveau du haut, il faut supprimer les images, elles ne seront plus utilisées
+    # Si on est au niveau de découpe, on doit mettre les fichiers temporaires dans le dossier de partage,
+    # pour que le FINISHER les y retrouve.
     if (defined $after) {
         if ($after eq "rm") {
             $cmd .= sprintf ("rm -f %s/%s\n", $workDir, $workImgName);
         } elsif ($after eq "mv") {
-            $cmd .= sprintf ("mv %s/%s \${ROOT_TMP_DIR}/%s\n", $workDir, $workImgName, $workImgName);
+            $cmd .= sprintf ("mv %s/%s \${COMMON_TMP_DIR}/%s\n", $workDir, $workImgName, $workImgName);
         }
     }
     
@@ -569,13 +566,19 @@ sub merge4tiff {
     
     return ("",$weight) if ($justWeight);
     
-    # We compose hte 'Merge4tiff' call
+    # We compose the 'Merge4tiff' call
     #   - the ouput
     $code .= sprintf "Merge4tiff \${TMP_DIR}/%s", $node->getWorkName;
-    #   - the inputs
-    foreach my $childNode ($node->getPossibleChildren) {
+    #   - the inputs    
+    foreach my $childNode ($node->getPossibleChildren()) {
         if (defined $childNode){
-            $code .= sprintf " \${TMP_DIR}/%s", $childNode->getWorkName;
+            # Si on utilise des image du cut level dans le merge4tiff,on dait qu'elle se trouve dans le dossier
+            # partagé (mise là par les split, pour le finisher.
+            if ( $childNode->isCutLevelNode() ) {
+                $code .= sprintf " \${COMMON_TMP_DIR}/%s", $childNode->getWorkName;
+            } else {
+                $code .= sprintf " \${TMP_DIR}/%s", $childNode->getWorkName;
+            }
         } else {
             $code .= " 0";
         }

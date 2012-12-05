@@ -427,6 +427,7 @@ sub exportForDebug {
     my $export = "";
     
     $export .= sprintf "\n Object BE4::DataSource :\n";
+    $export .= sprintf "\t Extent: %s\n",$self->{extent};
     $export .= sprintf "\t Levels ID (order):\n";
     $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
     $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
