@@ -36,11 +36,10 @@ install: builddir.inst buildconf.inst buildinstall.inst
 	@ echo "> Ok, Install $* !" ;
 
 buildconf: \
-./conf/nodata \
 ./conf/params.properties \
 ./conf/be4.properties
 	@(for p in $^ ; do \
-                res=`echo $$p | sed -e 's/conf\///'` ;\
+                res=`echo $$p | sed -e 's/config\/be4\///'` ;\
                 if [ `echo $$res|grep -E 'properties'` ] ; then \
                         cp $$p $(BE4_CONF) ;\
                 fi; \
@@ -95,7 +94,7 @@ buildhtml:
 	@(for f in `find lib -name "*.pm"` ;\
             do \
               h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-              pod2html --index --title=$$f --header --infile=$$f --outfile=docs/Html/$$h ;\
+              pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
           done)
 	@(for f in `find bin -name "*.pl"` ;\
           do \

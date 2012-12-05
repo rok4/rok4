@@ -285,7 +285,11 @@ sub identifyBottomNodes {
     TRACE();
     
     my $bottomID = $self->{bottomID};
-    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
+    my $tm = $self->getPyramid()->getTileMatrixSet()->getTileMatrix($bottomID);
+    if (! defined $tm) {
+        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug());
+        return FALSE;
+    };
     my $datasource = $self->{datasource};
     my ($TPW,$TPH) = ($self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight);
     
@@ -368,7 +372,7 @@ sub identifyBottomNodes {
         my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
         
         $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
-        
+        if (! defined $tm) {print "\n test : ".$bboxref->[0].",".$bboxref->[2].",".$bboxref->[1].",".$bboxref->[3].",".$TPW.",".$TPH."\n";};
         my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
             $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
         

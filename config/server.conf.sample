@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serverConf>
+	<!-- Sortie des logs (rolling_file|static_file|standard_output_stream_for_errors) -->
+	<logOutput>rolling_file</logOutput>
+	<!-- Prefixe des fichiers de log -->
+	<logFilePrefix>/var/tmp/rok4</logFilePrefix>
+	<!-- Periode de validite des fichiers de log (en secondes) -->
+	<logFilePeriod>3600</logFilePeriod>
+	<!-- Nombre de thread de traitement des requêtes -->
+	<nbThread>2</nbThread>
+	<!-- Niveau maximum des logs (fatal|error|warn|info|debug) -->
+	<logLevel>debug</logLevel>
+        <!-- Active le serveur WMTS -->
+        <WMTSSupport>true</WMTSSupport>
+        <!-- Active le serveur WMS -->
+        <WMSSupport>true</WMSSupport>
+	<!-- Capacite du serveur pour les reprojections -->
+	<reprojectionCapability>true</reprojectionCapability>
+	<!-- Fichier contenant les parametres de service -->
+	<servicesConfigFile>../config/services.conf</servicesConfigFile>
+	<!-- Repertoire contenant les confs des layers -->
+	<layerDir>../config/layers</layerDir>
+	<!-- Repertoire contenant les confs des styles -->
+	<styleDir>../config/styles</styleDir>
+	<!-- Répertoire contenant les confs des TMS -->
+	<tileMatrixSetDir>../config/tileMatrixSet</tileMatrixSetDir>
+        <!-- Répertoire contenant les registres proj4 -->
+        <projConfigDir>../config/proj</projConfigDir>
+        <!-- Chemin d'écoute du serveur FCGI dans le cas d'une socket UNIX "/var/run/rok4sock"
+             Ou (ip d'écoute) deux point suivi d'un numéro de port "127.0.0.1:9000" ou ":9000" 
+             Doit être vide pour une utilisation avec Apache ou Spawn-Fcgi-->
+        <serverPort></serverPort>
+        <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
+        <serverBackLog>0</serverBackLog>
+</serverConf>

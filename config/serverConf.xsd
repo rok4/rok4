@@ -31,6 +31,10 @@
 			<xs:element name="logLevel"         type="logLevelType"/>
 			<!-- Nombre de threads exploités pour l'ecoute et le calcul -->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
+                        <!-- Active le serveur WMTS -->
+                        <xs:element name="WMTSSupport"               type="xs:boolean"/>
+                        <!-- Active le serveur WMS -->
+                        <xs:element name="WMSSupport"               type="xs:boolean"/>
 			<!-- Capacite a reprojeter -->
 			<xs:element name="reprojectionCapability"        	type="xs:boolean"/>
 			<!-- Fichier contenant les parametres de service -->

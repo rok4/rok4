@@ -79,6 +79,13 @@ INIT {
     compressionoption => ['none','crop']
 );
 
+%DEFAULT = (
+    interpolation => 'bicubic',
+    compression => 'raw',
+    compressionoption => 'none',
+    gamma => 1
+);
+
 %CODE2SAMPLEFORMAT = (
     INT => "uint",
     FLOAT => "float"
@@ -148,7 +155,7 @@ sub _init {
     
     return FALSE if (! defined $params);
 
-    if (exists($params->{formatCode})) {
+    if (exists $params->{formatCode} && defined $params->{formatCode}) {
         (my $formatimg, $params->{compression}, $params->{sampleformat}, $params->{bitspersample})
             = $self->decodeFormat($params->{formatCode});
         if (! defined $formatimg) {
@@ -157,7 +164,7 @@ sub _init {
         }
     }
 
-    # Pixel object creation
+    ### Pixel object
     my $objPixel = BE4::Pixel->new({
         photometric => $params->{photometric},
         sampleformat => $params->{sampleformat},
@@ -172,58 +179,68 @@ sub _init {
 
     $self->{pixel} = $objPixel;
     
-    # Other attributes
-    # All attributes have to be present in parameters and defined
-
-    # Compression parameters
-    # to remove when compression type 'floatraw' will be remove
-    if (exists($params->{compression}) && $params->{compression} eq 'floatraw') {
+    ### Compression
+    if (! exists $params->{compression} || ! defined $params->{compression}) {
+        $params->{compression} = $DEFAULT{compression};
+        INFO(sprintf "Default value for 'compression' : %s", $params->{compression});
+    } elsif ($params->{compression} eq 'floatraw') {
+        # to remove when compression type 'floatraw' will be remove
         WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
         $params->{compression} = 'raw';
-    }
-    if (! exists $params->{compression} || ! defined $params->{compression}) {
-        ERROR ("'compression' is required !");
-        return FALSE;
-    }
-    if (! $self->is_Compression($params->{compression})) {
-        ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
-        return FALSE;
+    } else {
+        if (! $self->is_Compression($params->{compression})) {
+            ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
+            return FALSE;
+        }
     }
     $self->{compression} = $params->{compression};
 
+    ### Compression option
     if (! exists $params->{compressionoption} || ! defined $params->{compressionoption}) {
-        ERROR ("'compressionoption' is required !");
-        return FALSE;
-    }
-    if (! $self->is_CompressionOption($params->{compressionoption})) {
-        ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
-        return FALSE;
+        $params->{compressionoption} = $DEFAULT{compressionoption};
+        INFO(sprintf "Default value for 'compressionoption' : %s", $params->{compressionoption});
+    } else {
+        if (! $self->is_CompressionOption($params->{compressionoption})) {
+            ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
+            return FALSE;
+        }
     }
     $self->{compressionoption} = $params->{compressionoption};
 
-    # Interpolation parameter
+    ### Interpolation
     if (! exists $params->{interpolation} || ! defined $params->{interpolation}) {
-        ERROR ("'interpolation' is required !");
-        return FALSE;
-    }
-    if (! $self->is_Interpolation($params->{interpolation})) {
+        $params->{interpolation} = $DEFAULT{interpolation};
+        INFO(sprintf "Default value for 'interpolation' : %s", $params->{interpolation});
+    } elsif ($params->{interpolation} eq 'bicubique') {
+        # to remove when interpolation 'bicubique' will be remove
+        WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
+        $params->{interpolation} = 'bicubic';
+    } else {
+        if (! $self->is_Interpolation($params->{interpolation})) {
         ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
+        }
     }
     $self->{interpolation} = $params->{interpolation};
 
-    # Gamma parameter
-    if (! exists $params->{gamma} || ! defined $params->{interpolation}) {
-        ERROR ("'gamma' is undefined !");
-        return FALSE;
-    }
-    if ($params->{gamma} < 0) {
-        WARN ("Given value for gamma is negative : 0 is used !");
-        $params->{gamma} = 0;
+    ### Gamma
+    if (! exists $params->{gamma} || ! defined $params->{gamma}) {
+        $params->{gamma} = $DEFAULT{gamma};
+        INFO(sprintf "Default value for 'gamma' : %s", $params->{gamma});
+    } else {
+        if ($params->{gamma} !~ /^-?\d+\.?\d*$/) {
+            ERROR ("'gamma' is not a number !");
+            return FALSE;
+        }
+        
+        if ($params->{gamma} < 0) {
+            WARN ("Given value for gamma is negative : 0 is used !");
+            $params->{gamma} = 0;
+        }
     }
     $self->{gamma} = $params->{gamma};
 
-    # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
+    ### Format code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
     $self->{formatCode} = sprintf "TIFF_%s_%s%s",
         uc $self->{compression},
         $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}},
@@ -355,7 +372,7 @@ sub decodeFormat {
 
     my $bitspersample = $2;
     
-    return (lc $value[0], lc $value[1], $sampleformat, $bitspersample);
+    return ($value[0], lc $value[1], $sampleformat, $bitspersample);
     
 }
 

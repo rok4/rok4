@@ -193,7 +193,7 @@ sub _init {
         return FALSE;
     }
 
-    # check type ref
+    # check values
     if (! scalar ($params->{size})){
         ERROR("List empty to 'size' !");
         return FALSE;

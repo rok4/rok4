@@ -68,6 +68,7 @@ my %HEX2DEC;
 ################################################################################
 
 BEGIN {}
+
 INIT {
 
 %HEX2DEC = (
@@ -90,6 +91,7 @@ INIT {
 );
 
 }
+
 END {}
 
 ################################################################################
@@ -99,7 +101,6 @@ Group: variable
 variable: $self
     * pixel : BE4::Pixel
     * value - 255 (uint) or -99999 (float) per sample
-    * nowhite : boolean - FALSE by default
 =cut
 
 ####################################################################################################
@@ -117,7 +118,6 @@ sub new {
     my $self = {
         pixel           => undef,
         value           => undef,
-        nowhite         => undef,
     };
     
     bless($self, $class);
@@ -140,30 +140,16 @@ sub _init {
     
     # init. params
     # Mandatory : pixel
-    # Optionnal : nowhite and value
+    # Optionnal : value
 
-    # *** nowhite ***
-    if (! exists $params->{nowhite} || ! defined  $params->{nowhite}) {
-        $params->{nowhite} = 'false';
-    }
-    if (lc $params->{nowhite} eq 'true') {
-        $self->{nowhite} = TRUE;
-    }
-    elsif (lc $params->{nowhite} eq 'false') {
-        $self->{nowhite} = FALSE;
-    } else {
-        ERROR (sprintf "Parameter 'nowhite' is not valid (%s). Possible values are true or false !",$params->{nowhite});
-        return FALSE;
-    }
-
-    # *** pixel ***
+    ### Pixel
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
     $self->{pixel} = $params->{pixel};
 
-    # *** value ***
+    ### Value
     # For nodata value, it has to be coherent with bitspersample/sampleformat :
     #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
     #       - 8/uint -> a uint in decimal format (255 for example)
@@ -241,11 +227,6 @@ sub _init {
 sub getValue {
     my $self = shift;
     return $self->{value};
-}
-
-sub getNoWhite {
-    my $self = shift;
-    return $self->{nowhite};
 }
 
 #
@@ -376,11 +357,6 @@ sub exportForDebug {
     
     $export .= "\nObject BE4::NoData :\n";
     $export .= sprintf "\t Value : %s\n", $self->{value};
-    if ($self->{nowhite}) {
-        $export .= "\t'nowhite' option is on\n";
-    } else {
-        $export .= "\t'nowhite' option is off\n";
-    }
     
     return $export;
 }
@@ -399,8 +375,7 @@ BE4::NoData - components of nodata
     # NoData object creation
     my $objNodata = BE4::NoData->new({
             pixel   => $objPixel,
-            value   => "255,255,255",
-            nowhite => TRUE
+            value   => "255,255,255"
     });
 
 
@@ -419,10 +394,6 @@ A Pixel object, the same as the cache one.
 The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
 
 Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
-
-=item nowhite
-
-This boolean will be used in mergeNtiff. If it's TRUE, when images are stacked, white pixel are ignored. As this treatment is longer and often useless , default value is FALSE.
 
 =back
 

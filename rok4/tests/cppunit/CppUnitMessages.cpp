@@ -103,8 +103,8 @@ void CppUnitMessages::test1WMSException() {
     CPPUNIT_ASSERT_MESSAGE ( "attribut locator absent du message :\n"+exTxt,exTxt.find ( " locator=\""+locator+"\"",0 ) !=std::string::npos ) ;
     CPPUNIT_ASSERT_MESSAGE ( "texte absent du message :\n"+exTxt,exTxt.find ( message,0 ) !=std::string::npos ) ;
     // TODO : validation du XML
-
-    wmsSE= se ;
+    delete se;
+    //wmsSE= se ;
 } // test1WMSException
 
 
@@ -120,7 +120,7 @@ void CppUnitMessages::test2WMTSException() {
     CPPUNIT_ASSERT_MESSAGE ( "attribut locator absent du message :\n"+exTxt,exTxt.find ( " locator=\""+locator+"\"",0 ) !=std::string::npos ) ;
     CPPUNIT_ASSERT_MESSAGE ( "texte absent du message :\n"+exTxt,exTxt.find ( message,0 ) !=std::string::npos ) ;
     // TODO : validation du XML
-
+    delete se;
 
 } // test2WMTSException
 
@@ -178,6 +178,7 @@ void CppUnitMessages::test4ExceptionReport() {
     CPPUNIT_ASSERT_MESSAGE ( "attribut xmlns absent du message ou incorrect (xmlns=\"http://opengis.net/ogc\" attendu) :\n"+exTxt,exTxt.find ( "xmlns=\"http://www.opengis.net/ogc\"",0 ) !=std::string::npos ) ;
     // TODO : validation du XML
     exs.clear() ;
+    delete serDST;
 
 } // test4ExceptionReport
 
@@ -185,7 +186,8 @@ void CppUnitMessages::test4ExceptionReport() {
  * test d'1 SERDataStream
  */
 void CppUnitMessages::test41ExceptionReport() {
-    SERDataStream *serDST= new SERDataStream ( new ServiceException ( locator,code,message,"wms" ) ) ;
+    ServiceException * se = new ServiceException ( locator,code,message,"wms" );
+    SERDataStream *serDST= new SERDataStream ( se ) ;
 
     if ( serDST==NULL ) CPPUNIT_FAIL ( "Impossible de créer l'objet SERDataStream !" ) ;
     std::string exTxt= serDST->getMessage() ;
@@ -194,6 +196,7 @@ void CppUnitMessages::test41ExceptionReport() {
     CPPUNIT_ASSERT_MESSAGE ( "ServiceExceptionReport absent du message :\n"+exTxt,exTxt.find ( "<ServiceExceptionReport ",0 ) !=std::string::npos ) ;
     CPPUNIT_ASSERT_MESSAGE ( "attribut xmlns absent du message ou incorrect (xmlns=\"http://opengis.net/ogc\" attendu) :\n"+exTxt,exTxt.find ( "xmlns=\"http://www.opengis.net/ogc\"",0 ) !=std::string::npos ) ;
     // TODO : validation du XML
+    delete serDST;
 
 } // test41ExceptionReport
 

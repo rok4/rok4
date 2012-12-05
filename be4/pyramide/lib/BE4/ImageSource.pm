@@ -42,6 +42,7 @@ use Log::Log4perl qw(:easy);
 use List::Util qw(min max);
 
 use BE4::GeoImage;
+use BE4::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

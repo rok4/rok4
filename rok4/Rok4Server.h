@@ -65,6 +65,8 @@ private:
     std::vector<pthread_t> threads;
     ResponseSender S;
     
+    bool supportWMTS;
+    bool supportWMS;
     volatile bool running;
     std::string socket;
     int backlog;
@@ -144,7 +146,7 @@ public:
     bool isRunning() { return running ;}
     void terminate();
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog);
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true);
     virtual ~Rok4Server ();
 
 };

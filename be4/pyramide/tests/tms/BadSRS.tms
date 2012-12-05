@@ -1,0 +1,25 @@
+<tileMatrixSet>
+	<crs>IGNF:UTM40SGUAD</crs>
+
+        <tileMatrix>
+                <id>2</id>
+                <resolution>52428.8</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>1</matrixWidth>
+                <matrixHeight>2</matrixHeight>
+        </tileMatrix>
+	<tileMatrix>
+		<id>3</id>
+		<resolution>26214.4</resolution>
+		<topLeftCornerX> 0 </topLeftCornerX>
+		<topLeftCornerY> 12000000 </topLeftCornerY>
+		<tileWidth>256</tileWidth>
+		<tileHeight>256</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>2</matrixHeight>
+	</tileMatrix>
+
+</tileMatrixSet>

@@ -80,3 +80,6 @@ if(BUILD_BE4)
   add_subdirectory(be4)
 endif(BUILD_BE4)
 
+#Installe les fichiers de configurations
+INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
+  DESTINATION config)

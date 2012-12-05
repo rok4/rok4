@@ -182,14 +182,19 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
         if ( wr != read_size ) {
             LOGGER_DEBUG ( _("Nombre incorrect d'octets ecrits dans le flux de sortie") );
             delete stream;
+            stream = 0;
             delete[] buffer;
+            buffer = 0;
             break;
         }
         pos += read_size;
     }
-
-    delete stream;
-    delete[] buffer;
+    if (stream) {
+        delete stream;
+    }
+    if (buffer) {
+        delete[] buffer;
+    }
     LOGGER_DEBUG ( _("End of Response") );
     return 0;
 }

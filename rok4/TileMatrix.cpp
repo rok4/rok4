@@ -42,9 +42,15 @@
  *      Author: root
  */
 
+/**
+ * \file TileMatrix.cpp
+ * \~french
+ * \brief Implémentation de la classe TileMatrix gérant une matrice de tuile représentant un niveau d'une pyramide (Cf TileMatrixSet)
+ * \~english
+ * \brief Implement the TileMatrix Class handling a matrix of tile reprensenting a level in a pyramid (See TileMatrixSet)
+ */
+
 #include "TileMatrix.h"
-
-
 
 double   TileMatrix::getRes()    {
     return res;
@@ -72,6 +78,21 @@ std::string TileMatrix::getId()  {
     return id;
 }
 
+TileMatrix::TileMatrix ( const TileMatrix& t ) : id(t.id), res(t.res),x0(t.x0),y0(t.y0),tileW(t.tileW),tileH(t.tileH),matrixW(t.matrixW),matrixH(t.matrixH){}
+
+TileMatrix& TileMatrix::operator= ( const TileMatrix& other ) {
+
+    this->id = other.id;
+    this->res = other.res;
+    this->x0 = other.x0;
+    this->y0 = other.y0;
+    this->tileW = other.tileW;
+    this->tileH = other.tileH;
+    this->matrixW = other.matrixW;
+    this->matrixH = other.matrixH;
+}
+
+
 bool TileMatrix::operator== ( const TileMatrix& other ) const {
     return ( this->res == other.res
              && this->x0 == other.x0
@@ -86,3 +107,8 @@ bool TileMatrix::operator== ( const TileMatrix& other ) const {
 bool TileMatrix::operator!= ( const TileMatrix& other ) const {
     return ! ( *this == other );
 }
+
+TileMatrix::~TileMatrix() {
+
+}
+

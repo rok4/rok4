@@ -59,7 +59,7 @@ use constant FALSE => 0;
 # Global
 
 my $STRLYRTMPLT   = <<"TLYR";
-<?xml version='1.0' encoding='US-ASCII'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <layer>
     <title>__TITLE__</title>
     <abstract>__ABSTRACT__</abstract>
@@ -130,12 +130,12 @@ variable: $self
 # Group: constructor
 
 sub new {
-  my $this = shift;
+    my $this = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-	title            => undef,
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    my $self = {
+        title            => undef,
         abstract         => "",
         keywordlist      => [],
         style            => "normal",
@@ -149,19 +149,19 @@ sub new {
         proj             => undef,
         proj_bbox        => [],
         pyramid          => undef,
-  };
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  if (! $self->_init(@_)) {
+    bless($self, $class);
+
+    TRACE;
+
+    # init. class
+    if (! $self->_init(@_)) {
     ERROR ("One parameter is missing !");
     return undef;
-  }
-  
-  return $self;
+    }
+
+    return $self;
 }
 
 sub _init {

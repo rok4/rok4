@@ -71,6 +71,10 @@ INIT {
     samplesperpixel   => [1,3,4],
 );
 
+%DEFAULT = (
+    photometric => 'rgb',
+);
+
 }
 END {}
 
@@ -110,34 +114,53 @@ sub new {
 
     # All attributes have to be present in parameters and defined
 
-    my $sampleformat = $params->{sampleformat};
-    if ( ! defined $sampleformat || ! $self->is_SampleFormat($sampleformat)) {
-        ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
+    ### Sample format : REQUIRED
+    if (! exists $params->{sampleformat} || ! defined $params->{sampleformat}) {
+        ERROR ("'sampleformat' required !");
         return undef;
+    } else {
+        if (! $self->is_SamplesPerPixel($params->{sampleformat})) {
+            ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
+            return undef;
+        }
     }
-    $self->{sampleformat} = $sampleformat;
+    $self->{sampleformat} = $params->{sampleformat};
 
-    my $samplesperpixel = $params->{samplesperpixel};
-    if (! defined $samplesperpixel || ! $self->is_SamplesPerPixel($samplesperpixel)) {
-        ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
+    ### Samples per pixel : REQUIRED
+    if (! exists $params->{samplesperpixel} || ! defined $params->{samplesperpixel}) {
+        ERROR ("'samplesperpixel' required !");
         return undef;
+    } else {
+        if (! $self->is_SamplesPerPixel($params->{samplesperpixel})) {
+            ERROR (sprintf "Unknown 'samplesperpixel' : %s !",$params->{samplesperpixel});
+            return undef;
+        }
     }
-    $self->{samplesperpixel} = int($samplesperpixel);
+    $self->{samplesperpixel} = $params->{samplesperpixel};
 
-    my $photometric = $params->{photometric};
-    if (! defined $photometric || ! $self->is_Photometric($photometric)) {
-        ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
+    ### Photometric
+    if (! exists $params->{photometric} || ! defined $params->{photometric}) {
+        $params->{photometric} = $DEFAULT{photometric};
+        INFO(sprintf "Default value for 'photometric' : %s", $params->{photometric});
+    } else {
+        if (! $self->is_Photometric($params->{photometric})) {
+            ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
+            return undef;
+        }
+    }
+    $self->{photometric} = $params->{photometric};
+
+    ### Bits per sample : REQUIRED
+    if (! exists $params->{bitspersample} || ! defined $params->{bitspersample}) {
+        ERROR ("'bitspersample' required !");
         return undef;
+    } else {
+        if (! $self->is_BitsPerSample($params->{bitspersample})) {
+            ERROR (sprintf "Unknown 'bitspersample' : %s !",$params->{bitspersample});
+            return undef;
+        }
     }
-    $self->{photometric} = $photometric;
-
-    my $bitspersample = $params->{bitspersample};
-    if (! defined $bitspersample || ! $self->is_BitsPerSample($bitspersample)) {
-        ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
-        return undef;
-    }
-    $self->{bitspersample} = int($bitspersample);
-
+    $self->{bitspersample} = $params->{bitspersample};
 
     return $self;
 }

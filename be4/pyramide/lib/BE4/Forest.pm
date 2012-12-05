@@ -181,6 +181,7 @@ sub _load {
     
     my $splitNumber = $params_process->{job_number};
     my $tempDir = $params_process->{path_temp};
+    my $commonTempDir = $params_process->{path_temp_common};
     my $scriptDir = $params_process->{path_shell};
 
     if (! defined $splitNumber) {
@@ -194,10 +195,19 @@ sub _load {
         return FALSE;
     }
 
+    if (! defined $commonTempDir) {
+        ERROR("Parameter required : 'path_temp_common' in section 'Process' !");
+        return FALSE;
+    }
+
     if (! defined $scriptDir) {
         ERROR("Parameter required : 'path_shell' in section 'Process' !");
         return FALSE;
     }
+
+    # Ajout du nom de la pyramide aux dossiers temporaires (pour distinguer de ceux des autres générations)
+    $tempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
+    $commonTempDir = File::Spec->catdir($commonTempDir,$self->{pyramid}->getNewName);
     
     ############# PROCESS #############
     
@@ -258,8 +268,6 @@ sub _load {
     
     my $functions = $commands->configureFunctions;
     
-    my $rootTempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
-    
     if ($isQTree) {
         #### QTREE CASE
         
@@ -272,13 +280,13 @@ sub _load {
             
             my $script = BE4::Script->new({
                 id => $scriptID,
-                rootTempDir => $rootTempDir,
-                scriptDir => $scriptDir,
-                rootAsTempDir => ($i == 0),
+                tempDir => $tempDir,
+                commonTempDir => $commonTempDir,
+                scriptDir => $scriptDir
             });
             
             my $listFile = $self->{pyramid}->getNewListFile;
-            $script->prepare($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
+            $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
             
             push @{$self->{scripts}},$script;
         }
@@ -301,12 +309,13 @@ sub _load {
                 
                 my $script = BE4::Script->new({
                     id => $scriptID,
-                    rootTempDir => $rootTempDir,
-                    scriptDir => $scriptDir,
+                    tempDir => $tempDir,
+                    commonTempDir => $commonTempDir,
+                    scriptDir => $scriptDir
                 });
                 
                 my $listFile = $self->{pyramid}->getNewListFile;
-                $script->prepare($rootTempDir,$self->{pyramid}->getNewDataDir,$listFile,$functions);
+                $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
             
                 push @{$self->{scripts}},$script;
             }

@@ -72,8 +72,8 @@ std::string genSER ( ServiceException *sex ) {
  */
 std::string genSER ( std::vector<ServiceException*> *sexcp ) {
 
-    LOGGER_DEBUG ( "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0] ) ;
-    LOGGER_DEBUG ( "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]" ) ;
+   // LOGGER_DEBUG ( "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0] ) ;
+   // LOGGER_DEBUG ( "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]" ) ;
 
     //this->_init(&(sexcp->at(0)->getService())) ;
 
@@ -95,20 +95,28 @@ SERDataSource::SERDataSource ( std::vector<ServiceException*> *sexcp ) : Message
     this->message= genSER ( sexcp ) ;
     // le statut http est celui correspondant à la première exception
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sexcp->at ( 0 )->getCode() ) ;
+    for(int i = 0; i < sexcp->size(); ++i)
+        delete sexcp->at(i);
+    
 }
 
 SERDataSource::SERDataSource ( ServiceException *sex ) : MessageDataSource ( "","text/xml" ) {
     this->message= genSER ( sex ) ;
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sex->getCode() ) ;
+    delete sex;
 }
 
 SERDataStream::SERDataStream ( std::vector<ServiceException*> *sexcp ) : MessageDataStream ( "","text/xml" ) {
     this->message= genSER ( sexcp ) ;
     // le statut http est celui correspondant à la première exception
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sexcp->at ( 0 )->getCode() ) ;
+    for(int i = 0; i < sexcp->size(); ++i)
+        delete sexcp->at(i);
+    
 }
 
 SERDataStream::SERDataStream ( ServiceException *sex ) : MessageDataStream ( "","text/xml" ) {
     this->message= genSER ( sex ) ;
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sex->getCode() ) ;
+    delete sex;
 }

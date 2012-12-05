@@ -61,8 +61,8 @@
 #include <libintl.h>
 
 /**
-* @brief Initialisation d'une reponse a partir d'une source
-* @brief Les donnees source sont copiees dans la reponse
+* \brief Initialisation d'une reponse a partir d'une source
+* \brief Les donnees source sont copiees dans la reponse
 */
 
 static bool loggerInitialised = false;
@@ -84,9 +84,9 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 }
 
 /**
-* @brief Initialisation du serveur ROK4
-* @param serverConfigFile : nom du fichier de configuration des parametres techniques
-* @return : pointeur sur le serveur ROK4, NULL en cas d'erreur (forcement fatale)
+* \brief Initialisation du serveur ROK4
+* \param serverConfigFile : nom du fichier de configuration des parametres techniques
+* \return : pointeur sur le serveur ROK4, NULL en cas d'erreur (forcement fatale)
 */
 
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
@@ -94,9 +94,9 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogOutput logOutput;
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
-    bool reprojectionCapability;
+    bool supportWMTS,supportWMS,reprojectionCapability;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -165,24 +165,24 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
 }
 
 /**
-* @fn HttpRequest* rok4InitRequest(const char* queryString, const char* hostName, const char* scriptName)
-* @brief Initialisation d'une requete
-* @param[in] queryString
-* @param[in] hostName
-* @param[in] scriptName
-* @return Requete (memebres alloues ici, doivent etre desalloues ensuite)
+* \brief \~french Initialisation d'une requete \~english Initialize a request \~
+* \param[in] queryString 
+* \param[in] hostName
+* \param[in] scriptName
+* \return Requete (memebres alloues ici, doivent etre desalloues ensuite)
+* 
 * Requete HTTP, basee sur la terminologie des variables d'environnement Apache et completee par le type d'operation (au sens WMS/WMTS) de la requete
 * Exemple :
 * http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
 * queryString="SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0"
-* hostName="localhost"
-* scriptName="/target/bin/rok4"
-* service="wmts" (en minuscules)
-* operationType="Gettile" (en minuscules)
+* \arg \b hostName = "localhost"
+* \arg \b scriptName = "/target/bin/rok4"
+* \arg \b service = "wmts" \~french (en minuscules) \~english (lowercase)
+* \arg \b operationType =  "gettile" \~french (en minuscules) \~english (lowercase)
 */
 
 HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https ) {
@@ -212,11 +212,11 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
 }
 
 /**
-* @brief Implementation de l'operation GetCapabilities pour le WMTS
-* @param[in] hostName
-* @param[in] scriptName
-* @param[in] server : serveur
-* @return Reponse (allouee ici, doit etre desallouee ensuite)
+* \brief Implementation de l'operation GetCapabilities pour le WMTS
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
 HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server ) {
@@ -232,12 +232,12 @@ HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hos
 }
 
 /**
-* @brief Implementation de l'operation GetTile
-* @param[in] queryString
-* @param[in] hostName
-* @param[in] scriptName
-* @param[in] server : serveur
-* @return Reponse (allouee ici, doit etre desallouee ensuite)
+* \brief Implementation de l'operation GetTile
+* \param[in] queryString
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \return Reponse (allouee ici, doit etre desallouee ensuite)
 */
 
 HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server ) {
@@ -251,15 +251,15 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 }
 
 /**
-* @brief Implementation de l'operation GetTile modifiee
-* @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
-* @param[in] queryString
-* @param[in] hostName
-* @param[in] scriptName
-* @param[in] server : serveur
-* @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
-* @param[out] palette : palette à ajouter, NULL sinon.
-* @return Reponse en cas d'exception, NULL sinon
+* \brief Implementation de l'operation GetTile modifiee
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \param[in] queryString
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* \param[out] palette : palette à ajouter, NULL sinon.
+* \return Reponse en cas d'exception, NULL sinon
 */
 
 HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette ) {
@@ -324,15 +324,15 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 }
 
 /**
-* @brief Implementation de l'operation GetNoDataTile
-* @brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
-* @param[in] queryString
-* @param[in] hostName
-* @param[in] scriptName
-* @param[in] server : serveur
-* @param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
-* @param[out] palette : palette à ajouter, NULL sinon.
-* @return Reponse en cas d'exception, NULL sinon
+* \brief Implementation de l'operation GetNoDataTile
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \param[in] queryString
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
+* \param[out] palette : palette à ajouter, NULL sinon.
+* \return Reponse en cas d'exception, NULL sinon
 */
 HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette ) {
 // Initialisation
@@ -402,8 +402,8 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
 
 /**
-* @brief Construction d'un en-tete TIFF
-* @deprecated
+* \brief Construction d'un en-tete TIFF
+* \deprecated
 */
 
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
@@ -416,7 +416,7 @@ TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
 }
 
 /**
-* @brief Construction d'un en-tete TIFF
+* \brief Construction d'un en-tete TIFF
 */
 
 TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char* format, uint32_t possize ) {
@@ -433,7 +433,7 @@ TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char*
 }
 
 /**
-* @brief Construction d'un en-tete PNG avec Palette
+* \brief Construction d'un en-tete PNG avec Palette
 */
 
 PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* palette ) {
@@ -449,7 +449,7 @@ PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* 
 
 
 /**
-* @brief Renvoi d'une exception pour une operation non prise en charge
+* \brief Renvoi d'une exception pour une operation non prise en charge
 */
 
 HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server ) {
@@ -464,7 +464,7 @@ HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, c
 }
 
 /**
-* @brief Suppression d'une requete
+* \brief Suppression d'une requete
 */
 
 void rok4DeleteRequest ( HttpRequest* request ) {
@@ -477,7 +477,7 @@ void rok4DeleteRequest ( HttpRequest* request ) {
 }
 
 /**
-* @brief Suppression d'une reponse
+* \brief Suppression d'une reponse
 */
 
 void rok4DeleteResponse ( HttpResponse* response ) {
@@ -487,7 +487,7 @@ void rok4DeleteResponse ( HttpResponse* response ) {
 }
 
 /**
-* @brief Suppression des champs d'une reference de tuile
+* \brief Suppression des champs d'une reference de tuile
 * La reference n est pas supprimee
 */
 
@@ -498,7 +498,7 @@ void rok4FlushTileRef ( TileRef* tileRef ) {
 }
 
 /**
-* @brief Suppression d'un en-tete TIFF
+* \brief Suppression d'un en-tete TIFF
 */
 
 void rok4DeleteTiffHeader ( TiffHeader* header ) {
@@ -506,7 +506,7 @@ void rok4DeleteTiffHeader ( TiffHeader* header ) {
 }
 
 /**
-* @brief Suppression d'un en-tete Png avec Palette
+* \brief Suppression d'un en-tete Png avec Palette
 */
 
 void rok4DeletePngPaletteHeader ( PngPaletteHeader* header ) {
@@ -515,7 +515,7 @@ void rok4DeletePngPaletteHeader ( PngPaletteHeader* header ) {
 }
 
 /**
-* @brief Suppression d'une Palette
+* \brief Suppression d'une Palette
 */
 
 void rok4DeleteTilePalette ( TilePalette* palette ) {
@@ -524,7 +524,7 @@ void rok4DeleteTilePalette ( TilePalette* palette ) {
 
 
 /**
-* @brief Extinction du serveur
+* \brief Extinction du serveur
 */
 
 void rok4KillServer ( Rok4Server* server ) {
@@ -551,7 +551,7 @@ void rok4KillServer ( Rok4Server* server ) {
 }
 
 /**
- * @brief Extinction du Logger
+ * \brief Extinction du Logger
  */
 void rok4KillLogger() {
     loggerInitialised = false;
@@ -569,7 +569,7 @@ void rok4KillLogger() {
 }
 
 /**
- * @brief Fermeture des descripteurs de fichiers
+ * \brief Fermeture des descripteurs de fichiers
  */
 void rok4ReloadLogger() {
         Accumulator* acc = NULL;

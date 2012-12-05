@@ -276,11 +276,11 @@ sub doRequestUrl {
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
 
     my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s",
-                        $self->url(),
-                        $self->layer(),
-                        $self->version(),
-                        $self->request(),
-                        $self->format(),
+                        $self->getURL(),
+                        $self->getLayers(),
+                        $self->getVersion(),
+                        $self->getRequest(),
+                        $self->getFormat(),
                         $srs);
 
     if ($inversion) {
@@ -289,7 +289,7 @@ sub doRequestUrl {
         $url .= sprintf ("&BBOX=%s,%s,%s,%s", $xmin, $ymin, $xmax, $ymax);
     }
 
-    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&%s", $image_width, $image_height, $self->{OPTIONS});
+    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&%s", $image_width, $image_height, $self->getOptions);
 
     return $url;
 }
@@ -382,7 +382,7 @@ sub getCommandWms2work {
     
     my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
                     $self->getURL, $self->getLayers, $self->getVersion, $self->getRequest, $self->getFormat,
-                    $srs, $max_width, $max_height, $self->{OPTIONS});
+                    $srs, $max_width, $max_height, $self->getOptions);
     my $BBoxesAsString = "\"";
     for (my $i = 0; $i < $imagePerWidth; $i++) {
         for (my $j = 0; $j < $imagePerHeight; $j++) {
@@ -469,6 +469,11 @@ sub getFormat {
 sub getLayers {
     my $self = shift;
     return $self->{LAYERS};
+}
+
+sub getOptions {
+    my $self = shift;
+    return $self->{OPTIONS};
 }
 
 sub getMinSize {

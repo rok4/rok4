@@ -180,7 +180,7 @@ Return a boolean indicating if the point in parameter is inside the bbox of the 
   
 Parameters:
     x - the x coordinate of the point you want to know if it is in
-    x - the y coordinate of the point you want to know if it is in
+    y - the y coordinate of the point you want to know if it is in
 =cut
 sub isPointInNodeBbox {
     my $self = shift;
@@ -407,6 +407,40 @@ Returns:
 sub getChildren {
     my $self = shift;
     return $self->{graph}->getChildren($self);
+}
+
+####################################################################################################
+#                                          LEVELS TESTERS                                          #
+####################################################################################################
+
+# Group: levels' testers
+
+sub isCutLevelNode {
+    my $self = shift;
+
+    if (! defined $self->{graph} || ref ($self->{graph}) ne "BE4::QTree") {
+        return FALSE;
+    }
+
+    if (defined $self->{graph}->getCutLevelID && $self->getLevel eq $self->{graph}->getCutLevelID) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+sub isTopLevelNode {
+    my $self = shift;
+    
+    if (! defined $self->{graph} || ref ($self->{graph}) ne "BE4::QTree") {
+        return FALSE;
+    }
+    
+    if (defined $self->{graph}->getTopLevelID && $self->getLevel eq $self->{graph}->getCutLevelID) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 ####################################################################################################

@@ -76,7 +76,7 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my $STRPYRTMPLT   = <<"TPYR";
-<?xml version='1.0' encoding='US-ASCII'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <Pyramid>
     <tileMatrixSet>__TMSNAME__</tileMatrixSet>
     <format>__FORMATIMG__</format>
@@ -91,7 +91,18 @@ TPYR
 ################################################################################
 
 BEGIN {}
-INIT {}
+
+INIT {
+
+%DEFAULT = (
+    dir_image => 'IMAGE',
+    dir_nodata => 'NODATA',
+    dir_mask => 'MASK',
+    dir_metadata => 'METADATA'
+);
+    
+}
+
 END {}
 
 ################################################################################
@@ -290,60 +301,30 @@ sub _init {
             }
         }
     }
-
-    #
-    if (! exists($params->{compressionoption})) {
-        INFO ("Optional parameter 'compressionoption' is not set. The default value is 'none'");
-        $params->{compressionoption} = 'none';
-    }    
-    #
-    if (! exists($params->{color})) {
-        WARN ("Parameter 'color' (for nodata) has not been set. The default value will be used (consistent with the pixel's format).");
-        $params->{color} = undef;
-    }
-    #
-    if (! exists($params->{interpolation})) {
-        WARN ("Parameter 'interpolation' has not been set. The default value is 'bicubic'");
-        $params->{interpolation} = 'bicubic';
-    }
-    # to remove when interpolation 'bicubique' will be remove
-    if ($params->{interpolation} eq 'bicubique') {
-        WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
-        $params->{interpolation} = 'bicubic';
-    }
-    #
-    if (! exists($params->{photometric})) {
-        WARN ("Parameter 'photometric' has not been set. The default value is 'rgb'");
-        $params->{photometric} = 'rgb';
-    }
-    #
-    if (! exists($params->{gamma})) {
-        WARN ("Parameter 'gamma' has not been set. The default value is 1 (no effect)");
-        $params->{gamma} = 1;
-    }
     
-    # Directories names : data, nodata, mask and metadata
-    if (! exists($params->{dir_image})) {
-        WARN ("Parameter 'dir_image' has not been set. The default value is 'IMAGE'");
-        $params->{dir_image} = 'IMAGE';
+    ### Images' directory
+    if (! exists $params->{dir_image} || ! defined $params->{dir_image}) {
+        $params->{dir_image} = $DEFAULT{dir_image};
+        INFO(sprintf "Default value for 'dir_image' : %s", $params->{dir_image});
     }
     $self->{dir_image} = $params->{dir_image};
-    #
-    if (! exists($params->{dir_nodata})) {
-        WARN ("Parameter 'dir_nodata' has not been set. The default value is 'NODATA'");
-        $params->{dir_nodata} = 'NODATA';
+
+    ### Nodata's directory
+    if (! exists $params->{dir_nodata} || ! defined $params->{dir_nodata}) {
+        $params->{dir_nodata} = $DEFAULT{dir_nodata};
+        INFO(sprintf "Default value for 'dir_nodata' : %s", $params->{dir_nodata});
     }
-    $self->{dir_nodata} = $params->{dir_nodata};
-    #
+    $self->{dir_nodata} = $params->{dir_nodata}; 
+
+    ### Masks' directory
     if (exists $params->{dir_mask} && defined $params->{dir_mask}) {
         INFO ("We want to generate masks");
         $self->{dir_mask} = $params->{dir_mask};
     }
-    #
+    
+    ### Metadatas' directory
     if (exists $params->{dir_metadata} && defined $params->{dir_metadata}) {
         WARN ("We want to generate metadatas, but it is not implemented !");
-        # INFO ("We want to generate metadata");
-        # $self->{dir_metadata} = $params->{dir_metadata};
     }
     
     return TRUE;
@@ -547,7 +528,7 @@ sub readConfPyramid {
     # NODATA
     my $tagnodata = $root->findnodes('nodataValue')->to_literal;
     if ($tagnodata eq '') {
-        WARN (sprintf "Can not determine parameter 'nodata' in the XML file Pyramid ! Value from parameters kept");
+        WARN (sprintf "Can not extract 'nodata' from the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Nodata value ('%s') in the XML file Pyramid is used",$tagnodata);
         $params->{color} = $tagnodata;
@@ -556,7 +537,7 @@ sub readConfPyramid {
     # PHOTOMETRIC
     my $tagphotometric = $root->findnodes('photometric')->to_literal;
     if ($tagphotometric eq '') {
-        WARN (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid ! Value from parameters kept");
+        WARN (sprintf "Can not extract 'photometric' from the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Photometric value ('%s') in the XML file Pyramid is used",$tagphotometric);
         $params->{photometric} = $tagphotometric;
@@ -565,14 +546,9 @@ sub readConfPyramid {
     # INTERPOLATION    
     my $taginterpolation = $root->findnodes('interpolation')->to_literal;
     if ($taginterpolation eq '') {
-        WARN (sprintf "Can not determine parameter 'interpolation' in the XML file Pyramid ! Value from parameters kept");
+        WARN (sprintf "Can not extract 'interpolation' from the XML file Pyramid ! Value from parameters kept");
     } else {
         INFO (sprintf "Interpolation value ('%s') in the XML file Pyramid is used",$taginterpolation);
-        # to remove when interpolation 'bicubique' will be remove
-        if ($taginterpolation eq 'bicubique') {
-            WARN("'bicubique' is a deprecated interpolation name, use 'bicubic' instead");
-            $taginterpolation = 'bicubic';
-        }
         $params->{interpolation} = $taginterpolation;
     }
 
@@ -581,7 +557,7 @@ sub readConfPyramid {
     # TMS
     my $tagtmsname = $root->findnodes('tileMatrixSet')->to_literal;
     if ($tagtmsname eq '') {
-        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+        ERROR (sprintf "Can not extract 'tileMatrixSet' from the XML file Pyramid !");
         return FALSE;
     }
     my $tmsname = $params->{tms_name};
@@ -594,7 +570,7 @@ sub readConfPyramid {
         $tmsname = $tagtmsname;
     }
     # create a object tileMatrixSet
-    my $tmsfile = join(".", $tmsname, "tms"); 
+    my $tmsfile = join(".", $tmsname, "tms");
     my $objTMS  = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path}, $tmsfile));
     if (! defined $objTMS) {
         ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",
@@ -607,23 +583,14 @@ sub readConfPyramid {
     # FORMAT
     my $tagformat = $root->findnodes('format')->to_literal;
     if ($tagformat eq '') {
-        ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid !");
+        ERROR (sprintf "Can not extract 'format' in the XML file Pyramid !");
         return FALSE;
-    }
-    # TODO : to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-    if ($tagformat eq 'TIFF_INT8') {
-        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-        $tagformat = 'TIFF_RAW_INT8';
-    }
-    if ($tagformat eq 'TIFF_FLOAT32') {
-        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-        $tagformat = 'TIFF_RAW_FLOAT32';
     }
 
     # SAMPLESPERPIXEL  
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
     if ($tagsamplesperpixel eq '') {
-        ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid !");
+        ERROR (sprintf "Can not extract 'channels' in the XML file Pyramid !");
         return FALSE;
     }
     $params->{samplesperpixel} = $tagsamplesperpixel;
@@ -697,7 +664,10 @@ sub readConfPyramid {
         }
         #
         my $levelOrder = $self->getOrderfromID($tagtm);
-            
+        if (! defined $levelOrder) {
+            ERROR ("Level ID in the old pyramid's descriptor unknown by the TMS");
+            return FALSE;
+        }
         my $objLevel = BE4::Level->new({
             id                => $tagtm,
             order             => $levelOrder,
@@ -714,8 +684,8 @@ sub readConfPyramid {
             
 
         if (! defined $objLevel) {
-            WARN(sprintf "Can not load the pyramid level : '%s'", $tagtm);
-            next;
+            ERROR(sprintf "Can not load the pyramid level : '%s'", $tagtm);
+            return FALSE;
         }
 
         $self->addLevel($tagtm,$objLevel);
@@ -726,12 +696,6 @@ sub readConfPyramid {
         $self->{image_height} = $tagsize[1];
     }
 
-    #
-    if (scalar keys %{$self->{levels}} != scalar @levels) {
-        WARN (sprintf "Be careful, the level pyramid in not complete (%s != %s) !",
-            scalar keys %{$self->{levels}},
-            scalar @levels);
-    }
     #
     if (! scalar %{$self->{levels}}) {
         ERROR ("List of Level Pyramid is empty !");
