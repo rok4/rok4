@@ -89,7 +89,7 @@ public:
      * \~french
      * Crée un Keyword à partir d'un autre Keyword
      * \brief Constructeur de copie
-     * \param[in] origKW keyword à copié
+     * \param[in] origKW keyword à copier
      * \~english
      * Create a Keyword from another
      * \brief Copy Constructor

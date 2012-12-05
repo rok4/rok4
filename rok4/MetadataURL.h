@@ -82,7 +82,7 @@ public:
      * \~french
      * Crée un MetadataURL à partir d'un autre 
      * \brief Constructeur de copie
-     * \param[in] origMtdUrl MetadataURL à copié
+     * \param[in] origMtdUrl MetadataURL à copier
      * \~english
      * Create a MetadataURL from another
      * \brief Copy Constructor

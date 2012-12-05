@@ -102,7 +102,7 @@ public:
      * \~french
      * Crée un LegendURL à partir d'un autre 
      * \brief Constructeur de copie
-     * \param[in] origLUrl LegendURL à copié
+     * \param[in] origLUrl LegendURL à copier
      * \~english
      * Create a LegendURL from another
      * \brief Copy Constructor

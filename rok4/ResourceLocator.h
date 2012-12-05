@@ -60,7 +60,7 @@
 class ResourceLocator {
 private:
     /**
-     * \~french \brief Type mime du fichier référencé 
+     * \~french \brief Type mime du fichier référencé
      * \~english \brief Linked file mime type
      */
     std::string format;
@@ -85,7 +85,7 @@ public:
      * \~french
      * Crée un ResourceLocator à partir d'un autre 
      * \brief Constructeur de copie
-     * \param[in] origRL ResourceLocator à copié
+     * \param[in] origRL ResourceLocator à copier
      * \~english
      * Create a ResourceLocator from another
      * \brief Copy Constructor
@@ -93,11 +93,11 @@ public:
      */
     ResourceLocator ( const ResourceLocator &origRL );
     /**
-     * \~french
-     * \brief Affectation
-     * \~english
-     * \brief Assignement
-     */
+    * \~french
+    * \brief Affectation
+    * \~english
+    * \brief Assignement
+    */
     ResourceLocator& operator= (ResourceLocator const& other);
     /**
      * \~french
@@ -121,23 +121,23 @@ public:
     /**
      * \~french
      * \brief Retourne le type mime du fichier référencé
-     * \return hauteur
+     * \return type/mime
      * \~english
      * \brief Return the linked file mime type
-     * \return height
+     * \return type/mime
      */
     inline const std::string getFormat() const {
         return format;
     }
+    
     /**
      * \~french
      * \brief Retourne le lien vers le fichier sous la forme d'une URL
-     * \return hauteur
+     * \return URL
      * \~english
      * \brief Return the file link in URL format
-     * \return height
+     * \return URL
      */
-    
     inline const std::string getHRef() const {
         return href;
     }
