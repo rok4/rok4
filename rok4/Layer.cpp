@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Layer.cpp
+ * \~french
+ * \brief Implémentation de la classe Layer modélisant les couches de données.
+ * \~english
+ * \brief Implement the Layer Class handling data layer.
+ */
+
 #include "Layer.h"
 #include "Pyramid.h"
 #include "Logger.h"
