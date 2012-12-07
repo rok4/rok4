@@ -1,3 +1,5 @@
+#Récupère le nom du projet parent
+SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(pyramide)
 #définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
@@ -98,28 +100,17 @@ endif(UNITTEST)
 #Documentation Doxygen
 #Utilisation du fichier 
 if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc ALL
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-  endif(DOXYGEN_FOUND)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(NaturalDocs)
+    find_package(NaturalDocs)
     if(NATURALDOCS_FOUND)
-	add_custom_target(doc ALL make doc
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src
-    COMMENT "Generating API documentation with NaturalDocs" VERBATIM
-    )
+        add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src
+        COMMENT "Generating API documentation with NaturalDocs" VERBATIM )
     endif(NATURALDOCS_FOUND)
-endif(BUILD_DOC)
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
 
+    INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
+endif(BUILD_DOC)
+
+#Installe la documentation de base
+INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts
@@ -128,24 +119,7 @@ INSTALL(FILES LICENCE
 
 
 #Installe les différents fichers nécessaires
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
-  DESTINATION . USE_SOURCE_PERMISSIONS)
-
-#Installe la documentation
-INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME 
-  DESTINATION doc/${PROJECT_NAME})
-if(BUILD_DOC)
-  if(DOXYGEN_FOUND)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  endif(DOXYGEN_FOUND)
-  if(NATURALDOCS_FOUND)
-     INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/"
-             DESTINATION doc/${PROJECT_NAME})   
-  endif(NATURALDOCS_FOUND)
-endif(BUILD_DOC)
+INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/" DESTINATION . USE_SOURCE_PERMISSIONS)
 
 ########################################
 # Paramétrage de la gestion de package CPack

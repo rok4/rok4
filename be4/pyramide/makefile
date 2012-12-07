@@ -92,15 +92,15 @@ buildhtml:
                 install -d docs/Html ;\
         fi)
 	@(for f in `find lib -name "*.pm"` ;\
-            do \
-              h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-              pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
-          done)
+	do \
+		h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
+		pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
+	done)
 	@(for f in `find bin -name "*.pl"` ;\
-          do \
-            h=`echo $$f | sed -e 's/\.pl/\.html/' -e 's!/!-!g'` ;\
-            pod2html --index --title=$$f --header --infile=$$f --outfile=docs/Html/$$h ;\
-          done)
+	do \
+		h=`echo $$f | sed -e 's/\.pl/\.html/' -e 's!/!-!g'` ;\
+		pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
+        done)
 	@( echo "> Ok, Man2Html !" ) ;
 
 clean:

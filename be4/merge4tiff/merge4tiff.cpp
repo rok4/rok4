@@ -37,10 +37,32 @@
 
 /**
  * \file merge4tiff.cpp
- * \brief Sous echantillonage de 4 images 
- * \author IGN
-*
-*/
+ * \~french \brief Sous echantillonage de 4 images disposées en carré, avec utilisation possible de fond et de masques de données
+ * \~english \brief Four images subsampling, formed a square, pight use a background and data masks 
+ * \~ \image html merge4tiff.png
+ * \~french \details les images doivent avoir la disposition suivante , mais les 4 ne sont pas forcément présentes :
+ * \code
+ *    image1 | image2
+ *    -------+-------
+ *    image3 | image4
+ * \endcode
+ * Les caractéristiques suivantes doivent être les mêmes pour les 4 images, le fond et seront celles de l'image de sortie :
+ * \li largeur et hauteur en pixel
+ * \li nombre de canaux
+ * \li format des canaux
+ * \li photometrie
+ *
+ * Les masques doivent avoir la même taille mais sont à un canal entier non signé sur 8 bits
+ * Exemple d'appel à la commande :
+ * \li sans masque, avec une image de fond \~english \li without mask, with background image
+ * \~ \code
+ * merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
+ * \endcode
+ * \~french \li avec masque, sans image de fond \~english \li with mask, without background image
+ * \~ \code
+ * merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif   imageOut.tif
+ * \endcode
+ */
 
 #include "tiffio.h"
 #include <cstdlib>
@@ -51,7 +73,55 @@
 #include <stdint.h>
 #include "../be4version.h"
 
+/* Valeurs de nodata */
+/** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
+char* strnodata;
+/** \~french Valeur de nodata sous forme de tableau de flottant */
+float* nodataFloat32;
+/** \~french Valeur de nodata sous forme de tableau d'entier */
+uint8_t* nodataUInt8;
 
+/* Chemins des images en entrée et en sortie */
+/** \~french Chemin de l'image de fond */
+char* backgroundImage;
+/** \~french Chemin du masque associé à l'image de fond */
+char* backgroundMask;
+/** \~french Chemins des images en entrée */
+char* inputImages[4];
+/** \~french Chemins des masques associés aux images en entrée */
+char* inputMasks[4];
+/** \~french Chemin de l'image en sortie */
+char* outputImage;
+/** \~french Chemin du masque associé à l'image en sortie */
+char* outputMask;
+
+/* Caractéristiques des images en entrée et en sortie */
+/** \~french Valeur de gamma, pour foncer ou éclaircir des images en entier */
+double gammaM4t;
+/** \~french Largeur des images */
+uint32_t width;
+/** \~french Hauteur des images */
+uint32_t height;
+/** \~french Bufferisation des images */
+uint32_t rowsperstrip;
+/** \~french Compression de l'image de sortie */
+uint16_t compression;
+/** \~french Nombre de bits par canal, dans les images en entrée et celle en sortie */
+uint16_t bitspersample;
+/** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
+uint16_t samplesperpixel;
+/** \~french Format du canal (entier, flottant), dans les images en entrée et celle en sortie */
+uint16_t sampleformat;
+/** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
+uint16_t photometric;
+/** \~french Agancement des canaux (ne gère que des canaux entremêlés : RGB RGB RGB...) */
+uint16_t planarconfig;
+
+/**
+ * \~french
+ * \brief Affiche l'utilisation et les différentes options de la commande merge4tiff
+ * \todo Mettre à jour les cas d'utilisation
+ */
 void usage() {
   std::cerr << "merge4tiff version "<< BE4_VERSION << std::endl;
   std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
@@ -68,28 +138,23 @@ void usage() {
   std::cerr << "   image3 | image4" << std::endl;
 }
 
+/**
+ * \~french
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur (code de retour 1)
+ * \param[in] message message d'erreur
+ */
 void error(std::string message) {
     std::cerr << message << std::endl;
     usage();
     exit(1);
 }
 
-double gammaM4t;
-char* strnodata;
-float* nodataFloat32;
-uint8_t* nodataUInt8;
-
-// Chemins des images
-char* backgroundImage;
-char* backgroundMask;
-char* inputImages[4];
-char* inputMasks[4];
-char* outputImage;
-char* outputMask;
-
-uint32_t width,height,rowsperstrip;
-uint16_t compression,bitspersample,samplesperpixel,sampleformat,photometric,planarconfig;
-
+/**
+ * \~french
+ * \brief Récupère les valeurs passées en paramètres de la commande, et les stocke dans les variables globales
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ */
 void parseCommandLine(int argc, char* argv[])
 {
     // Initialisation
@@ -194,6 +259,12 @@ void parseCommandLine(int argc, char* argv[])
 
 }
 
+/**
+ * \~french
+ * \brief Contrôle les caractéristiques d'une image (format des canaux, tailles)
+ * \param[in] image image à contrôler
+ * \param[in] isMask précise si l'image contrôlée est un masque
+ */
 void checkComponents(TIFF* image, bool isMask)
 {
     uint32_t _width,_height,_rowsperstrip;
@@ -242,6 +313,17 @@ void checkComponents(TIFF* image, bool isMask)
     }
 }
 
+/**
+ * \~french
+ * \brief Contrôle l'ensemble des images et masques, en entrée et sortie
+ * \details Crée les objets TIFF, contrôle la cohérence des caractéristiques des images en entrée, ouvre les flux de lecture et écriture
+ * \param[in] INPUTI images en entrée
+ * \param[in] INPUTM masques associé aux images en entrée
+ * \param[in] BGI image de fond en entrée
+ * \param[in] BGM masque associé à l'image de fond en entrée
+ * \param[in] OUTPUTI image en sortie
+ * \param[in] OUTPUTM masques associé à l'image en sortie
+ */
 void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
                  TIFF*& BGI,TIFF*& BGM,
                  TIFF*& OUTPUTI,TIFF*& OUTPUTM)
@@ -323,7 +405,18 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
     }
 }
 
-
+/**
+ * \~french
+ * \brief Remplit un buffer à partir d'une ligne d'une image à canal flottant et d'un potentiel masque associé
+ * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
+ * \param[in] image ligne de l'image en sortie
+ * \param[in] IMAGE image à lire
+ * \param[in] mask ligne du masque en sortie
+ * \param[in] MASK masque associé à l'image à lire (peut être nul)
+ * \param[in] line indice de la ligne source dans l'image (et son masque)
+ * \param[in] width largeur de la ligne à lire (et remplir)
+ * \return code d'erreur, 0 si réussi
+ */
 int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
 
     if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
@@ -342,6 +435,17 @@ int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int
     return 0;
 }
 
+/**
+ * \~french
+ * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie, cas flottant
+ * \param[in] BGI image de fond en entrée
+ * \param[in] BGM masque associé à l'image de fond en entrée
+ * \param[in] INPUTI images en entrée
+ * \param[in] INPUTM masques associé aux images en entrée
+ * \param[in] OUTPUTI image en sortie
+ * \param[in] OUTPUTM masques associé à l'image en sortie
+ * \return code d'erreur, 0 si réussi
+ */
 int merge4float32(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM) {
 int nbsamples = width * samplesperpixel;
     int left,right;
@@ -467,6 +571,18 @@ int nbsamples = width * samplesperpixel;
     return 0;
 };
 
+/**
+ * \~french
+ * \brief Remplit un buffer à partir d'une ligne d'une image à canal entier et d'un potentiel masque associé
+ * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
+ * \param[in] image ligne de l'image en sortie
+ * \param[in] IMAGE image à lire
+ * \param[in] mask ligne du masque en sortie
+ * \param[in] MASK masque associé à l'image à lire (peut être nul)
+ * \param[in] line indice de la ligne source dans l'image (et son masque)
+ * \param[in] width largeur de la ligne à lire (et remplir)
+ * \return code d'erreur, 0 si réussi
+ */
 int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
 
     if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
@@ -485,6 +601,18 @@ int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, i
     return 0;
 }
 
+/**
+ * \~french
+ * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie, cas entier
+ * \details Lors de la moyenne des 4 pixels entiers, on utilise une valeur de gamma qui éclaircit (si supérieure à 1.0) ou fonce (si inférieure à 1.0) le résultat. Si gamma vaut 1, le résultat est une moyenne classique.
+ * \param[in] BGI image de fond en entrée
+ * \param[in] BGM masque associé à l'image de fond en entrée
+ * \param[in] INPUTI images en entrée
+ * \param[in] INPUTM masques associé aux images en entrée
+ * \param[in] OUTPUTI image en sortie
+ * \param[in] OUTPUTM masques associé à l'image en sortie
+ * \return code d'erreur, 0 si réussi
+ */
 int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
 {    
     uint8 MERGE[1024];
@@ -621,7 +749,13 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
     return 0;
 }
 
-
+/**
+ * \~french
+ * \brief Fonction principale de l'outil merge4tiff
+ * \details Différencie le cas de canaux flottants sur 32 bits des canaux entier non signés sur 8 bits.
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ */
 int main(int argc, char* argv[])
 {
     TIFF* INPUTI[2][2];

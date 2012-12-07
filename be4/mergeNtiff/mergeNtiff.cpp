@@ -37,33 +37,64 @@
 
 /**
  * \file mergeNtiff.cpp
- * \brief Creation d une image georeference a partir de n images source
- * \author IGN
-*
-* Ce programme est destine a etre utilise dans la chaine de generation de cache be4.
-* Il est appele pour calculer le niveau minimum d'une pyramide, pour chaque nouvelle image.
-*
-* Les images source ne sont pas necessairement entierement recouvrantes.
-*
-* Pas de fichier TIFF tuile ou LUT en entree
-*
-* Parametres d'entree :
-* 1. Un fichier texte contenant les images source et l image finale avec leur georeferencement (resolution, emprise)
-* 2. Une compression pour le fichier de sortie
-* 3. Un mode d'interpolation
-* 4. Une couleur de NoData
-* 5. Un type d image (Data/Metadata)
-* 6. Le nombre de canaux des images
-* 7. Nombre d'octets par canal
-* 8. La colorimetrie
-*
-* En sortie, un fichier TIFF au format dit de travail brut non compressé entrelace
-* Ou, erreurs (voir dans le main)
-*
-* Contrainte:
-* Toutes les images sont dans le meme SRS (pas de reprojection)
-* FIXME : meme type de pixels (nombre de canaux, poids, couleurs) en entree et en sortie
-*/
+ * \~french \brief Création d'une image TIFF géoréférencée à partir de n images TIFF sources géoréférencées
+ * \~english \brief Create one georeferenced TIFF image from several georeferenced TIFF images
+ * \~ \image html mergeNtiff.png
+ * \~french \details Les images en entrée peuvent :
+ * \li être de différentes résolutions
+ * \li ne pas couvrir entièrement l'emprise de l'image de sortie
+ * \li être recouvrantes entre elles
+ * 
+ * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
+ * \li le même système spatial de référence
+ * \li le même nombre de canaux
+ * \li le même format de canal
+ * 
+ * Les formats des canaux gérés sont :
+ * \li entier non signé sur 8 bits
+ * \li flottant sur 32 bits
+ *
+ * On doit réciser en paramètre de la commande :
+ * \li Un fichier texte contenant les images sources et l'image finale avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
+ * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
+ * Exemple de configuration :
+ * \~ \code{.txt}
+ * IMG IMAGE.tif      -499       1501    1501    -499       2       2
+ * MSK MASK.tif
+ * IMG sources/imagefond.tif      -499       1501    1501    -499       4       4
+ * MSK sources/maskfond.tif
+ * IMG sources/image1.tif      0       1000    1000    0       1       1
+ * MSK sources/mask1.tif
+ * IMG sources/image2.tif      500       1500    1500    500       1       1
+ * MSK sources/mask2.tif
+ * \endcode
+ * \~french
+ * \li Le type de la donnée traitée (Data/Metadata)
+ * \li La compression de l'image de sortie
+ * \li Le mode d'interpolation
+ * \li Le nombre de canaux par pixel
+ * \li Le nombre de bits par canal
+ * \li Le format du canal (entier ou flottant)
+ * \li La valeur de non-donnée
+ *
+ * Pour réaliser la fusion des images en entrée, on traite différemment :
+ * \li les images qui sont superposables à l'image de sortie (mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
+ * \li les images non compatibles : un passage par le réechntillonnage (plus lourd en calcul) est indispensable.
+ *
+ * Exemple d'appel à la commande :
+ * \~french \li pour des ortho-images \~english \li for orthoimage
+ * \~ \code
+ * mergeNtiff -f conf.txt -t image -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ * \endcode
+ * \~french \li pour du MNT \~english \li for DTM
+ * \~ \code
+ * mergeNtiff -f conf.txt -t image -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
+ * \endcode
+ * 
+ * \~french
+ * \todo Gérer correctement un canal alpha
+ * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
+ */
 
 #include <iostream>
 #include <sstream>
@@ -92,16 +123,30 @@
 #endif
 
 // Paramètres de la ligne de commande déclarés en global
+/** \~french Chemin du fichier de configuration des images */
 char imageListFilename[256];
+/** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
 char strnodata[256];
-uint16_t samplesperpixel, bitspersample, sampleformat, photometric, compression;
+/** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
+uint16_t samplesperpixel;
+/** \~french Nombre de bits par canal, dans les images en entrée et celle en sortie */
+uint16_t bitspersample;
+/** \~french Format du canal (entier, flottant), dans les images en entrée et celle en sortie */
+uint16_t sampleformat;
+/** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
+uint16_t photometric;
+/** \~french Compression de l'image de sortie */
+uint16_t compression;
+/** \~french Type de donnée traitée : image (1) ou meta-donnée (0, non implémenté) */
 int type=-1;
+/** \~french Interpolation utilisée pour le réechantillonnage */
 Interpolation::KernelType interpolation;
 
 /**
-* @fn void usage()
-* Usage de la ligne de commande
-*/
+ * \~french
+ * \brief Affiche l'utilisation et les différentes options de la commande mergeNtiff
+ * \details L'affichage se fait dans le niveau de logger INFO
+ */
 void usage() {
     LOGGER_INFO(
     "mergeNtiff version "<< BE4_VERSION << std::endl <<
@@ -109,6 +154,11 @@ void usage() {
     " Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
 }
 
+/**
+ * \~french
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur (code de retour -1)
+ * \param[in] message message d'erreur
+ */
 void error(std::string message) {
     LOGGER_ERROR(message);
     LOGGER_ERROR("Configuration file : " << imageListFilename);
@@ -118,10 +168,11 @@ void error(std::string message) {
 }
 
 /**
-* @fn parseCommandLine(int argc, char** argv, char* imageListFilename, Interpolation::KernelType& interpolation, char* nodata, int& type, uint16_t& sampleperpixel, uint16_t& bitspersample, uint16_t& sampleformat,  uint16_t& photometric)
-* Lecture des parametres de la ligne de commande
-*/
-
+ * \~french
+ * \brief Récupère les valeurs passées en paramètres de la commande, et les stocke dans les variables globales
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ */
 int parseCommandLine(int argc, char** argv) {
     
     if (argc != 19) {
@@ -209,19 +260,17 @@ int parseCommandLine(int argc, char** argv) {
 }
 
 /**
-* @fn int saveImage(Image *pImage, char* pName, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric)
-* @brief Enregistrement d'une image TIFF
-* @param Image : Image a enregistrer
-* @param pName : nom du fichier TIFF
-* @param bitspersample : nombre de bits par canal de l'image TIFF
-* @param sampleformat : format des données binaires (uint ou float)
-* @param photometric : valeur du tag TIFFTAG_PHOTOMETRIC de l'image TIFF
-* @param compression : valeur de compression de l'image a enregistrer
-* @param nodata : valeur du pixel representant la valeur NODATA (6 caractère hexadécimaux)
-* TODO : gerer tous les types de couleur pour la valeur NODATA
-* @return : 0 en cas de succes, -1 sinon
-*/
-
+ * \~french
+ * \brief Enregistre une image TIFF, avec passage de ses composantes
+ * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction.
+ * \param[in] pImage image à enregistrer
+ * \param[in] pName chemin de l'image à écrire
+ * \param[in] bps nombre de bits par canal de l'image TIFF
+ * \param[in] sf format des canaux (entier ou fottant)
+ * \param[in] ph photométrie de l'image à écrire
+ * \param[in] comp compression de l'image à écrire
+ * \return 0 en cas de succes, -1 sinon
+ */
 int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph, uint16_t comp) {
     // Ouverture du fichier
     /*TEST*//*
@@ -272,6 +321,14 @@ int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph
         return 0;
 }
 
+/**
+ * \~french
+ * \brief Enregistre une image TIFF, sans passage de ses composantes
+ * \details Toutes les informations nécessaires à l'écriture d'une image sont dans un objet LibtiffImage. Cependant, les données sources de l'image sont transmis via une seconde image.
+ * \param[in] pOut image à enregistrer
+ * \param[in] pIn source des donnée de l'image à écrire
+ * \return 0 en cas de succes, -1 sinon
+ */
 int saveImage(LibtiffImage* pOut, Image* pIn) {
     // Ouverture du fichier
     TIFF* output=TIFFOpen(pOut->getfilename(),"w");
@@ -320,13 +377,23 @@ int saveImage(LibtiffImage* pOut, Image* pIn) {
 }
 
 /**
-* @fn int readFileLine(std::ifstream& file, char* filename, BoundingBox<double>* bbox, int* width, int* height)
-* Lecture d une ligne du fichier de la liste d images source et de la suivante si celle si contient le tag du masque
-* Retourne -1 si la fin du fichier est atteinte
-* Retourne 1 si une erreur est detectée
-* Retourne 0 si une image et ses informations (dont masque) ont été bien lues
-*/
-
+ * \~french
+ * \brief Lit une ligne (ou deux si présence d'un masque) du fichier de configuration
+ * \details On parse la ligne courante du fichier de configuration, en stockant les valeurs dans les variables fournies. On saute les lignes vides. On lit ensuite la ligne suivante :
+ * \li si elle correspond à un masque, on complète les informations
+ * \li si elle ne correspond pas à un masque, on recule le pointeur
+ * 
+ * \param[in,out] file flux de lecture vers le fichier de configuration
+ * \param[out] imageFileName chemin de l'image lu dans le fichier de configuration
+ * \param[out] hasMask précise si l'image possède un masque
+ * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
+ * \param[out] bbox rectangle englobant de l'image lue (et de son masque)
+ * \param[out] width largeur en pixel de l'image lue (et de son masque)
+ * \param[out] height hauteur en pixel de l'image lue (et de son masque)
+ * \param[out] resx résolution en X de l'image lue (et de son masque)
+ * \param[out] resy résolution en Y de l'image lue (et de son masque)
+ * \return 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
+ */
 int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, BoundingBox<double>* bbox, int* width, int* height, double* resx, double* resy)
 {
     std::string str;
@@ -366,7 +433,7 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
     while (str.empty()) {
         if (file.eof()) {
             *hasMask = false;
-            return 0;
+            return -1;
         }
         std::getline(file,str);
     }
@@ -385,10 +452,15 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
 }
 
 /**
-* @fn int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, std::vector<Image*>* pImageIn, int sampleperpixel, uint16_t bitspersample, uint16_t photometric)
-* Chargement des images depuis le fichier texte donné en parametre
-*/
-
+ * \~french
+ * \brief Charge les images en entrée et en sortie depuis le fichier de configuration
+ * \details On va récupérer toutes les informations de toutes les images et masques présents dans le fichier de configuration et créer les objets LibtiffImage correspondant. Toutes les images ici manipulées sont de vraies images (physiques) dans ce sens où elles sont des fichiers soit lus, soit qui seront écrits.
+ * \param[in] imageListFilename chemin du fichier de configuration
+ * \param[out] ppImageOut image résultante de l'outil
+ * \param[out] ppMaskOut masque résultat de l'outil, si demandé
+ * \param[out] pImageIn ensemble des images en entrée
+ * \return 0 en cas de succès, -1 en cas d'erreur
+ */
 int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
                std::vector<LibtiffImage*>* pImageIn)
 {
@@ -474,13 +546,15 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
     return (pImageIn->size() - 1);
 }
 
-
 /**
-* @fn int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
-* @brief Controle des images
-* TODO : ajouter des controles
-*/
-
+ * \~french
+ * \brief Contrôle la cohérence des images en entrée et celle en sortie
+ * \details On vérifie que les résolutions fournies ne sont pas nulles et que le format des canaux est le même pour les images en entrée et pour celle en sortie
+ * \param[in] pImageOut image résultante de l'outil
+ * \param[in] ImageIn images en entrée
+ * \return 0 en cas de succès, -1 en cas d'erreur
+ * \todo Contrôler les éventuels masques
+ */
 int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
 {
     for (unsigned int i=0; i < ImageIn.size(); i++) {
@@ -511,12 +585,18 @@ int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
 }
 
 /**
-* @brief Tri des images source en paquets d images superposables (memes phases et resolutions en x et y)
-* @param ImageIn : vecteur contenant les images non triees
-* @param pTabImageIn : tableau de vecteurs conteant chacun des images superposables
-* @return 0 en cas de succes, -1 sinon
-*/
-
+ * \~french
+ * \brief Trie les images sources en paquets d'images superposables
+ * \details On réunit les images en paquets, dans lesquels :
+ * \li toutes les images ont la même résolution, en X et en Y
+ * \li toutes les images ont la même phase, en X et en Y
+ * 
+ * On conserve cependant l'ordre originale des images, quitte à augmenter le nombre de paquets final.
+ * Ce tri sert à simplifier le traitement des images et leur réechantillonnage.
+ * \param[in] ImageIn images en entrée
+ * \param[out] pTabImageIn images en entrée, triées en paquets compatibles
+ * \return 0 en cas de succès, -1 en cas d'erreur
+ */
 int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {    
     std::vector<Image*> vTmpImg;
@@ -545,12 +625,14 @@ int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Image
 }
 
 /**
-* @fn ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> bbox_src, Interpolation::KernelType& interpolation, ExtendedCompoundMaskImage* mask, ResampledImage*& resampledMask)
-* @brief Reechantillonnage d'une image de type ExtendedCompoundImage
-* @brief Objectif : la rendre superposable a l'image finale
-* @return Image reechantillonnee legerement plus petite
-*/
-
+ * \~french
+ * \brief Réechantillonne un paquet d'images compatibles
+ * \details On crée l'objet ResampledImage correspondant au réechantillonnage du paquet d'images, afin de le rendre compatible avec l'image de sortie. On veut que l'emprise de l'image réechantillonnée ne dépasse ni de l'image de sortie, ni des images en entrée (sans prendre en compte les miroirs, données virtuelles).
+ * \param[in] pImageOut image résultante de l'outil
+ * \param[in] pECI paquet d'images compatibles, à réechantillonner
+ * \param[in] realBbox réel rectangle englobant du paquet d'images, sans prendre en compte les miroirs ajoutés.
+ * \return image réechantillonnée
+ */
 ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> realBbox)
 {
     double resx_src=pECI->getresx(), resy_src=pECI->getresy();
@@ -653,15 +735,14 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 }
 
 /**
-* @fn int addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
-* @brief Ajout de miroirs a une ExtendedCompoundImage
-* On ajoute à chaque image de l'ECI 4 images au bord (un buffer miroir d'une largeur égale à celle nécessaire
-* à l'interpolation
-* Objectif : mettre des miroirs la ou il n'y a pas d'images afin d'eviter des effets de bord en cas de reechantillonnage
-* @param pECI : l'image à completer
-* @return : le nombre de miroirs ajoutes
-*/
-
+ * \~french \brief Ajoute des miroirs à un paquet d'images compatibles
+ * \~english \brief Add mirrors to compatible images pack
+ * \~ \image html miroirs.png
+ * \~french \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord. On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord). On sait distinguer les vraies images de celles virtuelles. On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
+ * \param[in] pECI paquet d'images compatibles, auquel on veut ajouter les miroirs
+ * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
+ * \return paquet d'images contenant les miroirs
+ */
 ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
     mirrorImageFactory MIF;
@@ -704,15 +785,22 @@ ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 }
 
 /**
-* @fn int mergeTabImages(LibtiffImage* pImageOut, std::vector<std::vector<Image*> >& TabImageIn, ExtendedCompoundImage** ppECImage, Interpolation::KernelType& interpolation, char* nodata, uint16_t sampleformat)
-* @brief Fusion des images
-* @param pImageOut : image de sortie
-* @param TabImageIn : tableau de vecteur d images superposables
-* @param ppECImage : image composite creee
-* @param interpolation : type d'interpolation utilise
-* @return 0 en cas de succes, -1 sinon
-*/
-
+ * \~french \brief Traite chaque paquet d'images en entrée
+ * \~english \brief Treat each input images pack
+ * \~french \details On a préalablement trié les images par compatibilité. Pour chaque paquet, on va créer un objet de la classe ExtendedCompoundImage. Ce dernier est à considérer comme une image simple.
+ * Cette image peut être :
+ * \li superposable avec l'image de sortie. Elle est directement ajoutée à une liste d'image.
+ * \li non superposable avec l'image de sortie. On va alors la réechantillonner, en utilisant la classe ResampledImage. C'est l'image réechantillonnée que l'on ajoute à la liste d'image.
+ *
+ * On obtient donc une liste d'images superposables avec celle de sortie, que l'on va réunir sous un objet de la classe ExtendedCompoundImage, qui sera la source unique utilisée pour écrire l'image de sortie.
+ *
+ * Les masques sont gérés en toile de fond, en étant attachés à chacune des images manipulées.
+ * \param[in] pImageOut image de sortie
+ * \param[in] TabImageIn paquets d'images en entrée
+ * \param[out] ppECIout paquet d'images superposable avec l'image de sortie
+ * \param[in] nodata valeur de non-donnée
+ * \return 0 en cas de succès, -1 en cas d'erreur
+ */
 int mergeTabImages(LibtiffImage* pImageOut, // Sortie
                    std::vector<std::vector<Image*> >& TabImageIn, // Entrée
                    ExtendedCompoundImage** ppECIout, // Résultat du merge
@@ -820,10 +908,11 @@ saveImage(resampledMask,"pResampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_M
 */
 
 /**
-* @fn int main(int argc, char **argv)
-* @brief Fonction principale
-*/
-
+ * \~french
+ * \brief Fonction principale de l'outil mergeNtiff
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ */
 int main(int argc, char **argv) {
 
     LibtiffImage* pImageOut ;

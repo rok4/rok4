@@ -65,6 +65,7 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my %IMAGESPEC;
+my %DEFAULT;
 my %CODE2SAMPLEFORMAT;
 my %SAMPLEFORMAT2CODE;
 

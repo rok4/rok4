@@ -806,7 +806,7 @@ sub configureFunctions {
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
     
     # pour les masques
-    $conf_tcp = "-s -r $imgS -c packbits";
+    $conf_tcp = "-s -r $imgS -c zip";
     $configuredFunc =~ s/__tcpM__/$conf_tcp/;
     
     ######## tiff2tile ########
@@ -829,7 +829,7 @@ sub configureFunctions {
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
     
     # pour les masques
-    $conf_t2t = sprintf "-c pkb -p gray -t %s %s -b 8 -a uint -s 1",
+    $conf_t2t = sprintf "-c zip -p gray -t %s %s -b 8 -a uint -s 1",
         $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
     $configuredFunc =~ s/__t2tM__/$conf_t2t/;
     
