@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ResponseSender.cpp
+ * \~french
+ * \brief Implémentation des fonctions d'envoie de réponse sur le flux FCGI
+ * \~english
+ * \brief Implement response sender function for the FCGI link
+ */
+
 #include "ResponseSender.h"
 #include "ServiceException.h"
 #include "Message.h"
@@ -46,7 +54,14 @@
 #include "intl.h"
 #include "config.h"
 /**
- * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
+ * \~french
+ * \brief Méthode commune pour générer l'entête HTTP en fonction du status code HTTP
+ * \param[in] statusCode Code de status HTTP
+ * \return élément status de l'en-tête HTTP
+ * \~english
+ * \brief Common function to generate HTTP headers using the HTTP status code
+ * \param[in] statusCode HTTP status code
+ * \return HTTP header status element
  */
 std::string genStatusHeader ( int statusCode ) {
     // Creation de l'en-tete
@@ -57,7 +72,14 @@ std::string genStatusHeader ( int statusCode ) {
 }
 
 /**
- * Methode commune pour generer le nom du fichier en fonction du type mime
+ * \~french
+ * \brief Méthode commune pour générer le nom du fichier en fonction du type mime
+ * \param[in] mime type mime
+ * \return nom du fichier
+ * \~english
+ * \brief Common function to generate file name using the mime type
+ * \param[in] mime mime type 
+ * \return filename
  */
 std::string genFileName ( std::string mime ) {
     if ( mime.compare ( "image/tiff" ) ==0 )
@@ -76,9 +98,13 @@ std::string genFileName ( std::string mime ) {
 }
 
 /**
- * Methode commune pour afficher les codes d'erreur FCGI
+ * \~french
+ * \brief Méthode commune pour afficher les codes d'erreur FCGI
+ * \param[in] error code d'erreur
+ * \~english
+ * \brief Common function to display FCGI error code
+ * \param[in] error error code
  */
-
 void displayFCGIError ( int error ) {
     if ( error>0 )
         LOGGER_ERROR ( _("Code erreur : ")<<error ); // Erreur errno(2) (Cf. manpage )
@@ -93,12 +119,6 @@ void displayFCGIError ( int error ) {
     else
         LOGGER_ERROR ( _("Erreur inconnue") );
 }
-
-/**
- * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
 
 int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
     // Creation de l'en-tete
@@ -135,12 +155,6 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
     return 0;
 }
 
-
-/**
- * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
 int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
     // Creation de l'en-tete
     std::string statusHeader= genStatusHeader ( stream->getHttpStatus() );

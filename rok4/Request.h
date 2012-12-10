@@ -47,10 +47,34 @@
 #include "ServicesConf.h"
 
 /**
-* @brief Classe request
-* @brief Decodage d'une requete HTTP
-*/
+ * \file Request.h
+ * \~french
+ * \brief Définition de la classe Request, analysant les requêtes HTTP
+ * \~english
+ * \brief Define the Request Class analysing HTTP requests
+ */
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * Classe décodant les requêtes HTTP envoyé au serveur. 
+ * Elle supporte les types de requête suivant :
+ *  - HTTP GET de type KVP
+ *  - HTTP POST de type XML (OGC SLD)
+ * \todo HTTP POST de type KVP
+ * \todo HTTP GET de type REST
+ * \todo HTTP POST de type XML/Soap
+ * \brief Gestion des requêtes HTTP
+ * \~english
+ * HTTP request decoder class.
+ * It support the following request type
+ *  - HTTP GET, KVP style
+ *  - HTTP POST , XML style (OGC SLD)
+ * \todo HTTP POST, KVP style
+ * \todo HTTP GET, REST style
+ * \todo HTTP POST, XML/Soap style
+ * \brief HTTP requests handler
+ */
 class Request {
 private:
     void url_decode ( char *src );

@@ -35,6 +35,35 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file main.cpp
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * Le serveur ROk4 peut fonctionner dans 2 modes distinct :
+ *  - autonome, en définissant l'adresse et le port d'écoute dans le fichier de configuration
+ *  - controlé, les paramètres d'écoute sont données par un processus maitre
+ * 
+ * Paramètre d'entrée : 
+ *  - le chemin vers le fichier de configuration du serveur
+ * 
+ * Signaux écoutés :
+ *  - \b SIGHUP réinitialise la configuration du serveur
+ *  - \b SIGQUIT & \b SIGUSR1 éteint le serveur
+ * \brief Exécutable du serveur ROK4
+ * \~english
+ * The ROK4 server can be started in two mods :
+ *  - autonomous, by defining in the config files the adress and port to listen to
+ *  - managed, by letting a master process define the adress and port to liste to
+ * 
+ * Command line parameter : 
+ *  - path to the server configuration file
+ * 
+ * Listened Signal :
+ *  - \b SIGHUP reinitialise the server configuration
+ *  - \b SIGQUIT & \b SIGUSR1 shut the server down
+ * \brief ROK4 Server executable
+ */
+
 #include "Rok4Server.h"
 #include "ConfLoader.h"
 #include <proj_api.h>
@@ -60,11 +89,22 @@ volatile sig_atomic_t signal_pending;
 volatile sig_atomic_t defer_signal;
 volatile timeval signal_timestamp;
 
-
+/**
+ * \~french
+ * \brief Affiche les paramètres de la ligne de commande
+ * \~english
+ * \brief Display the command line parameters
+ */
 void usage() {
     std::cerr<<_("Usage : rok4 [-f server_config_file]")<<std::endl;
 }
 
+/**
+ * \~french
+ * \brief Force le rechargement de la configuration
+ * \~english
+ * \brief Force configuration reload
+ */
 void reloadConfig ( int signum ) {
     if (defer_signal) {
         timeval now;
@@ -83,7 +123,12 @@ void reloadConfig ( int signum ) {
         W->terminate();
     }
 }
-
+/**
+ * \~french
+ * \brief Force le servgeur à s'éteindre
+ * \~english
+ * \brief Force server shutdown
+ */
 void shutdownServer ( int signum ) {
     if (defer_signal) {
          // Do nothing because rok4 is going to shutdown...
@@ -94,7 +139,14 @@ void shutdownServer ( int signum ) {
     }
 }
 
-
+/**
+ * \~french
+ * \brief Retourne l'emplacement des fichier de tranduction
+ * \return repertoire des traductions
+ * \~english
+ * \brief Return the translation files path
+ * \return translation directory
+ */
 std::string getlocalepath()
   {
   char result[ 4096 ];
@@ -107,11 +159,14 @@ std::string getlocalepath()
   return localePath;
   }
 
-
 /**
-* @brief main
-* @return -1 en cas d'erreur, 0 sinon
-*/
+ * \~french
+ * \brief Fonction principale
+ * \return 1 en cas de problème, 0 sinon
+ * \~english
+ * \brief Main function
+ * \return 1 if error, else 0
+ */
 int main ( int argc, char** argv ) {
 
     bool firstStart = true;
@@ -153,13 +208,13 @@ int main ( int argc, char** argv ) {
                 if ( i++ >= argc ) {
                     std::cerr<<_("Erreur sur l'option -f")<<std::endl;
                     usage();
-                    return -1;
+                    return 1;
                 }
                 serverConfigFile.assign ( argv[i] );
                 break;
             default:
                 usage();
-                return -1;
+                return 1;
             }
         }
     }

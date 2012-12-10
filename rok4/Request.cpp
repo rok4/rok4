@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Request.cpp
+ * \~french
+ * \brief Implémentation de la classe Request, analysant les requêtes HTTP
+ * \~english
+ * \brief Implement the Request Class analysing HTTP requests
+ */
+
 #include "Request.h"
 #include "Message.h"
 #include "CRS.h"

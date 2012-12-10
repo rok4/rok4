@@ -244,7 +244,7 @@ private:
     bool opaque;
     /**
      * \~french \brief Nom de l'entité propriétaire de la couche
-     * \~english \brief Owner's entitity name
+     * \~english \brief Oo
      */
     std::string authority;
     /**
@@ -269,6 +269,56 @@ private:
     std::vector<MetadataURL> metadataURLs;
 
 public:
+    /**
+     * \~french
+     * \brief Crée un Layer à partir des ses éléments constitutifs
+     * \param[in] id identifiant 
+     * \param[in] title titre
+     * \param[in] abstract résumé
+     * \param[in] keyWords liste des mots-clés
+     * \param[in] dataPyramid pyramide de tuiles
+     * \param[in] styles liste des styles, le premier élément est le style par défaut
+     * \param[in] minRes résolution minimale de la couche
+     * \param[in] maxRes résolution maximale de la couche
+     * \param[in] WMSCRSList liste des systèmes de coordonnées authorisés
+     * \param[in] opaque définit si la couche est opaque
+     * \param[in] authority nom de l'entité propriétaire de la couche
+     * \param[in] resampling interpolation utilisée pour reprojeter ou recadrer les tuile
+     * \param[in] geographicBoundingBox emprise des données en coordonnées géographique (WGS84)
+     * \param[in] boundingBox emprise des données dans le système de coordonnées natif
+     * \param[in] metadataURLs liste des métadonnées associées
+     * \~english
+     * \brief Create a Layer
+     * \param[in] id identifier
+     * \param[in] title title
+     * \param[in] abstract abstract
+     * \param[in] keyWords list of keywords
+     * \param[in] dataPyramid Tile pyramids
+     * \param[in] styles linked styles list, first element is the default style
+     * \param[in] minRes minimal display resolution
+     * \param[in] maxRes maximal display resolution
+     * \param[in] WMSCRSList authorised coordinates systems list
+     * \param[in] opaque whether the layer is opaque
+     * \param[in] authority owner's entitity name
+     * \param[in] resampling interpolation used for resizing and reprojecting tiles
+     * \param[in] geographicBoundingBox data bounding box in geographic coordinates (WGS84)
+     * \param[in] boundingBox data bounding box in native coordinates system
+     * \param[in] metadataURLs linked metadata list
+     */
+    Layer ( std::string id, std::string title, std::string abstract,
+            std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
+            std::vector<Style*> & styles, double minRes, double maxRes,
+            std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
+            Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
+            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
+            :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
+            dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
+            maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
+            authority ( authority ),resampling ( resampling ),
+            geographicBoundingBox ( geographicBoundingBox ),
+            boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle(styles.at(0)->getId()) {
+    }
+    
     /**
      * \~french
      * \brief Retourne l'indentifiant de la couche
@@ -328,66 +378,178 @@ public:
      * \return an image or a null pointer
      */
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
-
+     /**
+     * \~french
+     * \brief Retourne le résumé
+     * \return résumé
+     * \~english
+     * \brief Return the abstract
+     * \return abstract
+     */
     std::string              getAbstract()   const {
         return abstract;
     }
+    /**
+     * \~french
+     * \brief Retourne le nom de l'entité propriétaire de la couche
+     * \return nom
+     * \~english
+     * \brief Return the layer owner's entitity name
+     * \return name
+     */
     std::string              getAuthority()  const {
         return authority;
     }
+    /**
+     * \~french
+     * \brief Retourne la liste des mots-clés
+     * \return mots-clés
+     * \~english
+     * \brief Return the list of keywords
+     * \return keywords
+     */
     std::vector<Keyword>* getKeyWords() {
         return &keyWords;
     }
+    /**
+     * \~french
+     * \brief Retourne l'échelle maximum
+     * \return échelle maximum
+     * \~english
+     * \brief Return the maximum scale
+     * \return maximum scale
+     */
     double                   getMaxRes()     const {
         return maxRes;
     }
+    /**
+     * \~french
+     * \brief Retourne l'échelle minimum
+     * \return échelle minimum
+     * \~english
+     * \brief Return the minimum scale
+     * \return minimum scale
+     */
     double                   getMinRes()     const {
         return minRes;
     }
+    /**
+     * \deprecated
+     * \~french
+     * \brief La couche est elle opaque
+     * \return true si oui
+     * \~english
+     * \brief The layer is opaque
+     * \return true if it is
+     */
     bool                     getOpaque()     const {
         return opaque;
     }
+    /**
+     * \~french
+     * \brief Retourne la pyramide de données associée
+     * \return pyramide
+     * \~english
+     * \brief Return the associated data pyramid
+     * \return pyramid
+     */
     Pyramid*&            getDataPyramid() {
         return dataPyramid;
     }
+    /**
+     * \~french
+     * \brief Retourne l'interpolation utilisée
+     * \return interpolation
+     * \~english
+     * \brief Return the used interpolation
+     * \return interpolation
+     */
     Interpolation::KernelType getResampling() const {
         return resampling;
     }
+    /**
+     * \~french
+     * \brief Retourne le style par défaut associé à la couche
+     * \return identifiant de style
+     * \~english
+     * \brief Return the layer's default style
+     * \return style identifier
+     */
     std::string getDefaultStyle() const {
         return defaultStyle;
     }
+    /**
+     * \~french
+     * \brief Retourne la liste des styles associés à la couche
+     * \return liste de styles
+     * \~english
+     * \brief Return the associated styles list
+     * \return styles list
+     */
     std::vector<Style*>      getStyles()     const {
         return styles;
     }
+    /**
+     * \~french
+     * \brief Retourne le titre
+     * \return titre
+     * \~english
+     * \brief Return the title
+     * \return title
+     */
     std::string              getTitle()      const {
         return title;
     }
+    /**
+     * \~french
+     * \brief Retourne la liste des systèmes de coordonnées authorisés
+     * \return liste des CRS
+     * \~english
+     * \brief Return the authorised coordinates systems list
+     * \return CRS list
+     */
     std::vector<CRS> getWMSCRSList() const {
         return WMSCRSList;
     }
+    /**
+     * \~french
+     * \brief Retourne l'emprise des données en coordonnées géographique (WGS84)
+     * \return emprise
+     * \~english
+     * \brief Return the data bounding box in geographic coordinates (WGS84)
+     * \return bounding box
+     */
     GeographicBoundingBoxWMS getGeographicBoundingBox() const {
         return geographicBoundingBox;
     }
+    /**
+     * \~french
+     * \brief Retourne l'emprise des données dans le système de coordonnées natif
+     * \return emprise
+     * \~english
+     * \brief Return the data bounding box in the native coordinates system
+     * \return bounding box
+     */
     BoundingBoxWMS           getBoundingBox() const {
         return boundingBox;
     }
+    /**
+     * \~french
+     * \brief Retourne la liste des métadonnées associées
+     * \return liste de métadonnées
+     * \~english
+     * \brief Return the associated metadata list
+     * \return metadata list
+     */
     std::vector<MetadataURL> getMetadataURLs() const {
         return metadataURLs;
     }
-
-    Layer ( std::string id, std::string title, std::string abstract,
-            std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
-            std::vector<Style*> & styles, double minRes, double maxRes,
-            std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
-            Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
-            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
-            :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
-            dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
-            maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
-            authority ( authority ),resampling ( resampling ),
-            geographicBoundingBox ( geographicBoundingBox ),
-            boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle(styles.at(0)->getId()) {
-    }
+    /**
+     * \~french
+     * \brief Destructeur par défaut
+     * \~english
+     * \brief Default destructor
+     */
     ~Layer();
 };
 

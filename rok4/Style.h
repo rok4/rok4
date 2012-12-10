@@ -38,7 +38,7 @@
 /**
  * \file Style.h
  * \~french
- * \brief Définition de la classe Style modélisant les styles.
+ * \brief Définition de la classe Style modélisant les styles
  * \~english
  * \brief Define the Style Class handling style definition
  */
@@ -179,7 +179,7 @@ public:
     
     /**
      * \~french
-     * \brief Retourne l'indentifiant du style
+     * \brief Retourne l'identifiant du style
      * \return identifiant
      * \~english
      * \brief Return the style's identifier
