@@ -35,6 +35,22 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ExtendedCompoundImage.h
+ ** \~french
+ * \brief Implémentation des classes ExtendedCompoundImage, ExtendedCompoundMask et ExtendedCompoundImageFactory
+ * \details
+ * \li ExtendedCompoundImage : image composée d'images compatibles, superposables
+ * \li ExtendedCompoundMask : masque composé, associé à une image composée
+ * \li ExtendedCompoundImageFactory : usine de création d'objet ExtendedCompoundImage
+ ** \~english
+ * \brief Implement classes ExtendedCompoundImage, ExtendedCompoundMask and ExtendedCompoundImageFactory
+ * \details
+ * \li ExtendedCompoundImage : image compounded with superimpose images
+ * \li ExtendedCompoundMask : compounded mask, associated with a compounded image
+ * \li ExtendedCompoundImageFactory : factory to create ExtendedCompoundImage object
+ */
+
 #include "ExtendedCompoundImage.h"
 #include "Logger.h"
 #include "Utils.h"
@@ -45,14 +61,6 @@
 #ifndef __min
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
-
-/**
-@fn _getline(T* buffer, int line)
-@brief Remplissage iteratif d'une ligne
-Copie de la portion recouvrante de chaque ligne d'une image dans l'image finale
-@param line le numero de la ligne
-@return le nombre d'octets de la ligne
-*/
 
 template <typename T>
 int ExtendedCompoundImage::_getline(T* buffer, int line) {
@@ -111,13 +119,13 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
 }
 
 
-/** Implementation de getline pour les uint8_t */
+/* Implementation de getline pour les uint8_t */
 int ExtendedCompoundImage::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
 
-/** Implementation de getline pour les float */
+/* Implementation de getline pour les float */
 int ExtendedCompoundImage::getline(float* buffer, int line)
 {
-    if (sampleformat == 1) { //uint8_t
+    if (sampleformat == 1) { //SAMPLEFORMAT_UINT
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline(buffer_t,line);
@@ -130,25 +138,23 @@ int ExtendedCompoundImage::getline(float* buffer, int line)
     }
 }
 
-#define epsilon 0.001
-
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage(std::vector<Image*>& images,
                                                                                  int* nodata, uint16_t sampleformat,
                                                                                  uint mirrors)
 {
-    if (images.size()==0){
-        LOGGER_ERROR("Creation d'une image composite sans image");
+    if (images.size()==0) {
+        LOGGER_ERROR("No source images to defined compounded image");
         return NULL;
     }
 
     for (int i=0;i<images.size()-1;i++)
     {  
         if (! images[i]->isCompatibleWith(images[i+1])) {
-            LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
-                "- image " << i << " : " << images[i]->getresx() << "," << images[i]->getresy() << " " << images[i]->getPhasex() << " " << images[i]->getPhasey() << "\n" <<
-                "- image " << i+1 << " : " << images[i+1]->getresx() << "," << images[i+1]->getresy() << " " << images[i+1]->getPhasex() << " " << images[i+1]->getPhasey() << "\n"
-                
-            );
+            LOGGER_ERROR("Source images are not consistent");
+            LOGGER_ERROR("Image " << i);
+            images[i]->print();
+            LOGGER_ERROR("Image " << i+1);
+            images[i+1]->print();
             return NULL;
         }
     }
@@ -179,18 +185,18 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
                                                                                  uint mirrors)
 {
     if (images.size()==0){
-        LOGGER_ERROR("Creation d'une image composite sans image");
+        LOGGER_ERROR("No source images to defined compounded image");
         return NULL;
     }
 
     for (int i=0;i<images.size()-1;i++)
     {
         if (! images[i]->isCompatibleWith(images[i+1])) {
-            LOGGER_ERROR("Les images ne sont pas toutes compatibles : resX,resY phaseX,phaseY\n" <<
-                "- image " << i << " : " << images[i]->getresx() << "," << images[i]->getresy() << " " << images[i]->getPhasex() << " " << images[i]->getPhasey() << "\n" <<
-                "- image " << i+1 << " : " << images[i+1]->getresx() << "," << images[i+1]->getresy() << " " << images[i+1]->getPhasex() << " " << images[i+1]->getPhasey() << "\n"
-
-            );
+            LOGGER_ERROR("Source images are not consistent");
+            LOGGER_ERROR("Image " << i);
+            images[i]->print();
+            LOGGER_ERROR("Image " << i+1);
+            images[i+1]->print();
             return NULL;
         }
     }
@@ -206,7 +212,7 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 @return le nombre d'octets de la ligne
 */
 
-int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
+int ExtendedCompoundMask::_getline(uint8_t* buffer, int line) {
     
     memset(buffer,0,width);
     
@@ -249,10 +255,11 @@ int ExtendedCompoundMaskImage::_getline(uint8_t* buffer, int line) {
     return width;
 }
 
-/** Implementation de getline pour les uint8_t */
-int ExtendedCompoundMaskImage::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
-/** Implementation de getline pour les float */
-int ExtendedCompoundMaskImage::getline(float* buffer, int line) {
+/* Implementation de getline pour les uint8_t */
+int ExtendedCompoundMask::getline(uint8_t* buffer, int line) { return _getline(buffer, line); }
+
+/* Implementation de getline pour les float */
+int ExtendedCompoundMask::getline(float* buffer, int line) {
     uint8_t* buffer_t = new uint8_t[width*channels];
     getline(buffer_t,line);
     convert(buffer,buffer_t,width*channels);

@@ -35,6 +35,20 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file MirrorImage.cpp
+ ** \~french
+ * \brief Implémentation des classe MirrorImage et MirrorImageFactory
+ * \details
+ * \li MirrorImage : image par reflet
+ * \li MirrorImageFactory : usine de création d'objet MirrorImage
+ ** \~english
+ * \brief Implement classes MirrorImage and MirrorImageFactory
+ * \details
+ * \li MirrorImage : reflection image
+ * \li MirrorImageFactory : factory to create MirrorImage object
+ */
+
 #include "MirrorImage.h"
 #include "Logger.h"
 #include "Utils.h"
@@ -46,12 +60,7 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-/**
-Creation d'une MirrorImage a partir d'une image et de la position par rapport à celle ci
-retourne NULL en cas d erreur
-*/
-
-MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sampleformat,int position,uint mirrorSize)
+MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sampleformat,int position,uint mirrorSize)
 {
     int wTopBottom = pImageSrc->width+2*mirrorSize;
     int wLeftRight = mirrorSize;
@@ -111,10 +120,6 @@ MirrorImage* mirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
 
 }
 
-MirrorImage::MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getresx(),image->getresy(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat)
-{
-}
-
 template <typename T>
 int MirrorImage::_getline(T* buffer, int line)
 {
@@ -170,22 +175,24 @@ int MirrorImage::_getline(T* buffer, int line)
     return width*channels*sizeof(T);
 }
 
-/** Implementation de getline pour les uint8_t */
+/* Implementation de getline pour les uint8_t */
 int MirrorImage::getline(uint8_t* buffer, int line) {
     return _getline(buffer, line);
 }
 
-/** Implementation de getline pour les float */
+/* Implementation de getline pour les float */
 int MirrorImage::getline(float* buffer, int line)
 {
-    if (sampleformat==1){     //uint8_t
+    if (sampleformat==1) {
+        // les canaux sont des entiers, nécessite une conversion
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline(buffer_t,line);
         convert(buffer,buffer_t,width*channels);
         delete [] buffer_t;
         return width*channels;
     }
-    else {           //float
+    else {
+        // les canaux sont bien en flottants
         return _getline(buffer, line);
     }
 }

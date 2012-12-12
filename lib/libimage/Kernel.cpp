@@ -35,9 +35,18 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Kernel.cpp
+ * \~french
+ * \brief Implémentation de la classe Kernel, classe mère des différents noyaux d'interpolation
+ * \~english
+ * \brief Implement the Kernel class, super class for different interpolation kernels
+ */
+
 #include <cmath>
 #include "Kernel.h"
 #include "Logger.h"
+
 int Kernel::weight(float* W, int length, double x, int max) const {
 
     double rayon = (double)length/2.;
@@ -63,7 +72,7 @@ int Kernel::weight(float* W, int length, double x, int max) const {
         sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
     }
 
-    // On remplit le reste du tableau des poids avec des zéros (on veut toujours avoir "length" éléments
+    // On remplit le reste du tableau des poids avec des zéros (on veut toujours avoir "length" éléments)
     while (i < length) W[i++] = 0.;
 
     while (i--) {W[i] /= sum;}    // On normalise pour que la somme des poids fasse 1.
@@ -72,7 +81,21 @@ int Kernel::weight(float* W, int length, double x, int max) const {
 }
 
 
-
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Noyau d'interpolation de type Lanczos
+ * \details Il existe plusieurs noyaux lanczos : lanczos R avec R e [2,4]
+ * Les caractéristiques sont :
+ * \li taille de base du noyau : R
+ * \li taille du noyau constant : non
+ * \li fonction caractéristique : sinusoïdale
+ *
+ * \image html lanczos.png
+ * \li 2 -> vert
+ * \li 3 -> rouge
+ * \li 4 -> bleu
+ */
 template<int s>
 class Lanczos : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
@@ -92,7 +115,17 @@ class Lanczos : public Kernel {
     }
 };
 
-
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Noyau d'interpolation de type plus proche voisin
+ * \details Les caractéristiques sont :
+ * \li taille de base du noyau : 0.5
+ * \li taille du noyau constant : oui
+ * \li fonction caractéristique : escalier
+ *
+ * \image html ppv.png
+ */
 class NearestNeighbour : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
     private:
@@ -105,7 +138,17 @@ class NearestNeighbour : public Kernel {
     }
 };
 
-
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Noyau d'interpolation de type linéaire
+ * \details Les caractéristiques sont :
+ * \li taille de base du noyau : 1
+ * \li taille du noyau constant : non
+ * \li fonction caractéristique : affine
+ *
+ * \image html linear.png
+ */
 class Linear : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
 private:
@@ -118,6 +161,18 @@ private:
     }
 };
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Noyau d'interpolation de type bicubique
+ * \details Les caractéristiques sont :
+ * \li taille de base du noyau : 2
+ * \li taille du noyau constant : non
+ * \li fonction caractéristique : polynomiale
+ *
+ * \image html cubic.png
+ */
+class CatRom : public Kernel {
 
 /*
  * Pris dans Image Magick
@@ -142,9 +197,7 @@ private:
 
    Which ensures function is continuous in value and derivative (slope).
  */
-
-
-class CatRom : public Kernel {
+    
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
 private:
     double kernel_function(double d) {
@@ -169,31 +222,24 @@ const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
 
     switch (T) {
     case Interpolation::NEAREST_NEIGHBOUR:
-        LOGGER_DEBUG("Noyau PPV"); /*TEST*/
         return nearest_neighbour;
         break;
     case Interpolation::LINEAR:
-        LOGGER_DEBUG("Noyau linéaire"); /*TEST*/
         return linear;
         break;
     case Interpolation::CUBIC:
-        LOGGER_DEBUG("Noyau bicubique"); /*TEST*/
         return catrom;
         break;
     case Interpolation::LANCZOS_2:
-        LOGGER_DEBUG("Noyau Lanczos 2"); /*TEST*/
         return lanczos_2;
         break;
     case Interpolation::LANCZOS_3:
-        LOGGER_DEBUG("Noyau Lanczos 3"); /*TEST*/
         return lanczos_3;
         break;
     case Interpolation::LANCZOS_4:
-        LOGGER_DEBUG("Noyau Lanczos 4"); /*TEST*/
         return lanczos_4;
         break;
     }
-    LOGGER_DEBUG("Noyau par défaut : Lanczos 3"); /*TEST*/
     return lanczos_3;
 }
 

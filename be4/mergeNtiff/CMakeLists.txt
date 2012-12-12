@@ -118,8 +118,7 @@ INSTALL(TARGETS ${PROJECT_NAME}
 
 #Installe les différents headers nécessaires
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
-INSTALL(FILES ${headers-${PROJECT_NAME}}
-  DESTINATION include)
+INSTALL(FILES ${headers-${PROJECT_NAME}} DESTINATION include)
 
 
 ########################################

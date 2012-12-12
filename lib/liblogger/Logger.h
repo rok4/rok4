@@ -44,64 +44,64 @@
 #include <unistd.h>
 
 typedef enum {
-	ROLLING_FILE = 0,
-	STANDARD_OUTPUT_STREAM_FOR_ERRORS,
-	STATIC_FILE
+    ROLLING_FILE = 0,
+    STANDARD_OUTPUT_STREAM_FOR_ERRORS,
+    STATIC_FILE
 } LogOutput;
 
 typedef enum {	
-	FATAL = 0,
-	ERROR,
-	WARN,
-	INFO,
-	DEBUG,
-	nbLogLevel // ceci n'est pas un logLevel mais juste un hack pour avoir une constante qui compte le nombre de logLevel
+    FATAL = 0,
+    ERROR,
+    WARN,
+    INFO,
+    DEBUG,
+    nbLogLevel // ceci n'est pas un logLevel mais juste un hack pour avoir une constante qui compte le nombre de logLevel
 } LogLevel;
 
 
 class Logger {
-	private:
-		
-		// TODO: ce serait plus propre d'utiliser des shared_ptr
-		static Accumulator* accumulator[nbLogLevel];
-		static LogOutput logOutput;
-	public:
-		/**
-		 * Obtient un pointeur vers la sortie du niveau de log.
-		 *
-		 * @return la valeur de retour peut être un pointeur nul, ce qui signifie que le niveau de log est désactivé.
-		 */
-		inline static Accumulator* getAccumulator(LogLevel level) {
-			return accumulator[level];
-		}
+    private:
 
-		/**
-		 * Définit la sortie d'un niveau de log.
-		 *
-		 * Pour désactiver un niveau de log, utiliser un pointeur nul
-		 * Le même accumulateur peut être utilisé par plusieurs niveau de log.
-		 *
-		 * La classe Logger se charge de détruire les Accumulateurs non utilisés.
-		 *
-		 * Attention cette fonction n'est pas threadsafe et ne doit être utilisée que
-		 * par un unique thread.
-		 */
-		static void setAccumulator(LogLevel level, Accumulator *A);
+        // TODO: ce serait plus propre d'utiliser des shared_ptr
+        static Accumulator* accumulator[nbLogLevel];
+        static LogOutput logOutput;
+    public:
+        /**
+         * Obtient un pointeur vers la sortie du niveau de log.
+         *
+         * @return la valeur de retour peut être un pointeur nul, ce qui signifie que le niveau de log est désactivé.
+         */
+        inline static Accumulator* getAccumulator(LogLevel level) {
+            return accumulator[level];
+        }
 
-		/**
-		 * utilisation : Logger(DEBUG) << message
-		 */
-		static std::ostream& getLogger(LogLevel level);
+        /**
+         * Définit la sortie d'un niveau de log.
+         *
+         * Pour désactiver un niveau de log, utiliser un pointeur nul
+         * Le même accumulateur peut être utilisé par plusieurs niveau de log.
+         *
+         * La classe Logger se charge de détruire les Accumulateurs non utilisés.
+         *
+         * Attention cette fonction n'est pas threadsafe et ne doit être utilisée que
+         * par un unique thread.
+         */
+        static void setAccumulator(LogLevel level, Accumulator *A);
 
-		inline static void setOutput(LogOutput output) {logOutput=output;}
-		inline static LogOutput& getOutput() {return logOutput;}
-		
-		/**
-                 * Arrête le logger dans le thread courant.
-                 * 
-                 * L'accumulateur doit être libéré après l'arrêt de tous les threads.
-                 */
-		static void stopLogger();
+        /**
+         * utilisation : Logger(DEBUG) << message
+         */
+        static std::ostream& getLogger(LogLevel level);
+
+        inline static void setOutput(LogOutput output) {logOutput=output;}
+        inline static LogOutput& getOutput() {return logOutput;}
+
+        /**
+         * Arrête le logger dans le thread courant.
+         *
+         * L'accumulateur doit être libéré après l'arrêt de tous les threads.
+         */
+        static void stopLogger();
 };
 
 /**

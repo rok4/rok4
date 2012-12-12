@@ -35,6 +35,20 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file LibtiffImage.h
+ ** \~french
+ * \brief Définition des classes LibtiffImage et LibtiffImageFactory
+ * \details
+ * \li LibtiffImage : image physique, attaché à un fichier
+ * \li LibtiffImageFactory : usine de création d'objet LibtiffImage
+ ** \~english
+ * \brief Define classes LibtiffImage and LibtiffImageFactory
+ * \details
+ * \li LibtiffImage : physical image, linked to a file
+ * \li LibtiffImageFactory : factory to create LibtiffImage object
+ */
+
 #ifndef LIBTIFF_IMAGE_H
 #define LIBTIFF_IMAGE_H
 
@@ -44,21 +58,69 @@
 
 #define LIBTIFFIMAGE_MAX_FILENAME_LENGTH 512
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'une image physique
+ * \details Une image physique est une vraie image dans ce sens où elle est rattachée à un fichier, que ce soit pour la lecture ou l'écriture de données au format TIFF. Seule cette classe ne va pas s'appuyer sur une autre image pour la lecture.
+ *
+ * Cette classe va utiliser la librairie TIFF afin de lire/écrire les données et de récupérer/fournir les informations sur les images.
+ */
 class LibtiffImage : public Image {
 
-    friend class libtiffImageFactory;
+    friend class LibtiffImageFactory;
 
     private:
+        /**
+         * \~french \brief Image TIFF, servant d'interface entre le fichier et l'objet
+         * \~english \brief TIFF image, used as interface between file and object
+         */
         TIFF* tif;
+        /**
+         * \~french \brief Chemin du fichier image
+         * \~english \brief Path to th image file
+         */
         char* filename;
+        /**
+         * \~french \brief Nombre de bits par canal
+         * \~english \brief Number of bits per sample
+         */
         uint16_t bitspersample;
+        /**
+         * \~french \brief Photométrie des données (rgb, gray...)
+         * \~english \brief Data photometric (rgb, gray...)
+         */
         uint16_t photometric;
+        /**
+         * \~french \brief Compression des données (jpeg, packbits...)
+         * \~english \brief Data compression (jpeg, packbits...)
+         */
         uint16_t compression;
+        /**
+         * \~french \brief Format du canal, entier ou flottant
+         * \~english \brief Sample format, integer or float
+         */
         uint16_t sampleformat;
+        /**
+         * \~french \brief Taille de la bufferisation de l'image, en nombre de ligne
+         * \~english \brief Image buffering size, in line number
+         */
         uint16_t rowsperstrip;
 
+        /**
+         * \~french \brief Taille de la bufferisation de l'image, en nombre de canal
+         * \~english \brief Image buffering size, in sample number
+         */
         size_t strip_size;
+        /**
+         * \~french \brief Buffer de lecture, de taille strip_size
+         * \~english \brief Read buffer, strip_size long
+         */
         uint8_t* strip_buffer;
+        /**
+         * \~french \brief Buffer de lecture, de taille strip_size
+         * \~english \brief Read buffer, strip_size long
+         */
         uint16_t current_strip;
 
         template<typename T>
@@ -107,7 +169,7 @@ class LibtiffImage : public Image {
         }
 };
 
-class libtiffImageFactory {
+class LibtiffImageFactory {
     public:
         LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int calcWidth, int calcHeight, double resx, double resy);
         LibtiffImage* createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip );

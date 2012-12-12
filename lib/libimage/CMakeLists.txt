@@ -47,10 +47,14 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp TiffReader.cpp TiffNodataManager.cpp TiledTiffWriter.cpp Decoder.cpp
-ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp
-BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp format.cpp Interpolation.cpp
- TiffHeaderDataSource.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp)
+set(
+    libimage_SRCS Palette.cpp Data.cpp TiffReader.cpp TiffNodataManager.cpp TiledTiffWriter.cpp Decoder.cpp
+    ExtendedCompoundImage.cpp LibtiffImage.cpp CompoundImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp
+    Grid.cpp TiffEncoder.cpp
+    Kernel.cpp Interpolation.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
+    format.cpp TiffHeaderDataSource.cpp
+)
 
 
 add_library(image STATIC ${libimage_SRCS})
@@ -111,6 +115,7 @@ if(BUILD_DOC)
     include(DoxygenConfig)
 endif(BUILD_DOC)
 
+INSTALL(FILES LICENCE README DESTINATION doc/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts
@@ -129,21 +134,6 @@ INSTALL(TARGETS image
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
-
-#Installe la documentation
-INSTALL(FILES README 
-  DESTINATION doc/${PROJECT_NAME})
-
-if(BUILD_DOC)
-if(DOXYGEN_FOUND)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
-
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
-
 
 ########################################
 # Paramétrage de la gestion de package CPack

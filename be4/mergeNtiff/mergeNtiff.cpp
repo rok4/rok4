@@ -39,8 +39,8 @@
  * \file mergeNtiff.cpp
  * \~french \brief Création d'une image TIFF géoréférencée à partir de n images TIFF sources géoréférencées
  * \~english \brief Create one georeferenced TIFF image from several georeferenced TIFF images
- * \~ \image html mergeNtiff.png
- * \~french \details Les images en entrée peuvent :
+ * \~ \image html mergeNtiff.png \~french
+ * \details Les images en entrée peuvent :
  * \li être de différentes résolutions
  * \li ne pas couvrir entièrement l'emprise de l'image de sortie
  * \li être recouvrantes entre elles
@@ -54,7 +54,7 @@
  * \li entier non signé sur 8 bits
  * \li flottant sur 32 bits
  *
- * On doit réciser en paramètre de la commande :
+ * On doit préciser en paramètre de la commande :
  * \li Un fichier texte contenant les images sources et l'image finale avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
  * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
  * Exemple de configuration :
@@ -76,6 +76,10 @@
  * \li Le nombre de bits par canal
  * \li Le format du canal (entier ou flottant)
  * \li La valeur de non-donnée
+ *
+ * La légende utilisée dans tous les schémas de la documentation de ce fichier sera la suivante
+ *
+ * \~ \image html mergeNtiff_legende.png \~french
  *
  * Pour réaliser la fusion des images en entrée, on traite différemment :
  * \li les images qui sont superposables à l'image de sortie (mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
@@ -159,12 +163,12 @@ void usage() {
  * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur (code de retour -1)
  * \param[in] message message d'erreur
  */
-void error(std::string message) {
+void error(std::string message, int errorCode) {
     LOGGER_ERROR(message);
     LOGGER_ERROR("Configuration file : " << imageListFilename);
     usage();
     sleep(1);
-    exit(-1);
+    exit(errorCode);
 }
 
 /**
@@ -470,7 +474,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
     int width, height;
     bool hasMask;
     double resx, resy;
-    libtiffImageFactory factory;
+    LibtiffImageFactory factory;
 
     // Ouverture du fichier texte listant les images
     std::ifstream file;
@@ -593,6 +597,9 @@ int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
  * 
  * On conserve cependant l'ordre originale des images, quitte à augmenter le nombre de paquets final.
  * Ce tri sert à simplifier le traitement des images et leur réechantillonnage.
+ *
+ * \~ \image html mergeNtiff_package.png \~french
+ * 
  * \param[in] ImageIn images en entrée
  * \param[out] pTabImageIn images en entrée, triées en paquets compatibles
  * \return 0 en cas de succès, -1 en cas d'erreur
@@ -737,15 +744,20 @@ ResampledImage* resampleImages(LibtiffImage* pImageOut, ExtendedCompoundImage* p
 /**
  * \~french \brief Ajoute des miroirs à un paquet d'images compatibles
  * \~english \brief Add mirrors to compatible images pack
- * \~ \image html miroirs.png
- * \~french \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord. On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord). On sait distinguer les vraies images de celles virtuelles. On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
+ * \~ \image html miroirs.png \~french
+ * \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord.
+ *
+ * On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord).On sait distinguer les vraies images de celles virtuelles.
+ *
+ * On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
+ * 
  * \param[in] pECI paquet d'images compatibles, auquel on veut ajouter les miroirs
  * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
  * \return paquet d'images contenant les miroirs
  */
 ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
 {
-    mirrorImageFactory MIF;
+    MirrorImageFactory MIF;
     ExtendedCompoundImageFactory ECIF ;
     std::vector< Image*>  mirrorImages;
 
@@ -792,7 +804,11 @@ ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
  * \li superposable avec l'image de sortie. Elle est directement ajoutée à une liste d'image.
  * \li non superposable avec l'image de sortie. On va alors la réechantillonner, en utilisant la classe ResampledImage. C'est l'image réechantillonnée que l'on ajoute à la liste d'image.
  *
+ * \~ \image html mergeNtiff_composition.png \~french
+ * 
  * On obtient donc une liste d'images superposables avec celle de sortie, que l'on va réunir sous un objet de la classe ExtendedCompoundImage, qui sera la source unique utilisée pour écrire l'image de sortie.
+ *
+ * \~ \image html mergeNtiff_decoupe.png \~french
  *
  * Les masques sont gérés en toile de fond, en étant attachés à chacune des images manipulées.
  * \param[in] pImageOut image de sortie
@@ -824,7 +840,7 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
             return -1;
         }
 
-        ExtendedCompoundMaskImage* pECMI = new ExtendedCompoundMaskImage(pECI);
+        ExtendedCompoundMask* pECMI = new ExtendedCompoundMask(pECI);
         if (! pECI->setMask(pECMI)) {
             LOGGER_ERROR("Cannot add mask to the Image's pack " << i);
             return -1;
@@ -846,7 +862,7 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
                 return -1;
             }
             
-            ExtendedCompoundMaskImage* pECMI_M = new ExtendedCompoundMaskImage(pECI_M);
+            ExtendedCompoundMask* pECMI_M = new ExtendedCompoundMask(pECI_M);
             if (! pECI_M->setMask(pECMI_M)) {
                 LOGGER_ERROR("Cannot add mask to the Image's pack with mirrors !");
                 return -1;
@@ -875,7 +891,7 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
     }
     
     // Masque
-    ExtendedCompoundMaskImage* pECMIout = new ExtendedCompoundMaskImage(*ppECIout);
+    ExtendedCompoundMask* pECMIout = new ExtendedCompoundMask(*ppECIout);
 
     if (! (*ppECIout)->setMask(pECMIout)) {
         LOGGER_ERROR("Cannot add mask to the main Extended Compound Image");
@@ -908,10 +924,16 @@ saveImage(resampledMask,"pResampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_M
 */
 
 /**
- * \~french
+ ** \~french
  * \brief Fonction principale de l'outil mergeNtiff
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
+ * \return 0 en cas de succès, -1 sinon
+ ** \~english
+ * \brief Main function for tool mergeNtiff
+ * \param[in] argc parameters number
+ * \param[in] argv parameters array
+ * \return 0 if success, -1 otherwise
  */
 int main(int argc, char **argv) {
 
@@ -942,7 +964,7 @@ int main(int argc, char **argv) {
     LOGGER_DEBUG("Parse");
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc, argv) < 0){
-        error("Echec lecture ligne de commande");
+        error("Echec lecture ligne de commande",-1);
     }
 
     // Conversion string->int[] du paramètre nodata
@@ -951,13 +973,13 @@ int main(int argc, char **argv) {
     
     char* charValue = strtok(strnodata,",");
     if(charValue == NULL) {
-        error("Error with option -n : a value for nodata is missing");
+        error("Error with option -n : a value for nodata is missing",-1);
     }
     nodata[0] = atoi(charValue);
     for(int i = 1; i < samplesperpixel; i++) {
         charValue = strtok (NULL, ",");
         if(charValue == NULL) {
-            error("Error with option -n : a value for nodata is missing");
+            error("Error with option -n : a value for nodata is missing",-1);
         }
         nodata[i] = atoi(charValue);
     }
@@ -965,37 +987,37 @@ int main(int argc, char **argv) {
     LOGGER_DEBUG("Load");
     // Chargement des images
     if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn) < 0) {
-        error("Echec chargement des images");
+        error("Echec chargement des images",-1);
     }
 
     LOGGER_DEBUG("Check images");
     // Controle des images
     if (checkImages(pImageOut,ImageIn) < 0) {
-        error("Echec controle des images");
+        error("Echec controle des images",-1);
     }
     
     LOGGER_DEBUG("Sort");
     // Tri des images
     if (sortImages(ImageIn, &TabImageIn) < 0) {
-        error("Echec tri des images");
+        error("Echec tri des images",-1);
     }
     
     LOGGER_DEBUG("Merge");
     // Fusion des paquets d images
     if (mergeTabImages(pImageOut, TabImageIn, &pECI, nodata) < 0) {
-        error("Echec fusion des paquets d images");
+        error("Echec fusion des paquets d images",-1);
     }
     
     LOGGER_DEBUG("Save image");
     // Enregistrement de l'image fusionnée
     if (saveImage(pImageOut,pECI) < 0) {
-        error("Echec enregistrement de l image finale");
+        error("Echec enregistrement de l image finale",-1);
     }
 
     LOGGER_DEBUG("Save mask");
     // Enregistrement du masque fusionné, si demandé
     if (pMaskOut != NULL && saveImage(pMaskOut,pECI->Image::getMask()) < 0) {
-        error("Echec enregistrement du masque final");
+        error("Echec enregistrement du masque final",-1);
     }
     
     LOGGER_DEBUG("Clean");

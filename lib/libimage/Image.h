@@ -59,9 +59,14 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Cette classe abstraite permet d'utiliser toutes les images de la même manière, en assurant les définitions des fonctions permettant de lire une ligne, connaître l'emprise géographique de l'image... Toutes ces informations que l'on veut connaître sur une image, qu'elle soit directement liée à un fichier, ou le réechantillonnage d'un ensemble d'images.
- * On permet l'association d'un masque de donnée, qui n'est autre qu'une image à un canal sur 8 bits qui permet la distonction entre un pixel de l'image qui contient de la vraie donnée de celui qui contient du nodata.
- * Les images dont le canal est sur 1 bit ne sont pas gérées.
+ * \brief Interface de manipulation d'images
+ * \details Cette classe abstraite permet d'utiliser toutes les images de la même manière, en assurant les définitions des fonctions permettant de lire une ligne, connaître l'emprise géographique de l'image... Toutes ces informations que l'on veut connaître sur une image, qu'elle soit directement liée à un fichier, ou le réechantillonnage d'un ensemble d'images.
+ * 
+ * On permet l'association d'un masque de donnée, qui n'est autre qu'une image à un canal sur 8 bits qui permet la distinction entre un pixel de l'image qui contient de la vraie donnée de celui qui contient du nodata.
+ * 
+ * Ne sont gérés que les formats suivant pour les canaux :
+ * \li flottant sur 32 bits
+ * \li entier non signé sur 8 bits
  */
 class Image {
     public:
@@ -279,9 +284,12 @@ class Image {
         /**
          * \~french
          * \brief Calcul de la phase dans le sens des X
+         * \details La phase en X est le décalage entre le bord gauche du pixel et le 0 des abscisses, évalué en pixel. On a donc un nombre décimal appartenant à [0,1[.
+         * \image html phases.png
          * \return phase X
          * \~english
          * \brief Phasis calculation, X wise
+         * \image html phases.png
          * \return X phasis
          */
         double inline getPhasex() {
@@ -294,6 +302,7 @@ class Image {
         /**
          * \~french
          * \brief Calcul de la phase dans le sens des Y
+         * \details La phase en Y est le décalage entre le bord haut du pixel et le 0 des ordonnées, évalué en pixel. On a donc un nombre décimal appartenant à [0,1[.
          * \return phase Y
          * \~english
          * \brief Phasis calculation, Y wise
@@ -309,6 +318,16 @@ class Image {
         /**
          * \~french
          * \brief Détermine la compatibilité avec une autre image, en comparant phases et résolutions
+         * \details On parle d'images compatibles lorsqu'elles ont :
+         * \li la même résolution en X
+         * \li la même résolution en Y
+         * \li la même phase en X
+         * \li la même phase en Y
+         *
+         * Les tests d'égalité acceptent un epsilon qui est le suivant :
+         * \li 1 pour mille de la résolution la plus petite pour les résolutions
+         * \li 1% pour les phases
+         * 
          * \param[in] pImage image à comparer
          * \return compatibilité
          * \~english
@@ -377,8 +396,7 @@ class Image {
         /**
          * \~french
          * \brief Retourne une ligne en entier 8 bits.
-         * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
-         * une conversion est effectuée.
+         * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 8 bits, il n'y a pas de conversion.
          * \param[in] buffer Tableau contenant au moins width*channels uint8
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
          * \return taille utile du buffer, 0 si erreur
@@ -403,17 +421,14 @@ class Image {
          * \brief Default destructor
          */
         virtual ~Image() {
-            //std::cerr << "Delete Image" << std::endl; /*TEST*/
             //if (mask != NULL) delete mask;
         }
 
         /**
          * \~french
          * \brief Sortie des informations sur l'image
-         * \return description
          * \~english
          * \brief Image description output
-         * \return description
          */
         virtual void print() {
             LOGGER_INFO("\t- width = " << width << ", height = " << height);

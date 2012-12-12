@@ -35,64 +35,125 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ExtendedCompoundImage.h
+ ** \~french
+ * \brief Définition des classes ExtendedCompoundImage, ExtendedCompoundMask et ExtendedCompoundImageFactory
+ * \details
+ * \li ExtendedCompoundImage : image composée d'images compatibles, superposables
+ * \li ExtendedCompoundMask : masque composé, associé à une image composée
+ * \li ExtendedCompoundImageFactory : usine de création d'objet ExtendedCompoundImage
+ ** \~english
+ * \brief Define classes ExtendedCompoundImage, ExtendedCompoundMask and ExtendedCompoundImageFactory
+ * \details
+ * \li ExtendedCompoundImage : image compounded with superimpose images
+ * \li ExtendedCompoundMask : compounded mask, associated with a compounded image
+ * \li ExtendedCompoundImageFactory : factory to create ExtendedCompoundImage object
+ */
+
 #ifndef EXTENTED_COMPOUND_IMAGE_H
 #define EXTENTED_COMPOUND_IMAGE_H
 
-/**
-* @file ExtendedCompoundImage.h
-* @brief Image composee a partir de n autres images
-* @author IGN France - Geoportail
-*/
-
-#include "Image.h"
-#include "MirrorImage.h"
 #include <vector>
 #include <cstring>
-#include "Logger.h"
+#include <iostream>
 #include "math.h"
+
+#include "Logger.h"
 #include "Utils.h"
+#include "Image.h"
+//#include "tiffio.h"
+#include "MirrorImage.h"
 
 /**
-* @class ExtendedCompoundImage
-* @brief Image compose de n autres images
-* Ces images doivent etre superposables, c'est-a-dire remplir les conditions suivantes :
-* Elles doivent toutes avoir la meme resolution en x
-* Elles doivent toutes avoir la meme resolution en y
-* Elles doivent toutes etres en phase en x et en y (ne pas avoir les pixels d'une image decales par rapport aux pixels d'une autre image)
-*/
-#include <iostream>
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'un paquet d'images compatibles
+ * \details On va manipuler un paquet d'images superposables comme si elles n'en étaient qu'une seule. On parle d'images superposables lorsqu'elles ont :
+ * \li la même résolution en X
+ * \li la même résolution en Y
+ * \li la même phase en X
+ * \li la même phase en Y
+ *
+ * Les tests d'égalité acceptent un epsilon qui est le suivant :
+ * \li 1% de la résolution la plus petite pour les résolutions
+ * \li 1% pour les phases
+ *
+ * \~ \image html eci.png
+ */
 class ExtendedCompoundImage : public Image {
 
     friend class ExtendedCompoundImageFactory;
 
     private:
 
-        // Vecteur contenant les images (compatibles) représentant l'ECI.
+        /**
+         * \~french \brief Images sources, toutes superposables, utilisée pour assembler l'image composée
+         * \~english \brief Source images, consistent , to make the compounded image
+         */
         std::vector<Image*> images;
-
-        /* Certaines images peuvent etre des miroirs (MirrorImage)
-        * Ces images ne doivent pas etre prises en compte dans la fonction getline d'une ExtendedCompoundMaskImage.
-        * Hypothese : ces images sont stockees en premier.
-        */
+        
+        /**
+         * \~french \brief Nombre de miroirs dans les images sources
+         * \details Certaines images sources peuvent etre des miroirs (MirrorImage). Lors de la composition de l'image, on ne veut pas que les données des vraies images soient écrasées par des données "miroirs". C'est pourquoi on veut connaître le nombre d'images miroirs dans le tableau et on sait qu'elles sont placées au début.
+         * \~english \brief Mirror images' number among source images
+         */
         uint mirrors;
 
+        /**
+         * \~french \brief Valeur de non-donnée
+         * \details On a une valeur entière par canal. Tous les pixel de l'image composée seront initialisés avec cette valeur.
+         * \~english \brief Nodata value
+         */
         int* nodata;
 
+        /**
+         * \~french \brief Format du canal, entier ou flottant
+         * \~english \brief Sample format, integer or float
+         */
         uint16_t sampleformat;
 
+        /** \~french
+         * \brief Retourne une ligne, flottante ou entière
+         * \details Lors ce que l'on veut récupérer une ligne d'une image composée, on va se reporter sur toutes les images source.
+         *
+         * \image html eci_getline.png
+         *
+         * On lit en parallèle de chaque image source l'éventuel masque qui lui est associé. Ainsi, si un pixel n'est pas réellement de la donnée, on évite d'écraser les données du dessous. Si il n'y a pas de masque, on considère l'image source comme pleine (ne contient pas de non-donnée).
+         *
+         * \param[in] buffer Tableau contenant au moins width*channels valeurs
+         * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+         * \return taille utile du buffer, 0 si erreur
+         */
         template<typename T>
         int _getline(T* buffer, int line);
 
     protected:
 
-        /** Constructeur
-          * Appelé via une fabrique de type extendedCompoundImageFactory
-          * Les Image sont detruites ensuite en meme temps que l'objet
-          * Il faut donc les creer au moyen de l operateur new et ne pas s'occuper de leur suppression
+        /** \~french
+         * \brief Crée une ExtendedCompoundImage à partir de tous ses éléments constitutifs
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine extendedCompoundImageFactory, qui fera toute sorte de tests et calculs.
+         * \param[in] width largeur de l'image en pixel
+         * \param[in] height hauteur de l'image en pixel
+         * \param[in] channel nombre de canaux par pixel
+         * \param[in] bbox emprise rectangulaire de l'image
+         * \param[in] images images sources
+         * \param[in] nodata valeur de non-donnée
+         * \param[in] sampleformat format des canaux
+         * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
+         ** \~english
+         * \brief Create a ExtendedCompoundImage, from all attributes
+         * \param[in] width image width, in pixel
+         * \param[in] height image height, in pixel
+         * \param[in] channel number of samples per pixel
+         * \param[in] bbox bounding box
+         * \param[in] images source images
+         * \param[in] nodata nodata value
+         * \param[in] sampleformat samples' format
+         * \param[in] mirrors mirror images' number in source images (put in front)
          */
         ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                              std::vector<Image*>& images,
-                              int* nodata, uint16_t sampleformat, uint mirrors) :
+                              std::vector<Image*>& images, int* nodata, uint16_t sampleformat, uint mirrors) :
             Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
             images(images),
             nodata(nodata),
@@ -100,40 +161,102 @@ class ExtendedCompoundImage : public Image {
             mirrors(mirrors) {}
 
     public:
+        /**
+         * \~french
+         * \brief Retourne le tableau des images sources
+         * \param[in] i indice de l'image source sont on veut le masque
+         * \return images sources
+         * \~english
+         * \brief Return the array of source images
+         * \param[in] i source image indice, whose mask is wanted
+         * \return source images
+         */
         std::vector<Image*>* getImages() {return &images;}
-        
+
+        /**
+         * \~french
+         * \brief Précise si a moins une image source possède un masque de donnée
+         * \return présence de masque
+         * \~english
+         * \brief Precise if one or more source images own a mask 
+         * \return mask presence
+         */
         bool useMasks() {
             for(uint i=0; i < images.size(); i++) {
                 if (getMask(i)) return true;
             }
             return false;
         }
-        
-        Image* getMask(int i) {return images.at(i)->getMask();}
-        Image* getImage(int i) {return images.at(i);}
 
-        uint getMirrorsNumber() {return mirrors;}
+        /**
+         * \~french
+         * \brief Retourne le masque de l'image source d'indice i
+         * \return masque
+         * \~english
+         * \brief Return the mask of source images with indice i
+         * \return mask
+         */
+        Image* getMask(int i) { return images.at(i)->getMask(); }
+        /**
+         * \~french
+         * \brief Retourne l'image source d'indice i
+         * \param[in] i indice de l'image source voulue
+         * \return image
+         * \~english
+         * \brief Return the source images with indice i
+         * \param[in] i wanted source image indice
+         * \return image
+         */
+        Image* getImage(int i) { return images.at(i); }
 
-        uint16_t getSampleformat() {return sampleformat;}
+        /**
+         * \~french
+         * \brief Retourne le nombre de miroirs parmi les images sources
+         * \return nombre d'images miroirs
+         * \~english
+         * \brief Return the mirror images' number among source images
+         * \return mirror images' number
+         */
+        uint getMirrorsNumber() { return mirrors; }
+
+        /**
+         * \~french
+         * \brief Retourne le format des canaux
+         * \return format des canaux
+         * \~english
+         * \brief Return the sample format
+         * \return sample format
+         */
+        uint16_t getSampleformat() { return sampleformat; }
+        /**
+         * \~french
+         * \brief Retourne la valeur de non-donnée
+         * \return Valeur de non-donnée
+         * \~english
+         * \brief Return the nodata value
+         * \return nodata value
+         */
         int* getNodata() {return nodata;}
 
-        /** Implementation de getline pour les uint8_t */
         int getline(uint8_t* buffer, int line);
-
-        /** Implementation de getline pour les float */
         int getline(float* buffer, int line);
 
-        /** Destructeur
-          Suppression des images */
+        /**
+         * \~french
+         * \brief Destructeur par défaut
+         * \details Suppression de toutes les images composant l'ExtendedCompoundImage
+         * \~english
+         * \brief Default destructor
+         */
         virtual ~ExtendedCompoundImage() {
-            //std::cerr << "Delete ExtendedCompoundImage" << std::endl; /*TEST*/
-            for(uint i=0; i < images.size(); i++) {
-                //std::cerr << "    - image " << i << std::endl; /*TEST*/
-                delete images[i];
-            }
+            for(uint i=0; i < images.size(); i++) { delete images[i]; }
         }
 
-        /** Fonction d'export des informations sur l'image (pour le débug) */
+        /** \~french
+         * \brief Sortie des informations sur l'image composée
+         ** \~english
+         * \brief Compounded image description output
+         */
         void print() {
             LOGGER_INFO("");
             LOGGER_INFO("------ ExtendedCompoundImage -------");
@@ -146,51 +269,120 @@ class ExtendedCompoundImage : public Image {
         }
 };
 
-/**
-* @class ExtendedCompoundImageFactory
-* @brief Fabrique de ExtendedCompoundImageFactory
-* @return Un pointeur sur l'ExtendedCompoundImage creee, NULL en cas d'echec
-* La creation par une fabrique permet de proceder a certaines verifications
-*/
-
-#define epsilon 0.001
-
+/** \~ \author Institut national de l'information géographique et forestière
+ ** \~french
+ * \brief Usine de création d'une image composée
+ * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe ExtendedCompoundImage. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de ExtendedCompoundImage et de sortir en erreur en cas de problème.
+ */
 class ExtendedCompoundImageFactory {
-public:
-    ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, int* nodata,
-                                                       uint16_t sampleformat, uint mirrors);
+    public:
+        /** \~french
+         * \brief Teste et calcule les caractéristiques d'une image composée et crée un objet ExtendedCompoundImage
+         * \details Largeur, hauteur, nombre de canaux et bbox sont déduits des composantes de l'image source et des paramètres. On vérifie la superposabilité des images sources.
+         * \param[in] images images sources
+         * \param[in] nodata valeur de non-donnée
+         * \param[in] sampleformat format des canaux
+         * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
+         * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
+         ** \~english
+         * \brief Check and calculate compounded image components and create an ExtendedCompoundImage object
+         * \details Height, width, samples' number and bbox are deduced from source image's components and parameters. We check if source images are superimpose.
+         * \param[in] images source images
+         * \param[in] nodata nodata value
+         * \param[in] sampleformat samples' format
+         * \param[in] mirrors mirror images' number in source images (put in front)
+         * \return a ExtendedCompoundImage object pointer, NULL if error
+         */
+        ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, int* nodata,
+                                                           uint16_t sampleformat, uint mirrors);
 
-    ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                                                       std::vector<Image*>& images, int* nodata,
-                                                       uint16_t sampleformat, uint mirrors);
+        /** \~french
+         * \brief Vérifie la superposabilité des images sources et crée un objet ExtendedCompoundImage
+         * \param[in] width largeur de l'image en pixel
+         * \param[in] height hauteur de l'image en pixel
+         * \param[in] channel nombre de canaux par pixel
+         * \param[in] bbox emprise rectangulaire de l'image
+         * \param[in] images images sources
+         * \param[in] nodata valeur de non-donnée
+         * \param[in] sampleformat format des canaux
+         * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
+         * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
+         ** \~english
+         * \brief Check if source images are superimpose and create an ExtendedCompoundImage object
+         * \param[in] width image width, in pixel
+         * \param[in] height image height, in pixel
+         * \param[in] channel number of samples per pixel
+         * \param[in] bbox bounding box
+         * \param[in] images source images
+         * \param[in] nodata nodata value
+         * \param[in] sampleformat samples' format
+         * \param[in] mirrors mirror images' number in source images (put in front)
+         * \return a ExtendedCompoundImage object pointer, NULL if error
+         */
+        ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels,
+                                                           BoundingBox<double> bbox,
+                                                           std::vector<Image*>& images, int* nodata,
+                                                           uint16_t sampleformat, uint mirrors);
 };
 
 /**
-* @class ExtendedCompoundMaskImage
-* @brief Masque d'une ExtendedCompoundImage
-* 255 : si une image occupe un pixel, 0 sinon
-*/
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'un masque composé, s'appuyant sur une image composée
+ */
+class ExtendedCompoundMask : public Image {
 
-class ExtendedCompoundMaskImage : public Image {
-
-private:
+    private:
+        /**
+         * \~french \brief Image composée, à laquelle le masque composé est associé
+         * \~english \brief Compounded images, with which compounded mask is associated
+         */
         ExtendedCompoundImage* ECI;
+
+        /** \~french
+         * \brief Retourne une ligne, flottante ou entière
+         * \details Lors ce que l'on veut récupérer une ligne d'un masque composé, on va se reporter sur tous les masques des images source de l'image composée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
+         * \param[in] buffer Tableau contenant au moins width*channels valeurs
+         * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+         * \return taille utile du buffer, 0 si erreur
+         */
         int _getline(uint8_t* buffer, int line);
 
-public:
-    /** Constructeur */
-    ExtendedCompoundMaskImage(ExtendedCompoundImage*& ECI) :
-        Image(ECI->width, ECI->height, ECI->getresx(), ECI->getresy(), 1,ECI->getbbox()),
-        ECI(ECI) {}
+    public:
+        /** \~french
+         * \brief Crée une ExtendedCompoundImage
+         * \details Les caractéristiques du masque sont extraites de l'image composée.
+         * \param[in] ECI Image composée
+         ** \~english
+         * \brief Create a ExtendedCompoundImage
+         * \details Mask's components are extracted from the compounded image.
+         * \param[in] ECI Compounded image
+         */
+        ExtendedCompoundMask(ExtendedCompoundImage*& ECI) :
+            Image(ECI->width, ECI->height, ECI->getresx(), ECI->getresy(), 1,ECI->getbbox()),
+            ECI(ECI) {}
 
-    /** Implementation de getline pour les uint8_t */
-    int getline(uint8_t* buffer, int line); 
-    /** Implementation de getline pour les float */
-    int getline(float* buffer, int line);
+        int getline(uint8_t* buffer, int line);
+        int getline(float* buffer, int line);
 
-    /** Destructeur
-    Suppression des images */
-    virtual ~ExtendedCompoundMaskImage() {}
+        /**
+         * \~french
+         * \brief Destructeur par défaut
+         * \~english
+         * \brief Default destructor
+         */
+        virtual ~ExtendedCompoundMask() {}
+
+        /** \~french
+         * \brief Sortie des informations sur le masque composé
+         ** \~english
+         * \brief Compounded mask description output
+         */
+        void print() {
+            LOGGER_INFO("");
+            LOGGER_INFO("------ ExtendedCompoundMask -------");
+            Image::print();
+        }
 
 };
 

@@ -44,7 +44,7 @@ Creation d'une LibtiffImage a partir d un fichier TIFF filename
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int calcWidth, int calcHeight, double resx, double resy )
+LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int calcWidth, int calcHeight, double resx, double resy )
 {
     int width=0,height=0,channels=0,planarconfig=0,bitspersample=0,
         sampleformat=0,photometric=0,compression=0,rowsperstrip=0;
@@ -129,7 +129,7 @@ Creation d'une LibtiffImage en vue de creer un nouveau fichier TIFF
 retourne NULL en cas d erreur
 */
 
-LibtiffImage* libtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
+LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
 {
     if (width<0||height<0)
         return NULL;
@@ -145,9 +145,9 @@ LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int c
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy(filename,name);
 
-    current_strip=-1;
-    strip_size=width*channels*rowsperstrip;
-    strip_buffer=new uint8_t[strip_size];
+    current_strip = -1;
+    strip_size = width*channels*rowsperstrip;
+    strip_buffer = new uint8_t[strip_size];
 }
 
 template<typename T>
@@ -156,18 +156,18 @@ int LibtiffImage::_getline(T* buffer, int line)
     // le buffer est déjà alloue
     // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
-    // Cas Non compresse ou (compresse et 1 ligne/bande)
-    if (compression==COMPRESSION_NONE || (compression!=COMPRESSION_NONE && rowsperstrip==1) ){
-        if (TIFFReadScanline(tif,buffer,line,0)<0)
-            LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
-    }
-
-    // Cas compresse et > 1 ligne /bande
-    else{
-        if (line/rowsperstrip!=current_strip){
-            current_strip=line/rowsperstrip;
-            if (TIFFReadEncodedStrip(tif,current_strip,strip_buffer,strip_size)<0)
+    if (compression == COMPRESSION_NONE || (compression != COMPRESSION_NONE && rowsperstrip == 1) ) {
+        // Cas Non compresse ou (compresse et 1 ligne/bande)
+        if (TIFFReadScanline(tif,buffer,line,0) < 0) {
+            LOGGER_DEBUG("Erreur de lecture du fichier TIFF " << TIFFFileName(tif) << " ligne " << line);
+        }
+    } else {
+        // Cas compresse et > 1 ligne /bande
+        if (line / rowsperstrip != current_strip) {
+            current_strip = line / rowsperstrip;
+            if (TIFFReadEncodedStrip(tif,current_strip,strip_buffer,strip_size) < 0) {
                 LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
+            }
         }
         memcpy(buffer,&strip_buffer[(line%rowsperstrip)*width*channels],width*channels*sizeof(uint8_t));
     }

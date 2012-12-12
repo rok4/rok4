@@ -54,7 +54,7 @@
  *
  * Les masques doivent avoir la même taille mais sont à un canal entier non signé sur 8 bits
  * Exemple d'appel à la commande :
- * \li sans masque, avec une image de fond \~english \li without mask, with background image
+ * \~french \li sans masque, avec une image de fond \~english \li without mask, with background image
  * \~ \code
  * merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
  * \endcode

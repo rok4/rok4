@@ -35,51 +35,59 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Interpolation.cpp
+ * \~french
+ * \brief Implémentation de l'énumération des interpolations disponibles et des conversions
+ * \~english
+ * \brief Define available interpolations' enumeration and conversions
+ */
+
 #include "Interpolation.h"
 #include <string.h>
 
 namespace Interpolation {
     
-const char *einterpolation_name[] = {
-    "UNKNOWN",
-    "nn",
-    "linear",
-    "bicubic",
-    "lanczos_2",
-    "lanczos_3",
-    "lanczos_4"
-};
+    const char *einterpolation_name[] = {
+        "UNKNOWN",
+        "nn",
+        "linear",
+        "bicubic",
+        "lanczos_2",
+        "lanczos_3",
+        "lanczos_4"
+    };
 
-const int einterpolation_size = 6;
+    const int einterpolation_size = 6;
 
 
-Interpolation::KernelType fromString(std::string strInterpolation)
-{
-    int i;
-    //handle be4 element : lanczos to lanczos_2
-    if (strInterpolation.compare("lanczos")==0){
-        strInterpolation.append("_2");
+    Interpolation::KernelType fromString(std::string strInterpolation)
+    {
+        int i;
+        //handle be4 element : lanczos to lanczos_2
+        if (strInterpolation.compare("lanczos")==0){
+            strInterpolation.append("_2");
+        }
+
+        for (i=einterpolation_size; i ; --i) {
+            if (strInterpolation.compare(einterpolation_name[i])==0)
+                break;
+        }
+
+        return static_cast<Interpolation::KernelType>(i);
     }
-    
-    for (i=einterpolation_size; i ; --i) {
-        if (strInterpolation.compare(einterpolation_name[i])==0)
-            break;
-    }
-    
-    return static_cast<Interpolation::KernelType>(i);
-}
 
-std::string toString(Interpolation::KernelType KT)
-{
-    return std::string(einterpolation_name[KT]);
-}
-
-std::string toBe4String(Interpolation::KernelType KT)
-{
-    if (KT >= Interpolation::LANCZOS_2) {
-        return std::string("lanczos");
+    std::string toString(Interpolation::KernelType KT)
+    {
+        return std::string(einterpolation_name[KT]);
     }
-    return std::string(einterpolation_name[KT]);
-}
+
+    std::string toBe4String(Interpolation::KernelType KT)
+    {
+        if (KT >= Interpolation::LANCZOS_2) {
+            return std::string("lanczos");
+        }
+        return std::string(einterpolation_name[KT]);
+    }
 
 }
