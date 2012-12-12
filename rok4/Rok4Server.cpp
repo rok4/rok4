@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Rok4Server.cpp
+ * \~french
+ * \brief Implémentation de la classe Rok4Server et du programme principal
+ * \~english
+ * \brief Implement the Rok4Server class, handling the event loop
+ */
+
 #include "Image.h"
 
 #include "Rok4Server.h"
@@ -65,11 +73,6 @@
 #include <EstompageImage.h>
 #include <MergeImage.h>
 
-
-
-/**
- * Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
- */
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
@@ -140,9 +143,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-/**
-* @brief Construction du serveur
-*/
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
                          std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
@@ -180,11 +180,6 @@ void Rok4Server::killFCGI() {
     FCGX_Close();
 }
 
-
-
-/*
- * Lancement des threads du serveur
- */
 void Rok4Server::run() {
     running = true;
 
@@ -206,12 +201,6 @@ void Rok4Server::terminate() {
 
 }
 
-
-
-/**
- * @vriedf test de la présence de paramName dans option
- * @return true si présent
- */
 bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
     std::map<std::string, std::string>::iterator it = option.find ( paramName );
     if ( it == option.end() ) {
@@ -220,11 +209,6 @@ bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::str
     return true;
 }
 
-
-/**
- * @vriedf récupération du parametre paramName dans la requete
- * @return la valeur du parametre si existant "" sinon
- */
 std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
     std::map<std::string, std::string>::iterator it = option.find ( paramName );
     if ( it == option.end() ) {
@@ -232,8 +216,6 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
     }
     return it->second;
 }
-
-
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
     if (!supportWMS) {
@@ -280,11 +262,6 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
     return new MessageDataStream ( capa,"application/xml" );
 }
 
-/**
- * Traitement d'une requete GetMap
- * @return Un pointeur sur le flux de donnees resultant
- * @return Un message d'erreur en cas d'erreur
- */
 DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
@@ -463,11 +440,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 
-/**
- * Traitement d'une requete GetTile
- * @return Un pointeur sur la source de donnees de la tuile requetee
- * @return Un message d'erreur en cas d'erreur
- */
 DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
@@ -502,7 +474,6 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     return tileSource;
 }
 
-/** Traite les requêtes de type WMTS */
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
@@ -515,7 +486,6 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
-/** Traite les requêtes de type WMS */
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
@@ -528,7 +498,6 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
-/** Separe les requetes WMS et WMTS */
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
     if (supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );

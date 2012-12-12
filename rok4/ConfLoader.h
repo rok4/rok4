@@ -148,7 +148,7 @@ public:
      * \param[in] stylesList ensemble des Styles disponibles
      * \param[out] layers ensemble des Layers disponibles
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
-     * \param[in] servicesConf pointeur vers les configurations globales du services
+     * \param[in] servicesConf pointeur vers les configurations globales des services
      * \return faux en cas d'erreur
      * \~english
      * \brief Load Styles from the styleDir directory
@@ -157,7 +157,7 @@ public:
      * \param[in] stylesList set of available Styles
      * \param[out] layers set of available Layers
      * \param[in] reprojectionCapability whether the server can handle reprojection
-     * \param[in] servicesConf global service configuration pointer
+     * \param[in] servicesConf global services configuration pointer
      * \return false if something went wrong
      */
     static bool buildLayersList ( std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf );

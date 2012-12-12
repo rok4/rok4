@@ -57,8 +57,15 @@
 #include <algorithm>
 #include "intl.h"
 
-/* converts hex char (0-9, A-Z, a-z) to decimal.
- * returns 0xFF on invalid input.
+/**
+ * \~french
+ * \brief Convertit un caractère héxadécimal (0-9, A-Z, a-z) en décimal
+ * \param[in] hex caractère
+ * \return 0xFF sur une entrée invalide
+ * \~english
+ * \brief Converts hex char (0-9, A-Z, a-z) to decimal.
+ * \param[in] hex character
+ * \return 0xFF on invalid input.
  */
 char hex2int ( unsigned char hex ) {
     hex = hex - '0';
@@ -72,6 +79,20 @@ char hex2int ( unsigned char hex ) {
     return hex;
 }
 
+/**
+ * \~french
+ * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \param[in] s la chaîne à découper
+ * \param[in] delim le délimiteur
+ * \param[in,out] elems la liste contenant les parties de la chaîne
+ * \return la liste contenant les parties de la chaîne
+ * \~english
+ * \brief Split a string using a specified delimitor
+ * \param[in] s the string to split
+ * \param[in] delim the delimitor
+ * \param[in,out] elems the list with the splited string
+ * \return the list with the splited string
+ */
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -81,7 +102,18 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
     return elems;
 }
 
-
+/**
+ * \~french
+ * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \param[in] s la chaîne à découper
+ * \param[in] delim le délimiteur
+ * \return la liste contenant les parties de la chaîne
+ * \~english
+ * \brief Split a string using a specified delimitor
+ * \param[in] s the string to split
+ * \param[in] delim the delimitor
+ * \return the list with the splited string
+ */
 std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     return split(s, delim, elems);
@@ -121,11 +153,25 @@ void Request::url_decode ( char *src ) {
 
     *dst = '\0';
 }
-
+/**
+ * \~french
+ * \brief Transforme la chaîne de caractères en minuscule
+ * \param[in,out] str la chaîne
+ * \~english
+ * \brief Translate the string to lower case 
+ * \param[in,out] str the string
+ */
 void toLowerCase ( char* str ) {
     if ( str ) for ( int i = 0; str[i]; i++ ) str[i] = tolower ( str[i] );
 }
-
+/**
+ * \~french
+ * \brief Supprime l'espace de nom de la balise XML
+ * \param[in,out] elementName le nom de la balise
+ * \~english
+ * \brief Remove the namespace in the XML element
+ * \param[in,out] elementName the element name
+ */
 void removeNameSpace ( std::string& elementName ) {
     size_t pos = elementName.find ( ":" );
     if ( elementName.size() <= pos ) {
@@ -133,6 +179,17 @@ void removeNameSpace ( std::string& elementName ) {
     }
     elementName.erase ( elementName.begin(),elementName.begin() +pos );
 }
+
+/**
+ * \~french
+ * \brief Analyse des paramètres d'une requête GetCapabilities en POST XML
+ * \param[in] hGetCap élement XML de la requête
+ * \param[in,out] parameters liste associative des paramètres
+ * \~english
+ * \brief Parse a GetCapabilities request in POST XML 
+ * \param[in] hGetCap request XML element
+ * \param[in,out] parameters associative parameters list 
+ */
 void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std::string >& parameters ) {
     LOGGER_DEBUG ( _("Parse GetCapabilities Request") );
     std::string version;
@@ -158,7 +215,16 @@ void parseGetCapabilitiesPost ( TiXmlHandle& hGetCap, std::map< std::string, std
     parameters.insert ( std::pair<std::string, std::string> ( "version", version ) );
 
 }
-
+/**
+ * \~french
+ * \brief Analyse des paramètres d'une requête GetTile en POST XML
+ * \param[in] hGetTile élement XML de la requête
+ * \param[in,out] parameters liste associative des paramètres
+ * \~english
+ * \brief Parse a GetTile request in POST XML 
+ * \param[in] hGetTile request XML element
+ * \param[in,out] parameters associative parameters list 
+ */
 void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::string >& parameters ) {
     LOGGER_DEBUG ( _("Parse GetTile Request") );
     TiXmlElement* pElem = hGetTile.ToElement();
@@ -274,7 +340,16 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         }
 
 }
-
+/**
+ * \~french
+ * \brief Analyse des paramètres d'une requête GetMap en POST XML
+ * \param[in] hGetMap élement XML de la requête
+ * \param[in,out] parameters liste associative des paramètres
+ * \~english
+ * \brief Parse a GetMap request in POST XML 
+ * \param[in] hGetMap request XML element
+ * \param[in,out] parameters associative parameters list 
+ */
 void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string >& parameters ) {
     LOGGER_DEBUG ( _("Parse GetMap Request") );
     TiXmlElement* pElem = hGetMap.ToElement();
@@ -521,6 +596,20 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
 
 }
 
+/**
+ * \~french
+ * \brief Analyse des paramètres d'une requête POST XML
+ * \param[in] content contenu de la requête POST
+ * \param[in,out] parameters liste associative des paramètres
+ * \todo HTTP POST de type KVP
+ * \todo HTTP POST de type XML/Soap
+ * \~english
+ * \brief Parse a POST XML request
+ * \param[in] content POST request content
+ * \param[in,out] parameters associative parameters list 
+ * \todo HTTP POST, KVP style
+ * \todo HTTP POST, XML/Soap style
+ */
 void parsePostContent ( std::string content, std::map< std::string, std::string >& parameters ) {
     TiXmlDocument doc ( "request" );
     content.append ( "\n" );
@@ -548,13 +637,6 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
 
 }
 
-/**
- * Get Request Constructor
- * @param strquery http query arguments
- * @param hostName hostname declared in the request
- * @param path webserver path to the ROK4 Server
- * @param https https request if defined
- */
 Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://") {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     if (https) 
@@ -588,14 +670,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) : h
     }*/
 }
 
-/**
- * Post Request Constructor
- * @param strquery http query arguments
- * @param hostName hostname declared in the request
- * @param path webserver path to the ROK4 Server
- * @param https https request if defined
- * @param postContent the http Post Content
- */
+
 Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ) {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     scheme = ( https?"https://":"http://" );
@@ -645,10 +720,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https, std:
 
 Request::~Request() {}
 
-/**
- * @vriedf test de la présence de paramName dans la requete
- * @return true si présent
- */
+
 bool Request::hasParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -657,11 +729,6 @@ bool Request::hasParam ( std::string paramName ) {
     return true;
 }
 
-
-/**
- * @vriedf récupération du parametre paramName dans la requete
- * @return la valeur du parametre si existant "" sinon
- */
 std::string Request::getParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -669,11 +736,6 @@ std::string Request::getParam ( std::string paramName ) {
     }
     return it->second;
 }
-
-/**
-* @vrief Verification et recuperation des parametres d'une requete GetTile
-* @return message d'erreur en cas d'erreur (NULL sinon)
-*/
 
 DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style, bool& noDataError ) {
     // VERSION
@@ -750,7 +812,20 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
 
 }
 
-void stringSplit ( std::string str, std::string delim, std::vector<std::string> &results ) {
+
+/* *
+ * \~french
+ * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \param[in] str la chaîne à découper
+ * \param[in] delim le délimiteur
+ * \param[in,out] results la liste contenant les parties de la chaîne
+ * \~english
+ * \brief Split a string using a specified delimitor
+ * \param[in] str the string to split
+ * \param[in] delim the delimitor
+ * \param[in,out] results the list with the splited string
+ */
+/*void stringSplit ( std::string str, std::string delim, std::vector<std::string> &results ) {
     int cutAt;
     while ( ( cutAt = str.find_first_of ( delim ) ) != str.npos ) {
         if ( cutAt > 0 ) {
@@ -761,12 +836,7 @@ void stringSplit ( std::string str, std::string delim, std::vector<std::string> 
     if ( str.length() > 0 ) {
         results.push_back ( str );
     }
-}
-
-/**
- * @brief Recuperation et verification des parametres d'une requete GetMap
- * @return message d'erreur en cas d'erreur (NULL sinon)
- */
+}*/
 
 DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                    BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
@@ -859,8 +929,8 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     std::string strBbox=getParam ( "bbox" );
     if ( strBbox == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_("Parametre BBOX absent."),"wms" ) );
-    std::vector<std::string> coords;
-    stringSplit ( strBbox,",",coords );
+    std::vector<std::string> coords = split ( strBbox,',');
+    
     if ( coords.size() !=4 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Parametre BBOX incorrect."),"wms" ) );
     double bb[4];
@@ -983,12 +1053,6 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     return NULL;
 }
 
-
-/**
- * @brief Recuperation et verification des parametres d'une requete GetCapabilities
- * @return message d'erreur en cas d'erreur (NULL sinon)
- */
-
 DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& version)
 {
     if (service.compare("wms")!=0 ) {
@@ -1004,11 +1068,6 @@ DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& ver
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"),"wms" ));
     return NULL;
 }
-
-/**
- * @brief Recuperation et verification des parametres d'une requete GetCapabilities
- * @return message d'erreur en cas d'erreur (NULL sinon)
- */
 
 DataStream* Request::getCapWMTSParam(ServicesConf& servicesConf, std::string& version)
 {
