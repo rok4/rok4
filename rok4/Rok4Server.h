@@ -160,9 +160,31 @@ private:
      * \return true if present
      */
     static void* thread_loop ( void* arg );
-
+    /**
+     * \~french
+     * \brief 
+     * \param[in] arg pointeur vers l'instance de Rok4Server
+     * \return true si présent
+     * \~english
+     * \brief 
+     * \param[in] arg pointer to the Rok4Server instance
+     * \return true if present
+     */
     int GetDecimalPlaces ( double number );
+    
+    /**
+     * \~french
+     * \brief Construit les fragments invariants du getCapabilities WMS
+     * \~english
+     * \brief Build the invariant fragments of the WMS GetCapabilities
+     */
     void buildWMSCapabilities();
+    /**
+     * \~french
+     * \brief Construit les fragments invariants du getCapabilities WMS
+     * \~english
+     * \brief Build the invariant fragments of the WMTS GetCapabilities
+     */
     void buildWMTSCapabilities();
     
     /**
@@ -192,80 +214,172 @@ private:
      */
     std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
     
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetMap
+     * \param[in] request représentation de la requête
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Process a GetMap request
+     * \param[in] request request representation
+     * \return requested image or an error message
+     */
+    DataStream* getMap ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetCapabilities WMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetCapabilities WMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMSGetCapabilities ( Request* request );
     
     /**
- * Traitement d'une requete GetMap
- * @return Un pointeur sur le flux de donnees resultant
- * @return Un message d'erreur en cas d'erreur
- */
-    DataStream* getMap ( Request* request );
-    DataStream* WMSGetCapabilities ( Request* request );
-    /** Traite les requêtes de type WMS */
+     * \~french Traite les requêtes de type WMS
+     * \~english Process WMS request
+     */
     void        processWMS ( Request *request, FCGX_Request&  fcgxRequest );
-    /** Traite les requêtes de type WMTS */
+    /**
+     * \~french Traite les requêtes de type WMTS
+     * \~english Process WMTS request
+     */
     void        processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
-    /** Separe les requetes WMS et WMTS */
+    /**
+     * \~french Sépare les requêtes de type WMS et WMTS
+     * \~english Route WMS and WMTS request
+     */
     void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
 
 public:
-    
+    /**
+     * \~french Retourne la configuration des services
+     * \~english Return the services configurations
+     */
     ServicesConf& getServicesConf() {
         return servicesConf;
     }
+    /**
+     * \~french Retourne la liste des couches
+     * \~english Return the layers list
+     */
     std::map<std::string, Layer*>& getLayerList() {
         return layerList;
     }
+    /**
+     * \~french Retourne la liste des TileMatrixSets
+     * \~english Return the TileMatrixSets list
+     */
     std::map<std::string, TileMatrixSet*>& getTmsList() {
         return tmsList;
     }
+    /**
+     * \~french Retourne la liste des styles
+     * \~english Return the styles list
+     */
     std::map<std::string, Style*>& getStyleList() {
         return styleList;
     }
+    /**
+     * \~french Retourne les fragments du GetCapabilities WMS
+     * \~english Return WMS GetCapabilities fragments
+     */
     std::vector<std::string>& getWmsCapaFrag() {
         return wmsCapaFrag;
     }
+    /**
+     * \~french Retourne les fragments du GetCapabilities WMTS
+     * \~english Return WMTS GetCapabilities fragments
+     */
     std::vector<std::string>& getWmtsCapaFrag() {
         return wmtsCapaFrag;
     }
     
     /**
- * Traitement d'une requete GetTile
- * @return Un pointeur sur la source de donnees de la tuile requetee
- * @return Un message d'erreur en cas d'erreur
- */
+     * \~french
+     * \brief Traitement d'une requête GetTile
+     * \param[in] request représentation de la requête
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Process a GetTile request
+     * \param[in] request request representation
+     * \return requested image or an error message
+     */
     DataSource* getTile ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetCapabilities WMTS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetCapabilities WMTS request
+     * \param[in] request request representation
+     * \return response stream
+     */
     DataStream* WMTSGetCapabilities ( Request* request );
 
     /**
- * Lancement des threads du serveur
- */
+     * \~french
+     * \brief Lancement des threads du serveur
+     * \~english
+     * \brief Start server's thread
+     */
     void run();
     /**
-     * Initialize the FastCGI Socket 
+     * \~french
+     * \brief Initialise le socket FastCGI
+     * \~english
+     * \brief Initialize the FastCGI Socket
      */
     void initFCGI();
-
     /**
-     * Destroy the FastCGI Socket 
+     * \~french
+     * \brief Détruit le socket FastCGI
+     * \~english
+     * \brief Destroy the FastCGI Socket
      */
     void killFCGI();
-    
     /**
-     * Get the internal FastCGI socket representation, usefull for configuration reloading.
-     * @return the internal FastCGI socket representation
+     * \~french
+     * Utilisé pour le rechargement de la configuration du serveur
+     * \brief Retourne la représentation interne du socket FastCGI
+     * \return la représentation interne du socket
+     * \~english
+     * \brief Get the internal FastCGI socket representation, usefull for configuration reloading.
+     * \return the internal FastCGI socket representation
      */
     int getFCGISocket() {return sock;}
     
     /**
-     * Set the internal FastCGI socket representation, usefull for configuration reloading
-     * @param sockFCGI the internal FastCGI socket representation
+     * \~french
+     * utilisé pour le rechargement de la configuration du serveur
+     * \brief Restaure le socket FastCGI
+     * \param sockFCGI la représentation interne du socket
+     * \~english
+     * usefull for configuration reloading
+     * \brief Set the internal FastCGI socket representation
+     * \param sockFCGI the internal FastCGI socket representation
      */
     void setFCGISocket(int sockFCGI) {sock = sockFCGI;}
     
-    
+    /**
+     * \~french
+     * \brief Retourne l'état du serveur
+     * \return true si en fonctionnement
+     * \~english
+     * \brief Return the server state
+     * \return true if running
+     */
     bool isRunning() { return running ;}
+    /**
+     * \~french
+     * \brief Demande l'arrêt du serveur
+     * \~english
+     * \brief Ask for server shutdown
+     */
     void terminate();
-    
     
     /**
      * \brief Construction du serveur
