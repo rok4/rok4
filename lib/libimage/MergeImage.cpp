@@ -242,7 +242,7 @@ int MergeImage::getline ( uint8_t* buffer, int line ) {
 }
 
 MergeImage::MergeImage ( Image* backImage, Image* frontImage, MergeImage::MergeType composition, float factor ) :
-    Image ( backImage->width, backImage->height, ( backImage->channels>frontImage->channels?backImage->channels:frontImage->channels ), backImage->getbbox() ),
+    Image ( backImage->width, backImage->height, ( backImage->channels>frontImage->channels?backImage->channels:frontImage->channels ), backImage->getBbox() ),
     backImage ( backImage ), frontImage ( frontImage ), composition ( composition ), factor ( factor ) {
     
     LOGGER_DEBUG("Out   channels = "  << channels );

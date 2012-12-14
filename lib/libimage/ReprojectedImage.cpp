@@ -50,11 +50,11 @@
 ReprojectedImage::ReprojectedImage(Image *image,  BoundingBox<double> bbox, Grid* grid,  Interpolation::KernelType KT) 
 	: Image(grid->width, grid->height,image->channels, bbox), image(image), grid(grid), K(Kernel::getInstance(KT)) {
 
-		double res_x = image->getresx();
-		double res_y = image->getresy();
+		double res_x = image->getResX();
+		double res_y = image->getResY();
 
 		grid->bbox.print();
-		grid->affine_transform(1./res_x, -image->getbbox().xmin/res_x - 0.5, -1./res_y, image->getbbox().ymax/res_y - 0.5);
+		grid->affine_transform(1./res_x, -image->getBbox().xmin/res_x - 0.5, -1./res_y, image->getBbox().ymax/res_y - 0.5);
 		grid->bbox.print();
 		ratio_x = (grid->bbox.xmax - grid->bbox.xmin) / double(width); 
 		ratio_y = (grid->bbox.ymax - grid->bbox.ymin) / double(height);

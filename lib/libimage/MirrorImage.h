@@ -127,10 +127,10 @@ class MirrorImage : public Image {
         
         /** \~french
          * \brief Retourne une ligne, flottante ou entière
-         * \details Lors ce que l'on veut récupérer une ligne d'une image miroir, on va se reporter sur l'image source,
+         * \details Lorsque l'on veut récupérer une ligne d'une image miroir, on va se reporter sur l'image source,
          * 
          * Exemple : si on veut la denière ligne du miroir haut (position 0), on récupérera la première ligne de l'image source.
-         * \param[in] buffer Tableau contenant au moins width*channels valeurs
+         * \param[out] buffer Tableau contenant au moins width*channels valeurs
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
          * \return taille utile du buffer, 0 si erreur
          */
@@ -139,7 +139,7 @@ class MirrorImage : public Image {
     
     protected:
         /** \~french
-         * \brief Crée une MirrorImage à partir de tous ses éléments constitutifs
+         * \brief Crée un objet MirrorImage à partir de tous ses éléments constitutifs
          * \details Ce constructeur est protégé afin de n'être appelé que par l'usine mirrorImageFactory, qui fera toute sorte de tests et calculs.
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
@@ -150,7 +150,7 @@ class MirrorImage : public Image {
          * \param[in] position position du miroir par rapport à l'image source
          * \param[in] mirrorSize taille du miroir en pixel
          ** \~english
-         * \brief Create a MirrorImage, from all attributes
+         * \brief Create a MirrorImage object, from all attributes
          * \param[in] width image width, in pixel
          * \param[in] height image height, in pixel
          * \param[in] channel number of samples per pixel
@@ -160,7 +160,7 @@ class MirrorImage : public Image {
          * \param[in] position mirror position to image source
          * \param[in] mirrorSize mirror's size, in pixel
          */
-        MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getresx(),image->getresy(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat) {}
+        MirrorImage(int width, int height, int channels, uint16_t sampleformat, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize) : Image(width,height,image->getResX(),image->getResY(),channels,bbox), image(image), position(position), mirrorSize(mirrorSize), sampleformat(sampleformat) {}
 
     public:
 

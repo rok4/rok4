@@ -35,26 +35,38 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file LibtiffImage.cpp
+ ** \~french
+ * \brief Implémentation des classes LibtiffImage et LibtiffImageFactory
+ * \details
+ * \li LibtiffImage : image physique, attaché à un fichier
+ * \li LibtiffImageFactory : usine de création d'objet LibtiffImage
+ ** \~english
+ * \brief Implement classes LibtiffImage and LibtiffImageFactory
+ * \details
+ * \li LibtiffImage : physical image, linked to a file
+ * \li LibtiffImageFactory : factory to create LibtiffImage object
+ */
+
 #include "LibtiffImage.h"
 #include "Logger.h"
 #include "Utils.h"
 
-/**
-Creation d'une LibtiffImage a partir d un fichier TIFF filename
-retourne NULL en cas d erreur
-*/
+/* ------------------------------------------------------------------------------------------------ */
+/* -------------------------------------------- USINES -------------------------------------------- */
 
-LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int calcWidth, int calcHeight, double resx, double resy )
+                                /* ----- Pour la lecture ----- */
+LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, BoundingBox< double > bbox, double resx, double resy)
 {
-    int width=0,height=0,channels=0,planarconfig=0,bitspersample=0,
-        sampleformat=0,photometric=0,compression=0,rowsperstrip=0;
+    int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sampleformat=0, photometric=0, compression=0, rowsperstrip=0;
     TIFF* tif=TIFFOpen(filename, "r");
     
     if (tif == NULL) {
-        LOGGER_ERROR( "Unable to open " << filename);
+        LOGGER_ERROR( "Unable to open (to read) " << filename);
         return NULL;
     } else {
-        
+        // Lecture de l'en-tête pour récupérer les informations sur l'image
         if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width)<1) {
             LOGGER_ERROR( "Unable to read pixel width for file " << filename);
             return NULL;
@@ -113,6 +125,9 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingB
     }
 
     // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+    // Arrondi a la valeur entiere la plus proche
+    int calcWidth = lround((bbox.xmax - bbox.xmin)/(resx));
+    int calcHeight = lround((bbox.ymax - bbox.ymin)/(resy));
     if (calcWidth != width || calcHeight != height) {
         LOGGER_ERROR("Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent");
         LOGGER_ERROR("Height is " << height << " and calculation give " << calcHeight);
@@ -124,23 +139,88 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingB
                             photometric, compression, rowsperstrip);
 }
 
-/**
-Creation d'une LibtiffImage en vue de creer un nouveau fichier TIFF
-retourne NULL en cas d erreur
-*/
-
-LibtiffImage* LibtiffImageFactory::createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
+                                /* ----- Pour l'écriture ----- */
+LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, BoundingBox<double> bbox, double resx, double resy,
+                                                int width, int height, int channels, uint16_t bitspersample, uint16_t sampleformat,
+                                                uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
 {
-    if (width<0||height<0)
+    if ( width <= 0 || height <= 0) {
+        LOGGER_ERROR("One dimension is not valid for the output image " << filename << " : " << width << ", " << height);
         return NULL;
-        if (width*height*channels==0)
-                return NULL;
+    }
+    if (channels <= 0) {
+        LOGGER_ERROR("Number of samples per pixel is not valid for the output image " << filename << " : " << channels);
+        return NULL;
+    }
 
-    return new LibtiffImage(width,height,resx,resy,channels,bbox,NULL,filename,bitspersample,sampleformat,photometric,
+    TIFF* tif = TIFFOpen(filename, "w");
+    if (tif == NULL) {
+        LOGGER_ERROR( "Unable to open (to write) " << filename);
+        return NULL;
+    }
+
+    // Ecriture de l'en-tête pour récupérer les informations sur l'image
+    if (TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width) < 1) {
+        LOGGER_ERROR( "Unable to write pixel width for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height) < 1) {
+        LOGGER_ERROR( "Unable to write pixel height for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL,channels) < 1) {
+        LOGGER_ERROR( "Unable to write number of samples per pixel for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_PLANARCONFIG,PLANARCONFIG_CONTIG) < 1) {
+        LOGGER_ERROR( "Unable to write planar configuration for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE,bitspersample) < 1) {
+        LOGGER_ERROR( "Unable to write number of bits per sample for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT,sampleformat) < 1) {
+        LOGGER_ERROR( "Unable to write sample format for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_PHOTOMETRIC,photometric) < 1) {
+        LOGGER_ERROR( "Unable to write photometric for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_COMPRESSION,compression) < 1) {
+        LOGGER_ERROR( "Unable to write compression for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,1) < 1) {
+        LOGGER_ERROR( "Unable to write number of rows per strip for file " << filename);
+        return NULL;
+    }
+
+    if (TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE) < 1) {
+        LOGGER_ERROR( "Unable to write pixel resolution unit for file " << filename);
+        return NULL;
+    }
+
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,bitspersample,sampleformat,photometric,
                             compression,rowsperstrip);
 }
 
-LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif,char* name, int bitspersample, int sampleformat, int photometric, int compression, int rowsperstrip) : Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), sampleformat(sampleformat), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
+/* ------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
+
+LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
+                           TIFF* tif,char* name, int bitspersample, int sampleformat, int photometric, int compression,
+                           int rowsperstrip) :
+                           Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), sampleformat(sampleformat), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
 {
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy(filename,name);
@@ -149,6 +229,9 @@ LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int c
     strip_size = width*channels*rowsperstrip;
     strip_buffer = new uint8_t[strip_size];
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* ------------------------------------------- LECTURE -------------------------------------------- */
 
 template<typename T>
 int LibtiffImage::_getline(T* buffer, int line)
@@ -159,14 +242,14 @@ int LibtiffImage::_getline(T* buffer, int line)
     if (compression == COMPRESSION_NONE || (compression != COMPRESSION_NONE && rowsperstrip == 1) ) {
         // Cas Non compresse ou (compresse et 1 ligne/bande)
         if (TIFFReadScanline(tif,buffer,line,0) < 0) {
-            LOGGER_DEBUG("Erreur de lecture du fichier TIFF " << TIFFFileName(tif) << " ligne " << line);
+            LOGGER_DEBUG("Cannot read file " << TIFFFileName(tif) << ", line " << line);
         }
     } else {
         // Cas compresse et > 1 ligne /bande
         if (line / rowsperstrip != current_strip) {
             current_strip = line / rowsperstrip;
             if (TIFFReadEncodedStrip(tif,current_strip,strip_buffer,strip_size) < 0) {
-                LOGGER_DEBUG("Erreur de lecture du fichier TIFF "<<TIFFFileName(tif)<<" ligne "<<line);
+                LOGGER_DEBUG("Cannot read file " << TIFFFileName(tif) << ", line " << line);
             }
         }
         memcpy(buffer,&strip_buffer[(line%rowsperstrip)*width*channels],width*channels*sizeof(uint8_t));
@@ -184,3 +267,42 @@ int LibtiffImage::getline(float* buffer, int line)
     return _getline(buffer,line);
 }
 
+/* ------------------------------------------------------------------------------------------------ */
+/* ------------------------------------------- ECRITURE ------------------------------------------- */
+
+int LibtiffImage::writeImage(Image* pIn)
+{
+    // Initialisation du buffer
+    unsigned char* buf_u=0;
+    float* buf_f=0;
+
+    // Ecriture de l'image
+    if (sampleformat == SAMPLEFORMAT_UINT){
+        buf_u = (unsigned char*)_TIFFmalloc(width * channels * getBitsPerSample() / 8);
+        for( int line = 0; line < height; line++) {
+            pIn->getline(buf_u,line);
+            if (TIFFWriteScanline(tif, buf_u, line, 0) < 0) {
+                LOGGER_DEBUG("Cannot write file " << TIFFFileName(tif) << ", line " << line);
+                return -1;
+            }
+        }
+    } else if(sampleformat == SAMPLEFORMAT_IEEEFP){
+        buf_f = (float*)_TIFFmalloc(width * channels * getBitsPerSample()/8);
+        for( int line = 0; line < height; line++) {
+            pIn->getline(buf_f,line);
+            if (TIFFWriteScanline(tif, buf_f, line, 0) < 0) {
+                LOGGER_DEBUG("Cannot write file " << TIFFFileName(tif) << ", line " << line);
+                return -1;
+            }
+        }
+    } else {
+        LOGGER_DEBUG("Not handled sample format to write: " << sampleformat);
+        return -1;
+    }
+
+    // Liberation
+    if (buf_u) _TIFFfree(buf_u);
+    if (buf_f) _TIFFfree(buf_f);
+    
+    return 0;
+}

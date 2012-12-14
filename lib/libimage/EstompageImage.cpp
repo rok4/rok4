@@ -60,7 +60,7 @@ int EstompageImage::getline ( uint8_t* buffer, int line ) {
 }
 
 EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, uint8_t center) : 
-                Image ( image->width, image->height, 1, image->getbbox() ),
+                Image ( image->width, image->height, 1, image->getBbox() ),
                 origImage ( image ), estompage(NULL), exaggeration(exaggeration), center(center) {
     
     //   Sun direction

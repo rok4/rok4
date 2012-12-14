@@ -186,7 +186,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
         LOGGER_DEBUG(_("Image invalid !"));
         return 0;
     }
-    image->setbbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
+    image->setBbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
 
     return new ReprojectedImage ( image, bbox, grid, interpolation );
 }

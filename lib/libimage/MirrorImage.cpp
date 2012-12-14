@@ -81,37 +81,37 @@ MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
 
     if (position == 0){
         // TOP
-        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
-        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymax();        
-        ymax=pImageSrc->getymax()+pImageSrc->getresy()*mirrorSize;        
+        xmin=pImageSrc->getXmin()-pImageSrc->getResX()*mirrorSize;
+        xmax=pImageSrc->getXmax()+pImageSrc->getResX()*mirrorSize;
+        ymin=pImageSrc->getYmax();        
+        ymax=pImageSrc->getYmax()+pImageSrc->getResY()*mirrorSize;        
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,0,mirrorSize);
     }
     else if (position == 1){
         // RIGHT
-        xmin=pImageSrc->getxmax();
-        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymin();
-        ymax=pImageSrc->getymax();
+        xmin=pImageSrc->getXmax();
+        xmax=pImageSrc->getXmax()+pImageSrc->getResX()*mirrorSize;
+        ymin=pImageSrc->getYmin();
+        ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,1,mirrorSize);
     }
     else if (position == 2){
         // BOTTOM
-        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
-        xmax=pImageSrc->getxmax()+pImageSrc->getresx()*mirrorSize;
-        ymin=pImageSrc->getymin()-pImageSrc->getresy()*mirrorSize;
-        ymax=pImageSrc->getymin();
+        xmin=pImageSrc->getXmin()-pImageSrc->getResX()*mirrorSize;
+        xmax=pImageSrc->getXmax()+pImageSrc->getResX()*mirrorSize;
+        ymin=pImageSrc->getYmin()-pImageSrc->getResY()*mirrorSize;
+        ymax=pImageSrc->getYmin();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,2,mirrorSize);
     }
     else if (position == 3){
         // LEFT
-        xmin=pImageSrc->getxmin()-pImageSrc->getresx()*mirrorSize;
-        xmax=pImageSrc->getxmin();
-        ymin=pImageSrc->getymin();
-        ymax=pImageSrc->getymax();
+        xmin=pImageSrc->getXmin()-pImageSrc->getResX()*mirrorSize;
+        xmax=pImageSrc->getXmin();
+        ymin=pImageSrc->getYmin();
+        ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
         return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,3,mirrorSize);
     } else {

@@ -134,7 +134,7 @@ class Image {
          * \brief Define the image's bounding box and calculate resolutions
          * \param[in] box Image's bounding box
          */
-        inline void setbbox(BoundingBox<double> box) {
+        inline void setBbox(BoundingBox<double> box) {
             bbox = box;
             computeResxy();
         }
@@ -147,7 +147,7 @@ class Image {
          * \brief Return the image's bounding box
          * \return bounding box
          */
-        BoundingBox<double> inline getbbox() const {return bbox;}
+        BoundingBox<double> inline getBbox() const {return bbox;}
 
         /**
          * \~french
@@ -157,7 +157,7 @@ class Image {
          * \brief Return bounding box's xmin
          * \return xmin
          */
-        double inline getxmin() const {return bbox.xmin;}
+        double inline getXmin() const {return bbox.xmin;}
         /**
          * \~french
          * \brief Retourne le ymax de l'emprise rectangulaire
@@ -166,7 +166,7 @@ class Image {
          * \brief Return bounding box's ymax
          * \return ymax
          */
-        double inline getymax() const {return bbox.ymax;}
+        double inline getYmax() const {return bbox.ymax;}
         /**
          * \~french
          * \brief Retourne le xmax de l'emprise rectangulaire
@@ -175,7 +175,7 @@ class Image {
          * \brief Return bounding box's xmax
          * \return xmax
          */
-        double inline getxmax() const {return bbox.xmax;}
+        double inline getXmax() const {return bbox.xmax;}
         /**
          * \~french
          * \brief Retourne le ymin de l'emprise rectangulaire
@@ -184,7 +184,7 @@ class Image {
          * \brief Return bounding box's ymin
          * \return ymin
          */
-        double inline getymin() const {return bbox.ymin;}
+        double inline getYmin() const {return bbox.ymin;}
 
         /**
          * \~french
@@ -194,7 +194,7 @@ class Image {
          * \brief Return the X wise resolution
          * \return X resolution
          */
-        inline double getresx() const {return resx;}
+        inline double getResX() const {return resx;}
         /**
          * \~french
          * \brief Retourne la résolution dans le sens des Y
@@ -203,7 +203,7 @@ class Image {
          * \brief Return the Y wise resolution
          * \return Y resolution
          */
-        inline double getresy() const {return resy;}
+        inline double getResY() const {return resy;}
 
         /**
          * \~french
@@ -292,7 +292,7 @@ class Image {
          * \image html phases.png
          * \return X phasis
          */
-        double inline getPhasex() {
+        double inline getPhaseX() {
             double intpart;
             double phi=modf( bbox.xmin/resx, &intpart);
             if (phi < 0.) {phi += 1.0;}
@@ -308,7 +308,7 @@ class Image {
          * \brief Phasis calculation, Y wise
          * \return Y phasis
          */
-        double inline getPhasey() {
+        double inline getPhaseY() {
             double intpart;
             double phi=modf(bbox.ymax/resy, &intpart);
             if (phi < 0.) {phi += 1.0;}
@@ -336,16 +336,16 @@ class Image {
          * \return compatibility
          */
         bool isCompatibleWith(Image* pImage) {
-            double epsilon_x=__min(getresx(), pImage->getresx())/1000.;
-            double epsilon_y=__min(getresy(), pImage->getresy())/1000.;
+            double epsilon_x=__min(getResX(), pImage->getResX())/1000.;
+            double epsilon_y=__min(getResY(), pImage->getResY())/1000.;
 
-            if (fabs(getresx()-pImage->getresx()) > epsilon_x) {return false;}
-            if (fabs(getresy()-pImage->getresy()) > epsilon_y) {return false;}
+            if (fabs(getResX()-pImage->getResX()) > epsilon_x) {return false;}
+            if (fabs(getResY()-pImage->getResY()) > epsilon_y) {return false;}
 
-            if (fabs(getPhasex()-pImage->getPhasex()) > 0.01 && fabs(getPhasex()-pImage->getPhasex()) < 0.99) {
+            if (fabs(getPhaseX()-pImage->getPhaseX()) > 0.01 && fabs(getPhaseX()-pImage->getPhaseX()) < 0.99) {
                 return false;
             }
-            if (fabs(getPhasey()-pImage->getPhasey()) > 0.01 && fabs(getPhasey()-pImage->getPhasey()) < 0.99) {
+            if (fabs(getPhaseY()-pImage->getPhaseY()) > 0.01 && fabs(getPhaseY()-pImage->getPhaseY()) < 0.99) {
                 return false;
             }
             
@@ -354,7 +354,7 @@ class Image {
         
         /**
          * \~french
-         * \brief Crée une Image à partir de tous ses éléments constitutifs
+         * \brief Crée un objet Image à partir de tous ses éléments constitutifs
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] resx résolution dans le sens des X
@@ -362,7 +362,7 @@ class Image {
          * \param[in] channel nombre de canaux par pixel
          * \param[in] bbox emprise rectangulaire de l'image
          * \~english
-         * \brief Create an Image, from all attributes
+         * \brief Create an Image object, from all attributes
          * \param[in] width image width, in pixel
          * \param[in] height image height, in pixel
          * \param[in] resx X wise resolution
@@ -397,7 +397,7 @@ class Image {
          * \~french
          * \brief Retourne une ligne en entier 8 bits.
          * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 8 bits, il n'y a pas de conversion.
-         * \param[in] buffer Tableau contenant au moins width*channels uint8
+         * \param[out] buffer Tableau contenant au moins width*channels uint8
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
          * \return taille utile du buffer, 0 si erreur
          */
@@ -408,7 +408,7 @@ class Image {
          * \brief Retourne une ligne en flottant 32 bits.
          * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
          * une conversion est effectuée.
-         * \param[in] buffer Tableau contenant au moins width*channels float32
+         * \param[out] buffer Tableau contenant au moins width*channels float32
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
          * \return taille utile du buffer, 0 si erreur
          */

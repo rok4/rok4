@@ -52,7 +52,7 @@ int StyledImage::getline ( uint8_t* buffer, int line ) {
     return origImage->getline ( buffer, line );
 }
 
-StyledImage::StyledImage ( Image* image, int expectedChannels, Palette* palette ) : Image ( image->width, image->height, expectedChannels, image->getbbox() ), origImage ( image ), palette ( palette ) {
+StyledImage::StyledImage ( Image* image, int expectedChannels, Palette* palette ) : Image ( image->width, image->height, expectedChannels, image->getBbox() ), origImage ( image ), palette ( palette ) {
     if ( !this->palette->getColoursMap()->empty() ) {
         channels = expectedChannels;
     } else {

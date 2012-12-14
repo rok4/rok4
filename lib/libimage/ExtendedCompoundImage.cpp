@@ -36,7 +36,7 @@
  */
 
 /**
- * \file ExtendedCompoundImage.h
+ * \file ExtendedCompoundImage.cpp
  ** \~french
  * \brief Implémentation des classes ExtendedCompoundImage, ExtendedCompoundMask et ExtendedCompoundImageFactory
  * \details
@@ -77,16 +77,16 @@ int ExtendedCompoundImage::_getline(T* buffer, int line) {
         // On evite de comparer des coordonnees terrain (comparaison de flottants)
         // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
 
-        if (y2l(images[i]->getymin()) <= line || y2l(images[i]->getymax()) > line) {continue;}
-        if (images[i]->getxmin() >= getxmax() || images[i]->getxmax() <= getxmin()) {continue;}
+        if (y2l(images[i]->getYmin()) <= line || y2l(images[i]->getYmax()) > line) {continue;}
+        if (images[i]->getXmin() >= getXmax() || images[i]->getXmax() <= getXmin()) {continue;}
 
         // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max(0,x2c(images[i]->getxmin()));
+        int c0=__max(0,x2c(images[i]->getXmin()));
         // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min(width,x2c(images[i]->getxmax()));
+        int c1=__min(width,x2c(images[i]->getXmax()));
 
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=-(__min(0,x2c(images[i]->getxmin())));
+        int c2=-(__min(0,x2c(images[i]->getXmin())));
 
         T* buffer_t = new T[images[i]->width*images[i]->channels];
         LOGGER_DEBUG(i<<" "<<line<<" "<<images[i]->y2l(y));
@@ -162,14 +162,14 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     // Rectangle englobant des images d entree
     double xmin=1E12, ymin=1E12, xmax=-1E12, ymax=-1E12 ;
     for (unsigned int j=0;j<images.size();j++) {
-        if (images.at(j)->getxmin()<xmin)  xmin=images.at(j)->getxmin();
-        if (images.at(j)->getymin()<ymin)  ymin=images.at(j)->getymin();
-        if (images.at(j)->getxmax()>xmax)  xmax=images.at(j)->getxmax();
-        if (images.at(j)->getymax()>ymax)  ymax=images.at(j)->getymax();
+        if (images.at(j)->getXmin()<xmin)  xmin=images.at(j)->getXmin();
+        if (images.at(j)->getYmin()<ymin)  ymin=images.at(j)->getYmin();
+        if (images.at(j)->getXmax()>xmax)  xmax=images.at(j)->getXmax();
+        if (images.at(j)->getYmax()>ymax)  ymax=images.at(j)->getYmax();
     }
 
-    int w=(int)((xmax-xmin)/(*images.begin())->getresx()+0.5);
-    int h=(int)((ymax-ymin)/(*images.begin())->getresy()+0.5);
+    int w=(int)((xmax-xmin)/(*images.begin())->getResX()+0.5);
+    int h=(int)((ymax-ymin)/(*images.begin())->getResY()+0.5);
 
     return new ExtendedCompoundImage(w,h,images.at(0)->channels,BoundingBox<double>(xmin,ymin,xmax,ymax),
                                      images,nodata,sampleformat,mirrors);
@@ -221,20 +221,20 @@ int ExtendedCompoundMask::_getline(uint8_t* buffer, int line) {
          * On evite de comparer des coordonnees terrain (comparaison de flottants)
          * Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
          */
-        if (y2l(ECI->getImages()->at(i)->getymin()) <= line || y2l(ECI->getImages()->at(i)->getymax()) > line){
+        if (y2l(ECI->getImages()->at(i)->getYmin()) <= line || y2l(ECI->getImages()->at(i)->getYmax()) > line){
             continue;
         }
-        if (ECI->getImages()->at(i)->getxmin() >= getxmax() || ECI->getImages()->at(i)->getxmax() <= getxmin()){
+        if (ECI->getImages()->at(i)->getXmin() >= getXmax() || ECI->getImages()->at(i)->getXmax() <= getXmin()){
             continue;
         }
 
         // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max(0,x2c(ECI->getImages()->at(i)->getxmin()));
+        int c0=__max(0,x2c(ECI->getImages()->at(i)->getXmin()));
         // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min(width,x2c(ECI->getImages()->at(i)->getxmax()));
+        int c1=__min(width,x2c(ECI->getImages()->at(i)->getXmax()));
         
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=-(__min(0,x2c(ECI->getImages()->at(i)->getxmin())));
+        int c2=-(__min(0,x2c(ECI->getImages()->at(i)->getXmin())));
 
         if (ECI->getMask(i) == NULL) {
             memset(&buffer[c0], 255, c1-c0);

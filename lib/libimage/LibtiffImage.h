@@ -61,8 +61,8 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Manipulation d'une image physique
- * \details Une image physique est une vraie image dans ce sens où elle est rattachée à un fichier, que ce soit pour la lecture ou l'écriture de données au format TIFF. Seule cette classe ne va pas s'appuyer sur une autre image pour la lecture.
+ * \brief Manipulation d'une image TIFF
+ * \details Une image TIFF est une vraie image dans ce sens où elle est rattachée à un fichier, que ce soit pour la lecture ou l'écriture de données au format TIFF. Seule cette classe ne va pas s'appuyer sur une autre image pour êtr manipulée.
  *
  * Cette classe va utiliser la librairie TIFF afin de lire/écrire les données et de récupérer/fournir les informations sur les images.
  */
@@ -123,41 +123,142 @@ class LibtiffImage : public Image {
          */
         uint16_t current_strip;
 
+        /** \~french
+         * \brief Retourne une ligne, flottante ou entière
+         * \details Lorsque l'on veut récupérer une ligne d'une image TIFF, On fait appel à la fonction de la librairie TIFF TIFFReadScanline
+         * \param[out] buffer Tableau contenant au moins width*channels valeurs
+         * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+         * \return taille utile du buffer, 0 si erreur
+         */
         template<typename T>
         int _getline(T* buffer, int line);
 
     protected:
-        /** Constructeur */
+        /** \~french
+         * \brief Crée un objet LibtiffImage à partir de tous ses éléments constitutifs
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine LibtiffImageFactory, qui fera toute sorte de tests et calculs.
+         * \param[in] width largeur de l'image en pixel
+         * \param[in] height hauteur de l'image en pixel
+         * \param[in] resx résolution dans le sens des X
+         * \param[in] resy résolution dans le sens des Y
+         * \param[in] channel nombre de canaux par pixel
+         * \param[in] bbox emprise rectangulaire de l'image
+         * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
+         * \param[in] name chemin du fichier image
+         * \param[in] bitspersample nombre de bits par canal
+         * \param[in] sampleformat format des canaux
+         * \param[in] photometric photométie des données
+         * \param[in] compression compression des données
+         * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
+         ** \~english
+         * \brief Create a LibtiffImage object, from all attributes
+         * \param[in] width image width, in pixel
+         * \param[in] height image height, in pixel
+         * \param[in] resx X wise resolution
+         * \param[in] resy Y wise resolution
+         * \param[in] channel number of samples per pixel
+         * \param[in] bbox bounding box
+         * \param[in] tiff interface between file and object
+         * \param[in] name path to image file
+         * \param[in] bitspersample number of bits per sample
+         * \param[in] sampleformat samples' format
+         * \param[in] photometric data photometric
+         * \param[in] compression data compression
+         * \param[in] rowsperstrip data buffering size, in line number
+         */
         LibtiffImage( int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name, int bitspersample, int sampleformat, int photometric, int compression, int rowsperstrip );
 
     public:
 
-        /** D */
         int getline(uint8_t* buffer, int line);
-
-        /** D */
         int getline(float* buffer, int line);
 
-        void inline setfilename(char* str) {strcpy(filename,str);};
-        inline char* getfilename() {return filename;}
-        uint16_t inline getbitspersample() {return bitspersample;}
-        uint16_t inline getphotometric() {return photometric;}
-        uint16_t inline getcompression() {return compression;}
-        uint16_t inline getrowsperstrip() {return rowsperstrip;}
-        uint16_t inline getsampleformat() {return sampleformat;}
-        
-        /** Destructeur */
+        /**
+         * \~french
+         * \brief Ecrit une image TIFF, à partir d'une image source
+         * \details Toutes les informations nécessaires à l'écriture d'une image sont dans l'objet LibtiffImage, sauf les données à écrire. On renseigne cela via une seconde image.
+         * \param[in] pIn source des donnée de l'image à écrire
+         * \return 0 en cas de succes, -1 sinon
+         */
+        int writeImage(Image* pIn);
+
+        /**
+         * \~french
+         * \brief Retourne le chemin du fichier image
+         * \return chemin image
+         * \~english
+         * \brief Return the path to image file
+         * \return image's path
+         */
+        inline char* getFilename() {return filename;}
+        /**
+         * \~french
+         * \brief Retourne le nombre de bits par canal
+         * \return nombre de bits par canal
+         * \~english
+         * \brief Return number of bits per sample
+         * \return number of bits per sample
+         */
+        inline uint16_t getBitsPerSample() {return bitspersample;}
+        /**
+         * \~french
+         * \brief Retourne la photométrie des données image (rgb, gray...)
+         * \return photométie
+         * \~english
+         * \brief Return data photometric (rgb, gray...)
+         * \return photometric
+         */
+        inline uint16_t getPhotometric() {return photometric;}
+        /**
+         * \~french
+         * \brief Retourne la compression des données
+         * \return compression
+         * \~english
+         * \brief Return data compression
+         * \return compression
+         */
+        inline uint16_t getCompression() {return compression;}
+        /**
+         * \~french
+         * \brief Retourne le nombre de ligne stockées dans le buffer
+         * \return taille du buffer
+         * \~english
+         * \brief Return number of lines stored in the buffer
+         * \return buffer size
+         */
+        inline uint16_t getRowsPerStrip() {return rowsperstrip;}
+        /**
+         * \~french
+         * \brief Retourne le format des canaux (entier, flottant)
+         * \return format des canaux
+         * \~english
+         * \brief Return sample format (integer, float)
+         * \return sample format
+         */
+        inline uint16_t getSampleFormat() {return sampleformat;}
+
+        /**
+         * \~french
+         * \brief Destructeur par défaut
+         * \details Suppression des buffer de lecture et de l'interface TIFF
+         * \~english
+         * \brief Default destructor
+         * \details We remove read buffer and TIFF interface
+         */
         ~LibtiffImage() {
-            //std::cerr << "Delete LibtiffImage" << std::endl; /*TEST*/
             delete [] filename;
             delete [] strip_buffer;
-            if (tif) TIFFClose(tif);
+            TIFFClose(tif);
         }
 
-        /** Fonction d'export des informations sur l'image (pour le débug) */
+        /** \~french
+         * \brief Sortie des informations sur l'image TIIF
+         ** \~english
+         * \brief TIFF image description output
+         */
         void print() {
             LOGGER_INFO("");
-            LOGGER_INFO("---------- LibTiffImage ------------");
+            LOGGER_INFO("---------- LibtiffImage ------------");
             Image::print();
             LOGGER_INFO("\t- File name : " << filename);
             LOGGER_INFO("\t- Compression : " << compression);
@@ -169,10 +270,68 @@ class LibtiffImage : public Image {
         }
 };
 
+/** \~ \author Institut national de l'information géographique et forestière
+ ** \~french
+ * \brief Usine de création d'une image TIFF
+ * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe LibtiffImage. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de LibtiffImage et de sortir en erreur en cas de problème. Dans le cas d'une image TIFF pour la lecture, on récupère dans le fichier toutes les méta-informations sur l'image. Pour l'écriture, on doit tout préciser afin de constituer l'en-tête TIFF.
+ */
 class LibtiffImageFactory {
     public:
-        LibtiffImage* createLibtiffImage(char* filename, BoundingBox<double> bbox, int calcWidth, int calcHeight, double resx, double resy);
-        LibtiffImage* createLibtiffImage( char* filename, BoundingBox< double > bbox, int width, int height, double resx, double resy, int channels, uint16_t bitspersample, uint16_t sampleformat, uint16_t photometric, uint16_t compression, uint16_t rowsperstrip );
+        /** \~french
+         * \brief Crée un objet LibtiffImage, pour la lecture
+         * \details On considère que les informations d'emprise et de résolutions ne sont pas présentes dans le TIFF, on les précise donc à l'usine. Tout le reste sera lu dans les en-têtes TIFF. On vérifiera aussi la cohérence entre les emprise et résolutions fournies et les dimensiosn récupérée dans le fichier TIFF.
+         * \param[in] filename chemin du fichier image
+         * \param[in] bbox emprise rectangulaire de l'image
+         * \param[in] resx résolution dans le sens des X
+         * \param[in] resy résolution dans le sens des Y
+         * \return un pointeur d'objet LibtiffImage, NULL en cas d'erreur
+         ** \~english
+         * \brief Create an LibtiffImage object, for reading
+         * \details Bbox and resolutions are not present in the TIFF file, so we precise them. All other informations are extracted from TIFF header. We have to check consistency between provided bbox and resolutions and read image's dimensions.
+         * \param[in] filename path to image file
+         * \param[in] bbox bounding box
+         * \param[in] resx X wise resolution
+         * \param[in] resy Y wise resolution
+         * \return a LibtiffImage object pointer, NULL if error
+         */
+        LibtiffImage* createLibtiffImageToRead(char* filename, BoundingBox<double> bbox, double resx, double resy);
+
+        /** \~french
+         * \brief Crée un objet LibtiffImage, pour l'écriture
+         * \details Toutes les méta-informations sur l'image doivent être précisées pour écrire l'en-tête TIFF. Rien n'est calculé
+         * \param[in] filename chemin du fichier image
+         * \param[in] bbox emprise rectangulaire de l'image
+         * \param[in] resx résolution dans le sens des X
+         * \param[in] resy résolution dans le sens des Y
+         * \param[in] width largeur de l'image en pixel
+         * \param[in] height hauteur de l'image en pixel
+         * \param[in] channel nombre de canaux par pixel
+         * \param[in] bitspersample nombre de bits par canal
+         * \param[in] sampleformat format des canaux
+         * \param[in] photometric photométie des données
+         * \param[in] compression compression des données
+         * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
+         * \return un pointeur d'objet LibtiffImage, NULL en cas d'erreur
+         ** \~english
+         * \brief Create an LibtiffImage object, for writting
+         * \details All informations have to be provided to be written in the TIFF header. No calculation.
+         * \param[in] filename path to image file
+         * \param[in] bbox bounding box
+         * \param[in] resx X wise resolution
+         * \param[in] resy Y wise resolution
+         * \param[in] width image width, in pixel
+         * \param[in] height image height, in pixel
+         * \param[in] channel number of samples per pixel
+         * \param[in] bitspersample number of bits per sample
+         * \param[in] sampleformat samples' format
+         * \param[in] photometric data photometric
+         * \param[in] compression data compression
+         * \param[in] rowsperstrip data buffering size, in line number
+         * \return a LibtiffImage object pointer, NULL if error
+         */
+        LibtiffImage* createLibtiffImageToWrite(char* filename, BoundingBox<double> bbox, double resx, double resy,
+                                                int width, int height, int channels, uint16_t bitspersample, uint16_t sampleformat,
+                                                uint16_t photometric, uint16_t compression, uint16_t rowsperstrip );
 };
 
 

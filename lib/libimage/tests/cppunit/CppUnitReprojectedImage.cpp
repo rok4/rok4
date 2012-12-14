@@ -128,7 +128,7 @@ protected:
       image->getbbox().xmax = grid->bbox.xmax + 100;
       image->getbbox().ymax = grid->bbox.ymax + 100;
 */
-      image->setbbox( BoundingBox<double>(grid->bbox.xmin - 100, grid->bbox.ymin - 100, grid->bbox.xmax + 100, grid->bbox.ymax + 100));
+      image->setBbox( BoundingBox<double>(grid->bbox.xmin - 100, grid->bbox.ymin - 100, grid->bbox.xmax + 100, grid->bbox.ymax + 100));
             
       ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Interpolation::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);

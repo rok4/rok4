@@ -115,7 +115,7 @@ class ExtendedCompoundImage : public Image {
 
         /** \~french
          * \brief Retourne une ligne, flottante ou entière
-         * \details Lors ce que l'on veut récupérer une ligne d'une image composée, on va se reporter sur toutes les images source.
+         * \details Lorsque l'on veut récupérer une ligne d'une image composée, on va se reporter sur toutes les images source.
          *
          * \image html eci_getline.png
          *
@@ -131,7 +131,7 @@ class ExtendedCompoundImage : public Image {
     protected:
 
         /** \~french
-         * \brief Crée une ExtendedCompoundImage à partir de tous ses éléments constitutifs
+         * \brief Crée un objet ExtendedCompoundImage à partir de tous ses éléments constitutifs
          * \details Ce constructeur est protégé afin de n'être appelé que par l'usine extendedCompoundImageFactory, qui fera toute sorte de tests et calculs.
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
@@ -142,7 +142,7 @@ class ExtendedCompoundImage : public Image {
          * \param[in] sampleformat format des canaux
          * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
          ** \~english
-         * \brief Create a ExtendedCompoundImage, from all attributes
+         * \brief Create an ExtendedCompoundImage object, from all attributes
          * \param[in] width image width, in pixel
          * \param[in] height image height, in pixel
          * \param[in] channel number of samples per pixel
@@ -154,7 +154,7 @@ class ExtendedCompoundImage : public Image {
          */
         ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
                               std::vector<Image*>& images, int* nodata, uint16_t sampleformat, uint mirrors) :
-            Image(width, height,images.at(0)->getresx(),images.at(0)->getresy(),channels,bbox),
+            Image(width, height,images.at(0)->getResX(),images.at(0)->getResY(),channels,bbox),
             images(images),
             nodata(nodata),
             sampleformat(sampleformat),
@@ -164,18 +164,16 @@ class ExtendedCompoundImage : public Image {
         /**
          * \~french
          * \brief Retourne le tableau des images sources
-         * \param[in] i indice de l'image source sont on veut le masque
          * \return images sources
          * \~english
          * \brief Return the array of source images
-         * \param[in] i source image indice, whose mask is wanted
          * \return source images
          */
         std::vector<Image*>* getImages() {return &images;}
 
         /**
          * \~french
-         * \brief Précise si a moins une image source possède un masque de donnée
+         * \brief Précise si au moins une image source possède un masque de donnée
          * \return présence de masque
          * \~english
          * \brief Precise if one or more source images own a mask 
@@ -191,9 +189,11 @@ class ExtendedCompoundImage : public Image {
         /**
          * \~french
          * \brief Retourne le masque de l'image source d'indice i
+         * \param[in] i indice de l'image source sont on veut le masque
          * \return masque
          * \~english
          * \brief Return the mask of source images with indice i
+         * \param[in] i source image indice, whose mask is wanted
          * \return mask
          */
         Image* getMask(int i) { return images.at(i)->getMask(); }
@@ -227,7 +227,7 @@ class ExtendedCompoundImage : public Image {
          * \brief Return the sample format
          * \return sample format
          */
-        uint16_t getSampleformat() { return sampleformat; }
+        uint16_t getSampleFormat() { return sampleformat; }
         /**
          * \~french
          * \brief Retourne la valeur de non-donnée
@@ -342,7 +342,7 @@ class ExtendedCompoundMask : public Image {
         /** \~french
          * \brief Retourne une ligne, flottante ou entière
          * \details Lors ce que l'on veut récupérer une ligne d'un masque composé, on va se reporter sur tous les masques des images source de l'image composée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
-         * \param[in] buffer Tableau contenant au moins width*channels valeurs
+         * \param[out] buffer Tableau contenant au moins width*channels valeurs
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
          * \return taille utile du buffer, 0 si erreur
          */
@@ -359,7 +359,7 @@ class ExtendedCompoundMask : public Image {
          * \param[in] ECI Compounded image
          */
         ExtendedCompoundMask(ExtendedCompoundImage*& ECI) :
-            Image(ECI->width, ECI->height, ECI->getresx(), ECI->getresy(), 1,ECI->getbbox()),
+            Image(ECI->width, ECI->height, ECI->getResX(), ECI->getResY(), 1,ECI->getBbox()),
             ECI(ECI) {}
 
         int getline(uint8_t* buffer, int line);
