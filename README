@@ -1,123 +1,111 @@
-ROK4/BE4
-========
-Version ROK4 : 0.14.0
-Version BE4  : 0.14.0
+For a comprehensive guide for developers, go the main documentation site: 
+http://www.rok4.org/documentation
 
-Configuration Serveur Web
-+++++++++++++++++++++++++
 
-utilisation de ROK4 en mode FastCGI
+ROK4/BE4 VERSIONS
++++++++++++++++++
+ROK4 Version : 0.14.0
+BE4 Version : 0.14.0
 
-NGinX
-------
 
-//TODO
+BEFORE BUILDING
++++++++++++++++
 
-Support du SSL pour FastCGI: 
-ajout dans la configuration du site SSL
-   fastcgi_param HTTPS on;
+For Debian-based distributions : 
 
-Apache2
+1) Install a C++ compiler 
+	sudo apt-get install build-essential
+
+2) Install third party libraries
+	sudo apt-get install gettext
+	sudo apt-get install nasm
+	sudo apt-get install automake
+
+3) Install PERL and perl libraries
+	sudo apt-get install perl
+	sudo apt-get install libxml2-dev
+	sudo apt-get install libgdal-perl
+	sudo apt-get install liblog-log4perl-perl libconfig-inifiles-perl libxml-libxml-simple-perl libfile-copy-link-perl
+
+4) Install CMake (>2.6)
+	sudo apt-get install cmake
+
+5) Optional : Install documentation libraries
+	sudo apt-get install doxygen
+	sudo apt-get install graphviz
+	sudo apt-get install naturaldocs
+
+
+BUILDING
+++++++++
+
+Inside the source folder :
+
+	mkdir build 
+	cd build 
+	cmake .. [-DOPTION1 -DOPTION2]
+	make 
+	make [install|package]
+
+Example
 -------
+	mkdir build
+	cd build
+	cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target ..
+	make
+	make doc
+	make install
 
-1) Download mod_fastcgi (http://www.fastcgi.com/drupal/node/3)
+CMake Build Options
+-------------------
 
-2) Enable mod_fastcgi in Apache
+Options are fed to CMake using the following syntax : -DOPTION
 
-	LoadModule fastcgi_module /path_to_mod_fastcgi.so
-	<IfModule mod_fastcgi.c>
- 		 AddHandler fastcgi-script .fcgi
-  		FastCgiIpcDir /var/lib/apache2/fastcgi
-	</IfModule>
-
-
-3) Add the following instruction to your virtualhost configuration :
-
-       <Directory "/path_to_folder_containing_rok4_executable">
-                AllowOverride None
-                Options None
-                SetHandler  fastcgi-script
-                Order allow,deny
-                Allow from all
-        </Directory>
-	
-	FastCgiServer /path_to_rok4_executable -init-start-delay 5 -port 1998 -processes 2
-
-
-Compilation
-+++++++++++
-
-La compilation des sources de ROK4 necessite une version de CMake supérieure à 2.8.5.
-
-Dans le dossier contenant les sources du projet rok4 lancer les lignes de commandes suivantes
-
- mkdir build 
- cd build 
- cmake .. [-DOPTION1 -DOPTION2]
- make 
- make [install|package]
-
-Exemple:
---------
-
- cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target -DDEP_PATH=/tmp ..
-
-Options
--------
-
-les options sont définies en utilisant le préfixe -D : 
-
- exemple : cmake .. -DUNITTEST=TRUE -DBUILD_BE4=FALSE
-
-
-Liste des options disponibles pour le build du projet
+For example : cmake .. -DUNITTEST=TRUE -DBUILD_BE4=FALSE
 
 CMAKE_INSTALL_PREFIX : 
-  chemins d'installation du projet (PATH) 
-  par défaut : /usr/local
+  Installation Folder (PATH) 
+  Default Value : /usr/local
 
 DEP_PATH : 
-  chemins des dépendances ROK4 déjà compilé et installé (PATH)
-  par défaut : ./target
+  Path to compiled and installed ROK4 dependencies (PATH)
+  Default Value : ./target
   
 BUILD_DEPENDENCIES : 
-  compilation des dépendances de ROK4 manquante (BOOL)
-  les dépendances seront installées avec rok4
-  par défaut : TRUE  
+  Missing ROK4 dependencies compilation (BOOL)
+  These dependencies will be installed with ROK4
+  Default Value : TRUE  
 
 BUILD_ROK4 : 
-  compilation du sous-système ROK4Server (BOOL)
-  par défaut : TRUE  
+  ROK4(Server) compilation (BOOL)
+  Default Value : TRUE  
   
 BUILD_BE4 : 
-  compilation du sous-système BE4 (BOOL)
-  par défaut : TRUE  
+  BE4 compilation (BOOL)
+  Default Value : TRUE  
 
 BUILD_DOC : 
-  compilation des documentations avec doxygen (BOOL)
-  Création de la cible "doc" à compiler avant l'utilisation de make install et/ou make package
-    make doc 
-  par défaut : TRUE  
+  Doxygen documentation creation (BOOL)
+  This option creates the "doc" target (to be used before make install or make package) : make doc
+  Default Value : TRUE  
 
-UNITTEST : compilation des tests unitaires (BOOL)
-  Création de la cible "test" 
-    make test 
-  par défaut : FALSE 
+UNITTEST : 
+  Units tests compilation (BOOL)
+  This option creates the "test" target (to be used before make install or make package) :  make test 
+  Default Value : FALSE 
 
-DEBUG_BUILD : compilation en mode debug (BOOL)
- par défaut : FALSE
+DEBUG_BUILD : 
+  Debug mode build (BOOL)
+  Default Value : FALSE
 
 RPM_PACKAGE : (EXPERIMENTAL)
-  Création d'un paquet RPM à la place d'un tar.gz 
-  make all doc package
-  par défaut : FALSE 
+  Creates a RPM package instead of a tar.gz package : make all doc package
+  Default Value : FALSE 
 
 DEB_PACKAGE : (EXPERIMENTAL)
-  Création d'un paquet pour debian à la place d'un tar.gz 
-  dépend des bibliothèques systèmes
-  make all doc package
-  par défaut : FALSE 
+  Creates a debian package instead of a tar.gz package (relies on the systems libraries) : make all doc package
+  Default Value : FALSE 
 
 USE_SYSTEM_LIB : (EXPERIMENTAL)
-  force la compilation à utiliser les bibliothèques du système
-  par défaut : FALSE 
+  In order to compile against the system libraries
+  Default value : FALSE 
