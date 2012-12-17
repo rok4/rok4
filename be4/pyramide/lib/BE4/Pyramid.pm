@@ -76,7 +76,7 @@ use constant FALSE => 0;
 ################################################################################
 # Global
 my $STRPYRTMPLT   = <<"TPYR";
-<?xml version='1.0' encoding='US-ASCII'?>
+<?xml version='1.0' encoding='UTF-8'?>
 <Pyramid>
     <tileMatrixSet>__TMSNAME__</tileMatrixSet>
     <format>__FORMATIMG__</format>
@@ -1827,7 +1827,7 @@ sub exportForDebug {
     
     $export .= sprintf "\t TMS : %s\n", $self->{tms}->getName;
     
-    $export .= sprintf "\t Number of levels : %s\n", scalar (keys $self->{levels});
+    $export .= sprintf "\t Number of levels : %s\n", scalar (keys %{$self->{levels}});
     
     return $export;
 }

@@ -37,7 +37,6 @@ use strict;
 use warnings;
 
 use Test::More;
-use Test::Output qw( stdout_is );
 
 # My tested class
 use BE4::NoData;
