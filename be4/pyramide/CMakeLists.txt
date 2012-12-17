@@ -85,12 +85,12 @@ if(UNITTEST)
         FOREACH(test ${UnitTests_SRCS})
             MESSAGE("  - adding test ${test}")
             GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME ${TestName} COMMAND perl -I install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+            ADD_TEST(NAME ${TestName} COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire
         MESSAGE("  - adding cleaning")
-        ADD_TEST(NAME "Cleaning" COMMAND rm -r ${CMAKE_CURRENT_BINARY_DIR}/src/tests/temp)
+        ADD_TEST(NAME "Cleaning" COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/src/tests/temp)
 
     endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
   

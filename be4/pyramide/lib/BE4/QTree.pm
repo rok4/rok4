@@ -1101,7 +1101,7 @@ sub exportForDebug {
 
     $export .= sprintf "\t Number of nodes per level :\n";
     foreach my $level ( keys %{$self->{nodes}} ) {
-        $export .= sprintf "\t\tLevel %s : %s node(s)\n",$level,scalar (keys $self->{nodes}->{$level});
+        $export .= sprintf "\t\tLevel %s : %s node(s)\n",$level,scalar (keys %{$self->{nodes}->{$level}});
     }
     
     $export .= sprintf "\t Bbox (SRS : %s) :\n",$self->{pyramid}->getTileMatrixSet->getSRS;

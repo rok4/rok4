@@ -100,7 +100,6 @@ my $forest = BE4::Forest->new($pyramid,$DSL,{
 	path_shell => $Bin."/../temp",
 });
 ok (defined $forest,"forest ok.");
-print "\n".$datasource->exportForDebug()."\n";
 
 my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
 ok (defined $qtree,"qtree ok.");

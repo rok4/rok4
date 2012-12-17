@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file CapabilitiesBuilder.cpp
+ * \~french
+ * \brief Implémentation des fonctions de générations des GetCapabilities
+ * \~english
+ * \brief Implement the GetCapabilities generation function
+ */
+
 #include "Rok4Server.h"
 #include "tinyxml.h"
 #include "tinystr.h"
@@ -47,8 +55,10 @@
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
 #include "intl.h"
+
 /**
- * Conversion de int en std::string.
+ * \~french Conversion d'un entier en une chaîne de caractère
+ * \~english Convert an integer in a character string
  */
 std::string numToStr ( long int i ) {
     std::ostringstream strstr;
@@ -57,7 +67,8 @@ std::string numToStr ( long int i ) {
 }
 
 /**
- * Conversion de double en std::string.
+ * \~french Conversion d'un flottant en une chaîne de caractères
+ * \~english Convert a float in a character string
  */
 std::string doubleToStr ( long double d ) {
     std::ostringstream strstr;
@@ -68,7 +79,8 @@ std::string doubleToStr ( long double d ) {
 }
 
 /**
- * construit un noeud xml simple (de type text).
+ * \~french Construit un noeud xml simple (de type text)
+ * \~english Create a simple XML text node
  */
 TiXmlElement * buildTextNode ( std::string elementName, std::string value ) {
     TiXmlElement * elem = new TiXmlElement ( elementName );
@@ -77,9 +89,6 @@ TiXmlElement * buildTextNode ( std::string elementName, std::string value ) {
     return elem;
 }
 
-/**
- * Construit les fragments invariants du getCapabilities WMS (wmsCapaFrag).
- */
 void Rok4Server::buildWMSCapabilities() {
     std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.

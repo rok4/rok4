@@ -385,13 +385,10 @@ DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*ge
     return 0;
 }
 
-
 DataSource* Level::getEncodedNoDataTile() {
     LOGGER_DEBUG ( _("Tile : ") << noDataFile );
     return noDataSourceProxy;
 }
-
-
 
 DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* source=getEncodedTile ( x, y );

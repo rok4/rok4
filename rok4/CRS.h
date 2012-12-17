@@ -38,7 +38,7 @@
 /**
  * \file CRS.h
  * \~french
- * \brief Définition de la de gestion des systèmes de référence
+ * \brief Définition de la gestion des systèmes de référence
  * \~english
  * \brief Define the reference systems handler
  */

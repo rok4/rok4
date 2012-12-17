@@ -1,28 +1,55 @@
 ROK4/BE4
 ========
-Version ROK4 : 0.13.0
+Version ROK4 : 0.14.0
 Version BE4  : 0.0.0
 
 Configuration Serveur Web
 +++++++++++++++++++++++++
 
-utilisation en serveur FastCGI
+utilisation de ROK4 en mode FastCGI
 
 NGinX
 ------
+
 //TODO
 
 Support du SSL pour FastCGI: 
 ajout dans la configuration du site SSL
    fastcgi_param HTTPS on;
 
-Apache
-------
-//TODO
+Apache2
+-------
+
+1) Download mod_fastcgi (http://www.fastcgi.com/drupal/node/3)
+
+2) Enable mod_fastcgi in Apache
+
+	LoadModule fastcgi_module /path_to_mod_fastcgi.so
+	<IfModule mod_fastcgi.c>
+ 		 AddHandler fastcgi-script .fcgi
+  		FastCgiIpcDir /var/lib/apache2/fastcgi
+	</IfModule>
+
+
+3) Add the following instruction to your virtualhost configuration :
+
+       <Directory "/path_to_folder_containing_rok4_executable">
+                AllowOverride None
+                Options None
+                SetHandler  fastcgi-script
+                Order allow,deny
+                Allow from all
+        </Directory>
+	
+	FastCgiServer /path_to_rok4_executable -init-start-delay 5 -port 1998 -processes 2
 
 
 Compilation
 +++++++++++
+
+La compilation des sources de ROK4 necessite une version de CMake supérieure à 2.8.5.
+
+Dans le dossier contenant les sources du projet rok4 lancer les lignes de commandes suivantes
 
  mkdir build 
  cd build 
@@ -32,14 +59,18 @@ Compilation
 
 Exemple:
 --------
+
  cmake -DCMAKE_INSTALL_PREFIX=$HOME/rok4/target -DDEP_PATH=/tmp ..
 
 Options
 -------
 
-les options sont définie par : 
- -DOPTIONS
+les options sont définies en utilisant le préfixe -D : 
+
  exemple : cmake .. -DUNITTEST=TRUE -DBUILD_BE4=FALSE
+
+
+Liste des options disponibles pour le build du projet
 
 CMAKE_INSTALL_PREFIX : 
   chemins d'installation du projet (PATH) 

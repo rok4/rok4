@@ -1821,7 +1821,7 @@ sub exportForDebug {
     
     $export .= sprintf "\t TMS : %s\n", $self->{tms}->getName;
     
-    $export .= sprintf "\t Number of levels : %s\n", scalar (keys $self->{levels});
+    $export .= sprintf "\t Number of levels : %s\n", scalar (keys %{$self->{levels}});
     
     return $export;
 }

@@ -60,15 +60,13 @@
 #include <cfloat>
 #include <libintl.h>
 
+static bool loggerInitialised = false;
+//Keep the servicesConf for deletion
+static ServicesConf* sc = NULL;
 /**
 * \brief Initialisation d'une reponse a partir d'une source
 * \brief Les donnees source sont copiees dans la reponse
 */
-
-static bool loggerInitialised = false;
-//Keep the servicesConf for deletion
-static ServicesConf* sc = NULL;
-
 HttpResponse* initResponseFromSource ( DataSource* source ) {
     HttpResponse* response=new HttpResponse;
     response->status=source->getHttpStatus();

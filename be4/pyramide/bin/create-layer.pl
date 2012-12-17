@@ -287,8 +287,11 @@ my $srsini= new Geo::OSR::SpatialReference;
 eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
 
 if ($@) {
-  ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
-  exit -41;
+    eval { $srsini->ImportFromProj4('+init='.lc($srs).' +wktext'); };
+    if ($@) {
+        ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
+        exit -41;
+    }
 }
     
 my $srsfin= new Geo::OSR::SpatialReference;

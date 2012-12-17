@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ServiceException.cpp
+ * \~french
+ * \brief Implémentation de la gestion des exceptions des services
+ * \~english
+ * \brief Implement services exceptions
+ */
+
 #include <map>
 
 #include "ServiceException.h"

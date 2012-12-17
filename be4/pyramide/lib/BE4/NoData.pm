@@ -173,10 +173,11 @@ sub _init {
 
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{value});
+            
             # nodata is supplied in hexadecimal format, we convert it
             my $valueDec = $self->hexToDec($params->{value});
             if (! defined $valueDec) {
-                ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Impossible to convert",
+                ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Unable to convert",
                     $params->{value});
                 return FALSE;
             }

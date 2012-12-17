@@ -38,7 +38,7 @@
 /**
  * \file CRS.cpp
  * \~french
- * \brief Implémente de la de gestion des systèmes de référence
+ * \brief Implémente de la gestion des systèmes de référence
  * \~english
  * \brief implement the reference systems handler
  */

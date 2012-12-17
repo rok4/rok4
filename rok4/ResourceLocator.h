@@ -40,7 +40,7 @@
  * \~french
  * \brief Définition de la classe RessourceLocator gérant les liens vers les ressources externe dans les documents de capacités
  * \~english
- * \brief Define the LegendURL Class handling capabilities external link elements
+ * \brief Define the RessourceLocator Class handling capabilities external link elements
  */
 
 #ifndef RESOURCELOCATOR_H
@@ -52,10 +52,10 @@
  * \author Institut national de l'information géographique et forestière
  * \~french
  * Une instance ResourceLocator représente un lien externe dans les différents documents de capacités. 
- * \brief Gestion des éléments de légendes des documents de capacités
+ * \brief Gestion des éléments des ressources externes des documents de capacités
  * \~english
  * A ResourceLocator represent an external link element in the differents capabilities documents.
- * \brief Legends handler for the capabilities documents
+ * \brief External ressources handler for the capabilities documents
  */
 class ResourceLocator {
 private:
