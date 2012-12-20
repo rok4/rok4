@@ -197,12 +197,11 @@ Work2cache () {
 }
 
 MergeNtiff () {
-    local type=$1
-    local config=$2
-    local bgI=$3
-    local bgM=$4
+    local config=$1
+    local bgI=$2
+    local bgM=$3
     
-    mergeNtiff -f ${MNT_CONF_DIR}/$config -t $type __mNt__
+    mergeNtiff -f ${MNT_CONF_DIR}/$config __mNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f $config
@@ -502,7 +501,7 @@ Parameters:
     justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 Example:
-    MergeNtiff image ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
+    MergeNtiff ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
 =cut
 sub mergeNtiff {
     my $self = shift;
@@ -587,7 +586,7 @@ sub mergeNtiff {
     
     close CFGF;
     
-    $code .= "MergeNtiff image $mergNtiffConfFilename";
+    $code .= "MergeNtiff $mergNtiffConfFilename";
     $code .= " $workBgI" if (defined $workBgI); # pour supprimer l'image de fond si elle existe
     $code .= " $workBgM" if (defined $workBgM); # pour supprimer le masque de fond si il existe
     $code .= "\n";

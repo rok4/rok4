@@ -37,8 +37,9 @@
 
 /**
  * \file merge4tiff.cpp
+ * \author Institut national de l'information géographique et forestière
  * \~french \brief Sous echantillonage de 4 images disposées en carré, avec utilisation possible de fond et de masques de données
- * \~english \brief Four images subsampling, formed a square, pight use a background and data masks 
+ * \~english \brief Four images subsampling, formed a square, might use a background and data masks
  * \~ \image html merge4tiff.png
  * \~french \details les images doivent avoir la disposition suivante , mais les 4 ne sont pas forcément présentes :
  * \code
@@ -50,7 +51,7 @@
  * \li largeur et hauteur en pixel
  * \li nombre de canaux
  * \li format des canaux
- * \li photometrie
+ * \li photomètrie
  *
  * Les masques doivent avoir la même taille mais sont à un canal entier non signé sur 8 bits
  * Exemple d'appel à la commande :
@@ -60,11 +61,12 @@
  * \endcode
  * \~french \li avec masque, sans image de fond \~english \li with mask, without background image
  * \~ \code
- * merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif   imageOut.tif
+ * merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif -io imageOut.tif
  * \endcode
  */
 
 #include "tiffio.h"
+#include "Logger.h"
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -76,9 +78,9 @@
 /* Valeurs de nodata */
 /** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
 char* strnodata;
-/** \~french Valeur de nodata sous forme de tableau de flottant */
+/** \~french Valeur de nodata sous forme de tableau de flottants sur 32 bits*/
 float* nodataFloat32;
-/** \~french Valeur de nodata sous forme de tableau d'entier */
+/** \~french Valeur de nodata sous forme de tableau d'entier non-signés sur 8 bits*/
 uint8_t* nodataUInt8;
 
 /* Chemins des images en entrée et en sortie */
@@ -103,7 +105,7 @@ uint32_t width;
 /** \~french Hauteur des images */
 uint32_t height;
 /** \~french Bufferisation des images */
-uint32_t rowsperstrip;
+uint32_t rowsperstrip = 1;
 /** \~french Compression de l'image de sortie */
 uint16_t compression;
 /** \~french Nombre de bits par canal, dans les images en entrée et celle en sortie */
@@ -120,33 +122,99 @@ uint16_t planarconfig;
 /**
  * \~french
  * \brief Affiche l'utilisation et les différentes options de la commande merge4tiff
- * \todo Mettre à jour les cas d'utilisation
+ * \details L'affichage se fait dans le niveau de logger INFO
+ * \~ \code
+ * merge4tiff version X.X.X
+ *
+ * Usage: merge4tiff [-g <VAL>] -n <VAL> -c <VAL> [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]
+ *
+ * Parameters:
+ *      -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling
+ *      -n nodata value, one interger per sample, seperated with comma. Examples
+ *              -99999 for DTM
+ *              255,255,255 for orthophotography
+ *      -c output compression :
+ *              raw     no compression
+ *              none    no compression
+ *              jpg     Jpeg encoding
+ *              lzw     Lempel-Ziv & Welch encoding
+ *              pkb     PackBits encoding
+ *              zip     Deflate encoding
+ *
+ *      -io output image
+ *      -mo output mask (optionnal)
+ *
+ *      -iX input images
+ *              X = [1..4]      give input image position
+ *                      image1 | image2
+ *                      -------+-------
+ *                      image3 | image4
+ *
+ *              X = b           background image
+ *      -mX input associated masks (optionnal)
+ *              X = [1..4] or X = b
+ *
+ * Examples
+ *      - without mask, with background image
+ *      merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
+ *
+ *      - with mask, without background image
+ *      merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif
+ * \endcode
  */
-void usage() {
-  std::cerr << "merge4tiff version "<< BE4_VERSION << std::endl;
-  std::cerr << "Usage : merge4tiff -g gamma_correction -n nodata -c compression -r rowsperstrip -b background_image -i1 image1 -i2 image2 -i3 image3 -i4 image4 imageOut" << std::endl;
-  std::cerr << "-n : one integer per samples, separated by comma, in decimal format, mandatory. Examples :"<< std::endl;
-  std::cerr << "       - for images (u_int8) : 255,255,0"<< std::endl;
-  std::cerr << "       - for DTM (float) : -99999"<< std::endl;
-  std::cerr << "-b : the background image, optional" << std::endl;
-  std::cerr << "-g : default gamma is 1.0 (have no effect)" << std::endl;
-  std::cerr << "-c : work compression" << std::endl;
-  std::cerr << "-r : should not be used in be4 context" << std::endl;
-  std::cerr << std::endl << "Images spatial distribution :" << std::endl;
-  std::cerr << "   image1 | image2" << std::endl;
-  std::cerr << "   -------+-------" << std::endl;
-  std::cerr << "   image3 | image4" << std::endl;
+void usage()
+{
+    LOGGER_INFO("\nmerge4tiff version " << BE4_VERSION << "\n\n" <<
+
+    "Four images subsampling, formed a square, might use a background and data masks\n\n" <<
+
+    "Usage: merge4tiff [-g <VAL>] -n <VAL> -c <VAL> [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]\n\n" <<
+
+    "Parameters:\n" <<
+    "     -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling\n" <<
+    "     -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
+    "             -99999 for DTM\n" <<
+    "             255,255,255 for orthophotography\n" <<
+    "     -c output compression :\n" <<
+    "             raw     no compression\n" <<
+    "             none    no compression\n" <<
+    "             jpg     Jpeg encoding\n" <<
+    "             lzw     Lempel-Ziv & Welch encoding\n" <<
+    "             pkb     PackBits encoding\n" <<
+    "             zip     Deflate encoding\n\n" <<
+
+    "     -io output image\n" <<
+    "     -mo output mask (optionnal)\n\n" <<
+
+    "     -iX input images\n" <<
+    "             X = [1..4]      give input image position\n" <<
+    "                     image1 | image2\n" <<
+    "                     -------+-------\n" <<
+    "                     image3 | image4\n\n" <<
+
+    "             X = b           background image\n" <<
+    "     -mX input associated masks (optionnal)\n" <<
+    "             X = [1..4] or X = b\n\n" <<
+
+    "Examples\n" <<
+    "     - without mask, with background image\n" <<
+    "     merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif\n\n" <<
+
+    "     - with mask, without background image\n" <<
+    "     merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif\n");
 }
 
 /**
  * \~french
- * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur (code de retour 1)
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur
  * \param[in] message message d'erreur
+ * \param[in] errorCode code de retour
  */
-void error(std::string message) {
-    std::cerr << message << std::endl;
+void error(std::string message, int errorCode) {
+    LOGGER_ERROR(message);
     usage();
-    exit(1);
+    sleep(1);
+    exit(errorCode);
 }
 
 /**
@@ -154,14 +222,14 @@ void error(std::string message) {
  * \brief Récupère les valeurs passées en paramètres de la commande, et les stocke dans les variables globales
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
+ * \return code de retour, 0 si réussi, -1 sinon
  */
-void parseCommandLine(int argc, char* argv[])
+int parseCommandLine(int argc, char* argv[])
 {
     // Initialisation
     gammaM4t = 1.;
     strnodata = 0;
     compression = -1;
-    rowsperstrip = -1;
     backgroundImage = 0;
     backgroundMask = 0;
     for (int i=0;i<4;i++) {inputImages[i] = 0; inputMasks[i] = 0;}
@@ -171,37 +239,30 @@ void parseCommandLine(int argc, char* argv[])
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             switch(argv[i][1]) {
-                case 'g': // gamma
-                    if(++i == argc) error("Missing parameter in -g argument");
-                    gammaM4t = atof(argv[i]);
-                    if (gammaM4t <= 0.) error("invalid parameter in -g argument");
-                    break;
-                case 'n': // nodata
-                    if(++i == argc) error("Missing parameter in -n argument");
-                    strnodata = argv[i];
-                    break;
                 case 'h': // help
                     usage();
                     exit(0);
+                case 'g': // gamma
+                    if(++i == argc) {LOGGER_ERROR("Error in option -g"); return -1;}
+                    gammaM4t = atof(argv[i]);
+                    if (gammaM4t <= 0.) {LOGGER_ERROR("Unvalid parameter in -g argument, have to be positive"); return -1;}
+                    break;
+                case 'n': // nodata
+                    if(++i == argc) {LOGGER_ERROR("Error in option -n"); return -1;}
+                    strnodata = argv[i];
+                    break;
                 case 'c': // compression
-                    if(++i == argc) error("Error in -c option");
-                    if(strncmp(argv[i], "none",4) == 0 || strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
+                    if(++i == argc) {LOGGER_ERROR("Error in option -c"); return -1;}
+                    if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
                     else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
                     else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
                     else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
                     else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
-                    else compression = COMPRESSION_NONE;
+                    else {LOGGER_ERROR("Unknown value for option -c : " << argv[i]); return -1;}
                     break;
-                case 'r':
-                    if(++i == argc) error("Missing parameter in -r argument");
-                    rowsperstrip = atoi(argv[i]);
-                    break;
-                case 'b': // background image
-                    if(++i == argc) error("Missing parameter in -b argument");
-                    backgroundImage = argv[i];
-                    break;
-                case 'i': // images to merge
-                    if(++i == argc) error("Missing parameter in -i argument");
+                case 'i': // images
+                    if(++i == argc) {LOGGER_ERROR("Error in option -i"); return -1;}
                     switch(argv[i-1][2]){
                         case '1':
                             inputImages[0] = argv[i];
@@ -215,12 +276,18 @@ void parseCommandLine(int argc, char* argv[])
                         case '4':
                             inputImages[3] = argv[i];
                             break;
+                        case 'b':
+                            backgroundImage = argv[i];
+                            break;
+                        case 'o':
+                            outputImage = argv[i];
+                            break;
                         default:
                             break;
                     }
                     break;
                 case 'm': // associated masks
-                    if(++i == argc) error("Missing parameter in -m argument");
+                    if(++i == argc) {LOGGER_ERROR("Error in option -m"); return -1;}
                     switch(argv[i-1][2]){
                         case '1':
                             inputMasks[0] = argv[i];
@@ -245,18 +312,22 @@ void parseCommandLine(int argc, char* argv[])
                     }
                     break;
                 default:
-                    error("Unknown option");
+                    LOGGER_ERROR("Unknown option");
+                    return -1;
             }
-        } else {
-            if (outputImage!=0) error ("ONE output file");
-            outputImage = argv[i];
         }
     }
-    if (strnodata == 0) {
-        error ("Missing nodata value");
-    }
-    if (outputImage==0) error ("Missing output file");
 
+    /* Obligatoire :
+     *  - la valeur de nodata
+     *  - l'image de sortie
+     *  - la compression
+     */
+    if (strnodata == 0) {LOGGER_ERROR("Missing nodata value"); return -1;}
+    if (outputImage == 0) {LOGGER_ERROR("Missing output file"); return -1;}
+    if (compression == -1) {LOGGER_ERROR("Missing compression"); return -1;}
+
+    return 0;
 }
 
 /**
@@ -264,11 +335,12 @@ void parseCommandLine(int argc, char* argv[])
  * \brief Contrôle les caractéristiques d'une image (format des canaux, tailles)
  * \param[in] image image à contrôler
  * \param[in] isMask précise si l'image contrôlée est un masque
+ * \return code de retour, 0 si réussi, -1 sinon
  */
-void checkComponents(TIFF* image, bool isMask)
+int checkComponents(TIFF* image, bool isMask)
 {
-    uint32_t _width,_height,_rowsperstrip;
-    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_compression,_planarconfig;
+    uint32_t _width,_height;
+    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_planarconfig;
 
     if(width == 0) { // read the parameters of the first input file
         if( ! TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &width)                   ||
@@ -278,14 +350,12 @@ void checkComponents(TIFF* image, bool isMask)
         ! TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &photometric)                ||
         ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
         ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
-        error(std::string("Error reading input file: ") + TIFFFileName(image));
+        {LOGGER_ERROR(std::string("Error reading input file: ") + TIFFFileName(image)); return -1;}
+        
+        if (planarconfig != 1) {LOGGER_ERROR("Sorry : only planarconfig = 1 is supported"); return -1;}
+        if (width%2 || height%2) {LOGGER_ERROR("Sorry : only even dimensions for input images are supported"); return -1;}
 
-        if (compression == (uint16)(-1)) TIFFGetField(image, TIFFTAG_COMPRESSION, &compression);
-        if (rowsperstrip == (uint32)(-1)) TIFFGetField(image, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
-        if (planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
-        if (width%2 || height%2) error ("Sorry : only even dimensions for input images are supported");
-
-        return;
+        return 0;
     }
     
     if( ! TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &_width)                         ||
@@ -295,22 +365,26 @@ void checkComponents(TIFF* image, bool isMask)
         ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &_samplesperpixel) ||
         ! TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &_photometric)                  ||
         ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &_sampleformat) )
-        error(std::string("Error reading file ") + TIFFFileName(image));
+        {LOGGER_ERROR(std::string("Error reading file ") + TIFFFileName(image)); return -1;}
 
     if (isMask) {
         if (! (_width == width && _height == height && _bitspersample == 8 && _planarconfig == planarconfig &&
                 _photometric == PHOTOMETRIC_MINISBLACK && _samplesperpixel == 1)) {
-            error(std::string("Error : all input masks must have the same parameters (width, height, etc...) : ")
+            LOGGER_ERROR(std::string("Error : all input masks must have the same parameters (width, height, etc...) : ")
                 + TIFFFileName(image));
+            return -1;
         }
     } else {
         if (! (_width == width && _height == height && _bitspersample == bitspersample &&
                 _planarconfig == planarconfig && _photometric == photometric && _samplesperpixel == samplesperpixel)) {
             
-            error(std::string("Error : all input images must have the same parameters (width, height, etc...) : ")
+            LOGGER_ERROR(std::string("Error : all input images must have the same parameters (width, height, etc...) : ")
                 + TIFFFileName(image));
+            return -1;
         }
     }
+
+    return 0;
 }
 
 /**
@@ -323,32 +397,39 @@ void checkComponents(TIFF* image, bool isMask)
  * \param[in] BGM masque associé à l'image de fond en entrée
  * \param[in] OUTPUTI image en sortie
  * \param[in] OUTPUTM masques associé à l'image en sortie
+ * \return code de retour, 0 si réussi, -1 sinon
  */
-void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
-                 TIFF*& BGI,TIFF*& BGM,
-                 TIFF*& OUTPUTI,TIFF*& OUTPUTM)
+int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
+                TIFF*& BGI,TIFF*& BGM,
+                TIFF*& OUTPUTI,TIFF*& OUTPUTM)
 {
     width=0;    
 
     for(int i = 0; i < 4; i++) {
         INPUTM[i/2][i%2] = NULL;
-        if (inputImages[i] == 0){
+        if (inputImages[i] == 0) {
             INPUTI[i/2][i%2] = NULL;
             continue;
         }
         
         TIFF *inputi = TIFFOpen(inputImages[i], "r");
-        if(inputi == NULL) error("Unable to open input image: " + std::string(inputImages[i]));
+        if(inputi == NULL) {LOGGER_ERROR("Unable to open input image: " + std::string(inputImages[i])); return -1;}
         INPUTI[i/2][i%2] = inputi;
 
-        checkComponents(inputi, false);
+        if (checkComponents(inputi, false) < 0) {
+            LOGGER_ERROR("Unable to read components of the image " << std::string(inputImages[i]));
+            return -1;
+        }
 
         if (inputMasks[i] != 0){
             TIFF *inputm = TIFFOpen(inputMasks[i], "r");
-            if(inputm == NULL) error("Unable to open input mask: " + std::string(inputMasks[i]));
+            if(inputm == NULL) {LOGGER_ERROR("Unable to open input mask: " << std::string(inputMasks[i])); return -1;}
             INPUTM[i/2][i%2] = inputm;
 
-            checkComponents(inputm, true);
+            if (checkComponents(inputm, true) < 0) {
+                LOGGER_ERROR("Unable to read components of the mask " << std::string(inputMasks[i]));
+                return -1;
+            }
         }
         
     }
@@ -363,13 +444,21 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
 
     if (backgroundImage) {
         BGI=TIFFOpen(backgroundImage, "r");
-        if (BGI == NULL) error("Unable to open background image: " + std::string(backgroundImage));
-        checkComponents(BGI,false);
+        if (BGI == NULL) {LOGGER_ERROR("Unable to open background image: " + std::string(backgroundImage)); return -1;}
+
+        if (checkComponents(BGI, false) < 0) {
+            LOGGER_ERROR("Unable to read components of the background image " << std::string(backgroundImage));
+            return -1;
+        }
         
         if (backgroundMask) {
             BGM = TIFFOpen(backgroundMask, "r");
-            if (BGM == NULL) error("Unable to open background mask: " + std::string(backgroundMask));
-            checkComponents(BGM,true);
+            if (BGM == NULL) {LOGGER_ERROR("Unable to open background mask: " + std::string(backgroundMask)); return -1;}
+
+            if (checkComponents(BGM, true) < 0) {
+                LOGGER_ERROR("Unable to read components of the background mask " << std::string(backgroundMask));
+                return -1;
+            }
         }
     }
 
@@ -377,7 +466,7 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
     OUTPUTM = 0;
 
     OUTPUTI = TIFFOpen(outputImage, "w");
-    if(OUTPUTI == NULL) error("Unable to open output image: " + std::string(outputImage));
+    if(OUTPUTI == NULL) {LOGGER_ERROR("Unable to open output image: " + std::string(outputImage)); return -1;}
     if(! TIFFSetField(OUTPUTI, TIFFTAG_IMAGEWIDTH, width) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_IMAGELENGTH, height) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_BITSPERSAMPLE, bitspersample) ||
@@ -387,11 +476,14 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
          ! TIFFSetField(OUTPUTI, TIFFTAG_PLANARCONFIG, planarconfig) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_COMPRESSION, compression) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLEFORMAT, sampleformat))
-        error("Error writting output image: " + std::string(outputImage));
+        {
+            LOGGER_ERROR("Error writting output image: " + std::string(outputImage));
+            return -1;
+        }
 
     if (outputMask) {
         OUTPUTM = TIFFOpen(outputMask, "w");
-        if(OUTPUTM == NULL) error("Unable to open output mask: " + std::string(outputImage));
+        if(OUTPUTM == NULL) {LOGGER_ERROR("Unable to open output mask: " + std::string(outputImage)); return -1;}
         if(! TIFFSetField(OUTPUTM, TIFFTAG_IMAGEWIDTH, width) ||
              ! TIFFSetField(OUTPUTM, TIFFTAG_IMAGELENGTH, height) ||
              ! TIFFSetField(OUTPUTM, TIFFTAG_BITSPERSAMPLE, 8) ||
@@ -401,13 +493,24 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
              ! TIFFSetField(OUTPUTM, TIFFTAG_PLANARCONFIG, planarconfig) ||
              ! TIFFSetField(OUTPUTM, TIFFTAG_COMPRESSION, COMPRESSION_PACKBITS) ||
              ! TIFFSetField(OUTPUTM, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT))
-            error("Error writting output mask: " + std::string(outputMask));
+            {
+                LOGGER_ERROR("Error writting output mask: " + std::string(outputMask));
+                return -1;
+            }
     }
+
+    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) ||
+        (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
+        LOGGER_ERROR("sampleformat/bitspersample not supported");
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
  * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image à canal flottant et d'un potentiel masque associé
+ * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas flottant)
  * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
  * \param[in] image ligne de l'image en sortie
  * \param[in] IMAGE image à lire
@@ -415,12 +518,42 @@ void checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
  * \param[in] MASK masque associé à l'image à lire (peut être nul)
  * \param[in] line indice de la ligne source dans l'image (et son masque)
  * \param[in] width largeur de la ligne à lire (et remplir)
- * \return code d'erreur, 0 si réussi
+ * \return code de retour, 0 si réussi, -1 sinon
  */
-int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
-
+int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width)
+{
     if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
-    
+
+    if (MASK) {
+        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
+        for (int w = 0; w < width; w++) {
+            if (mask[w] < 127) {
+                memcpy(image + w*samplesperpixel,nodataUInt8,samplesperpixel);
+            }
+        }
+    } else {
+        memset(mask,255,width);
+    }
+
+    return 0;
+}
+
+/**
+ * \~french
+ * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas entier)
+ * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
+ * \param[in] image ligne de l'image en sortie
+ * \param[in] IMAGE image à lire
+ * \param[in] mask ligne du masque en sortie
+ * \param[in] MASK masque associé à l'image à lire (peut être nul)
+ * \param[in] line indice de la ligne source dans l'image (et son masque)
+ * \param[in] width largeur de la ligne à lire (et remplir)
+ * \return code de retour, 0 si réussi, -1 sinon
+ */
+int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width)
+{
+    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
+
     if (MASK) {
         if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
         for (int w = 0; w < width; w++) {
@@ -437,40 +570,46 @@ int fillLine(float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int
 
 /**
  * \~french
- * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie, cas flottant
+ * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie
+ * \details Dans le cas entier ,lors de la moyenne des 4 pixels, on utilise une valeur de gamma qui éclaircit (si supérieure à 1.0) ou fonce (si inférieure à 1.0) le résultat. Si gamma vaut 1, le résultat est une moyenne classique.
  * \param[in] BGI image de fond en entrée
  * \param[in] BGM masque associé à l'image de fond en entrée
  * \param[in] INPUTI images en entrée
  * \param[in] INPUTM masques associé aux images en entrée
  * \param[in] OUTPUTI image en sortie
  * \param[in] OUTPUTM masques associé à l'image en sortie
- * \return code d'erreur, 0 si réussi
+ * \return code de retour, 0 si réussi, -1 sinon
  */
-int merge4float32(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM) {
-int nbsamples = width * samplesperpixel;
+template <typename T>
+int merge(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
+{
+    uint8 MERGE[1024];
+    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
+
+    int nbsamples = width * samplesperpixel;
     int left,right;
 
-    float line_bgI[nbsamples];
+    T line_bgI[nbsamples];
     uint8_t line_bgM[width];
 
     int nbData;
     float pix[samplesperpixel];
 
-    float line_1I[2*nbsamples];
+    T line_1I[2*nbsamples];
     uint8_t line_1M[2*width];
 
-    float line_2I[2*nbsamples];
+    T line_2I[2*nbsamples];
     uint8_t line_2M[2*width];
 
-    float line_outI[nbsamples];
+    T line_outI[nbsamples];
     uint8_t line_outM[width];
 
-    for (int i = 0; i < nbsamples ; i++) {
-        line_bgI[i] = nodataFloat32[i%samplesperpixel];
-    }
+    // ----------- initialisation du fond -----------
+    if (sizeof(T) == 4) for (int i = 0; i < nbsamples ; i++) line_bgI[i] = nodataFloat32[i%samplesperpixel];
+    if (sizeof(T) == 1) for (int i = 0; i < nbsamples ; i++) line_bgI[i] = nodataUInt8[i%samplesperpixel];
     memset(line_bgM,0,width);
 
-    for(int y = 0; y < 2; y++){
+    for(int y = 0; y < 2; y++) {
         if (INPUTI[y][0]) left = 0; else left = width;
         if (INPUTI[y][1]) right = 2*width; else right = width;
 
@@ -478,47 +617,82 @@ int nbsamples = width * samplesperpixel;
 
             int line = y*height/2 + h;
 
-            // ------------ le fond -----------
+            // ------------------- le fond ------------------
             if (BGI)
-                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
-                    error("Unable to read background line");
+                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width)) {
+                    LOGGER_ERROR("Unable to read background line");
+                    return -1;
+                }
 
             if (left == right) {
                 // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
-                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
-                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
+                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) {
+                    LOGGER_ERROR("Unable to write image");
+                    return -1;
+                }
+                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) {
+                    LOGGER_ERROR("Unable to write mask");
+                    return -1;
+                }
+
                 continue;
             }
 
-            memcpy(line_outI,line_bgI,sizeof(float)*nbsamples);
+            // -- initialisation de la sortie avec le fond --
+            memcpy(line_outI,line_bgI,nbsamples*sizeof(T));
             memcpy(line_outM,line_bgM,width);
 
-            // ---------- les images ----------
+            // ----------------- les images -----------------
             if (INPUTI[y][0]) {
-                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
+                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
             }
+
 
             if (INPUTI[y][1]) {
-                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
+                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
             }
 
-            // ---------- les masques ---------
+            // ----------------- les masques ----------------
             memset(line_1M,255,2*width);
             memset(line_2M,255,2*width);
 
             if (INPUTM[y][0]) {
-                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
+                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
             }
 
             if (INPUTM[y][1]) {
-                if (TIFFReadScanline(INPUTM[y][1], line_1M + width, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][1], line_2M + width, 2*h+1) == -1) error("Unable to read data line");
+                if (TIFFReadScanline(INPUTM[y][1], line_1M + width, 2*h) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
+                if (TIFFReadScanline(INPUTM[y][1], line_2M + width, 2*h+1) == -1) {
+                    LOGGER_ERROR("Unable to read data line");
+                    return -1;
+                }
             }
 
-            // ---------- la moyenne ---------
+            // ----------------- la moyenne ----------------
             for (int pixIn = left, sampleIn = left * samplesperpixel; pixIn < right;
                  pixIn += 2, sampleIn += 2*samplesperpixel) {
 
@@ -547,191 +721,23 @@ int nbsamples = width * samplesperpixel;
 
                 if (nbData > 1) {
                     line_outM[pixIn/2] = 255;
-                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = pix[c]/(float)nbData;
-                }
-            }
-
-            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
-            if (OUTPUTM) if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
-
-        }
-    }
-
-    if (BGI) TIFFClose(BGI);
-    if (BGM) TIFFClose(BGM);
-
-    for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) {
-        if (INPUTI[i][j]) TIFFClose(INPUTI[i][j]);
-        if (INPUTM[i][j]) TIFFClose(INPUTM[i][j]);
-    }
-
-    TIFFClose(OUTPUTI);
-    if (OUTPUTM) TIFFClose(OUTPUTM);
-
-    return 0;
-};
-
-/**
- * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image à canal entier et d'un potentiel masque associé
- * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
- * \param[in] image ligne de l'image en sortie
- * \param[in] IMAGE image à lire
- * \param[in] mask ligne du masque en sortie
- * \param[in] MASK masque associé à l'image à lire (peut être nul)
- * \param[in] line indice de la ligne source dans l'image (et son masque)
- * \param[in] width largeur de la ligne à lire (et remplir)
- * \return code d'erreur, 0 si réussi
- */
-int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width) {
-
-    if (TIFFReadScanline(IMAGE, image,line) == -1) return 1;
-
-    if (MASK) {
-        if (TIFFReadScanline(MASK, mask,line) == -1) return 1;
-        for (int w = 0; w < width; w++) {
-            if (mask[w] < 127) {
-                memcpy(image + w*samplesperpixel,nodataUInt8,samplesperpixel);
-            }
-        }
-    } else {
-        memset(mask,255,width);
-    }
-
-    return 0;
-}
-
-/**
- * \~french
- * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie, cas entier
- * \details Lors de la moyenne des 4 pixels entiers, on utilise une valeur de gamma qui éclaircit (si supérieure à 1.0) ou fonce (si inférieure à 1.0) le résultat. Si gamma vaut 1, le résultat est une moyenne classique.
- * \param[in] BGI image de fond en entrée
- * \param[in] BGM masque associé à l'image de fond en entrée
- * \param[in] INPUTI images en entrée
- * \param[in] INPUTM masques associé aux images en entrée
- * \param[in] OUTPUTI image en sortie
- * \param[in] OUTPUTM masques associé à l'image en sortie
- * \return code d'erreur, 0 si réussi
- */
-int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM)
-{    
-    uint8 MERGE[1024];
-    for(int i = 0; i <= 1020; i++) MERGE[i] = 255 - (uint8) round(pow(double(1020 - i)/1020., gammaM4t) * 255.);
-
-    int nbsamples = width * samplesperpixel;
-    int left,right;
-
-    uint8_t line_bgI[nbsamples];
-    uint8_t line_bgM[width];
-
-    int nbData;
-    int pix[samplesperpixel];
-
-    uint8_t line_1I[2*nbsamples];
-    uint8_t line_1M[2*width];
-
-    uint8_t line_2I[2*nbsamples];
-    uint8_t line_2M[2*width];
-
-    uint8_t line_outI[nbsamples];
-    uint8_t line_outM[width];
-
-    // ----------- initialisation du fond -----------
-    for (int i = 0; i < nbsamples ; i++) {
-        line_bgI[i] = nodataUInt8[i%samplesperpixel];
-    }
-    memset(line_bgM,0,width);
-
-    for(int y = 0; y < 2; y++){
-        if (INPUTI[y][0]) left = 0; else left = width;
-        if (INPUTI[y][1]) right = 2*width; else right = width;
-
-        for(uint32 h = 0; h < height/2; h++) {
-
-            int line = y*height/2 + h;
-
-            // ------------------- le fond ------------------
-            if (BGI)
-                if (fillLine(line_bgI,BGI,line_bgM,BGM,line,width))
-                    error("Unable to read background line");
-
-            if (left == right) {
-                // On n'a pas d'image en entrée pour cette ligne, on stocke le fond et on passe à la suivante
-                if (TIFFWriteScanline(OUTPUTI, line_bgI, line) == -1) error("Unable to write image");
-                if (OUTPUTM) if (TIFFWriteScanline(OUTPUTM, line_bgM, line) == -1) error("Unable to write mask");
-
-                continue;
-            }
-
-            // -- initialisation de la sortie avec le fond --
-            memcpy(line_outI,line_bgI,nbsamples);
-            memcpy(line_outM,line_bgM,width);
-
-            // ----------------- les images -----------------
-            if (INPUTI[y][0]) {
-                if (TIFFReadScanline(INPUTI[y][0], line_1I, 2*h) == -1)
-                    error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][0], line_2I, 2*h+1) == -1)
-                    error("Unable to read data line");
-            }
-
-
-            if (INPUTI[y][1]) {
-                if (TIFFReadScanline(INPUTI[y][1], line_1I + nbsamples, 2*h) == -1)
-                    error("Unable to read data line");
-                if (TIFFReadScanline(INPUTI[y][1], line_2I + nbsamples, 2*h+1) == -1)
-                    error("Unable to read data line");
-            }
-
-            // ----------------- les masques ----------------
-            memset(line_1M,255,2*width);
-            memset(line_2M,255,2*width);
-
-            if (INPUTM[y][0]) {
-                if (TIFFReadScanline(INPUTM[y][0], line_1M, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][0], line_2M, 2*h+1) == -1) error("Unable to read data line");
-            }
-
-            if (INPUTM[y][1]) {
-                if (TIFFReadScanline(INPUTM[y][1], line_1M + width, 2*h) == -1) error("Unable to read data line");
-                if (TIFFReadScanline(INPUTM[y][1], line_2M + width, 2*h+1) == -1) error("Unable to read data line");
-            }
-
-            // ----------------- la moyenne ----------------
-            for (int pixIn = left, sampleIn = left * samplesperpixel; pixIn < right;
-                 pixIn += 2, sampleIn += 2*samplesperpixel) {
-
-                memset(pix,0,samplesperpixel*sizeof(int));
-                nbData = 0;
-
-                if (line_1M[pixIn] >= 127) {
-                    nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+c];
-                }
-
-                if (line_1M[pixIn+1] >= 127) {
-                    nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_1I[sampleIn+samplesperpixel+c];
-                }
-
-                if (line_2M[pixIn] >= 127) {
-                    nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+c];
-                }
-
-                if (line_2M[pixIn+1] >= 127) {
-                    nbData++;
-                    for (int c = 0; c < samplesperpixel; c++) pix[c] += line_2I[sampleIn+samplesperpixel+c];
-                }
-
-                if (nbData > 1) {
-                    line_outM[pixIn/2] = 255;
-                    for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = MERGE[pix[c]*4/nbData];
+                    if (sizeof(T) == 1) {
+                        // Cas entier : utilisation d'un gamma
+                        for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = MERGE[(int)pix[c]*4/nbData];
+                    } else if (sizeof(T) == 4) {
+                        for (int c = 0; c < samplesperpixel; c++) line_outI[sampleIn/2+c] = pix[c]/(float)nbData;
+                    }
                 }
             }
             
-            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) error("Unable to write image");
-            if (OUTPUTM) if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) error("Unable to write mask");
+            if(TIFFWriteScanline(OUTPUTI, line_outI, line) == -1) {
+                LOGGER_ERROR("Unable to write image");
+                return -1;
+            }
+            if (OUTPUTM) if(TIFFWriteScanline(OUTPUTM, line_outM, line) == -1) {
+                LOGGER_ERROR("Unable to write mask");
+                return -1;
+            }
         }
     }
     
@@ -750,11 +756,17 @@ int merge4uint8(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TI
 }
 
 /**
- * \~french
+ ** \~french
  * \brief Fonction principale de l'outil merge4tiff
  * \details Différencie le cas de canaux flottants sur 32 bits des canaux entier non signés sur 8 bits.
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
+ * \return 0 en cas de succès, -1 sinon
+ ** \~english
+ * \brief Main function for tool merge4tiff
+ * \param[in] argc parameters number
+ * \param[in] argv parameters array
+ * \return 0 if success, -1 otherwise
  */
 int main(int argc, char* argv[])
 {
@@ -765,41 +777,66 @@ int main(int argc, char* argv[])
     TIFF* OUTPUTI;
     TIFF* OUTPUTM;
 
-    parseCommandLine(argc, argv);
-    
-    checkImages(INPUTI,INPUTM,BGI,BGM,OUTPUTI,OUTPUTM);
-    
-    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) || 
-        (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
-        error("sampleformat/bitspersample not supported");
+    /* Initialisation des Loggers */
+    Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
+
+    Accumulator* acc = new StreamAccumulator();
+    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(INFO , acc);
+    Logger::setAccumulator(WARN , acc);
+    Logger::setAccumulator(ERROR, acc);
+    Logger::setAccumulator(FATAL, acc);
+
+    std::ostream &logd = LOGGER(DEBUG);
+    logd.precision(16);
+    logd.setf(std::ios::fixed,std::ios::floatfield);
+
+    std::ostream &logw = LOGGER(WARN);
+    logw.precision(16);
+    logw.setf(std::ios::fixed,std::ios::floatfield);
+
+    LOGGER_DEBUG("Parse");
+    // Lecture des parametres de la ligne de commande
+    if (parseCommandLine(argc, argv) < 0){
+        error("Echec lecture ligne de commande",-1);
     }
     
-    // Nodata interpretation
-    int nodata[samplesperpixel];
+    LOGGER_DEBUG("Check images");
+    // Controle des images
+    if (checkImages(INPUTI,INPUTM,BGI,BGM,OUTPUTI,OUTPUTM) < 0) {
+        error("Echec controle des images",-1);
+    }
+    
+    LOGGER_DEBUG("Nodata interpretation");
+    // Conversion string->int[] du paramètre nodata
+    int nodataInt[samplesperpixel];
+
     char* charValue = strtok(strnodata,",");
     if(charValue == NULL) {
-        error("Error with option -n : a value for nodata is missing");
+        error("Error with option -n : a value for nodata is missing",-1);
     }
-    nodata[0] = atoi(charValue);
+    nodataInt[0] = atoi(charValue);
     for(int i = 1; i < samplesperpixel; i++) {
         charValue = strtok (NULL, ",");
         if(charValue == NULL) {
-            error("Error with option -n : a value for nodata is missing");
+            error("Error with option -n : a value for nodata is missing",-1);
         }
-        nodata[i] = atoi(charValue);
+        nodataInt[i] = atoi(charValue);
     }
     
     // Cas MNT
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
         nodataFloat32 = new float[samplesperpixel];
-        for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodata[i];
-        return merge4float32(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM);
+        for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodataInt[i];
+        
+        if (merge<uint8_t>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge float images",-1);
     }
     // Cas images
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
         nodataUInt8 = new uint8_t[samplesperpixel];
-        for(int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodata[i];
-        return merge4uint8(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM);
+        for (int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodataInt[i];
+        
+        if (merge<float>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge integer images",-1);
     }
 }
 

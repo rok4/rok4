@@ -1,24 +1,24 @@
 #!/usr/bin/env perl
 # Copyright © (2011) Institut national de l'information
-#                    géographique et forestière 
-# 
+#                    géographique et forestière
+#
 # Géoportail SAV <geop_services@geoportail.fr>
-# 
+#
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
-# 
+#
 # This software is governed by the CeCILL-C license under French law and
-# abiding by the rules of distribution of free software.  You can  use, 
+# abiding by the rules of distribution of free software.  You can  use,
 # modify and/ or redistribute the software under the terms of the CeCILL-C
 # license as circulated by CEA, CNRS and INRIA at the following URL
-# "http://www.cecill.info". 
-# 
+# "http://www.cecill.info".
+#
 # As a counterpart to the access to the source code and  rights to copy,
 # modify and redistribute granted by the license, users are provided only
 # with a limited warranty  and the software's author,  the holder of the
 # economic rights,  and the successive licensors  have only  limited
-# liability. 
-# 
+# liability.
+#
 # In this respect, the user's attention is drawn to the risks associated
 # with loading,  using,  modifying and/or developing or reproducing the
 # software by the user in light of its specific status of free software,
@@ -26,12 +26,12 @@
 # therefore means  that it is reserved for developers  and  experienced
 # professionals having in-depth computer knowledge. Users are therefore
 # encouraged to load and test the software's suitability as regards their
-# requirements in conditions enabling the security of their systems and/or 
-# data to be ensured and,  more generally, to use and operate it in the 
-# same conditions as regards security. 
-# 
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
 # The fact that you are presently reading this means that you have had
-# 
+#
 # knowledge of the CeCILL-C license and that you accept its terms.
 
 use warnings;
@@ -55,13 +55,16 @@ use lib "$Bin/../lib/perl5";
 use BE4::TileMatrixSet;
 use BE4::Layer;
 
-# constantes
+################################################################################
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# version
-my $VERSION = "0.0.1";
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
 
+################################################################################
 # Options
 my $MYPYR   = undef;
 my $MYLAYPATH = undef;
@@ -70,12 +73,13 @@ my $MYSAMPLE = "lanczos_4";
 my $MYSTYLE  = "normal";
 my $MYOPAQUE = "true";
 
-#
+################################################################################
+
 sub init {
-    
+
     # init Getopt
     local $ENV{POSIXLY_CORRECT} = 1;
-    
+
     Getopt::Long::config qw(
         default
         no_autoabbrev
@@ -85,7 +89,7 @@ sub init {
         no_ignorecase
         permute
     );
-    
+
     # init Options
     GetOptions(
         "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
@@ -98,15 +102,15 @@ sub init {
         "resampling|r=s"     => \$MYSAMPLE,
         "style|s=s"          => \$MYSTYLE,
         "opaque!"            => \$MYOPAQUE,
-    
+
     ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
-    
+
     # pyramid : obligatoire !
     if (! defined $MYPYR) {
         ERROR("Option 'pyr' not defined !");
         return FALSE;
     }
-    
+
     my $pyrFile = File::Spec->rel2abs($MYPYR);
     if (! -d dirname($pyrFile)) {
         ERROR(sprintf "Le répertoire du descripteur de pyramide n'existe pas ('%s') !", dirname($pyrFile));
@@ -117,8 +121,8 @@ sub init {
         return FALSE;
     }
     $MYPYR = $pyrFile;
-    
-    
+
+
     # tms path : obligatoire !
     if (! defined $MYTMSPATH) {
         ERROR("Option 'tmsdir' (directory where to find TMS) not defined !");
@@ -130,11 +134,11 @@ sub init {
         return FALSE;
     }
     $MYTMSPATH = $tmsDir;
-    
+
     return TRUE;
 }
 #
-
+printf("CREATE-LAYER : version [%s]\n",$VERSION);
 printf STDOUT "[BEGIN]\n";
 ## LOGGER
 Log::Log4perl->easy_init( { level  => "WARN",
@@ -192,7 +196,7 @@ if ($photometric ne '') {
     push @keyword, $photometric;
 }
 
-# INTERPOLATION    
+# INTERPOLATION
 my $interpolation = $root->findnodes('interpolation')->to_literal;
 if ($interpolation ne '') {
     push @keyword, $interpolation;
@@ -204,7 +208,7 @@ if ($format ne '') {
     push @keyword, $format;
 }
 
-# SAMPLESPERPIXEL  
+# SAMPLESPERPIXEL
 my $samplesperpixel = $root->findnodes('channels')->to_literal;
 if ($samplesperpixel ne '') {
     push @keyword, "Samples per pixel: $samplesperpixel";
@@ -237,7 +241,7 @@ my ($imin,$imax,$jmin,$jmax);
 foreach my $v (@levels) {
     my $ID = $v->findvalue('tileMatrix');
     my $order = $objTMS->getOrderfromID($ID);
-    
+
     if (! defined $bottomOrder || $order < $bottomOrder) {
         $bottomOrder = $order;
         $bottomID = $ID;
@@ -248,7 +252,7 @@ foreach my $v (@levels) {
             $v->findvalue('TMSLimits/maxTileRow')
         );
     }
-    
+
     if (! defined $topOrder || $order > $topOrder) {
         $topOrder = $order;
         $topID = $ID;
@@ -293,10 +297,10 @@ if ($@) {
         exit -41;
     }
 }
-    
+
 my $srsfin= new Geo::OSR::SpatialReference;
 eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
-    
+
 if ($@) {
   ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
   exit -42;
@@ -317,7 +321,7 @@ my $params = {
     style            => $MYSTYLE,
     minres           => $minres,
     maxres           => $maxres,
-    opaque           => $MYOPAQUE, 
+    opaque           => $MYOPAQUE,
     authority        => $auth,
     srslist          => \@lstsrs,
     resampling       => $MYSAMPLE,
@@ -326,7 +330,7 @@ my $params = {
     proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
     pyramid          => $MYPYR,
 };
-    
+
 my $objLayer = new BE4::Layer($params);
 
 if (! defined $objLayer){
@@ -359,7 +363,7 @@ if (! open (FILE, ">", $filelayer)) {
 printf FILE "%s", $strlayer;
 
 close FILE;
-  
+
 printf STDOUT "[END]\n";
 exit 0;
 END {}
@@ -376,7 +380,7 @@ create-layer - Outil orienté maintenance qui permet de construire un layer pour
     perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/
                         [--resampling="" --opaque --style=""  ]
     perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/ --layerdir=/home/ign/layers/
-                      [--r="" --opaque --s=""  ] 
+                      [--r="" --opaque --s=""  ]
 
 =head1 DESCRIPTION
 
@@ -385,7 +389,7 @@ ORIENTÉ MAINTENANCE !
 Pas de fichier de configuration, création du layer uniquement grâce au descripteur de pyramide et tu TMS utilisé.
     --pyr
     --tmsdir
-  
+
 Par defaut, la liste des SRS sont les suivantes :
     - la projection des données sources,
     - "CR:84",

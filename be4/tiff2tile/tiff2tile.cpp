@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if (crop) {
         
-        TiffNodataManager TNM(samplesperpixel,white,fastWhite,white,true,true);
+        TiffNodataManager TNM(samplesperpixel,white,fastWhite,white);
 
         if (! TNM.treatNodata(input,input)) {
             std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;

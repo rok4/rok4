@@ -98,8 +98,8 @@ ResampledImage::ResampledImage( Image* image, int width, int height, double resx
 
     if (useMask) {
         sz += 8 * srcMskSize * sizeof(float)        // src_mask_buffer + mux_src_mask_buffer;
-            // resampled_mask ("memorize_line" lignes) + mux_resampled_mask + weight_buffer + own_mask_buffer
-            + outMskSize * (memorize_line + 4 + 1 + 1) * sizeof(float);
+            // resampled_mask ("memorize_line" lignes) + mux_resampled_mask + weight_buffer
+            + outMskSize * (memorize_line + 4 + 1) * sizeof(float);
     }
 
 
@@ -141,7 +141,6 @@ ResampledImage::ResampledImage( Image* image, int width, int height, double resx
         mux_src_mask_buffer = B; B += 4*srcMskSize;
 
         weight_buffer = B; B += outMskSize;
-        own_mask_buffer = B; B += outMskSize;
 
         // Ligne de masque rééchantillonnée
         resampled_mask = new float*[memorize_line];
@@ -150,6 +149,8 @@ ResampledImage::ResampledImage( Image* image, int width, int height, double resx
         for(int i = 0; i < memorize_line; i++) {
                 resampled_mask[i] = B; B += outMskSize;
         }
+
+        own_mask_buffer = new uint8_t[outMskSize];
     }
 
     /* -------------------- PARTIE POIDS -------------------- */
@@ -277,7 +278,7 @@ int ResampledImage::getline(float* buffer, int line)
         if (getMask()) {
             getMask()->getline(own_mask_buffer,line);
             for(int y = 0; y < width; y++) {
-                if (own_mask_buffer[y] < 127.) weight_buffer[y] = 0.;
+                if (! own_mask_buffer[y]) weight_buffer[y] = 0.;
             }
         }
         normalize(buffer, weight_buffer, width, channels);

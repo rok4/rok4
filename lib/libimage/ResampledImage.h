@@ -227,7 +227,7 @@ class ResampledImage : public Image {
          * \~french \brief Ligne du masque de l'image réechantillonnée
          * \~english \brief Resampled image's mask's line
          */
-        float* own_mask_buffer;
+        uint8_t* own_mask_buffer;
 
         /**
          * \~french \brief Ligne entièrement réechantillonnée

@@ -37,6 +37,7 @@
 
 /**
  * \file mergeNtiff.cpp
+ * \author Institut national de l'information géographique et forestière
  * \~french \brief Création d'une image TIFF géoréférencée à partir de n images TIFF sources géoréférencées
  * \~english \brief Create one georeferenced TIFF image from several georeferenced TIFF images
  * \~ \image html mergeNtiff.png \~french
@@ -69,7 +70,6 @@
  * MSK sources/mask2.tif
  * \endcode
  * \~french
- * \li Le type de la donnée traitée (Data/Metadata)
  * \li La compression de l'image de sortie
  * \li Le mode d'interpolation
  * \li Le nombre de canaux par pixel
@@ -86,16 +86,15 @@
  * \li les images non compatibles : un passage par le réechntillonnage (plus lourd en calcul) est indispensable.
  *
  * Exemple d'appel à la commande :
- * \~french \li pour des ortho-images \~english \li for orthoimage
+ * \li pour des ortho-images \~english \li for orthoimage
  * \~ \code
- * mergeNtiff -f conf.txt -t image -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ * mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
  * \endcode
  * \~french \li pour du MNT \~english \li for DTM
  * \~ \code
- * mergeNtiff -f conf.txt -t image -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
+ * mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
  * \endcode
- * 
- * \~french
+ ** \~french
  * \todo Gérer correctement un canal alpha
  * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
  */
@@ -150,18 +149,88 @@ Interpolation::KernelType interpolation;
  * \~french
  * \brief Affiche l'utilisation et les différentes options de la commande mergeNtiff
  * \details L'affichage se fait dans le niveau de logger INFO
+ * \~ \code
+ * mergeNtiff version X.X.X
+ *
+ * Usage: mergeNtiff -f <FILE> -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
+ * All parameters are mandatory (parameters' number must be 17), no default value.
+ *
+ * Parameters:
+ *      -f configuration file : list of output and source images and masks
+ *      -c output compression :
+ *              raw     no compression
+ *              none    no compression
+ *              jpg     Jpeg encoding
+ *              lzw     Lempel-Ziv & Welch encoding
+ *              pkb     PackBits encoding
+ *              zip     Deflate encoding
+ *      -a sample format : uint (unsigned integer) or float
+ *      -i interpolationused for resampling :
+ *              nn      nearest neighbor
+ *              linear
+ *              bicubic
+ *              lanczos lanczos 3
+ *      -n nodata value, one interger per sample, seperated with comma. Examples
+ *              -99999 for DTM
+ *              255,255,255 for orthophotography
+ *      -s samples per pixel : 1, 3 or 4
+ *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
+ *      -p photometric :
+ *              gray    min is black
+ *              rgb     for image with alpha too
+ *
+ * Examples
+ *      - for orthophotography
+ *      mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ *
+ *      - for DTM
+ *      mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
+ * \endcode
  */
 void usage() {
-    LOGGER_INFO(
-    "mergeNtiff version "<< BE4_VERSION << std::endl <<
-    " Usage :  mergeNtiff -f [fichier liste des images source] -c [none/png/jpg/lzw/zip/pkb] -a [uint/float] -i [lanczos/nn/linear/bicubic] -n [couleur NoData] -t [img/mtd] -s [1/3] -b [8/32] -p[min_is_black/rgb/mask] " << std::endl << 
-    " Exemple : mergeNtiff -f configfile.txt -a float -i nn -n -99999 -t image -s 1 -b 32 -p gray ");
+    LOGGER_INFO("\nmergeNtiff version " << BE4_VERSION << "\n\n" <<
+
+    "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
+    
+    "Usage: mergeNtiff -f <FILE> -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>\n" <<
+    "All parameters are mandatory (parameters' number must be 17), no default value.\n\n" <<
+
+    "Parameters:\n" <<
+    "    -f configuration file : list of output and source images and masks\n" <<
+    "    -c output compression :\n" <<
+    "            raw     no compression\n" <<
+    "            none    no compression\n" <<
+    "            jpg     Jpeg encoding\n" <<
+    "            lzw     Lempel-Ziv & Welch encoding\n" <<
+    "            pkb     PackBits encoding\n" <<
+    "            zip     Deflate encoding\n" <<
+    "    -a sample format : uint (unsigned integer) or float\n" <<
+    "    -i interpolationused for resampling :\n" <<
+    "            nn      nearest neighbor\n" <<
+    "            linear\n" <<
+    "            bicubic\n" <<
+    "            lanczos lanczos 3\n" <<
+    "    -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
+    "            -99999 for DTM\n" <<
+    "            255,255,255 for orthophotography\n" <<
+    "    -s samples per pixel : 1, 3 or 4\n" <<
+    "    -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
+    "    -p photometric :\n" <<
+    "            gray    min is black\n" <<
+    "            rgb     for image with alpha too\n\n" <<
+
+    "Examples\n" <<
+    "    - for orthophotography\n" <<
+    "    mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255\n\n" <<
+    "    - for DTM\n" <<
+    "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n");
 }
 
 /**
  * \~french
- * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur (code de retour -1)
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur
  * \param[in] message message d'erreur
+ * \param[in] errorCode code de retour
  */
 void error(std::string message, int errorCode) {
     LOGGER_ERROR(message);
@@ -176,76 +245,71 @@ void error(std::string message, int errorCode) {
  * \brief Récupère les valeurs passées en paramètres de la commande, et les stocke dans les variables globales
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
+ * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine(int argc, char** argv) {
     
-    if (argc != 19) {
-        LOGGER_ERROR(" Nombre de parametres incorrect");
+    if (argc < 17 && argc != 2) {
+        LOGGER_ERROR("Unvalid parameters number : is " << argc << " and have to be 17 or more (2 to request help)");
         return -1;
     }
 
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
             switch(argv[i][1]) {
+                case 'h': // help
+                    usage();
+                    exit(0);
                 case 'f': // fichier de liste des images source
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -f"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -f"); return -1;}
                     strcpy(imageListFilename,argv[i]);
                     break;
                 case 'i': // interpolation
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -i"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -i"); return -1;}
                     if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
                     else if(strncmp(argv[i], "nn",2) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
                     else if(strncmp(argv[i], "bicubic",7) == 0) interpolation = Interpolation::CUBIC; // =2
                     else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
-                    else {LOGGER_ERROR("Erreur sur l'option -i "); return -1;}
+                    else {LOGGER_ERROR("Unknown value for option -i : " << argv[i]); return -1;}
                     break;
                 case 'n': // nodata
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -n"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -n"); return -1;}
                     strcpy(strnodata,argv[i]);
                     break;
-                case 't': // type
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
-                    if(strncmp(argv[i], "image",5) == 0) type = 1 ;
-                    else if(strncmp(argv[i], "mtd",3) == 0) {
-                        LOGGER_ERROR("Le type mtd n'est pas pris en compte");
-                        return -1;
-                    }
-                    else {LOGGER_ERROR("Erreur sur l'option -t"); return -1;}
-                    break;
-                case 's': // sampleperpixel
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+                case 's': // samplesperpixel
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -s"); return -1;}
                     if(strncmp(argv[i], "1",1) == 0) samplesperpixel = 1 ;
                     else if(strncmp(argv[i], "3",1) == 0) samplesperpixel = 3 ;
                     else if(strncmp(argv[i], "4",1) == 0) samplesperpixel = 4 ;
-                    else {LOGGER_ERROR("Erreur sur l'option -s"); return -1;}
+                    else {LOGGER_ERROR("Unknown value for option -s : " << argv[i]); return -1;}
                     break;
                 case 'b': // bitspersample
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -b"); return -1;}
                     if(strncmp(argv[i], "8",1) == 0) bitspersample = 8 ;
                     else if(strncmp(argv[i], "32",2) == 0) bitspersample = 32 ;
-                    else {LOGGER_ERROR("Erreur sur l'option -b"); return -1;}
+                    else {LOGGER_ERROR("Unknown value for option -b : " << argv[i]); return -1;}
                     break;
                 case 'a': // sampleformat
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -a"); return -1;}
                     if(strncmp(argv[i],"uint",4) == 0) sampleformat = SAMPLEFORMAT_UINT ;
                     else if(strncmp(argv[i],"float",5) == 0) sampleformat = SAMPLEFORMAT_IEEEFP ;
-                    else {LOGGER_ERROR("Erreur sur l'option -a"); return -1;}
+                    else {LOGGER_ERROR("Unknown value for option -a : " << argv[i]); return -1;}
                     break;
                 case 'p': // photometric
-                    if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -p"); return -1;}
                     if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
                     else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
-                    else if(strncmp(argv[i], "mask",4) == 0) photometric = PHOTOMETRIC_MASK;
-                    else {LOGGER_ERROR("Erreur sur l'option -p"); return -1;}
+                    else {LOGGER_ERROR("Unknown value for option -p : " << argv[i]); return -1;}
                     break;
                 case 'c': // compression
-                   if(i++ >= argc) {LOGGER_ERROR("Erreur sur l'option -c"); return -1;}
-                   if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                   if(i++ >= argc) {LOGGER_ERROR("Error in option -c"); return -1;}
+                   if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
+                   else if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
                    else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
                    else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
                    else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
-                   else compression = COMPRESSION_NONE;
+                   else {LOGGER_ERROR("Unknown value for option -c : " << argv[i]); return -1;}
                    break;
                 default: return -1;
             }
@@ -265,21 +329,18 @@ int parseCommandLine(int argc, char** argv) {
 
 /**
  * \~french
- * \brief Enregistre une image TIFF, avec passage de ses composantes
- * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction. Cette fonction est utilisée pour le debug pour enregistrer des images intermédiaires. Pour l'image finale, on utilisera la fonction d'enregistrement propre aux objets de la classe LibtiffImage
+ * \brief Enregistre une image TIFF, avec passage de ses composantes (pour le déboguage)
+ * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction. Cette fonction est utilisée pour le déboguage pour enregistrer des images intermédiaires. Pour l'image finale, on utilisera la fonction d'enregistrement propre aux objets de la classe LibtiffImage
  * \param[in] pImage image à enregistrer
  * \param[in] pName chemin de l'image à écrire
  * \param[in] bps nombre de bits par canal de l'image TIFF
  * \param[in] sf format des canaux (entier ou fottant)
  * \param[in] ph photométrie de l'image à écrire
  * \param[in] comp compression de l'image à écrire
- * \return 0 en cas de succes, -1 sinon
+ * \return code de retour, 0 si réussi, -1 sinon
  */
 int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph, uint16_t comp) {
     // Ouverture du fichier
-    /*TEST*//*
-    LOGGER_INFO("Sauvegarde de l'image " << pName);
-    pImage->print();*/
     TIFF* output=TIFFOpen(pName,"w");
     if (output==NULL) {
         LOGGER_ERROR("Impossible d'ouvrir le fichier " << pName << " en ecriture");
@@ -339,7 +400,7 @@ int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph
  * \param[out] bbox rectangle englobant de l'image lue (et de son masque)
  * \param[out] resx résolution en X de l'image lue (et de son masque)
  * \param[out] resy résolution en Y de l'image lue (et de son masque)
- * \return 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
+ * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
  */
 int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, BoundingBox<double>* bbox, double* resx, double* resy)
 {
@@ -403,7 +464,7 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
  * \param[out] ppImageOut image résultante de l'outil
  * \param[out] ppMaskOut masque résultat de l'outil, si demandé
  * \param[out] pImageIn ensemble des images en entrée
- * \return 0 en cas de succès, -1 en cas d'erreur
+ * \return code de retour, 0 si réussi, -1 sinon
  */
 int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
                std::vector<LibtiffImage*>* pImageIn)
@@ -496,7 +557,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
  * \details On vérifie que les résolutions fournies ne sont pas nulles et que le format des canaux est le même pour les images en entrée et pour celle en sortie
  * \param[in] pImageOut image résultante de l'outil
  * \param[in] ImageIn images en entrée
- * \return 0 en cas de succès, -1 en cas d'erreur
+ * \return code de retour, 0 si réussi, -1 sinon
  * \todo Contrôler les éventuels masques
  */
 int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
@@ -541,7 +602,7 @@ int checkImages(LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn)
  * 
  * \param[in] ImageIn images en entrée
  * \param[out] pTabImageIn images en entrée, triées en paquets compatibles
- * \return 0 en cas de succès, -1 en cas d'erreur
+ * \return code de retour, 0 si réussi, -1 sinon
  */
 int sortImages(std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn)
 {    
@@ -839,34 +900,12 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
     return 0;
 }
 
-/*TEST : sortie des images (masques) temporaires
-saveImage(pECI,"pECI.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-saveImage(pECMI,"pECMI.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-saveImage(pECI,"pECI_compat.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-saveImage(mask,"pECI_compat_mask.tif",1,8,1,PHOTOMETRIC_MASK,COMPRESSION_NONE);
-saveImage(pECI,"pECI_non_compat_withMirrors.tif",1,32,SAMPLEFORMAT_IEEEFP,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-saveImage(pECI,"pECI_non_compat_withMirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-saveImage(pRImage,"pRImage.tif",3,8,1,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-saveImage(pResampledMask,"pRImage_mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-saveImage(mask,"mask.tif",1,8,1,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-LOGGER_ERROR("On enregistre le paquet d'images " << i);
-saveImage(pECI,"pECI.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-LOGGER_ERROR("On enregistre le masque du paquet d'images " << i);
-saveImage(pECMI,"pECMI.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-LOGGER_ERROR("On enregistre le paquet d'images avec miroirs");
-saveImage(pECI_mirrors,"pECI_mirrors.tif",3,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
-LOGGER_ERROR("On enregistre le masque du paquet d'images avec miroirs");
-saveImage(pECMI,"pECMI_mirrors.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-LOGGER_ERROR("On enregistre le masque rééchantillonné");
-saveImage(resampledMask,"pResampledMask.tif",1,8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_NONE);
-*/
-
 /**
  ** \~french
  * \brief Fonction principale de l'outil mergeNtiff
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
- * \return 0 en cas de succès, -1 sinon
+ * \return code de retour, 0 si réussi, -1 sinon
  ** \~english
  * \brief Main function for tool mergeNtiff
  * \param[in] argc parameters number
