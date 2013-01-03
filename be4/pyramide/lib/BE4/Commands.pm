@@ -99,7 +99,13 @@ Wms2work () {
         do
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
-            if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+            if [ "$fmt" == "png" ] ; then
+                echo "gdalinfo"
+                if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+            else
+                echo "tiffck"
+                if tiffck $nameImg 1>/dev/null ; then break ; fi
+            fi
             
             echo "Failure $count : wait for $wait_delay s"
             sleep $wait_delay
@@ -120,7 +126,7 @@ Wms2work () {
     fi
 
     if [ "$fmt" == "png" ]||[ "$nbTiles" != "1x1" ] ; then
-        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096 -compress Zip $dir.tif
+        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         mv $dir/img01.tif $dir.tif
@@ -668,7 +674,7 @@ sub configureFunctions {
         $conf_montageOut .= "-type Grayscale ";
     }
 
-    $configuredFunc =~ s/__montageOut__/$conf_montageOut/;
+    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
     # congigure tiffcp
     my $conf_tcp = "";

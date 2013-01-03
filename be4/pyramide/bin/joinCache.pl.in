@@ -1806,7 +1806,7 @@ sub writeRootsInList {
         return FALSE;
     }
     
-    while( my ($root,$rootID) = each($this{list}->{cacheRoots}) ) {
+    while( my ($root,$rootID) = each( %{$this{list}->{cacheRoots}} ) ) {
         unshift @LIST,(sprintf "%s=%s\n",$rootID,$root);
     }
     
