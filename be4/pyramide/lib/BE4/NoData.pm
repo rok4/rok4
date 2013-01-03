@@ -183,7 +183,7 @@ sub _init {
 
         if ($self->{pixel}->getBitsPerSample == 8 &&
             $self->{pixel}->getSampleFormat eq 'uint' &&
-            $params->{value} !~ m/^[0-9,]+$/) {
+            ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {
 
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{value});
