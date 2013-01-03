@@ -149,7 +149,7 @@ sub new {
 
     ########## Dossier des configurations des mergeNtiff pour ce script
     
-    $self->{mntConfDir} = File::Spec->catfile($self->{tempDir},"mergeNtiff");
+    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff",$self->{id});
 
     ########## Tests et création de l'ensemble des dossiers
     
