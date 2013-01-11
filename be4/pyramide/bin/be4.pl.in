@@ -34,6 +34,24 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: be4.pl
+
+program: be4
+
+Tool allowing to generate images' pyramid from georeferenced images or WMS servers. Output format respects WMS/WMTS server ROK4 specifications.
+
+(see be4_general.png)
+
+Using:
+    (start code)
+    (end code)
+=cut
+
+################################################################################
+
 use warnings;
 use strict;
 
@@ -74,20 +92,19 @@ $|=1;
 # Version
 my $VERSION = '@VERSION_TEXT@';
 
-################################################################################
-#
-# Title: be4
-#
-# (see uml-global.png)
-#
 ####################################################################################################
-#                                              VARIABLES                                           #
+#                                       Group: Variables                                           #
 ####################################################################################################
 
-# Group: variable
-
-#
 =begin nd
+
+
+
+Contains all Perl classes used by tools:
+    - be4
+    - joinCache
+    - create-layer
+    
 variable: %opts
 
 Command options.

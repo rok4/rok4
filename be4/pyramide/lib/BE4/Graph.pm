@@ -33,6 +33,68 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Graph.pm
+
+Class: BE4::Graph
+
+Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
+
+To generate this kind of graph, we use :
+    - *jobNumber* scripts by level : to generate image to work format.
+    - *jobNumber* scripts : to move image in the final pyramid, with the wanted format (compression...)
+
+=> *jobNumber x (levelNumber + 1)* scripts
+
+Organization in the <Forest> scripts' array :
+
+(see script_NNGraph.png)
+
+Link between a node and his children or his father is not trivial. It is calculated and store in the <Node> object.
+
+Using:
+    (start code)
+    use BE4::Graph;
+
+    # Graph object creation
+    my $objGraph = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+
+    ...
+
+    # Fill each node with computing code
+    $objGraph->computeYourself();
+    (end code)
+
+Attributes:
+    forest - <Forest> - Forest which this tree belong to.
+    pyramid - <Pyramid> - Pyramid linked to this tree.
+    commands - <Commands> - Command to use to generate images.
+    datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
+
+    bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
+    nodes - <Node> hash - Structure is:
+        (start code)
+        level1 => {
+           c1_r2 => n1,
+           c2_r2 => n2,
+           c3_r2 => n3, ...}
+        level2 => {
+           c1_r2 => n4,
+           c2_r2 => n5, ...}
+
+        cX : node's column
+        rX : node's row
+        nX : BE4::Node
+        (end code)
+        
+    bottomID - string - Bottom level identifiant
+    topID - string - Top level identifiant
+=cut
+
+################################################################################
+
 package BE4::Graph;
 
 use Geo::OSR;
@@ -72,47 +134,23 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
-=begin nd
-Group: variable
-
-variable: $self
-    * forest : BE4::Forest
-    * pyramid : BE4::Pyramid
-    * commands : BE4::Commands
-    * datasource : BE4::DataSource
-    
-    * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    * nodes : hash
-|   level1 => {
-|      x1_y2 => n1,
-|      x2_y2 => n2,
-|      x3_y2 => n3, ...}
-|   level2 => { 
-|      x1_y2 => n4,
-|      x2_y2 => n5, ...}
-|
-|   nX = BE4::Node
-
-    * bottomID : string
-    * topID : string
-=cut
-
 ####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
+#                                        Group: Constructors                                       #
 ####################################################################################################
 
-# Group: constructor
-
-#
 =begin nd
-method: new
+Constructor: new
 
-Parameters:
-    objForest - BE4::Forest in which this graph is.
-    objSrc - BE4::DataSource, used to defined nodes
-    objPyr - BE4::Pyramid
-    objCommands - BE4::Commands, used to compute tree
+Graph constructor. Bless an instance.
+
+Parameters (list):
+    objForest - <Forest> - Forest which this tree belong to
+    objSrc - <DataSource> - Datasource which determine bottom level nodes
+    objPyr - <Pyramid> - Pyramid linked to this tree
+    objCommands - <Commands> - Commands to use to generate pyramid's images
+
+See also:
+    <_init>, <_load>
 =cut
 sub new {
     my $this = shift;
@@ -145,15 +183,15 @@ sub new {
 }
 
 =begin nd
-method: _init
+Function: _init
 
-Check DataSource, Pyramid and Commands parameters.
+Checks and stores informations.
 
-Parameters :
-    objForest - a BE4::DataForest object
-    objSrc - a BE4::DataSource object
-    objPyr - a BE4::Pyramid object
-    ObjCommands - a BE4::Commands object
+Parameters (list):
+    objForest - <Forest> - Forest which this tree belong to
+    objSrc - <DataSource> - Data source which determine bottom level nodes
+    objPyr - <Pyramid> - Pyramid linked to this tree
+    objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
     my $self = shift;
@@ -191,12 +229,10 @@ sub _init {
     return TRUE;
 }
 
-#
 =begin nd
-method: _load
+Function: _load
 
-Determine all nodes from the bottom level to the top level, thanks to the data source.
-
+Determines all nodes from the bottom level to the top level, thanks to the data source.
 =cut
 sub _load {
     my $self = shift;
@@ -264,19 +300,16 @@ sub _load {
 }
 
 ####################################################################################################
-#                                 NODES DETERMINATION METHODS                                      #
+#                          Group: Nodes determination methods                                      #
 ####################################################################################################
 
-# Group: nodes determination methods
-
-#
 =begin nd
-method: identifyBottomNodes
+Function: identifyBottomNodes
 
 Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent).
 
-Parameters:
-    ct - a Geo::OSR::CoordinateTransformation object, to convert data extent or images' bbox.
+Parameters (list):
+    ct - <Geo::OSR::CoordinateTransformation> - To convert data extent or images' bbox.
 =cut
 sub identifyBottomNodes {
     my $self = shift;
@@ -411,11 +444,18 @@ sub identifyBottomNodes {
     return TRUE;  
 }
 
-#
 =begin nd
-method: identifyAboveNodes
+Function: identifyAboveNodes
 
-Calculate all nodes in above levels concerned by the datasource (tiles which touch the data source extent).
+Calculate all nodes in above levels. We generate a above level node if one or more children are generated.
+
+We have to use "nearest neighbour" interpolation with this kinf of graph. So (beacuase pixel's center are aligned), we keep the value from the below level. Goal is to always have values from source data, no average.
+
+(see aboveNodes_NNGraph_2.png)
+
+When we load the TMS, we precise links between different levels (source and targets). For each level, we identify above nodes (thanks to bounding boxes) which will be generated from the node. We store all this parent-child relations.
+
+(see aboveNodes_NNGraph.png)
 =cut
 sub identifyAboveNodes {
     my $self = shift;
@@ -496,21 +536,14 @@ sub identifyAboveNodes {
 
 # Group: graph computing methods
 
-#
 =begin nd
-method: computeYourself
-
-Determine codes and weights for each node of the current graph, and share work on scripts, so as to optimize execution time.
+Function: computeYourself
 
 Only one step:
     - browse graph and write commands in different scripts.
-
-Parameter:
-    NEWLIST - stream to the cache's list, to add new images.
 =cut
 sub computeYourself {
     my $self = shift;
-    my $NEWLIST = shift;
     
     my $src = $self->{datasource};
     my $tms = $self->getPyramid()->getTileMatrixSet();
@@ -571,17 +604,15 @@ sub computeYourself {
     return TRUE;
 };
 
-#
 =begin nd
-method: containsNode
+Function: containsNode
 
-Parameters:
-    level - level of the node we want to know if it is in the graph.
-    x     - x coordinate of the node we want to know if it is in the graph.
-    y     - y coordinate of the node we want to know if it is in the graph.
+Returns a boolean : TRUE if the node belong to this tree, FALSE otherwise.
 
-Returns:
-    A boolean : TRUE if the node exists, FALSE otherwise.
+Parameters (list):
+    level - string - Level ID of the node we want to know if it is in the quad tree.
+    i - integer - Column of the node we want to know if it is in the quad tree.
+    j - integer - Row of the node we want to know if it is in the quad tree.
 =cut
 sub containsNode {
     my $self = shift;
@@ -596,52 +627,65 @@ sub containsNode {
 }
 
 ####################################################################################################
-#                                         GETTERS / SETTERS                                        #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
-sub getPyramid{
+# Function: getPyramid
+sub getPyramid {
     my $self = shift;
     return $self->{pyramid};
 }
 
-sub getCommands{
+# Function: getCommands
+sub getCommands {
     my $self = shift;
     return $self->{commands};
 }
 
-sub getForest{
+# Function: getForest
+sub getForest {
     my $self = shift;
     return $self->{forest};
 }
 
-sub getDataSource{
+# Function: getDataSource
+sub getDataSource {
     my $self = shift;
     return $self->{datasource};
 }
 
+# Function: getTopID
 sub getTopID {
     my $self = shift;
     return $self->{topID};
 }
 
+# Function: getBottomID
 sub getBottomID {
     my $self = shift;
     return $self->{bottomID};
 }
 
-
+# Function: getTopOrder
 sub getTopOrder {
     my $self = shift;
     return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{topID});
 }
 
+# Function: getBottomOrder
 sub getBottomOrder {
     my $self = shift;
     return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{bottomID});
 }
 
+=begin nd
+Function: getNodesOfLevel
+
+Returns a <Node> array, contaning all nodes of the provided level.
+
+Parameters (list):
+    level - string - Level ID whose we want all nodes.
+=cut
 sub getNodesOfLevel {
     my $self = shift;
     my $levelID= shift;
@@ -654,6 +698,14 @@ sub getNodesOfLevel {
     return values (%{$self->{nodes}->{$levelID}});
 }
 
+=begin nd
+Function: isLevelEmpty
+
+Returns a boolean, precise if level is empty.
+
+Parameters (list):
+    level - string - Level ID
+=cut
 sub isLevelEmpty {
     my $self = shift;
     my $levelID= shift;
@@ -667,29 +719,31 @@ sub isLevelEmpty {
     return TRUE;
 }
 
+# Function: getNodesOfTopLevel
 sub getNodesOfTopLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{topID});
 }
 
+# Function: getNodesOfBottomLevel
 sub getNodesOfBottomLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{bottomID});
 }
 
+# Function: getBbox
 sub getBbox {
     my $self =shift;
     return ($self->{bbox}[0],$self->{bbox}[1],$self->{bbox}[2],$self->{bbox}[3]);
 }
 
-#
 =begin nd
-method: updateBBox
+Function: updateBBox
 
-Compare old extrems coordinates and update values.
+Compare provided and stored extrems coordinates and update values.
 
-Parameters:
-    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+Parameters (list):
+    xmin, ymin, xmax, ymax - double - New coordinates to compare with current bbox.
 =cut
 sub updateBBox {
     my $self = shift;
@@ -703,22 +757,18 @@ sub updateBBox {
     if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
-#
-=begin_nd
+=begin nd
 method: getScriptsOfLevel
 
-Return the scripts for a given Level.
+Returns a <Script> array, used scripts to generate the supllied level.
 
-Parameters:
-    - level : levelID 
-    
-Returns:
-    An array of BE4::Script
+Parameters (list):
+    level - string - Level identifiant, whose scripts we want.
 =cut
 sub getScriptsOfLevel {
     my $self = shift;
     my $levelID = shift;
-    my $order =  $self->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
+    my $order =  $self->getPyramid()->getOrderfromID($levelID);
     
     my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
     my $numberOfFinisher = $self->getForest()->getSplitNumber();
@@ -729,19 +779,18 @@ sub getScriptsOfLevel {
     return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
 };
 
-
 ####################################################################################################
-#                                         EXPORT METHODS                                           #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group : EXPORT METHODS
-
-#
 =begin nd
-method: exportForDebug
+Function: exportForDebug
 
-Export in a string the content of the graph object
+Returns all informations about the "nearest neighbour" graph. Useful for debug.
 
+Example:
+    (start code)
+    (end code)
 =cut
 sub exportForDebug {
     my $self = shift ;
@@ -769,91 +818,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Graph - representation of the cache as a graph : cache image = node
-
-=head1 SYNOPSIS
-
-    use BE4::Graph;
-    
-    my $job_number = 4; # 4 split scripts by level + 4 finisher = 4*(number_of_level +1) scripts
-  
-    # Graph object creation
-    my $objGraph = BE4::Graph->new($objDataSource, $objPyramid, $job_number);
-    
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item pyramid
-
-A Pyramid object.
-
-=item commands
-
-A Commands object.
-
-=item datasource
-
-A Datasource object.
-
-=item bbox
-
-Array [xmin,ymin,xmax,ymax], bbox of datasource in the TMS' SRS.
-
-=item nodes
-
-An hash, composition of each node in the tree (code to generate the node, own weight, accumulated weight):
-
-    {
-        levelID => { x1_y2 => objNode, ...}
-        ...
-    }
-    
-    with objNode = a BE4::Node object
-
-=item bottomID, topID
-
-Extrem levels identifiants of the graph.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHORS
-
-Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

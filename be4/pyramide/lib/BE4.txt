@@ -1,0 +1,10 @@
+Package: BE4
+
+Library for tools :
+    - <BE4>
+    - <JOINCACHE>
+    - <CREATE-LAYER>
+
+Group: UML classes diagram
+
+(see be4_classes.png)

@@ -33,6 +33,25 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Array.pm
+
+Class: BE4::Array
+
+Provides functions to compute the max value or the min index of an array. Do not instanciate.
+
+Using:
+    (start code)
+    my @array = (1,3,5,9);
+    my $minIndex = BE4::Arrray->minArrayIndex(@array); # return 0
+    my $maxArrayValue = BE4::Array->maxArrayValue($array); # return 9
+    (end code)
+=cut
+
+################################################################################
+
 package BE4::Array;
 
 use strict;
@@ -54,24 +73,19 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
 ####################################################################################################
-#                                      Index Returning Functions                                   #
+#                               Group: Index returning functions                                   #
 ####################################################################################################
 
-# Group: Index Returning Functions
-
-#
 =begin nd
-method: minArrayIndex
+Function: minArrayIndex
 
-Parameters:
-    first - integer, indice from which minimum is looked for.
-    array - numbers (floats or integers) array
+Parameters (list):
+    first - integer - Indice from which minimum is looked for.
+    array - numbers array -
 
 Returns:
-    Index of the smaller element in a array, begining with the element 'first'
+    An integer, indice of the smaller element in a array, begining with the element 'first'
 =cut
 sub minArrayIndex {
     my $self = shift;
@@ -92,17 +106,14 @@ sub minArrayIndex {
 }
 
 ####################################################################################################
-#                                      Value Returning Functions                                   #
+#                               Group: Value returning functions                                   #
 ####################################################################################################
 
-# Group: Value Returning Functions
-
-#
 =begin nd
-method: maxArrayValue
+Function: maxArrayValue
 
 Parameters:
-    first - integer, indice from which maximum is looked for.
+    first - integer - Indice from which maximum is looked for.
     array - numbers (floats or integers) array
 
 Returns:
@@ -126,41 +137,3 @@ sub maxArrayValue {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Array - Array Manipulation tools
-
-=head1 SYNOPSIS
-
-    use BE4::Array;
-    my @array = (1,3,5,9);
-    my $minIndex = BE4::Arrray->minArrayIndex(@array); # return 0
-    my $maxArrayValue = BE4::Array->maxArrayValue($array); # return 9
-    
-=head1 DESCRIPTION
-
-Provide functios to compute the max value or the min index of an array
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHORS
-
-Chevereau Simon, E<lt>simon.chevereau@ign.frE<gt>
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

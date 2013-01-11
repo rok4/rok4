@@ -60,7 +60,6 @@ set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
 add_custom_command(OUTPUT install_be4 COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
 
-
 add_custom_target(be4-build ALL DEPENDS install_be4)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
@@ -98,13 +97,13 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Documentation Doxygen
+#Documentation NaturalDocs
 #Utilisation du fichier 
 if(BUILD_DOC)
     find_package(NaturalDocs)
     if(NATURALDOCS_FOUND)
-        add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src
-        COMMENT "Generating API documentation with NaturalDocs" VERBATIM )
+        add_custom_target(doc ALL BE4_SRC="${CMAKE_CURRENT_SOURCE_DIR}" make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
+        #add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
     endif(NATURALDOCS_FOUND)
 
     INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})

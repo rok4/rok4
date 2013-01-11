@@ -331,14 +331,14 @@ my $params = {
     pyramid          => $MYPYR,
 };
 
-my $objLayer = new BE4::Layer($params);
+my $objLayer = BE4::Layer->new($params);
 
 if (! defined $objLayer){
     ERROR("Erreur de configuration du layer !");
     exit -43;
 }
 
-my $strlayer = $objLayer->to_string();
+my $strlayer = $objLayer->exportToXML();
 
 if (! defined $strlayer) {
     ERROR("Erreur de construction du layer !");

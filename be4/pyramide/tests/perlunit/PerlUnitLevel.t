@@ -52,7 +52,6 @@ my $level = BE4::Level->new({
     dir_nodata        => "relative/path/to/nodataDir",
     size              => [16,8],
     dir_depth         => 2,
-    limit             => [undef, undef, undef, undef],
 });
 
 ok (defined $level, "Level created");

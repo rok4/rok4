@@ -33,6 +33,37 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Commands.pm
+
+Class: BE4::Commands
+
+Configure and assemble commands used to generate pyramid's images.
+
+All schemes in this page respect this legend :
+
+(see formats.png)
+
+Using:
+    (start code)
+    use BE4::Commands;
+
+    # Commands object creation
+    my $objCommands = BE4::Commands->new(
+        $objPyramid, # BE4::Pyramid object
+        TRUE # useMasks
+    );
+    (end code)
+
+Attributes:
+    pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
+    useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a result mask. This processing is longer, that's why default behaviour is without mask.
+=cut
+
+################################################################################
+
 package BE4::Commands;
 
 use strict;
@@ -57,23 +88,29 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# Constantes
 
-# Booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Commands' weights
+# Group: Commands' weights
+
+# Constant: MERGE4TIFF_W
 use constant MERGE4TIFF_W => 1;
+# Constant: MERGENTIFF_W
 use constant MERGENTIFF_W => 4;
+# Constant: CACHE2WORK_PNG_W
 use constant CACHE2WORK_PNG_W => 3;
+# Constant: WGET_W
 use constant WGET_W => 35;
+# Constant: TIFF2TILE_W
 use constant TIFF2TILE_W => 0;
+# Constant: TIFFCP_W
 use constant TIFFCP_W => 0;
 
 ################################################################################
-# Global
 
+# Variable: BASHFUNCTIONS
+# Define bash functions, used to factorize and reduce scripts.
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
 declare -A RM_IMGS
@@ -285,26 +322,26 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * pyramid : BE4::Pyramid
-    * useMasks : Boolean - Specify if we work with masks to generate images.
+Level constructor. Bless an instance.
+
+Parameters (list):
+    pyr - <Pyramid> - Image pyramid to generate
+    useMasks - boolean - Do we want use masks to generate images ?
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
+    my $pyr = shift;
+    my $useMasks = shift;
     
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pyramid => undef,
         useMasks => FALSE
@@ -312,50 +349,59 @@ sub new {
     bless($self, $class);
 
     TRACE;
-    
-    return undef if (! $self->_init(@_));
-
-    return $self;
-}
-
-sub _init {
-    my ($self, $pyr, $useMasks) = @_;
-
-    TRACE;
 
     if (! defined $pyr || ref ($pyr) ne "BE4::Pyramid") {
         ERROR("Can not load Pyramid !");
-        return FALSE;
+        return undef;
     }
     $self->{pyramid} = $pyr;
-    
+
     if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") ) {
         $self->{useMasks} = TRUE;
     }
 
-    return TRUE;
+    return $self;
 }
 
 ####################################################################################################
-#                                      COMMANDS METHODS                                            #
+#                               Group: Commands methods                                            #
 ####################################################################################################
 
-# Group: commands methods
-
-#
 =begin nd
-method: wms2work
+Function: wms2work
 
 Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
 
 Example:
-    Wms2work ${TMP_DIR}/18_8300_5638.tif "http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_D075-E&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:3857&BBOX=264166.3697535659936,6244599.462785762557312,266612.354658691633792,6247045.447690888197504&WIDTH=4096&HEIGHT=4096&STYLES="
+    (start code)
+    BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
+    10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
+    11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
+    11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
+    10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
+    10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
+    11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
+    11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
+    10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
+    10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
+    11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
+    11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
+    10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
+    10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
+    11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
+    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
+    #
+    Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    (end code)
 
-Parameters:
-    node - BE4::Node, whose image have to be harvested.
-    harvesting - BE4::Harvesting, to use to harvest image.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
-    suffix - optionnal, suffix to add after the node's name ('BgI' for example), seperated with an underscore.
+Parameters (list):
+    node - <Node> - Node whose image have to be harvested.
+    harvesting - <Harvesting> - To use to harvest image.
+    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+    suffix - string - Optionnal, suffix to add after the node's name ('BgI' for example), seperated with an underscore.
+
+Returns:
+    An array (code, weight), (undef,WGET_W) if error.
 =cut
 sub wms2work {
     my ($self, $node, $harvesting, $justWeight, $suffix) = @_;
@@ -383,24 +429,29 @@ sub wms2work {
     return ($cmd,WGET_W);
 }
 
-#
 =begin nd
-method: cache2work
+Function: cache2work
 
-Copy image from cache to work directory and transform (work format : untiles, uncompressed).
-Use the 'Cache2work' bash function.
+Copy image from cache to work directory and transform (work format : untiles, uncompressed). Use the 'Cache2work' bash function.
+
+(see cache2work.png)
 
 2 cases:
     - legal tiff compression -> tiffcp
     - png -> untile + montage
     
 Examples:
+    (start code)
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI png
+    (end code)
     
-Parameters:
-    node - BE4::Node, whose image have to be transfered in the work directory.
-    ownMask - Boolean, specify if mask is combined with this node.
+Parameters (list):
+    node - <Node> - Node whose image have to be transfered in the work directory.
+    ownMask - boolean - Specify if mask is combined with this node and have to be imported.
+
+Returns:
+    An array (code, weight), ("",-1) if error.
 =cut
 sub cache2work {
     my ($self, $node, $ownMask) = @_;
@@ -444,19 +495,23 @@ sub cache2work {
     return ($cmd,$weight);
 }
 
-#
 =begin nd
-method: work2cache
+Function: work2cache
 
 Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
 
+(see work2cache.png)
+
 Example:
-    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
+|    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
 
 Parameter:
-    node - BE4::Node object, whose image have to be transfered in the cache.
-    workDir - Work image directory, can be an environment variable.
-    after - string, specify if image have to be removed after copy in the cache ("rm"), move in the temporary directory root ("mv"), nothing otherwise
+    node - <Node> - Node whose image have to be transfered in the cache.
+    workDir - string - Work image directory, can be an environment variable.
+    after - string - Specify if work image have to be removed after copy in the cache ("remove"), move in the common temporary directory ("move"), or nothing ("none").
+
+Returns:
+    An array (code, weight), ("",-1) if error.
 =cut
 sub work2cache {
     my $self = shift;
@@ -490,18 +545,22 @@ sub work2cache {
     return ($cmd,$weight);
 }
 
-#
 =begin nd
-method: mergeNtiff
+Function: mergeNtiff
 
 Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
-Parameters:
-    node - BE4::Node to generate thanks to a 'mergeNtiff' command.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+(see mergeNtiff.png)
+
+Parameters (list):
+    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 Example:
-    MergeNtiff ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
+|    MergeNtiff ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
+
+Returns:
+    An array (code, weight), ("",-1) if error.
 =cut
 sub mergeNtiff {
     my $self = shift;
@@ -594,23 +653,29 @@ sub mergeNtiff {
     return ($code,$weight);
 }
 
-#
 =begin nd
-method: merge4tiff
+Function: merge4tiff
 
-Compose the 'merge4tiff' command.
+Compose the 'merge4tiff' command. If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
 
 |                   i1  i2
 | backGround    +              =  resultImg
 |                   i3  i4
 
-Parameters:
-    node - BE4::Node to generate thanks to a 'merge4tiff' command.
-    harvesting - BE4::Harvesting, to use to harvest background if necessary.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+(see merge4tiff.png)
+
+Parameters (list):
+    node - <Node> - Node to generate thanks to a 'merge4tiff' command.
+    harvesting - <Harvesting> - To use to harvest background if necessary.
+    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
 
 Example:
+    (start code)
     merge4tiff -g 1 -n FFFFFF  -i1 ${TMP_DIR}/19_396_3134.tif -i2 ${TMP_DIR}/19_397_3134.tif -i3 ${TMP_DIR}/19_396_3135.tif -i4 ${TMP_DIR}/19_397_3135.tif ${TMP_DIR}/18_198_1567.tif
+    (end code)
+
+Returns:
+    An array (code, weight), ("",-1) if error.
 =cut
 sub merge4tiff {
     my $self = shift;
@@ -657,7 +722,7 @@ sub merge4tiff {
                     ($c,$w) = $self->wms2work($node,$harvesting,$justWeight,"BgI");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
-                        return FALSE;
+                        return ("",-1);
                     }
                     
                     $code .= $c;
@@ -720,15 +785,8 @@ sub merge4tiff {
     return ($code,$weight);
 }
 
-####################################################################################################
-#                                        PUBLIC METHODS                                            #
-####################################################################################################
-
-# Group: public methods
-
-#
 =begin nd
-method: configureFunctions
+Function: configureFunctions
 
 Configure bash functions to write in scripts' header thanks to pyramid's components.
 =cut
@@ -835,12 +893,9 @@ sub configureFunctions {
     return $configuredFunc;
 }
 
-
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
-
-# Group: getters - setters
 
 sub getNodata {
     my $self = shift;
@@ -851,71 +906,31 @@ sub getPyramid {
     my $self = shift;
     return $self->{pyramid};
 }
+
+####################################################################################################
+#                                Group: Export methods                                             #
+####################################################################################################
+
+=begin nd
+Function: exportForDebug
+
+Returns all commands' informations. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
+sub exportForDebug {
+    my $self = shift ;
+
+    my $export = "";
+
+    $export .= "\nObject BE4::Commands :\n";
+    $export .= "\t Use masks\n" if $self->{useMasks};
+    $export .= "\t Doesn't use masks\n" if (! $self->{useMasks});
+
+    return $export;
+}
   
 1;
 __END__
-
-# Below is stub documentation for your module. You'd better edit it!
-
-=head1 NAME
-
-BE4::Commands - Compose commands to generate the cache
-
-=head1 SYNOPSIS
-
-    use BE4::Commands;
-  
-    # Commands object creation
-    my $objCommands = BE4::Commands->new(
-        $objPyramid, # BE4::Pyramid object
-        TRUE # useMasks
-    );
-
-=head1 DESCRIPTION
-
-=over 4
-
-=item pyramid
-
-A BE4::Pyramid object.
-
-=item useMasks
-
-A boolean. If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a result mask. This processing is longer, that's why default behaviour is without mask.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
-<li><A HREF="./lib-BE4-Script.html">BE4::Script</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

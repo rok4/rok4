@@ -33,6 +33,85 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: DataSource.pm
+
+Class: BE4::DataSource
+
+Manage a data source, physical (image files) or virtual (WMS server) or both.
+
+Using:
+    (start code)
+    use BE4::DataSource;
+
+    # DataSource object creation : 3 cases
+
+    # Real Data and no harvesting : native SRS and lossless compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+        }
+    );
+
+    # No Data, just harvesting (here for a WMS vector)
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => IGNF:WGS84G,
+            extent => /home/ign/SHAPE/GMLPolygon.txt,
+
+            wms_layer   => "tp:TRONCON_ROUTE",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format  => "image/png",
+            wms_bgcolor => "0xFFFFFF",
+            wms_transparent  => "FALSE",
+            wms_style  => "line",
+            min_size => 9560,
+            max_width => 1024,
+            max_height => 1024
+        }
+    );
+
+    # Real Data and harvesting : reprojection or lossy compression
+    my $objDataSource = BE4::DataSource->new(
+        "19",
+        {
+            srs => "IGNF:LAMB93",
+            path_image => "/home/ign/DATA/BDORTHO"
+            wms_layer => "ORTHO_XXX",
+            wms_url => "http://geoportail/wms/",
+            wms_version => "1.3.0",
+            wms_request => "getMap",
+            wms_format => "image/tiff"
+        }
+    );
+    (end code)
+
+Attributes:
+    bottomID - string - Level identifiant, from which data source is used (base level).
+    bottomOrder - integer - Level order, from which data source is used (base level).
+    topID - string - Level identifiant, to which data source is used. It is calculated in relation to other datasource.
+    topOrder - integer - Level order, to which data source is used. It is calculated in relation to other datasource.
+
+    srs - string - SRS of the bottom extent (and ImageSource objects if exists).
+    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
+    bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
+
+    imageSource - <ImageSource> - Georeferenced images' source.
+    harvesting - <Harvesting> - WMS server. If it is useless, it will be remove.
+
+Limitations:
+    Metadata managing not yet implemented.
+=cut
+
+################################################################################
+
 package BE4::DataSource;
 
 use strict;
@@ -69,30 +148,22 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * bottomID : string - this datasource will be used between bottomLevel and topLevel
-    * bottomOrder : integer
-    * topID : string
-    * topOrder : integer
-    
-    * srs
-    * extent : OGR::Geometry - in the previous SRS
-    * bbox - [$xmin,$ymin,$xmax,$ymax]
+DataSource constructor. Bless an instance.
 
-    * imageSource : BE4::ImageSource - can be undefined
-    * harvesting : BE4::Harvesting - can be undefined
+Parameters (list):
+    level - string - Base level (bottom) for this data source.
+    params - hash - Data source parameters (see <_load> for details).
+
+See also:
+    <_load>, <computeGlobalInfo>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
     my $level = shift;
@@ -127,15 +198,37 @@ sub new {
     return $self;
 }
 
-#
 =begin nd
-method: _load
+Function: _load
 
-Extract data from the hash with parameters. Create a BE4::Harvesting Object if required.
+Sorts parameters, relays to concerned constructors and stores results.
 
-Parameters:
-    level - a BE4::Level object.
-    params - srs, extent, path_image, path_metadata and optionally wms_layer, wms_url, wms_version, wms_request, wms_format, wms_style, wms_bgcolor, wms_transparent, min_size, max_width,maw_height from at from a hash
+(see datasource.png)
+
+Parameters (list):
+    level - string - Base level (bottom) for this data source.
+    params - hash - Data source parameters :
+    (start code)
+            # common part
+            srs - string
+
+            # image source part
+            path_image - string
+
+            # harvesting part
+            wms_layer - string
+            wms_url - string
+            wms_version - string
+            wms_request - string
+            wms_format - string
+            wms_bgcolor - string
+            wms_transparent - string
+            wms_style - string
+            min_size - string
+            max_width - string
+            max_height - string
+    (end code)
+    Image source part is directly relayed to <ImageSource::new> and harvesting part is directly relayed to <Harvesting::new> (see parameters' meaning).
 =cut
 sub _load {
     my $self   = shift;
@@ -208,23 +301,16 @@ sub _load {
     return TRUE;
 }
 
-####################################################################################################
-#                                       PUBLIC METHODS                                             #
-####################################################################################################
-
-# Group: public methods
-
-#
 =begin nd
-    method: computeGlobalInfo
+Function: computeGlobalInfo
 
-    Read the srs, for the box or images.
+Reads the srs, manipulates extent and bounding box.
 
-    Read the extent, 2 cases are possible :
-        - extent is a bbox, as xmin,ymin,xmax,ymax
-        - extent is a file path, file contains a complex polygon
+If an extent is supplied (no image source), 2 cases are possible :
+    - extent is a bbox, as xmin,ymin,xmax,ymax
+    - extent is a file path, file contains a complex polygon, GML format.
 
-    We generate an OGR Geometry
+We generate an OGR Geometry from the supplied extent or the image source bounding box.
 =cut
 sub computeGlobalInfo {
     my $self = shift;
@@ -335,80 +421,106 @@ sub computeGlobalInfo {
 
 }
 
-
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getSRS
 sub getSRS {
     my $self = shift;
     return $self->{srs};
 }
 
+# Function: getExtent
 sub getExtent {
     my $self = shift;
     return $self->{extent};
 }
 
+# Function: getHarvesting
 sub getHarvesting {
     my $self = shift;
     return $self->{harvesting};
 }
 
+# Function: getImages
 sub getImages {
     my $self = shift;
     return $self->{imageSource}->getImages();
 }
 
+# Function: hasImages
 sub hasImages {
     my $self = shift;
     return (defined $self->{imageSource});
 }
 
+# Function: hasHarvesting
 sub hasHarvesting {
     my $self = shift;
     return (defined $self->{harvesting});
 }
 
+# Function: removeHarvesting
 sub removeHarvesting {
     my $self = shift;
     $self->{harvesting} = undef;
 }
 
+# Function: getBottomID
 sub getBottomID {
     my $self = shift;
     return $self->{bottomID};
 }
 
+# Function: getTopID
 sub getTopID {
     my $self = shift;
     return $self->{topID};
 }
 
+# Function: getBottomOrder
 sub getBottomOrder {
     my $self = shift;
     return $self->{bottomOrder};
 }
 
+# Function: getTopOrder
 sub getTopOrder {
     my $self = shift;
     return $self->{topOrder};
 }
 
+=begin nd
+Function: setBottomOrder
+
+Parameters (list):
+    bottomOrder - integer - Bottom level order to set
+=cut
 sub setBottomOrder {
     my $self = shift;
     my $bottomOrder = shift;
     $self->{bottomOrder} = $bottomOrder;
 }
 
+=begin nd
+Function: setTopOrder
+
+Parameters (list):
+    topOrder - integer - Top level order to set
+=cut
 sub setTopOrder {
     my $self = shift;
     my $topOrder = shift;
     $self->{topOrder} = $topOrder;
 }
 
+=begin nd
+Function: setTopID
+
+Parameters (list):
+    topID - string - Top level identifiant to set
+=cut
 sub setTopID {
     my $self = shift;
     my $topID = shift;
@@ -416,11 +528,18 @@ sub setTopID {
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all informations about the data source. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -448,132 +567,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::DataSource - Managing a data source
-
-=head1 SYNOPSIS
-
-    use BE4::DataSource;
-
-    # DataSource object creation : 3 cases
-    
-    # Real Data and no harvesting : native SRS and lossless compression
-    my $objDataSource = BE4::DataSource->new(
-        "19",
-        {
-            srs => "IGNF:LAMB93",
-            path_image => "/home/ign/DATA/BDORTHO"
-        }
-    );
-    
-    # No Data, just harvesting (here for a WMS vector)
-    my $objDataSource = BE4::DataSource->new(
-        "19",
-        {
-            srs => IGNF:WGS84G,
-            extent => /home/ign/SHAPE/GMLPolygon.txt,
-            
-            wms_layer   => "tp:TRONCON_ROUTE",
-            wms_url => "http://geoportail/wms/",
-            wms_version => "1.3.0",
-            wms_request => "getMap",
-            wms_format  => "image/png",
-            wms_bgcolor => "0xFFFFFF",
-            wms_transparent  => "FALSE",
-            wms_style  => "line",
-            min_size => 9560,
-            max_width => 1024,
-            max_height => 1024
-        }
-    );
-    
-    # Real Data and harvesting : reprojection or lossy compression
-    my $objDataSource = BE4::DataSource->new(
-        "19",
-        {
-            srs => "IGNF:LAMB93",
-            path_image => "/home/ign/DATA/BDORTHO"
-            wms_layer => "ORTHO_XXX",
-            wms_url => "http://geoportail/wms/",
-            wms_version => "1.3.0",
-            wms_request => "getMap",
-            wms_format => "image/tiff"
-        }
-    );
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-  
-=item bottomID, bottomOrder
-
-ID (in TMS) and order (integer) of the base level, from which this datasource is used.
-
-=item topID, topOrder
-
-ID (in TMS) and order (integer) of the top level, to which this datasource is used, calculated in relation to other datasource
-        
-=item extent
-
-An OGR geometry, extent of the data source (calculate from ImageSource or supplied in configuration)
-
-=item bbox
-
-Bbox of extent, an array [xmin,ymin,xmax,ymax].
-
-=item srs
-
-SRS of the bottom extent (and ImageSource objects if exists)
-    
-=item imageSource
-
-An ImageSource object, can be undefined
-    
-=item harvesting
-
-An Harvestingobject, can be undefined. If it is useless, it will be remove.
-
-=back
-
-'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
-
-=head1 LIMITATION & BUGS
-
-Metadata managing not yet implemented.
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Harvesting.html">BE4::Harvesting</A></li>
-<li><A HREF="./lib-BE4-ImageSource.html">BE4::ImageSource</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

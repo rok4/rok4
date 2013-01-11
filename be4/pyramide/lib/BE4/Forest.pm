@@ -33,6 +33,39 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Forest.pm
+
+Class: BE4::Forest
+
+Creates and manages all graphs, <Graph> and <QTree>.
+
+(see forest.png)
+
+Using:
+    (start code)
+    use BE4::Forest
+
+    my $Forest = BE4::Forest->new(
+        $objPyramid, # a BE4::Pyramid object
+        $objDSL, # a BE4::DataSourceLoader object
+        $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
+    );
+    (end code)
+
+Attributes:
+    pyramid - <Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
+    commands - <Commands> - To compose generation commands (mergeNtiff, tiff2tile...).
+    graphs - <QTree> or <Graph> array - Graphs composing the forest, one per data source.
+    scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
+    splitNumber - integer - Number of script used for work parallelization.
+
+=cut
+
+################################################################################
+
 package BE4::Forest;
 
 use strict;
@@ -74,34 +107,37 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * pyramid : BE4::Pyramid
-    * commands : BE4::Commands
-    * graphs : array of BE4::QTree or BE4::Graph
-    * scripts : array of BE4::Script
-    * splitNumber : integer - the number of script used
+Forest constructor. Bless an instance.
+
+Parameters (list):
+    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    DSL - <DataSourceLoader> - Contains one or several data sources
+    params_process - hash - Informations for scripts
+|               job_number - integer - Parallelization level
+|               path_temp - string - Temporary directory
+|               path_temp_common - string - Common temporary directory
+|               path_shell - string - Script directory
+
+See also:
+    <_init>, <_load>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pyramid     => undef,
-        commands     => undef,
-        graphs  => [],
-        scripts => [],
+        commands    => undef,
+        graphs      => [],
+        scripts     => [],
         splitNumber => undef,
     };
 
@@ -120,16 +156,20 @@ sub new {
     return $self;
 }
 
-#
 =begin nd
-method: _init
+Function: _init
 
-Check the Pyramid and DataSourceLoader objects and Commands parameters.
+Checks parameters and stores the pyramid.
 
-Parameters:
-    pyr - a BE4::Pyramid object.
-    DSL - a BE4::DataSourceLoader object
-    params_process - job_number, path_temp and path_shell.
+Parameters (list):
+    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    DSL - <DataSourceLoader> - Contains one or several data sources
+    params_process - hash - Informations for scipts, where to write them, temporary directory to use...
+|               job_number - integer - Parallelization level
+|               path_temp - string - Temporary directory
+|               path_temp_common - string - Common temporary directory
+|               path_shell - string - Script directory
+
 =cut
 sub _init {
     my ($self, $pyr, $DSL, $params_process) = @_;
@@ -157,16 +197,24 @@ sub _init {
     return TRUE;
 }
 
-#
 =begin nd
-method: _load
+Function: _load
 
-Create a Graph or a QTree object per data source and a Commands object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
+Creates a <Graph> or a <QTree> object per data source and a <Commands> object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
 
-Parameters:
-    pyr - a BE4::Pyramid object.
-    DSL - a BE4::DataSourceLoader object
-    params_process - job_number, path_temp and path_shell.
+All differences between different kinds of graphs are handled in respective classes, in order to be imperceptible for users.
+
+Only scripts creation and initial organization are managed by the forest.
+
+Parameters (list):
+    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    DSL - <DataSourceLoader> - Contains one or several data sources
+    params_process - hash - Informations for scipts, where to write them, temporary directory to use...
+|               job_number - integer - Parallelization level
+|               path_temp - string - Temporary directory
+|               path_temp_common - string - Common temporary directory
+|               path_shell - string - Script directory
+
 =cut
 sub _load {
     my ($self, $pyr, $DSL, $params_process) = @_;
@@ -303,7 +351,7 @@ sub _load {
                 if ($i == $pyr->getBottomOrder - 1) {
                     $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
                 } else {
-                    my $levelID = $self->getPyramid()->getTileMatrixSet()->getIDfromOrder($i);
+                    my $levelID = $self->getPyramid()->getIDfromOrder($i);
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
                 
@@ -327,24 +375,18 @@ sub _load {
 
 
 ####################################################################################################
-#                                          Graph TOOLS                                             #
+#                                  Group: Graphs tools                                             #
 ####################################################################################################
 
-# Group: Graph and QTree tools
-
-#
 =begin nd
-method: containsNode
+Function: containsNode
 
-Check if a Graph (or a QTree) in the forest contain a particular node (level,x,y).
+Returns a boolean : TRUE if the node belong to this forest, FALSE otherwise.
 
-Parameters:
-    level - level of the node we want to know if it is in the forest.
-    x - x coordinate of the node we want to know if it is in the forest.
-    y - y coordinate of the node we want to know if it is in the forest.
-
-Returns:
-    A boolean : TRUE if the node exists, FALSE otherwise.
+Parameters (list):
+    level - string - Level ID of the node we want to know if it is in the forest.
+    i - integer - Column of the node we want to know if it is in the forest.
+    j - integer - Row of the node we want to know if it is in the forest.
 =cut
 sub containsNode {
     my $self = shift;
@@ -359,14 +401,13 @@ sub containsNode {
     return FALSE;
 }
 
-#
 =begin nd
-method: computeGraphs
+Function: computeGraphs
 
-Compute each Graph or QTree one after the other and close scripts to finish.
+Computes each <Graph> or <QTree> one after the other and closes scripts to finish.
 
 See Also:
-    <computeYourself>
+    <Graph::computeYourself>, <QTree::computeYourself>
 =cut
 sub computeGraphs {
     my $self = shift;
@@ -392,26 +433,33 @@ sub computeGraphs {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getGraphs
 sub getGraphs {
     my $self = shift;
     return $self->{graphs}; 
 }
 
+# Function: getPyramid
 sub getPyramid {
     my $self = shift;
     return $self->{pyramid}; 
 }
 
+# Function: getScripts
 sub getScripts {
     my $self = shift;
     return $self->{scripts};
 }
 
+=begin nd
+Function: getScript
+
+Parameters (list):
+    ind - integer - Script's indice in the array
+=cut
 sub getScript {
     my $self = shift;
     my $ind = shift;
@@ -419,6 +467,12 @@ sub getScript {
     return $self->{scripts}[$ind];
 }
 
+=begin nd
+Function: getWeightOfScript
+
+Parameters (list):
+    ind - integer - Script's indice in the array
+=cut 
 sub getWeightOfScript {
     my $self = shift;
     my $ind = shift;
@@ -426,6 +480,13 @@ sub getWeightOfScript {
     return $self->{scripts}[$ind]->getWeight;
 }
 
+=begin nd
+Function: setWeightOfScript
+
+Parameters (list):
+    ind - integer - Script's indice in the array
+    weight - integer - Script's weight to set
+=cut
 sub setWeightOfScript {
     my $self = shift;
     my $ind = shift;
@@ -434,17 +495,25 @@ sub setWeightOfScript {
     $self->{scripts}[$ind]->setWeight($weight);
 }
 
+# Function: getSplitNumber
 sub getSplitNumber {
     my $self = shift;
     return $self->{splitNumber};
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all informations about the forest. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -464,79 +533,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Forest - Create and compute Graphs (including QTrees)
-
-=head1 SYNOPSIS
-
-    use BE4::Forest
-    
-    my $Forest = BE4::Forest->new(
-        $objPyramid, # a BE4::Pyramid object
-        $objDSL, # a BE4::DataSourceLoader object
-        $param_process, # a hash with following keys : job_number, path_temp and path_shell
-    );
-
-=head1 DESCRIPTION
-
-=over 4
-
-=item pyramid
-
-A BE4::Pyramid object.
-
-=item commands
-
-A BE4::Commands object, to compose generating commands (mergeNtiff, tiff2tile...).
-
-=item graphs
-
-Array of BE4::QTree or BE4::Graph.
-
-=item scripts
-
-Array of BE4::Script.
-
-=item splitNumber
-
-Number of script used to divide works.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Commands.html">BE4::Commands</A></li>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-QTree.html">BE4::QTree</A></li>
-<li><A HREF="./lib-BE4-Graph.html">BE4::Graph</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHORS
-
-Chevereau Simon, E<lt>simon.chevereaun@ign.frE<gt>
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

@@ -1,5 +1,7 @@
 # WARNING : You must fixe an environement export for BE4_ENV !
 # ie BE4_ENV=../../BE4_INSTALL
+# WARNING : You must fixe an environement export for BE4_SRC !
+# ie BE4_SRC=../../BE4/SRC
 
 BE4_BIN=$(BE4_ENV)/bin
 BE4_LIB=$(BE4_ENV)/lib
@@ -39,14 +41,10 @@ buildconf: \
 ./conf/params.properties \
 ./conf/be4.properties
 	@(for p in $^ ; do \
-                res=`echo $$p | sed -e 's/config\/be4\///'` ;\
-                if [ `echo $$res|grep -E 'properties'` ] ; then \
-                        cp $$p $(BE4_CONF) ;\
-                fi; \
-                if [ `echo $$res|grep -E 'nodata'` ] ; then \
-                        cp -r $$p $(BE4_CONF) ;\
-                fi; \
-        done)
+	        if [ `echo $$p|grep -E 'properties'` ] ; then \
+	                cp $$p $(BE4_CONF) ;\
+	        fi; \
+	done)
 
 builddir:
 	@(if [ ! -d $(BE4_ENV) ] ; then \
@@ -74,7 +72,7 @@ buildinstall:
 test:
 	@( cd . && make -f Makefile test ) ;
 
-doc: buildnatural.doc buildhtml.doc
+doc: buildnatural.doc
 
 %.doc: %
 	@ echo "> Ok, Doc $* !" ;
@@ -84,29 +82,17 @@ buildnatural:
                 install -d docs/Natural/Html ;\
 		install -d docs/Natural/NaturalDocs ;\
 	fi)
-	@( naturaldocs -r -i bin/ -i lib/ -img docs/Natural/UML -o HTML docs/Natural/Html -p docs/Natural/NaturalDocs ) ;
+# 	@( if [ -f $(BE4_SRC)/../doc/MenuND.txt ] ; then \
+# 		cp $(BE4_SRC)/../doc/MenuND.txt ./docs/Natural/NaturalDocs/Menu.txt ;\
+# 	fi)
+# 	@( if [ -f $(BE4_SRC)/lib/BE4/Global.txt ] ; then \
+# 		cp $(BE4_SRC)/lib/BE4/Global.txt ./lib/BE4/ ;\
+# 	fi)
+	@( naturaldocs -r --input ./ --exclude-input ./blib/ -img $(BE4_SRC)/../doc/images --no-auto-group --documented-only --output HTML ./docs/Natural/Html --project ./docs/Natural/NaturalDocs ) ;
 	@( echo "> Ok, NaturalDocs !" ) ;
 
-buildhtml:
-	@( if [ ! -d docs/Html ] ; then \
-                install -d docs/Html ;\
-        fi)
-	@(for f in `find lib -name "*.pm"` ;\
-	do \
-		h=`echo $$f | sed -e 's/\.pm/\.html/' -e 's!/!-!g'` ;\
-		pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
-	done)
-	@(for f in `find bin -name "*.pl"` ;\
-	do \
-		h=`echo $$f | sed -e 's/\.pl/\.html/' -e 's!/!-!g'` ;\
-		pod2html --index --title=$$f --css=style.css --header --infile=$$f --outfile=docs/Html/$$h ;\
-        done)
-	@( echo "> Ok, Man2Html !" ) ;
 
 clean:
-	@( if [ -d docs/Html ] ; then \
-                rm -rf docs/Html ;\
-        fi)
 	@( if [ -d docs/Natural/Html ] ; then \
                 rm -rf docs/Natural/Html ;\
 		rm -rf docs/Natural/NaturalDocs ;\
@@ -133,7 +119,6 @@ help:
 	@echo " sub target ():"
 	@echo "    make buildinstall- ."
 	@echo "    make builddir    - ."
-	@echo "    make buildhtml   - ."
 	@echo "    make buildnatural- ."
 	@echo "    make buildbin    - ."
 	@echo "    make builddir    - ."

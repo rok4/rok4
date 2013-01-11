@@ -1434,7 +1434,7 @@ sub doIt {
             type_metadata     => undef,      # TODO !
             size              => [$pyramid->getTilesPerWidth,$pyramid->getTilesPerHeight],
             dir_depth         => $pyramid->getDirDepth,
-            limit             => [$jmin,$jmax,$imin,$imax],
+            limits            => [$jmin,$jmax,$imin,$imax],
         });
 
         if (! defined $objLevel) {

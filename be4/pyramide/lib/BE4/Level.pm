@@ -33,6 +33,56 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Level.pm
+
+Class: BE4::Level
+
+Describe a level in a pyramid.
+
+Using:
+    (start code)
+    use BE4::Level;
+
+    my $params = {
+        id                => level_5,
+        order             => 12,
+        dir_image         => "./BDORTHO/IMAGE/level_5/",
+        dir_nodata        => "./BDORTHO/NODATA/level_5/",
+        dir_mask          => "./BDORTHO/MASK/level_5/",
+        dir_metadata      => undef,
+        compress_metadata => undef,
+        type_metadata     => undef,
+        size              => [16, 16],
+        dir_depth         => 2,
+        limits            => [365,368,1026,1035]
+    };
+
+    my $objLevel = BE4::Level->new($params);
+    (end code)
+
+Attributes:
+    id - string - Level identifiant.
+    order - integer - Level order (ascending resolution)
+    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
+    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
+    dir_mask - string - Relative mask' directory path for this level, from the pyramid's descriptor.
+    dir_metadata - NOT IMPLEMENTED
+    compress_metadata - NOT IMPLEMENTED
+    type_metadata - NOT IMPLEMENTED
+    size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
+    dir_depth - integer - Number of subdirectories from the level root to the image : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif, in the images' pyramid.
+    limits - integer array - Extrems columns and rows for the level (Extrems tiles which contains data) : [rowMin,rowMax,colMin,colMax]
+
+Limitations:
+
+Metadata not implemented.
+=cut
+
+################################################################################
+
 package BE4::Level;
 
 use strict;
@@ -55,7 +105,9 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Global
+
+# Variable: STRLEVELTMPLT
+# Define the template XML for a level in the pyramid's descriptor.
 my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
         <tileMatrix>__ID__</tileMatrix>
@@ -78,12 +130,16 @@ my $STRLEVELTMPLT = <<"TLEVEL";
 <!-- __LEVELS__ -->
 TLEVEL
 
+# Variable: STRLEVELTMPLTMASK
+# Define the template XML for the mask part of a level in the pyramid's descriptor.
 my $STRLEVELTMPLTMASK = <<"TMASK";
         <mask>
             <baseDir>__DIRMASK__</baseDir>
         </mask>
 TMASK
 
+# Variable: STRLEVELTMPLTMORE
+# Define the template XML for the metadat part of a level in the pyramid's descriptor.
 my $STRLEVELTMPLTMORE = <<"TMTD";
         <metadata type='INT32_DB_LZW'>
             <baseDir>__DIRMTD__</baseDir>
@@ -97,32 +153,31 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * id : string
-    * order : integer
-    * dir_image
-    * dir_nodata
-    * dir_mask
-    * dir_metadata - NOT IMPLEMENTED
-    * compress_metadata - NOT IMPLEMENTED
-    * type_metadata - NOT IMPLEMENTED
-    * size - [width, height]
-    * dir_depth : integer
-    * limit - [rowMin,rowMax,colMin,colMax]
+Level constructor. Bless an instance.
+
+Parameters (hash):
+    id - string - Level identifiant
+    order - integer - Level order (ascending resolution)
+    size - integer array - Number of tile in one image for this level
+    limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
+    dir_depth - integer - Number of subdirectories from the level root to the image
+    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
+    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
+    dir_mask - string - Optionnal (if we want to kkep mask in the final images' pyramid). Relative mask' directory path for this level, from the pyramid's descriptor.
+
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
+    my $params = shift;
     
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
@@ -137,7 +192,7 @@ sub new {
         type_metadata     => undef,
         size              => [],
         dir_depth         => 0,
-        limit             => [undef,undef,undef,undef]
+        limits             => [undef,undef,undef,undef]
     };
     
     bless($self, $class);
@@ -145,7 +200,7 @@ sub new {
     TRACE;
     
     # init. class
-    if (! $self->_init(@_)) {
+    if (! $self->_init($params)) {
         ERROR ("One parameter is missing !");
         return undef;
     }
@@ -153,6 +208,21 @@ sub new {
     return $self;
 }
 
+=begin nd
+Function: _init
+
+Check and store level's attributes values.
+
+Parameters (hash):
+    id - string - Level identifiant
+    order - integer - Level order (ascending resolution)
+    size - integer array - Number of tile in one image for this level
+    limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
+    dir_depth - integer - Number of subdirectories from the level root to the image
+    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
+    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
+    dir_mask - string - Optionnal (if we want to kkep mask in the final images' pyramid). Relative mask' directory path for this level, from the pyramid's descriptor.
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -161,9 +231,7 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    # init. params
-    
-    # parameters mandatory !
+    # Mandatory parameters !
     if (! exists($params->{id})) {
         ERROR ("key/value required to 'id' !");
         return FALSE;
@@ -188,10 +256,6 @@ sub _init {
         ERROR ("key/value required to 'dir_depth' !");
         return FALSE;
     }
-    if (! exists($params->{limit})) {
-        ERROR ("key/value required to 'limit' !");
-        return FALSE;
-    }
 
     # check values
     if (! scalar ($params->{size})){
@@ -202,14 +266,18 @@ sub _init {
         ERROR("Value not valid for 'dir_depth' (0 or undef) !");
         return FALSE;
     }
-    if (! scalar (@{$params->{limit}})){
-        ERROR("List empty to 'limit' !");
+    if (! scalar (@{$params->{limits}})){
+        ERROR("List empty to 'limits' !");
         return FALSE;
     }
     
     # parameters optional !
     if (exists $params->{dir_mask} && defined $params->{dir_mask}){
         $self->{dir_mask} = $params->{dir_mask};
+    }
+
+    if (! exists($params->{limits}) || ! defined($params->{limits})) {
+        $params->{limits} = [undef, undef, undef, undef];
     }
     
     # TODO : metadata 
@@ -220,51 +288,52 @@ sub _init {
     $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
-    $self->{limit}          = $params->{limit};
+    $self->{limits}         = $params->{limits};
     
     return TRUE;
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getID
 sub getID {
     my $self = shift;
     return $self->{id};
 }
 
+# Function: getOrder
 sub getOrder {
     my $self = shift;
     return $self->{order};
 }
 
+# Function: getDirImage
 sub getDirImage {
     my $self = shift;
     return $self->{dir_image};
 }
 
+# Function: getDirNodata
 sub getDirNodata {
     my $self = shift;
     return $self->{dir_nodata};
 }
 
+# Function: getDirMask
 sub getDirMask {
     my $self = shift;
     return $self->{dir_mask};
 }
 
-
-#
 =begin nd
 method: updateExtremTiles
 
 Compare old extrems rows/columns with the news and update values.
 
-Parameter:
-    jMin, jMax, iMin, iMax - tiles indices to compare with current extrems
+Parameters (list):
+    jMin, jMax, iMin, iMax - integer list - Tiles indices to compare with current extrems
 =cut
 sub updateExtremTiles {
     my $self = shift;
@@ -272,26 +341,45 @@ sub updateExtremTiles {
 
     TRACE();
     
-    if (! defined $self->{limit}[0] || $jMin < $self->{limit}[0]) {$self->{limit}[0] = $jMin;}
-    if (! defined $self->{limit}[1] || $jMax > $self->{limit}[1]) {$self->{limit}[1] = $jMax;}
-    if (! defined $self->{limit}[2] || $iMin < $self->{limit}[2]) {$self->{limit}[2] = $iMin;}
-    if (! defined $self->{limit}[3] || $iMax > $self->{limit}[3]) {$self->{limit}[3] = $iMax;}
+    if (! defined $self->{limits}[0] || $jMin < $self->{limits}[0]) {$self->{limits}[0] = $jMin;}
+    if (! defined $self->{limits}[1] || $jMax > $self->{limits}[1]) {$self->{limits}[1] = $jMax;}
+    if (! defined $self->{limits}[2] || $iMin < $self->{limits}[2]) {$self->{limits}[2] = $iMin;}
+    if (! defined $self->{limits}[3] || $iMax > $self->{limits}[3]) {$self->{limits}[3] = $iMax;}
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
-
-#
 =begin nd
 method: exportToXML
 
 Insert Level's attributes in the XML template, write in the pyramid's descriptor.
 
-Returns:
-   A string in XML format.
+Returns a string to XML format.
+
+Example:
+    (start code)
+    <level>
+        <tileMatrix>level_5</tileMatrix>
+        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <mask>
+            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+        </mask>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>16</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <nodata>
+            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>365</minTileRow>
+            <maxTileRow>368</maxTileRow>
+            <minTileCol>1026</minTileCol>
+            <maxTileCol>1035</maxTileCol>
+        </TMSLimits>
+    </level>
+    (end code)
 =cut
 sub exportToXML {
     my $self = shift;
@@ -315,13 +403,13 @@ sub exportToXML {
     my $depth    =  $self->{dir_depth};
     $levelXML =~ s/__DEPTH__/$depth/;
 
-    my $minrow   =  $self->{limit}[0];
+    my $minrow   =  $self->{limits}[0];
     $levelXML =~ s/__MINROW__/$minrow/;
-    my $maxrow   =  $self->{limit}[1];
+    my $maxrow   =  $self->{limits}[1];
     $levelXML =~ s/__MAXROW__/$maxrow/;
-    my $mincol   =  $self->{limit}[2];
+    my $mincol   =  $self->{limits}[2];
     $levelXML =~ s/__MINCOL__/$mincol/;
-    my $maxcol   =  $self->{limit}[3];
+    my $maxcol   =  $self->{limits}[3];
     $levelXML =~ s/__MAXCOL__/$maxcol/;
 
     # mask
@@ -350,6 +438,15 @@ sub exportToXML {
     return $levelXML;
 }
 
+=begin nd
+Function: exportForDebug
+
+Returns all level's informations. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -379,115 +476,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Level - Describe a level in a pyramid.
-
-=head1 SYNOPSIS
-
-    use BE4::Level;
-    
-    my $params = {
-        id                => level_5,
-        order             => 12,
-        dir_image         => "./BDORTHO/IMAGE/level_5/",
-        dir_nodata        => "./BDORTHO/NODATA/level_5/",
-        dir_mask        => "./BDORTHO/MASK/level_5/",
-        dir_metadata      => undef,
-        compress_metadata => undef,
-        type_metadata     => undef,
-        size              => [16, 16],
-        dir_depth         => 2,
-        limit             => [365,368,1026,1035]
-    };
-    
-    my $objLevel = BE4::Level->new($params);
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item id, order
-
-ID (in TMS) and order (integer) of the level.
-
-=item dir_image
-
-Relative images' directory path for this level, from the pyramid's descriptor.
-
-=item dir_nodata
-
-Relative nodata's directory path for this level, from the pyramid's descriptor..
-
-=item dir_mask
-
-Relative mask' directory path for this level, from the pyramid's descriptor.
-
-=item dir_metadata, compress_metadata, type_metadata
-
-Relative metadata's directory path for this level, from the pyramid's descriptor.. NOT IMPLEMENTED.
-
-=item size
-
-Number of tile in one image for this level, widthwise and heightwise (often 16x16).
-
-=item dir_depth
-
-Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
-
-=item limit
-
-Extrems tiles indices of data in this level : [jmin,jmax,imin,imax].
-
-=back
-
-=head1 SAMPLE
-
-    <level>
-        <tileMatrix>level_5</tileMatrix>
-        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
-        <mask>
-            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
-        </mask>
-        <tilesPerWidth>16</tilesPerWidth>
-        <tilesPerHeight>16</tilesPerHeight>
-        <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>365</minTileRow>
-            <maxTileRow>368</maxTileRow>
-            <minTileCol>1026</minTileCol>
-            <maxTileCol>1035</maxTileCol>
-        </TMSLimits>
-    </level>
-
-=head1 LIMITATIONS AND BUGS
-
-Metadata not implemented.
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHORS
-
-Bazonnais Jean Philippe, E<lt>jean-philippe@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Bazonnais Jean Philippe
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

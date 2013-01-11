@@ -33,6 +33,49 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Node.pm
+
+Class: BE4::Node
+
+Descibe a node of a <QTree> or a <Graph>.
+
+Using:
+    (start code)
+    use BE4::Node
+
+    my $tm = BE4::TileMatrix->new(...)
+    
+    my $graph = BE4::Qtree->new(...)
+    #or
+    my $graph = BE4::Graph->new(...)
+    
+    my $node = BE4::Node->new({
+        i => 51,
+        j => 756,
+        tm => $tm,
+        graph => $graph,
+    });
+    (end code)
+
+Attributes:
+    i - integer - Column, according to the TMS grid.
+    j - integer - Row, according to the TMS grid.
+    pyramidName - string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
+    tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
+    graph - <Graph> or <QTree> - Graph which contains the node.
+    w - integer - Own node's weight
+    W - integer - Accumulated weight (own weight + childs' accumulated weights sum)
+    code - string - Commands to execute to generate this node (to write in a script)
+    script - <Script> - Script in which the node will be generated
+    nodeSources - <Node> array - Nodes from which this node is generated (working for <Graph>)
+    geoImages - <GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <QTree>)
+=cut
+
+################################################################################
+
 package BE4::Node;
 
 use strict;
@@ -64,35 +107,30 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * i : integer - column
-    * j : integer - row
-    * pyramidName : string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
-    * tm : BE4::TileMatrix - to which node belong
-    * graph : BE4::Graph or BE4::QTree - which contain the node
-    * w - own node's weight  
-    * W - accumulated weight (childs' weights sum)
-    * code - commands to execute to generate this node (to write in a script)
-    * script : BE4::Script - in which the node is calculated
-    * nodeSources : array of BE4::Node - from which this node is calculated
-    * geoImages : array of BE4::GeoImage - from which this node is calculated
+Node constructor. Bless an instance.
+
+Parameters (hash):
+    i - integer - Node's column
+    j - integer - Node's row
+    tm - <TileMatrix> - Tile matrix of the level which node belong to
+    graph - <Graph> or <QTree> - Graph containing the node.
+
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
+    my $params = shift;
     
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         i => undef,
         j => undef,
@@ -112,23 +150,25 @@ sub new {
     TRACE;
     
     # init. class
-    return undef if (! $self->_init(@_));
+    return undef if (! $self->_init($params));
     
     return $self;
 }
 
-#
 =begin nd
-method: _init
+Function: _init
 
-Load node's parameters
+Check and store node's attributes values. Initialize weights to 0. Calculate the pyramid's relative path, from indices, thanks to <Base36::indicesToB36Path>.
 
-Parameters:
-    params - a hash of parameters
+Parameters (hash):
+    i - integer - Node's column
+    j - integer - Node's row
+    tm - <TileMatrix> - Tile matrix of the level which node belong to
+    graph - <Graph> or <QTree> - Graph containing the node.
 =cut
 sub _init {
     my $self = shift;
-    my $params = shift ; # Hash
+    my $params = shift;
     
     TRACE;
     
@@ -159,8 +199,7 @@ sub _init {
     $self->{W} = 0;
     $self->{code} = '';
     
-    my $base36path = BE4::Base36->indicesToB36Path($params->{i},$params->{j},
-                                                   $self->getGraph->getPyramid->getDirDepth()+1);
+    my $base36path = BE4::Base36->indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
     
     $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");;
     
@@ -168,19 +207,17 @@ sub _init {
 }
 
 ####################################################################################################
-#                                       GEOGRAPHIC TOOLS                                           #
+#                                Group: Geographic tools                                           #
 ####################################################################################################
 
-# Group: geographic tools
-
 =begin nd
-method: isPointInNodeBbox
+Function: isPointInNodeBbox
 
-Return a boolean indicating if the point in parameter is inside the bbox of the node
+Returns a boolean indicating if the point is inside the bbox of the node.
   
 Parameters:
-    x - the x coordinate of the point you want to know if it is in
-    y - the y coordinate of the point you want to know if it is in
+    x - double - X coordinate of the point you want to know if it is in
+    y - double - Y coordinate of the point you want to know if it is in
 =cut
 sub isPointInNodeBbox {
     my $self = shift;
@@ -197,12 +234,12 @@ sub isPointInNodeBbox {
 }
 
 =begin nd
-method: isBboxIntersectingNodeBbox
+Function: isBboxIntersectingNodeBbox
 
-Test if the Bbox  in parameter intersect the bbox of the node
+Tests if the provided bbox intersects the bbox of the node.
       
 Parameters:
-    Bbox - (xmin,ymin,xmax,ymax) : coordinates of the bbox
+    Bbox - double list - (xmin,ymin,xmax,ymax) : coordinates of the bbox
 =cut
 sub isBboxIntersectingNodeBbox {
     my $self = shift;
@@ -218,21 +255,27 @@ sub isBboxIntersectingNodeBbox {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getScript
 sub getScript {
     my $self = shift;
     return $self->{script}
 }
 
+# Function: writeInScript
 sub writeInScript {
     my $self = shift;
     $self->{script}->print($self->{code});
 }
 
+=begin nd
+Function: setScript
+
+Parameters (list):
+    script - <Script> - Script to set.
+=cut
 sub setScript {
     my $self = shift;
     my $script = shift;
@@ -244,21 +287,32 @@ sub setScript {
     $self->{script} = $script; 
 }
 
+# Function: getCol
 sub getCol {
     my $self = shift;
     return $self->{i};
 }
 
+# Function: getRow
 sub getRow {
     my $self = shift;
     return $self->{j};
 }
 
+# Function: getPyramidName
 sub getPyramidName {
     my $self = shift;
     return $self->{pyramidName};
 }
 
+=begin nd
+Function: getWorkBaseName
+
+Returns the work image base name (no extension) : "level_col_row", or "level_col_row_suffix" if defined.
+
+Parameters (list):
+    prefix - string - Optionnal, suffix to add to the work name
+=cut
 sub getWorkBaseName {
     my $self = shift;
     my $suffix = shift;
@@ -269,6 +323,14 @@ sub getWorkBaseName {
     return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
 }
 
+=begin nd
+Function: getWorkName
+
+Returns the work image name : "level_col_row.tif", or "level_col_row_suffix.tif" if defined.
+
+Parameters (list):
+    prefix - string - Optionnal, suffix to add to the work name
+=cut
 sub getWorkName {
     my $self = shift;
     my $suffix = shift;
@@ -279,31 +341,42 @@ sub getWorkName {
     return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
 }
 
+# Function: getLevel
 sub getLevel {
     my $self = shift;
     return $self->{tm}->getID;
 }
 
+# Function: getTM
 sub getTM {
     my $self = shift;
     return $self->{tm};
 }
 
+# Function: getGraph
 sub getGraph {
     my $self = shift;
     return $self->{graph};
 }
 
+# Function: getNodeSources
 sub getNodeSources {
     my $self = shift;
     return $self->{nodeSources};
 }
 
+# Function: getGeoImages
 sub getGeoImages {
     my $self = shift;
     return $self->{geoImages};
 }
 
+=begin nd
+Function: addNodeSources
+
+Parameters (list):
+    nodes - <Node> array - Source nodes to add
+=cut
 sub addNodeSources {
     my $self = shift;
     my @nodes = shift;
@@ -313,6 +386,12 @@ sub addNodeSources {
     return TRUE;
 }
 
+=begin nd
+Function: addGeoImages
+
+Parameters (list):
+    images - <GeoImage> array - Source images to add
+=cut
 sub addGeoImages {
     my $self = shift;
     my @images = shift;
@@ -322,12 +401,19 @@ sub addGeoImages {
     return TRUE;
 }
 
+=begin nd
+Function: setCode
+
+Parameters (list):
+    code - string - Code to set.
+=cut
 sub setCode {
     my $self = shift;
     my $code = shift;
     $self->{code} = $code;
 }
 
+# Function: getBBox
 sub getBBox {
     my $self = shift;
     
@@ -341,35 +427,44 @@ sub getBBox {
     return @Bbox;
 }
 
+# Function: getCode
 sub getCode {
     my $self = shift;
     return $self->{code};
 }
 
+# Function: getOwnWeight
 sub getOwnWeight {
     my $self = shift;
     return $self->{w};
 }
 
+# Function: getAccumulatedWeight
 sub getAccumulatedWeight {
     my $self = shift;
     return $self->{W};
 }
 
+=begin nd
+Function: setOwnWeight
+
+Parameters (list):
+    weight - integer - Own weight to set
+=cut
 sub setOwnWeight {
     my $self = shift;
     my $weight = shift;
     $self->{w} = $weight;
 }
 
+# Function: getScriptID
 sub getScriptID {
     my $self = shift;
     return $self->{script}->getID;
 }
 
-#
 =begin nd
-method: setAccumulatedWeight
+Function: setAccumulatedWeight
 
 AccumulatedWeight = children's weights sum + own weight = provided weight + already store own weight.
 =cut
@@ -379,30 +474,26 @@ sub setAccumulatedWeight {
     $self->{W} = $childrenWeight + $self->getOwnWeight;
 }
 
-#
 =begin nd
-method: getPossibleChildren
+Function: getPossibleChildren
 
-Parameters:
-    node - BE4::Node whose we want to know children.
+Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
-Returns:
-    An array of the real children from a node (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Warning:
+    Do not mistake with <getChildren>
 =cut
 sub getPossibleChildren {
     my $self = shift;
     return $self->{graph}->getPossibleChildren($self);
 }
 
-#
 =begin nd
-method: getChildren
+Function: getChildren
 
-Parameters:
-    node - BE4::Node whose we want to know children.
+Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
-Returns:
-    An array of the real children from a node (max length = 4), an empty array if the node is a leaf.
+Warning:
+    Do not mistake with <getPossibleChildren>
 =cut
 sub getChildren {
     my $self = shift;
@@ -415,6 +506,7 @@ sub getChildren {
 
 # Group: levels' testers
 
+# Function: isCutLevelNode
 sub isCutLevelNode {
     my $self = shift;
 
@@ -429,6 +521,7 @@ sub isCutLevelNode {
     return FALSE;
 }
 
+# Function: isTopLevelNode
 sub isTopLevelNode {
     my $self = shift;
     
@@ -444,13 +537,11 @@ sub isTopLevelNode {
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
-
 =begin nd
-method: exportForMntConf
+Function: exportForMntConf
 
 Export attributs of the Node for mergNtiff configuration file.
 
@@ -459,28 +550,31 @@ sub exportForMntConf {
     my $self = shift;
     my $imagePath = shift;
     my $maskPath = shift;
-    
+
     TRACE;
-    
+
     my @Bbox = $self->getBBox;
-    
+
     my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $imagePath,
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
         $self->getTM()->getResolution(), $self->getTM()->getResolution();
-    
+
     if (defined $maskPath) {
         $output .= sprintf "MSK %s\n", $maskPath;
     }
-    
+
     return $output;
 }
 
-#
 =begin nd
-method: exportForDebug
+Function: exportForDebug
 
-Export in a string the content of the node object
+Returns all image's components. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
 =cut
 sub exportForDebug {
     my $self = shift ;

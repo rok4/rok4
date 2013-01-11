@@ -33,6 +33,43 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: GeoImage.pm
+
+Class: BE4::GeoImage
+
+Describes a georeferenced image and enable to know its components.
+
+Using:
+    (start code)
+    use BE4::GeoImage;
+
+    # GeoImage object creation
+    my $objGeoImage = BE4::GeoImage->new("/home/ign/DATA/XXXXX_YYYYY.tif");
+    (end code)
+
+Attributes:
+    completePath - string - Complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
+    filename - string - Just the image name, with file extension (XXXXX_YYYYY.tif).
+    filepath - string - The directory which contain the image (/home/ign/DATA)
+    maskCompletePath - string - Complete path of associated mask, if exists (undef otherwise).
+    xmin - double - Bottom left corner X coordinate.
+    ymin - double - Bottom left corner Y coordinate.
+    xmax - double - Top right corner X coordinate.
+    ymax - double - Top right corner Y coordinate.
+    xres - double - X wise resolution (in SRS unity).
+    yres - double - Y wise resolution (in SRS unity).
+    xcenter - double - Center X coordinate.
+    ycenter - double - Center Y coordinate.
+    height - integer - Pixel height.
+    width - integer - Pixel width.
+    
+=cut
+
+################################################################################
+
 package BE4::GeoImage;
 
 use strict;
@@ -62,91 +99,89 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * completePath
-    * filename
-    * filepath
-    * maskCompletePath
-    * xmin
-    * ymax
-    * xmax
-    * ymin
-    * xres
-    * yres
-    * xcenter
-    * ycenter
-    * heigh
-    * width
+GeoImage constructor. Bless an instance.
+
+Parameters (list):
+    completePath - string - Complete path to the image file.
+
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $completePath = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    completePath => undef,
-    filename => undef,
-    filepath => undef,
-    maskCompletePath => undef,
-    xmin => undef,
-    ymax => undef,
-    xmax => undef,
-    ymin => undef,
-    xres => undef,
-    yres => undef,
-    xcenter => undef,
-    ycenter => undef,
-    height  => undef,
-    width   => undef,
-  };
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+        completePath => undef,
+        filename => undef,
+        filepath => undef,
+        maskCompletePath => undef,
+        xmin => undef,
+        ymax => undef,
+        xmax => undef,
+        ymin => undef,
+        xres => undef,
+        yres => undef,
+        xcenter => undef,
+        ycenter => undef,
+        height  => undef,
+        width   => undef,
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  
-  return $self;
+    bless($self, $class);
+
+    TRACE;
+
+    # init. class
+    return undef if (! $self->_init($completePath));
+
+    return $self;
 }
 
+=begin nd
+Function: _init
 
+Checks and stores file's informations.
+
+Search a potential associated data mask : A file with the same base name but the extension *.msk*.
+
+Parameters (list):
+    completePath - string - Complete path to the image file.
+=cut
 sub _init {
     my $self   = shift;
-    my $param = shift;
+    my $completePath = shift;
 
     TRACE;
     
-    return FALSE if (! defined $param);
+    return FALSE if (! defined $completePath);
     
-    if (! -f $param) {
+    if (! -f $completePath) {
       ERROR ("File doesn't exist !");
       return FALSE;
     }
     
     # init. params    
-    $self->{completePath} = $param;
+    $self->{completePath} = $completePath;
     
     #
-    $self->{filepath} = File::Basename::dirname($param);
-    $self->{filename} = File::Basename::basename($param);
+    $self->{filepath} = File::Basename::dirname($completePath);
+    $self->{filename} = File::Basename::basename($completePath);
     
-    my $maskPath = $param;
-    $maskPath =~ s/\.(tif|TIF|tiff|TIFF)$/\.msk/;
+    my $maskPath = $completePath;
+    $maskPath =~ s/\.[a-zA-Z]+$/\.msk/;
     
     if (-f $maskPath) {
-        INFO(sprintf "We have a mask associated to the image '%s' :\n\t%s",$param,$maskPath);
+        INFO(sprintf "We have a mask associated to the image '%s' :\n\t%s",$completePath,$maskPath);
         $self->{maskCompletePath} = $maskPath;
     }
     
@@ -154,16 +189,17 @@ sub _init {
 }
 
 ####################################################################################################
-#                                       COMPUTING METHODS                                          #
+#                                Group: computing methods                                          #
 ####################################################################################################
 
-# Group: computing methods
-
-#
 =begin nd
-method: computeInfo
+Function: computeInfo
 
-Image parameters are checked (sample per pixel, bits per sample...) and return by the function. ImageSource can verify if all images own same components and the compatibility with be4's configuration.
+Extracts and calculates all GeoImage attributes' values, using GDAL library (see <Details>).
+
+Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
+
+Returns a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
 =cut
 sub computeInfo {
     my $self = shift;
@@ -263,8 +299,7 @@ sub computeInfo {
         }
     }
 
-    DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
-    $bitspersample, $photometric, $sampleformat, $samplesperpixel);
+    DEBUG(sprintf "Format image : bps %s, photo %s, sf %s, spp %s", $bitspersample, $photometric, $sampleformat, $samplesperpixel);
 
     my $refgeo = $dataset->GetGeoTransform();
     if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
@@ -296,17 +331,15 @@ sub computeInfo {
     
 }
 
-#
 =begin nd
-method: convertBBox
+Function: convertBBox
 
-Not just convert corners, but 7 points on each side, to determine reprojected bbox.
+Not just convert corners, but 7 points on each side, to determine reprojected bbox. Use OSR library.
 
-Parameter:
-    ct - a Geo::OSR::CoordinateTransformation object, to convert bbox .
+Parameters (list):
+    ct - <Geo::OSR::CoordinateTransformation> - To convert bbox. Can be undefined (no reprojection).
 
-Returns:
-    Converted (according to the given CoordinateTransformation) image bbox as an array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
+Returns the onverted (according to the given CoordinateTransformation) image bbox as a double array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
 =cut
 sub convertBBox {
   my $self = shift;
@@ -394,32 +427,59 @@ sub convertBBox {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
+=begin nd
+Function: getInfo
 
+Returns all image's geo informations in a list.
+
+Example:
+    (start code)
+    # GeoImage information getter
+    my (
+        $filename,
+        $filepath,
+        $xmin,
+        $ymax,
+        $xmax,
+        $ymin,
+        $xres,
+        $yres,
+        $xcenter,
+        $ycenter,
+        $height,
+        $width
+    ) = $objGeoImage->getInfo();
+    (end code)
+=cut
 sub getInfo {
-  my $self = shift;
-  
-  TRACE;
-  
-  return (
-    $self->{filename},
-    $self->{filepath},
-    $self->{xmin},
-    $self->{ymax},
-    $self->{xmax},
-    $self->{ymin},
-    $self->{xres},
-    $self->{yres},
-    $self->{xcenter},
-    $self->{ycenter},
-    $self->{height},
-    $self->{width},
-  );
-  
+    my $self = shift;
+
+    TRACE;
+
+    return (
+        $self->{filename},
+        $self->{filepath},
+        $self->{xmin},
+        $self->{ymax},
+        $self->{xmax},
+        $self->{ymin},
+        $self->{xres},
+        $self->{yres},
+        $self->{xcenter},
+        $self->{ycenter},
+        $self->{height},
+        $self->{width},
+    );
 }
+
+=begin nd
+Function: getBBox
+
+Return the image's bbox as a double array [xMin, yMin, xMax, yMax], source SRS.
+=cut
 sub getBBox {
   my $self = shift;
 
@@ -432,65 +492,75 @@ sub getBBox {
   return @bbox;
 }
 
+# Function: getXmin
 sub getXmin {
   my $self = shift;
   return $self->{xmin};
 }
+
+# Function: getYmin
 sub getYmin {
   my $self = shift;
   return $self->{ymin};
 }
+
+# Function: getXmax
 sub getXmax {
   my $self = shift;
   return $self->{xmax};
 }
+
+# Function: getYmax
 sub getYmax {
   my $self = shift;
   return $self->{ymax};
 }
+
+# Function: getXres
 sub getXres {
   my $self = shift;
   return $self->{xres};  
 }
+
+# Function: getYres
 sub getYres {
   my $self = shift;
   return $self->{yres};  
 }
 
+# Function: getName
 sub getName {
   my $self = shift;
   return $self->{filename}; 
 }
 
+# Function: getMask
 sub getMask {
   my $self = shift;
   return $self->{maskCompletePath}; 
 }
 
+# Function: hasMask
 sub hasMask {
   my $self = shift;
   return (defined $self->{maskCompletePath}); 
 }
 
 ####################################################################################################
-#                                         EXPORT METHODS                                           #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
-
-#
 =begin nd
-method: exportForMntConf
+Function: exportForMntConf
 
-Export a GeoImage object as a string.
-Output is formated to be used in mergeNtiff configuration.
+Export a GeoImage object as a string. Output is formated to be used in <Commands::mergeNtiff> configuration.
 
 Example:
 |    IMG completePath xmin ymax xmax ymin xres yres
 |    MSK maskCompletePath
 
 Parameter:
-    useMasks - Boolean, specify if we want to export mask (if present).
+    useMasks - boolean - Specify if we want to export mask (if present). TRUE by default.
 =cut
 sub exportForMntConf {
     my $self = shift;
@@ -511,6 +581,15 @@ sub exportForMntConf {
     return $output;
 }
 
+=begin nd
+Function: exportForDebug
+
+Returns all informations about the georeferenced image. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -540,75 +619,14 @@ sub exportForDebug {
 1;
 __END__
 
-=head1 NAME
+=begin nd
 
-BE4::GeoImage - Describe a georeferenced image and enable to know its components.
+Group: Details
 
-=head1 SYNOPSIS
+Use the binding Perl of Gdal
 
-    use BE4::GeoImage;
-    
-    # GeoImage object creation
-    my $objGeoImage = BE4::GeoImage->new("/home/ign/DATA/XXXXX_YYYYY.tif");
-
-    # GeoImage information getter
-    my (
-        $filename,
-        $filepath,
-        $xmin,
-        $ymax,
-        $xmax,
-        $ymin,
-        $xres,
-        $yres,
-        $xcenter,
-        $ycenter,
-        $height,
-        $width
-    ) = $objGeoImage->getInfo();
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item completePath
-
-Complete path (/home/ign/DATA/XXXXX_YYYYY.tif)
-
-=item filename
-
-Just the image name, with file extension (XXXXX_YYYYY.tif).
-
-=item filepath
-
-The directory which contain the image (/home/ign/DATA)
-
-=item maskCompletePath
-
-Complete path of associated mask, if exists (undef otherwise).
-
-=item xmin, ymin, xmax, ymax
-
-=item xres, yres
-
-=item xcenter, ycenter
-
-=item height, width
-
-=back
-
-=head2 INFORMATIONS
-
-=over 4
-
-=item Constraint on the input formats of images : format tiff
-
-=item Use the binding Perl of Gdal
-
-=item Sample with gdalinfo
-
+Sample with gdalinfo:
+    (start code)
     GDAL 1.7.2, released 2010/04/23
 
     ~$ gdalinfo  image.png
@@ -674,27 +692,6 @@ Complete path of associated mask, if exists (undef otherwise).
     Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
     Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
     Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
-
-=back
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    (end code)
 
 =cut
