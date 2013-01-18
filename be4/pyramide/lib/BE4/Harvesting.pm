@@ -114,13 +114,11 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: WMS
+# Constant: WMS
 # Define allowed values for attribute wms_format.
 my %WMS;
 
-# Variable: DEFAULT
+# Constant: DEFAULT
 # Define default values for attributes.
 my %DEFAULT;
 

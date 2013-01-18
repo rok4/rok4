@@ -39,15 +39,21 @@
 =begin nd
 File: be4.pl
 
-program: be4
+Section: BE4 tool
 
-Tool allowing to generate images' pyramid from georeferenced images or WMS servers. Output format respects WMS/WMTS server ROK4 specifications.
+Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
 
 (see be4_general.png)
 
-Using:
-    (start code)
-    (end code)
+2 types of generation :
+    - create a new pyramid with data
+    - create a pyramid from an ancestor one (update)
+
+2 data source type :
+    - images
+    - WMS service
+
+If reprojection or lossy compression for an update, we need a WMS service.
 =cut
 
 ################################################################################
@@ -88,33 +94,23 @@ use constant FALSE => 0;
 # Pas de bufferisation des sorties.
 $|=1;
 
-################################################################################
-# Version
-my $VERSION = '@VERSION_TEXT@';
-
 ####################################################################################################
 #                                       Group: Variables                                           #
 ####################################################################################################
 
+# Variable: version
+my $VERSION = '@VERSION_TEXT@';
+
 =begin nd
+Variable: opts
 
+Contains be4 call options :
 
-
-Contains all Perl classes used by tools:
-    - be4
-    - joinCache
-    - create-layer
-    
-variable: %opts
-
-Command options.
-
-    * version
-    * help
-    * usage
-    * properties
-    * environment
-    * test
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    properties - Configuration file
+    environment - Environment file
 =cut
 my %opts =
 (
@@ -130,46 +126,42 @@ my %opts =
     "test" => 0,
 );
 
-#
 =begin nd
-variable: %this
+Variable: this
 
-All Parameters by section.
+All parameters by section :
 
-    * logger
-    * datasource
-    * harvesting (deprecated)
-    * pyramid
-    * tilematrixset
-    * nodata
-    * tile
-    * process
+    logger - Can be null
+    datasource - 
+    harvesting - Deprecated, use *datasource* section instead.
+    pyramid - 
+    tilematrixset - Can be in *pyramid* section
+    nodata - Can be in *pyramid* section
+    tile - Can be in *pyramid* section
+    process - 
 =cut
 my %this =
 (
     params => {
-        logger        => undef, # can be null !
-        datasource    => undef, # can be null if no data to process !
-        harvesting    => undef, # deprecated
-        pyramid       => undef, # ALWAYS !!!
-        tilematrixset => undef, # can be in pyramid params !
-        nodata        => undef, # can be in pyramid params !
-        tile          => undef, # can be in pyramid params !
-        process       => undef, # can be null if no process to do !
+        logger        => undef,
+        datasource    => undef,
+        harvesting    => undef,
+        pyramid       => undef,
+        tilematrixset => undef,
+        nodata        => undef,
+        tile          => undef,
+        process       => undef,
     },
 );
 
 ####################################################################################################
-#                                                MAIN                                              #
+#                                         Group: Functions                                         #
 ####################################################################################################
 
-# Group: main
-
-#
 =begin nd
-method: main
+Function: main
 
-Main method
+Main method.
 
 See Also:
     <init>, <config>, <doIt>
@@ -210,11 +202,10 @@ sub main {
   printf STDOUT "%s\n", $message;
 }
 
-#
 =begin nd
-method: init
+Function: init
 
-Check options and initialize the default logger. Check environment file (optionnal) and properties file (mandatory).
+Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
 =cut
 sub init {
   
@@ -293,11 +284,10 @@ sub init {
     return TRUE;
 }
 
-#
 =begin nd
-method: config
+Function: config
 
-Loading environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
 =cut
 sub config {
   
@@ -391,11 +381,10 @@ sub config {
     return TRUE;
 }
 
-#
 =begin nd
-method: checkParams
+Function: checkParams
 
-Check presence of mandatory sections in parameters.
+Checks presence of mandatory sections in parameters.
     - pyramid
     - process
     - datasource
@@ -484,18 +473,17 @@ sub checkParams {
     return TRUE;
 }
 
-#
 =begin nd
-method: doIt
+Function: doIt
 
-Steps in order, using parameters.
-    - Create the Pyramid object
-    - Load data sources
-    - Update levels for this Pyramid object
-    - Create the Forest object
-    - Write (initialization) the cache and its list
-    - Write the pyramid's descriptor
-    - Compute trees (write scripts)
+Steps in order, using parameters :
+    - create the Pyramid object : <BE4::Pyramid::new>
+    - load data sources : <BE4::DataSourceLoader::new>
+    - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
+    - create the Forest object : <BE4::Forest::new>
+    - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
+    - write the pyramid's descriptor : <BE4::Pyramid::writeConfPyramid>
+    - compute trees (write scripts) : <BE4::Forest::computeGraphs>
 =cut
 sub doIt {
 
@@ -609,12 +597,14 @@ sub doIt {
     return TRUE;
 }
 
-####################################################################################################
-#                                           OTHERS                                                 #
-####################################################################################################
+=begin nd
+Function: IsEmpty
 
-# Group: others
+Precises if an hash or a reference can be considered as empty.
 
+Parameters (list):
+    value - var - Variable to test
+=cut
 sub IsEmpty {
 
   my $value = shift;
@@ -640,410 +630,298 @@ END {}
 1;
 __END__
 
-=head1 NAME
+=begin nd
+Section: Details
 
-be4 - create a pyramid of tiled tiff images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service.
+Group: Synopsis
 
-=head1 SYNOPSIS
-
+    (start code)
     perl be4.pl --conf=path [ --env=path ]
     # All parameters of the --env config file can be overided by --conf config file parameter
+    (end code)
 
-=head1 DESCRIPTION
+Group: Command's options
 
-2 types of generation:
+    --help - 
 
-* create a new pyramid with data
-* create a pyramid from an existing (update)
+    --usage - 
 
-2 data source type:
+    --version - 
 
-* Images
-* WMS service
+    --conf=path - Path to configuration file of the pyramid. This option is mandatory.
 
-If reprojection or lossy compression for an update, we need a WMS service.
+    --env=path - Path to environment file of all pyramid, it's the common configuration. This option is optional. By default, the file configuration of install is used.
 
-=head1 CONFIGURATION FILES
-
-=head2 BE4 configuration, by section
-
-=head3 logger
-
-=over 4
-
-=item log_path
-
-Directory path where to write F<log_file>
-
-=item log_file
-
-Path to print too output (in addition to STDOUT).
-
-Log file: F<log_path/log_file>
-
-=item log_level
-
-Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
-
-=back
-
-=head3 datasource
-
-=over 4
-
-=item filepath_conf
-
-Complete file path to configuration file for data sources (F</home/ign/SOURCE/sources.txt>)
-
-=back
-
-=head3 pyramid
-
-=over 4
-
-=item pyr_name_new
-
-Name of the new pyramid, used to name the descriptor, the cache's list, the data directory and the temporary directory.
-
-=item pyr_desc_path
-
-Directory path, where to write the descriptor.
-
-Mandatory.
-
-=item pyr_data_path
-
-Directory path, where to write the cache.
-
-Mandatory.
-
-=item pyr_name_old
-
-If existing pyramid, its name. If this parameter is present, generation is an update.
-
-=item pyr_desc_path_old
-
-If existing pyramid, directory path where to find the descriptor.
-
-Default : pyr_desc_path value. 
-
-=item pyr_data_path_old
-
-If existing pyramid, directory path where to find the cache.
-
-Default : pyr_data_path value.
-
-=item compression
-
-Possible values : raw, jpg, zip, lzw, png, pkb. png compression is not an official compression for tiff format (just readable by rok4).
-
-Default : raw.
-
-=item compressionoption
-
-Possible values : none and crop. Crop option have to be used with compression 'jpg'. Blocks which contain a white pixel are filled with white, to keep a pure white, in spite of compression.
-
-Default : none.
-
-=item color
-
-The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
-
-Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
-
-=item nowhite
-
-Possible values : true and false. If source images contain nodata pixel, we don't want them to remove real data. It requires a pixel by pixel work : it's longer. That's why we do it just if needed.
-
-Default : false.
-
-=item image_width, image_height
-
-Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example.
-
-Mandatory.
-
-=item bitspersample
-
-Possible values : 8, 32. Have to be the same as source.
-
-Mandatory.
-
-=item sampleformat
-
-Possible values : uint, float. Have to be the same as source.
-
-Mandatory.
-
-=item samplesperpixel
-
-Possible values : 1, 3, 4. Have to be the same as source.
-
-Mandatory.
-
-=item photometric
-
-Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb.
-
-Default : rgb.
-
-=item interpolation
-
-Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Warning : nodata pixel are not excluded by the interpolation.
-
-Default : bicubic.
-
-=item dir_depth
-
-Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
-
-Mandatory.
-
-=item dir_image, dir_nodata
-
-Names of subdirectories in the cache, in F<pyr_data_path/pyr_name/>.
-
-Default : IMAGE, NODATA.
-
-=item tms_name
-
-TMS file name, with extension .tms.
-
-Mandatory
-
-=item tms_path
-
-Directory, where to find the TMS file.
-
-Mandatory
-
-=back
-
-=head3 process
-
-=over 4
-
-=item job_number
-
-Number of split scripts. If job_number = 5 -> 5 split scripts (can run in parallel) + one finisher (when splits are finished) = 6 scripts.
-
-Mandatory.
-
-=item path_temp
-
-Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new/SCRIPT_X>.
-
-=item path_temp_common
-
-Temporary directory path in which we create a directory named like the new cache : temporary files which have to be shared between several scripts are written in F<path_temp_common/pyr_name_new/COMMON>.
-
-Mandatory.
-
-=item path_shell
-
-Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... and F<SCRIPT_FINISHER.sh> for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
-
-Mandatory.
-
-=item use_masks
-
-To avoid some proble (data removing), we can use mask during generation, to know precisely where is data, in images. Tis behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use.
-
-Optionnal.
-
-=back
-
-=head2 Paths in brief.
-
-Descriptor file: F<pyr_desc_path/pyr_name.pyr>
-
-List file: F<pyr_desc_path/pyr_name.list>
-
-Cache directory: F<pyr_data_path/pyr_name/>
-
-TMS file: F<tms_path/tms_name>
-
-Scripts: F<path_shell/SCRIPT_X.sh>
-
-Temporary directory: F<path_temp/pyr_name_new/SCRIPT_X>
-
-Common temporary directory: F<path_temp_common/pyr_name_new/COMMON>
-
-=head2 DataSource configuration
-
-=over 4
-
-=item srs
-
-The images' or the extent's SRS.
-
-Mandatory.
-
-=item path_image
-
-Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
-
-Optionnal.
-
-=item wms_layer
-
-Resource to harvest.
-
-Optionnal.
-
-=item wms_url
-
-URL of rok4.
-
-Mandatory if wms_layer is present.
-
-=item wms_version
-
-1.3.0
-
-Mandatory if wms_layer is present.
-
-=item wms_request
-
-getMap
-
-Mandatory if wms_layer is present.
-
-=item wms_format
-
-Possible values : image/png, image/tiff, image/x-bil;bits=32.
-
-Mandatory if wms_layer is present.
-
-=item wms_style
-
-Optionnal.
-
-=item wms_transparent
-
-TRUE or FALSE
-
-Optionnal.
-
-=item max_width, max_height
-
-If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
-
-=item min_size
-
-Used to remove too short harvested images.
-
-Optionnal.
-
-=item wms_bgcolor
-
-Format : 0xFFFFFF
-
-Optionnal.
-
-=item extent
-
-Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contain an geometry in GML format.
-
-Mandatory if path_image is not present.
-
-Optionnal.
-
-=item image_width,image_height
-
-Optionnal.
-
-=back
-
-=head2 Write a configuration file
+Group: Write a configuration file
 
 A file configuration can be composed of sections and parameters following :
 
+    (start code)
     [ section ]
     parameter  = value     ; comments
     ;comments
+    (end code)
 
 In a data source configuration, sections are level ID, from which the data source is used.
 
-=head1 OPTIONS
+Group: BE4 global configuration file
 
-=over 4
+Properties by section.
 
-=item --help
+Topic: logger
 
-=item --usage
+    log_path - Directory path where to write log_file
+    
+    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
 
-=item --version
+    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
 
-=item --conf=path
+Example:
+    (start code)
+    [ logger ]
+    log_path = /var/log
+    log_file = be4_log_yyyy-mm-dd.txt
+    log_level = INFO
+    (end code)
 
-Path to file configuration of the pyramid. This option is mandatory !
+Topic: datasource
 
-=item --env=path
+    filepath_conf - Complete file path to configuration file for data sources (*/home/ign/SOURCE/sources.txt*)
 
-Path to file environment of all pyramid, it's the common configuration. This option is optional ! By default, the file configuration of install is used.
+Example:
+    (start code)
+    [ datasource ]
+    filepath_conf = /home/IGN/sources.txt
+    (end code)
 
-=back
+Topic: pyramid
 
+For more informations about properties, see <BE4::Pyramid>.
 
-=head1 SEE ALSO
+    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
+    pyr_data_path - Directory path, where to write the cache. Mandatory.
+    pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
 
-=head2 Intern libraries
+    pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
+    pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
+    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.     
 
-=head3 POD documentation
+    compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 
-=begin html
+    compressionoption - Possible values : none and crop. Crop option have to be used with compression 'jpg'. Blocks which contain a white pixel are filled with white, to keep a pure white, in spite of compression. Default : none.
 
-<ul>
-<li><A HREF="./lib-BE4-PropertiesLoader.html">BE4::PropertiesLoader</A></li>
-<li><A HREF="./lib-BE4-DataSourceLoader.html">BE4::DataSourceLoader</A></li>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
-<li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-</ul>
+    color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-=end html
+    nowhite - Possible values : true and false. If source images contain nodata pixel, we don't want them to remove real data. It requires a pixel by pixel work : it's longer. That's why we do it just if needed. Default : false.
 
-=head3 NaturalDocs
+    image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
 
-=begin html
+    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
 
-<A HREF="../Natural/Html/index.html">Index</A>
+    sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory.
 
-=end html
+    samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory.
 
-=head2 Extern libraries
+    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb. Default : rgb.
 
-Use of binding gdal (Geo::GDAL)
+    interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
 
-=head2 Modules CPAN
+    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
 
-POSIX qw(locale_h)
+    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
 
-sigtrap qw(die normal-signals)
+    tms_name - TMS file name, with extension *.tms*. Mandatory.
 
-Getopt::Long
+    tms_path - Directory, where to find the TMS file. Mandatory
 
-Pod::Usage
+    pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
 
-Log::Log4perl qw(get_logger)
+Examples:
+    (start code)
+    [ pyramid ]
+    pyr_data_path = /home/IGN/PYRAMIDS
+    pyr_desc_path = /home/IGN/DESCRIPTOR
+    pyr_name_new = ORTHO
+    pyr_level_bottom = 19
+    
+    tms_name = LAMB93_10cm.tms
+    tms_path = /home/IGN/TMS
 
-Cwd qw(abs_path cwd chdir)
+    dir_depth = 2
+    image_width = 16
+    image_height = 16
 
-File::Spec
+    dir_image = IMAGE
+    dir_nodata = NODATA
+    dir_mask = MASK
+    
+    compression         = png
+    bitspersample       = 8
+    sampleformat        = uint
+    photometric         = rgb
+    samplesperpixel     = 3
+    interpolation       = bicubic
 
-=head2 Deployment and installation
+    color               = 255,0,0 ; red as nodata color
+    (end code)
 
-cf. INSTALL and README file
+Topic: process
 
-=head1 AUTHOR
+For more informations about properties, see <BE4::Forest> and <BE4::Commands>.
 
-Jean-Philippe Bazonnais, E<lt>Jean-Philippe.Bazonnais@ign.frE<gt>
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <BE4::QTree> and <BE4::Graph>). Mandatory.
 
-=head1 COPYRIGHT AND LICENSE
+    path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
 
-Copyright 2011 by Jean-Philippe Bazonnais
+    path_temp_common - Common temporary directory path : temporary files which have to be shared between several scripts are written in *path_temp_common/pyr_name_new/COMMON*. Mandatory.
 
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    path_shell - Directory path, to write scripts in. Scripts are named in like manner for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example). Mandatory.
 
+    use_masks - To avoid some problems (data removing), we can use mask during generation, to know precisely where is data, in images. Tis behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use. Optionnal, FALSE by default.
+
+Example:
+    (start code)
+    [ process ]
+    path_temp = /tmp/PRIVATE/
+    path_temp_common = /tmp/COMMON/
+    path_shell  = /home/IGN/SCRIPT/ORTHO
+    job_number = 16
+    (end code)
+
+Group: Paths in brief
+
+    - Descriptor file : *pyr_desc_path/pyr_name.pyr*
+    - List file: *pyr_desc_path/pyr_name.list*
+    - Cache directory: *pyr_data_path/pyr_name/*
+    - TMS file: *tms_path/tms_name*
+    - Scripts: *path_shell/SCRIPT_X.sh*
+    - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
+    - Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
+
+Group: DataSource configuration
+
+For more informations about datasource properties loading, see <BE4::DataSourceLoader> and <BE4::DataSource>.
+
+Topic: For all types
+
+    srs - The images' or the extent's SRS. Mandatory.
+
+Topic: For an image source
+
+For more informations about properties, see <BE4::ImageSource>.
+    
+    path_image - Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
+
+Topic: For a WMS source
+
+For more informations about properties, see <BE4::Harvesting>.
+    
+    wms_layer - Resource to harvest.
+
+    wms_url - URL of rok4.
+
+    wms_version - 1.3.0
+
+    wms_request - Kind of request : "getMap".
+
+    wms_format - Format of the harvested image.
+
+    wms_style - Optionnal.
+
+    wms_transparent - TRUE or FALSE. Optionnal.
+
+    max_width, max_height - If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
+
+    min_size - Used to remove too short harvested images. Optionnal.
+
+    wms_bgcolor - Format : 0xFFFFFF. Optionnal.
+
+    extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in GML format. Mandatory if no georeferenced image to define extent (path_image is not present).
+
+Examples:
+    (start code)
+    [ 14 ]
+    ; Georeferenced images, but we have to reproject them : we need a WMS service to harvest
+    path_image          = /home/IGN/DATA/ORTHO_LAMB93
+    srs                 = IGNF:LAMB93
+
+    wms_layer   = WMS_ORTHO
+    wms_url     = http://localhost/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/tiff
+
+    [ 17 ]
+    ; No georeferenced images, we use a WMS service and we have to know extent to harvest. Extent's SRS is supplied too.
+    srs = IGNF:WGS84G
+    extent = /home/IGN/Polygon.txt
+
+    wms_layer   = ORTHO
+    wms_url     = http://localhost/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/png
+    wms_style  = line
+    wms_bgcolor  = 0x80BBDA
+    wms_transparent  = true
+    max_width = 2048
+    max_height = 1024
+
+    [ 19 ]
+    ; Georeferenced images, in the final SRS
+    srs = EPSG:3857
+    path_image = /home/IGN/DATA/ORTHO_PM
+    (end code)
+
+Group: Old way to provide ONE datasource
+
+No specific configuration file for data sources. All parameters regarding THE data source, *with georeferenced images*, are in the BE4 configuration file.
+
+    - We have to precise the level from which the one data source is used. *pyr_level_bottom*, in the *pyramid* section.
+    - Image source parameters (*path_image* and *srs*) are in the *datasource* section (see <For an image source> for meanings).
+    - Possibly WMS service parameters (*wms_layer*, ...) are in a *harvesting* section (see <For a WMS source> for options and meanings).
+
+Examples:
+    (start code)
+    
+    ; Georeferenced images, but we have to reproject them : we need a WMS service to harvest
+    [ datasource ]
+    path_image          = /home/IGN/DATA/ORTHO_LAMB93
+    srs                 = IGNF:LAMB93
+
+    [ harvesting ]
+    wms_layer   = WMS_ORTHO
+    wms_url     = http://localhost/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/tiff
+
+    [ pyramid ]
+    pyr_data_path = /home/IGN/PYRAMIDS
+    pyr_desc_path = /home/IGN/DESCRIPTOR
+    pyr_name_new = ORTHO
+    pyr_level_bottom = 19
+
+    tms_name = LAMB93_10cm.tms
+    tms_path = /home/IGN/TMS
+
+    dir_depth = 2
+    image_width = 16
+    image_height = 16
+
+    dir_image = IMAGE
+    dir_nodata = NODATA
+    dir_mask = MASK
+
+    compression         = png
+    bitspersample       = 8
+    sampleformat        = uint
+    photometric         = rgb
+    samplesperpixel     = 3
+    interpolation       = bicubic
+
+    color               = 255,0,0 ; red as nodata color
+    (end code)
+    
 =cut

@@ -111,13 +111,11 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: IMAGESPEC
+# Constant: IMAGESPEC
 # Define allowed values for attributes interpolation, compression and compressionoption.
 my %IMAGESPEC;
 
-# Variable: DEFAULT
+# Constant: DEFAULT
 # Define default values for attributes interpolation, compression, compressionoption and gamma.
 my %DEFAULT;
 

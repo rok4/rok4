@@ -4,7 +4,9 @@ Format: 1.51
 Title: BE4
 SubTitle: Perl tools and libraries
 
-Footer: Copyright (C) IGN
+Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
+
+Footer: (C) 2013 BE4 - (R) IGN 2012
 Timestamp: Updated month day, year
 #   m     - One or two digit month.  January is "1"
 #   mm    - Always two digit month.  January is "01"
@@ -66,26 +68,22 @@ Group: Classes  {
 
          File: Array  (no auto-title, lib/BE4/Array.pm)
          File: Base36  (no auto-title, lib/BE4/Base36.pm)
-         File: Logger  (no auto-title, lib/BE4/Logger.pm)
          File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
          File: Layer  (no auto-title, lib/BE4/Layer.pm)
          }  # Group: Utils
 
-      Group: Generation  {
-
-         File: Commands  (no auto-title, lib/BE4/Commands.pm)
-         File: Script  (no auto-title, lib/BE4/Script.pm)
-         }  # Group: Generation
-
-      Group: Graphs  {
+      Group: For generation  {
 
          File: Forest  (no auto-title, lib/BE4/Forest.pm)
          File: Graph  (no auto-title, lib/BE4/Graph.pm)
          File: QTree  (no auto-title, lib/BE4/QTree.pm)
          File: Node  (no auto-title, lib/BE4/Node.pm)
-         }  # Group: Graphs
 
-      Group: Images' pyramid  {
+         File: Commands  (no auto-title, lib/BE4/Commands.pm)
+         File: Script  (no auto-title, lib/BE4/Script.pm)
+         }  # Group: Generation
+
+      Group: About pyramid  {
 
          File: Level  (no auto-title, lib/BE4/Level.pm)
          File: NoData  (no auto-title, lib/BE4/NoData.pm)
@@ -106,5 +104,6 @@ Group: Index  {
    File Index: Files
    Function Index: Functions
    Variable Index: Variables
+   Constant Index: Constants
    }  # Group: Index
 

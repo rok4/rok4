@@ -108,9 +108,7 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: STRLYRTMPLT
+# Constant: STRLYRTMPLT
 # Define the template XML for a layer
 my $STRLYRTMPLT   = <<"TLYR";
 <?xml version='1.0' encoding='UTF-8'?>
@@ -140,21 +138,21 @@ my $STRLYRTMPLT   = <<"TLYR";
 </layer>
 TLYR
 
-# Variable: STRTKTMPLT
+# Constant: STRTKTMPLT
 # Define the template XML for the keywords part of a layer.
 my $STRTKTMPLT = <<"TK";
     <keyword>__KEYWORD__</keyword>
     <!-- __KEYWORDS__ -->
 TK
 
-# Variable: STRSRSTMPLT
+# Constant: STRSRSTMPLT
 # Define the template XML for the SRS part of a layer.
 my $STRSRSTMPLT = <<"TSRS";
     <WMSCRS>__SRS__</WMSCRS>
     <!-- __SRSS__ -->
 TSRS
 
-# Variable: DEFAULT
+# Constant: DEFAULT
 # Define default values for optionnal attributes.
 my %DEFAULT;
 

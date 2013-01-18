@@ -92,7 +92,7 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Group: Commands' weights
+# Group: Commands' weights and calls
 
 # Constant: MERGE4TIFF_W
 use constant MERGE4TIFF_W => 1;
@@ -107,9 +107,7 @@ use constant TIFF2TILE_W => 0;
 # Constant: TIFFCP_W
 use constant TIFFCP_W => 0;
 
-################################################################################
-
-# Variable: BASHFUNCTIONS
+# Constant: BASHFUNCTIONS
 # Define bash functions, used to factorize and reduce scripts.
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 

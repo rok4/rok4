@@ -175,9 +175,7 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: STRPYRTMPLT
+# Constant: STRPYRTMPLT
 # Define the template XML for the pyramid's descriptor.
 my $STRPYRTMPLT   = <<"TPYR";
 <?xml version='1.0' encoding='UTF-8'?>
@@ -192,7 +190,7 @@ my $STRPYRTMPLT   = <<"TPYR";
 </Pyramid>
 TPYR
 
-# Variable: DEFAULT
+# Constant: DEFAULT
 # Define default values for directories' names.
 my %DEFAULT;
 

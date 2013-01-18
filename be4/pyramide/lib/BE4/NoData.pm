@@ -90,9 +90,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 use constant CREATE_NODATA => "createNodata";
 
-################################################################################
-
-# Variable: HEX2DEC
+# Constant: HEX2DEC
 # Define conversion from hedecimal to decimal number.
 my %HEX2DEC;
 

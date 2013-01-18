@@ -85,13 +85,11 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: IMAGESPEC
+# Constant: PIXEL
 # Define allowed values for attributes bitspersample, sampleformat, photometric and samplesperpixel.
 my %PIXEL;
 
-# Variable: DEFAULT
+# Constant: DEFAULT
 # Define default values for attribute photometric.
 my %DEFAULT;
 

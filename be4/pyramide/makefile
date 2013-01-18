@@ -82,12 +82,9 @@ buildnatural:
                 install -d docs/Natural/Html ;\
 		install -d docs/Natural/NaturalDocs ;\
 	fi)
-# 	@( if [ -f $(BE4_SRC)/../doc/MenuND.txt ] ; then \
-# 		cp $(BE4_SRC)/../doc/MenuND.txt ./docs/Natural/NaturalDocs/Menu.txt ;\
-# 	fi)
-# 	@( if [ -f $(BE4_SRC)/lib/BE4/Global.txt ] ; then \
-# 		cp $(BE4_SRC)/lib/BE4/Global.txt ./lib/BE4/ ;\
-# 	fi)
+	@( if [ -f $(BE4_SRC)/../doc/MenuND.txt ] ; then \
+		cp $(BE4_SRC)/../doc/MenuND.txt ./docs/Natural/NaturalDocs/Menu.txt ;\
+	fi)
 	@( naturaldocs -r --input ./ --exclude-input ./blib/ -img $(BE4_SRC)/../doc/images --no-auto-group --documented-only --output HTML ./docs/Natural/Html --project ./docs/Natural/NaturalDocs ) ;
 	@( echo "> Ok, NaturalDocs !" ) ;
 

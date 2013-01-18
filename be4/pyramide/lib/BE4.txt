@@ -1,9 +1,4 @@
-Package: BE4
-
-Library for tools :
-    - <BE4>
-    - <JOINCACHE>
-    - <CREATE-LAYER>
+Title: Library BE4 : global view
 
 Group: UML classes diagram
 

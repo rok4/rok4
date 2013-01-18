@@ -33,6 +33,54 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: PropertiesLoader.pm
+
+Class: BE4::PropertiesLoader
+
+Reads a configuration file, to sIniFiles* format
+
+Using:
+    (start code)
+    use BE4::PropertiesLoader;
+
+    my $proptxt << EOF
+        [section 1]
+        param1=value1
+        param2=value2
+        [section 2]
+        ; param21=value21
+        ; param22=value22
+    EOF
+
+    open FILE, ">", $propfile;
+    printf FILE "%s",  $proptxt;
+    close FILE;
+
+    my $objprop = BE4::PropertiesLoader->new($propfile);
+
+    # {section 1 => {...}, section 2 => {...}}
+    my $config     = $objprop->getAllProperties();
+
+    my @sections   = $objprop->getSections();  # [section 1, section 2]
+    my @parameters = $objprop->getKeyParameters("section 1"); # [param1, param2]
+    my @values     = $objprop->getValueParameters("section 1"); # [value1, value2]
+
+    # {param1=>value1, param2=>value2}
+    my $config_section = $objprop->getPropertiesBySection("section 1");
+    ...
+    (end code)
+
+Attributes:
+    CFGFILE - string - Configuration file path
+    HDLFILE - <Config::IniFiles> - Configuration reader
+    CFGPARAMS - hash - File properties (sections...)
+=cut
+
+################################################################################
+
 package BE4::PropertiesLoader;
 
 use strict;
@@ -63,22 +111,11 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
-=begin nd
-Group: variable
-
-variable: $self
-    * CFGFILE - file properties
-    * HDLFILE - ref to file properties
-    * CFGPARAMS - hash to stock params
-=cut
-
 ####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
+#                                        Group: Constructors                                       #
 ####################################################################################################
 
-# Group: constructor
-
+# Function: new
 sub new {
   my $this = shift;
 
@@ -101,6 +138,7 @@ sub new {
   return $self;
 }
 
+# Function: _initParams
 sub _initParams {
     my $self = shift;
     my $file = shift;
@@ -122,6 +160,7 @@ sub _initParams {
     return TRUE;
 }
 
+# Function: _initCfg
 sub _initCfg {
   my $self = shift;
 
@@ -133,11 +172,10 @@ sub _initCfg {
 }
 
 ####################################################################################################
-#                                           LOADER                                                 #
+#                                      Group: Loader                                               #
 ####################################################################################################
 
-# Group: loader
-
+# Function: LoadProperties
 sub LoadProperties {
   
   my $self     = shift;
@@ -187,17 +225,17 @@ sub LoadProperties {
   return TRUE;
 }
 
-
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getAllProperties
 sub getAllProperties {
   my $self = shift;
   return $self->{CFGPARAMS};
 }
+
+# Function: getPropertiesBySection
 sub getPropertiesBySection {
   my $self = shift;
   my $section = shift;
@@ -207,6 +245,8 @@ sub getPropertiesBySection {
   
   return $self->{CFGPARAMS}->{$section};
 }
+
+# Function: getSections
 sub getSections {
   my $self = shift;
   
@@ -217,6 +257,8 @@ sub getSections {
   }
   return @sections;
 }
+
+# Function: getKeyParameters
 sub getKeyParameters {
   my $self = shift;
   my $section = shift;
@@ -232,6 +274,8 @@ sub getKeyParameters {
   
   return @params;
 }
+
+# Function: getValueParameters
 sub getValueParameters {
   my $self = shift;
   my $section = shift;
@@ -250,59 +294,3 @@ sub getValueParameters {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::PropertiesLoader - load file properties.
-
-=head1 SYNOPSIS
-
-    use BE4::PropertiesLoader;
-    
-    my $proptxt << EOF
-        [section 1]
-        param1=value1
-        param2=value2
-        [section 2]
-        ; param21=value21
-        ; param22=value22
-    EOF
-    
-    open FILE, ">", $propfile;
-    printf FILE "%s",  $proptxt;
-    close FILE;
-    
-    my $objprop = BE4::PropertiesLoader->new($propfile);
-    
-    # {section 1 => {...}, section 2 => {...}}
-    my $config     = $objprop->getAllProperties();
-    
-    my @sections   = $objprop->getSections();  # [section 1, section 2]
-    my @parameters = $objprop->getKeyParameters("section 1"); # [param1, param2]
-    my @values     = $objprop->getValueParameters("section 1"); # [value1, value2]
-    
-    # {param1=>value1, param2=>value2}
-    my $config_section = $objprop->getPropertiesBySection("section 1"); 
-    ...
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Bazonnais Jean Philippe
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

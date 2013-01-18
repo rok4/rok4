@@ -104,9 +104,7 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-
-# Variable: STRLEVELTMPLT
+# Constant: STRLEVELTMPLT
 # Define the template XML for a level in the pyramid's descriptor.
 my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
@@ -130,7 +128,7 @@ my $STRLEVELTMPLT = <<"TLEVEL";
 <!-- __LEVELS__ -->
 TLEVEL
 
-# Variable: STRLEVELTMPLTMASK
+# Constant: STRLEVELTMPLTMASK
 # Define the template XML for the mask part of a level in the pyramid's descriptor.
 my $STRLEVELTMPLTMASK = <<"TMASK";
         <mask>
@@ -138,7 +136,7 @@ my $STRLEVELTMPLTMASK = <<"TMASK";
         </mask>
 TMASK
 
-# Variable: STRLEVELTMPLTMORE
+# Constant: STRLEVELTMPLTMORE
 # Define the template XML for the metadat part of a level in the pyramid's descriptor.
 my $STRLEVELTMPLTMORE = <<"TMTD";
         <metadata type='INT32_DB_LZW'>

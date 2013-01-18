@@ -42,6 +42,8 @@ Class: BE4::Graph
 
 Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
 
+(see NNGraphTMS.png)
+
 To generate this kind of graph, we use :
     - *jobNumber* scripts by level : to generate image to work format.
     - *jobNumber* scripts : to move image in the final pyramid, with the wanted format (compression...)
@@ -449,7 +451,7 @@ Function: identifyAboveNodes
 
 Calculate all nodes in above levels. We generate a above level node if one or more children are generated.
 
-We have to use "nearest neighbour" interpolation with this kinf of graph. So (beacuase pixel's center are aligned), we keep the value from the below level. Goal is to always have values from source data, no average.
+We have to use "nearest neighbour" interpolation with this kinf of graph. So (beacause pixel's center are aligned), we keep the value from the below level. Goal is to always have values from source data, no average.
 
 (see aboveNodes_NNGraph_2.png)
 
