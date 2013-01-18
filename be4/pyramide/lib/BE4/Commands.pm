@@ -167,7 +167,8 @@ Work2cache () {
   if [[ ! ${RM_IMGS[$work]} ]] ; then
     tiff2tile $work __t2t__ ${PYR_DIR}/$cacheName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    echo "0/$cacheName" >> ${LIST_FILE}
+    echo "0/$cacheName" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
   fi
 }
 
