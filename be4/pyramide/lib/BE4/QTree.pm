@@ -574,14 +574,22 @@ sub computeYourself {
             sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow));
         $self->writeBranchCode($node);
     }
+
+    # On copie les listes temporaires dans le dossier commun
+    my $finisher = $self->getScriptFinisher();
+    for (my $i = 1; $i <= $self->{forest}->getSplitNumber; $i++) {
+        my $split = $self->{forest}->getScript($i);
+        $split->moveTemporaryList();
+        $finisher->mergeTemporaryList($split->getID);
+    }
     
-    # Final script    
+    # Final script
     if ($self->getTopID eq $self->getCutLevelID){
         INFO("Final script will be empty");
         $self->printInFinisher("echo \"Final script have nothing to do.\" \n");
     } else {
         my @nodeList = $self->getNodesOfTopLevel;
-        foreach my $node (@nodeList){
+        foreach my $node (@nodeList) {
             $self->writeTopCode($node);
         }
     }

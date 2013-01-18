@@ -134,7 +134,13 @@ Wms2work () {
         do
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
-            if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+            if [ "$fmt" == "png" ] ; then
+                echo "gdalinfo"
+                if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+            else
+                echo "tiffck"
+                if tiffck $nameImg 1>/dev/null ; then break ; fi
+            fi
             
             echo "Failure $count : wait for $wait_delay s"
             sleep $wait_delay
@@ -155,7 +161,7 @@ Wms2work () {
     fi
 
     if [ "$fmt" == "png" ]||[ "$nbTiles" != "1x1" ] ; then
-        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt -depth 8 -define tiff:rows-per-strip=4096 -compress Zip $dir.tif
+        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         mv $dir/img01.tif $dir.tif
@@ -203,7 +209,9 @@ Work2cache () {
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
         tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        echo "0/$imgName" >> ${LIST_FILE}
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         if [ "$after" == "remove" ] ; then
             rm $workDir/$workImgName
@@ -851,7 +859,7 @@ sub configureFunctions {
         $conf_montageOut .= "-type Grayscale ";
     }
 
-    $configuredFunc =~ s/__montageOut__/$conf_montageOut/;
+    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
     ######## tiffcp ########
     my $imgS = $self->{pyramid}->getCacheImageHeight;

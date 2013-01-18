@@ -296,9 +296,9 @@ sub _load {
         # Creation of QTree or Graph object
         my $graph = undef;
         if ($isQTree) {
-          $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
+            $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
         } else {
-          $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{commands});
+            $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{commands});
         };
                 
         if (! defined $graph) {

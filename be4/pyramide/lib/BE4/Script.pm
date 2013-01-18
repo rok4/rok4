@@ -165,7 +165,7 @@ sub new {
 
     ########## Dossier des configurations des mergeNtiff pour ce script
     
-    $self->{mntConfDir} = File::Spec->catfile($self->{tempDir},"mergeNtiff");
+    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff",$self->{id});
 
     ########## Tests et création de l'ensemble des dossiers
     
@@ -343,7 +343,11 @@ sub prepare {
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
     $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
-    $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);    
+    $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);
+
+    my $tmpListFile = File::Spec->catdir($self->{tempDir},"list_".$self->{id}.".txt");
+    $tmpListFile = $listFile if ($self->{id} eq "SCRIPT_FINISHER");
+    $code   .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code   .= "\n";
     
     # Fonctions
@@ -370,6 +374,22 @@ sub print {
     
     my $stream = $self->{stream};
     printf $stream "%s", $text;
+}
+
+sub moveTemporaryList {
+    my $self = shift;
+
+    my $stream = $self->{stream};
+    printf $stream "\nmv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+}
+
+sub mergeTemporaryList {
+    my $self = shift;
+    my $scriptID = shift;
+
+    my $stream = $self->{stream};
+    printf $stream "cat \${COMMON_TMP_DIR}/list_%s.txt >>\${LIST_FILE}\n", $scriptID;
+    printf $stream "rm -f \${COMMON_TMP_DIR}/list_%s.txt\n", $scriptID;
 }
 
 # Function: close
