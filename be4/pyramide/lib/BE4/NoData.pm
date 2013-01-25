@@ -203,6 +203,7 @@ sub _init {
     } else {
         $params->{value} =~ s/ //g;
 
+        # On garde la possibilité de traiter une valeur fournie en héxadécimal
         if ($self->{pixel}->getBitsPerSample == 8 &&
             $self->{pixel}->getSampleFormat eq 'uint' &&
             ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {

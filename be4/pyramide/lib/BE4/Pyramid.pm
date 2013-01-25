@@ -333,20 +333,43 @@ sub _init {
     
     # Different treatment for a new or an update pyramid
     if (exists $params->{pyr_name_old} && defined $params->{pyr_name_old}) {
+        # With an ancestor
         $params->{pyr_name_old} =~ s/\.(pyr|PYR)$//;
         $self->{old_pyramid}->{name} = $params->{pyr_name_old};
         #
-        if (! exists($params->{pyr_desc_path_old})) {
+        if (! exists $params->{pyr_desc_path_old} || ! defined $params->{pyr_desc_path_old}) {
             WARN ("Parameter 'pyr_desc_path_old' has not been set, 'pyr_desc_path' is used.");
             $params->{pyr_desc_path_old} = $params->{pyr_desc_path};
         }
         $self->{old_pyramid}->{desc_path} = $params->{pyr_desc_path_old};
         #
-        if (! exists($params->{pyr_data_path_old})) {
+        if (! exists $params->{pyr_data_path_old} || ! defined $params->{pyr_data_path_old}) {
             WARN ("Parameter 'pyr_data_path_old' has not been set, 'pyr_data_path' is used.");
             $params->{pyr_data_path_old} = $params->{pyr_data_path};
         }
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
+    } else {
+        # For a new pyramid, are mandatory (and controlled in this class):
+        #   - image_width, image_height
+        #   - dir_depth
+        
+        if (! exists $params->{image_width} || ! defined $params->{image_width}) {
+            ERROR ("The parameter 'image_width' is required!");
+            return FALSE;
+        }
+        $self->{image_width} = $params->{image_width};
+
+        if (! exists $params->{image_height} || ! defined $params->{image_height}) {
+            ERROR ("The parameter 'image_height' is required!");
+            return FALSE;
+        }
+        $self->{image_height} = $params->{image_height};
+
+        if (! exists $params->{dir_depth} || ! defined $params->{dir_depth}) {
+            ERROR ("The parameter 'dir_depth' is required!");
+            return FALSE;
+        }
+        $self->{dir_depth} = $params->{dir_depth};
     }
     
     ### Images' directory
@@ -367,6 +390,8 @@ sub _init {
     if (exists $params->{dir_mask} && defined $params->{dir_mask}) {
         INFO ("We want to generate masks");
         $self->{dir_mask} = $params->{dir_mask};
+    } else {
+        INFO ("We don't want to generate masks");
     }
     
     ### Metadatas' directory
@@ -386,7 +411,7 @@ We have to collect pyramid's attributes' values
 
 Informations are checked, using perl classes like <NoData>, <Level>, <PyrImageSpec>...
 
-Parameters (list):
+# Parameters (list):
     params - All parameters about a pyramid's format (new or update).
     path_temp - string - Directory path, where to write the temporary old cache list, if not exist.
 =cut
@@ -397,7 +422,7 @@ sub _load {
 
     TRACE;
 
-    if ($self->isNewPyramid) {
+    if (! $self->isNewPyramid) {
         # A pyramid with ancestor
         # init. process hasn't checked all parameters,
         # so, we must read file pyramid to initialyze them...
@@ -1245,10 +1270,13 @@ sub writeListPyramid {
             
             if ($directories[1] ne $self->{dir_nodata}) {
                 $level = $directories[2];
+                my $b36path = File::Spec->catdir(@directories[3..-1]);
+=begin
                 my $b36path = "";
                 for (my $i = 3; $i < scalar @directories; $i++) {
                     $b36path .= $directories[$i]."/";
                 }
+=cut
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
                 ($x,$y) = BE4::Base36->b36PathToIndices($b36path);

@@ -264,10 +264,22 @@ sub getScript {
     return $self->{script}
 }
 
-# Function: writeInScript
+=begin nd
+Function: writeInScript
+
+Write own code in the associated script.
+
+Parameters (list):
+    additionnalText - string - Optionnal, can be undefined, text to add after the own code.
+=cut
 sub writeInScript {
     my $self = shift;
-    $self->{script}->print($self->{code});
+    my $additionnalText = shift;
+
+    my $text = $self->{code};
+    $text .= $additionnalText if (defined $additionnalText);
+    
+    $self->{script}->write($text);
 }
 
 =begin nd
@@ -501,10 +513,8 @@ sub getChildren {
 }
 
 ####################################################################################################
-#                                          LEVELS TESTERS                                          #
+#                                  Group: Levels' testers                                          #
 ####################################################################################################
-
-# Group: levels' testers
 
 # Function: isCutLevelNode
 sub isCutLevelNode {

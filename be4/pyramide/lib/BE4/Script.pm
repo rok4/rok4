@@ -51,11 +51,13 @@ Using:
         tempDir => "/home/ign/TMP/",
         commonTempDir => "/home/ign/TMP/",
         scriptDir => "/home/ign/SCRIPTS",
+        executedAlone => "FALSE"
     });
     (end code)
 
 Attributes:
     id - string - Identifiant, like "SCRIPT_2". It used to name the file and temporary directories.
+    executedAlone - boolean - If we know a script will be executed ALONE. it can change some working.
     filePath - string - Complete absolute script file path.
     tempDir - string - Directory used to write temporary images.
     commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
@@ -110,6 +112,7 @@ Parameters (hash):
     scriptDir - string - Directory path, where to write the script.
     tempDir - string - Root directory, in which own temporary directory will be created.
     commonTempDir - string - Common temporary directory, to allowed scripts to share files
+    executedAlone - boolean - Optionnal, FALSE by default.
 =cut
 sub new {
     my $this = shift;
@@ -119,6 +122,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         id => undef,
+        executedAlone => FALSE,
         filePath => undef,
         tempDir => undef,
         commonTempDir => undef,
@@ -139,6 +143,12 @@ sub new {
     }
     $self->{id} = $params->{id};
 
+    ########## Will be executed alone ?
+
+    if ( exists $params->{executedAlone} && defined $params->{executedAlone} && $params->{executedAlone}) {
+        $self->{executedAlone} = TRUE;
+    }
+
     ########## Chemin d'écriture du script
     
     if ( ! exists $params->{scriptDir} || ! defined $params->{scriptDir}) {
@@ -158,14 +168,14 @@ sub new {
     ########## Dossier commun à tous les scripts
 
     if ( ! exists $params->{commonTempDir} || ! defined $params->{commonTempDir}) {
-        ERROR ("'commonTempDir' mandatory to create a Script object !");
+        ERROR ("'commonTempDir mandatory to create a Script object !");
         return undef;
     }
     $self->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
 
     ########## Dossier des configurations des mergeNtiff pour ce script
     
-    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff",$self->{id});
+    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
     
@@ -346,7 +356,6 @@ sub prepare {
     $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);
 
     my $tmpListFile = File::Spec->catdir($self->{tempDir},"list_".$self->{id}.".txt");
-    $tmpListFile = $listFile if ($self->{id} eq "SCRIPT_FINISHER");
     $code   .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code   .= "\n";
     
@@ -358,17 +367,20 @@ sub prepare {
     $code .= "# creation du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
 
-    $self->print($code);
+    $code .= "# creation de la liste temporaire\n";
+    $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
+
+    $self->write($code);
 }
 
 =begin nd
-Function: print
+Function: write
 Print text in the script's file, using the opened stream.
 
 Parameters (list):
-    text - string - Text to print in file.
+    text - string - Text to write in file.
 =cut
-sub print {
+sub write {
     my $self = shift;
     my $text = shift;
     
@@ -376,19 +388,12 @@ sub print {
     printf $stream "%s", $text;
 }
 
-sub moveTemporaryList {
-    my $self = shift;
-
-    my $stream = $self->{stream};
-    printf $stream "\nmv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
-}
-
 sub mergeTemporaryList {
     my $self = shift;
     my $scriptID = shift;
 
     my $stream = $self->{stream};
-    printf $stream "cat \${COMMON_TMP_DIR}/list_%s.txt >>\${LIST_FILE}\n", $scriptID;
+    
     printf $stream "rm -f \${COMMON_TMP_DIR}/list_%s.txt\n", $scriptID;
 }
 
@@ -397,6 +402,23 @@ sub close {
     my $self = shift;
     
     my $stream = $self->{stream};
+
+    if ($self->{weight} == 0) {
+        printf $stream "\necho \"No image to generate (null weight)\"\n";
+    } else {
+        printf $stream "\necho \"Theorical weight was : %s\"\n", $self->{weight};
+    }
+
+    # On copie la liste temporaire de ce script vers le dossier commun
+    printf $stream "\necho \"Temporary files list is moving to the common directory\"\n";
+    printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+
+    if ($self->{executedAlone}) {
+        printf $stream "\necho \"Temporary files lists (list_<?>.txt in the common directory) are added to the global files list, then removed\"\n";
+        printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
+        printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
+    }
+    
     close $stream;
 }
 
@@ -413,6 +435,7 @@ Example:
     (start code)
     Object BE4::Script :
         ID : SCRIPT_2
+        Will NOT be executed alone
         Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
         Temporary directory : /home/IGN/TEMP/SCRIPT_2
         Common temporary directory : /home/IGN/TEMP/COMMON
@@ -427,6 +450,10 @@ sub exportForDebug {
     
     $export .= "\nObject BE4::Script :\n";
     $export .= sprintf "\t ID : %s\n", $self->{id};
+    
+    $export .= sprintf "\t Will NOT be executed alone\n" if (! $self->{executedAlone});
+    $export .= sprintf "\t Will be executed ALONE\n" if ($self->{executedAlone});
+    
     $export .= sprintf "\t Script path : %s\n", $self->{filePath};
     $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
     $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};

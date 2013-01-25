@@ -149,7 +149,7 @@ sub new {
         ERROR ("'sampleformat' required !");
         return undef;
     } else {
-        if (! $self->is_SamplesPerPixel($params->{sampleformat})) {
+        if (! $self->is_SampleFormat($params->{sampleformat})) {
             ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
             return undef;
         }

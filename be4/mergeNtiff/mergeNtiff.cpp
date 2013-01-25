@@ -58,10 +58,11 @@
  * On doit préciser en paramètre de la commande :
  * \li Un fichier texte contenant les images sources et l'image finale avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
  * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
+ * Le chemin peut contenir un point d'interrogation comme premier caractère, cela voudra dire qu'on veut utiliser la racine placée en paramètre (option -r). Si celle-ci n'est pas précisée, le point d'interrogation est juste supprimé.
  * Exemple de configuration :
  * \~ \code{.txt}
- * IMG IMAGE.tif      -499       1501    1501    -499       2       2
- * MSK MASK.tif
+ * IMG ?IMAGE.tif      -499       1501    1501    -499       2       2
+ * MSK ?MASK.tif
  * IMG sources/imagefond.tif      -499       1501    1501    -499       4       4
  * MSK sources/maskfond.tif
  * IMG sources/image1.tif      0       1000    1000    0       1       1
@@ -70,6 +71,7 @@
  * MSK sources/mask2.tif
  * \endcode
  * \~french
+ * \li On peut préciser une racine (un répertoire) à ajouter au chemin de l'image de sortie (et de son masque). Le chemin du répertoire doit finir par le séparateur de dossier (slash en linux).
  * \li La compression de l'image de sortie
  * \li Le mode d'interpolation
  * \li Le nombre de canaux par pixel
@@ -88,7 +90,7 @@
  * Exemple d'appel à la commande :
  * \li pour des ortho-images \~english \li for orthoimage
  * \~ \code
- * mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
  * \endcode
  * \~french \li pour du MNT \~english \li for DTM
  * \~ \code
@@ -128,6 +130,8 @@
 // Paramètres de la ligne de commande déclarés en global
 /** \~french Chemin du fichier de configuration des images */
 char imageListFilename[256];
+/** \~french Racine pour les images de sortie */
+char outImagesRoot[256];
 /** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
 char strnodata[256];
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
@@ -157,6 +161,7 @@ Interpolation::KernelType interpolation;
  *
  * Parameters:
  *      -f configuration file : list of output and source images and masks
+ *      -r root : root directory for output files, have to end with a '/'
  *      -c output compression :
  *              raw     no compression
  *              none    no compression
@@ -165,7 +170,7 @@ Interpolation::KernelType interpolation;
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
  *      -a sample format : uint (unsigned integer) or float
- *      -i interpolationused for resampling :
+ *      -i interpolation : used for resampling :
  *              nn      nearest neighbor
  *              linear
  *              bicubic
@@ -192,11 +197,12 @@ void usage() {
 
     "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
     
-    "Usage: mergeNtiff -f <FILE> -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>\n" <<
+    "Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>\n" <<
     "All parameters are mandatory (parameters' number must be 17), no default value.\n\n" <<
 
     "Parameters:\n" <<
     "    -f configuration file : list of output and source images and masks\n" <<
+    "    -r output root : root directory for output files, have to end with a '/'\n" <<
     "    -c output compression :\n" <<
     "            raw     no compression\n" <<
     "            none    no compression\n" <<
@@ -205,7 +211,7 @@ void usage() {
     "            pkb     PackBits encoding\n" <<
     "            zip     Deflate encoding\n" <<
     "    -a sample format : uint (unsigned integer) or float\n" <<
-    "    -i interpolationused for resampling :\n" <<
+    "    -i interpolation : used for resampling :\n" <<
     "            nn      nearest neighbor\n" <<
     "            linear\n" <<
     "            bicubic\n" <<
@@ -264,12 +270,16 @@ int parseCommandLine(int argc, char** argv) {
                     if(i++ >= argc) {LOGGER_ERROR("Error in option -f"); return -1;}
                     strcpy(imageListFilename,argv[i]);
                     break;
+                case 'r': // racine pour le fichier de configuration
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -r"); return -1;}
+                    strcpy(outImagesRoot,argv[i]);
+                    break;
                 case 'i': // interpolation
                     if(i++ >= argc) {LOGGER_ERROR("Error in option -i"); return -1;}
-                    if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3; // =4
-                    else if(strncmp(argv[i], "nn",2) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR; // =0
-                    else if(strncmp(argv[i], "bicubic",7) == 0) interpolation = Interpolation::CUBIC; // =2
-                    else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR; // =2
+                    if(strncmp(argv[i], "lanczos",7) == 0) interpolation = Interpolation::LANCZOS_3;
+                    else if(strncmp(argv[i], "nn",2) == 0) interpolation = Interpolation::NEAREST_NEIGHBOUR;
+                    else if(strncmp(argv[i], "bicubic",7) == 0) interpolation = Interpolation::CUBIC;
+                    else if(strncmp(argv[i], "linear",6) == 0) interpolation = Interpolation::LINEAR;
                     else {LOGGER_ERROR("Unknown value for option -i : " << argv[i]); return -1;}
                     break;
                 case 'n': // nodata
@@ -302,16 +312,18 @@ int parseCommandLine(int argc, char** argv) {
                     else {LOGGER_ERROR("Unknown value for option -p : " << argv[i]); return -1;}
                     break;
                 case 'c': // compression
-                   if(i++ >= argc) {LOGGER_ERROR("Error in option -c"); return -1;}
-                   if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
-                   else if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
-                   else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
-                   else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
-                   else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
-                   else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
-                   else {LOGGER_ERROR("Unknown value for option -c : " << argv[i]); return -1;}
-                   break;
-                default: return -1;
+                    if(i++ >= argc) {LOGGER_ERROR("Error in option -c"); return -1;}
+                    if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
+                    else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
+                    else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
+                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
+                    else {LOGGER_ERROR("Unknown value for option -c : " << argv[i]); return -1;}
+                    break;
+                default:
+                    LOGGER_ERROR("Unknown option : -" << argv[i][1]);
+                    return -1;
             }
         }
     }
@@ -386,6 +398,8 @@ int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph
         return 0;
 }
 
+int nbreadFileLine = 0;
+
 /**
  * \~french
  * \brief Lit une ligne (ou deux si présence d'un masque) du fichier de configuration
@@ -405,7 +419,12 @@ int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph
 int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, BoundingBox<double>* bbox, double* resx, double* resy)
 {
     std::string str;
-
+    char tmpPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    int rootLength = strlen(outImagesRoot);
+    
+    memset(imageFileName, 0, strlen(imageFileName));
+    memset(maskFileName, 0, strlen(maskFileName));
+    
     while (str.empty()) {
         if (file.eof()) {
             LOGGER_DEBUG("Configuration file end reached");
@@ -420,7 +439,7 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
     char type[3];
 
     if ((nb = std::sscanf(str.c_str(),"%s %s %lf %lf %lf %lf %lf %lf",
-        type, imageFileName, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) == 8) {
+        type, tmpPath, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy)) == 8) {
         if (memcmp(type,"IMG",3)) {
             LOGGER_ERROR("We have to read an image information at first.");
             return 1;
@@ -432,18 +451,25 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
         return 1;
     }
 
+    if (! strncmp(tmpPath,"?",1)) {
+        strcpy(imageFileName,outImagesRoot);
+        strcpy(&(imageFileName[rootLength]),&(tmpPath[1]));
+    } else {
+        strcpy(imageFileName,tmpPath);
+    }
+
     str.clear();
     
     // Récupération d'un éventuel masque
     while (str.empty()) {
         if (file.eof()) {
             *hasMask = false;
-            return -1;
+            return 0;
         }
         std::getline(file,str);
     }
     
-    if ((std::sscanf(str.c_str(),"%s %s", type, maskFileName)) != 2 || memcmp(type,"MSK",3)) {
+    if ((std::sscanf(str.c_str(),"%s %s", type, tmpPath)) != 2 || memcmp(type,"MSK",3)) {
         /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
          * C'est en fait l'image suivante (ou une erreur). On doit donc remettre le
          * pointeur de manière à ce que cette ligne soit lue au prochain appel de
@@ -451,7 +477,17 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
          */
         *hasMask = false;
         file.seekg(pos);
-    } else *hasMask = true;
+    } else {
+        if (! strncmp(tmpPath,"?",1)) {
+            strcpy(maskFileName,outImagesRoot);
+            strcpy(&(maskFileName[rootLength]),&(tmpPath[1]));
+        } else {
+            strcpy(maskFileName,tmpPath);
+        }
+        *hasMask = true;
+    }
+
+
 
     return 0;
 }
@@ -460,13 +496,14 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
  * \~french
  * \brief Charge les images en entrée et en sortie depuis le fichier de configuration
  * \details On va récupérer toutes les informations de toutes les images et masques présents dans le fichier de configuration et créer les objets LibtiffImage correspondant. Toutes les images ici manipulées sont de vraies images (physiques) dans ce sens où elles sont des fichiers soit lus, soit qui seront écrits.
- * \param[in] imageListFilename chemin du fichier de configuration
+ *
+ * Le chemin vers le fichier de configuration est stocké dans la variables globale imageListFilename et outImagesRoot va être concaténer au chemin vers les fichiers de sortie.
  * \param[out] ppImageOut image résultante de l'outil
  * \param[out] ppMaskOut masque résultat de l'outil, si demandé
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
+int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
                std::vector<LibtiffImage*>* pImageIn)
 {
     char imageFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
@@ -476,6 +513,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
     bool hasMask;
     double resx, resy;
     LibtiffImageFactory factory;
+
 
     // Ouverture du fichier texte listant les images
     std::ifstream file;
@@ -505,6 +543,7 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
     }
 
     if (hasMask) {
+        
         *ppMaskOut = factory.createLibtiffImageToWrite(maskFileName, bbox,resx, resy, width, height, 1, 8, 1,
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
 
@@ -541,14 +580,19 @@ int loadImages(char* imageListFilename, LibtiffImage** ppImageOut, LibtiffImage*
     }
     
     if (out != -1) {
-        LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename << " a la ligne " << file.tellg());
+        LOGGER_ERROR("Erreur lecture du fichier de parametres: " << imageListFilename);
         return -1;
     }
 
     // Fermeture du fichier
     file.close();
 
-    return (pImageIn->size() - 1);
+    if (pImageIn->size() == 0) {
+        LOGGER_ERROR("Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée.");
+        return -1;
+    }
+
+    return 0;
 }
 
 /**
@@ -963,7 +1007,7 @@ int main(int argc, char **argv) {
 
     LOGGER_DEBUG("Load");
     // Chargement des images
-    if (loadImages(imageListFilename,&pImageOut,&pMaskOut,&ImageIn) < 0) {
+    if (loadImages(&pImageOut,&pMaskOut,&ImageIn) < 0) {
         error("Echec chargement des images",-1);
     }
 

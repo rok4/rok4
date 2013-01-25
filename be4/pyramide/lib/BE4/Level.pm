@@ -133,6 +133,7 @@ TLEVEL
 my $STRLEVELTMPLTMASK = <<"TMASK";
         <mask>
             <baseDir>__DIRMASK__</baseDir>
+            <format>__FMTMASK__</format>
         </mask>
 TMASK
 
@@ -190,7 +191,7 @@ sub new {
         type_metadata     => undef,
         size              => [],
         dir_depth         => 0,
-        limits             => [undef,undef,undef,undef]
+        limits            => undef
     };
     
     bless($self, $class);
@@ -231,27 +232,27 @@ sub _init {
     
     # Mandatory parameters !
     if (! exists($params->{id})) {
-        ERROR ("key/value required to 'id' !");
+        ERROR ("The parameter 'id' is required");
         return FALSE;
     }
     if (! exists($params->{order})) {
-        ERROR ("key/value required to 'order' !");
+        ERROR ("The parameter 'order' is required");
         return FALSE;
     }
     if (! exists($params->{dir_image})) {
-        ERROR ("key/value required to 'dir_image' !");
+        ERROR ("The parameter 'dir_image' is required");
         return FALSE;
     }
     if (! exists($params->{dir_nodata})) {
-        ERROR ("key/value required to 'dir_nodata' !");
+        ERROR ("The parameter 'dir_nodata' is required");
         return FALSE;
     }
     if (! exists($params->{size})) {
-        ERROR ("key/value required to 'size' !");
+        ERROR ("The parameter 'size' is required");
         return FALSE;
     }
     if (! exists($params->{dir_depth})) {
-        ERROR ("key/value required to 'dir_depth' !");
+        ERROR ("The parameter 'dir_depth' is required");
         return FALSE;
     }
 
@@ -262,10 +263,6 @@ sub _init {
     }
     if (! $params->{dir_depth}){
         ERROR("Value not valid for 'dir_depth' (0 or undef) !");
-        return FALSE;
-    }
-    if (! scalar (@{$params->{limits}})){
-        ERROR("List empty to 'limits' !");
         return FALSE;
     }
     
@@ -416,6 +413,8 @@ sub exportToXML {
 
         my $dirmask   = $self->{dir_mask};
         $levelXML =~ s/__DIRMASK__/$dirmask/;
+        
+        $levelXML =~ s/__FMTMASK__/TIFF_ZIP_INT8/;
     } else {
         $levelXML =~ s/<!-- __MASK__ -->\n//;
     }

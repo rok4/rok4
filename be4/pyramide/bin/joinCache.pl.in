@@ -34,6 +34,34 @@
 #
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: joinCache.pl
+
+Section: JOINCACHE tool
+
+Tool allowing to merge pyramids, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
+    - replace (just the top pyramid's image is kept
+    - multiply (samples are multiplied)
+    - transparency (alpha blending method)
+
+(see joinCache_general.png)
+
+Source pyramids could have different :
+    - compression
+    - number of samples per pixel
+
+Source pyramids must have the same :
+    - TMS
+    - directory depth
+    - sample format
+    - number of bits per sample
+
+=cut
+
+################################################################################
+
 use warnings;
 use strict;
 
@@ -75,13 +103,111 @@ use constant FALSE => 0;
 # Pas de bufferisation des sorties.
 $|=1;
 
-################################################################################
-# Version
+####################################################################################################
+#                                       Group: Variables                                           #
+####################################################################################################
+
+# Variable: version
 my $VERSION = '@VERSION_TEXT@';
 
-################################################################################
-# Global
+=begin nd
+Variable: opts
 
+Contains joinCache call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    properties - Configuration file
+=cut
+my %opts =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
+);
+
+=begin nd
+Variable: this
+
+All parameters by section :
+
+    logger - Can be null
+    pyramid -
+    bboxes - 
+    composition - 
+    process - 
+
+Perl objects to merge pyramids.
+    sourceByLevel
+    sourcePyramids
+    list
+|       - cacheRoots
+|       - stream
+    currentscript
+    streams
+    doneTiles
+=cut
+my %this =
+(
+    logger        => undef,
+    pyramid       => undef,
+    bboxes        => undef,
+    composition   => undef,
+    process       => undef,
+
+    sourceByLevel => {},
+    sourcePyramids => {},
+
+    list => {
+        cacheRoots => {},
+        stream => undef
+    },
+
+    currentscript => 0,
+    streams => [],
+
+    doneTiles => {},
+);
+
+=begin nd
+Variable: CONF
+
+Define allowed:
+    - sections
+    - merge methods
+    - compressions
+=cut
+my %CONF = (
+    sections => ['pyramid','process','composition','logger','bboxes'],
+    merge_method => ['replace','transparency','multiply'],
+);
+
+=begin nd
+Variable: SAMPLEFORMAT2CODE
+
+To convert sample format from parameter to code
+=cut
+my %SAMPLEFORMAT2CODE = (
+    uint => "INT",
+    float => "FLOAT"
+);
+
+####################################################################################################
+#                                       Group: Commands' calls                                     #
+####################################################################################################
+
+=begin nd
+Constant: BASHFUNCTIONS
+Define bash functions, used to factorize and reduce scripts :
+    - PrepareImage
+    - Cache2work
+    - OverlayNtiff
+    - Work2cache
+=cut
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
 PrepareImage () {
@@ -155,116 +281,14 @@ Work2cache () {
 
 FUNCTIONS
 
-################################################################################
-#
-# Title: joinCache
-#
 ####################################################################################################
-#                                              VARIABLES                                           #
+#                                         Group: Functions                                         #
 ####################################################################################################
 
-# Group: variables
-
-#
 =begin nd
-variable: %opts
+Function: main
 
-Command options.
-
-    * version
-    * help
-    * usage
-    * properties
-=cut
-my %opts =
-(
-    "version"    => 0,
-    "help"       => 0,
-    "usage"      => 0,
-
-    # Configuration
-    "properties"  => undef, # file properties params (mandatory) !
-);
-
-#
-=begin nd
-variable: %this
-
-All Parameters by section.
-    * logger
-    * pyramid
-    * bboxes
-    * composition
-    * process
-
-Perl objects to merge pyramids.
-    * sourceByLevel
-    * sourcePyramids
-    * list
-|       - cacheRoots
-|       - stream
-    * currentscript
-    * streams
-    * doneTiles
-=cut
-my %this =
-(
-    logger        => undef,
-    pyramid       => undef,
-    bboxes        => undef,
-    composition   => undef,
-    process       => undef,
-
-    sourceByLevel => {},
-    sourcePyramids => {},
-
-    list => {
-        cacheRoots => {},
-        stream => undef
-    },
-
-    currentscript => 0,
-    streams => [],
-
-    doneTiles => {},
-);
-
-#
-=begin nd
-variable: %CONF
-
-Define allowed:
-    * sections
-    * merge methods
-    * compressions
-=cut
-my %CONF = (
-    sections => ['pyramid','process','composition','logger','bboxes'],
-    merge_method => ['replace','transparency','multiply'],
-);
-
-#
-=begin nd
-variable: %SAMPLEFORMAT2CODE
-
-To convert sample format from parameter to code
-=cut
-my %SAMPLEFORMAT2CODE = (
-    uint => "INT",
-    float => "FLOAT"
-);
-
-####################################################################################################
-#                                                MAIN                                              #
-####################################################################################################
-
-# Group: main
-
-#
-=begin nd
-method: main
-
-Main method
+Main method.
 
 See Also:
     <_init>, <_config>, <_validate>, <openStreams>, <doIt>, <closeStreams>, <writePyr>
@@ -333,11 +357,10 @@ sub main {
     print STDOUT "END\n";
 }
 
-#
 =begin nd
-method: _init
+Function: _init
 
-Check options and initialize the logger
+Checks options and initializes the default logger. Check properties file (mandatory).
 =cut
 sub _init {
 
@@ -398,15 +421,8 @@ sub _init {
     return TRUE;
 }
 
-####################################################################################################
-#                                     CONFIGURATION LOADER                                         #
-####################################################################################################
-
-# Group: configuration loader
-
-#
 =begin nd
-method: _config
+Function: _config
 
 Load all parameters from the configuration file.
 
@@ -436,14 +452,13 @@ sub _config {
 
 }
 
-#
 =begin nd
-method: _read
+Function: _read
 
 Read line by line (order is important), no library is used.
 
-Parameter:
-    filepath - Configuration file to read.
+Parameters (list):
+    filepath - string - Configuration file path, to read
 
 See Also:
     <isConfSection>, <readComposition>
@@ -510,9 +525,8 @@ sub _read {
     return TRUE;
 }
 
-#
 =begin nd
-method: readComposition
+Function: readComposition
 
 Read a 'composition' section line. Determine sources by level and calculate priorities.
 
@@ -571,7 +585,7 @@ sub readComposition {
 
 #
 =begin nd
-method: isConfSection
+Function: isConfSection
 
 Check section's name
 
@@ -596,7 +610,7 @@ sub isConfSection {
 
 #
 =begin nd
-method: checkParams
+Function: checkParams
 
 Check is basic: sections have not to be empty
 =cut
@@ -678,7 +692,7 @@ sub checkParams {
 
 #
 =begin nd
-method: openStreams
+Function: openStreams
 
 Open one stream by script and write header. They stay opened to write commands directly in files (not store in memory).
 =cut
@@ -735,7 +749,7 @@ sub openStreams {
 
 #
 =begin nd
-method: configureFunctions
+Function: configureFunctions
 
 Configure bash functions to write in scripts' header.
 =cut
@@ -803,7 +817,7 @@ sub configureFunctions {
 
 #
 =begin nd
-method: closeStreams
+Function: closeStreams
 
 Close all streams to scripts.
 =cut
@@ -823,7 +837,7 @@ sub closeStreams {
 
 #
 =begin nd
-method: printInScript
+Function: printInScript
 
 Writes commands in the current script. Round robin method is used to fill scripts.
 
@@ -851,7 +865,7 @@ sub printInScript {
 
 #
 =begin nd
-method: _validate
+Function: _validate
 
 Validates all components, checks consistency.
 
@@ -919,7 +933,7 @@ sub _validate {
 
 #
 =begin nd
-method: validatePyramidSection
+Function: validatePyramidSection
 
 Checks final pyramid's paramters presence (TMS, merge method, sampleformat, ...)
 
@@ -991,7 +1005,7 @@ sub validatePyramidSection {
 
 #
 =begin nd
-method: isMergeMethod
+Function: isMergeMethod
 
 Check merge method value.
 
@@ -1015,7 +1029,7 @@ sub isMergeMethod {
 
 #
 =begin nd
-method: validateSourcePyramids
+Function: validateSourcePyramids
 
 For each pyramid in composition, we store and control attributes, reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
 
@@ -1146,7 +1160,7 @@ sub validateSourcePyramids {
 
 #
 =begin nd
-method: validateBboxes
+Function: validateBboxes
 
 For each bbox, we parse string to store values in array and we control consistency (min < max).
 =cut
@@ -1178,7 +1192,7 @@ sub validateBboxes {
 
 #
 =begin nd
-method: validateComposition
+Function: validateComposition
 
 Validates each source in the composition.
     - levelId have to be in the TMS
@@ -1252,7 +1266,7 @@ sub validateComposition {
 
 #
 =begin nd
-method: calculateBbox
+Function: calculateBbox
 
 We have source's bbox in ground coordinates. We calculate images' indices for a given level [$iMin,$jMin,$iMax,$jMax].
 
@@ -1281,7 +1295,7 @@ sub calculateBbox {
 
 #
 =begin nd
-method: isCompatible
+Function: isCompatible
 
 A pyramid is compatible with the final cache if format and sample per pixel are the same
 =cut
@@ -1305,7 +1319,7 @@ sub isCompatible {
 
 #
 =begin nd
-method: doIt
+Function: doIt
 
 Reads each image from each source pyramids which is in the bbox and writes it in the final cache, according the merge method.
 
@@ -1459,7 +1473,7 @@ sub doIt {
 
 #
 =begin nd
-method: searchTile
+Function: searchTile
 
 Search a tile in source pyramids with a smaller priority
 
@@ -1506,7 +1520,7 @@ sub searchTile {
 
 #
 =begin nd
-method: treatTile
+Function: treatTile
 
 3 possibilities:
     - the image is present in just one pyramid or merge_method = replace, and is compatible with the final cache -> we write a symbolic link.
@@ -1556,7 +1570,7 @@ sub treatTile {
 
 #
 =begin nd
-method: makeLink
+Function: makeLink
 
 Create a symbolic link in the final cache, to a source image.
 
@@ -1612,7 +1626,7 @@ sub makeLink {
 
 #
 =begin nd
-method: transformImage
+Function: transformImage
 
 Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel.
 
@@ -1674,7 +1688,7 @@ sub transformImage {
 
 #
 =begin nd
-method: mergeImages
+Function: mergeImages
 
 Write commands in the current script to merge n images according to the merge method. We use tiff2rgba to convert into work format and overlayNtiff to merge.
 
@@ -1740,7 +1754,7 @@ sub mergeImages {
 
 #
 =begin nd
-method: storeInList
+Function: storeInList
 
 Writes file's path in the cache list and store the root.
 
@@ -1789,7 +1803,7 @@ sub storeInList {
 
 #
 =begin nd
-method: writeRootsInList
+Function: writeRootsInList
 
 Write roots at the top of the cache list.
 

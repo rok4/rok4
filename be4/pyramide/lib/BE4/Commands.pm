@@ -59,6 +59,7 @@ Using:
 
 Attributes:
     pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
+    mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a result mask. This processing is longer, that's why default behaviour is without mask.
 =cut
 
@@ -107,8 +108,15 @@ use constant TIFF2TILE_W => 0;
 # Constant: TIFFCP_W
 use constant TIFFCP_W => 0;
 
-# Constant: BASHFUNCTIONS
-# Define bash functions, used to factorize and reduce scripts.
+=begin nd
+Constant: BASHFUNCTIONS
+Define bash functions, used to factorize and reduce scripts :
+    - Wms2work
+    - Cache2work
+    - Work2cache
+    - MergeNtiff
+    - Merge4tiff
+=cut
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
 declare -A RM_IMGS
@@ -135,10 +143,8 @@ Wms2work () {
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
             if [ "$fmt" == "png" ] ; then
-                echo "gdalinfo"
                 if gdalinfo $nameImg 1>/dev/null ; then break ; fi
             else
-                echo "tiffck"
                 if tiffck $nameImg 1>/dev/null ; then break ; fi
             fi
             
@@ -194,7 +200,7 @@ Cache2work () {
 }
 
 Work2cache () {
-    local after=$1
+    local level=$1
     local workDir=$2
     local workImgName=$3
     local imgName=$4
@@ -213,10 +219,10 @@ Work2cache () {
         echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        if [ "$after" == "remove" ] ; then
+        if [ "$level" == "$TOP_LEVEL" ] ; then
             rm $workDir/$workImgName
-        elif [ "$after" == "move" ] ; then
-            mv $workDir/$workImgName ${ROOT_TMP_DIR}/$workImgName
+        elif [ "$level" == "$CUT_LEVEL" ] ; then
+            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
         fi
         
         if [ $workMskName ] ; then
@@ -230,10 +236,10 @@ Work2cache () {
             if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
             echo "0/$mskName" >> ${LIST_FILE}
             
-            if [ "$after" == "remove" ] ; then
+            if [ "$level" == "$TOP_LEVEL" ] ; then
                 rm $workDir/$workMskName
-            elif [ "$after" == "move" ] ; then
-                mv $workDir/$workMskName ${ROOT_TMP_DIR}/$workMskName
+            elif [ "$level" == "$CUT_LEVEL" ] ; then
+                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
             fi
         fi
     fi
@@ -244,10 +250,10 @@ MergeNtiff () {
     local bgI=$2
     local bgM=$3
     
-    mergeNtiff -f ${MNT_CONF_DIR}/$config __mNt__
+    mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ __mNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
-    rm -f $config
+    #rm -f ${MNT_CONF_DIR}/$config
     
     if [ $bgI ] ; then
         rm -f $bgI
@@ -259,42 +265,50 @@ MergeNtiff () {
 }
 
 Merge4tiff () {
-    local imgs=( $1 $3 $5 $7 $9 )
-    shift
-    local masks=( $1 $3 $5 $7 $9 )
+    local imgOut=$1
+    local mskOut=$2
+    shift 2
+    local levelIn=$1
+    local imgIn=( 0 $2 $4 $6 $8 )
+    local mskIn=( 0 $3 $5 $7 $9 )
     shift 9
-    local bgI=$1
-    local bgM=$2
+    local imgBg=$1
+    local mskBg=$2
 
     local forRM=''
 
     # Entrées
+
+    local tempDir="${TMP_DIR}"
+    if [ "$levelIn" == "$CUT_LEVEL" ] ; then
+        tempDir="${COMMON_TMP_DIR}"
+    fi
+    
     local inM4T=''
     
-    if [ $bgI ] ; then
-        forRM="$bgI"
-        inM4T="$inM4T -b $bgI"
-        if [ $bgM ] ; then
-            forRM="$bgM"
-            inM4T="$inM4T -mb $bgM"
+    if [ $imgBg ] ; then
+        forRM="$imgBg"
+        inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
+        if [ $mskBg ] ; then
+            forRM="$mskBg"
+            inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
         fi
     fi
     
     local nbImgs=0
     for i in `seq 1 4`;
     do
-        if [ ${imgs[$i]} != '0' ] ; then
-            if [[ ! ${RM_IMGS[${imgs[$i]}]} ]] ; then
-                inM4T=`printf "$inM4T -i%.1d ${imgs[$i]}" $i`
-                if [ ${masks[$i]} != '0' ] ; then
-                    inM4T=`printf "$inM4T -m%.1d ${masks[$i]}" $i`
-                    forRM="$forRM ${masks[$i]}"
+        if [ ${imgIn[$i]} != '0' ] ; then
+            if [[ ! ${RM_IMGS[${imgIn[$i]}]} ]] ; then
+                forRM="$forRM ${imgIn[$i]}"
+                inM4T=`printf "$inM4T -i%.1d ${tempDir}/${imgIn[$i]}" $i`
+                
+                if [ ${mskIn[$i]} != '0' ] ; then
+                    inM4T=`printf "$inM4T -m%.1d ${tempDir}/${mskIn[$i]}" $i`
+                    forRM="$forRM ${mskIn[$i]}"
                 fi
                 
-                forRM="$forRM ${imgs[$i]}"
                 let nbImgs=$nbImgs+1
-            else
-                echo -e "Merge4tiff : on sait que ${imgs[$i]} a été supprimé normalement, on passe"
             fi
         fi
     done
@@ -302,18 +316,18 @@ Merge4tiff () {
     # Sorties
     local outM4T=''
     
-    if [ ${masks[0]} != '0' ] ; then
-        outM4T="$outM4T -mo ${masks[0]}"
+    if [ ${mskOut} != '0' ] ; then
+        outM4T="-mo ${TMP_DIR}/${mskOut}"
     fi
     
-    outM4T="$outM4T ${imgs[0]}"
+    outM4T="$outM4T -io ${TMP_DIR}/${imgOut}"
     
     # Appel à la commande merge4tiff
     if [ "$nbImgs" -gt 0 ] ; then
         merge4tiff __m4t__ $inM4T $outM4T
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        RM_IMGS[${imgs[0]}]="1"
+        RM_IMGS[${imgOut}]="1"
     fi
     
     # Suppressions
@@ -335,7 +349,7 @@ END {}
 =begin nd
 Constructor: new
 
-Level constructor. Bless an instance.
+Commands constructor. Bless an instance.
 
 Parameters (list):
     pyr - <Pyramid> - Image pyramid to generate
@@ -350,7 +364,8 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pyramid => undef,
-        useMasks => FALSE
+        mntConfDir => undef,
+        useMasks => FALSE,
     };
     bless($self, $class);
 
@@ -403,18 +418,15 @@ Example:
 Parameters (list):
     node - <Node> - Node whose image have to be harvested.
     harvesting - <Harvesting> - To use to harvest image.
-    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     suffix - string - Optionnal, suffix to add after the node's name ('BgI' for example), seperated with an underscore.
 
 Returns:
     An array (code, weight), (undef,WGET_W) if error.
 =cut
 sub wms2work {
-    my ($self, $node, $harvesting, $justWeight, $suffix) = @_;
+    my ($self, $node, $harvesting, $suffix) = @_;
     
     TRACE;
-    
-    return ("",WGET_W) if ($justWeight);
     
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
@@ -425,9 +437,9 @@ sub wms2work {
     
     my $cmd = $harvesting->getCommandWms2work({
         inversion => $tms->getInversion,
-        dir       => "\${TMP_DIR}/".$nodeName,
-        srs       => $tms->getSRS,
-        bbox      => [$xMin, $yMin, $xMax, $yMax],
+        dir => "\${TMP_DIR}/".$nodeName,
+        srs => $tms->getSRS,
+        bbox => [$xMin, $yMin, $xMax, $yMax],
         width => $imgSize[0],
         height => $imgSize[1]
     });
@@ -514,7 +526,6 @@ Example:
 Parameter:
     node - <Node> - Node whose image have to be transfered in the cache.
     workDir - string - Work image directory, can be an environment variable.
-    after - string - Specify if work image have to be removed after copy in the cache ("remove"), move in the common temporary directory ("move"), or nothing ("none").
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -523,7 +534,6 @@ sub work2cache {
     my $self = shift;
     my $node = shift;
     my $workDir = shift;
-    my $after = shift;
     
     my $cmd = "";
     my $weight = 0;
@@ -533,7 +543,7 @@ sub work2cache {
     my $workName  = $node->getWorkName("I");
     my $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("data",FALSE),$node->getPyramidName);
     
-    $cmd .= sprintf ("Work2cache %s %s %s %s", $after, $workDir, $workName, $pyrName);
+    $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $workName, $pyrName);
     $weight += TIFF2TILE_W;
     
     #### Copie du masque, si voulu
@@ -560,7 +570,6 @@ Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
-    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
     
 Example:
 |    MergeNtiff ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
@@ -571,7 +580,6 @@ Returns:
 sub mergeNtiff {
     my $self = shift;
     my $node = shift;
-    my $justWeight = shift;
 
     TRACE;
     
@@ -597,37 +605,27 @@ sub mergeNtiff {
             $code .= $c;
             $weight += $w;
             
-            # We just want to know weight (we don't already know the script for this node).
-            return ("",$weight) if ($justWeight);
-            
-            $workBgM = File::Spec->catfile($node->getScript->getTempDir,$node->getWorkName("BgM"));
+            $workBgM = "?".$node->getWorkName("BgM");
         } else {
             ($c,$w) = $self->cache2work($node,FALSE);
             $code .= $c;
             $weight += $w;
         }
         
-        # We just want to know weight (we don't already know the script for this node).
-        return ("",$weight) if ($justWeight);
-        
-        $workBgI = File::Spec->catfile($node->getScript->getTempDir,$node->getWorkName("BgI"));
+        $workBgI = "?".$node->getWorkName("BgI");
     }
     
-    # We just want to know weight.
-    return ("",$weight) if ($justWeight);
-    
-    my $workImgPath = File::Spec->catfile($node->getScript->getTempDir,$node->getWorkName("I"));
+    my $workImgPath = "?".$node->getWorkName("I");
     my $workMskPath = undef;
     if ($self->{useMasks}) {
-        $workMskPath = File::Spec->catfile($node->getScript->getTempDir,$node->getWorkName("M"));
+        $workMskPath = "?".$node->getWorkName("M");
     }
     
-    my $mergNtiffConfDir = $node->getScript->getMntConfDir;
-    my $mergNtiffConfFilename = $node->getWorkBaseName.".txt";
-    my $mergNtiffConfFile = File::Spec->catfile($mergNtiffConfDir,$mergNtiffConfFilename);
+    my $mNtConfFilename = $node->getWorkBaseName.".txt";
+    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir},$mNtConfFilename);
     
-    if (! open CFGF, ">", $mergNtiffConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $mergNtiffConfFile.");
+    if (! open CFGF, ">", $mNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
         return ("",-1);
     }
     
@@ -651,7 +649,7 @@ sub mergeNtiff {
     
     close CFGF;
     
-    $code .= "MergeNtiff $mergNtiffConfFilename";
+    $code .= "MergeNtiff $mNtConfFilename";
     $code .= " $workBgI" if (defined $workBgI); # pour supprimer l'image de fond si elle existe
     $code .= " $workBgM" if (defined $workBgM); # pour supprimer le masque de fond si il existe
     $code .= "\n";
@@ -672,12 +670,11 @@ Compose the 'merge4tiff' command. If we have not 4 children or if children conta
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'merge4tiff' command.
-    harvesting - <Harvesting> - To use to harvest background if necessary.
-    justWeight - boolean - If TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+    harvesting - <Harvesting> - To use to harvest background if necessary. Can be undefined.
 
 Example:
     (start code)
-    merge4tiff -g 1 -n FFFFFF  -i1 ${TMP_DIR}/19_396_3134.tif -i2 ${TMP_DIR}/19_397_3134.tif -i3 ${TMP_DIR}/19_396_3135.tif -i4 ${TMP_DIR}/19_397_3135.tif ${TMP_DIR}/18_198_1567.tif
+    merge4tiff -g 1 -n FFFFFF  -i1 19_396_3134.tif -i2 19_397_3134.tif -i3 19_396_3135.tif -i4 19_397_3135.tif 18_198_1567.tif
     (end code)
 
 Returns:
@@ -687,7 +684,6 @@ sub merge4tiff {
     my $self = shift;
     my $node = shift;
     my $harvesting = shift;
-    my $justWeight = shift;
   
     TRACE;
     
@@ -725,7 +721,7 @@ sub merge4tiff {
                 } else {
                     # On peut et doit chercher l'image de fond sur le WMS
                     $workBgI = $node->getWorkName("BgI");
-                    ($c,$w) = $self->wms2work($node,$harvesting,$justWeight,"BgI");
+                    ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
                     if (! defined $c) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
                         return ("",-1);
@@ -755,23 +751,25 @@ sub merge4tiff {
         }
     }
     
-    return ("",$weight) if ($justWeight);
-    
     # We compose the 'Merge4tiff' call
     #   - the ouput
-    $code .= sprintf "Merge4tiff \${TMP_DIR}/%s", $node->getWorkName("I");
+    $code .= sprintf "Merge4tiff %s", $node->getWorkName("I");
     if ($self->{useMasks}) {
-        $code .= sprintf " \${TMP_DIR}/%s", $node->getWorkName("M");
+        $code .= sprintf " %s", $node->getWorkName("M");
     } else {
         $code .= " 0";
     }
     #   - the inputs
+    my $inputsLevel = $self->{pyramid}->getTileMatrixSet()->getBelowLevelID($node->getLevel());
+    $code .= sprintf " %s", $inputsLevel;
     foreach my $childNode ($node->getPossibleChildren) {
+            
         if (defined $childNode){
-            $code .= sprintf " \${TMP_DIR}/%s", $childNode->getWorkName("I");
+            
+            $code .= sprintf " %s", $childNode->getWorkName("I");
             
             if ($self->{useMasks}){
-                $code .= sprintf " \${TMP_DIR}/%s", $childNode->getWorkName("M");
+                $code .= sprintf " %s", $childNode->getWorkName("M");
             } else {
                 $code .= " 0";
             }
@@ -781,9 +779,9 @@ sub merge4tiff {
     }
     #   - the background (if it exists)
     if ( defined $workBgI ){
-        $code.= " \${TMP_DIR}/$workBgI";
+        $code.= " $workBgI";
         if ( defined $workBgM ){
-            $code.= " \${TMP_DIR}/$workBgM";
+            $code.= " $workBgM";
         }
     }
     $code .= "\n";
@@ -818,10 +816,6 @@ sub configureFunctions {
     $conf_mNt .= "-p $ph ";
     my $sf = $pyr->getSampleFormat;
     $conf_mNt .= "-a $sf ";
-
-    if ($self->getNodata->getNoWhite) {
-        $conf_mNt .= "-nowhite ";
-    }
 
     my $nd = $self->getNodata->getValue;
     $conf_mNt .= "-n $nd ";
@@ -911,6 +905,21 @@ sub getNodata {
 sub getPyramid {
     my $self = shift;
     return $self->{pyramid};
+}
+
+=begin nd
+Function: setConfDir
+
+Store the directory for mergeNtiff configuration files.
+
+Parameters (list):
+    mntConfDir - string - Image pyramid to generate
+=cut
+sub setConfDir {
+    my $self = shift;
+    my $mntConfDir = shift;
+
+    $self->{mntConfDir} = $mntConfDir;
 }
 
 ####################################################################################################

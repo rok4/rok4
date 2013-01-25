@@ -256,9 +256,9 @@ sub _load {
     # Ajout du nom de la pyramide aux dossiers temporaires (pour distinguer de ceux des autres générations)
     $tempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
     $commonTempDir = File::Spec->catdir($commonTempDir,$self->{pyramid}->getNewName);
-    
+
     ############# PROCESS #############
-    
+
     my $commands = BE4::Commands->new($pyr,$params_process->{use_masks});
 
     if (! defined $commands) {
@@ -266,6 +266,72 @@ sub _load {
         return FALSE;
     }
     $self->{commands} = $commands;
+    
+    ############# SCRIPTS #############
+    # We create BE4::Script objects and initialize them (header)
+
+    my $functions = $commands->configureFunctions;
+
+    if ($isQTree) {
+        #### QTREE CASE
+
+        for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
+            my $scriptID = sprintf "SCRIPT_%s",$i;
+            my $executedAlone = FALSE;
+
+            if ($i == 0) {
+                $scriptID = "SCRIPT_FINISHER";
+                $executedAlone = TRUE;
+            }
+
+            my $script = BE4::Script->new({
+                id => $scriptID,
+                tempDir => $tempDir,
+                commonTempDir => $commonTempDir,
+                scriptDir => $scriptDir,
+                executedAlone => $executedAlone
+            });
+
+            my $listFile = $self->{pyramid}->getNewListFile;
+            $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+
+            push @{$self->{scripts}},$script;
+        }
+    } else {
+        #### GRAPH CASE
+
+        # Boucle sur les levels et sur le nb de scripts/jobs
+        # On commence par les finishers
+        # On continue avec les autres scripts, par level
+        for (my $i = $pyr->getBottomOrder - 1; $i <= $pyr->getTopOrder; $i++) {
+            for (my $j = 1; $j <= $self->getSplitNumber; $j++) {
+                my $scriptID ;
+                if ($i == $pyr->getBottomOrder - 1) {
+                    $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
+                } else {
+                    my $levelID = $self->getPyramid()->getIDfromOrder($i);
+                    $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
+                }
+
+                my $script = BE4::Script->new({
+                    id => $scriptID,
+                    tempDir => $tempDir,
+                    commonTempDir => $commonTempDir,
+                    scriptDir => $scriptDir,
+                    executedAlone => FALSE
+                });
+
+                my $listFile = $self->{pyramid}->getNewListFile;
+                $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+
+                push @{$self->{scripts}},$script;
+            }
+        }
+    }
+    
+    ######## PROCESS (suite) #########
+
+    $commands->setConfDir($self->{scripts}[0]->getMntConfDir());
     
     ############# GRAPHS #############
 
@@ -308,66 +374,6 @@ sub _load {
         }
         
         push @{$self->{graphs}},$graph;
-    }
-    
-    
-    ############# SCRIPTS #############
-    # We create BE4::Script objects and initialize them (header)
-    
-    my $functions = $commands->configureFunctions;
-    
-    if ($isQTree) {
-        #### QTREE CASE
-        
-        for (my $i = 0; $i <= $self->getSplitNumber; $i++) {
-            my $scriptID = sprintf "SCRIPT_%s",$i;
-            
-            if ($i == 0) {
-                $scriptID = "SCRIPT_FINISHER";
-            }
-            
-            my $script = BE4::Script->new({
-                id => $scriptID,
-                tempDir => $tempDir,
-                commonTempDir => $commonTempDir,
-                scriptDir => $scriptDir
-            });
-            
-            my $listFile = $self->{pyramid}->getNewListFile;
-            $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
-            
-            push @{$self->{scripts}},$script;
-        }
-        
-    } else {
-        #### GRAPH CASE
-        
-        # Boucle sur les levels et sur le nb de scripts/jobs
-        # On commence par les finishers
-        # On continue avec les autres scripts, par level  
-        for (my $i = $pyr->getBottomOrder - 1; $i <= $pyr->getTopOrder; $i++) {
-            for (my $j = 1; $j <= $self->getSplitNumber; $j++) {
-                my $scriptID ;
-                if ($i == $pyr->getBottomOrder - 1) {
-                    $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
-                } else {
-                    my $levelID = $self->getPyramid()->getIDfromOrder($i);
-                    $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
-                }
-                
-                my $script = BE4::Script->new({
-                    id => $scriptID,
-                    tempDir => $tempDir,
-                    commonTempDir => $commonTempDir,
-                    scriptDir => $scriptDir
-                });
-                
-                my $listFile = $self->{pyramid}->getNewListFile;
-                $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
-            
-                push @{$self->{scripts}},$script;
-            }
-        }   
     }
 
     return TRUE;
@@ -416,7 +422,8 @@ sub computeGraphs {
     
     my $graphInd = 1;
     my $graphNumber = scalar @{$self->{graphs}};
-    foreach my $graph (@{$self->{graphs}}) { 
+    
+    foreach my $graph (@{$self->{graphs}}) {
         if (! $graph->computeYourself) {
             ERROR(sprintf "Cannot compute graph $graphInd/$graphNumber");
             return FALSE;

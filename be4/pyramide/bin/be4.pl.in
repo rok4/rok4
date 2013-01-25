@@ -43,6 +43,8 @@ Section: BE4 tool
 
 Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
 
+This tool write scripts, to execute to obtain the pyramid.
+
 (see be4_general.png)
 
 2 types of generation :
@@ -239,7 +241,7 @@ sub init {
     # logger by default at runtime
     Log::Log4perl->easy_init( {
         level => $WARN,
-        layout => '[%M](%L): %m%n'}
+        layout => '%5p : %m (%M) %n'}
     );
   
     # check Options
@@ -249,12 +251,12 @@ sub init {
         my $fenvironment = File::Spec->rel2abs($opts{environment});
         
         if (! -d dirname($fenvironment)) {
-            ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fenvironment));
+            FATAL(sprintf "File path doesn't exist ('%s') !", dirname($fenvironment));
             return FALSE;
         }
         
         if (! -f $fenvironment ) {
-            ERROR(sprintf "File name doesn't exist ('%s') !", basename($fenvironment));
+            FATAL(sprintf "File name doesn't exist ('%s') !", basename($fenvironment));
             return FALSE;
         }
         #
@@ -263,19 +265,19 @@ sub init {
   
     # properties : mandatory !
     if (! defined $opts{properties}) {
-        ERROR("Option 'properties' not defined !");
+        FATAL("Option 'properties' not defined !");
         return FALSE;
     }
   
     my $fproperties = File::Spec->rel2abs($opts{properties});
   
     if (! -d dirname($fproperties)) {
-        ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
+        FATAL(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
         return FALSE;
     }
     
     if (! -f $fproperties) {
-        ERROR(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
+        FATAL(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
         return FALSE;
     }
     
@@ -288,6 +290,9 @@ sub init {
 Function: config
 
 Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+
+See Also:
+    <checkParams>
 =cut
 sub config {
   
@@ -318,21 +323,21 @@ sub config {
     # FIXME :
     #   This option may be optional ?
     if (! -f $fenv) {
-        ERROR(sprintf "The environment properties '%s' doesn't exist into directory '%s' !", basename($fenv), dirname($fenv));
+        FATAL(sprintf "The environment properties '%s' doesn't exist into directory '%s' !", basename($fenv), dirname($fenv));
         return FALSE;
     }
     
     my $objEnv = BE4::PropertiesLoader->new($fenv);
     
     if (! defined $objEnv) {
-        ERROR("Can not load environment properties !");
+        FATAL("Can not load environment properties !");
         return FALSE;
     }
     
     my $refEnv = $objEnv->getAllProperties();
     
     if (! defined $refEnv) {
-        ERROR("All parameters environment are empty !");
+        FATAL("All parameters environment are empty !");
         return FALSE;
     }
   
@@ -345,14 +350,14 @@ sub config {
     my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
-        ERROR("Can not load specific properties !");
+        FATAL("Can not load specific properties !");
         return FALSE;
     }
     
     my $refProp = $objProp->getAllProperties();
     
     if (! defined $refProp) {
-        ERROR("All parameters properties are empty !");
+        FATAL("All parameters properties are empty !");
         return FALSE;
     }
 
@@ -366,7 +371,7 @@ sub config {
     }
     
     if (! defined $hashref) {
-        ERROR("Can not merge all parameters of properties !");
+        FATAL("Can not merge all parameters of properties !");
         return FALSE;
     }
   
@@ -374,7 +379,7 @@ sub config {
     $this{params} = $hashref;
     
     if (! main::checkParams() ) {
-        ERROR("Can not check parameters of properties !");
+        FATAL("Can not check parameters of properties !");
         return FALSE;
     }
     
@@ -410,19 +415,19 @@ sub checkParams {
     
     # pyramid
     if (! defined $pyramid) {
-        ERROR ("Parameters Pyramid can not be null !");
+        ERROR("Parameters Pyramid can not be null !");
         return FALSE;
     }
     
     # datasource
     if (! defined $datasource) {
-        ERROR ("Parameters Datasource can not be null !");
+        ERROR("Parameters Datasource can not be null !");
         return FALSE;
     }
     
     # process
     if (! defined $process) {
-        ERROR ("Parameters Process can not be null !");
+        ERROR("Parameters Process can not be null !");
         return FALSE;
     }
     
@@ -431,7 +436,7 @@ sub checkParams {
     
         my @args;
         
-        my $layout= '[%C][%M](%L): %m%n';
+        my $layout= '%5p : %m (%M) %n';
         my $level = $logger->{log_level};
         my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
             if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
@@ -440,7 +445,7 @@ sub checkParams {
         $level = "WARN"   if (! defined $level);
         
         if ($level =~ /(ALL|DEBUG)/) {
-            $layout = '[%C][%M](%L): %m%n';
+            $layout = '%5p : %m (%M) %n';
         }
         
         # add the param logger by default (user settings !)
@@ -505,7 +510,7 @@ sub doIt {
     
     $objPyramid = BE4::Pyramid->new($params->{pyramid},$params->{process}->{path_temp});
     if (! defined $objPyramid) {
-        ERROR ("Can not load Pyramid !");
+        FATAL("Can not load Pyramid !");
         return FALSE;
     }
     
@@ -516,7 +521,7 @@ sub doIt {
 
     $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
     if (! defined $objDSL) {
-        ERROR ("Cannot load data sources !");
+        FATAL("Cannot load data sources !");
         return FALSE;
     }
     
@@ -526,11 +531,11 @@ sub doIt {
     ALWAYS(">>> Determine levels ...");
     
     if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
-        ERROR ("Can not update levels !");
+        FATAL("Can not update levels !");
         return FALSE;
     }
 
-    DEBUG (sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
+    DEBUG(sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
     
     # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
   
@@ -546,7 +551,7 @@ sub doIt {
     );
   
     if (! defined $objForest) {
-        ERROR ("Can not load the forest !");
+        FATAL("Can not load the forest !");
         return FALSE;
     }
 
@@ -556,7 +561,7 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's list ...");
 
     if (! $objPyramid->writeListPyramid($objForest)) {
-        ERROR ("Can not write Pyramid list !");
+        FATAL("Can not write Pyramid list !");
         return FALSE;
     }
     
@@ -566,7 +571,7 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's cache ...");
 
     if (! $objPyramid->writeCachePyramid) {
-        ERROR ("Can not write Pyramid Cache !");
+        FATAL("Can not write Pyramid Cache !");
         return FALSE;
     }
     
@@ -576,11 +581,11 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
     if (! $objPyramid->writeConfPyramid) {
-        ERROR ("Can not write Pyramid file !");
+        FATAL("Can not write Pyramid file !");
         return FALSE;
     }
   
-    DEBUG (sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
+    DEBUG(sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
   
     #######################
     # compute graphs
@@ -588,11 +593,11 @@ sub doIt {
     ALWAYS(">>> Compute forest ...");
     
     if (! $objForest->computeGraphs()) {
-        ERROR ("Can not compute forest !");
+        FATAL("Can not compute forest !");
         return FALSE;
     }
     
-    DEBUG (sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
     
     return TRUE;
 }
@@ -658,7 +663,7 @@ A file configuration can be composed of sections and parameters following :
 
     (start code)
     [ section ]
-    parameter  = value     ; comments
+    parameter = value
     ;comments
     (end code)
 
@@ -778,7 +783,7 @@ For more informations about properties, see <BE4::Forest> and <BE4::Commands>.
 
     path_shell - Directory path, to write scripts in. Scripts are named in like manner for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example). Mandatory.
 
-    use_masks - To avoid some problems (data removing), we can use mask during generation, to know precisely where is data, in images. Tis behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use. Optionnal, FALSE by default.
+    use_masks - To avoid some problems (data removing), we can use mask during generation, to know precisely where is data, in images. This behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use. Optionnal, FALSE by default.
 
 Example:
     (start code)

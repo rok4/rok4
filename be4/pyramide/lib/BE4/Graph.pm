@@ -533,10 +533,8 @@ sub identifyAboveNodes {
 }
 
 ####################################################################################################
-#                                          GRAPH COMPUTING METHODS                                 #
+#                                   Group: Compute methods                                         #
 ####################################################################################################
-
-# Group: graph computing methods
 
 =begin nd
 Function: computeYourself
@@ -583,14 +581,14 @@ sub computeYourself {
            # on met à jour les poids
            $script->addWeight($w);
            # on ecrit la commande dans le fichier
-           $script->print($c);       
+           $script->write($c);
                    
            # final script with all tiff2tile commands
            # on ecrit dans chacun des scripts de manière tournante
            my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID(),"rm");
+           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
            # on ecrit la commande dans le fichier
-           $finisher->print($c);
+           $finisher->write($c);
            #on met à jour l'index
            if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
                $Finisher_Index = 0;

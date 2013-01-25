@@ -283,7 +283,8 @@ int parseCommandLine(int argc, char* argv[])
                             outputImage = argv[i];
                             break;
                         default:
-                            break;
+                            LOGGER_ERROR("Unknown image's indice : -m" << argv[i-1][2]);
+                            return -1;
                     }
                     break;
                 case 'm': // associated masks
@@ -308,11 +309,12 @@ int parseCommandLine(int argc, char* argv[])
                             outputMask = argv[i];
                             break;
                         default:
-                            break;
+                            LOGGER_ERROR("Unknown mask's indice : -m" << argv[i-1][2]);
+                            return -1;
                     }
                     break;
                 default:
-                    LOGGER_ERROR("Unknown option");
+                    LOGGER_ERROR("Unknown option : -" << argv[i][1]);
                     return -1;
             }
         }
@@ -467,6 +469,7 @@ int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
 
     OUTPUTI = TIFFOpen(outputImage, "w");
     if(OUTPUTI == NULL) {LOGGER_ERROR("Unable to open output image: " + std::string(outputImage)); return -1;}
+    
     if(! TIFFSetField(OUTPUTI, TIFFTAG_IMAGEWIDTH, width) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_IMAGELENGTH, height) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_BITSPERSAMPLE, bitspersample) ||
@@ -510,7 +513,7 @@ int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
 
 /**
  * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas flottant)
+ * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas entier)
  * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
  * \param[in] image ligne de l'image en sortie
  * \param[in] IMAGE image à lire
@@ -540,7 +543,7 @@ int fillLine(uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, i
 
 /**
  * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas entier)
+ * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas flottant)
  * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
  * \param[in] image ligne de l'image en sortie
  * \param[in] IMAGE image à lire
@@ -605,8 +608,14 @@ int merge(TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OU
     uint8_t line_outM[width];
 
     // ----------- initialisation du fond -----------
-    if (sizeof(T) == 4) for (int i = 0; i < nbsamples ; i++) line_bgI[i] = nodataFloat32[i%samplesperpixel];
-    if (sizeof(T) == 1) for (int i = 0; i < nbsamples ; i++) line_bgI[i] = nodataUInt8[i%samplesperpixel];
+    if (sizeof(T) == 4)
+        for (int i = 0; i < nbsamples ; i++)
+            line_bgI[i] = nodataFloat32[i%samplesperpixel];
+
+    if (sizeof(T) == 1)
+        for (int i = 0; i < nbsamples ; i++)
+            line_bgI[i] = nodataUInt8[i%samplesperpixel];
+        
     memset(line_bgM,0,width);
 
     for(int y = 0; y < 2; y++) {
@@ -826,17 +835,19 @@ int main(int argc, char* argv[])
     
     // Cas MNT
     if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
+        LOGGER_DEBUG("Merge images (float)");
         nodataFloat32 = new float[samplesperpixel];
         for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodataInt[i];
         
-        if (merge<uint8_t>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge float images",-1);
+        if (merge<float>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge float images",-1);
     }
     // Cas images
     else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
+        LOGGER_DEBUG("Merge images (uint8_t)");
         nodataUInt8 = new uint8_t[samplesperpixel];
         for (int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodataInt[i];
         
-        if (merge<float>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge integer images",-1);
+        if (merge<uint8_t>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge integer images",-1);
     }
 }
 
