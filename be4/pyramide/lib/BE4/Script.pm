@@ -310,17 +310,17 @@ sub prepare {
     $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);
 
     my $tmpListFile = File::Spec->catdir($self->{tempDir},"list_".$self->{id}.".txt");
-    $tmpListFile = $listFile if ($self->{id} eq "SCRIPT_FINISHER");
     $code   .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code   .= "\n";
     
-    # Fonctions
     $code   .= "# Fonctions\n";
     $code   .= "$functions\n";
 
-    # creation du répertoire de travail:
     $code .= "# creation du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+
+    $code .= "# creation de la liste temporaire\n";
+    $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
 
     $self->print($code);
 }
@@ -333,26 +333,21 @@ sub print {
     printf $stream "%s", $text;
 }
 
-sub moveTemporaryList {
-    my $self = shift;
-
-    my $stream = $self->{stream};
-    printf $stream "\nmv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
-}
-
-sub mergeTemporaryList {
-    my $self = shift;
-    my $scriptID = shift;
-
-    my $stream = $self->{stream};
-    printf $stream "cat \${COMMON_TMP_DIR}/list_%s.txt >>\${LIST_FILE}\n", $scriptID;
-    printf $stream "rm -f \${COMMON_TMP_DIR}/list_%s.txt\n", $scriptID;
-}
-
 sub close {
     my $self = shift;
     
     my $stream = $self->{stream};
+
+    # On copie la liste temporaire de ce script vers le dossier commun
+    printf $stream "\necho \"Temporary files list is moving to the common directory\"\n";
+    printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+
+    if ($self->{id} eq "SCRIPT_FINISHER") {
+        printf $stream "\necho \"Temporary files lists (list_<?>.txt in the common directory) are added to the global files list, then removed\"\n";
+        printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
+        printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
+    }
+    
     close $stream;
 }
 
