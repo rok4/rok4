@@ -27,7 +27,7 @@ buildbin: \
 ./bin/create-layer.pl
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \
-                        perl -c -Iblib/lib/  $$p ;\
+                        perl -c -W -Iblib/lib/  $$p ;\
                 fi \
         done)
 

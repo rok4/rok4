@@ -161,10 +161,14 @@ Constructor: new
 PyrImageSpec constructor. Bless an instance.
 
 Parameters (hash):
-    formatCode - string - Format code, present in the pyramid's descriptor
+    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
+
+        OR
+
     compression - string - Image's compression
     sampleformat - string - Image's sample format
     bitspersample - integer - Image's bits per sample
+
     samplesperpixel - integer - Image's samples per pixel
     photometric - string - Image's photometric
     compressionoption - string - Image's compression option
@@ -209,10 +213,14 @@ Function: _init
 Checks and stores informations.
 
 Parameters (hash):
-    formatCode - string - Format code, present in the pyramid's descriptor
+    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
+        
+        OR
+        
     compression - string - Image's compression
     sampleformat - string - Image's sample format
     bitspersample - integer - Image's bits per sample
+    
     samplesperpixel - integer - Image's samples per pixel
     photometric - string - Image's photometric
     compressionoption - string - Image's compression option
@@ -260,7 +268,7 @@ sub _init {
         WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
         $params->{compression} = 'raw';
     } else {
-        if (! $self->is_Compression($params->{compression})) {
+        if (! $self->isCompression($params->{compression})) {
             ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
             return FALSE;
         }
@@ -272,7 +280,7 @@ sub _init {
         $params->{compressionoption} = $DEFAULT{compressionoption};
         INFO(sprintf "Default value for 'compressionoption' : %s", $params->{compressionoption});
     } else {
-        if (! $self->is_CompressionOption($params->{compressionoption})) {
+        if (! $self->isCompressionOption($params->{compressionoption})) {
             ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
             return FALSE;
         }
@@ -288,7 +296,7 @@ sub _init {
         WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
         $params->{interpolation} = 'bicubic';
     } else {
-        if (! $self->is_Interpolation($params->{interpolation})) {
+        if (! $self->isInterpolation($params->{interpolation})) {
         ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
         }
@@ -326,14 +334,14 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: is_Compression
+Function: isCompression
 
 Tests if compression value is allowed.
 
 Parameters (list):
     compression - string - Compression value to test
 =cut
-sub is_Compression {
+sub isCompression {
     my $self = shift;
     my $compression = shift;
 
@@ -348,14 +356,14 @@ sub is_Compression {
 }
 
 =begin nd
-Function: is_CompressionOption
+Function: isCompressionOption
 
 Tests if compression option value is allowed, and consistent with the compression.
 
 Parameters (list):
     compressionoption - string - Compression option value to test
 =cut
-sub is_CompressionOption {
+sub isCompressionOption {
     my $self = shift;
     my $compressionoption = shift;
 
@@ -386,14 +394,14 @@ sub is_CompressionOption {
 }
 
 =begin nd
-Function: is_Interpolation
+Function: isInterpolation
 
 Tests if interpolation value is allowed.
 
 Parameters (list):
     interpolation - string - Interpolation value to test
 =cut
-sub is_Interpolation {
+sub isInterpolation {
     my $self = shift;
     my $interpolation = shift;
 
@@ -455,7 +463,7 @@ sub decodeFormat {
     my $sampleformat = $CODE2SAMPLEFORMAT{$sampleformatCode};
 
     # Contrôle de la valeur compression extraite
-    if (! $self->is_Compression(lc $value[1])) {
+    if (! $self->isCompression(lc $value[1])) {
         ERROR(sprintf "Extracted compression is not valid '%s' !", $value[1]);
         return undef;
     }

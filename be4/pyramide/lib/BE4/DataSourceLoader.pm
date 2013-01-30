@@ -317,7 +317,7 @@ Parameters:
     TMS - <TileMatrixSet> - To know levels' orders
     topID - string - Optionnal, from the *pyramid* section in the configuration file
     
-Returns the global bottom and top order, in a integer list : (bottomOrder,topOrder)
+Returns the global bottom and top order, in a integer list : (bottomOrder,topOrder), (-1,-1) if failure.
 =cut
 sub updateDataSources {
     my $self = shift;

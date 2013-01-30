@@ -392,6 +392,7 @@ Parameters (list):
 =cut
 sub bboxToIndices {
     my $self = shift;
+    
     my $xMin = shift;
     my $yMin = shift;
     my $xMax = shift;

@@ -718,8 +718,6 @@ For more informations about properties, see <BE4::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    nowhite - Possible values : true and false. If source images contain nodata pixel, we don't want them to remove real data. It requires a pixel by pixel work : it's longer. That's why we do it just if needed. Default : false.
-
     image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
@@ -768,7 +766,8 @@ Examples:
     samplesperpixel     = 3
     interpolation       = bicubic
 
-    color               = 255,0,0 ; red as nodata color
+    ; red as nodata color
+    color               = 255,0,0 
     (end code)
 
 Topic: process
@@ -926,7 +925,8 @@ Examples:
     samplesperpixel     = 3
     interpolation       = bicubic
 
-    color               = 255,0,0 ; red as nodata color
+    ; red as nodata color
+    color               = 255,0,0
     (end code)
     
 =cut

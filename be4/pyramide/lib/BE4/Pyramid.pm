@@ -411,7 +411,7 @@ We have to collect pyramid's attributes' values
 
 Informations are checked, using perl classes like <NoData>, <Level>, <PyrImageSpec>...
 
-# Parameters (list):
+Parameters (list):
     params - All parameters about a pyramid's format (new or update).
     path_temp - string - Directory path, where to write the temporary old cache list, if not exist.
 =cut
@@ -1386,7 +1386,7 @@ sub writeCachePyramid {
     my %levels = %{$self->getLevels};
     foreach my $objLevel (values %levels) {
         #create folders for data and nodata (metadata not implemented) if they don't exist
-        
+        ### DATA
         my $dataDir = File::Spec->rel2abs($objLevel->getDirImage, $self->getNewDescriptorDir);
         if (! -d $dataDir) {
             eval { mkpath([$dataDir]); };
@@ -1395,7 +1395,7 @@ sub writeCachePyramid {
                 return FALSE;
             }
         }
-        
+        ### MASK
         if (defined $self->getDirMask) {
             my $maskDir = File::Spec->rel2abs($objLevel->getDirMask, $self->getNewDescriptorDir);
             if (! -d $maskDir) {
@@ -1406,7 +1406,8 @@ sub writeCachePyramid {
                 }
             }
         }
-        
+
+        ### METADATA
         #my $metadataDir = File::Spec->rel2abs($objLevel->getDirMetadata, $self->getNewDescriptorDir);
         #if (! -d $metadataDir) {
         #    eval { mkpath([$metadataDir]); };
@@ -1415,7 +1416,8 @@ sub writeCachePyramid {
         #        return FALSE;
         #    }
         #}
-        
+
+        ### NODATA
         my $nodataDir = File::Spec->rel2abs($objLevel->getDirNodata, $self->getNewDescriptorDir);
         my $nodataTilePath = File::Spec->catfile($nodataDir,$self->{nodata}->getNodataFilename);
         if (! -e $nodataTilePath) {
@@ -1539,7 +1541,7 @@ sub getOldDataDir {
 # Function: getTmsName
 sub getTmsName {
     my $self   = shift;
-    return $self->{tms}->{name};
+    return $self->{tms}->getName();
 }
 
 # Function: getTileMatrixSet

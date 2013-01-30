@@ -289,10 +289,9 @@ int treatImages()
         error("Error reading file: " +  std::string(input.at(0)));
     }
 
-    if (planarconfig != 1) error("Sorry : only planarconfig = 1 is supported");
-    if (sampleperpixel != 4) error("Sorry : only sampleperpixel = 4 is supported");
-    if (bitspersample != 8) error("Sorry : only bitspersample = 8 is supported");
-    if (compression != 1) error("Sorry : compression not accepted");
+    if (planarconfig != 1) error("Sorry : only planarconfig = 1 is supported (" + std::string(input.at(0)) +")");
+    if (sampleperpixel != 4) error("Sorry : only sampleperpixel = 4 is supported (" + std::string(input.at(0)) +")");
+    if (bitspersample != 8) error("Sorry : only bitspersample = 8 is supported (" + std::string(input.at(0)) +")");
 
     uint8_t *IM = new uint8_t[width * height * 4];
     uint8_t *LINE = new uint8_t[width * 4];
@@ -333,7 +332,6 @@ int treatImages()
         if (planarconfigp != 1) error("Sorry : only planarconfig = 1 is supported (" + std::string(input.at(i)) +")");
         if (sampleperpixelp != 4) error("Sorry : only sampleperpixel = 4 is supported (" + std::string(input.at(i)) +")");
         if (bitspersamplep != 8) error("Sorry : only bitspersample = 8 is supported (" + std::string(input.at(i)) +")");
-        if (compressionp != 1) error("Sorry : compression not accepted (" + std::string(input.at(i)) +")");
 
         if (widthp != width || heightp != height) error("All images must have same size (width and height)");
 

@@ -288,7 +288,7 @@ sub _init {
         ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
-    if (! $self->is_WmsFormat($params->{wms_format})) {
+    if (! $self->isWmsFormat($params->{wms_format})) {
         ERROR("Parameter 'wms_format' is not valid !");
         return FALSE ;
     }
@@ -529,14 +529,14 @@ sub getCommandWms2work {
 ####################################################################################################
 
 =begin nd
-Function: is_WmsFormat
+Function: isWmsFormat
 
 Tests if format value is allowed.
 
 Parameters (list):
     wmsformat - string - Format value to test
 =cut
-sub is_WmsFormat {
+sub isWmsFormat {
     my $self = shift;
     my $wmsformat = shift;
 

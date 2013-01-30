@@ -192,7 +192,7 @@ sub _init {
     if (! exists $params->{value} || ! defined ($params->{value})) {
         if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
             WARN ("Parameter 'nodata value' has not been set. The default value is -99999 per sample");
-            $params->{value} .= '-99999' . ',-99999'x($self->getPixel->getSamplesPerPixel - 1);
+            $params->{value} .= '-99999' . ',-99999'x($self->{pixel}->getSamplesPerPixel - 1);
         } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
             WARN ("Parameter 'nodata value' has not been set. The default value is 255 per sample");
             $params->{value} = '255' . ',255'x($self->{pixel}->getSamplesPerPixel - 1);

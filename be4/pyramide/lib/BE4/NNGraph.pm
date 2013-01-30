@@ -36,9 +36,9 @@
 ################################################################################
 
 =begin nd
-File: Graph.pm
+File: NNGraph.pm
 
-Class: BE4::Graph
+Class: BE4::NNGraph
 
 Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
 
@@ -58,15 +58,15 @@ Link between a node and his children or his father is not trivial. It is calcula
 
 Using:
     (start code)
-    use BE4::Graph;
+    use BE4::NNGraph;
 
-    # Graph object creation
-    my $objGraph = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    # NNGraph object creation
+    my $objNNGraph = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
 
     ...
 
     # Fill each node with computing code
-    $objGraph->computeYourself();
+    $objNNGraph->computeYourself();
     (end code)
 
 Attributes:
@@ -97,7 +97,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Graph;
+package BE4::NNGraph;
 
 use Geo::OSR;
 
@@ -143,7 +143,7 @@ END {}
 =begin nd
 Constructor: new
 
-Graph constructor. Bless an instance.
+NNGraph constructor. Bless an instance.
 
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to

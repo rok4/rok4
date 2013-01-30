@@ -897,11 +897,13 @@ sub configureFunctions {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: getNodata
 sub getNodata {
     my $self = shift;
     return $self->{pyramid}->getNodata; 
 }
 
+# Function: getPyramid
 sub getPyramid {
     my $self = shift;
     return $self->{pyramid};

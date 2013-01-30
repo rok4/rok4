@@ -149,7 +149,7 @@ sub new {
         ERROR ("'sampleformat' required !");
         return undef;
     } else {
-        if (! $self->is_SampleFormat($params->{sampleformat})) {
+        if (! $self->isSampleFormat($params->{sampleformat})) {
             ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
             return undef;
         }
@@ -161,19 +161,19 @@ sub new {
         ERROR ("'samplesperpixel' required !");
         return undef;
     } else {
-        if (! $self->is_SamplesPerPixel($params->{samplesperpixel})) {
+        if (! $self->isSamplesPerPixel($params->{samplesperpixel})) {
             ERROR (sprintf "Unknown 'samplesperpixel' : %s !",$params->{samplesperpixel});
             return undef;
         }
     }
-    $self->{samplesperpixel} = $params->{samplesperpixel};
+    $self->{samplesperpixel} = int($params->{samplesperpixel});
 
     ### Photometric
     if (! exists $params->{photometric} || ! defined $params->{photometric}) {
         $params->{photometric} = $DEFAULT{photometric};
         INFO(sprintf "Default value for 'photometric' : %s", $params->{photometric});
     } else {
-        if (! $self->is_Photometric($params->{photometric})) {
+        if (! $self->isPhotometric($params->{photometric})) {
             ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
             return undef;
         }
@@ -185,12 +185,12 @@ sub new {
         ERROR ("'bitspersample' required !");
         return undef;
     } else {
-        if (! $self->is_BitsPerSample($params->{bitspersample})) {
+        if (! $self->isBitsPerSample($params->{bitspersample})) {
             ERROR (sprintf "Unknown 'bitspersample' : %s !",$params->{bitspersample});
             return undef;
         }
     }
-    $self->{bitspersample} = $params->{bitspersample};
+    $self->{bitspersample} = int($params->{bitspersample});
 
     return $self;
 }
@@ -200,14 +200,14 @@ sub new {
 ####################################################################################################
 
 =begin nd
-Function: is_SampleFormat
+Function: isSampleFormat
 
 Tests if sample format value is allowed.
 
 Parameters (list):
     sampleformat - string - Sample format value to test
 =cut
-sub is_SampleFormat {
+sub isSampleFormat {
     my $self = shift;
     my $sampleformat = shift;
 
@@ -222,14 +222,14 @@ sub is_SampleFormat {
 }
 
 =begin nd
-Function: is_BitsPerSample
+Function: isBitsPerSample
 
 Tests if bits per sample value is allowed.
 
 Parameters (list):
     bitspersample - string - Bits per sample value to test
 =cut
-sub is_BitsPerSample {
+sub isBitsPerSample {
     my $self = shift;
     my $bitspersample = shift;
 
@@ -246,14 +246,14 @@ sub is_BitsPerSample {
 }
 
 =begin nd
-Function: is_Photometric
+Function: isPhotometric
 
 Tests if photometric value is allowed.
 
 Parameters (list):
     photometric - string - Photometric value to test
 =cut
-sub is_Photometric {
+sub isPhotometric {
     my $self = shift;
     my $photometric = shift;
 
@@ -268,14 +268,14 @@ sub is_Photometric {
 }
 
 =begin nd
-Function: is_SamplesPerPixel
+Function: isSamplesPerPixel
 
 Tests if samples per pixel value is allowed.
 
 Parameters (list):
     samplesperpixel - string - Samples per pixel value to test
 =cut
-sub is_SamplesPerPixel {
+sub isSamplesPerPixel {
     my $self = shift;
     my $samplesperpixel = shift;
 

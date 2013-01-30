@@ -40,9 +40,14 @@ File: Forest.pm
 
 Class: BE4::Forest
 
-Creates and manages all graphs, <Graph> and <QTree>.
+Creates and manages all graphs, <NNGraph> and <QTree>.
 
 (see forest.png)
+
+We have several kinds of graphs and their using have to be transparent for the forest. That's why we must define functions for all graph's types (as an interface) :
+    - computeYourself() : <NNGraph::computeYourself>, <QTree::computeYourself>
+    - containsNode(level, i, j) : <NNGraph::containsNode>, <QTree::containsNode>
+    - exportForDebug() : <NNGraph::exportForDebug>, <QTree::exportForDebug>
 
 Using:
     (start code)
@@ -58,7 +63,7 @@ Using:
 Attributes:
     pyramid - <Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
     commands - <Commands> - To compose generation commands (mergeNtiff, tiff2tile...).
-    graphs - <QTree> or <Graph> array - Graphs composing the forest, one per data source.
+    graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
     splitNumber - integer - Number of script used for work parallelization.
 
@@ -80,7 +85,7 @@ use Geo::GDAL;
 
 # My module
 use BE4::QTree;
-use BE4::Graph;
+use BE4::NNGraph;
 use BE4::Commands;
 use BE4::Pyramid;
 use BE4::Script;
@@ -200,7 +205,7 @@ sub _init {
 =begin nd
 Function: _load
 
-Creates a <Graph> or a <QTree> object per data source and a <Commands> object. Using a QTree is faster but it does'nt match all cases. Graph is a more general case.
+Creates a <NNGraph> or a <QTree> object per data source and a <Commands> object. Using a QTree is faster but it does'nt match all cases.
 
 All differences between different kinds of graphs are handled in respective classes, in order to be imperceptible for users.
 
@@ -359,17 +364,16 @@ sub _load {
         
         # Now, if datasource contains a WMS service, we have to use it
         
-        # Creation of QTree or Graph object
+        # Creation of QTree or NNGraph object
         my $graph = undef;
         if ($isQTree) {
             $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
         } else {
-            $graph = BE4::Graph->new($self,$datasource, $self->{pyramid}, $self->{commands});
+            $graph = BE4::NNGraph->new($self,$datasource, $self->{pyramid}, $self->{commands});
         };
                 
         if (! defined $graph) {
-            ERROR(sprintf "Can not create nor QTree nor Graph object for datasource with bottom level %s !",
-                  $datasource->getBottomID);
+            ERROR(sprintf "Can not create a graph for datasource with bottom level %s !",$datasource->getBottomID);
             return FALSE;
         }
         
@@ -410,10 +414,10 @@ sub containsNode {
 =begin nd
 Function: computeGraphs
 
-Computes each <Graph> or <QTree> one after the other and closes scripts to finish.
+Computes each <NNGraph> or <QTree> one after the other and closes scripts to finish.
 
 See Also:
-    <Graph::computeYourself>, <QTree::computeYourself>
+    <NNGraph::computeYourself>, <QTree::computeYourself>
 =cut
 sub computeGraphs {
     my $self = shift;

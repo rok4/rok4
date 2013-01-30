@@ -4,8 +4,6 @@ Format: 1.51
 Title: BE4
 SubTitle: Perl tools and libraries
 
-Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
-
 Footer: (C) 2013 BE4 - (R) IGN 2012
 Timestamp: Updated month day, year
 #   m     - One or two digit month.  January is "1"
@@ -19,28 +17,28 @@ Timestamp: Updated month day, year
 #   yyyy  - Four digit year.  2006 is "2006"
 #   year  - Four digit year.  2006 is "2006"
 
-# These are indexes you deleted, so Natural Docs will not add them again
-# unless you remove them from this line.
 
 # --------------------------------------------------------------------------
-# 
+#
 # Cut and paste the lines below to change the order in which your files
 # appear on the menu.  Don't worry about adding or removing files, Natural
 # Docs will take care of that.
-# 
+#
 # You can further organize the menu by grouping the entries.  Add a
 # "Group: [name] {" line to start a group, and add a "}" to end it.
-# 
+#
 # You can add text and web links to the menu by adding "Text: [text]" and
 # "Link: [name] ([URL])" lines, respectively.
-# 
+#
 # The formatting and comments are auto-generated, so don't worry about
 # neatness when editing the file.  Natural Docs will clean it up the next
 # time it is run.  When working with groups, just deal with the braces and
 # forget about the indentation and comments.
-# 
+#
 # --------------------------------------------------------------------------
 
+
+Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 
 Group: Tools  {
 
@@ -53,7 +51,7 @@ Group: Classes  {
 
    Group: BE4  {
 
-      File: Global  (lib/BE4.txt)
+      File: Global  (no auto-title, lib/BE4.txt)
 
       Group: Sources  {
 
@@ -64,24 +62,15 @@ Group: Classes  {
          File: GeoImage  (no auto-title, lib/BE4/GeoImage.pm)
          }  # Group: Sources
 
-      Group: Utils  {
-
-         File: Array  (no auto-title, lib/BE4/Array.pm)
-         File: Base36  (no auto-title, lib/BE4/Base36.pm)
-         File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
-         File: Layer  (no auto-title, lib/BE4/Layer.pm)
-         }  # Group: Utils
-
       Group: For generation  {
 
          File: Forest  (no auto-title, lib/BE4/Forest.pm)
          File: Graph  (no auto-title, lib/BE4/Graph.pm)
          File: QTree  (no auto-title, lib/BE4/QTree.pm)
          File: Node  (no auto-title, lib/BE4/Node.pm)
-
          File: Commands  (no auto-title, lib/BE4/Commands.pm)
          File: Script  (no auto-title, lib/BE4/Script.pm)
-         }  # Group: Generation
+         }  # Group: For generation
 
       Group: About pyramid  {
 
@@ -92,8 +81,40 @@ Group: Classes  {
          File: PyrImageSpec  (no auto-title, lib/BE4/PyrImageSpec.pm)
          File: TileMatrix  (no auto-title, lib/BE4/TileMatrix.pm)
          File: TileMatrixSet  (no auto-title, lib/BE4/TileMatrixSet.pm)
-         }  # Group: Images' pyramid
+         }  # Group: About pyramid
+
+      Group: Utils  {
+
+         File: Array  (no auto-title, lib/BE4/Array.pm)
+         File: Base36  (no auto-title, lib/BE4/Base36.pm)
+         File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
+         File: Layer  (no auto-title, lib/BE4/Layer.pm)
+         }  # Group: Utils
+
       }  # Group: BE4
+
+   Group: JOINCACHE  {
+
+      File: Global  (no auto-title, lib/JOINCACHE.txt)
+
+      Group: Sources  {
+
+         File: SourcePyramid  (no auto-title, lib/JOINCACHE/SourcePyramid.pm)
+         File: SourceLevel  (no auto-title, lib/JOINCACHE/SourceLevel.pm)
+         }  # Group: Sources
+
+      Group: For generation  {
+
+         File: Process  (no auto-title, lib/JOINCACHE/Process.pm)
+         File: Script  (no auto-title, lib/JOINCACHE/Script.pm)
+         }  # Group: For generation
+         
+      Group: Utils  {
+
+         File: PropertiesLoader.pm  (lib/JOINCACHE/PropertiesLoader.pm)
+         }  # Group: Utils
+
+      }  # Group: JOINCACHE
 
    }  # Group: Classes
 
