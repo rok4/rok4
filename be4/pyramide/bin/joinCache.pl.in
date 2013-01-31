@@ -240,42 +240,38 @@ sub init {
 
     # init Options
     GetOptions(
-        "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
-        "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
-        "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
-        #
-        "properties|conf=s"  => \$options{properties},
-
-    ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
-
-
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/joinCache-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/joinCache-pl.html\n" ;
+            exit 0;
+        },
+        
+        "properties|conf=s" => \$options{properties},     
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/joinCache-pl.html\n";
+        exit -1;
+    };
+  
     # logger by default at runtime
-    Log::Log4perl->easy_init( {
+    Log::Log4perl->easy_init({
         level => $WARN,
-        layout => '[%M](%L): %m%n'}
-    );
+        layout => '%5p : %m (%M) %n'
+    });
 
-    # check Options
+    # We make path absolute
 
     # properties : mandatory !
-    if (! defined $options{properties}) {
-        ERROR("Option 'properties' not defined !");
+    if (! defined $opts{properties} || $opts{properties} eq "") {
+        FATAL("Option 'properties' not defined !");
         return FALSE;
     }
-
-    my $fproperties = File::Spec->rel2abs($options{properties});
-
-    if (! -d dirname($fproperties)) {
-        ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
-        return FALSE;
-    }
-
-    if (! -f $fproperties) {
-        ERROR(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
-        return FALSE;
-    }
-
-    $options{properties} = $fproperties;
+    my $fproperties = File::Spec->rel2abs($opts{properties});
+    $opts{properties} = $fproperties;
 
     return TRUE;
 }
@@ -293,20 +289,6 @@ sub config {
     ALWAYS(">>> Load Properties ...");
 
     my $fprop = $options{properties};
-
-    if (! defined $fprop) {
-        ERROR ("The file path is required to read configuration !");
-        return FALSE;
-    }
-
-    if (! -f $fprop) {
-        ERROR (sprintf "Configuration file doesn't exist : %s",$fprop);
-        return FALSE;
-    }
-
-    ###################
-    # load specific properties 
-    
     my $objProp = JOINCACHE::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {

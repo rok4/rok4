@@ -145,7 +145,7 @@ sub _initParams {
 
     TRACE;
     
-    if (! defined $file) {
+    if (! defined $file || $file eq "") {
         ERROR ("Parameter : properties ?");
         return FALSE;
     }

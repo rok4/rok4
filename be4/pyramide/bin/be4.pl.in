@@ -172,9 +172,6 @@ sub main {
   printf("BE4: version [%s]\n",$VERSION);
   # message
   my $message = undef;
-
-  $message = "BEGIN";
-  printf STDOUT "%s\n", $message;
   
   # initialization
   ALWAYS("> Initialization");
@@ -183,6 +180,9 @@ sub main {
     printf STDERR "%s\n", $message;
     exit 1;
   }
+
+  $message = "BEGIN";
+  printf STDOUT "%s\n", $message;
   
   # configuration
   ALWAYS("> Configuration");
@@ -226,62 +226,45 @@ sub init {
 
     # init Options
     GetOptions(
-        "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
-        "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
-        "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
-        #
-        "properties|conf=s"  => \$opts{properties},
-        "environment|env=s" => \$opts{environment},
-        #
-        "test"          => \$opts{test},
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            exit 0;
+        },
         
-    ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
-  
+        "properties|conf=s" => \$opts{properties},
+        "environment|env=s" => \$opts{environment},        
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
+        exit -1;
+    };
   
     # logger by default at runtime
-    Log::Log4perl->easy_init( {
+    Log::Log4perl->easy_init({
         level => $WARN,
-        layout => '%5p : %m (%M) %n'}
-    );
-  
-    # check Options
-  
-    # env : optional !
-    if (defined $opts{environment} && $opts{environment} ne "") {
-        my $fenvironment = File::Spec->rel2abs($opts{environment});
-        
-        if (! -d dirname($fenvironment)) {
-            FATAL(sprintf "File path doesn't exist ('%s') !", dirname($fenvironment));
-            return FALSE;
-        }
-        
-        if (! -f $fenvironment ) {
-            FATAL(sprintf "File name doesn't exist ('%s') !", basename($fenvironment));
-            return FALSE;
-        }
-        #
-        $opts{environment} = $fenvironment;
-    }
-  
+        layout => '%5p : %m (%M) %n'
+    });
+
+    # We make path absolute
+
     # properties : mandatory !
-    if (! defined $opts{properties}) {
+    if (! defined $opts{properties} || $opts{properties} eq "") {
         FATAL("Option 'properties' not defined !");
         return FALSE;
     }
-  
     my $fproperties = File::Spec->rel2abs($opts{properties});
-  
-    if (! -d dirname($fproperties)) {
-        FATAL(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
-        return FALSE;
-    }
-    
-    if (! -f $fproperties) {
-        FATAL(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
-        return FALSE;
-    }
-    
     $opts{properties} = $fproperties;
+    
+    # env : optional !
+    if (defined $opts{environment} && $opts{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($opts{environment});
+        $opts{environment} = $fenvironment;
+    }
     
     return TRUE;
 }
@@ -295,58 +278,11 @@ See Also:
     <checkParams>
 =cut
 sub config {
-  
-    ALWAYS(">>> Load Properties Environment ...");
-    
+
     ###################
-    # load environement be4
-    my $fenv = undef;
-    
-    # env user !
-    $fenv = $opts{environment} if (defined $opts{environment} && $opts{environment} ne "");
-    
-    # if env user is null, we search in env sys !
-    if (! defined $opts{environment}) {
-        # if variable environment is fixed !
-        if(exists ($ENV{BE4_ENV}) &&
-        defined($ENV{BE4_ENV}) ) {
-            INFO("Use environment variable 'BE4_ENV' to determined the global configuration !");
-            $fenv = File::Spec->catfile($ENV{BE4_ENV}, "config/be4", "be4.properties");
-        }
-        # if not, by default, we take the file env in the install directory !
-        else {
-            INFO("Use path runtime to determined the configuration !");
-            $fenv = File::Spec->catfile($Bin, "..", "config/be4", "be4.properties");
-        }
-    }
-  
-    # FIXME :
-    #   This option may be optional ?
-    if (! -f $fenv) {
-        FATAL(sprintf "The environment properties '%s' doesn't exist into directory '%s' !", basename($fenv), dirname($fenv));
-        return FALSE;
-    }
-    
-    my $objEnv = BE4::PropertiesLoader->new($fenv);
-    
-    if (! defined $objEnv) {
-        FATAL("Can not load environment properties !");
-        return FALSE;
-    }
-    
-    my $refEnv = $objEnv->getAllProperties();
-    
-    if (! defined $refEnv) {
-        FATAL("All parameters environment are empty !");
-        return FALSE;
-    }
-  
     ALWAYS(">>> Load Properties ...");
     
-    ###################
-    # load specific properties 
     my $fprop = $opts{properties};
-    
     my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
@@ -362,14 +298,43 @@ sub config {
     }
 
     ###################
-    # merge env/prop
-    
+
     my $hashref;
-    foreach (keys %{$this{params}}) {
-        my $href = { map %$_, grep ref $_ eq 'HASH', ($this{params}->{$_}, $refEnv->{$_}, $refProp->{$_}) };
-        $hashref->{$_} = $href;
+
+    ###################
+    ALWAYS(">>> Treat optionnal environment ...");
+
+    my $fenv = undef;
+    $fenv = $opts{environment} if (defined $opts{environment} && $opts{environment} ne "");
+
+    if (defined $fenv) {
+        my $objEnv = BE4::PropertiesLoader->new($fenv);
+
+        if (! defined $objEnv) {
+            FATAL("Can not load environment properties !");
+            return FALSE;
+        }
+
+        my $refEnv = $objEnv->getAllProperties();
+
+        if (! defined $refEnv) {
+            FATAL("All parameters environment are empty !");
+            return FALSE;
+        }
+        
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($refEnv->{$_}, $refProp->{$_}) };
+            $hashref->{$_} = $href;
+        }
+    } else {
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($refProp->{$_}) };
+            $hashref->{$_} = $href;
+        }
     }
-    
+
+    ###################
+
     if (! defined $hashref) {
         FATAL("Can not merge all parameters of properties !");
         return FALSE;

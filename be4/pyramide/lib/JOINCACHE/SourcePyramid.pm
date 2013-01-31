@@ -208,11 +208,11 @@ sub loadAndCheck {
     if ($tagphotometric eq '') {
         WARN("Can not find parameter 'photometric', determine it from the samples per pixel .");
 
-        my %sppToPh = {
+        my %sppToPh = (
             1 => "gray",
             3 => "rgb",
             4 => "rgb"
-        };
+        );
 
         $tagphotometric = $sppToPh{$tagchannels};
     }

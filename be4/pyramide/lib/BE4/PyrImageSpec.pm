@@ -88,11 +88,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use Data::Dumper;
-
-# version
-my $VERSION = "0.0.1";
 
 # My module
 use BE4::Pixel;
@@ -322,9 +318,7 @@ sub _init {
 
     ### Format code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
     $self->{formatCode} = sprintf "TIFF_%s_%s%s",
-        uc $self->{compression},
-        $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}},
-        $self->{pixel}->{bitspersample};
+        uc $self->{compression}, $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}}, $self->{pixel}->{bitspersample};
 
     return TRUE;
 }
@@ -419,14 +413,12 @@ sub isInterpolation {
 #                                   Group: Code manager                                            #
 ####################################################################################################
 
-# Group: code manager methods
-
 =begin nd
 method: decodeFormat
 
 Extracts bits per sample, compression and sample format from a code (present in pyramid's descriptor). Returns a string array : [image format,compression,sample format,bits per sample] ( ["TIFF","png","uint",8] ), *undef* if error.
 
-Parameter:
+Parameters (list):
     formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
 =cut
 sub decodeFormat {
