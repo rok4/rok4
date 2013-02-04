@@ -313,8 +313,8 @@ sub computeBBox {
 
     foreach my $objImage (@$lstGeoImages) {
         $xmin = min($xmin, $objImage->getXmin);
-        $xmax = max($xmax, $objImage->getYmin);
-        $ymin = min($ymin, $objImage->getXmax);
+        $xmax = max($xmax, $objImage->getXmax);
+        $ymin = min($ymin, $objImage->getYmin);
         $ymax = max($ymax, $objImage->getYmax);
     }
 
