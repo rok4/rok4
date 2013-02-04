@@ -1279,7 +1279,7 @@ sub writeListPyramid {
 =cut
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
-                ($x,$y) = BE4::Base36->b36PathToIndices($b36path);
+                ($x,$y) = BE4::Base36::b36PathToIndices($b36path);
             }
             
             if (! $forest->containsNode($level,$x,$y)) {

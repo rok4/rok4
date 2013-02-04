@@ -44,6 +44,8 @@
  */
 
 #include "TiledTiffWriter.h"
+#include "Logger.h"
+#include "Image.h"
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
@@ -87,7 +89,7 @@
  */
 void usage() {
 
-    std::cerr << "\ncreateNodata version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO("\ncreateNodata version " << BE4_VERSION << "\n\n" <<
     
         "Create an image, containing one monochrome tile\n\n" <<
         
@@ -116,7 +118,7 @@ void usage() {
         "     createNodata -c zip -t 256 256 -s 3 -b 8 -p rgb -a uint -n 255,255,255 nodata.tif\n\n" <<
 
         "     - for DTM\n" <<
-        "     createNodata -c lzw -t 256 256 -s 1 -b 32 -p gray -a float -n -99999 nodata.tif\n" << std::endl;
+        "     createNodata -c lzw -t 256 256 -s 1 -b 32 -p gray -a float -n -99999 nodata.tif\n");
 }
 
 /**
@@ -126,7 +128,7 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error(std::string message, int errorCode) {
-    std::cerr << message << std::endl;
+    LOGGER_ERROR(message);
     usage();
     sleep(1);
     exit(errorCode);
@@ -161,6 +163,24 @@ int main(int argc, char* argv[]) {
     int compression = COMPRESSION_NONE;
     
     int quality = -1;
+
+    /* Initialisation des Loggers */
+    Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
+
+    Accumulator* acc = new StreamAccumulator();
+    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(INFO , acc);
+    Logger::setAccumulator(WARN , acc);
+    Logger::setAccumulator(ERROR, acc);
+    Logger::setAccumulator(FATAL, acc);
+
+    std::ostream &logd = LOGGER(DEBUG);
+    logd.precision(16);
+    logd.setf(std::ios::fixed,std::ios::floatfield);
+
+    std::ostream &logw = LOGGER(WARN);
+    logw.precision(16);
+    logw.setf(std::ios::fixed,std::ios::floatfield);
     
 //  Nodata image dimensions are precised in parameters and image contains a single tile
 
@@ -241,9 +261,9 @@ int main(int argc, char* argv[]) {
     // Contrôle des compatibilité format <-> compression 
     if (photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG) error("Gray jpeg not supported",-1);
     if (samplesperpixel == 4 && compression == COMPRESSION_JPEG) error("Jpeg with alpha is unconsistent",-1);
-    if (!(sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) &&
-        !(sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) ) {
-        error("sampleformat/bitspersample not supported (have to be float/32 or uint/8)",-1);
+
+    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ){
+        error("Supported sample format are 8-bit unsigned integer and 32-bit float",-1);
     }
 
     // Conversion string->int[] du paramètre nodata
@@ -286,6 +306,8 @@ int main(int argc, char* argv[]) {
 
     if(W.WriteTile(0, 0, data) < 0) error("Error while writting tile of nodata",-1);
     if(W.close() < 0) error("Error while writting index",-1);
+
+    delete acc;
 
     return 0;
 }

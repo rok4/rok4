@@ -558,7 +558,7 @@ sub computeYourself {
            # on détermine dans quel script on l'écrit en se basant sur les poids
            my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = BE4::Array->minArrayIndex(0,@WeightsOfLevel);
+           my $script_index = BE4::Array::minArrayIndex(0,@WeightsOfLevel);
            my $script = $ScriptsOfLevel[$script_index];
            # on stocke l'information dans l'objet node
            $node->setScript($script);
@@ -634,12 +634,6 @@ sub containsNode {
 sub getPyramid {
     my $self = shift;
     return $self->{pyramid};
-}
-
-# Function: getCommands
-sub getCommands {
-    my $self = shift;
-    return $self->{commands};
 }
 
 # Function: getForest
@@ -723,12 +717,6 @@ sub isLevelEmpty {
 sub getNodesOfTopLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{topID});
-}
-
-# Function: getNodesOfBottomLevel
-sub getNodesOfBottomLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{bottomID});
 }
 
 # Function: getBbox

@@ -66,6 +66,7 @@
  */
 
 #include "tiffio.h"
+#include "Image.h"
 #include "Logger.h"
 #include <cstdlib>
 #include <cmath>
@@ -502,9 +503,8 @@ int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
             }
     }
 
-    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) ||
-        (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
-        LOGGER_ERROR("sampleformat/bitspersample not supported");
+    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ){
+        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return -1;
     }
 

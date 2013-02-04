@@ -330,9 +330,8 @@ int parseCommandLine(int argc, char** argv) {
 
     LOGGER_DEBUG("mergeNtiff -f " << imageListFilename);
     
-    if (! ((bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) || 
-            (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT)) ){
-        LOGGER_ERROR("sampleformat/bitspersample not supported");
+    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
+        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return -1;
     }
     
@@ -397,8 +396,6 @@ int saveImage(Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph
         TIFFClose(output);
         return 0;
 }
-
-int nbreadFileLine = 0;
 
 /**
  * \~french
@@ -487,8 +484,6 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
         *hasMask = true;
     }
 
-
-
     return 0;
 }
 
@@ -503,8 +498,7 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut,
-               std::vector<LibtiffImage*>* pImageIn)
+int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<LibtiffImage*>* pImageIn)
 {
     char imageFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     char maskFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
@@ -982,7 +976,7 @@ int main(int argc, char **argv) {
     logw.precision(16);
     logw.setf(std::ios::fixed,std::ios::floatfield);
     
-    LOGGER_DEBUG("Parse");
+    LOGGER_DEBUG("Read parameters");
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc, argv) < 0){
         error("Echec lecture ligne de commande",-1);

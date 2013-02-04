@@ -124,15 +124,22 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
         return NULL;
     }
 
-    // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-    // Arrondi a la valeur entiere la plus proche
-    int calcWidth = lround((bbox.xmax - bbox.xmin)/(resx));
-    int calcHeight = lround((bbox.ymax - bbox.ymin)/(resy));
-    if (calcWidth != width || calcHeight != height) {
-        LOGGER_ERROR("Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent");
-        LOGGER_ERROR("Height is " << height << " and calculation give " << calcHeight);
-        LOGGER_ERROR("Width is " << width << " and calculation give " << calcWidth);
+    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
+        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return NULL;
+    }
+
+    if (resx > 0 && resy > 0) {
+        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        int calcWidth = lround((bbox.xmax - bbox.xmin)/(resx));
+        int calcHeight = lround((bbox.ymax - bbox.ymin)/(resy));
+        if (calcWidth != width || calcHeight != height) {
+            LOGGER_ERROR("Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent");
+            LOGGER_ERROR("Height is " << height << " and calculation give " << calcHeight);
+            LOGGER_ERROR("Width is " << width << " and calculation give " << calcWidth);
+            return NULL;
+        }
     }
     
     return new LibtiffImage(width, height, resx, resy, channels, bbox, tif, filename, bitspersample, sampleformat,
@@ -150,6 +157,11 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
     }
     if (channels <= 0) {
         LOGGER_ERROR("Number of samples per pixel is not valid for the output image " << filename << " : " << channels);
+        return NULL;
+    }
+
+    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
+        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return NULL;
     }
 

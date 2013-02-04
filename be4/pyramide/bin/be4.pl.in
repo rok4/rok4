@@ -41,6 +41,12 @@ File: be4.pl
 
 Section: BE4 tool
 
+Synopsis:
+    (start code)
+    perl be4.pl --conf=path [ --env=path ]
+    # All parameters of the --env config file can be overided by --conf config file parameter
+    (end code)
+
 Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
 
 This tool write scripts, to execute to obtain the pyramid.
@@ -104,7 +110,7 @@ $|=1;
 my $VERSION = '@VERSION_TEXT@';
 
 =begin nd
-Variable: opts
+Variable: options
 
 Contains be4 call options :
 
@@ -114,7 +120,7 @@ Contains be4 call options :
     properties - Configuration file
     environment - Environment file
 =cut
-my %opts =
+my %options =
 (
     "version"    => 0,
     "help"       => 0,
@@ -236,8 +242,8 @@ sub init {
             exit 0;
         },
         
-        "properties|conf=s" => \$opts{properties},
-        "environment|env=s" => \$opts{environment},        
+        "properties|conf=s" => \$options{properties},
+        "environment|env=s" => \$options{environment},        
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
@@ -253,17 +259,17 @@ sub init {
     # We make path absolute
 
     # properties : mandatory !
-    if (! defined $opts{properties} || $opts{properties} eq "") {
-        FATAL("Option 'properties' not defined !");
+    if (! defined $options{properties} || $options{properties} eq "") {
+        ERROR("Option 'properties' not defined !");
         return FALSE;
     }
-    my $fproperties = File::Spec->rel2abs($opts{properties});
-    $opts{properties} = $fproperties;
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
     
     # env : optional !
-    if (defined $opts{environment} && $opts{environment} ne "") {
-        my $fenvironment = File::Spec->rel2abs($opts{environment});
-        $opts{environment} = $fenvironment;
+    if (defined $options{environment} && $options{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($options{environment});
+        $options{environment} = $fenvironment;
     }
     
     return TRUE;
@@ -282,18 +288,18 @@ sub config {
     ###################
     ALWAYS(">>> Load Properties ...");
     
-    my $fprop = $opts{properties};
+    my $fprop = $options{properties};
     my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
-        FATAL("Can not load specific properties !");
+        ERROR("Can not load specific properties !");
         return FALSE;
     }
     
     my $refProp = $objProp->getAllProperties();
     
     if (! defined $refProp) {
-        FATAL("All parameters properties are empty !");
+        ERROR("All parameters properties are empty !");
         return FALSE;
     }
 
@@ -305,20 +311,20 @@ sub config {
     ALWAYS(">>> Treat optionnal environment ...");
 
     my $fenv = undef;
-    $fenv = $opts{environment} if (defined $opts{environment} && $opts{environment} ne "");
+    $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
 
     if (defined $fenv) {
         my $objEnv = BE4::PropertiesLoader->new($fenv);
 
         if (! defined $objEnv) {
-            FATAL("Can not load environment properties !");
+            ERROR("Can not load environment properties !");
             return FALSE;
         }
 
         my $refEnv = $objEnv->getAllProperties();
 
         if (! defined $refEnv) {
-            FATAL("All parameters environment are empty !");
+            ERROR("All parameters environment are empty !");
             return FALSE;
         }
         
@@ -336,7 +342,7 @@ sub config {
     ###################
 
     if (! defined $hashref) {
-        FATAL("Can not merge all parameters of properties !");
+        ERROR("Can not merge all parameters of properties !");
         return FALSE;
     }
   
@@ -344,7 +350,7 @@ sub config {
     $this{params} = $hashref;
     
     if (! main::checkParams() ) {
-        FATAL("Can not check parameters of properties !");
+        ERROR("Can not check parameters of properties !");
         return FALSE;
     }
     
@@ -404,7 +410,7 @@ sub checkParams {
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger->{log_level};
         my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
+            if (! main::IsEmpty($logger->{log_path}) && ! main::IsEmpty($logger->{log_file}));
         
         $out   = "STDOUT" if (! defined $out);
         $level = "WARN"   if (! defined $level);
@@ -475,7 +481,7 @@ sub doIt {
     
     $objPyramid = BE4::Pyramid->new($params->{pyramid},$params->{process}->{path_temp});
     if (! defined $objPyramid) {
-        FATAL("Can not load Pyramid !");
+        ERROR("Can not load Pyramid !");
         return FALSE;
     }
     
@@ -486,7 +492,7 @@ sub doIt {
 
     $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
     if (! defined $objDSL) {
-        FATAL("Cannot load data sources !");
+        ERROR("Cannot load data sources !");
         return FALSE;
     }
     
@@ -496,7 +502,7 @@ sub doIt {
     ALWAYS(">>> Determine levels ...");
     
     if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
-        FATAL("Can not update levels !");
+        ERROR("Can not update levels !");
         return FALSE;
     }
 
@@ -516,7 +522,7 @@ sub doIt {
     );
   
     if (! defined $objForest) {
-        FATAL("Can not load the forest !");
+        ERROR("Can not load the forest !");
         return FALSE;
     }
 
@@ -526,7 +532,7 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's list ...");
 
     if (! $objPyramid->writeListPyramid($objForest)) {
-        FATAL("Can not write Pyramid list !");
+        ERROR("Can not write Pyramid list !");
         return FALSE;
     }
     
@@ -536,7 +542,7 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's cache ...");
 
     if (! $objPyramid->writeCachePyramid) {
-        FATAL("Can not write Pyramid Cache !");
+        ERROR("Can not write Pyramid Cache !");
         return FALSE;
     }
     
@@ -546,7 +552,7 @@ sub doIt {
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
     if (! $objPyramid->writeConfPyramid) {
-        FATAL("Can not write Pyramid file !");
+        ERROR("Can not write Pyramid file !");
         return FALSE;
     }
   
@@ -558,7 +564,7 @@ sub doIt {
     ALWAYS(">>> Compute forest ...");
     
     if (! $objForest->computeGraphs()) {
-        FATAL("Can not compute forest !");
+        ERROR("Can not compute forest !");
         return FALSE;
     }
     
@@ -603,20 +609,13 @@ __END__
 =begin nd
 Section: Details
 
-Group: Synopsis
-
-    (start code)
-    perl be4.pl --conf=path [ --env=path ]
-    # All parameters of the --env config file can be overided by --conf config file parameter
-    (end code)
-
 Group: Command's options
 
-    --help - 
+    --help - Display the link to the technic documentation.
 
-    --usage - 
+    --usage - Display the link to the technic documentation.
 
-    --version - 
+    --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
 

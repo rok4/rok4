@@ -591,24 +591,6 @@ sub getOptions {
     return $self->{OPTIONS};
 }
 
-# Function: getMinSize
-sub getMinSize {
-    my $self = shift;
-    return $self->{min_size};
-}
-
-# Function: getMaxWidth
-sub getMaxWidth {
-    my $self = shift;
-    return $self->{max_width};
-}
-
-# Function: getMaxHeight
-sub getMaxHeight {
-    my $self = shift;
-    return $self->{max_height};
-}
-
 ####################################################################################################
 #                                Group: Export methods                                             #
 ####################################################################################################

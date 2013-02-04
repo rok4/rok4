@@ -78,13 +78,34 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-#define     COMPOSEMETHOD_TRANSPARENCY  1
-#define     COMPOSEMETHOD_MULTIPLY      2
+#define  MERGEMETHOD_TRANSPARENCY  1
+#define      MERGEMETHOD_MULTIPLY  2
+#define          MERGEMETHOD_MASK  3
+
+/** \~french Chemin du fichier de configuration des images */
+char imageListFilename[256];
+/** \~french Nombre de canaux par pixel de l'image en sortie */
+uint16_t samplesperpixel = 0;
+/** \~french Photométrie (rgb, gray), pour les images en sortie */
+uint16_t photometric = PHOTOMETRIC_RGB;
+/** \~french Compression de l'image de sortie */
+uint16_t compression = COMPRESSION_NONE;
+/** \~french Mode de fusion des images */
+int mergeMethod = 0;
+
+/** \~french Nombre de canaux par pixel avec lequel on travaille */
+uint16_t work_samplesperpixel = 0;
+
+uint8_t transparent[3];
+uint8_t opaque[4];
 
 /**
-* @fn void usage()
-* Usage de la ligne de commande
-*/
+ * \~french
+ * \brief Affiche l'utilisation et les différentes options de la commande overlayNtiff
+ * \details L'affichage se fait dans le niveau de logger INFO
+ * \~ \code
+ * \endcode
+ */
 void usage() {
     LOGGER_INFO("overlayNtiff version "<< BE4_VERSION);
     LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4 "
@@ -98,142 +119,332 @@ void usage() {
 }
 
 /**
-* @fn void error()
-* Sortie d'erreur de la commande
-*/
-void error(std::string message) {
+ * \~french
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur
+ * \param[in] message message d'erreur
+ * \param[in] errorCode code de retour
+ */
+void error(std::string message, int errorCode) {
     LOGGER_ERROR(message);
+    LOGGER_ERROR("Configuration file : " << imageListFilename);
     usage();
-    exit(1);
+    sleep(1);
+    exit(errorCode);
 }
 
-uint8_t transparent[3];
-int outputChannels = 0;
-int composeMethod = 0;
-uint8_t opaque[4];
-std::vector<char*> input;
-char* output = 0;
-
 /**
-* @fn parseCommandLine(int argc, char** argv)
-* Lecture des parametres de la ligne de commande
-*/
-
+ * \~french
+ * \brief Récupère les valeurs passées en paramètres de la commande, et les stocke dans les variables globales
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ * \return code de retour, 0 si réussi, -1 sinon
+ */
 int parseCommandLine(int argc, char** argv) {
 
-    char* strTransparent;
-    char* strOpaque;
+    char* strTransparent = 0;
+    char* strOpaque = 0;
 
     for(int i = 1; i < argc; i++) {
-        if(!strcmp(argv[i],"-transparent")) {
-            if(i++ >= argc) error("Error with option -transparent");
-            strTransparent = argv[i];
-            continue;
-        }
-        else if(!strcmp(argv[i],"-mode")) {
-            if(i++ >= argc) error("Error with option -mode");
-            if(strncmp(argv[i], "multiply",8) == 0) composeMethod = COMPOSEMETHOD_MULTIPLY; // = 2
-            else if(strncmp(argv[i], "transparency",12) == 0) composeMethod = COMPOSEMETHOD_TRANSPARENCY; // = 1
-            else error("Error with option -mode ");
-            continue;
-        }
-        else if(!strcmp(argv[i],"-channels")) {
-            if(i++ >= argc) error("Error with option -channels");
-            outputChannels = atoi(argv[i]);
-            continue;
-        }
-        else if(!strcmp(argv[i],"-opaque")) {
-            if(i++ >= argc) error("Error with option -opaque");
-            strOpaque = argv[i];
-            continue;
-        }
-        else if (!strcmp(argv[i],"-input")) {
-            if(i++ >= argc) error("Error with option -input");
-            while (argv[i][0] != '-') {
-                input.push_back(argv[i]);
-                i++;
+        if(argv[i][0] == '-') {
+            switch(argv[i][1]) {
+                case 'h': // help
+                    usage();
+                    exit(0);
+                case 'f': // Images' list file
+                    if(i++ >= argc) {LOGGER_ERROR("Error with images' list file (option -f)"); return -1;}
+                    strcpy(imageListFilename,argv[i]);
+                    break;
+                case 'm': // image merge method
+                    if(i++ >= argc) {LOGGER_ERROR("Error with merge method (option -m)"); return -1;}
+                    if(strncmp(argv[i], "multiply",8) == 0) mergeMethod = MERGEMETHOD_MULTIPLY; // = 2
+                    else if(strncmp(argv[i], "transparency",12) == 0) mergeMethod = MERGEMETHOD_TRANSPARENCY; // = 1
+                    else if(strncmp(argv[i], "mask",4) == 0) mergeMethod = MERGEMETHOD_TRANSPARENCY; // = 3
+                    else {LOGGER_ERROR("Unknown value for merge method (option -m) : " << argv[i]); return -1;}
+                    break;
+                case 's': // samplesperpixel
+                    if(i++ >= argc) {LOGGER_ERROR("Error with samples per pixel (option -s)"); return -1;}
+                    if(strncmp(argv[i], "1",1) == 0) samplesperpixel = 1 ;
+                    else if(strncmp(argv[i], "3",1) == 0) samplesperpixel = 3 ;
+                    else if(strncmp(argv[i], "4",1) == 0) samplesperpixel = 4 ;
+                    else {LOGGER_ERROR("Unknown value for samples per pixel (option -s) : " << argv[i]); return -1;}
+                    break;
+                case 'c': // compression
+                    if(i++ >= argc) {LOGGER_ERROR("Error with compression (option -c)"); return -1;}
+                    if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
+                    else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
+                    else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
+                    else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
+                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
+                    else {LOGGER_ERROR("Unknown value for compression (option -c) : " << argv[i]); return -1;}
+                    break;
+                case 'p': // photometric
+                    if(i++ >= argc) {LOGGER_ERROR("Error with photometric (option -p)"); return -1;}
+                    if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
+                    else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
+                    else {LOGGER_ERROR("Unknown value for photometric (option -p) : " << argv[i]); return -1;}
+                    break;
+                case 'n': // transparent color
+                    if(i++ >= argc) {LOGGER_ERROR("Error with transparent color (option -n)"); return -1;}
+                    strcpy(strTransparent,argv[i]);
+                    break;
+                case 'b': // background color
+                    if(i++ >= argc) {LOGGER_ERROR("Error with background color (option -b)"); return -1;}
+                    strcpy(strOpaque,argv[i]);
+                    break;
+                default:
+                    LOGGER_ERROR("Unknown option : -" << argv[i][1]);
+                    return -1;
             }
-            i--;
-            continue;
-        }
-        else if (!strcmp(argv[i],"-output")) {
-            if(i++ >= argc) error("Error with option -output");
-            output = argv[i];
-            continue;
-        }
-        else {
-            error("Unknown option : " + std::string(argv[i]));
         }
     }
 
-    // Mode control
-    if (composeMethod == 0) {
-        error("We need to know the compoistion method");
-    }
-
-    // Input/output control
-    if (input.size() == 0 || !output) {
-        LOGGER_ERROR("We need to have one or more sources and one output");
+    // Merge method control
+    if (mergeMethod == 0) {
+        LOGGER_ERROR("We need to know the merge method");
         return -1;
     }
 
-    // Channels control
-    if (outputChannels != 1 && outputChannels != 3 && outputChannels != 4) {
-        LOGGER_ERROR("Samples per pixel can be 1,3 or 4.");
+    // Image list file control
+    if (strlen(imageListFilename) == 0) {
+        LOGGER_ERROR("We need to have one images' list (text file)");
         return -1;
     }
 
-    // Transparent interpretation
-    char* charValue = strtok(strTransparent,",");
-    if(charValue == NULL) {
-        LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+    // Samples per pixel control
+    if (samplesperpixel == 0) {
+        LOGGER_ERROR("We need to know the number of samples per pixel in the output image");
         return -1;
     }
-    int value = atoi(charValue);
-    if(value < 0 || value > 255) {
-        LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
-        return -1;
-    }
-    transparent[0] = value;
-    for(int i = 1; i < 3; i++) {
-        charValue = strtok (NULL, ",");
+
+    if (strTransparent != 0) {
+        // Transparent interpretation
+        char* charValue = strtok(strTransparent,",");
         if(charValue == NULL) {
             LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
             return -1;
         }
-        value = atoi(charValue);
+        int value = atoi(charValue);
         if(value < 0 || value > 255) {
             LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
             return -1;
         }
-        transparent[i] = value;
+        transparent[0] = value;
+        for(int i = 1; i < 3; i++) {
+            charValue = strtok (NULL, ",");
+            if(charValue == NULL) {
+                LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+                return -1;
+            }
+            value = atoi(charValue);
+            if(value < 0 || value > 255) {
+                LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+                return -1;
+            }
+            transparent[i] = value;
+        }
     }
 
-    // Opaque interpretation
-    opaque[3] = 255;
-    charValue = strtok(strOpaque,",");
-    if(charValue == NULL) {
-        LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
-        return -1;
-    }
-    value = atoi(charValue);
-    if(value < 0 || value > 255) {
-        LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
-        return -1;
-    }
-    opaque[0] = value;
-    for(int i = 1; i < 3; i++) {
-        charValue = strtok (NULL, ",");
+    if (strOpaque != 0) {
+        // Opaque interpretation
+        opaque[3] = 255;
+        char* charValue = strtok(strOpaque,",");
         if(charValue == NULL) {
             LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
             return -1;
         }
-        value = atoi(charValue);
+        int value = atoi(charValue);
         if(value < 0 || value > 255) {
             LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
             return -1;
         }
-        opaque[i] = value;
+        opaque[0] = value;
+        for(int i = 1; i < 3; i++) {
+            charValue = strtok (NULL, ",");
+            if(charValue == NULL) {
+                LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+                return -1;
+            }
+            value = atoi(charValue);
+            if(value < 0 || value > 255) {
+                LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+                return -1;
+            }
+            opaque[i] = value;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * \~french
+ * \brief Lit une ligne du fichier de configuration
+ * \details Une ligne contient le chemin vers une image, potentiellement suivi du chemin vers le masque associé.
+ * \param[in,out] file flux de lecture vers le fichier de configuration
+ * \param[out] imageFileName chemin de l'image lu dans le fichier de configuration
+ * \param[out] hasMask précise si l'image possède un masque
+ * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
+ * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
+ */
+int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName)
+{
+    std::string str;
+
+    while (str.empty()) {
+        if (file.eof()) {
+            LOGGER_DEBUG("Configuration file end reached");
+            return -1;
+        }
+        std::getline(file,str);
+    }
+
+    int pos;
+    int nb;
+
+    char type[3];
+
+    if (std::sscanf(str.c_str(),"%s %s", imageFileName, maskFileName) == 2) {
+        *hasMask = true;
+    } else {
+        *hasMask = false;
+    }
+    
+    return 0;
+}
+
+/**
+ * \~french
+ * \brief Charge les images en entrée et en sortie depuis le fichier de configuration
+ * \details On va récupérer toutes les informations de toutes les images et masques présents dans le fichier de configuration et créer les objets LibtiffImage correspondant. Toutes les images ici manipulées sont de vraies images (physiques) dans ce sens où elles sont des fichiers soit lus, soit qui seront écrits.
+ *
+ * \param[out] ppImageOut image résultante de l'outil
+ * \param[out] ppMaskOut masque résultat de l'outil, si demandé
+ * \param[out] pImageIn ensemble des images en entrée
+ * \return code de retour, 0 si réussi, -1 sinon
+ */
+int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<LibtiffImage*>* pImageIn)
+{
+    char inputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char inputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+
+    char outputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char outputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    
+    BoundingBox<double> fakeBbox(0.,0.,0.,0.);
+
+    uint16_t bitspersample, sampleformat;
+    int width, height;
+    
+    bool hasMask;
+    LibtiffImageFactory factory;
+
+
+    // Ouverture du fichier texte listant les images
+    std::ifstream file;
+
+    file.open(imageListFilename);
+    if (!file) {
+        LOGGER_ERROR("Cannot open the file " << imageListFilename);
+        return -1;
+    }
+
+    // Lecture de l'image de sortie
+    if (readFileLine(file,outputImagePath,&hasMask,outputMaskPath)) {
+        LOGGER_ERROR("Cannot read output image in the file : " << imageListFilename);
+        return -1;
+    }
+
+    // Lecture et création des images sources
+    int inputNb = 0;
+    int out = 0;
+    LOGGER_INFO("**** En entrée ****");
+    while ((out = readFileLine(file,inputImagePath,&hasMask,inputMaskPath)) == 0) {
+
+        LibtiffImage* pImage = factory.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
+        if (pImage == NULL) {
+            LOGGER_ERROR("Cannot create a LibtiffImage from the file " << inputImagePath);
+            return -1;
+        }
+
+        if (inputNb == 0) {
+            // C'est notre première image en entrée, on mémorise lse caractéristiques)
+            bitspersample = pImage->getBitsPerSample();
+            sampleformat = pImage->getSampleFormat();
+            width = pImage->width;
+            height = pImage->height;
+        } else {
+            // Toutes les images en entrée doivent avoir certaines caractéristiques en commun
+            if (bitspersample != pImage->getBitsPerSample() || sampleformat != pImage->getSampleFormat() ||
+                width != pImage->width || height != pImage->height) {
+                
+                LOGGER_ERROR("All input images must have same dimension and sample format");
+                return -1;
+            }
+        }
+
+        LOGGER_INFO("L'image " << inputImagePath);
+
+        if (hasMask) {
+            /* On a un masque associé, on en fait une image à lire et on vérifie qu'elle est cohérentes :
+             *          - même dimensions que l'image
+             *          - 1 seul canal (entier)
+             */
+            LibtiffImage* pMask = factory.createLibtiffImageToRead(inputMaskPath, fakeBbox, -1., -1.);
+            if (pMask == NULL) {
+                LOGGER_ERROR("Cannot create a LibtiffImage (mask) from the file " << inputMaskPath);
+                return -1;
+            }
+            
+            if (! pImage->setMask(pMask)) {
+                LOGGER_ERROR("Cannot add mask " << inputMaskPath);
+                return -1;
+            }
+            LOGGER_INFO("\t avec son masque " << inputMaskPath);
+        }
+
+        if (pImage->channels > work_samplesperpixel) {work_samplesperpixel = pImage->channels;}
+
+        pImageIn->push_back(pImage);
+        inputNb++;
+    }
+
+    if (out != -1) {
+        LOGGER_ERROR("Failure reading the file " << imageListFilename);
+        return -1;
+    }
+
+    // Fermeture du fichier
+    file.close();
+
+    if (inputNb == 0) {
+        LOGGER_ERROR("Failure reading the file '" << imageListFilename << "' : no input data");
+        return -1;
+    }
+
+    // Création des sorties
+    LOGGER_INFO("**** En sortie ****");
+    *ppImageOut = factory.createLibtiffImageToWrite(outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
+                                                    bitspersample, sampleformat, photometric,compression,16);
+
+    if (*ppImageOut == NULL) {
+        LOGGER_ERROR("Impossible de creer l'image " << outputImagePath);
+        return -1;
+    }
+
+    LOGGER_INFO("L'image " << outputImagePath);
+
+    if (hasMask) {
+
+        *ppMaskOut = factory.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1, 8, 1,
+                                                       PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
+
+        if (*ppMaskOut == NULL) {
+            LOGGER_ERROR("Impossible de creer le masque " << outputMaskPath);
+            return -1;
+        }
+
+        LOGGER_INFO("\t avec son masque " << outputMaskPath);
     }
 
     return 0;
@@ -245,13 +456,13 @@ int parseCommandLine(int argc, char** argv) {
 */
 void compose(uint8_t* PixA,uint8_t* PixB,uint8_t* PixR, bool rmAlpha) {
 
-    if (composeMethod == COMPOSEMETHOD_TRANSPARENCY || rmAlpha) {
+    if (mergeMethod == MERGEMETHOD_TRANSPARENCY || rmAlpha) {
         PixR[3] = PixA[3] + PixB[3]*(255-PixA[3])/255;
         PixR[0] = (PixA[0]*PixA[3] + PixB[0]*PixB[3]*(255-PixA[3])/255)/PixR[3];
         PixR[1] = (PixA[1]*PixA[3] + PixB[1]*PixB[3]*(255-PixA[3])/255)/PixR[3];
         PixR[2] = (PixA[2]*PixA[3] + PixB[2]*PixB[3]*(255-PixA[3])/255)/PixR[3];
     }
-    else if (composeMethod == COMPOSEMETHOD_MULTIPLY) {
+    else if (mergeMethod == MERGEMETHOD_MULTIPLY) {
         PixR[0] = PixA[0]*PixB[0]/255;
         PixR[1] = PixA[1]*PixB[1]/255;
         PixR[2] = PixA[2]*PixB[2]/255;
@@ -260,13 +471,9 @@ void compose(uint8_t* PixA,uint8_t* PixB,uint8_t* PixR, bool rmAlpha) {
 
 }
 
-/**
-* @fn int treatImages()
-* @brief Controle des images et lecture du contenu
-*/
-
-int treatImages()
+int mergeImages()
 {
+    //
 
     TIFF *TIFF_FILE = 0;
 
@@ -299,7 +506,7 @@ int treatImages()
 
     for(int h = 0; h < height; h++) {
         if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
-        if (composeMethod == COMPOSEMETHOD_TRANSPARENCY) {
+        if (mergeMethod == MERGEMETHOD_TRANSPARENCY) {
             // merge method is transparency, we want to make transparent the 'transparent' color (given in parameters)
             for(int w = 0; w < width; w++) {
                 if (! memcmp(LINE+w*4,&transparent,3)) {
@@ -338,7 +545,7 @@ int treatImages()
         for(int h = 0; h < height; h++) {
             if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
             for(int w = 0; w < width; w++) {
-                if (composeMethod == COMPOSEMETHOD_TRANSPARENCY && (LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3))) {
+                if (mergeMethod == MERGEMETHOD_TRANSPARENCY && (LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3))) {
                     continue;
                 }
                 compose(LINE+w*4,IM+(h*width+w)*4,PIXEL,false);
@@ -356,29 +563,29 @@ int treatImages()
     if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, 8)                ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, outputChannels) ||
+        ! TIFFSetField(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig)      ||
         ! TIFFSetField(TIFF_FILE, TIFFTAG_COMPRESSION, compression))
             error("Error writting file: " +  std::string(output));
 
-    if (outputChannels == 4) {
+    if (samplesperpixel == 4) {
         if (! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
             error("Error writting file: " +  std::string(output));
     }
 
 
-    if (outputChannels == 4) {
+    if (samplesperpixel == 4) {
         if (! TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) ||
             ! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
             error("Error writting file: " +  std::string(output));
 
         for(int h = 0; h < height; h++) {
-            memcpy(LINE, IM+h*width*outputChannels, width * outputChannels);
+            memcpy(LINE, IM+h*width*samplesperpixel, width * samplesperpixel);
             if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
         }
     }
-    else if (outputChannels == 3) {
+    else if (samplesperpixel == 3) {
         if (!TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB))
             error("Error writting file: " +  std::string(output));
 
@@ -413,14 +620,16 @@ int treatImages()
     return 0;
 }
 
-
-
 /**
 * @fn int main(int argc, char **argv)
 * @brief Fonction principale
 */
 
 int main(int argc, char **argv) {
+
+    LibtiffImage* pImageOut ;
+    LibtiffImage* pMaskOut = NULL;
+    std::vector<LibtiffImage*> ImageIn;
 
     /* Initialisation des Loggers */
     Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
@@ -440,23 +649,26 @@ int main(int argc, char **argv) {
     logw.precision(16);
     logw.setf(std::ios::fixed,std::ios::floatfield);
 
-    LOGGER_DEBUG("Read parameters");
+    LOGGER_INFO("Read parameters");
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc,argv)) {
-        LOGGER_ERROR("Echec lecture ligne de commande");
-        sleep(1);
-        return -1;
+    if (parseCommandLine(argc,argv) < 0) {
+        error("Cannot parse command line",-1);
     }
 
-    LOGGER_DEBUG("Treat");
-    // Controle des images
-    if (treatImages()<0){
-        LOGGER_ERROR("Echec controle des images");
-        sleep(1);
-        return -1;
+    LOGGER_INFO("Load");
+    // Chargement des images
+    if (loadImages(&pImageOut,&pMaskOut,&ImageIn) < 0) {
+        error("Cannot load images from the configuration file",-1);
     }
+
+    /*LOGGER_INFO("Cannot merge images");
+    if (mergeImages() < 0){
+        error("Echec fusion des images",-1);
+    }*/
 
     delete acc;
+    delete pImageOut;
+    delete pMaskOut;
 
     return 0;
 }

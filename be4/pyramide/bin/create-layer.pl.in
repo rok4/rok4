@@ -34,6 +34,34 @@
 #
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: create-layer.pl
+
+Section: CREATE-LAYER tool
+
+Synopsis:
+    (start code)
+    perl create-layer.pl --pyr=file --tmsdir=dir [--layerdir=dir] [--style=string] [--resampling=string]
+    (end code)
+
+Tool allowing to generate the layer file. This file is used by ROK4 to find (and interpret) data to compose the requested image.
+
+Default SRS' list :
+    - data's SRS
+    - CR:84
+    - IGNF:WGS84G
+    - EPSG:3857
+    - EPSG:4258
+
+The XML file has the same name than the used pyramid.
+
+(see layer.png)
+=cut
+
+################################################################################
+
 use warnings;
 use strict;
 
@@ -64,17 +92,81 @@ use constant FALSE => 0;
 # Version
 my $VERSION = '@VERSION_TEXT@';
 
-################################################################################
-# Options
-my $MYPYR   = undef;
-my $MYLAYPATH = undef;
-my $MYTMSPATH = undef;
-my $MYSAMPLE = "lanczos_4";
-my $MYSTYLE  = "normal";
-my $MYOPAQUE = "true";
+=begin nd
+Variable: options
+
+Contains create-layer call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    
+    pyramid - To precise the pyramid's descriptor
+    layer-path - To precise where to write the XML layer file
+    tms-path - To precise the TMS directory
+    
+    resampling - To precise the interpolation to used
+    style - To precise the style to apply
+    opaque - To define opacity
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "pyramid"  => undef,
+    "layer-path" => undef,
+    "tms-path" => undef,
+
+    # Optionnal (with default values)
+    "resampling" => "lanczos_4",
+    "style" => "normal",
+    "opaque" => "true",
+);
 
 ################################################################################
 
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+    printf("CREATE-LAYER : version [%s]\n",$VERSION);
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks and stores options, initializes the default logger. Checks TMS directory and the pyramid's descriptor file.
+=cut
 sub init {
 
     # init Getopt
@@ -92,404 +184,332 @@ sub init {
 
     # init Options
     GetOptions(
-        "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
-        "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
-        "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
-        #
-        "pyr=s"  => \$MYPYR,
-        "tmsdir=s"  => \$MYTMSPATH,
-        "layerdir=s"  => \$MYLAYPATH,
-        "resampling|r=s"     => \$MYSAMPLE,
-        "style|s=s"          => \$MYSTYLE,
-        "opaque!"            => \$MYOPAQUE,
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/create-layer-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/create-layer-pl.html\n" ;
+            exit 0;
+        },
+        
+        "pyr=s" => \$options{pyramid},
+        "tmsdir=s" => \$options{"tms-path"},
+        "layerdir=s" => \$options{"layer-path"},
+        "resampling|r=s" => \$options{resampling},
+        "style|s=s" => \$options{style},
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/create-layer-pl.html\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => $WARN,
+        layout => '%5p : %m (%M) %n'
+    });
 
-    ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
-
-    # pyramid : obligatoire !
-    if (! defined $MYPYR) {
+    ############# pyramid
+    if (! defined $options{pyramid} || $options{pyramid} eq "") {
         ERROR("Option 'pyr' not defined !");
         return FALSE;
     }
 
-    my $pyrFile = File::Spec->rel2abs($MYPYR);
-    if (! -d dirname($pyrFile)) {
-        ERROR(sprintf "Le répertoire du descripteur de pyramide n'existe pas ('%s') !", dirname($pyrFile));
-        return FALSE;
-    }
+    my $pyrFile = File::Spec->rel2abs($options{pyramid});
+
     if (! -f $pyrFile) {
-        ERROR(sprintf "Le descripteur de pyramide n'existe pas ('%s') !", $pyrFile);
+        ERROR(sprintf "Pyramid's descriptor file does not exist : %s", $pyrFile);
         return FALSE;
     }
-    $MYPYR = $pyrFile;
-
-
-    # tms path : obligatoire !
-    if (! defined $MYTMSPATH) {
-        ERROR("Option 'tmsdir' (directory where to find TMS) not defined !");
+    $options{pyramid} = $pyrFile;
+    
+    ############# tms directory
+    if (! defined $options{"tms-path"} || $options{"tms-path"} eq "") {
+        ERROR("Option 'tmsdir' not defined !");
         return FALSE;
     }
-    my $tmsDir = File::Spec->rel2abs($MYTMSPATH);
+
+    my $tmsDir = File::Spec->rel2abs($options{"tms-path"});
+
     if (! -d $tmsDir) {
-        ERROR(sprintf "Le répertoire des TMS n'existe pas ('%s') !", $tmsDir);
+        ERROR(sprintf "TMS directory does not exist : %s", $tmsDir);
         return FALSE;
     }
-    $MYTMSPATH = $tmsDir;
+    $options{"tms-path"} = $tmsDir;
+
+    ############# layer directory : optionnal
+
+    if (defined $options{"tms-path"} && $options{"tms-path"} ne "") {
+        my $layerDir = File::Spec->rel2abs($options{"layer-path"});
+
+        if (! -d $layerDir) {
+            ERROR(sprintf "Layer directory does not exist : %s", $layerDir);
+            return FALSE;
+        }
+        $options{"layer-path"} = $layerDir;
+    } else {
+        $options{"layer-path"} = cwd();
+    }
 
     return TRUE;
 }
-#
-printf("CREATE-LAYER : version [%s]\n",$VERSION);
-printf STDOUT "[BEGIN]\n";
-## LOGGER
-Log::Log4perl->easy_init( { level  => "WARN",
-                            file   => "STDOUT",
-                            layout => '[%M](%L): %m%n'}
-                        );
 
-## INITOPTIONS (error -1)
-if (! main::init()) {
-    ERROR("Erreur d'initialisation !");
-    exit -1;
-}
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
 
-## PYRAMID (error -2X)
-ALWAYS("- Loading pyramid ...");
+=begin nd
+Function: doIt
 
-my @keyword;
+We extract all needed informations from the pyramid's descriptor, and write them into the XML layer file.
 
-# read xml pyramid
-my $parser  = XML::LibXML->new();
-my $xmltree =  eval { $parser->parse_file($MYPYR); };
+Use classes :
+    - <BE4::TileMatrixSet>
+    - <BE4::Layer>
+=cut
+sub doIt {
+    
+    ALWAYS(">>> Loading pyramid ...");
 
-if (! defined ($xmltree) || $@) {
-    ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
-    exit -21;
-}
+    my @keyword;
 
-my $root = $xmltree->getDocumentElement;
+    # read xml pyramid
+    my $parser  = XML::LibXML->new();
+    my $xmltree =  eval { $parser->parse_file($options{pyramid}); };
 
-## TMS (error -3X)
-my $tmsname = $root->findnodes('tileMatrixSet')->to_literal;
-if ($tmsname eq '') {
-    ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
-    exit -31;
-}
-
-my $tmsFilePath = File::Spec->catfile($MYTMSPATH,$tmsname.".tms");
-my $objTMS  = BE4::TileMatrixSet->new($tmsFilePath);
-if (! defined $objTMS) {
-    ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",$tmsFilePath);
-    exit -32;
-}
-
-push @keyword, $tmsname;
-
-# NODATA
-my $nodata = $root->findnodes('nodataValue')->to_literal;
-if ($nodata ne '') {
-    push @keyword, $nodata;
-}
-
-# PHOTOMETRIC
-my $photometric = $root->findnodes('photometric')->to_literal;
-if ($photometric ne '') {
-    push @keyword, $photometric;
-}
-
-# INTERPOLATION
-my $interpolation = $root->findnodes('interpolation')->to_literal;
-if ($interpolation ne '') {
-    push @keyword, $interpolation;
-}
-
-# FORMAT
-my $format = $root->findnodes('format')->to_literal;
-if ($format ne '') {
-    push @keyword, $format;
-}
-
-# SAMPLESPERPIXEL
-my $samplesperpixel = $root->findnodes('channels')->to_literal;
-if ($samplesperpixel ne '') {
-    push @keyword, "Samples per pixel: $samplesperpixel";
-}
-
-# load pyramid level to determine the top and bottom, and bbox
-my @levels = $root->getElementsByTagName('level');
-
-# global informations
-my $level = $levels[0];
-my $tilesPerWidth = $level->findvalue('tilesPerWidth');
-if ($tilesPerWidth ne '') {
-    push @keyword, "Tiles per width: $tilesPerWidth";
-}
-my $tilesPerHeight = $level->findvalue('tilesPerHeight');
-if ($tilesPerHeight ne '') {
-    push @keyword, "Tiles per height: $tilesPerHeight";
-}
-my $dirdepth = $level->findvalue('pathDepth');
-if ($dirdepth ne '') {
-    push @keyword, "Directory depth: $dirdepth";
-}
-
-my $bottomID = undef;
-my $bottomOrder = undef;
-my $topID = undef;
-my $topOrder = undef;
-my ($imin,$imax,$jmin,$jmax);
-
-foreach my $v (@levels) {
-    my $ID = $v->findvalue('tileMatrix');
-    my $order = $objTMS->getOrderfromID($ID);
-
-    if (! defined $bottomOrder || $order < $bottomOrder) {
-        $bottomOrder = $order;
-        $bottomID = $ID;
-        ($imin,$imax,$jmin,$jmax) = (
-            $v->findvalue('TMSLimits/minTileCol'),
-            $v->findvalue('TMSLimits/maxTileCol'),
-            $v->findvalue('TMSLimits/minTileRow'),
-            $v->findvalue('TMSLimits/maxTileRow')
-        );
+    if (! defined ($xmltree) || $@) {
+        ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
+        return FALSE;
     }
 
-    if (! defined $topOrder || $order > $topOrder) {
-        $topOrder = $order;
-        $topID = $ID;
+    my $root = $xmltree->getDocumentElement;
+
+    ## TMS
+    my $tmsname = $root->findnodes('tileMatrixSet')->to_literal;
+    if ($tmsname eq '') {
+        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+        return FALSE;
     }
-}
 
-my $bottomTM = $objTMS->getTileMatrix($bottomID);
+    my $tmsFilePath = File::Spec->catfile($options{"tms-path"},$tmsname.".tms");
+    my $objTMS  = BE4::TileMatrixSet->new($tmsFilePath);
+    if (! defined $objTMS) {
+        ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",$tmsFilePath);
+        return FALSE;
+    }
 
-my $xmin = $bottomTM->columnToX($imin);
-my $ymax = $bottomTM->rowToY($jmin);
-my $xmax = $bottomTM->columnToX($imax+1);
-my $ymin = $bottomTM->rowToY($jmax+1);
+    push @keyword, $tmsname;
 
-ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
+    # NODATA
+    my $nodata = $root->findnodes('nodataValue')->to_literal;
+    if ($nodata ne '') {
+        push @keyword, $nodata;
+    }
 
+    # PHOTOMETRIC
+    my $photometric = $root->findnodes('photometric')->to_literal;
+    if ($photometric ne '') {
+        push @keyword, $photometric;
+    }
 
-## LAYER (error -4X)
-ALWAYS("- Loading layer ...");
+    # INTERPOLATION
+    my $interpolation = $root->findnodes('interpolation')->to_literal;
+    if ($interpolation ne '') {
+        push @keyword, $interpolation;
+    }
 
-my $srs  = $objTMS->getSRS();
-my $auth = (split(":", $srs))[0];
+    # FORMAT
+    my $format = $root->findnodes('format')->to_literal;
+    if ($format ne '') {
+        push @keyword, $format;
+    }
 
-# TODO ajouter une liste par defaut
-my @lstsrs;
-push @lstsrs, $srs; # Toujour en 1er !!!
-push @lstsrs, "CRS:84";
-push @lstsrs, "IGNF:WGS84G";
-push @lstsrs, "EPSG:3857";
-push @lstsrs, "EPSG:4258";
+    # SAMPLESPERPIXEL
+    my $samplesperpixel = $root->findnodes('channels')->to_literal;
+    if ($samplesperpixel ne '') {
+        push @keyword, "Samples per pixel: $samplesperpixel";
+    }
 
-# TODO informatif...
-my $minres=$bottomTM->getResolution();
-my $maxres=$objTMS->getTileMatrix($topID)->getResolution();
+    # load pyramid level to determine the top and bottom, and bbox
+    my @levels = $root->getElementsByTagName('level');
 
-my $srsini= new Geo::OSR::SpatialReference;
-eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
+    # global informations
+    my $level = $levels[0];
+    my $tilesPerWidth = $level->findvalue('tilesPerWidth');
+    if ($tilesPerWidth ne '') {
+        push @keyword, "Tiles per width: $tilesPerWidth";
+    }
+    my $tilesPerHeight = $level->findvalue('tilesPerHeight');
+    if ($tilesPerHeight ne '') {
+        push @keyword, "Tiles per height: $tilesPerHeight";
+    }
+    my $dirdepth = $level->findvalue('pathDepth');
+    if ($dirdepth ne '') {
+        push @keyword, "Directory depth: $dirdepth";
+    }
 
-if ($@) {
-    eval { $srsini->ImportFromProj4('+init='.lc($srs).' +wktext'); };
+    my $bottomID = undef;
+    my $bottomOrder = undef;
+    my $topID = undef;
+    my $topOrder = undef;
+    my ($imin,$imax,$jmin,$jmax);
+
+    foreach my $v (@levels) {
+        my $ID = $v->findvalue('tileMatrix');
+        my $order = $objTMS->getOrderfromID($ID);
+
+        if (! defined $bottomOrder || $order < $bottomOrder) {
+            $bottomOrder = $order;
+            $bottomID = $ID;
+            ($imin,$imax,$jmin,$jmax) = (
+                $v->findvalue('TMSLimits/minTileCol'),
+                $v->findvalue('TMSLimits/maxTileCol'),
+                $v->findvalue('TMSLimits/minTileRow'),
+                $v->findvalue('TMSLimits/maxTileRow')
+            );
+        }
+
+        if (! defined $topOrder || $order > $topOrder) {
+            $topOrder = $order;
+            $topID = $ID;
+        }
+    }
+
+    my $bottomTM = $objTMS->getTileMatrix($bottomID);
+
+    my $xmin = $bottomTM->columnToX($imin);
+    my $ymax = $bottomTM->rowToY($jmin);
+    my $xmax = $bottomTM->columnToX($imax+1);
+    my $ymin = $bottomTM->rowToY($jmax+1);
+
+    ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
+
+    ALWAYS(">>> Loading layer ...");
+
+    my $srs  = $objTMS->getSRS();
+    my $auth = (split(":", $srs))[0];
+
+    # TODO ajouter une liste par defaut
+    my @lstsrs;
+    push @lstsrs, $srs; # Toujour en 1er !!!
+    push @lstsrs, "CRS:84";
+    push @lstsrs, "IGNF:WGS84G";
+    push @lstsrs, "EPSG:3857";
+    push @lstsrs, "EPSG:4258";
+
+    # TODO informatif...
+    my $minres=$bottomTM->getResolution();
+    my $maxres=$objTMS->getTileMatrix($topID)->getResolution();
+
+    my $srsini= new Geo::OSR::SpatialReference;
+    eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
+
     if ($@) {
-        ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
-        exit -41;
+        eval { $srsini->ImportFromProj4('+init='.lc($srs).' +wktext'); };
+        if ($@) {
+            ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
+            return FALSE;
+        }
     }
+
+    my $srsfin= new Geo::OSR::SpatialReference;
+    eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
+
+    if ($@) {
+      ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
+      return FALSE;
+    }
+
+    my $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
+
+    my $bg= $ct->TransformPoint($xmin,$ymin);
+    my $hd= $ct->TransformPoint($xmax,$ymax);
+
+    my $pyrName = File::Basename::basename($options{pyramid});
+    $pyrName =~ s/\.(pyr|PYR)$//;
+
+    my $params = {
+        title            => $pyrName,
+        abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
+        keywordlist      => \@keyword,
+        style            => $options{style},
+        minres           => $minres,
+        maxres           => $maxres,
+        opaque           => $options{opaque},
+        authority        => $auth,
+        srslist          => \@lstsrs,
+        resampling       => $options{resampling},
+        geo_bbox         => [$bg->[0],$bg->[1],$hd->[0],$hd->[1]],
+        proj             => $srs,
+        proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
+        pyramid          => $options{pyramid},
+    };
+
+    my $objLayer = BE4::Layer->new($params);
+
+    if (! defined $objLayer){
+        ERROR("Erreur de configuration du layer !");
+        return FALSE;
+    }
+
+    my $strlayer = $objLayer->exportToXML();
+
+    if (! defined $strlayer) {
+        ERROR("Erreur de construction du layer XML !");
+        return FALSE;
+    }
+
+    ## WRITE IN FILE
+    ALWAYS(">>> Write layer file ...");
+
+    my $filelayer = File::Spec->catfile($options{"layer-path"},$pyrName.".lay");
+
+    if (! open (FILE, ">", $filelayer)) {
+        ERROR(sprintf "Erreur de creation du fichier layer (%s) : %s!", $!, $filelayer);
+        return FALSE;
+    }
+
+    printf FILE "%s", $strlayer;
+
+    close FILE;
 }
 
-my $srsfin= new Geo::OSR::SpatialReference;
-eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
+################################################################################
 
-if ($@) {
-  ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
-  exit -42;
-}
+BEGIN {}
+INIT {}
 
-my $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
-
-my $bg= $ct->TransformPoint($xmin,$ymin);
-my $hd= $ct->TransformPoint($xmax,$ymax);
-
-my $pyrName = File::Basename::basename($MYPYR);
-$pyrName =~ s/\.(pyr|PYR)$//;
-
-my $params = {
-    title            => $pyrName,
-    abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
-    keywordlist      => \@keyword,
-    style            => $MYSTYLE,
-    minres           => $minres,
-    maxres           => $maxres,
-    opaque           => $MYOPAQUE,
-    authority        => $auth,
-    srslist          => \@lstsrs,
-    resampling       => $MYSAMPLE,
-    geo_bbox         => [$bg->[0],$bg->[1],$hd->[0],$hd->[1]],
-    proj             => $srs,
-    proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
-    pyramid          => $MYPYR,
-};
-
-my $objLayer = BE4::Layer->new($params);
-
-if (! defined $objLayer){
-    ERROR("Erreur de configuration du layer !");
-    exit -43;
-}
-
-my $strlayer = $objLayer->exportToXML();
-
-if (! defined $strlayer) {
-    ERROR("Erreur de construction du layer !");
-    exit -44;
-}
-
-
-## WRITE IN FILE (error -5X)
-ALWAYS("- Write layer file ...");
-
-if (! defined $MYLAYPATH) {
-  $MYLAYPATH = cwd();
-}
-
-my $filelayer = File::Spec->catfile($MYLAYPATH,$pyrName.".lay");
-
-if (! open (FILE, ">", $filelayer)) {
-    ERROR(sprintf "Erreur de creation du fichier layer (%s) : %s!", $!, $filelayer);
-    exit -51;
-}
-
-printf FILE "%s", $strlayer;
-
-close FILE;
-
-printf STDOUT "[END]\n";
+main;
 exit 0;
+
 END {}
 
-=pod
+################################################################################
 
-=head1 NAME
+1;
+__END__
 
-create-layer - Outil orienté maintenance qui permet de construire un layer pour Rok4, sur la pyramide du descripteur.
+=begin nd
+Section: Details
 
-=head1 SYNOPSIS
+Group: Command's options
 
-    ORIENTÉ MAINTENANCE !
-    perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/
-                        [--resampling="" --opaque --style=""  ]
-    perl create-layer.pl --pyr=/home/ign/pyramids/pyr1.pyr --tmsdir=/home/ign/TMS/ --layerdir=/home/ign/layers/
-                      [--r="" --opaque --s=""  ]
+    --help - Display the link to the technic documentation.
 
-=head1 DESCRIPTION
+    --usage - Display the link to the technic documentation.
 
-ORIENTÉ MAINTENANCE !
+    --version - Display the tool version.
 
-Pas de fichier de configuration, création du layer uniquement grâce au descripteur de pyramide et tu TMS utilisé.
-    --pyr
-    --tmsdir
+    --pyr - Pyramid's descriptor file, defining data used by the layer. Mandatory.
 
-Par defaut, la liste des SRS sont les suivantes :
-    - la projection des données sources,
-    - "CR:84",
-    - "IGNF:WGS84G",
-    - "EPSG:3857",
-    - "EPSG:4258",
+    --tmsdir - TMS directory. Mandatory.
 
-Le nom du layer est le nom de la pyramide !
+    --layerdir - Optionnal, directory where to write the XML .lay file. Written where the command is executed by default.
 
-=head1 OPTIONS
-
-=over
-
-=item B<--help>
-
-=item B<--usage>
-
-=item B<--version>
-
-=item B<--pyr=path>
-
-Obligatoire. Chemin du descripteur de pyramide dont on veut le layer correspondant.
-
-=item B<--tmsdir=path>
-
-Obligatoire. Chemin du répertoire contenant le TMS utilisé par la pyramide.
-
-=item B<--layerdir=path>
-
-Optionnel. Chemin du répertoire dans lequel on souhaite écrire le fichier layer. Si non renseigné, le fichier est écrit dans le dossier courant.
-
-=item B<--resampling|r="value">
-
-Optionnel, par defaut resampling = "lanczos_4".
-
-=item B<--style|s="value">
-
-Optionnel, par defaut style = "normal".
-
-=item B<--noopaque>
-
-Optionnel, par defaut opaque = 1.
-
-=back
-
-=head1 DIAGNOSTICS
-
-Ecriture du fichier "<nom de la pyramide>.lay" dans le répertoire courant ou dans le dossier précisé (--layerdir).
-
-=head1 REQUIRES
-
-=over
-
-=item * LIB EXTERNAL
-
-=item * MODULES (CPAN)
-
-    use POSIX qw(locale_h);
-    use Getopt::Long;
-    use Pod::Usage;
-    use Log::Log4perl;
-    use File::Basename;
-
-=item * MODULES (owner)
-
-    use BE4::TileMatrixSet;
-    use BE4::Layer;
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
-<li><A HREF="./lib-BE4-Layer.html">BE4::Layer</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Jean-Philippe Bazonnais, E<lt>Jean-Philippe.Bazonnais@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright 2011 by SIEL/PZGG/Jean-Philippe Bazonnais - Institut Géographique National
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+    --resampling - Optionnal, interpolation kernel used by ROK4 to resample images. lanczos_4 by default.
+    
+    --style - Optionnal, style to apply to images. normal by default.
 
 =cut

@@ -54,7 +54,7 @@
 #include <string.h>
 #include <typeinfo>
 #include "BoundingBox.h"
-#include "math.h"    // Pour lround
+#include "math.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -426,6 +426,23 @@ class Image {
 
         /**
          * \~french
+         * \brief Précise si le format des canaux (nombre de bits et type) est géré
+         * \details Sont gérés :
+         * \li les entiers non-signés sur 8 bits
+         * \li les flottants sur 32 bits
+         * \~english
+         * \brief Precises if sample format (bits per sample and type) is supported
+         * \details Are supported :
+         * \li 8-bit unsigned integer
+         * \li 32-bit float
+         */
+        static bool isSupportedSampleType(uint16_t bitspersample, uint16_t sampleformat) {
+            return (bitspersample == 32 && sampleformat == 3) || // 32 bits float
+                    (bitspersample == 8 && sampleformat == 1); // 8 bits unsigned integer
+        }
+
+        /**
+         * \~french
          * \brief Sortie des informations sur l'image
          * \~english
          * \brief Image description output
@@ -436,11 +453,10 @@ class Image {
             LOGGER_INFO("\t- bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax);
             LOGGER_INFO("\t- x resolution = " << resx << ", y resolution = " << resy);
             if (mask) {
-                LOGGER_INFO("\t- Own a mask");
+                LOGGER_INFO("\t- Own a mask\n");
             } else {
-                LOGGER_INFO("\t- No mask");
+                LOGGER_INFO("\t- No mask\n");
             }
-            LOGGER_INFO("");
         }
 };
 

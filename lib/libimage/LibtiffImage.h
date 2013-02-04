@@ -282,16 +282,16 @@ class LibtiffImageFactory {
          * \details On considère que les informations d'emprise et de résolutions ne sont pas présentes dans le TIFF, on les précise donc à l'usine. Tout le reste sera lu dans les en-têtes TIFF. On vérifiera aussi la cohérence entre les emprise et résolutions fournies et les dimensiosn récupérée dans le fichier TIFF.
          * \param[in] filename chemin du fichier image
          * \param[in] bbox emprise rectangulaire de l'image
-         * \param[in] resx résolution dans le sens des X
-         * \param[in] resy résolution dans le sens des Y
+         * \param[in] resx résolution dans le sens des X. Négative pour une image non géoréférencée
+         * \param[in] resy résolution dans le sens des Y. Négative pour une image non géoréférencée
          * \return un pointeur d'objet LibtiffImage, NULL en cas d'erreur
          ** \~english
          * \brief Create an LibtiffImage object, for reading
          * \details Bbox and resolutions are not present in the TIFF file, so we precise them. All other informations are extracted from TIFF header. We have to check consistency between provided bbox and resolutions and read image's dimensions.
          * \param[in] filename path to image file
          * \param[in] bbox bounding box
-         * \param[in] resx X wise resolution
-         * \param[in] resy Y wise resolution
+         * \param[in] resx X wise resolution. Negative for non georeferenced image
+         * \param[in] resy Y wise resolution. Negative for non georeferenced image
          * \return a LibtiffImage object pointer, NULL if error
          */
         LibtiffImage* createLibtiffImageToRead(char* filename, BoundingBox<double> bbox, double resx, double resy);
@@ -301,8 +301,8 @@ class LibtiffImageFactory {
          * \details Toutes les méta-informations sur l'image doivent être précisées pour écrire l'en-tête TIFF. Rien n'est calculé
          * \param[in] filename chemin du fichier image
          * \param[in] bbox emprise rectangulaire de l'image
-         * \param[in] resx résolution dans le sens des X
-         * \param[in] resy résolution dans le sens des Y
+         * \param[in] resx résolution dans le sens des X. Négative pour une image non géoréférencée
+         * \param[in] resy résolution dans le sens des Y. Négative pour une image non géoréférencée
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] channel nombre de canaux par pixel
@@ -317,8 +317,8 @@ class LibtiffImageFactory {
          * \details All informations have to be provided to be written in the TIFF header. No calculation.
          * \param[in] filename path to image file
          * \param[in] bbox bounding box
-         * \param[in] resx X wise resolution
-         * \param[in] resy Y wise resolution
+         * \param[in] resx X wise resolution. Negative for non georeferenced image
+         * \param[in] resy Y wise resolution. Negative for non georeferenced image
          * \param[in] width image width, in pixel
          * \param[in] height image height, in pixel
          * \param[in] channel number of samples per pixel

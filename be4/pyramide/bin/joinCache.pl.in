@@ -41,6 +41,11 @@ File: joinCache.pl
 
 Section: JOINCACHE tool
 
+Synopsis:
+    (start code)
+    perl joinCache.pl --conf=path
+    (end code)
+
 Tool allowing to merge pyramids, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
     - replace : just the top pyramid's image is kept
     - multiply : samples are multiplied
@@ -266,12 +271,12 @@ sub init {
     # We make path absolute
 
     # properties : mandatory !
-    if (! defined $opts{properties} || $opts{properties} eq "") {
+    if (! defined $options{properties} || $options{properties} eq "") {
         FATAL("Option 'properties' not defined !");
         return FALSE;
     }
-    my $fproperties = File::Spec->rel2abs($opts{properties});
-    $opts{properties} = $fproperties;
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
 
     return TRUE;
 }
@@ -803,19 +808,13 @@ __END__
 =begin nd
 Section: Details
 
-Group: Synopsis
-
-    (start code)
-    perl joinCache.pl --conf=path
-    (end code)
-
 Group: Command's options
 
-    --help -
+    --help - Display the link to the technic documentation.
 
-    --usage -
+    --usage - Display the link to the technic documentation.
 
-    --version -
+    --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
 

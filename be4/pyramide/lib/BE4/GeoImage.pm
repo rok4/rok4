@@ -534,18 +534,6 @@ sub getName {
   return $self->{filename}; 
 }
 
-# Function: getMask
-sub getMask {
-  my $self = shift;
-  return $self->{maskCompletePath}; 
-}
-
-# Function: hasMask
-sub hasMask {
-  my $self = shift;
-  return (defined $self->{maskCompletePath}); 
-}
-
 ####################################################################################################
 #                                Group: Export methods                                             #
 ####################################################################################################

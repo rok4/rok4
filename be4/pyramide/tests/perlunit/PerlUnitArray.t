@@ -49,26 +49,26 @@ my @array = (65,465,8,462,165,32,45,123,354);
 
 # Test on maxArrayValue
 
-my $maxValue = BE4::Array->maxArrayValue(0,@array);
+my $maxValue = BE4::Array::maxArrayValue(0,@array);
 is ($maxValue, 465, "Find the maximum value from the beginning");
 
-$maxValue = BE4::Array->maxArrayValue(4,@array);
+$maxValue = BE4::Array::maxArrayValue(4,@array);
 is ($maxValue, 354, "Find the maximum value from the fourth element");
 
-$maxValue = BE4::Array->maxArrayValue(12,@array);
+$maxValue = BE4::Array::maxArrayValue(12,@array);
 is ($maxValue, undef, "maxArrayValue : identify bad value for the first element index");
 
 ######################################################
 
 # Test on minArrayIndex
 
-my $minIndex = BE4::Array->minArrayIndex(0,@array);
+my $minIndex = BE4::Array::minArrayIndex(0,@array);
 is ($minIndex, 2, "Find the index of the minimum from the beginning");
 
-$minIndex = BE4::Array->minArrayIndex(3,@array);
+$minIndex = BE4::Array::minArrayIndex(3,@array);
 is ($minIndex, 5, "Find the index of the minimum from the third element");
 
-$minIndex = BE4::Array->minArrayIndex(12,@array);
+$minIndex = BE4::Array::minArrayIndex(12,@array);
 is ($minIndex, undef, "minArrayIndex : identify bad value for the first element index");
 
 ######################################################

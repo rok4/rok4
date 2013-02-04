@@ -816,7 +816,7 @@ sub shareNodesOnJobs {
         my $finisherWeight = $wholeTreeWeight;
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $scriptInd = BE4::Array->minArrayIndex(1,@TMP_WEIGHTS);
+            my $scriptInd = BE4::Array::minArrayIndex(1,@TMP_WEIGHTS);
             my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
             $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
@@ -826,7 +826,7 @@ sub shareNodesOnJobs {
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
-        my $worstWeight = BE4::Array->maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
+        my $worstWeight = BE4::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
         
         DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 
@@ -1028,18 +1028,6 @@ sub getNodesOfLevel {
 sub getNodesOfTopLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{topID});
-}
-
-# Function: getNodesOfCutLevel
-sub getNodesOfCutLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{cutLevelID});
-}
-
-# Function: getNodesOfBottomLevel
-sub getNodesOfBottomLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{bottomID});
 }
 
 ####################################################################################################

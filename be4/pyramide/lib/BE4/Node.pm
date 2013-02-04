@@ -199,7 +199,7 @@ sub _init {
     $self->{W} = 0;
     $self->{code} = '';
     
-    my $base36path = BE4::Base36->indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
+    my $base36path = BE4::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
     
     $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");;
     
@@ -439,12 +439,6 @@ sub getBBox {
     return @Bbox;
 }
 
-# Function: getCode
-sub getCode {
-    my $self = shift;
-    return $self->{code};
-}
-
 # Function: getOwnWeight
 sub getOwnWeight {
     my $self = shift;
@@ -510,40 +504,6 @@ Warning:
 sub getChildren {
     my $self = shift;
     return $self->{graph}->getChildren($self);
-}
-
-####################################################################################################
-#                                  Group: Levels' testers                                          #
-####################################################################################################
-
-# Function: isCutLevelNode
-sub isCutLevelNode {
-    my $self = shift;
-
-    if (! defined $self->{graph} || ref ($self->{graph}) ne "BE4::QTree") {
-        return FALSE;
-    }
-
-    if (defined $self->{graph}->getCutLevelID && $self->getLevel eq $self->{graph}->getCutLevelID) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-# Function: isTopLevelNode
-sub isTopLevelNode {
-    my $self = shift;
-    
-    if (! defined $self->{graph} || ref ($self->{graph}) ne "BE4::QTree") {
-        return FALSE;
-    }
-    
-    if (defined $self->{graph}->getTopLevelID && $self->getLevel eq $self->{graph}->getCutLevelID) {
-        return TRUE;
-    }
-
-    return FALSE;
 }
 
 ####################################################################################################

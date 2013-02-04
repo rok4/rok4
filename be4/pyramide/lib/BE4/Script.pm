@@ -388,15 +388,6 @@ sub write {
     printf $stream "%s", $text;
 }
 
-sub mergeTemporaryList {
-    my $self = shift;
-    my $scriptID = shift;
-
-    my $stream = $self->{stream};
-    
-    printf $stream "rm -f \${COMMON_TMP_DIR}/list_%s.txt\n", $scriptID;
-}
-
 # Function: close
 sub close {
     my $self = shift;

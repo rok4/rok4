@@ -404,12 +404,6 @@ sub getTopLevel {
   return $self->{topID};
 }
 
-# Function: getLevelsBind
-sub getLevelsBind {
-  my $self = shift;
-  return $self->{levelsBind};
-}
-
 # Function: getBottomLevel
 sub getBottomLevel {
   my $self = shift;

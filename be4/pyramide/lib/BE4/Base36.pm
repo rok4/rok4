@@ -45,10 +45,10 @@ Base 36 converting tools. Do not instanciate.
 Using:
     (start code)
     use BE4::Base36;
-    my ($i) = BE4::Base36->b36PathToIndices("E21") ; # returns 18217
-    my ($i,$j) = BE4::Base36->b36PathToIndices("3E/42/01") ; # returns [4032,18217]
-    my $b36 = BE4::Base36->encodeB10toB36(32674) ; # returns "P7M"
-    my $b36Path = BE4::Base36->indicesToB36Path(4032, 18217, 2) ; # returns "3E/42/01"
+    my ($i) = BE4::Base36::b36PathToIndices("E21") ; # returns 18217
+    my ($i,$j) = BE4::Base36::b36PathToIndices("3E/42/01") ; # returns [4032,18217]
+    my $b36 = BE4::Base36::encodeB10toB36(32674) ; # returns "P7M"
+    my $b36Path = BE4::Base36::indicesToB36Path(4032, 18217, 2) ; # returns "3E/42/01"
     (end code)
 =cut
 
@@ -89,12 +89,11 @@ Parameters (list):
     length - integer - Optionnal, to force the minimum number of character.
     
 Examples:
-    - BE4::Base36->encodeB10toB36(32674) returns "P7M".
-    - BE4::Base36->encodeB10toB36(156,4) returns "004C".
-    - BE4::Base36->encodeB10toB36(156,1) returns "4C".
+    - BE4::Base36::encodeB10toB36(32674) returns "P7M".
+    - BE4::Base36::encodeB10toB36(156,4) returns "004C".
+    - BE4::Base36::encodeB10toB36(156,1) returns "4C".
 =cut
 sub encodeB10toB36 {
-    my $class = shift ;
     my $number = shift; # in base 10 !
     my $length = shift;
     
@@ -132,19 +131,18 @@ Parameters (list):
     pathlength - integer - Number of subdirectories + the file.
     
 Examples:
-    BE4::Base36->indicesToB36Path(4032, 18217, 3) returns "3E/42/01".
+    BE4::Base36::indicesToB36Path(4032, 18217, 3) returns "3E/42/01".
     
 See also:
     <encodeB10toB36>
 =cut
 sub indicesToB36Path {
-    my $class = shift ;
     my $i = shift ;
     my $j = shift ;
     my $pathlength = shift ;
     
-    my $xb36 = BE4::Base36->encodeB10toB36($i,$pathlength);
-    my $yb36 = BE4::Base36->encodeB10toB36($j,$pathlength);
+    my $xb36 = BE4::Base36::encodeB10toB36($i,$pathlength);
+    my $yb36 = BE4::Base36::encodeB10toB36($j,$pathlength);
     
     if (length ($xb36) > length ($yb36)) {
         $yb36 = "0"x(length ($xb36) - length ($yb36)).$yb36;
@@ -182,10 +180,9 @@ Parameters (list):
     b36 - string - The base-36 integer to convert.
     
 Example:
-    BE4::Base36->encodeB10toB36("F4S6") returns 706038.
+    BE4::Base36::encodeB10toB36("F4S6") returns 706038.
 =cut
 sub encodeB36toB10 {
-    my $class = shift ;
     my $b36  = shift; # idx in base 36 !
     
     my $number = 0;
@@ -210,13 +207,12 @@ Returns:
     An integer list, (col,row).
     
 Example:
-    BE4::Base36->b36PathToIndices("3E/42/01") returns (4032,18217).
+    BE4::Base36::b36PathToIndices("3E/42/01") returns (4032,18217).
         
 See also:
     <encodeB36toB10>
 =cut
 sub b36PathToIndices {
-    my $class = shift ;
     my $path = shift;
     
     my $xB36 = "";
@@ -229,8 +225,8 @@ sub b36PathToIndices {
         $yB36 .= substr($part,length($part)/2);
     }
     
-    my $x = BE4::Base36->encodeB36toB10($xB36);
-    my $y = BE4::Base36->encodeB36toB10($yB36);
+    my $x = BE4::Base36::encodeB36toB10($xB36);
+    my $y = BE4::Base36::encodeB36toB10($yB36);
     
     return ($x, $y);
 }

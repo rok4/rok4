@@ -45,8 +45,8 @@ Provides functions to compute the max value or the min index of an array. Do not
 Using:
     (start code)
     my @array = (1,3,5,9);
-    my $minIndex = BE4::Arrray->minArrayIndex(@array); # return 0
-    my $maxArrayValue = BE4::Array->maxArrayValue($array); # return 9
+    my $minIndex = BE4::Array::minArrayIndex(@array); # return 0
+    my $maxArrayValue = BE4::Array::maxArrayValue($array); # return 9
     (end code)
 =cut
 
@@ -88,7 +88,6 @@ Returns:
     An integer, indice of the smaller element in a array, begining with the element 'first'
 =cut
 sub minArrayIndex {
-    my $self = shift;
     my $first = shift;
     my @array = @_;
 
@@ -120,7 +119,6 @@ Returns:
     The greater value in a array, begining with the element 'first'
 =cut
 sub maxArrayValue {
-    my $self = shift;
     my $first = shift;
     my @array = @_;
 
