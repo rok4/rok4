@@ -1,6 +1,44 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #include <stdio.h>
 #include <iostream>
 #include <stdint.h>
+#include "../be4version.h"
 
 #define STRIP_OFFSETS      273
 #define ROWS_PER_STRIP     278
@@ -17,6 +55,7 @@ struct Entry {
 int main(int argc, char **argv) {
   // controle de la ligne de commande
   if (argc == 1){
+    std::cout << "tiffck version "<< BE4_VERSION << std::endl;
     std::cout << std::endl << "tiffck: check tiff image size" << std::endl; 
     std::cout << "usage: tiffck <filename>" << std::endl << std::endl; 
     std::cout << "Kind of prototype..." << std::endl; 
@@ -60,8 +99,8 @@ int main(int argc, char **argv) {
   // controle du type tiff
   uint16_t tiff_file_tag;
   if (fread (&tiff_file_tag,2,1,pFile)!=1){ std::cerr << "tiffck: Can't read in File" << std::endl;  return(4); }
-  // std::cout << "tiff_tag:" << tiff_file_tag << std::endl;
-  if (tiff_file_tag != 42){
+  std::cout << "tiff_tag:" << tiff_file_tag << std::endl;
+  if (tiff_file_tag != 42 && tiff_file_tag != 10752){
     std::cerr << "tiffck: This is not a tiff file." << std::endl;
     return(5);
   }
@@ -69,7 +108,8 @@ int main(int argc, char **argv) {
   // read de first directory offset
   uint32_t dir_offset;
   if (fread (&dir_offset,sizeof(uint32_t),1,pFile)!=1){std::cerr << "tiffck: Can't read in File" << std::endl; return(4);}
-  // std::cout << "dir_offset:" << dir_offset << std::endl;
+  std::cout << "dir_offset:" << dir_offset << std::endl;
+  std::cout << "file_size:" << file_size << std::endl;
   if (dir_offset + 2 > file_size){
     std::cerr << "tiffck: File is too short (dir offset)" << std::endl;
     return(3);

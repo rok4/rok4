@@ -1,0 +1,2089 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+use Getopt::Long;
+use Pod::Usage;
+
+use Data::Dumper;
+use Math::BigFloat;
+use File::Spec::Link;
+use File::Basename;
+use File::Spec;
+use File::Path;
+use Cwd;
+
+use Log::Log4perl qw(:easy);
+use XML::LibXML;
+use List::Util qw[min max];
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4::TileMatrixSet;
+use BE4::Pyramid;
+use BE4::Pixel;
+use BE4::NoData;
+use BE4::Level;
+use BE4::Base36;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Pas de bufferisation des sorties.
+$|=1;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+################################################################################
+# Global
+
+my $BASHFUNCTIONS   = <<'FUNCTIONS';
+
+PrepareImage () {
+  local imgSrc=$1
+  local imgDst=$2
+  local png=$3
+  local opt=$4
+
+  if [ $png ] ; then
+    mkdir ${TMP_DIR}/Untiled_PNG
+    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/Untiled_PNG.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf ${TMP_DIR}/Untiled_PNG
+  
+    tiff2rgba -c none ${TMP_DIR}/Untiled_PNG.tif $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  else
+    tiff2rgba -c none $imgSrc $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
+}
+
+Cache2work () {
+  local imgSrc=$1
+  local imgDst=$2
+  local png=$3
+  local opt=$4
+
+  if [ $png ] ; then
+    mkdir ${TMP_DIR}/Untiled_PNG
+    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -rf ${TMP_DIR}/Untiled_PNG
+  else
+    tiffcp __tcp__ $imgSrc $imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+
+}
+
+OverlayNtiff () {
+  local inputs=$1
+  
+  overlayNtiff __oNt__ -input $inputs -output ${TMP_DIR}/result.tif
+  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  rm -f $config
+  if [ $bg ] ; then
+    rm -f $bg
+  fi
+}
+
+Work2cache () {
+  local work=$1
+  local cache=$2
+  
+  local dir=`dirname $cache`
+  
+  if [ -r $cache ] ; then rm -f $cache ; fi
+  if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
+  
+  if [ -f $work ] ; then
+    tiff2tile $work __t2t__  $cache
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+  fi
+}
+
+FUNCTIONS
+
+################################################################################
+#
+# Title: joinCache
+#
+####################################################################################################
+#                                              VARIABLES                                           #
+####################################################################################################
+
+# Group: variables
+
+#
+=begin nd
+variable: %opts
+
+Command options.
+
+    * version
+    * help
+    * usage
+    * properties
+=cut
+my %opts =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+    
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
+);
+
+#
+=begin nd
+variable: %this
+
+All Parameters by section.
+    * logger
+    * pyramid
+    * bboxes
+    * composition
+    * process
+
+Perl objects to merge pyramids.
+    * sourceByLevel
+    * sourcePyramids
+    * list
+|       - cacheRoots
+|       - stream
+    * currentscript
+    * streams
+    * doneTiles
+=cut
+my %this =
+(
+    logger        => undef,
+    pyramid       => undef,
+    bboxes        => undef,
+    composition   => undef,
+    process       => undef,
+
+    sourceByLevel => {},
+    sourcePyramids => {},
+    
+    list => {
+        cacheRoots => {},
+        stream => undef
+    },
+
+    currentscript => 0,
+    streams => [],
+
+    doneTiles => {},
+);
+
+#
+=begin nd
+variable: %CONF
+
+Define allowed:
+    * sections
+    * merge methods
+    * compressions
+=cut
+my %CONF = (
+    sections => ['pyramid','process','composition','logger','bboxes'],
+    merge_method => ['replace','transparency','multiply'],
+);
+
+#
+=begin nd
+variable: %SAMPLEFORMAT2CODE
+
+To convert sample format from parameter to code
+=cut
+my %SAMPLEFORMAT2CODE = (
+    uint => "INT",
+    float => "FLOAT"
+);
+
+####################################################################################################
+#                                                MAIN                                              #
+####################################################################################################
+
+# Group: main
+
+#
+=begin nd
+method: main
+
+Main method
+
+See Also:
+    <_init>, <_config>, <_validate>, <openStreams>, <doIt>, <closeStreams>, <writePyr>
+=cut
+sub main {
+    printf("JoinCache : version [%s]\n",$VERSION);
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::_init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::_config()) {
+        print STDERR "ERROR CONFIGURATION !\n";
+        exit 2;
+    }
+
+    # execution
+    ALWAYS("> Validation");
+    if (! main::_validate()) {
+        print STDERR "ERROR VALIDATION !\n";
+        exit 3;
+    }
+
+    # ouverture des flux
+    ALWAYS("> Open streams to scripts");
+    if (! main::openStreams()) {
+        print STDERR "ERROR OPEN STREAMS !\n";
+        exit 4;
+    }    
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    # fermeture des flux
+    ALWAYS("> Close streams to scripts");
+    if (! main::closeStreams()) {
+        print STDERR "ERROR CLOSE STREAMS !\n";
+        exit 6;
+    }
+
+    # writting pyramid's configuration file
+    ALWAYS("> Write pyramid's descriptor");
+    if (! $this{pyramid}->writeConfPyramid) {
+        print STDERR "ERROR WRITE PYRAMID DESCRIPTOR !\n";
+        exit 7;
+    }
+    
+    # writting pyramid's cache (nodata tiles)
+    ALWAYS("> Write pyramid's cache");
+    if (! $this{pyramid}->writeCachePyramid) {
+        print STDERR "%s\n";
+        exit 8;
+    }
+
+    print STDOUT "END\n";
+}
+
+#
+=begin nd
+method: _init
+
+Check options and initialize the logger
+=cut
+sub _init {
+
+    ALWAYS(">>> Check Configuration ...");
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
+        "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
+        "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
+        #
+        "properties|conf=s"  => \$opts{properties},
+
+    ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
+
+
+    # logger by default at runtime
+    Log::Log4perl->easy_init( {
+        level => $WARN,
+        layout => '[%M](%L): %m%n'}
+    );
+
+    # check Options
+
+    # properties : mandatory !
+    if (! defined $opts{properties}) {
+        ERROR("Option 'properties' not defined !");
+        return FALSE;
+    }
+
+    my $fproperties = File::Spec->rel2abs($opts{properties});
+
+    if (! -d dirname($fproperties)) {
+        ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
+        return FALSE;
+    }
+
+    if (! -f $fproperties) {
+        ERROR(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
+        return FALSE;
+    }
+
+    $opts{properties} = $fproperties;
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                     CONFIGURATION LOADER                                         #
+####################################################################################################  
+
+# Group: configuration loader
+
+#
+=begin nd
+method: _config
+
+Load all parameters from the configuration file.
+
+See Also:
+    <_read>, <checkParams>
+=cut
+sub _config {
+  
+    ALWAYS(">>> Load Properties ...");
+
+    my $fprop = $opts{properties};
+
+    if (! defined $fprop) {
+        ERROR ("The file path is required to read configuration !");
+        return FALSE;
+    }
+    
+    if (! -f $fprop) {
+        ERROR (sprintf "Configuration file doesn't exist : %s",$fprop);
+        return FALSE;
+    }
+
+    return FALSE if (! main::_read($fprop));
+    return FALSE if (! main::checkParams($fprop));
+
+    return TRUE;
+
+}
+
+#
+=begin nd
+method: _read
+
+Read line by line (order is important), no library is used.
+
+Parameter:
+    filepath - Configuration file to read.
+
+See Also:
+    <isConfSection>, <readComposition>
+=cut
+sub _read {
+    my $filepath = shift;
+
+    TRACE;
+
+    if (! open CFGF, "<", $filepath ){
+        ERROR(sprintf "Cannot open configurations' file %s.",$filepath);
+        return FALSE;
+    }
+
+    my $currentSection = undef;
+
+    while( defined( my $l = <CFGF> ) ) {
+        chomp $l;
+        $l =~ s/\s+//g; # we remove all spaces
+        $l =~ s/;\S*//; # we remove comments
+        
+        next if ($l eq '');
+
+        if ($l =~ m/^\[(\w*)\]$/) {
+            $l =~ s/[\[\]]//g;
+
+            if (! main::isConfSection($l)) {
+                ERROR ("Invalid section's name");
+                return FALSE;
+            }
+            $currentSection = $l;
+            next;
+        }
+
+        if (! defined $currentSection) {
+            ERROR (sprintf "A property must always be in a section (%s)",$l);
+            return FALSE;
+        }
+
+        my @prop = split(/=/,$l,-1);
+        if (scalar @prop != 2 || $prop[0] eq '' || $prop[1] eq '') {
+            ERROR (sprintf "A line is invalid (%s). Must be prop = val",$l);
+            return FALSE;   
+        }
+
+        if ($currentSection ne 'composition') {
+            if (exists $this{$currentSection}->{$prop[0]}) {
+                ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s",
+                    $currentSection,$prop[0]);
+                return FALSE; 
+            }
+            $this{$currentSection}->{$prop[0]} = $prop[1];
+        } else {
+            if (! main::readComposition($prop[0],$prop[1])) {
+                ERROR (sprintf "Cannot read a composition !");
+                return FALSE;
+            }
+        }
+        
+    }
+
+    close CFGF;
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: readComposition
+
+Read a 'composition' section line. Determine sources by level and calculate priorities.
+
+Parameters:
+    prop - composition's name: levelId.bboxId
+    val - composition's value: pyrPath1,pyrPath2,pyrPath3
+=cut
+sub readComposition {
+    my $prop = shift;
+    my $val = shift;
+
+    TRACE;
+
+    my ($levelId,$bboxId) = split(/\./,$prop,-1);
+
+    if ($levelId eq '' || $bboxId eq '') {
+        ERROR (sprintf "Cannot define a level id and a bbox id (%s). Must be levelId.bboxId",$prop);
+        return FALSE;
+    }
+
+    my @pyrs = split(/,/,$val,-1);
+
+    foreach my $pyr (@pyrs) {
+        if ($pyr eq '') {
+            ERROR (sprintf "Invalid list of pyramids (%s). Must be /path/pyr1.pyr,/path/pyr2.pyr",$val);
+            return FALSE;
+        }
+        if (! -f $pyr) {
+            ERROR (sprintf "A referenced pyramid's file doesn't exist : %s",$pyr);
+            return FALSE;
+        }
+
+        my $priority = 1;
+        if (exists $this{sourceByLevel}->{$levelId}) {
+            $this{sourceByLevel}->{$levelId} += 1;
+            $priority = $this{sourceByLevel}->{$levelId};
+        } else {
+            $this{sourceByLevel}->{$levelId} = 1;
+        }
+
+        $this{composition}->{$levelId}->{$priority} = {
+            bbox => $bboxId,
+            pyr => $pyr,
+        };
+
+        if (! exists $this{sourcePyramids}->{$pyr}) {
+            # we have a new source pyramid, but not yet information about
+            $this{sourcePyramids}->{$pyr} = undef;
+        }
+
+    }
+
+    return TRUE;
+
+}
+
+#
+=begin nd
+method: isConfSection
+
+Check section's name
+
+Parameter:
+    section - section's name
+
+Possible values: 'pyramid','process','composition','logger','bboxes'.
+=cut
+sub isConfSection {
+    my $section = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $section);
+
+    foreach (@{$CONF{sections}}) {
+        return TRUE if ($section eq $_);
+    }
+    ERROR (sprintf "Unknown 'section' (%s) !",$section);
+    return FALSE;
+}
+
+#
+=begin nd
+method: checkParams
+
+Check is basic: sections have not to be empty
+=cut
+sub checkParams {
+
+    ###################
+    # check parameters
+
+    my $pyramid      = $this{pyramid};        
+    my $logger       = $this{logger};         
+    my $composition  = $this{composition};    
+    my $bboxes       = $this{bboxes};         
+    my $process      = $this{process};    
+
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR ("Section [pyramid] can not be null !");
+        return FALSE;
+    }
+    
+    # names are not the same between be4 and joinCache for the moment
+    $this{pyramid}->{dir_image} = $this{pyramid}->{image_dir};
+    $this{pyramid}->{dir_nodata} = $this{pyramid}->{nodata_dir};
+    $this{pyramid}->{dir_metadata} = $this{pyramid}->{metadata_dir};
+    $this{pyramid}->{pyr_name_new} = $this{pyramid}->{pyr_name};
+    # change section
+    $this{process}->{merge_method} = $this{pyramid}->{merge_method};
+
+    # composition
+    if (! defined $composition) {
+        ERROR ("Section [composition] can not be empty !");
+        return FALSE;
+    }
+
+    # bboxes
+    if (! defined $bboxes) {
+        ERROR ("Section [bboxes] can not be empty !");
+        return FALSE;
+    }
+
+    # process
+    if (! defined $process) {
+        ERROR ("Section [process] can not be empty !");
+        return FALSE;
+    }
+
+    # logger
+    if (defined $logger) {
+        my @args;
+
+        my $layout= '[%C][%M](%L): %m%n';
+        my $level = $logger->{log_level};
+
+        my $out   = "STDOUT";
+        $level = "WARN"   if (! defined $level);
+
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '[%C][%M](%L): %m%n';
+        }
+
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+
+        Log::Log4perl->easy_init(@args);
+    }
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                         STREAM METHODS                                           #
+####################################################################################################  
+
+# Group: stream methods
+
+#
+=begin nd
+method: openStreams
+
+Open one stream by script and write header. They stay opened to write commands directly in files (not store in memory).
+=cut
+sub openStreams {
+    TRACE;
+    
+    my $functions = main::configureFunctions();
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+
+        my $scriptName     = join('.',$scriptId,'sh');
+        my $scriptFilePath = File::Spec->catfile($this{process}->{path_shell}, $scriptName);
+
+        if (! -d dirname($scriptFilePath)) {
+            my $dir = dirname($scriptFilePath);
+            DEBUG (sprintf "Create the script directory '%s' !", $dir);
+            eval { mkpath([$dir]); };
+            if ($@) {
+                ERROR(sprintf "Can not create the script directory '%s' : %s !", $dir , $@);
+                return FALSE;
+            }
+        }
+        
+        DEBUG(sprintf "Open stream to %s",$scriptFilePath);
+        my $SCRIPT;
+        if ( ! (open $SCRIPT,">", $scriptFilePath)) {
+            ERROR(sprintf "Can not save the script '%s' into directory '%s' !.", $scriptName, dirname($scriptFilePath));
+            return FALSE;
+        }
+        
+        my $header = sprintf ("# Environment variables\n");
+        $header   .= sprintf ("SCRIPT_ID=\"%s\"\n", $scriptId);
+        $header   .= sprintf ("TMP_DIR=\"%s\"\n",
+            File::Spec->catdir($this{process}->{path_temp},$this{pyramid}->getNewName,$scriptId));
+        $header   .= sprintf ("PYR_DIR=\"%s\"\n", $this{pyramid}->getNewDataDir);
+        $header   .= "\n";
+        
+        # Fonctions
+        $header   .= "# Functions\n";
+        $header   .= "$functions\n";
+        
+        $header .= "# Work directory creation\n";
+        $header .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
+        
+        printf $SCRIPT "%s", $header;
+        
+        push @{$this{streams}},$SCRIPT;
+        
+    }
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: configureFunctions
+
+Configure bash functions to write in scripts' header.
+=cut
+sub configureFunctions {
+    my $self = shift;
+
+    TRACE;
+
+    my $pyr = $self->{pyramid};
+    my $configuredFunc = $BASHFUNCTIONS;
+
+    # congigure overlayNtiff
+    my $conf_oNt = "";
+
+    $conf_oNt .= sprintf "-mode %s -transparent 255,255,255 -opaque 255,255,255 -channels %s",
+        $this{process}->{merge_method}, $this{pyramid}->getSamplesPerPixel;
+
+    $configuredFunc =~ s/__oNt__/$conf_oNt/;
+
+    # calculate image pixel size
+    
+    my $tileWidth = $this{pyramid}->getTileMatrixSet->getTileWidth;
+    my $tileHeight = $this{pyramid}->getTileMatrixSet->getTileHeight;
+    
+    my $imgHeight = $this{pyramid}->getTilesPerHeight * $tileHeight;
+    
+    # congigure tiffcp
+    my $conf_tcp = "";
+
+    $conf_tcp .= "-s -r $imgHeight ";
+
+    $configuredFunc =~ s/__tcp__/$conf_tcp/;
+    
+    # configure montage
+    my $conf_montageIn = "";
+
+    $conf_montageIn .= sprintf "-geometry %sx%s ",$tileWidth,$tileHeight;
+    $conf_montageIn .= sprintf "-tile %sx%s",$this{pyramid}->getTilesPerWidth,$this{pyramid}->getTilesPerHeight;
+    
+    $configuredFunc =~ s/__montageIn__/$conf_montageIn/g;
+    
+    my $conf_montageOut = "";
+    
+    $conf_montageOut .= sprintf "-depth %s ",$this{pyramid}->getBitsPerSample;
+    
+    $conf_montageOut .= "-define tiff:rows-per-strip=$imgHeight ";
+
+    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
+
+    # congigure tiff2tile
+    my $conf_t2t = "";
+
+    $conf_t2t .= sprintf "-c %s ", $this{pyramid}->getCompression;
+
+    $conf_t2t .= sprintf "-p %s ",$this{pyramid}->getPhotometric;
+    $conf_t2t .= "-t $tileWidth $tileHeight ";
+    $conf_t2t .= sprintf "-b %s ",$this{pyramid}->getBitsPerSample;
+    $conf_t2t .= sprintf "-a %s ",$this{pyramid}->getSampleFormat;
+    $conf_t2t .= sprintf "-s %s ",$this{pyramid}->getSamplesPerPixel;
+
+    $configuredFunc =~ s/__t2t__/$conf_t2t/;
+
+    return $configuredFunc;
+}
+
+#
+=begin nd
+method: closeStreams
+
+Close all streams to scripts.
+=cut
+sub closeStreams {
+
+    TRACE;
+
+    for (my $i = 0; $i < $this{process}->{job_number}; $i++) {
+        my $scriptId = sprintf "SCRIPT_%s",$i+1;
+        DEBUG(sprintf "Close stream %s",$scriptId);
+        close $this{streams}[$i];
+    }
+
+    return TRUE;
+
+}
+
+#
+=begin nd
+method: printInScript
+
+Writes commands in the current script. Round robin method is used to fill scripts.
+
+Parameter:
+    code - code to write in the current script.
+
+=cut
+sub printInScript {
+    my $code = shift;
+
+    TRACE;
+
+    my $stream = $this{streams}[$this{currentscript}];
+    printf ($stream "%s", $code);
+
+    $this{currentscript} = ($this{currentscript}+1)%($this{process}->{job_number});
+
+}
+
+####################################################################################################
+#                                       VALIDATION METHODS                                         #
+####################################################################################################  
+
+# Group: validation method
+
+#
+=begin nd
+method: _validate
+
+Validates all components, checks consistency.
+
+See Also:
+    <validatePyramidSection> <validateSourcePyramids>,, <validateBboxes>, <validateComposition>
+=cut
+sub _validate {
+
+    ##################
+
+    ALWAYS(">>> Validate 'pyramid' section ...");
+
+    if (! main::validatePyramidSection()) {
+        ERROR ("Merged pyramid is not valid !");
+        return FALSE;
+    }
+
+    ##################
+
+    ALWAYS(">>> Validate source pyramids ...");
+
+    if (! main::validateSourcePyramids()) {
+        ERROR ("Some source pyramids are not valid !");
+        return FALSE;
+    }
+    
+    ##################
+
+    ALWAYS(">>> Create the Pyramid object ...");
+    
+    my $objPyramid = BE4::Pyramid->new($this{pyramid});
+
+    if (! defined $objPyramid) {
+        ERROR ("Cannot create the Pyramid object !");
+        return FALSE;
+    }
+    
+    delete $this{pyramid};
+    $this{pyramid} = $objPyramid;
+    
+    ##################
+    # load bounding boxes
+    ALWAYS(">>> Validate bounding boxes ...");
+
+    if (! main::validateBboxes()) {
+        ERROR ("Some bboxes are not valid !");
+        return FALSE;
+    }
+
+    DEBUG(sprintf "BBOXES : %s",Dumper($this{bboxes}));
+
+    ##################
+
+    ALWAYS(">>> Validate composition");
+    if (! main::validateComposition()) {
+        ERROR ("Cannot validate composition !");
+        return FALSE;
+    }
+
+    DEBUG(sprintf "COMPOSITION : %s",Dumper($this{composition}));
+
+    return TRUE;
+    
+}
+
+#
+=begin nd
+method: validatePyramidSection
+
+Checks final pyramid's paramters presence (TMS, merge method, sampleformat, ...)
+
+See also:
+    <isCompression>, <isMergeMethod>
+=cut
+sub validatePyramidSection {
+
+    TRACE();
+
+    # Pyramid's name
+    if (! exists $this{pyramid}->{pyr_name}) {
+        ERROR ("'pyr_name' must be given in the configuration file !");
+        return FALSE;
+    }
+
+    # TMS
+    if (! exists $this{pyramid}->{tms_path}) {
+        ERROR ("'tms_path' must be given in the configuration file !");
+        return FALSE;
+    }
+    if (! exists $this{pyramid}->{tms_name}) {
+        ERROR ("'tms_name' must be given in the configuration file !");
+        return FALSE;
+    }
+    
+    # Merge method
+    if (! exists $this{pyramid}->{merge_method}) {
+        ERROR ("'merge_method' must be given in the configuration file !");
+        return FALSE;
+    } elsif (! main::isMergeMethod($this{pyramid}->{merge_method})) {
+        ERROR (sprintf "Unknown 'merge_method' (%s) !",$this{pyramid}->{merge_method});
+        return FALSE;
+    }
+    
+    # Pixel format
+
+    if (! exists $this{pyramid}->{sampleformat}) {
+        ERROR ("'sampleformat' must be given in the configuration file !");
+        return FALSE;
+    }
+    if ($this{pyramid}->{sampleformat} ne 'uint') {
+        ERROR (sprintf "Just 'uint' sampleformat is handled (not '%s')",$this{pyramid}->{sampleformat});
+        return FALSE;
+    }
+    
+    if (! exists $this{pyramid}->{bitspersample}) {
+        ERROR ("'bitspersample' must be given in the configuration file !");
+        return FALSE;
+    }
+    if ($this{pyramid}->{bitspersample} != 8) {
+        ERROR (sprintf "Just 8 bits poer sample is handled (not '%s')",$this{pyramid}->{bitspersample});
+        return FALSE;
+    }
+    
+    if (! exists $this{pyramid}->{photometric}) {
+        ERROR ("'photometric' must be given in the configuration file !");
+        return FALSE;
+    }
+    
+    if (! exists $this{pyramid}->{samplesperpixel}) {
+        ERROR ("'samplesperpixel' must be given in the configuration file !");
+        return FALSE;
+    }
+
+    return TRUE;
+
+}
+
+#
+=begin nd
+method: isMergeMethod
+
+Check merge method value.
+
+Parameter:
+    mergeMethod - merge method value
+
+Possible values: 'replace','transparency','multiply'.
+=cut
+sub isMergeMethod {
+    my $mergeMethod = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $mergeMethod);
+
+    foreach (@{$CONF{merge_method}}) {
+        return TRUE if ($mergeMethod eq $_);
+    }
+    return FALSE;
+}
+
+#
+=begin nd
+method: validateSourcePyramids
+
+For each pyramid in composition, we store and control attributes, reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
+
+See alse:
+    <isCompatible>
+=cut
+sub validateSourcePyramids {
+
+    TRACE();
+
+    my $dirDepth;
+    my $tilesPerWidth;
+    my $tilesPerHeight;
+    
+    my $confTMS = $this{pyramid}->{tms_name};
+    $confTMS =~ s/\.(tms|TMS)$//;
+
+    foreach my $pyr (keys %{$this{sourcePyramids}}) {
+        my ($volume,$directories,$file) = File::Spec->splitpath($pyr);
+
+        # read xml pyramid
+        my $parser  = XML::LibXML->new();
+        my $xmltree =  eval { $parser->parse_file($pyr); };
+
+        if (! defined ($xmltree) || $@) {
+            ERROR (sprintf "Can not read the XML file Pyramid : %s", $@);
+            return FALSE;
+        }
+
+        my $root = $xmltree->getDocumentElement;
+
+        # FORMAT
+        my $tagformat = $root->findnodes('format')->to_literal;
+        if ($tagformat eq '') {
+            ERROR (sprintf "Can not determine parameter 'format' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        # Format have to be 8-bits unsigned integer
+        if ($tagformat !~ m/_INT8/) {
+            ERROR("Use pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
+            return FALSE;
+        }
+        
+        # SAMPLES PER PIXEL
+        my $tagchannels = $root->findnodes('channels')->to_literal;
+        if ($tagchannels eq '') {
+            ERROR (sprintf "Can not determine parameter 'channels' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+
+        # TMS
+        my $tagTMS = $root->findnodes('tileMatrixSet')->to_literal;
+        if ($tagTMS eq '') {
+            ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+        
+        if ($tagTMS ne $confTMS) {
+            ERROR (sprintf "The TMS in the pyramid '%s' (%s) is different from the TMS in the configuration (%s) !",
+                $pyr,$tagTMS,$confTMS);
+            return FALSE;
+        }
+
+        # PHOTOMETRIC
+        my $tagphotometric = $root->findnodes('photometric')->to_literal;
+        if ($tagphotometric eq '') {
+            ERROR (sprintf "Can not determine parameter 'photometric' in the XML file Pyramid (%s) !",
+                $pyr);
+            return FALSE;
+        }
+
+        # LEVELS
+        my @levels = $root->getElementsByTagName('level');
+        
+        # read tilesPerWidth and tilesPerHeight, using a level
+        my $level = $levels[0];
+        my $tagtilesPerWidth = $level->findvalue('tilesPerWidth');
+        my $tagtilesPerHeight = $level->findvalue('tilesPerHeight');
+
+        if (defined $tilesPerHeight && 
+            ($tagtilesPerHeight ne $tilesPerHeight || $tagtilesPerWidth ne $tilesPerWidth)) {
+            ERROR (sprintf "The tile size in the pyramid '%s' is different from %s,%s (%s,%s) !",
+                $pyr,$tilesPerHeight,$tilesPerWidth,$tagtilesPerHeight,$tagtilesPerWidth);
+            return FALSE;
+        }
+        $tilesPerHeight = $tagtilesPerHeight if (! defined $tilesPerHeight);
+        $tilesPerWidth = $tagtilesPerWidth if (! defined $tilesPerWidth);
+
+        # read dirDepth, using a level
+        my $tagdepth = $level->findvalue('pathDepth');
+
+        if (defined $dirDepth && $tagdepth ne $dirDepth) {
+            ERROR (sprintf "The depth in the pyramid '%s' is different from %s (%s) !",$pyr,$dirDepth,$tagdepth);
+            return FALSE;
+        }
+        $dirDepth = $tagdepth if (! defined $dirDepth);
+
+        foreach my $v (@levels) {
+            my $levelId = $v->findvalue('tileMatrix');
+            my $baseDir = $v->findvalue('baseDir');
+            $this{sourcePyramids}->{$pyr}->{$levelId}->{dir} = File::Spec->rel2abs($baseDir,$volume.$directories);
+
+            my @taglimit = (
+                $v->findvalue('TMSLimits/minTileRow'),
+                $v->findvalue('TMSLimits/maxTileRow'),
+                $v->findvalue('TMSLimits/minTileCol'),
+                $v->findvalue('TMSLimits/maxTileCol')
+            );
+
+            @{$this{sourcePyramids}->{$pyr}->{$levelId}->{extremTiles}} = @taglimit;
+        }
+
+        $this{sourcePyramids}->{$pyr}->{format} = $tagformat;
+        $this{sourcePyramids}->{$pyr}->{photometric} = $tagphotometric;
+        $this{sourcePyramids}->{$pyr}->{samplesperpixel} = $tagchannels;
+    }
+
+    # we save merged pyramid's attributes
+    $this{pyramid}->{dir_depth} = $dirDepth;
+    $this{pyramid}->{image_width} = $tilesPerWidth;
+    $this{pyramid}->{image_height} = $tilesPerHeight;
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: validateBboxes
+
+For each bbox, we parse string to store values in array and we control consistency (min < max).
+=cut
+sub validateBboxes {
+    TRACE();
+
+    my $bboxes = $this{bboxes};
+
+    while( my ($bboxId,$bbox) = each(%$bboxes) ) {
+        if ($bbox !~ m/([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?)/) {
+            ERROR (sprintf "The bbox with id '%s' is not valid (%s).
+                Must be 'xmin,ymin,xmax,ymax', to decimal format.",$bboxId,$bbox);
+            return FALSE;
+        }
+
+        my @bboxArray = split(/,/,$bbox,-1);
+        if (!($bboxArray[0] < $bboxArray[2] && $bboxArray[1] < $bboxArray[3])) {
+            ERROR (sprintf "The bbox with id '%s' is not valid (%s). Max is not greater than min !",$bboxId,$bbox);
+            return FALSE;
+        }
+        
+        # we replace the string bbox by the array bbox
+        $bboxes->{$bboxId} = undef;
+        @{$bboxes->{$bboxId}} = @bboxArray;
+    }
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: validateComposition
+
+Validates each source in the composition.
+    - levelId have to be in the TMS
+    - bboxId have to be defined in the 'bboxes' section (and is interpreted)
+    - used level have to be present in the pyramid
+
+We store too pyramid's format (phtomoetric, samples per pixel...).
+
+See also:
+    <calculateBbox>
+=cut
+sub validateComposition {
+
+    TRACE;
+
+    my $composition = $this{composition};
+    my $bboxes = $this{bboxes};
+    my $tms = $this{pyramid}->getTileMatrixSet;
+
+    while( my ($levelId,$sources) = each(%$composition) ) {
+        if (! defined $tms->getTileMatrix($levelId)) {
+            ERROR (sprintf "A level id (%s) from the configuration file is not in the TMS !",$levelId);
+            return FALSE;
+        }
+
+        while( my ($priority,$source) = each(%$sources) ) {
+            if (! exists $bboxes->{$source->{bbox}}) {
+                ERROR (sprintf "A bbox id (%s) from the composition is not define in the 'bboxes' section !",
+                    $source->{bbox});
+                return FALSE;
+            }
+            # we replace .pyr path by the data directory for this level
+            if (! exists $this{sourcePyramids}->{$source->{pyr}}->{$levelId}) {
+                ERROR (sprintf "The pyramid '%s' is used for the level %s but has not it !",
+                    $source->{pyr},$levelId);
+                return FALSE;
+            }
+            
+            my $photometric = $this{sourcePyramids}->{$source->{pyr}}->{photometric};
+            my $format = $this{sourcePyramids}->{$source->{pyr}}->{format};
+            my $spp = $this{sourcePyramids}->{$source->{pyr}}->{samplesperpixel};
+
+            if (main::isCompatible($format, $spp, $photometric)) {
+                $source->{isCompatible} = TRUE;
+            } else {
+                $source->{format} = $format;
+                $source->{photometric} = $photometric;
+                $source->{samplesperpixel} = $spp;
+            }
+
+            my @extremTiles = @{$this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{extremTiles}}; #[$jMin,$jMax,$iMin,$iMax]
+            $source->{pyr} = $this{sourcePyramids}->{$source->{pyr}}->{$levelId}->{dir};
+            
+            my @bboxArray = main::calculateBbox($levelId,$source->{bbox}); #[$iMin,$jMin,$iMax,$jMax]
+            $source->{bbox} = undef;
+            @{$source->{bbox}} = @bboxArray;
+            
+            # We calculate intersection between the composition's bbox (extrem IMAGES) and source pyramid's extrem TILES.
+            $extremTiles[0] = max($extremTiles[0],$bboxArray[1]*$this{pyramid}->getTilesPerHeight); #jMin
+            $extremTiles[1] = min($extremTiles[1],($bboxArray[3]+1)*$this{pyramid}->getTilesPerHeight); #jMax
+            $extremTiles[2] = max($extremTiles[2],$bboxArray[0]*$this{pyramid}->getTilesPerWidth); #iMin
+            $extremTiles[3] = min($extremTiles[3],($bboxArray[2]+1)*$this{pyramid}->getTilesPerWidth); #iMax
+            
+            @{$source->{extremTiles}} = @extremTiles;
+        }
+    
+    }
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: calculateBbox
+
+We have source's bbox in ground coordinates. We calculate images' indices for a given level [$iMin,$jMin,$iMax,$jMax].
+
+Parameters:
+    levelId - level for which we want to calculate bbox's indices
+    bboxId - bbox whose we want to calculate indices
+=cut
+sub calculateBbox {
+    my $levelId = shift;
+    my $bboxId = shift;
+
+    TRACE();
+
+    my @bboxCoord = @{$this{bboxes}->{$bboxId}};
+    my @bboxInd;
+
+    my $tm = $this{pyramid}->getTileMatrixSet->getTileMatrix($levelId);
+
+    push @bboxInd, $tm->xToColumn($bboxCoord[0],$this{pyramid}->getTilesPerHeight); #xMin -> iMin
+    push @bboxInd, $tm->yToRow($bboxCoord[3],$this{pyramid}->getTilesPerHeight); # yMax -> jMin
+    push @bboxInd, $tm->xToColumn($bboxCoord[2],$this{pyramid}->getTilesPerWidth); # xMax -> iMax
+    push @bboxInd, $tm->yToRow($bboxCoord[1],$this{pyramid}->getTilesPerWidth); # yMin -> jMax
+
+    return @bboxInd;
+}
+
+#
+=begin nd
+method: isCompatible
+
+A pyramid is compatible with the final cache if format and sample per pixel are the same
+=cut
+sub isCompatible {
+    my $format = shift;
+    my $samplesperpixel = shift;
+    my $photometric = shift;
+
+    TRACE;
+
+    return ($format eq $this{pyramid}->getFormatCode &&
+            $samplesperpixel eq $this{pyramid}->getSamplesPerPixel &&
+            $photometric eq $this{pyramid}->getPhotometric);
+}
+
+####################################################################################################
+#                                        PROCESS METHODS                                           #
+####################################################################################################  
+
+# Group: process methods
+
+#
+=begin nd
+method: doIt
+
+Reads each image from each source pyramids which is in the bbox and writes it in the final cache, according the merge method.
+
+See also:
+    <getCacheNameOfImage>, <searchTile>, <treatTile>
+=cut
+sub doIt {
+
+    TRACE();
+
+    my $composition = $this{composition};
+    my $bboxes = $this{bboxes};
+    my $pyramid = $this{pyramid};
+    my $tms = $pyramid->getTileMatrixSet;
+    
+    # We open stream to the cache list
+    
+    my $cachelist = $this{pyramid}->getNewListFile;
+    if (-f $cachelist) {
+        ERROR(sprintf "New cache list ('%s') exist, can not overwrite it ! ", $cachelist);
+        return FALSE;
+    }
+    
+    my $dir = dirname($cachelist);
+    if (! -d $dir) {
+        DEBUG (sprintf "Create the cache list directory '%s' !", $dir);
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the cache list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+    
+    my $LIST;
+    if (! open $LIST, ">", $cachelist) {
+        ERROR(sprintf "Cannot open new cache list file : %s",$cachelist);
+        return FALSE;
+    }
+    printf $LIST "#\n";
+    
+    $this{list}->{stream} = $LIST;
+
+    while( my ($levelId,$sources) = each(%$composition) ) {
+        INFO(sprintf "Level %s",$levelId);
+
+        # Extrems :
+        #    - Image : ($IMIN,$JMIN,$IMAX,$JMAX)
+        #    - Tiles (for the Level object : ($imin,$jmin,$imax,$jmax)
+
+        my $priority = 1;
+        
+        # base dir image
+        my $baseimage = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirImage, $levelId);
+        # base dir nodata
+        my $basenodata = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirNodata, $levelId);
+                        
+        my ($imin,$jmin,$imax,$jmax);
+
+        while( exists $sources->{$priority}) {
+            my $source = $sources->{$priority};
+            
+            my @extremTiles = @{$source->{extremTiles}};
+            # we update extrems tiles
+            if (! defined $imin || $extremTiles[2] < $imin) {$imin = $extremTiles[2];}
+            if (! defined $jmin || $extremTiles[0] < $jmin) {$jmin = $extremTiles[0];}
+            if (! defined $imax || $extremTiles[3] > $imax) {$imax = $extremTiles[3];}
+            if (! defined $jmax || $extremTiles[1] > $jmax) {$jmax = $extremTiles[1];}
+            
+            
+            INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{pyr});
+            
+            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{bbox}};
+
+            for (my $I = $IMIN; $I <= $IMAX; $I++) {
+                for (my $J = $JMIN; $J <= $JMAX; $J++) {
+                    if (exists $this{doneTiles}->{$I."_".$J}) {
+                        #Tile already exists (created by a treatment)
+                        next;
+                    }
+
+                    my $base36path = BE4::Base36->indicesToB36Path($I,$J,$this{pyramid}->getDirDepth+1);
+                    my $imagePath = "$base36path.tif";
+                    
+                    my $sourceImage = File::Spec->catfile($source->{pyr},$imagePath);
+                    if (! -f $sourceImage) {
+                        # no data source
+                        next;
+                    }
+
+                    my $finaleImage = File::Spec->catfile($baseimage,$imagePath);
+                    if (-f $finaleImage) {
+                        #Tile already exists (it's a link)
+                        next;
+                    }
+
+                    my @images;
+
+                    if (exists $source->{isCompatible}) {
+                        push @images,{img => $sourceImage,isCompatible => TRUE};
+                    } else {
+                        push @images,{img => $sourceImage,format => $source->{format},spp => $source->{samplesperpixel}};
+                    }
+
+                    if ($this{process}->{merge_method} ne 'replace') {
+                        my @others = main::searchTile($levelId,$priority+1,$I,$J,$imagePath,@images);
+                        push @images,@others;
+                    }
+
+                    if (! main::treatTile($I,$J,$finaleImage,@images)) {
+                        ERROR(sprintf "Cannot treat the image %s",$finaleImage);
+                        return FALSE;                        
+                    }
+                }
+            }
+            $priority++;
+        }
+
+        my $levelOrder = $tms->getOrderfromID($levelId);
+        my $objLevel = BE4::Level->new({
+            id                => $levelId,
+            order             => $levelOrder,
+            dir_image         => File::Spec->abs2rel($baseimage,$pyramid->getNewDescriptorDir),
+            dir_nodata        => File::Spec->abs2rel($basenodata,$pyramid->getNewDescriptorDir),
+            dir_metadata      => undef,      # TODO !
+            compress_metadata => undef,      # TODO !
+            type_metadata     => undef,      # TODO !
+            size              => [$pyramid->getTilesPerWidth,$pyramid->getTilesPerHeight],
+            dir_depth         => $pyramid->getDirDepth,
+            limit             => [$jmin,$jmax,$imin,$imax],
+        });
+
+        if (! defined $objLevel) {
+            ERROR(sprintf "Can not create the pyramid Level object for the level '%s'", $levelId);
+            return FALSE;
+        }
+
+        $pyramid->addLevel($levelId, $objLevel);
+
+        delete $this{doneTiles};
+    }
+    
+    close $LIST;
+    
+    if (! main::writeRootsInList()) {
+        ERROR(sprintf "Cannot write the header in the cache list file : %s", $this{pyramid}->getNewListFile);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: searchTile
+
+Search a tile in source pyramids with a smaller priority
+
+Parameters:
+    levelId - level in which we serach tiles
+    priority - source's priority from which we search tiles
+    i,j - searched tile's indices
+    imagePath - relative image path, from the image directory ("19/00/M4/12.tif")
+=cut
+sub searchTile {
+    my $levelId = shift;
+    my $priority = shift;
+    my $i = shift;
+    my $j = shift;
+    my $imagePath = shift;
+
+    TRACE();
+
+    my $sources = $this{composition}->{$levelId};
+    my @others;
+
+    while( exists $sources->{$priority}) {
+        my $source = $sources->{$priority};
+        $priority++;
+        my ($imin,$jmin,$imax,$jmax) = @{$source->{bbox}};
+
+        if ($i < $imin || $i > $imax || $j < $jmin || $j > $jmax) {
+            next;
+        }
+
+        my $sourceImage = File::Spec->catfile($source->{pyr},$imagePath);
+        if (-f $sourceImage) {
+            if (exists $source->{isCompatible}) {
+                push @others,{img => $sourceImage,isCompatible => TRUE};
+            } else {
+                push @others,{img => $sourceImage,format => $source->{format},spp => $source->{samplesperpixel}};
+            }
+        }
+    }  
+
+    return @others;
+  
+}
+
+#
+=begin nd
+method: treatTile
+
+3 possibilities:
+    - the image is present in just one pyramid or merge_method = replace, and is compatible with the final cache -> we write a symbolic link.
+    - the image is present in just one pyramid or merge_method = replace, and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts.
+    - the image is preent in seve(ral pyramids and merge method is not 'replace' -> we use tool 'overlayNtiff', commands are written in scripts.
+
+Parameters:
+    i,j - tile's indices to calculate
+    finaleImage - absolute path of the final image
+    images - array of absolute source images' paths
+    
+See also:
+    <makeLink>, <transformImage>, <mergeImages>
+=cut
+sub treatTile {
+    my $i = shift;
+    my $j = shift;
+    my $finaleImage = shift;
+    my @images = @_;
+
+    TRACE();
+
+    if (scalar @images == 1 && exists $images[0]{isCompatible}) {
+        if (! main::makeLink($finaleImage,$images[0]{img})) {
+            ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$images[0]);
+            return FALSE;
+        }
+        return TRUE
+    }
+
+    if (scalar @images == 1) {
+        # We have just one source image, but it is not compatible with the final cache
+        # We need to transform it.
+        if (! main::transformImage($finaleImage,$images[0]{img},$images[0]{format},int($images[0]{spp}))) {
+            ERROR(sprintf "Cannot transform the image %s",$images[0]{img});
+            return FALSE;
+        }
+        $this{doneTiles}->{$i."_".$j} = TRUE;
+        return TRUE;
+    }
+
+    main::mergeImages($finaleImage,@images);
+    $this{doneTiles}->{$i."_".$j} = TRUE;
+    return TRUE;
+
+}
+
+#
+=begin nd
+method: makeLink
+
+Create a symbolic link in the final cache, to a source image.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    baseImage - absolute source image's path, to link
+=cut
+sub makeLink {
+    my $finaleImage = shift;
+    my $baseImage = shift;
+
+    TRACE();
+
+    #create folders
+    my $finalDir = dirname($finaleImage);
+    eval { mkpath([$finalDir]); };
+    if ($@) {
+        ERROR(sprintf "Can not create the cache directory '%s' : %s !",$finalDir, $@);
+        return FALSE;
+    }
+
+    my $relativeTarget = undef;
+    my $absoluteTarget = undef;
+
+    if (-f $baseImage && ! -l $baseImage) {
+        $relativeTarget = File::Spec->abs2rel($baseImage,$finalDir);
+        $absoluteTarget = $baseImage;
+    }
+    elsif (-f $baseImage && -l $baseImage) {
+        my $linked   = File::Spec::Link->linked($baseImage);
+        $absoluteTarget = File::Spec::Link->full_resolve($linked);
+        $relativeTarget = File::Spec->abs2rel($absoluteTarget, $finalDir);
+    } else {
+        ERROR(sprintf "The tile '%s' is not a file or a link in '%s' !",basename($baseImage),dirname($baseImage));
+        return FALSE;
+    }
+
+    if (! defined $relativeTarget) {
+        ERROR (sprintf "The link '%s' can not be resolved in '%s' ?", basename($baseImage), dirname($baseImage));
+        return FALSE;
+    }
+
+    my $result = eval { symlink ($relativeTarget, $finaleImage); };
+    if (! $result) {
+        ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?", $relativeTarget,$finaleImage,$!);
+        return FALSE;
+    }
+    
+    main::storeInList(FALSE, $absoluteTarget);
+
+    return TRUE;
+}
+
+#
+=begin nd
+method: transformImage
+
+Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    baseImage - absolute source image's path, to transform
+    format - format of the source cache ('TIFF_PNG_INT8')
+    spp - samples per pixel of the source cache
+=cut
+sub transformImage {
+    my $finaleImage = shift;
+    my $baseImage = shift;
+    my $format = shift;
+    my $spp = shift;
+
+    TRACE();
+
+    my $code = '';
+    
+    # Use environment to short path
+    my $dataPath = $this{pyramid}->getNewDataDir;
+    $finaleImage =~ s/$dataPath\/?//;
+
+    # Pretreatment
+
+    if ($format =~ m/PNG/) {
+        if ($spp == 4) {
+            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png \"-background none\"\n", $baseImage;
+        } else {
+            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png\n", $baseImage;
+        }
+    } else {
+        $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif\n", $baseImage;
+    }
+
+    # We transform image with the samples per pixel of the final cache
+    if (int($this{pyramid}->getSamplesPerPixel) == 3) {
+        $code .= "tiff2rgba -c none -n \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+    }
+    elsif (int($this{pyramid}->getSamplesPerPixel) == 4) {
+        $code .= "tiff2rgba -c none \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+    }
+    elsif (int($this{pyramid}->getSamplesPerPixel) == 1) {
+        $code .= "convert \${TMP_DIR}/img.tif -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/transformedImg.tif\n";
+    } else {
+        ERROR (sprintf "Samplesperpixel (%s) not supported ", $this{pyramid}->getSamplesPerPixel);
+        return FALSE;
+    }
+
+    # Final location writting
+    $code .= sprintf ("Work2cache \${TMP_DIR}/transformedImg.tif \${PYR_DIR}/%s\n\n", $finaleImage);
+
+    # Storage
+    main::printInScript($code);
+    main::storeInList(TRUE, $finaleImage);
+    
+    return TRUE;
+}
+
+#
+=begin nd
+method: mergeImages
+
+Write commands in the current script to merge n images according to the merge method. We use tiff2rgba to convert into work format and overlayNtiff to merge.
+
+Parameters:
+    finaleImage - absolute path of the final image
+    images - array of absolute source images' paths
+=cut
+sub mergeImages {
+    my $finaleImage = shift;
+    my @images = @_;
+
+    TRACE();
+
+    my $code = '';
+
+    # Use environment to short path
+    my $dataPath = $this{pyramid}->getNewDataDir;
+    $finaleImage =~ s/$dataPath\/?//;
+
+    # Pretreatment
+
+    for (my $i = 0; $i < scalar @images; $i++) {
+        
+        if ((exists $images[$i]{format} && $images[$i]{format} =~ m/PNG/) ||
+            (exists $images[$i]{isCompatible} && $this{pyramid}->getCompression eq "png")){
+            
+            if ((exists $images[$i]{spp} && int($images[$i]{spp}) == 4) ||
+                (exists $images[$i]{isCompatible} && int($this{pyramid}->getSamplesPerPixel) == 4))
+            {
+                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png \"-background none\"\n", $images[$i]{img} ,$i);
+            } else {
+                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png\n", $images[$i]{img} ,$i);
+            }
+        } else {
+            $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif\n", $images[$i]{img} ,$i);
+        }
+    }
+
+    # Superposition
+    my $inputs = "";
+
+    for (my $i = scalar @images - 1; $i >= 0; $i--) {
+        $inputs .= sprintf " \${TMP_DIR}/img%s.tif ",$i;
+    }
+
+    $code .= "OverlayNtiff \"$inputs\"\n";
+
+    # Final location writting
+    $code .= sprintf ("Work2cache \${TMP_DIR}/result.tif \${PYR_DIR}/%s\n\n", $finaleImage);
+
+    # Storage
+    main::printInScript($code);
+    main::storeInList(TRUE, $finaleImage);
+    
+    return TRUE;
+}
+
+####################################################################################################
+#                                          LIST METHODS                                            #
+####################################################################################################  
+
+# Group: list methods
+
+#
+=begin nd
+method: storeInList
+
+Writes file's path in the cache list and store the root.
+
+Parameters:
+    isNewImage - boolean, if TRUE, root is already remove and ID have to be '0'.
+    path - Path to write in the cache list : root is factorize.
+
+=cut
+sub storeInList {
+    my $isNewImage = shift;
+    my $path = shift;
+
+    TRACE;
+    
+    if ($isNewImage) {
+        $path = "0/" . $path;
+    } else {
+        # We extract from the old tile path, the cache name (without the old cache root path)
+        my @directories = File::Spec->splitdir($path);
+        # $realName : abs_datapath/dir_image/level/XY/XY/XY.tif
+        #                             -5      -4  -3 -2   -1
+        #                     => -(3 + dir_depth)
+
+        my $deb = -3 - $this{pyramid}->getDirDepth;
+        
+        my @indexName = ($deb..-1);
+        my @indexRoot = (0..@directories+$deb-1);
+        
+        my $name = File::Spec->catdir(@directories[@indexName]);
+        my $root = File::Spec->catdir(@directories[@indexRoot]);
+        
+        my $rootID;
+        if (exists $this{list}->{cacheRoots}->{$root}) {
+            $rootID = $this{list}->{cacheRoots}->{$root};
+        } else {
+            $rootID = scalar (keys %{$this{list}->{cacheRoots}}) + 1;
+            $this{list}->{cacheRoots}->{$root} = $rootID;
+        }
+
+        $path = "$rootID/$name";
+    }
+
+    my $stream = $this{list}->{stream};
+    printf ($stream "%s\n", $path);
+}
+
+#
+=begin nd
+method: writeRootsInList
+
+Write roots at the top of the cache list.
+
+=cut
+sub writeRootsInList {
+
+    TRACE;
+    
+    # We write at the top of the list file, caches' roots, using Tie library
+    
+    my @LIST;
+    if (! tie @LIST, 'Tie::File', $this{pyramid}->getNewListFile) {
+        ERROR(sprintf "Cannot open '%s' with Tie librairy", $this{pyramid}->getNewListFile);
+        return FALSE;
+    }
+    
+    while( my ($root,$rootID) = each( %{$this{list}->{cacheRoots}} ) ) {
+        unshift @LIST,(sprintf "%s=%s\n",$rootID,$root);
+    }
+    
+    # Root of the new cache (first position)
+    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getNewDataDir);
+    
+    untie @LIST;
+    
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=head1 NAME
+
+joinCache - create a pyramid from several, thanks to n triplets (composition)
+
+A triplet = a level (ID in the TMS) + an extent (a bbox) + a list of pyramid's descriptor path
+
+=head1 SYNOPSIS
+
+    perl joinCache.pl --conf=path
+
+=head1 DESCRIPTION
+
+All used pyramids must have identical parameters : used TMS, sample format (uint), bits per sample (8). Resulting pyramid will have same attributes.
+
+Others parameters are free (compression, samples per pixel) and have to be defined for the final cache.
+
+Bounding boxes' SRS have to be the TMS' one.
+
+=head1 JOINCACHE CONFIGURATION FILE
+
+=head2 By section
+
+=head3 logger
+
+=over 4
+
+=item log_level
+
+Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+=back
+
+=head3 pyramid
+
+=over 4
+
+=item pyr_name
+
+Name of the new pyramid, used to name the descriptor, the cache's list, the data directory and the temporary directory.
+
+Mandatory.
+
+=item pyr_desc_path
+
+Directory path, where to write the descriptor.
+
+Mandatory.
+
+=item pyr_data_path
+
+Directory path, where to write the cache.
+
+Mandatory.
+
+=item compression
+
+Possible values : raw, jpg, zip, lzw, png, pkb. png compression is not an official compression for tiff format (just readable by rok4).
+
+Mandatory.
+
+=item bitspersample
+
+Possible value : 8.
+
+Mandatory.
+
+=item sampleformat
+
+Possible value : uint.
+
+Mandatory.
+
+=item samplesperpixel
+
+Possible values : 1, 3, 4.
+
+Mandatory.
+
+=item photometric
+
+Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb.
+
+Mandatory.
+
+=item dir_image, dir_nodata
+
+Names of subdirectories in the cache, in F<pyr_data_path/pyr_name/>.
+
+Default : IMAGE, NODATA.
+
+=item tms_name
+
+TMS file name, with extension .tms.
+
+Mandatory.
+
+=item tms_path
+
+Directory, where to find the TMS file.
+
+Mandatory.
+
+=item merge_method
+
+Method to use to overlay several images. Used by overlayNtiff.
+
+Possible values : 'replace', 'transparency', 'multiply'.
+
+Mandatory.
+
+=back
+
+=head3 process
+
+=over 4
+
+=item job_number
+
+Number of split scripts. Round robin method is used to share jobs between splits.
+
+Mandatory.
+
+=item path_temp
+
+Temporary directory path in which we create a directory named like the merged cache : temporary files are written in F<path_temp/pyr_name_new/>.
+
+Mandatory.
+
+=item path_shell
+
+Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
+
+Mandatory.
+
+=back
+
+=head3 bboxes
+
+Format : ID = xmin,ymin,xmax,ymax , ID is a basic string, without space and coordinates are in the TMS' SRS.
+
+=head3 composition
+
+Format : LevelID.BboxId = pyrPath1,pyrPath2 , BboxId have to be defined in 'bboxes' section, LevelId have to be present in the TMS and in used pyramids.
+
+Order in 'composition' is important, a triplet will take precedence over the triplets for a same level.
+
+=head2 Example.
+
+    ;Commentaires
+    
+    [logger]
+    log_level      = INFO
+    
+    [pyramid]
+    pyr_name       = MERGE_PYRAMID
+    pyr_desc_path  = /home/ign/JoinCache
+    pyr_data_path  = /home/ign/JoinCache
+    
+    tms_path       = /home/ign/TMS
+    tms_name       = LAMB93_10cm.tms
+    
+    image_dir      = IMAGE
+    nodata_dir     = NODATA
+    
+    compression = jpg
+    samplesperpixel = 3
+    photometric = rgb
+    bitspersample = 8
+    sampleformat = uint
+    
+    merge_method = multiply 
+    
+    [bboxes]
+    PARIS = 535286,6747049,771666,6976667
+    
+    [process]
+    path_shell  = /home/ign/JoinCache      ;Commentaires
+    path_temp   = /home/ign/TMP
+    job_number  = 4
+    
+    [composition]  
+    
+    16.PARIS = /home/ign/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr
+    16.PARIS = /home/ign/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
+    
+    19.PARIS = /home/ign/PYRAMIDS/PARCELLAIRE_PNG_LAMB93_PARIS_OUEST.pyr,/home/ign/PYRAMIDS/ORTHO_RAW_LAMB93_PARIS_OUEST.pyr
+
+=head1 OPTIONS
+
+=over 4
+
+=item --help
+
+=item --usage
+
+=item --version
+
+=item --conf=path
+
+Path to file configuration of the pyramid. This option is mandatory !
+
+=back
+
+=head1 SEE ALSO
+
+=head2 Intern libraries
+
+=head3 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+<li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
+<li><A HREF="./lib-BE4-NoData.html">BE4::NoData</A></li>
+</ul>
+
+=end html
+
+=head3 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head2 Modules CPAN
+
+POSIX qw(locale_h)
+
+sigtrap qw(die normal-signals)
+
+Getopt::Long
+
+Pod::Usage
+
+Log::Log4perl qw(get_logger)
+
+Cwd qw(abs_path cwd chdir)
+
+File::Spec
+
+=head1 AUTHOR
+
+Théo Satabin, E<lt>theo.satabin@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Satabin Théo
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

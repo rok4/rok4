@@ -1,49 +1,97 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière
+ *
+ * Géoportail SAV <geop_services@geoportail.fr>
+ *
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ *
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use,
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info".
+ *
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability.
+ *
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
+ * The fact that you are presently reading this means that you have had
+ *
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
+/**
+ * \file Rok4Server.cpp
+ * \~french
+ * \brief Implémentation de la classe Rok4Server et du programme principal
+ * \~english
+ * \brief Implement the Rok4Server class, handling the event loop
+ */
+
 #include "Image.h"
 
 #include "Rok4Server.h"
 #include <iostream>
+#include <algorithm>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <cstring>
+#include <proj_api.h>
+#include <csignal>
 
+#include "config.h"
+#include "intl.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
-#include <sstream>
-#include <vector>
-#include <map>
 #include "Message.h"
-#include <fstream>
-#include <cstring>
+#include "StyledImage.h"
 #include "Logger.h"
 #include "TileMatrixSet.h"
 #include "Layer.h"
 #include "ServiceException.h"
 #include "fcgiapp.h"
-#include <proj_api.h>
-#include <PaletteDataSource.h>
+#include "PaletteDataSource.h"
+#include <EstompageImage.h>
+#include <MergeImage.h>
 
-
-/**
- * Boucle principale exécuté par chaque thread à l'écoute des requêtes de utilisateur.
- */
-void* Rok4Server::thread_loop(void* arg)
-{
-    Rok4Server* server = (Rok4Server*) (arg);
+void* Rok4Server::thread_loop ( void* arg ) {
+    Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
-
-    if (FCGX_InitRequest(&fcgxRequest, server->sock, 0)!=0) {
-        LOGGER_FATAL("Le listener FCGI ne peut etre initialise");
+    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
+        LOGGER_FATAL ( _ ( "Le listener FCGI ne peut etre initialise" ) );
     }
 
-    while (true) {
+    while ( server->isRunning() ) {
         std::string content;
         bool postRequest;
 
         int rc;
-        if ((rc=FCGX_Accept_r(&fcgxRequest)) < 0) {
-            LOGGER_ERROR("FCGX_InitRequest renvoie le code d'erreur" << rc);
+        if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
+            if ( rc != -4 ) { // Cas différent du redémarrage
+                LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur" ) << rc );
+            }
+            //std::cerr <<"FCGX_InitRequest renvoie le code d'erreur" << rc << std::endl;
             break;
         }
-
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
         /*char **p;
         for (p = fcgxRequest.envp; *p; ++p) {
@@ -51,22 +99,26 @@ void* Rok4Server::thread_loop(void* arg)
         }*/
 
         Request* request;
-        
-        postRequest = strcmp(FCGX_GetParam("REQUEST_METHOD",fcgxRequest.envp),"POST")==0;
-        if (postRequest) { // Post Request
-            char* contentBuffer = (char*) malloc(sizeof(char)*200);
-            while (FCGX_GetLine(contentBuffer,200,fcgxRequest.in)) {
-                content.append(contentBuffer);
-            }
-            free(contentBuffer);
-            contentBuffer= NULL;
-            LOGGER_DEBUG("Request Content :"<< std::endl << content);
 
-            request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
-                                           FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
-                                           FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp),
-                                           FCGX_GetParam("HTTPS", fcgxRequest.envp),
-                                           content);
+
+
+        postRequest = ( server->servicesConf.isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
+
+        if ( postRequest ) { // Post Request
+            char* contentBuffer = ( char* ) malloc ( sizeof ( char ) *200 );
+            while ( FCGX_GetLine ( contentBuffer,200,fcgxRequest.in ) ) {
+                content.append ( contentBuffer );
+            }
+            free ( contentBuffer );
+            contentBuffer= NULL;
+            LOGGER_DEBUG ( _ ( "Request Content :" ) << std::endl << content );
+            request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
+                                    content );
+
+
 
         } else { // Get Request
 
@@ -74,196 +126,387 @@ void* Rok4Server::thread_loop(void* arg)
              * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
              */
 
-            request = new Request(FCGX_GetParam("QUERY_STRING", fcgxRequest.envp),
-                                           FCGX_GetParam("HTTP_HOST", fcgxRequest.envp),
-                                           FCGX_GetParam("SCRIPT_NAME", fcgxRequest.envp),
-                                           FCGX_GetParam("HTTPS", fcgxRequest.envp)
-                                          );
+            request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
+                                    FCGX_GetParam ( "HTTPS", fcgxRequest.envp )
+                                  );
         }
-        server->processRequest(request, fcgxRequest);
+        server->processRequest ( request, fcgxRequest );
         delete request;
 
-        FCGX_Finish_r(&fcgxRequest);
-        FCGX_Free(&fcgxRequest,1);
+        FCGX_Finish_r ( &fcgxRequest );
+        FCGX_Free ( &fcgxRequest,1 );
     }
-
+    LOGGER_DEBUG ( _ ( "Extinction du thread" ) );
+    Logger::stopLogger();
     return 0;
 }
 
-/**
-* @brief Construction du serveur
-*/
-Rok4Server::Rok4Server(int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList, std::map<std::string,TileMatrixSet*> &tmsList) :
-        sock(0), servicesConf(servicesConf), layerList(layerList), tmsList(tmsList), threads(nbThread) {
+Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
+                         std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
+                         std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
+    sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
+    styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
+    running ( false ), notFoundError ( NULL ), supportWMTS(supportWMTS), supportWMS(supportWMS) {
 
-    LOGGER_DEBUG("Build WMS Capabilities");
-    buildWMSCapabilities();
-    LOGGER_DEBUG("Build WMTS Capabilities");
-    buildWMTSCapabilities();
-}
-
-/*
- * Lancement des threads du serveur
- */
-void Rok4Server::run() {
-    int init=FCGX_Init();
-
-// Pour faire que le serveur fcgi communique sur le port xxxx utiliser FCGX_OpenSocket
-    // Ceci permet de pouvoir lancer l'application sans que ce soit le serveur web qui la lancer automatiquement
-    // Utile
-    //  * Pour faire du profiling (grof)
-    //  * Pour lancer rok4 sur plusieurs serveurs distants
-    //  Voir si le choix ne peut pas être pris automatiquement en regardant comment un serveur web lance l'application fcgi.
-
-    // A décommenter pour utiliser valgrind
-    // Ex : valgrind --leak-check=full --show-reachable=yes rok4 2> leak.txt
-    // Ensuite redemarrer le serveur Apache configure correctement. Attention attendre suffisamment longtemps l'initialisation de valgrind
-
-    // sock = FCGX_OpenSocket(":1990", 50);
-
-    // Cf. aussi spawn-fcgi qui est un spawner pour serveur fcgi et qui permet de specifier un port d ecoute
-    // Exemple : while (true) ; do spawn-fcgi -n -p 9000 -- ./rok4 -f ../config/server-nginx.conf ; done
-
-
-    for (int i = 0; i < threads.size(); i++) {
-        pthread_create(&(threads[i]), NULL, Rok4Server::thread_loop, (void*) this);
+    if (supportWMS) {
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
+        buildWMSCapabilities();
     }
-    for (int i = 0; i < threads.size(); i++)
-        pthread_join(threads[i], NULL);
+    if (supportWMTS) {
+        LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
+        buildWMTSCapabilities();
+    }
 }
 
+Rok4Server::~Rok4Server() {
+    if ( notFoundError ) {
+        delete notFoundError;
+        notFoundError = NULL;
+    }
+}
 
-DataStream* Rok4Server::WMSGetCapabilities(Request* request) {
+void Rok4Server::initFCGI() {
+    int init=FCGX_Init();
+    if ( !socket.empty() ) {
+        LOGGER_INFO ( _ ( "Listening on " ) << socket );
+        sock = FCGX_OpenSocket ( socket.c_str(), backlog );
+    }
+}
+
+void Rok4Server::killFCGI() {
+    FCGX_CloseSocket ( sock );
+    FCGX_Close();
+}
+
+void Rok4Server::run() {
+    running = true;
+
+    for ( int i = 0; i < threads.size(); i++ ) {
+        pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
+    }
+    for ( int i = 0; i < threads.size(); i++ )
+        pthread_join ( threads[i], NULL );
+}
+
+void Rok4Server::terminate() {
+    running = false;
+    //FCGX_ShutdownPending();
+    // Terminate FCGI Thread
+    for ( int i = 0; i < threads.size(); i++ ) {
+        pthread_kill ( threads[i], SIGPIPE );
+    }
+
+
+}
+
+bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return false;
+    }
+    return true;
+}
+
+std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+    std::map<std::string, std::string>::iterator it = option.find ( paramName );
+    if ( it == option.end() ) {
+        return "";
+    }
+    return it->second;
+}
+
+DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
+    if (!supportWMS) {
+        // Return Error 
+    }
+    std::string version;
+    DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        return errorResp;
+    }
+
     /* concaténation des fragments invariant de capabilities en intercalant les
      * parties variables dépendantes de la requête */
+
     std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
-    for (int i=1; i < wmsCapaFrag.size()-1; i++) {
+    for ( int i=1; i < wmsCapaFrag.size()-1; i++ ) {
         capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
     }
     capa = capa + wmsCapaFrag.back();
 
-    return new MessageDataStream(capa,"text/xml");
+    return new MessageDataStream ( capa,"text/xml" );
 }
 
-DataStream* Rok4Server::WMTSGetCapabilities(Request* request) {
+DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
+    if (!supportWMTS) {
+        // Return Error
+    }
+    std::string version;
+    DataStream* errorResp = request->getCapWMTSParam ( servicesConf,version );
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        return errorResp;
+    }
+
     /* concaténation des fragments invariant de capabilities en intercalant les
-     * parties variables dépendantes de la requête */
+      * parties variables dépendantes de la requête */
     std::string capa = "";
-    for (int i=0; i < wmtsCapaFrag.size()-1; i++) {
+    for ( int i=0; i < wmtsCapaFrag.size()-1; i++ ) {
         capa = capa + wmtsCapaFrag[i] + request->scheme + request->hostName + request->path +"?";
     }
     capa = capa + wmtsCapaFrag.back();
 
-    return new MessageDataStream(capa,"application/xml");
+    return new MessageDataStream ( capa,"application/xml" );
 }
 
-/*
- * Traitement d'une requete GetMap
- * @return Un pointeur sur le flux de donnees resultant
- * @return Un message d'erreur en cas d'erreur
- */
-
-DataStream* Rok4Server::getMap(Request* request)
-{
-    Layer* L;
-    BoundingBox<double> bbox(0.0, 0.0, 0.0, 0.0);
+DataStream* Rok4Server::getMap ( Request* request ) {
+    std::vector<Layer*> layers;
+    BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
     int width, height;
     CRS crs;
     std::string format;
-    Style* style=0;
+    std::vector<Style*> styles;
+    std::map <std::string, std::string > format_option;
+    std::vector<Image*> images;
+
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam(servicesConf, layerList, L, bbox, width, height, crs, format,style);
-    if (errorResp) {
-        LOGGER_ERROR("Probleme dans les parametres de la requete getMap");
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
     }
 
     int error;
-    Image* image = L->getbbox(bbox, width, height, crs, error);
+    Image* image;
+    for ( int i = 0 ; i < layers.size(); i ++ ) {
+        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
 
-    LOGGER_DEBUG("GetMap de Style : " << style->getId() << " pal size : "<<style->getPalette()->getPalettePNGSize() );
+        LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
-    if (image == 0) {
-        if (error==1)
-            return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"bbox invalide","wms"));
-        else
-            return new SERDataStream(new ServiceException("",OWS_NOAPPLICABLE_CODE,"Impossible de repondre a la requete","wms"));
+        if ( curImage == 0 ) {
+            switch ( error ) {
+
+            case 1: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+            }
+            case 2: {
+                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+            }
+            default : {
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+            }
+            }
+        }
+
+        eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+
+        if ( servicesConf.isFullStyleCapable() ) {
+            if ( styles.at ( i )->isEstompage() ) {
+                LOGGER_DEBUG ( _ ( "Estompage" ) );
+                curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
+                switch ( pyrType ) {
+                    //Only use int8 output whith estompage
+                case TIFF_RAW_FLOAT32 :
+                    pyrType = TIFF_RAW_INT8;
+                    break;
+                case TIFF_ZIP_FLOAT32 :
+                    pyrType = TIFF_ZIP_INT8;
+                    break;
+                case TIFF_LZW_FLOAT32 :
+                    pyrType = TIFF_LZW_INT8;
+                    break;
+                case TIFF_PKB_FLOAT32 :
+                    pyrType = TIFF_PKB_INT8;
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
+                if ( format == "image/png" && layerList.size() == 1 ) {
+                    switch ( pyrType ) {
+
+                    case TIFF_RAW_FLOAT32 :
+                    case TIFF_ZIP_FLOAT32 :
+                    case TIFF_LZW_FLOAT32 :
+                    case TIFF_PKB_FLOAT32 :
+                        curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                    default:
+                        break;
+                    }
+                } else {
+                    curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                }
+            }
+
+        }
+
+        images.push_back ( curImage );
     }
 
-    if (format=="image/png")
-        return new PNGEncoder(image,style->getPalette());
-    else if (format == "image/tiff")
-        return new TiffEncoder(image);
-    else if (format == "image/jpeg")
-        return new JPEGEncoder(image);
-    else if (format == "image/x-bil;bits=32")
-        return new BilEncoder(image);
-    LOGGER_ERROR("Le format "<<format<<" ne peut etre traite");
-    return new SERDataStream(new ServiceException("",WMS_INVALID_FORMAT,"Le format "+format+" ne peut etre traite","wms"));
+    //Use background image format.
+    eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
+    image = images.at(0);
+    if ( images.size() > 1 ) {
+        switch ( pyrType ) {
+            //Only use int8 output whith estompage
+        case TIFF_RAW_FLOAT32 :
+            pyrType = TIFF_RAW_INT8;
+            break;
+        case TIFF_ZIP_FLOAT32 :
+            pyrType = TIFF_ZIP_INT8;
+            break;
+        case TIFF_LZW_FLOAT32 :
+            pyrType = TIFF_LZW_INT8;
+            break;
+        case TIFF_PKB_FLOAT32 :
+            pyrType = TIFF_PKB_INT8;
+            break;
+        default:
+            break;
+        }
+        image = new MergeImage(images.at(0), images.at(1), MergeImage::NORMAL);
+        for (int i = 2 ; i < images.size()  ; i++) {
+            image = new MergeImage(image, images.at(i), MergeImage::NORMAL);
+        }
+    }
+
+    if ( format=="image/png" ) {
+        if ( layerList.size() == 1 ) {
+            return new PNGEncoder ( image,styles.at(0)->getPalette() );
+        } else {
+            return new PNGEncoder ( image,NULL);
+        }
+        
+    } else if ( format == "image/tiff" ) { // Handle compression option
+        switch ( pyrType ) {
+
+        case TIFF_RAW_FLOAT32 :
+        case TIFF_ZIP_FLOAT32 :
+        case TIFF_LZW_FLOAT32 :
+        case TIFF_PKB_FLOAT32 :
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_FLOAT32 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_FLOAT32 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_FLOAT32 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_PKB_FLOAT32 );
+            }
+            return TiffEncoder::getTiffEncoder ( image, pyrType );
+        case TIFF_RAW_INT8 :
+        case TIFF_ZIP_INT8 :
+        case TIFF_LZW_INT8 :
+        case TIFF_PKB_INT8 :
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_PKB_INT8 );
+            }
+            return TiffEncoder::getTiffEncoder ( image, pyrType );
+        default:
+            if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_LZW_INT8 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_ZIP_INT8 );
+            }
+            if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
+                return TiffEncoder::getTiffEncoder ( image, TIFF_PKB_INT8 );
+            }
+            return TiffEncoder::getTiffEncoder ( image, TIFF_RAW_INT8 );
+        }
+    } else if ( format == "image/jpeg" ) {
+        return new JPEGEncoder ( image );
+    } else if ( format == "image/x-bil;bits=32" )
+        return new BilEncoder ( image );
+    LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
+    return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 
-/*
- * Traitement d'une requete GetTile
- * @return Un pointeur sur la source de donnees de la tuile requetee
- * @return Un message d'erreur en cas d'erreur
- */
-
-DataSource* Rok4Server::getTile(Request* request)
-{
+DataSource* Rok4Server::getTile ( Request* request ) {
     Layer* L;
     std::string tileMatrix,format;
     int tileCol,tileRow;
+    bool noDataError;
     Style* style=0;
 
     // Récupération des parametres de la requete
-    DataSource* errorResp = request->getTileParam(servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format,style);
+    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
 
-    if (errorResp) {
-        LOGGER_ERROR("Probleme dans les parametres de la requete getTile");
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
         return errorResp;
     }
+    errorResp = NULL;
+    if ( noDataError ) {
+        if ( !notFoundError ) {
+            notFoundError = new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+        }
+        errorResp = notFoundError;
+    }
+
     DataSource* tileSource;
     // Avoid using unnecessary palette
-    if ( format == "image/png") {
-        tileSource= new PaletteDataSource(L->gettile(tileCol, tileRow, tileMatrix),style->getPalette());
+    if ( format == "image/png" ) {
+        tileSource= new PaletteDataSource ( L->gettile ( tileCol, tileRow, tileMatrix, errorResp ),style->getPalette() );
     } else {
-        tileSource= L->gettile(tileCol, tileRow, tileMatrix);
+        tileSource= L->gettile ( tileCol, tileRow, tileMatrix , errorResp );
     }
 
 
     return tileSource;
 }
 
-/** Traite les requêtes de type WMTS */
-void Rok4Server::processWMTS(Request* request, FCGX_Request&  fcgxRequest) {
-    if (request->request == "getcapabilities") {
-        S.sendresponse(WMTSGetCapabilities(request),&fcgxRequest);
-    } else if (request->request == "gettile") {
-        S.sendresponse(getTile(request), &fcgxRequest);
+void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
+    if ( request->request == "getcapabilities" ) {
+        S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
+    } else if ( request->request == "gettile" ) {
+        S.sendresponse ( getTile ( request ), &fcgxRequest );
+    } else if ( request->request == "getversion" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else {
-        S.sendresponse(new SERDataSource(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wmts")),&fcgxRequest);
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
 }
 
-/** Traite les requêtes de type WMS */
-void Rok4Server::processWMS(Request* request, FCGX_Request&  fcgxRequest) {
-    if (request->request == "getcapabilities") {
-        S.sendresponse(WMSGetCapabilities(request),&fcgxRequest);
-    } else if (request->request == "getmap") {
-        S.sendresponse(getMap(request), &fcgxRequest);
+void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
+    if ( request->request == "getcapabilities" ) {
+        S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
+    } else if ( request->request == "getmap" ) {
+        S.sendresponse ( getMap ( request ), &fcgxRequest );
+    } else if ( request->request == "getversion" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
     } else {
-        S.sendresponse(new SERDataStream(new ServiceException("",OWS_OPERATION_NOT_SUPORTED,"L'operation "+request->request+" n'est pas prise en charge par ce serveur.","wms")),&fcgxRequest);
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
     }
 }
 
-/** Separe les requetes WMS et WMTS */
-void Rok4Server::processRequest(Request * request, FCGX_Request&  fcgxRequest ) {
-    if (request->service == "wms") {
-        processWMS(request, fcgxRequest);
-    } else if (request->service=="wmts") {
-        processWMTS(request, fcgxRequest);
+void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
+    if (supportWMTS && request->service == "wmts" ) {
+        processWMTS ( request, fcgxRequest );
+        //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
+    } else if (supportWMS && (request->service=="wms" || request->request == "getmap") ) {
+        processWMS ( request, fcgxRequest );
     } else {
-        S.sendresponse(new SERDataSource(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"Le service "+request->service+" est inconnu pour ce serveur.","wmts")),&fcgxRequest);
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
 }
+
+

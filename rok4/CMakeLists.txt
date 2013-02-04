@@ -10,8 +10,6 @@ endif(NOT DEFINED ROK4_VERSION)
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-cmake_minimum_required(VERSION 2.6)
-
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -45,7 +43,9 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
-set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Rok4Server.cpp)
+add_subdirectory(po)
+
+set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp CRS.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -54,6 +54,8 @@ add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
 add_executable(test_api ${rok4apitest_SRCS})
+
+
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
@@ -106,23 +108,23 @@ if(UNITTEST)
     add_custom_target(junitxml DEPENDS ${PROJECT_NAME}-junit-xml)
     endif(XSLTPROC_FOUND)
     
-
-
 endif(UNITTEST)
+
 
 ########################################
 #Documentation Doxygen
 #Utilisation du fichier 
 if(BUILD_DOC)
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc ALL
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-endif(DOXYGEN_FOUND)
+include(DoxygenConfig)
+# find_package(Doxygen)
+# if(DOXYGEN_FOUND)
+# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+# add_custom_target(doc ALL
+# ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+# WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+# COMMENT "Generating API documentation with Doxygen" VERBATIM
+# )
+# endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 
 
@@ -145,7 +147,7 @@ INSTALL(FILES Rok4Api.h
   DESTINATION include)
 
 #Installe la documentation
-INSTALL(FILES README
+INSTALL(FILES README LICENCE
   DESTINATION doc/${PROJECT_NAME})
 
 if(BUILD_DOC)
@@ -154,11 +156,6 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   DESTINATION doc/${PROJECT_NAME})
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
-
-#Installe la configuration
-INSTALL(DIRECTORY "../config/"
-  DESTINATION config)
-
 
 ########################################
 # Paramétrage de la gestion de package CPack

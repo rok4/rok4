@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style>
+        <Identifier>hypso</Identifier>
+        <Title>Teinte Hypsométrique</Title> 
+        <Abstract>Teinte hypsométrique</Abstract>
+        <Keywords>
+                <Keyword>Défaut</Keyword>
+        </Keywords>
+        <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+        <!-- Rok4-->
+        <palette maxValue="3.40282e+38" rgbContinuous="true" alphaContinuous="true">
+                <colour value="-99999.0">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>0</alpha>
+                </colour>
+                <colour value="-99998.1">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>0</alpha>
+                </colour>
+                <colour value="-99998.0">
+                        <red>255</red>
+                        <green>0</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="-501.0">
+                        <red>255</red>
+                        <green>0</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="-500.0">
+                        <red>11</red>
+                        <green>29</green>
+                        <blue>148</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="-15.0">
+                        <red>19</red>
+                        <green>42</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="0.0">
+                        <red>67</red>
+                        <green>105</green>
+                        <blue>227</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="0.01">
+                        <red>57</red>
+                        <green>151</green>
+                        <blue>105</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="300.0">
+                        <red>230</red>
+                        <green>230</green>
+                        <blue>128</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="600.0">
+                        <red>220</red>
+                        <green>179</green>
+                        <blue>99</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="2000.0">
+                        <red>162</red>
+                        <green>100</green>
+                        <blue>51</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="2500.0">
+                        <red>122</red>
+                        <green>81</green>
+                        <blue>40</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="3000.0">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="9000.0">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="9001.0">
+                        <red>255</red>
+                        <green>0</green>
+                        <blue>255</blue>
+                        <alpha>255</alpha>
+                </colour>
+        </palette>
+</style>

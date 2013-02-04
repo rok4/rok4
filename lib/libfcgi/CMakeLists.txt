@@ -39,6 +39,8 @@ set(BUILD_SHARED_LIBS OFF)
 set(${PROJECT_NAME}_SRCS fcgiapp.c os_unix.c) 
 
 set(ENV{CFLAGS} "-O3")
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/fcgi_config.h)
+
 add_custom_command(OUTPUT fcgi_config.h COMMAND cp -f -l ${CMAKE_CURRENT_SOURCE_DIR}/conf* ${CMAKE_CURRENT_SOURCE_DIR}/*.in ${CMAKE_CURRENT_SOURCE_DIR}/install-sh . COMMAND CFLAGS=-O3 ./configure)
 
 add_custom_target(fcgi-config DEPENDS fcgi_config.h)

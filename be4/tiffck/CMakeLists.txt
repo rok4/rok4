@@ -2,14 +2,14 @@
 project(tiffck)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
+if(NOT DEFINED BE4_VERSION)
         FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
         STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+        STRING(REPLACE "." ";" BE4_VERSION ${subtmp})
+endif(NOT DEFINED BE4_VERSION)
+list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -62,7 +62,7 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 ##Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
 #set(DEP_LIBRARY tiff zlib jpeg)
 #
-#include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 #
 #target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY})
 #
@@ -144,7 +144,8 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
   endif(DOXYGEN_FOUND)
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
 endif(BUILD_DOC)
-
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
 
 
 ########################################

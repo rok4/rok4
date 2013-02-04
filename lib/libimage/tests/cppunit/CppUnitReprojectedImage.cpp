@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "ReprojectedImage.h"
@@ -61,12 +98,13 @@ protected:
 
   string name(int kernel_type) {
     switch(kernel_type) {
-      case Kernel::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
-      case Kernel::LINEAR: return "Linear";
-      case Kernel::CUBIC: return "Cubic";
-      case Kernel::LANCZOS_2: return "Lanczos 2";
-      case Kernel::LANCZOS_3: return "Lanczos 3";
-      case Kernel::LANCZOS_4: return "Lanczos 4";
+      case Interpolation::UNKNOWN: return "(Default) Lanczos 3";
+      case Interpolation::NEAREST_NEIGHBOUR: return "Nearest Neighbour";
+      case Interpolation::LINEAR: return "Linear";
+      case Interpolation::CUBIC: return "Cubic";
+      case Interpolation::LANCZOS_2: return "Lanczos 2";
+      case Interpolation::LANCZOS_3: return "Lanczos 3";
+      case Interpolation::LANCZOS_4: return "Lanczos 4";
     }
   }
 
@@ -92,7 +130,7 @@ protected:
 */
       image->setbbox( BoundingBox<double>(grid->bbox.xmin - 100, grid->bbox.ymin - 100, grid->bbox.xmax + 100, grid->bbox.ymax + 100));
             
-      ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Kernel::KernelType(kernel_type));
+      ReprojectedImage* R = new ReprojectedImage(image,  bbox, grid, Interpolation::KernelType(kernel_type));
       for(int l = 0; l < 600; l++) R->getline(buffer, l);
       delete R;
     }
@@ -102,9 +140,11 @@ protected:
   }
 
   void performance() {
-    for(int i = 1; i <= 4; i++) 
-      for(int j = 0; j < 6; j++) 
+    for(int i = 1; i <= 4; i++){
+     // i=(i==2?++i:i);
+      for(int j = 0; j < 7; j++) 
         _chrono(i, j);
+    }
   }
 
 };

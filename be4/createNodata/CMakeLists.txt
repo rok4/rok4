@@ -2,14 +2,14 @@
 project(createNodata)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
+if(NOT DEFINED BE4_VERSION)
         FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+$")
         STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+        STRING(REPLACE "." ";" BE4_VERSION ${subtmp})
+endif(NOT DEFINED BE4_VERSION)
+list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -45,7 +45,7 @@ endif(DEBUG_BUILD)
 
 
 ########################################
-#définition des fichiers sources
+# #définition des fichiers sources
 
 set(${PROJECT_NAME}_SRCS createNodata.cpp )
 
@@ -132,8 +132,11 @@ INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
 
 #Installe la documentation
+INSTALL(FILES LICENCE
+    DESTINATION doc/${PROJECT_NAME})
+
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-  INSTALL(FILES README 
+  INSTALL(FILES README
     DESTINATION doc/${PROJECT_NAME})
 endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
 if(BUILD_DOC)

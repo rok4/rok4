@@ -1,11 +1,48 @@
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
 package BE4::ImageSource;
 
 use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use List::Util qw(min max);
 
-use Geo::GDAL;
+use BE4::GeoImage;
+use BE4::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -17,72 +54,50 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant NODATA_IDENTIFIER => "nodataIdentifier";
-use constant CONVERT => "convert";
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
 
-#
-# Group: variable
-#
-
-#
-# variable: $self
-#
-#    *    PATHFILENAME => undef,
-#    *    filename => undef,
-#    *    filepath => undef,
-#    *    xmin => undef,
-#    *    ymax => undef,
-#    *    xmax => undef,
-#    *    ymin => undef,
-#    *    xres => undef,
-#    *    yres => undef,
-#    *    pixelsize => undef,
-#    *    xcenter => undef,
-#    *    ycenter => undef,
-#    *    height  => undef,
-#    *    width   => undef,
-#
-
-#
-# Group: constructor
-#
-
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * PATHIMG - path to images
+    * PATHMTD - path to metadata, not implemented
+    * images : array of BE4::GeoImage
+    * bestResX
+    * bestResY
+    * pixel : BE4::Pixel
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-    PATHFILENAME => undef,
+    PATHIMG => undef,
+    PATHMTD => undef,
     #
-    filename => undef,
-    filepath => undef,
-    xmin => undef,
-    ymax => undef,
-    xmax => undef,
-    ymin => undef,
-    xres => undef,
-    yres => undef,
-    pixelsize => undef,
-    xcenter => undef,
-    ycenter => undef,
-    height  => undef,
-    width   => undef,
-    
+    images  => [],
+    #
+    bestResX => undef,
+    bestResY => undef,
+    #
+    pixel => undef,
   };
 
   bless($self, $class);
@@ -91,444 +106,339 @@ sub new {
   
   # init. class
   return undef if (! $self->_init(@_));
+
+  return undef if (! $self->computeImageSource());
   
   return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
+
     my $self   = shift;
-    my $param = shift;
+    my $params = shift;
 
     TRACE;
     
-    return FALSE if (! defined $param);
-    
-    if (! -f $param) {
-      ERROR ("File doesn't exist !");
-      return FALSE;
-    }
+    return FALSE if (! defined $params);
     
     # init. params    
-    $self->{PATHFILENAME}=$param;
+    $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
+    $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
     
-    #
-    $self->{filepath} = File::Basename::dirname($param);
-    $self->{filename} = File::Basename::basename($param);
-    
-    return TRUE;
-}
-################################################################################
-# public
-# Image parameters are checked (sample per pixel, bits per sample...) and return by the function. Datasource can
-# verify if all images own same components and the compatibility with be4's configuration.
-
-sub computeInfo {
-    my $self = shift;
-
-    my $image = $self->{filename};
-
-    DEBUG(sprintf "compute '%s'", $image);
-
-    my $dataset;
-    eval { $dataset= Geo::GDAL::Open($self->{PATHFILENAME}, 'ReadOnly'); };
-    if ($@) {
-        ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return undef;
-    }
-
-    my $driver = $dataset->GetDriver();
-    my $code   = $driver->{ShortName};
-    # FIXME : type of driver ?
-    if ($code !~ /(GTiff|GeoTIFF)/) {
-        ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
-        return undef;
-    }
-
-    # NV : Dans la suite j'ai commente la recuperation des infos dont on a pas encore
-    #      besoin et qui semble poser des problèmes (version de gdalinfo?)
-
-    my $i = 0;
-
-    my $DataType       = undef;
-    my $Band           = undef;
-    my @Interpretation;
-
-    foreach my $objBand ($dataset->Bands()) {
-
-        # FIXME undefined !
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
-
-        # ie Float32,  GrayIndex,          , , .
-        # ie Byte,     (Red|Green|Blue)Band, , .
-        # ie Byte,     GrayIndex,          , , .
-        # ie UInt32,   GrayIndex,          , , .
-        # Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32, or CFloat64
-        # Undefined GrayIndex PaletteIndex RedBand GreenBand BlueBand AlphaBand HueBand SaturationBand LightnessBand CyanBand MagentaBand YellowBand BlackBand
-
-        push @Interpretation, lc $objBand->ColorInterpretation();
-
-        if (!defined $DataType) {
-            $DataType = lc $objBand->DataType();
-        } else {
-            if (! (lc $objBand->DataType() eq $DataType)) {
-                ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
-                return undef;
-            }
-        }
-        
-        $i++;
-    }
-
-    $Band = $i;
-
-    my $bitspersample = undef;
-    my $photometric = undef;
-    my $sampleformat = undef;
-    my $samplesperpixel = undef;
-
-    if ($DataType eq "byte") {
-        $bitspersample = 8;
-        $sampleformat  = "uint";
-    }
-    else {
-        ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
-    }
-
-    if ($Band == 3) {
-        foreach (@Interpretation) {
-            last if ($_ !~ m/(red|green|blue)band/);
-        }
-        $photometric     = "rgb";
-        $samplesperpixel = 3;
-    }
-
-    if ($Band == 1 && $Interpretation[0] eq "grayindex") {
-        $photometric     = "gray";
-        $samplesperpixel = 1;
-    }
-
-    DEBUG(sprintf "format image : bps %s, photo %s, sf %s,  spp %s",
-    $bitspersample, $photometric, $sampleformat, $samplesperpixel);
-
-    my $refgeo = $dataset->GetGeoTransform();
-    if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
-        ERROR ("Can not found parameters of image ('$image') !");
-        return undef;
-    }
-
-    # forced formatting string !
-    my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
-
-    # FIXME : precision ?
-    $self->{xmin} = sprintf "%.8f", $xmin;
-    $self->{xmax} = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize};
-    $self->{ymin} = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize};
-    $self->{ymax} = sprintf "%.8f", $ymax;
-    $self->{xres} = sprintf "%.8f", $dx;      # $rx null ?
-    $self->{yres} = sprintf "%.8f", abs($ndy);# $ry null ?
-    $self->{xcenter}   = sprintf "%.8f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
-    $self->{ycenter}   = sprintf "%.8f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $self->{pixelsize} = sprintf "%.8f", $dx;
-    $self->{height} = $dataset->{RasterYSize};
-    $self->{width}  = $dataset->{RasterXSize};
-
-
-    #DEBUG(sprintf "box:[%s %s %s %s] res:[%s %s] c:[%s %s] p[%s] size:[%s %s]\n",
-    #      $self->{xmin},
-    #      $self->{xmax},
-    #      $self->{ymin},
-    #      $self->{ymax},
-    #      $self->{xres},
-    #      $self->{yres},
-    #      $self->{xcenter},
-    #      $self->{ycenter},
-    #      $self->{pixelsize},
-    #      $self->{height},
-    #      $self->{width});
-    
-    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
-        ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return undef;
-    }
-    
-    return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
-}
-
-################################################################################
-# method: treatNodata
-#
-
-sub treatNodata {
-    my $self = shift;
-    my $nodataColor = shift;
-
-    DEBUG(sprintf "Treat nodata for '%s'", $self->{PATHFILENAME});
-    
-    my $command = undef;
-
-    $command = $self->convert('FFFFFF','FEFEFE');
-    if (! system($command) == 0) {
-        ERROR (sprintf "Impossible to replace white with FEFEFE in '%s' with the command %s",
-                $self->{PATHFILENAME},
-                $command);
+    if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
+        ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
         return FALSE;
     }
     
-    if ($nodataColor =~ m/^(FF|ff)+$/) {
-        # nodata is white (255 for all samples). 'convert' transform it to FEFEFE. We have to restore this value.
-        $command = $self->nodataIdentifier('FEFEFE','FFFFFF');
-        if (! system($command) == 0) {
-            ERROR (sprintf "Impossible to identify nodata in '%s' with the command %s",
-                    $self->{PATHFILENAME},
-                    $command);
-            return FALSE;
-        }
+    if (defined ($self->{PATHMTD}) && ! -d $self->{PATHMTD}) {
+        ERROR ("Directory metadata doesn't exist !");
+        return FALSE;
     }
-    
+
     return TRUE;
 
 }
 
-# method: nodataIdentifier
-#  create commands to identify pixel of nodata and change their value
-#---------------------------------------------------------------------------------------------------
-sub nodataIdentifier {
+####################################################################################################
+#                                        IMAGES TREATMENTS                                         #
+####################################################################################################
+
+# Group: images treatments
+
+#
+=begin nd
+method: computeImageSource
+
+Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
+=cut
+sub computeImageSource {
     my $self = shift;
-    my $nodataColor = shift;
-    
-    my $cmd = sprintf ("%s -n1 %s",NODATA_IDENTIFIER, $nodataColor);
-    $cmd .= sprintf ( " -n2 %s", '0000FF');
-    $cmd .= sprintf ( " %s", $self->{PATHFILENAME});
-    return $cmd;
+
+    TRACE;
+
+    my $lstGeoImages = $self->{images};
+
+    my $search = $self->getListImages($self->{PATHIMG});
+    if (! defined $search) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
+
+    my @listGeoImagePath = @{$search->{images}};
+    if (! @listGeoImagePath) {
+        ERROR ("Can not load data source !");
+        return FALSE;
+    }
+
+    my $badRefCtrl = 0;
+    my $pixel = undef;
+    my $bestResX = undef;
+    my $bestResY = undef;
+
+    foreach my $filepath (@listGeoImagePath) {
+
+        my $objGeoImage = BE4::GeoImage->new($filepath);
+
+        if (! defined $objGeoImage) {
+            ERROR ("Can not load image source ('$filepath') !");
+            return FALSE;
+        }
+
+        # images reading and analysis
+        my @imageInfo = $objGeoImage->computeInfo();
+        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
+        if (! @imageInfo) {
+            ERROR ("Can not read image info ('$filepath') !");
+            return FALSE;
+        }
+
+        if (! defined $pixel) {
+            # we have read the first image, components are empty. This first image will be the reference.
+            if ($imageInfo[0] == 1) {
+                WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
+                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 8
+                $imageInfo[0] = 8;
+            }
+            $pixel = BE4::Pixel->new({
+                bitspersample => $imageInfo[0],
+                photometric => $imageInfo[1],
+                sampleformat => $imageInfo[2],
+                samplesperpixel => $imageInfo[3]
+            });
+            if (! defined $pixel) {
+                ERROR ("Can not create Pixel object for DataSource !");
+                return FALSE;
+            }
+        } else {
+            if ($imageInfo[0] == 1) {
+                # bitspersample in the Pixel object is 1. we change artificially current value for 8
+                $imageInfo[0] = 8;
+            }
+            # we have already values. We must have the same components for all images
+            if (! ($pixel->getBitsPerSample eq $imageInfo[0] && $pixel->getPhotometric eq $imageInfo[1] &&
+                    $pixel->getSampleFormat eq $imageInfo[2] && $pixel->getSamplesPerPixel eq $imageInfo[3])) {
+                ERROR ("All images must have same components. This image ('$filepath') is different !");
+                return FALSE;
+            }
+        }
+
+        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax == 0){
+            $badRefCtrl++;
+        }
+        if ($badRefCtrl>1){
+            ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
+            return FALSE;
+        }
+
+        my $xRes = $objGeoImage->getXres();
+        my $yRes = $objGeoImage->getYres();
+
+        $bestResX = $xRes if (! defined $bestResX || $xRes < $bestResX);
+        $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
+
+        push @$lstGeoImages, $objGeoImage;
+    }
+
+    $self->{pixel} = $pixel;
+    $self->{bestResX} = $bestResX;
+    $self->{bestResY} = $bestResY;
+
+    if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
+        ERROR (sprintf "Can not found image source in '%s' !",$self->{PATHIMG});
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
-# method: convert
-#  create commands to switch pixel's color
-#---------------------------------------------------------------------------------------------------
-sub convert {
+#
+=begin nd
+method: getListImages
+
+Get the list of all path data image (image tiff only !). Recursive to browse directories.
+=cut  
+sub getListImages {
+  my $self      = shift;
+  my $directory = shift;
+
+  TRACE();
+  
+  my $search = {
+    images => [],
+  };
+
+  if (! opendir (DIR, $directory)) {
+    ERROR("Can not open directory cache (%s) ?",$directory);
+    return undef;
+  }
+
+  my $newsearch;
+  
+  foreach my $entry (readdir DIR) {
+    
+    next if ($entry =~ m/^\.{1,2}$/);
+    
+    if ( -d File::Spec->catdir($directory, $entry)) {
+      TRACE(sprintf "DIR:%s\n",$entry);      
+      # recursif
+      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+    }
+
+    next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
+    
+    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
+  }
+  
+  return $search;
+}
+
+#
+=begin nd
+method: computeBBox
+
+Calculate extrem limits of images, in the source SRS.
+
+Returns:
+    (xMin,yMin,xMax,yMax)
+=cut
+sub computeBBox {
     my $self = shift;
-    my $colorToRemove = shift;
-    my $colorToAdd = shift;
+
+    TRACE;
+
+    my $lstGeoImages = $self->{images};
+
+    my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox;
+
+    foreach my $objImage (@$lstGeoImages) {
+        $xmin = min($xmin, $objImage->getXmin);
+        $xmax = max($xmax, $objImage->getYmin);
+        $ymin = min($ymin, $objImage->getXmax);
+        $ymax = max($ymax, $objImage->getYmax);
+    }
+
+    return ($xmin,$ymin,$xmax,$ymax);
+}
+
+####################################################################################################
+#                                       GETTERS / SETTERS                                          #
+####################################################################################################
+
+# Group: getters - setters
+
+sub getResolution {
+  my $self = shift;
+  return $self->{resolution};  
+}
+
+sub getImages {
+  my $self = shift;
+  # copy !
+  my @images;
+  foreach (@{$self->{images}}) {
+    push @images, $_;
+  }
+  return @images; 
+}
+
+
+####################################################################################################
+#                                        EXPORT METHOD                                             #
+####################################################################################################
+
+# Group: export method
+
+sub exportForDebug {
+    my $self = shift ;
     
-    my $cmd = sprintf ("%s -fill \"#%s\"",CONVERT, $colorToAdd);
-    $cmd .= sprintf ( " -opaque \"#%s\"", $colorToRemove);
-    $cmd .= sprintf ( " %s %s", $self->{PATHFILENAME}, $self->{PATHFILENAME});
-    return $cmd;
+    my $export = "";
     
+    $export .= "\nObject BE4::ImageSource :\n";
+    $export .= sprintf "\t Image directory : %s\n", $self->{PATHIMG};
+    $export .= sprintf "\t Image number : %s\n", scalar @{$self->{images}};
+
+    $export .= "\t Best resolution : \n";
+    $export .= sprintf "\t\t- x : %s\n", $self->{bestResX};
+    $export .= sprintf "\t\t- y : %s\n", $self->{bestResY};
+    
+    $export .= sprintf "\t Pixel : %s\n", $self->{pixel}->exportForDebug;
+    
+    return $export;
 }
 
-################################################################################
-
-sub getInfo {
-  my $self = shift;
-  
-  TRACE;
-  
-  return (
-    $self->{filename},
-    $self->{filepath},
-    $self->{xmin},
-    $self->{ymax},
-    $self->{xmax},
-    $self->{ymin},
-    $self->{xres},
-    $self->{yres},
-    $self->{pixelsize},
-    $self->{xcenter},
-    $self->{ycenter},
-    $self->{height},
-    $self->{width},
-  );
-  
-}
-sub getBbox {
-  my $self = shift;
-
-  TRACE;
-  
-  my @bbox;
-
-  # FIXME : format bbox (Upper Left, Lower Right) ?
-  push @bbox, ($self->{xmin},$self->{ymax},$self->{xmax},$self->{ymin});
-  
-  return @bbox;
-}
-################################################################################
-# get / set
-sub getXmin {
-  my $self = shift;
-  return $self->{xmin};
-}
-sub getYmin {
-  my $self = shift;
-  return $self->{ymin};
-}
-sub getXmax {
-  my $self = shift;
-  return $self->{xmax};
-}
-sub getYmax {
-  my $self = shift;
-  return $self->{ymax};
-}
-sub getXres {
-  my $self = shift;
-  return $self->{xres};  
-}
-sub getYres {
-  my $self = shift;
-  return $self->{yres};  
-}
-sub getName {
-  my $self = shift;
-  return $self->{filename}; 
-}
-################################################################################
-# to_string methode
-sub to_string {
-  my $self = shift;
-  
-  TRACE;
-  
-  my $output = sprintf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-          File::Spec->catfile($self->{filepath}, $self->{filename}),
-          $self->{xmin},
-          $self->{ymax},
-          $self->{xmax},
-          $self->{ymin},
-          $self->{xres},
-          $self->{yres},;
-  #DEBUG ($output);
-  return $output;
-}
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
 
-  BE4::ImageSource - analyzes the features of the image.
+BE4::ImageSource - information about a source made up of georeferenced images
 
 =head1 SYNOPSIS
 
-  use BE4::ImageSource;
+    use BE4::ImageSource;
   
-  my $objImg = BE4::ImageSource->new($filepath);
-  if (! $objImg->computeInfo()) { # ERROR ! }
-  
-  my (
-    $filename,
-    $filepath,
-    $xmin,
-    $ymax,
-    $xmax,
-    $ymin,
-    $xres,
-    $yres,
-    $pixelsize,
-    $xcenter,
-    $ycenter,
-    $height,
-    $width
-    ) = $objImg->getInfo();
+    # ImageSource object creation
+    my $objImageSource = BE4::XXX->new({
+        path_image => "/home/ign/DATA",
+        path_metadata=> "/home/ign/METADATA",
+    });
 
 =head1 DESCRIPTION
 
-* Constraint on the input formats of images
+=head2 ATTRIBUTES
 
-  format tiff ...
+=over 4
 
-* Use the binding Perl of Gdal
+=item PATHIMG
 
-* Sample with gdalinfo
-  
-  GDAL 1.7.2, released 2010/04/23
-  
-  ~$ gdalinfo  image.png
-  
-  Driver: PNG/Portable Network Graphics
-  Files: image.png
-  Size is 316, 261
-  Coordinate System is `'
-  Metadata:
-    Software=Shutter
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (    0.0,    0.0)
-  Lower Left  (    0.0,  261.0)
-  Upper Right (  316.0,    0.0)
-  Lower Right (  316.0,  261.0)
-  Center      (  158.0,  130.5)
-  Band 1 Block=316x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=316x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
-  
+Directory which contains images
 
-  ~$ gdalinfo  image.tif
-  (...)
-  Metadata:
-    TIFFTAG_IMAGEDESCRIPTION=
-    TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
-    TIFFTAG_DATETIME=2007:03:15 11:17:17
-    TIFFTAG_XRESOLUTION=600
-    TIFFTAG_YRESOLUTION=600
-    TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  (...)
-  Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
-  Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
-  Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
-  Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
-  Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
-  
-  ~$ gdalinfo image.tif
-  
-  Driver: GTiff/GeoTIFF
-  Files: image.tif
-         image.tfw
-  Size is 5000, 5000
-  Coordinate System is `'
-  Origin = (937500.000000000000000,6541000.000000000000000)
-  Pixel Size = (0.100000000000000,-0.100000000000000)
-  Metadata:
-    TIFFTAG_XRESOLUTION=100
-    TIFFTAG_YRESOLUTION=100
-    TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
-  Image Structure Metadata:
-    INTERLEAVE=PIXEL
-  Corner Coordinates:
-  Upper Left  (  937500.000, 6541000.000) 
-  Lower Left  (  937500.000, 6540500.000) 
-  Upper Right (  938000.000, 6541000.000) 
-  Lower Right (  938000.000, 6540500.000) 
-  Center      (  937750.000, 6540750.000) 
-  Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
-  Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
-  Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
+=item PATHMTD
 
-=head2 EXPORT
+Directory which contains metadata (not yet implemented)
 
-None by default.
+=item images
+
+Array of GeoImage objects
+
+=item bestResX, bestResY
+
+=item pixel
+
+Pixel object
+
+=back
 
 =head1 SEE ALSO
 
+=head2 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-GeoImage.html">BE4::GeoImage</A></li>
+<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
+</ul>
+
+=end html
+
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011 by Bazonnais Jean Philippe
+Copyright (C) 2011 by Satabin Théo
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -1,0 +1,1030 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+use Getopt::Long;
+use Pod::Usage;
+
+use Data::Dumper;
+
+use File::Basename;
+use File::Spec;
+use File::Path;
+use Cwd;
+
+use Log::Log4perl qw(:easy);
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4::PropertiesLoader;
+use BE4::Pyramid;
+use BE4::DataSourceLoader;
+use BE4::Forest;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Pas de bufferisation des sorties.
+$|=1;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+################################################################################
+#
+# Title: be4
+#
+# (see uml-global.png)
+#
+####################################################################################################
+#                                              VARIABLES                                           #
+####################################################################################################
+
+# Group: variable
+
+#
+=begin nd
+variable: %opts
+
+Command options.
+
+    * version
+    * help
+    * usage
+    * properties
+    * environment
+    * test
+=cut
+my %opts =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+    
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
+    "environment" => undef, # file environment be4 params (optional) !
+    
+    # Only for maintenance !
+    "test" => 0,
+);
+
+#
+=begin nd
+variable: %this
+
+All Parameters by section.
+
+    * logger
+    * datasource
+    * harvesting (deprecated)
+    * pyramid
+    * tilematrixset
+    * nodata
+    * tile
+    * process
+=cut
+my %this =
+(
+    params => {
+        logger        => undef, # can be null !
+        datasource    => undef, # can be null if no data to process !
+        harvesting    => undef, # deprecated
+        pyramid       => undef, # ALWAYS !!!
+        tilematrixset => undef, # can be in pyramid params !
+        nodata        => undef, # can be in pyramid params !
+        tile          => undef, # can be in pyramid params !
+        process       => undef, # can be null if no process to do !
+    },
+);
+
+####################################################################################################
+#                                                MAIN                                              #
+####################################################################################################
+
+# Group: main
+
+#
+=begin nd
+method: main
+
+Main method
+
+See Also:
+    <init>, <config>, <doIt>
+=cut
+sub main {
+  printf("BE4: version [%s]\n",$VERSION);
+  # message
+  my $message = undef;
+
+  $message = "BEGIN";
+  printf STDOUT "%s\n", $message;
+  
+  # initialization
+  ALWAYS("> Initialization");
+  if (! main::init()) {
+    $message = "ERROR INITIALIZATION !";
+    printf STDERR "%s\n", $message;
+    exit 1;
+  }
+  
+  # configuration
+  ALWAYS("> Configuration");
+  if (! main::config()) {
+    $message = "ERROR CONFIGURATION !";
+    printf STDERR "%s\n", $message;
+    exit 2;
+  }
+  
+  # execution
+  ALWAYS("> Execution");
+  if (! main::doIt()) {
+    $message = "ERROR EXECUTION !";
+    printf STDERR "%s\n", $message;
+    exit 3;
+  }
+  
+  $message = "END";
+  printf STDOUT "%s\n", $message;
+}
+
+#
+=begin nd
+method: init
+
+Check options and initialize the default logger. Check environment file (optionnal) and properties file (mandatory).
+=cut
+sub init {
+  
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+    
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h"        => sub { pod2usage( -sections => "NAME|DESCRIPTION|SYNOPSIS|OPTIONS", -exitval=> 0, -verbose => 99); },
+        "version|v"     => sub { printf "%s version %s", basename($0), $VERSION; exit 0; },
+        "usage"         => sub { pod2usage( -sections => "SYNOPSIS", -exitval=> 0, -verbose => 99); },
+        #
+        "properties|conf=s"  => \$opts{properties},
+        "environment|env=s" => \$opts{environment},
+        #
+        "test"          => \$opts{test},
+        
+    ) or pod2usage( -message => "Usage inapproprié", -verbose => 1);
+  
+  
+    # logger by default at runtime
+    Log::Log4perl->easy_init( {
+        level => $WARN,
+        layout => '[%M](%L): %m%n'}
+    );
+  
+    # check Options
+  
+    # env : optional !
+    if (defined $opts{environment} && $opts{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($opts{environment});
+        
+        if (! -d dirname($fenvironment)) {
+            ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fenvironment));
+            return FALSE;
+        }
+        
+        if (! -f $fenvironment ) {
+            ERROR(sprintf "File name doesn't exist ('%s') !", basename($fenvironment));
+            return FALSE;
+        }
+        #
+        $opts{environment} = $fenvironment;
+    }
+  
+    # properties : mandatory !
+    if (! defined $opts{properties}) {
+        ERROR("Option 'properties' not defined !");
+        return FALSE;
+    }
+  
+    my $fproperties = File::Spec->rel2abs($opts{properties});
+  
+    if (! -d dirname($fproperties)) {
+        ERROR(sprintf "File path doesn't exist ('%s') !", dirname($fproperties));
+        return FALSE;
+    }
+    
+    if (! -f $fproperties) {
+        ERROR(sprintf "File name doesn't exist ('%s') !", basename($fproperties));
+        return FALSE;
+    }
+    
+    $opts{properties} = $fproperties;
+    
+    return TRUE;
+}
+
+#
+=begin nd
+method: config
+
+Loading environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+=cut
+sub config {
+  
+    ALWAYS(">>> Load Properties Environment ...");
+    
+    ###################
+    # load environement be4
+    my $fenv = undef;
+    
+    # env user !
+    $fenv = $opts{environment} if (defined $opts{environment} && $opts{environment} ne "");
+    
+    # if env user is null, we search in env sys !
+    if (! defined $opts{environment}) {
+        # if variable environment is fixed !
+        if(exists ($ENV{BE4_ENV}) &&
+        defined($ENV{BE4_ENV}) ) {
+            INFO("Use environment variable 'BE4_ENV' to determined the global configuration !");
+            $fenv = File::Spec->catfile($ENV{BE4_ENV}, "conf", "be4.properties");
+        }
+        # if not, by default, we take the file env in the install directory !
+        else {
+            INFO("Use path runtime to determined the configuration !");
+            $fenv = File::Spec->catfile($Bin, "..", "conf", "be4.properties");
+        }
+    }
+  
+    # FIXME :
+    #   This option may be optional ?
+    if (! -f $fenv) {
+        ERROR(sprintf "The environment properties '%s' doesn't exist into directory '%s' !", basename($fenv), dirname($fenv));
+        return FALSE;
+    }
+    
+    my $objEnv = BE4::PropertiesLoader->new($fenv);
+    
+    if (! defined $objEnv) {
+        ERROR("Can not load environment properties !");
+        return FALSE;
+    }
+    
+    my $refEnv = $objEnv->getAllProperties();
+    
+    if (! defined $refEnv) {
+        ERROR("All parameters environment are empty !");
+        return FALSE;
+    }
+  
+    ALWAYS(">>> Load Properties ...");
+    
+    ###################
+    # load specific properties 
+    my $fprop = $opts{properties};
+    
+    my $objProp = BE4::PropertiesLoader->new($fprop);
+    
+    if (! defined $objProp) {
+        ERROR("Can not load specific properties !");
+        return FALSE;
+    }
+    
+    my $refProp = $objProp->getAllProperties();
+    
+    if (! defined $refProp) {
+        ERROR("All parameters properties are empty !");
+        return FALSE;
+    }
+
+    ###################
+    # merge env/prop
+    
+    my $hashref;
+    foreach (keys %{$this{params}}) {
+        my $href = { map %$_, grep ref $_ eq 'HASH', ($this{params}->{$_}, $refEnv->{$_}, $refProp->{$_}) };
+        $hashref->{$_} = $href;
+    }
+    
+    if (! defined $hashref) {
+        ERROR("Can not merge all parameters of properties !");
+        return FALSE;
+    }
+  
+    # save params properties
+    $this{params} = $hashref;
+    
+    if (! main::checkParams() ) {
+        ERROR("Can not check parameters of properties !");
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+#
+=begin nd
+method: checkParams
+
+Check presence of mandatory sections in parameters.
+    - pyramid
+    - process
+    - datasource
+    
+Sections tile, tms and nodata are inserted into the pyramid section.
+
+Logger parameters are used to initialize logger (Log::Log4perl library).
+
+=cut
+sub checkParams {
+    
+    ###################
+    # check parameters
+    
+    my $pyramid     = $this{params}->{pyramid};       # 
+    my $logger      = $this{params}->{logger};        # 
+    my $tms         = $this{params}->{tilematrixset}; #  
+    my $tile        = $this{params}->{tile};          # 
+    my $nodata      = $this{params}->{nodata};        # 
+    my $datasource  = $this{params}->{datasource};    #
+    my $harvesting  = $this{params}->{harvesting};    #
+    my $process     = $this{params}->{process};       # 
+    
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR ("Parameters Pyramid can not be null !");
+        return FALSE;
+    }
+    
+    # datasource
+    if (! defined $datasource) {
+        ERROR ("Parameters Datasource can not be null !");
+        return FALSE;
+    }
+    # harvesting
+    if (defined $harvesting) {
+        WARN("Use the 'harvesting' section is deprecated !");
+    }
+    
+    # process
+    if (! defined $process) {
+        ERROR ("Parameters Process can not be null !");
+        return FALSE;
+    }
+    
+    # logger
+    if (defined $logger) {
+    
+        my @args;
+        
+        my $layout= '[%C][%M](%L): %m%n';
+        my $level = $logger->{log_level};
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! IsEmpty($logger->{log_path}) && ! IsEmpty($logger->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '[%C][%M](%L): %m%n';
+        }
+        
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+        Log::Log4perl->easy_init(@args); 
+    }
+    
+    # 
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tms,         $pyramid) };
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($tile,        $pyramid) };
+    $pyramid = { map %$_, grep ref $_ eq 'HASH', ($nodata,      $pyramid) };
+    
+    # save
+    $this{params}->{pyramid} = $pyramid;
+    $this{params}->{logger}  = $logger;
+    
+    return TRUE;
+}
+
+#
+=begin nd
+method: doIt
+
+Steps in order, using parameters.
+    - Create the Pyramid object
+    - Load data sources
+    - Update levels for this Pyramid object
+    - Create the Forest object
+    - Write (initialization) the cache and its list
+    - Write the pyramid's descriptor
+    - Compute trees (write scripts)
+=cut
+sub doIt {
+
+    #######################
+    # link to parameters
+    my $params = $this{params};
+    
+    #######################
+    # objects to implemented
+    
+    my $objPyramid = undef;
+    my $objDSL = undef;
+    my $objForest = undef;
+    
+    #######################
+    # create a pyramid
+    
+    ALWAYS(">>> Load a Pyramid ...");
+    
+    $objPyramid = BE4::Pyramid->new($params->{pyramid},$params->{process}->{path_temp});
+    if (! defined $objPyramid) {
+        ERROR ("Can not load Pyramid !");
+        return FALSE;
+    }
+    
+    #######################
+    # load data source
+    
+    ALWAYS(">>> Load Data Source ...");
+
+    $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
+    if (! defined $objDSL) {
+        ERROR ("Cannot load data sources !");
+        return FALSE;
+    }
+    
+    #######################
+    # update levels
+    
+    ALWAYS(">>> Determine levels ...");
+    
+    if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
+        ERROR ("Can not update levels !");
+        return FALSE;
+    }
+
+    DEBUG (sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
+    
+    # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
+  
+    #######################
+    # create forest : load graphs
+    
+    ALWAYS(">>> Load Forest ...");
+  
+    $objForest = BE4::Forest->new(
+        $objPyramid,
+        $objDSL,
+        $params->{process}
+    );
+  
+    if (! defined $objForest) {
+        ERROR ("Can not load the forest !");
+        return FALSE;
+    }
+
+    #######################
+    # write the pyramid list
+    
+    ALWAYS(">>> Write the pyramid's list ...");
+
+    if (! $objPyramid->writeListPyramid($objForest)) {
+        ERROR ("Can not write Pyramid list !");
+        return FALSE;
+    }
+    
+    #######################
+    # write the pyramid cache
+    
+    ALWAYS(">>> Write the pyramid's cache ...");
+
+    if (! $objPyramid->writeCachePyramid) {
+        ERROR ("Can not write Pyramid Cache !");
+        return FALSE;
+    }
+    
+    #######################
+    # write the pyramid descriptor
+
+    ALWAYS(">>> Write the pyramid's descriptor ...");
+
+    if (! $objPyramid->writeConfPyramid) {
+        ERROR ("Can not write Pyramid file !");
+        return FALSE;
+    }
+  
+    DEBUG (sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
+  
+    #######################
+    # compute graphs
+    
+    ALWAYS(">>> Compute forest ...");
+    
+    if (! $objForest->computeGraphs()) {
+        ERROR ("Can not compute forest !");
+        return FALSE;
+    }
+    
+    DEBUG (sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+    
+    return TRUE;
+}
+
+####################################################################################################
+#                                           OTHERS                                                 #
+####################################################################################################
+
+# Group: others
+
+sub IsEmpty {
+
+  my $value = shift;
+  
+  return FALSE if (ref($value) eq "HASH");
+  return TRUE  if (! defined $value);
+  return TRUE  if ($value eq "");
+  return FALSE;
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=head1 NAME
+
+be4 - create a pyramid of tiled tiff images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service.
+
+=head1 SYNOPSIS
+
+    perl be4.pl --conf=path [ --env=path ]
+    # All parameters of the --env config file can be overided by --conf config file parameter
+
+=head1 DESCRIPTION
+
+2 types of generation:
+
+* create a new pyramid with data
+* create a pyramid from an existing (update)
+
+2 data source type:
+
+* Images
+* WMS service
+
+If reprojection or lossy compression for an update, we need a WMS service.
+
+=head1 CONFIGURATION FILES
+
+=head2 BE4 configuration, by section
+
+=head3 logger
+
+=over 4
+
+=item log_path
+
+Directory path where to write F<log_file>
+
+=item log_file
+
+Path to print too output (in addition to STDOUT).
+
+Log file: F<log_path/log_file>
+
+=item log_level
+
+Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+=back
+
+=head3 datasource
+
+=over 4
+
+=item filepath_conf
+
+Complete file path to configuration file for data sources (F</home/ign/SOURCE/sources.txt>)
+
+=back
+
+=head3 pyramid
+
+=over 4
+
+=item pyr_name_new
+
+Name of the new pyramid, used to name the descriptor, the cache's list, the data directory and the temporary directory.
+
+=item pyr_desc_path
+
+Directory path, where to write the descriptor.
+
+Mandatory.
+
+=item pyr_data_path
+
+Directory path, where to write the cache.
+
+Mandatory.
+
+=item pyr_name_old
+
+If existing pyramid, its name. If this parameter is present, generation is an update.
+
+=item pyr_desc_path_old
+
+If existing pyramid, directory path where to find the descriptor.
+
+Default : pyr_desc_path value. 
+
+=item pyr_data_path_old
+
+If existing pyramid, directory path where to find the cache.
+
+Default : pyr_data_path value.
+
+=item compression
+
+Possible values : raw, jpg, zip, lzw, png, pkb. png compression is not an official compression for tiff format (just readable by rok4).
+
+Default : raw.
+
+=item compressionoption
+
+Possible values : none and crop. Crop option have to be used with compression 'jpg'. Blocks which contain a white pixel are filled with white, to keep a pure white, in spite of compression.
+
+Default : none.
+
+=item color
+
+The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+
+Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
+
+=item nowhite
+
+Possible values : true and false. If source images contain nodata pixel, we don't want them to remove real data. It requires a pixel by pixel work : it's longer. That's why we do it just if needed.
+
+Default : false.
+
+=item image_width, image_height
+
+Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example.
+
+Mandatory.
+
+=item bitspersample
+
+Possible values : 8, 32. Have to be the same as source.
+
+Mandatory.
+
+=item sampleformat
+
+Possible values : uint, float. Have to be the same as source.
+
+Mandatory.
+
+=item samplesperpixel
+
+Possible values : 1, 3, 4. Have to be the same as source.
+
+Mandatory.
+
+=item photometric
+
+Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb.
+
+Default : rgb.
+
+=item interpolation
+
+Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Warning : nodata pixel are not excluded by the interpolation.
+
+Default : bicubic.
+
+=item dir_depth
+
+Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
+
+Mandatory.
+
+=item dir_image, dir_nodata
+
+Names of subdirectories in the cache, in F<pyr_data_path/pyr_name/>.
+
+Default : IMAGE, NODATA.
+
+=item tms_name
+
+TMS file name, with extension .tms.
+
+Mandatory
+
+=item tms_path
+
+Directory, where to find the TMS file.
+
+Mandatory
+
+=back
+
+=head3 process
+
+=over 4
+
+=item job_number
+
+Number of split scripts. If job_number = 5 -> 5 split scripts (can run in parallel) + one finisher (when splits are finished) = 6 scripts.
+
+Mandatory.
+
+=item path_temp
+
+Temporary directory path in which we create a directory named like the new cache : temporary files are written in F<path_temp/pyr_name_new/SCRIPT_X>.
+
+=item path_temp_common
+
+Temporary directory path in which we create a directory named like the new cache : temporary files which have to be shared between several scripts are written in F<path_temp_common/pyr_name_new/COMMON>.
+
+Mandatory.
+
+=item path_shell
+
+Directory path, to write scripts in. Scripts are named F<SCRIPT_1.sh>,F<SCRIPT_2.sh>... and F<SCRIPT_FINISHER.sh> for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example).
+
+Mandatory.
+
+=back
+
+=head2 Paths in brief.
+
+Descriptor file: F<pyr_desc_path/pyr_name.pyr>
+
+List file: F<pyr_desc_path/pyr_name.list>
+
+Cache directory: F<pyr_data_path/pyr_name/>
+
+TMS file: F<tms_path/tms_name>
+
+Scripts: F<path_shell/SCRIPT_X.sh>
+
+Temporary directory: F<path_temp/pyr_name_new/SCRIPT_X>
+
+Common temporary directory: F<path_temp_common/pyr_name_new/COMMON>
+
+=head2 DataSource configuration
+
+=over 4
+
+=item srs
+
+The images' or the extent's SRS.
+
+Mandatory.
+
+=item path_image
+
+Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
+
+Optionnal.
+
+=item wms_layer
+
+Resource to harvest.
+
+Optionnal.
+
+=item wms_url
+
+URL of rok4.
+
+Mandatory if wms_layer is present.
+
+=item wms_version
+
+1.3.0
+
+Mandatory if wms_layer is present.
+
+=item wms_request
+
+getMap
+
+Mandatory if wms_layer is present.
+
+=item wms_format
+
+Possible values : image/png, image/tiff, image/x-bil;bits=32.
+
+Mandatory if wms_layer is present.
+
+=item wms_style
+
+Optionnal.
+
+=item wms_transparent
+
+TRUE or FALSE
+
+Optionnal.
+
+=item max_width, max_height
+
+If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
+
+=item min_size
+
+Used to remove too short harvested images.
+
+Optionnal.
+
+=item wms_bgcolor
+
+Format : 0xFFFFFF
+
+Optionnal.
+
+=item extent
+
+Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contain an geometry in GML format.
+
+Mandatory if path_image is not present.
+
+Optionnal.
+
+=item image_width,image_height
+
+Optionnal.
+
+=back
+
+=head2 Write a configuration file
+
+A file configuration can be composed of sections and parameters following :
+
+    [ section ]
+    parameter  = value     ; comments
+    ;comments
+
+In a data source configuration, sections are level ID, from which the data source is used.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --help
+
+=item --usage
+
+=item --version
+
+=item --conf=path
+
+Path to file configuration of the pyramid. This option is mandatory !
+
+=item --env=path
+
+Path to file environment of all pyramid, it's the common configuration. This option is optional ! By default, the file configuration of install is used.
+
+=back
+
+
+=head1 SEE ALSO
+
+=head2 Intern libraries
+
+=head3 POD documentation
+
+=begin html
+
+<ul>
+<li><A HREF="./lib-BE4-PropertiesLoader.html">BE4::PropertiesLoader</A></li>
+<li><A HREF="./lib-BE4-DataSourceLoader.html">BE4::DataSourceLoader</A></li>
+<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
+<li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
+<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
+</ul>
+
+=end html
+
+=head3 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
+=head2 Extern libraries
+
+Use of binding gdal (Geo::GDAL)
+
+=head2 Modules CPAN
+
+POSIX qw(locale_h)
+
+sigtrap qw(die normal-signals)
+
+Getopt::Long
+
+Pod::Usage
+
+Log::Log4perl qw(get_logger)
+
+Cwd qw(abs_path cwd chdir)
+
+File::Spec
+
+=head2 Deployment and installation
+
+cf. INSTALL and README file
+
+=head1 AUTHOR
+
+Jean-Philippe Bazonnais, E<lt>Jean-Philippe.Bazonnais@ign.frE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2011 by Jean-Philippe Bazonnais
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+
+=cut

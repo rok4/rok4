@@ -1,3 +1,38 @@
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
 package BE4::Logger;
 
 use strict;
@@ -16,16 +51,12 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# version
-our $VERSION = '0.0.1';
-
-################################################################################
-# constantes
+# Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Preloaded methods go here.
+
 BEGIN {}
 INIT {}
 END {}
@@ -38,17 +69,34 @@ END {}
 #   level_log =
 
 ################################################################################
-# constructor
+=begin nd
+Group: variable
+
+variable: $self
+    * file - "STDOUT" by default
+    * level - "WARN" by default
+    * layout = '[%M](%L): %m%n'
+    * utf8 = 1
+    * category = ""
+=cut
+
+####################################################################################################
+#                                       CONSTRUCTOR METHODS                                        #
+####################################################################################################
+
+# Group: constructor
+
 sub new {
   my $this = shift;
 
   my $class= ref($this) || $this;
+  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
   my $self = {
-    file     => "STDOUT",  # by default !
-    level    => "WARN",    # by default !
-    layout   => '[%M](%L): %m%n', # always by default !
-    utf8     => 1,                # always by default !
-    category => ""                # always rootlogger by default !
+    file     => "STDOUT",
+    level    => "WARN",
+    layout   => '[%M](%L): %m%n',
+    utf8     => 1,
+    category => ""
   };
 
   bless($self, $class);
@@ -58,18 +106,9 @@ sub new {
   # init. class
   return undef if (! $self->_init(@_));
   
-  # fixme ...
-  return {
-          level    => $self->{level},
-          file     => $self->{file},
-          layout   => $self->{layout},
-          utf8     => 1,
-          category => $self->{category},
-          };
+  return $self;
 }
 
-################################################################################
-# privates init.
 sub _init {
     my $self   = shift;
     my %params = @_;
@@ -98,30 +137,41 @@ sub _init {
 1;
 __END__
 
-# Below is stub documentation for your module. You'd better edit it!
-
 =head1 NAME
+
+BE4::Logger -
 
 =head1 SYNOPSIS
 
-=head1 DESCRIPTION
-
-=head2 EXPORT
-
-None by default.
+    use BE4::Logger;
+  
+    # Logger object creation
+    my $objLogger = BE4::Logger->new({
+        level => "INFO",
+        file => "log.txt",
+        layout => "[%M](%L): %m%n",
+        utf8 => 1,
+        path => "/home/IGN/logs/,
+    });
 
 =head1 SEE ALSO
 
+=head2 NaturalDocs
+
+=begin html
+
+<A HREF="../Natural/Html/index.html">Index</A>
+
+=end html
+
 =head1 AUTHOR
 
-Bazonnais Jean Philippe, E<lt>jpbazonnais@E<gt>
+Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2011 by Bazonnais Jean Philippe
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
 
 =cut

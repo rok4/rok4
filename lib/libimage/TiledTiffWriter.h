@@ -1,3 +1,40 @@
+/*
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière 
+ * 
+ * Géoportail SAV <geop_services@geoportail.fr>
+ * 
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ * 
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use, 
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info". 
+ * 
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability. 
+ * 
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or 
+ * data to be ensured and,  more generally, to use and operate it in the 
+ * same conditions as regards security. 
+ * 
+ * The fact that you are presently reading this means that you have had
+ * 
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
 #ifndef _TILEDTIFFWRITER_
 #define _TILEDTIFFWRITER_
 
@@ -5,7 +42,6 @@
 #include <fstream>
 #include "zlib.h"
 #include <jpeglib.h>
-#include "lzw_encoder.h"
 #include <tiff.h>
 
 //#define TIFF_SHORT              3       /* 16-bit unsigned integer */
@@ -39,6 +75,9 @@
 #define COMPRESSION_JPEG        7       /* %JPEG DCT compression */
 #define	COMPRESSION_PNG         8   	/* Zlib compression PNG spec */
 #define	COMPRESSION_LZW         5   	/* liblzw */
+#define COMPRESSION_ADOBE_DEFLATE 8     /* Zlib */
+#define COMPRESSION_DEFLATE     32946   /* Zlib */
+#define COMPRESSION_PACKBITS     32773   /* Packbits */
 
 #define	PHOTOMETRIC_MINISBLACK	1	/* min value is black */
 #define	PHOTOMETRIC_RGB		2	/* RGB color model */
@@ -92,7 +131,7 @@ class TiledTiffWriter {
 
     std::ofstream output;  // tiff file output stream
 
-
+    size_t BufferSize;
     uint8_t* Buffer, *PNG_buffer;
     z_stream zstream;
     struct jpeg_compress_struct cinfo;
@@ -106,7 +145,9 @@ class TiledTiffWriter {
     size_t computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop);
     void emptyWhiteBlock(uint8_t *buffheight, int l);
     size_t computeLzwTile(uint8_t *buffer, uint8_t *data);
+    size_t computePackbitsTile(uint8_t *buffer, uint8_t *data);
     size_t computePngTile (uint8_t *buffer, uint8_t *data);
+    size_t computeDeflateTile (uint8_t *buffer, uint8_t *data);
   public: 
 
     /*
@@ -114,7 +155,7 @@ class TiledTiffWriter {
      * Open a new tiff file and write header and IFD
      */
     TiledTiffWriter(const char *filename, uint32_t width, uint32_t length, uint16_t photometric,
-        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample, uint16_t sampleformat);
+        uint16_t compression, int quality, uint32_t tilewidth, uint32_t tilelength, uint32_t bitspersample, uint16_t samplesperpixel, uint16_t sampleformat);
 
     /*
      * Write tileoffset and tilebytecounts then close file

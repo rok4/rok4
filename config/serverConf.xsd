@@ -7,6 +7,7 @@
 			<xs:simpleType name="logOutputType">
                                 <xs:restriction base="xs:string">
                                         <xs:enumeration value="rolling_file"/>
+                                        <xs:enumeration value="static_file"/>
                                         <xs:enumeration value="standard_output_stream_for_errors"/>
                                 </xs:restriction>
                         </xs:simpleType>
@@ -30,6 +31,10 @@
 			<xs:element name="logLevel"         type="logLevelType"/>
 			<!-- Nombre de threads exploités pour l'ecoute et le calcul -->
 			<xs:element name="nbThread"         type="xs:positiveInteger"/>
+                        <!-- Active le serveur WMTS -->
+                        <xs:element name="WMTSSupport"               type="xs:boolean"/>
+                        <!-- Active le serveur WMS -->
+                        <xs:element name="WMSSupport"               type="xs:boolean"/>
 			<!-- Capacite a reprojeter -->
 			<xs:element name="reprojectionCapability"        	type="xs:boolean"/>
 			<!-- Fichier contenant les parametres de service -->
@@ -40,8 +45,14 @@
 			<xs:element name="layerDir"         type="xs:string"/>
 			<!-- Répertoire des configs des tileMatrixSet -->
 			<xs:element name="tileMatrixSetDir" type="xs:string"/>
-			</xs:sequence>
+                        <!-- Répertoire des configs de la bibliothèque Proj -->
 			<xs:element name="projConfigDir" type="xs:string"/>
+                        <!-- Chemin d'écoute du serveur FCGI dans le cas d'une socket UNIX "/var/run/rok4sock"
+                             Ou (ip d'écoute) deux point suivi d'un numéro de port "127.0.0.1:9000" ou ":9000" 
+                             Doit être vide pour une utilisation avec Apache ou Spawn-Fcgi-->
+                        <xs:element name="serverPath" type="xs:string"/>
+                        <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
+                        <xs:element name="serverBackLog" type="xs:nonNegativeInteger"/>
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
