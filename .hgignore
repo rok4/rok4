@@ -5,11 +5,9 @@ build*
 *.komodoproject
 *.kate-swp
 .kdev_include_paths
-<<<<<<< local
 .DS_Store
-=======
+
 syntax: regexp
 ~
 kdev4
 .orig
->>>>>>> other
