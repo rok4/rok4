@@ -55,6 +55,7 @@
 #include "Image.h"
 #include "tiffio.h"
 #include <string.h>
+#include "Format.h"
 
 #define LIBTIFFIMAGE_MAX_FILENAME_LENGTH 512
 
@@ -97,10 +98,10 @@ class LibtiffImage : public Image {
          */
         uint16_t compression;
         /**
-         * \~french \brief Format du canal, entier ou flottant
-         * \~english \brief Sample format, integer or float
+         * \~french \brief Type du canal
+         * \~english \brief Sample type
          */
-        uint16_t sampleformat;
+        SampleType ST;
         /**
          * \~french \brief Taille de la bufferisation de l'image, en nombre de ligne
          * \~english \brief Image buffering size, in line number
@@ -145,8 +146,7 @@ class LibtiffImage : public Image {
          * \param[in] bbox emprise rectangulaire de l'image
          * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
          * \param[in] name chemin du fichier image
-         * \param[in] bitspersample nombre de bits par canal
-         * \param[in] sampleformat format des canaux
+         * \param[in] sampleType type des canaux
          * \param[in] photometric photométie des données
          * \param[in] compression compression des données
          * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
@@ -160,13 +160,12 @@ class LibtiffImage : public Image {
          * \param[in] bbox bounding box
          * \param[in] tiff interface between file and object
          * \param[in] name path to image file
-         * \param[in] bitspersample number of bits per sample
-         * \param[in] sampleformat samples' format
+         * \param[in] sampleType samples' type
          * \param[in] photometric data photometric
          * \param[in] compression data compression
          * \param[in] rowsperstrip data buffering size, in line number
          */
-        LibtiffImage( int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name, int bitspersample, int sampleformat, int photometric, int compression, int rowsperstrip );
+        LibtiffImage( int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name, SampleType sampleType, int photometric, int compression, int rowsperstrip );
 
     public:
 
@@ -199,7 +198,7 @@ class LibtiffImage : public Image {
          * \brief Return number of bits per sample
          * \return number of bits per sample
          */
-        inline uint16_t getBitsPerSample() {return bitspersample;}
+        inline uint16_t getBitsPerSample() {return ST.getBitsPerSample();}
         /**
          * \~french
          * \brief Retourne la photométrie des données image (rgb, gray...)
@@ -235,7 +234,7 @@ class LibtiffImage : public Image {
          * \brief Return sample format (integer, float)
          * \return sample format
          */
-        inline uint16_t getSampleFormat() {return sampleformat;}
+        inline uint16_t getSampleFormat() {return ST.getSampleFormat();}
 
         /**
          * \~french
@@ -264,7 +263,7 @@ class LibtiffImage : public Image {
             LOGGER_INFO("\t- Compression : " << compression);
             LOGGER_INFO("\t- Photometric : " << photometric);
             LOGGER_INFO("\t- Bits per sample : " << bitspersample);
-            LOGGER_INFO("\t- Sample format : " << sampleformat);
+            LOGGER_INFO("\t- Sample format : " << ST.getSampleFormat());
             LOGGER_INFO("\t- Rows per strip : " << rowsperstrip);
             LOGGER_INFO("");
         }

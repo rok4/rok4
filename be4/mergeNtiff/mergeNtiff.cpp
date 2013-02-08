@@ -117,6 +117,7 @@
 #include "ExtendedCompoundImage.h"
 #include "MirrorImage.h"
 #include "Interpolation.h"
+#include "Format.h"
 #include "math.h"
 #include "../be4version.h"
 
@@ -136,10 +137,8 @@ char outImagesRoot[256];
 char strnodata[256];
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
-/** \~french Nombre de bits par canal, dans les images en entrée et celle en sortie */
-uint16_t bitspersample;
-/** \~french Format du canal (entier, flottant), dans les images en entrée et celle en sortie */
-uint16_t sampleformat;
+/** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
+SampleType sampleType;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
 uint16_t photometric;
 /** \~french Compression de l'image de sortie */
@@ -254,6 +253,8 @@ void error(std::string message, int errorCode) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine(int argc, char** argv) {
+
+    uint16_t bitspersample = 0, sampleformat = 0;
     
     if (argc < 17 && argc != 2) {
         LOGGER_ERROR("Unvalid parameters number : is " << argc << " and have to be 17 or more (2 to request help)");
@@ -329,10 +330,12 @@ int parseCommandLine(int argc, char** argv) {
     }
 
     LOGGER_DEBUG("mergeNtiff -f " << imageListFilename);
-    
-    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
-        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
-        return -1;
+
+    sampleType = SampleType(bitspersample,sampleformat);
+
+    if (! sampleType.isSupported() ) {
+        LOGGER_ERROR("Supported sample format are :\n" << sampleType.getHandledFormat());
+        return NULL;
     }
     
     return 0;
@@ -529,7 +532,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
     height = lround((bbox.ymax - bbox.ymin)/(resy));
 
     *ppImageOut = factory.createLibtiffImageToWrite(imageFileName, bbox,resx, resy, width, height, samplesperpixel,
-                                                    bitspersample, sampleformat, photometric,COMPRESSION_NONE,16);
+                                                    sampleType, photometric,COMPRESSION_NONE,16);
 
     if (*ppImageOut == NULL) {
         LOGGER_ERROR("Impossible de creer l'image " << imageFileName);
@@ -538,7 +541,8 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
 
     if (hasMask) {
         
-        *ppMaskOut = factory.createLibtiffImageToWrite(maskFileName, bbox,resx, resy, width, height, 1, 8, 1,
+        *ppMaskOut = factory.createLibtiffImageToWrite(maskFileName, bbox,resx, resy, width, height, 1,
+                                                       SampleType(8,SAMPLEFORMAT_UINT),
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
 
         if (*ppMaskOut == NULL) {
@@ -802,14 +806,14 @@ ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
     uint i = 0;
     while (i<pECI->getImages()->size()) {
         for (int j=0; j<4; j++) {
-            MirrorImage* mirrorImage = MIF.createMirrorImage(pECI->getImage(i), pECI->getSampleFormat(), j, mirrorSize);
+            MirrorImage* mirrorImage = MIF.createMirrorImage(pECI->getImage(i), pECI->getSampleType(), j, mirrorSize);
             if (mirrorImage == NULL){
                 LOGGER_ERROR("Unable to calculate image's mirror");
                 return NULL;
             }
 
             if (pECI->getMask(i)) {
-                MirrorImage* mirrorMask = MIF.createMirrorImage(pECI->getMask(i), SAMPLEFORMAT_UINT, j, mirrorSize);
+                MirrorImage* mirrorMask = MIF.createMirrorImage(pECI->getMask(i), SampleType(8,SAMPLEFORMAT_UINT), j, mirrorSize);
                 if (mirrorMask == NULL){
                     LOGGER_ERROR("Unable to calculate mask's mirror");
                     return NULL;
@@ -828,7 +832,7 @@ ExtendedCompoundImage* addMirrors(ExtendedCompoundImage* pECI,int mirrorSize)
     mirrorImages.insert(mirrorImages.end(),pECI->getImages()->begin(),pECI->getImages()->end());
 
     ExtendedCompoundImage* pECI_mirrors = ECIF.createExtendedCompoundImage(mirrorImages,pECI->getNodata(),
-                                                                           pECI->getSampleFormat(), i*4);
+                                                                           pECI->getSampleType(), i*4);
 
     return pECI_mirrors;
 }
@@ -871,7 +875,7 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
         
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
 
-        ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage(TabImageIn.at(i),nodata,sampleformat,0);
+        ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage(TabImageIn.at(i),nodata,sampleType,0);
         if (pECI==NULL) {
             LOGGER_ERROR("Impossible d'assembler les images");
             return -1;
@@ -920,7 +924,7 @@ int mergeTabImages(LibtiffImage* pImageOut, // Sortie
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     *ppECIout = ECIF.createExtendedCompoundImage(
         pImageOut->width, pImageOut->height, pImageOut->channels, pImageOut->getBbox(),
-        pOverlayedImages, nodata, sampleformat,0);
+        pOverlayedImages, nodata, sampleType,0);
     
     if ( *ppECIout == NULL) {
         LOGGER_ERROR("Cannot create final compounded image.");

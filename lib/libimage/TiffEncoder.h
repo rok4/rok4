@@ -40,12 +40,12 @@
 
 #include "Data.h"
 #include "Image.h"
-#include "format.h"
+#include "Format.h"
 
 class TiffEncoder : public DataStream {
 
 public:
-    static DataStream* getTiffEncoder(Image* image, eformat_data format);
+    static DataStream* getTiffEncoder(Image* image, Format::eformat_data format);
     
     virtual size_t read(uint8_t *buffer, size_t size) = 0;
     virtual bool eof() = 0;

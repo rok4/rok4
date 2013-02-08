@@ -67,6 +67,10 @@
  * Ne sont gérés que les formats suivant pour les canaux :
  * \li flottant sur 32 bits
  * \li entier non signé sur 8 bits
+ *
+ * Le géoréférencement est assuré par le renseignement des résolutions et du rectangle englobant. Cependant, on peut également gérer des images simples. Dans ce cas, on mettra par convention une bbox à 0,0,0,0 et des résolutions à -1. Aucun test ne sera fait par les fonctions qui utilisent ces attributs. On doit donc bien faire attention à rester cohérent.
+ *
+ * \todo Vérifier le renseignement des attributs de géoréférencement avant de faire des calculs avec.
  */
 class Image {
     public:
@@ -422,23 +426,6 @@ class Image {
          */
         virtual ~Image() {
             //if (mask != NULL) delete mask;
-        }
-
-        /**
-         * \~french
-         * \brief Précise si le format des canaux (nombre de bits et type) est géré
-         * \details Sont gérés :
-         * \li les entiers non-signés sur 8 bits
-         * \li les flottants sur 32 bits
-         * \~english
-         * \brief Precises if sample format (bits per sample and type) is supported
-         * \details Are supported :
-         * \li 8-bit unsigned integer
-         * \li 32-bit float
-         */
-        static bool isSupportedSampleType(uint16_t bitspersample, uint16_t sampleformat) {
-            return (bitspersample == 32 && sampleformat == 3) || // 32 bits float
-                    (bitspersample == 8 && sampleformat == 1); // 8 bits unsigned integer
         }
 
         /**

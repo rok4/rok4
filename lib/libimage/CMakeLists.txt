@@ -53,7 +53,7 @@ set(
     Grid.cpp TiffEncoder.cpp
     Kernel.cpp Interpolation.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
-    format.cpp TiffHeaderDataSource.cpp
+    Format.cpp TiffHeaderDataSource.cpp
 )
 
 

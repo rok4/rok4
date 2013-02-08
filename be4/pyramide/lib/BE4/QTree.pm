@@ -897,7 +897,7 @@ sub getScriptFinisher {
 =begin nd
 Function: containsNode
 
-Returns a boolean : TRUE if the node belong to this tree, FALSE otherwise.
+Returns a boolean : TRUE if the node belong to this tree, FALSE otherwise (if a parameter is not defined too).
 
 Parameters (list):
     level - string - Level ID of the node we want to know if it is in the quad tree.
@@ -909,6 +909,8 @@ sub containsNode {
     my $level = shift;
     my $i = shift;
     my $j = shift;
+
+    return FALSE if (! defined $level || ! defined $i || ! defined $j);
     
     my $nodeKey = $i."_".$j;
     return (exists $self->{nodes}->{$level}->{$nodeKey});

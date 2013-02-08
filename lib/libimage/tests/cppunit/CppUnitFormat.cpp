@@ -38,7 +38,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <string.h>
-#include "format.h"
+#include "Format.h"
 
 class CppUnitFormat : public CPPUNIT_NS::TestFixture {
 	CPPUNIT_TEST_SUITE (CppUnitFormat);
@@ -69,27 +69,27 @@ void CppUnitFormat::testFormat()
         eformat_data tzf32 = TIFF_ZIP_FLOAT32;
 	
 	CPPUNIT_ASSERT_MESSAGE("Unknown is false", !(ukn));
-	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", format::toString(tri8).compare("TIFF_RAW_INT8") == 0);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", format::toString(tji8).compare("TIFF_JPG_INT8") == 0);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", format::toString(tpi8).compare("TIFF_PNG_INT8") == 0);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", format::toString(tli8).compare("TIFF_LZW_INT8") == 0);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", format::toString(trf32).compare("TIFF_RAW_FLOAT32") == 0);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", format::toString(tlf32).compare("TIFF_LZW_FLOAT32") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", format::toString(tzi8).compare("TIFF_ZIP_INT8") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", format::toString(tzf32).compare("TIFF_ZIP_FLOAT32") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", Format::toString(tri8).compare("TIFF_RAW_INT8") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", Format::toString(tji8).compare("TIFF_JPG_INT8") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", Format::toString(tpi8).compare("TIFF_PNG_INT8") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", Format::toString(tli8).compare("TIFF_LZW_INT8") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", Format::toString(trf32).compare("TIFF_RAW_FLOAT32") == 0);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", Format::toString(tlf32).compare("TIFF_LZW_FLOAT32") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", Format::toString(tzi8).compare("TIFF_ZIP_INT8") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", Format::toString(tzf32).compare("TIFF_ZIP_FLOAT32") == 0);
 }
 
 void CppUnitFormat::formatFromString()
 {
-	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", format::fromString("TIFF_RAW_INT8") == TIFF_RAW_INT8);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", format::fromString("TIFF_JPG_INT8") == TIFF_JPG_INT8);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", format::fromString("TIFF_PNG_INT8") == TIFF_PNG_INT8);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", format::fromString("TIFF_LZW_INT8") == TIFF_LZW_INT8);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", format::fromString("TIFF_RAW_FLOAT32") == TIFF_RAW_FLOAT32);
-	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", format::fromString("TIFF_LZW_FLOAT32") == TIFF_LZW_FLOAT32);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", format::fromString("TIFF_ZIP_FLOAT32") == TIFF_ZIP_FLOAT32);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", format::fromString("TIFF_ZIP_INT8") == TIFF_ZIP_INT8);
-	CPPUNIT_ASSERT_MESSAGE("Wrong Value", format::fromString("Wrong") == UNKNOWN);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", Format::fromString("TIFF_RAW_INT8") == TIFF_RAW_INT8);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", Format::fromString("TIFF_JPG_INT8") == TIFF_JPG_INT8);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", Format::fromString("TIFF_PNG_INT8") == TIFF_PNG_INT8);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", Format::fromString("TIFF_LZW_INT8") == TIFF_LZW_INT8);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", Format::fromString("TIFF_RAW_FLOAT32") == TIFF_RAW_FLOAT32);
+	CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", Format::fromString("TIFF_LZW_FLOAT32") == TIFF_LZW_FLOAT32);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", Format::fromString("TIFF_ZIP_FLOAT32") == TIFF_ZIP_FLOAT32);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", Format::fromString("TIFF_ZIP_INT8") == TIFF_ZIP_INT8);
+	CPPUNIT_ASSERT_MESSAGE("Wrong Value", Format::fromString("Wrong") == UNKNOWN);
 }
 
 void CppUnitFormat::formatToMime()
@@ -104,12 +104,12 @@ void CppUnitFormat::formatToMime()
         eformat_data tzi8 = TIFF_ZIP_INT8;
         eformat_data tzf32 = TIFF_ZIP_FLOAT32;
         
-        CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", format::toMimeType(tri8).compare("image/tiff") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", format::toMimeType(tji8).compare("image/jpeg") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", format::toMimeType(tpi8).compare("image/png") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", format::toMimeType(tli8).compare("image/tiff") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", format::toMimeType(trf32).compare("image/x-bil;bits=32") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", format::toMimeType(tlf32).compare("image/tiff") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", format::toMimeType(tzi8).compare("image/tiff") == 0);
-        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", format::toMimeType(tzf32).compare("image/tiff") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_INT8", Format::toMimeType(tri8).compare("image/tiff") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_JPG_INT8", Format::toMimeType(tji8).compare("image/jpeg") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_PNG_INT8", Format::toMimeType(tpi8).compare("image/png") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_INT8", Format::toMimeType(tli8).compare("image/tiff") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_RAW_FLOAT32", Format::toMimeType(trf32).compare("image/x-bil;bits=32") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_LZW_FLOAT32", Format::toMimeType(tlf32).compare("image/tiff") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_INT8", Format::toMimeType(tzi8).compare("image/tiff") == 0);
+        CPPUNIT_ASSERT_MESSAGE("TIFF_ZIP_FLOAT32", Format::toMimeType(tzf32).compare("image/tiff") == 0);
 }

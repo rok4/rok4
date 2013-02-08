@@ -35,6 +35,22 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file MergeImage.cpp
+ ** \~french
+ * \brief Implémentation des classes MergeImage, MergeImageFactory et Pixel
+ * \details
+ * \li MergeImage : image résultant de la fusion d'images semblables, selon différents modes de composition
+ * \li MergeImageFactory : usine de création d'objet MergeImage
+ * \li Pixel
+ ** \~english
+ * \brief Implement classes MergeImage, MergeImageFactory and ExtendedCompoundImageFactory
+ * \details
+ * \li MergeImage : image merged with similar images, with different merge methods
+ * \li MergeImageFactory : factory to create MergeImage object
+ * \li Pixel
+ */
+
 #include "MergeImage.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -68,11 +84,7 @@ static inline void composeMultiply( uint8_t * dest,int outchannels, Pixel back, 
 }
 
 static inline void composeNormal( uint8_t * dest,int outchannels, Pixel back, Pixel front) {
-    //float gamma = back.a * front.a;
-    //gamma = back.a * front.a;
-    //gamma = gamma;
-    //gamma = ( gamma < 0.0 ? 0.0 : gamma );
-    //gamma = ( gamma > 1.0 ? 1.0 : gamma );
+
     switch ( outchannels ) {
         case 4:
             *(dest+3) = (uint8_t) ( 255 * (1.0 - ( 1.0 - front.Sa ) * ( 1.0 - back.Sa ) ) );
@@ -85,7 +97,44 @@ static inline void composeNormal( uint8_t * dest,int outchannels, Pixel back, Pi
             *dest = (uint8_t) ( ( (1.0-front.Sa) * back.Sra + front.Sra ) );
     }
 }
+/*
+template <typename T>
+int MergeImage::_getline(T* buffer, int line)
+{
+    for (int i = 0; i < width*channels; i++) {
+        buffer[i]=(T)bgValue[i%channels];
+    }
 
+    for (int i = 0; i < images.size(); i++) {
+        
+        T* buffer_t = new T[images[i]->width*images[i]->channels];
+        images[i]->getline(buffer_t,images[i]->y2l(y));
+
+        if (getMask(i) == NULL) {
+            memcpy(&buffer[c0*channels], &buffer_t[c2*channels], (c1-c0)*channels*sizeof(T));
+        } else {
+
+            uint8_t* buffer_m = new uint8_t[getMask(i)->width];
+            getMask(i)->getline(buffer_m,getMask(i)->y2l(y));
+
+            for (int j=0; j < c1-c0; j++) {
+                if (buffer_m[c2+j]) {
+                    if (c2+j >= images[i]->width) {
+                        // On dépasse la largeur de l'image courante (arrondis). On passe.
+                        // Une sortie pour vérifier si ce cas se représente malgré les corrections
+                        LOGGER_ERROR("Dépassement : demande la colonne "<<c2+j+1<<" sur "<<images[i]->width);
+                        continue;
+                    }
+                    memcpy(&buffer[(c0+j)*channels],&buffer_t[(c2+j)*channels],sizeof(T)*channels);
+                }
+            }
+
+            delete [] buffer_m;
+        }
+        delete [] buffer_t;
+    }
+    return width*channels*sizeof(T);
+}
 
 void MergeImage::mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front ) {
     size_t column = 0;
@@ -136,83 +185,6 @@ void MergeImage::mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front ) {
         }
 }
     
-//    case MULTIPLYOLD:
-//         if ( backImage->channels == frontImage->channels ) {
-//             while ( column < width * channels ) {
-//                 * ( buffer+column ) = * ( back + column ) * * ( front + column ) * factor / 255;
-//                 column++;
-//             }
-//             break;
-//         }
-//         switch ( backImage->channels ) {
-//         case 1: {
-//             switch ( frontImage->channels ) {
-//             case 3:
-//                 while ( column < width * channels ) {
-//                     * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     column++;
-//                 }
-//                 break;
-//             case 4:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = 0;
-//                     } else {
-//                         * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
-//         break;
-//         case 3: {
-//             switch ( frontImage->channels ) {
-//             case 1:
-//                 while ( column < width * channels ) {
-//                     * ( buffer+column ) =( * ( back + column ) * * ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor )/ 255;
-//                     column++;
-//                 }
-//                 break;
-//             case 4:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = 0;
-//                     } else {
-//                         * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
-//         break;
-//         case 4: {
-//             switch ( frontImage->channels ) {
-//             case 1:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = ( * ( back + column ) ==255?* ( back + column ) :0 );
-//                     } else {
-//                         * ( buffer+column ) = * ( back + column ) * (* ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor + 255*factor) / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             case 3:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = ( * ( back + column ) ==255?* ( back + column ) :0 );
-//                     } else {
-//                         * ( buffer+column ) = * ( back + column ) * * ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
-
-
 int MergeImage::getline ( float* buffer, int line ) {
     uint8_t* backBuffer = new uint8_t[backImage->width* backImage->channels];
     uint8_t* frontBuffer = new uint8_t[frontImage->width* frontImage->channels];
@@ -239,19 +211,29 @@ int MergeImage::getline ( uint8_t* buffer, int line ) {
     delete[] backBuffer;
     delete[] frontBuffer;
     return width*channels;
-}
+}*/
 
-MergeImage::MergeImage ( Image* backImage, Image* frontImage, MergeImage::MergeType composition, float factor ) :
-    Image ( backImage->width, backImage->height, ( backImage->channels>frontImage->channels?backImage->channels:frontImage->channels ), backImage->getBbox() ),
-    backImage ( backImage ), frontImage ( frontImage ), composition ( composition ), factor ( factor ) {
-    
-    LOGGER_DEBUG("Out   channels = "  << channels );
-    LOGGER_DEBUG("Back  channels = "  << backImage->channels );
-    LOGGER_DEBUG("Front channels = "  << frontImage->channels );
-}
+MergeImage* MergeImageFactory::createMergeImage( std::vector< Image* >& images, SampleType ST, int* bgValue, Merge::MergeType composition )
+{
+    if (images.size()==0) {
+        LOGGER_ERROR("No source images to defined merged image");
+        return NULL;
+    }
 
-MergeImage::~MergeImage() {
-    delete backImage;
-    delete frontImage;
+    int width = images.at(0)->width;
+    int height = images.at(0)->height;
+    int channels = images.at(0)->channels;
+
+    for (int i = 1; i < images.size(); i++) {
+        if (images.at(i)->width != width || images.at(i)->height != height) {
+            LOGGER_ERROR("All images msut have same dimensions");
+            images.at(0)->print();
+            images.at(i)->print();
+            return NULL;
+        }
+        if (images.at(i)->channels > channels) channels = images.at(i)->channels;
+    }
+
+    return new MergeImage(images, channels, ST, bgValue, composition);
 }
 

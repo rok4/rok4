@@ -35,59 +35,59 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "format.h"
+#include "Format.h"
 #include <string.h>
 
-namespace format {
-const char *eformat_name[] = {
-    "UNKNOWN",
-    "TIFF_RAW_INT8",
-    "TIFF_JPG_INT8",
-    "TIFF_PNG_INT8",
-    "TIFF_LZW_INT8",
-    "TIFF_RAW_FLOAT32",
-    "TIFF_LZW_FLOAT32",
-    "TIFF_ZIP_INT8",
-    "TIFF_ZIP_FLOAT32",
-    "TIFF_PKB_INT8",
-    "TIFF_PKB_FLOAT32"
-};
+namespace Format {
+    
+    const char *eformat_name[] = {
+        "UNKNOWN",
+        "TIFF_RAW_INT8",
+        "TIFF_JPG_INT8",
+        "TIFF_PNG_INT8",
+        "TIFF_LZW_INT8",
+        "TIFF_ZIP_INT8",
+        "TIFF_PKB_INT8",
+        "TIFF_RAW_FLOAT32",
+        "TIFF_LZW_FLOAT32",
+        "TIFF_ZIP_FLOAT32",
+        "TIFF_PKB_FLOAT32"
+    };
 
-const int eformat_size = 10;
+    const int eformat_size = 10;
+    const int eformat_float = 7;
 
-const char *eformat_mime[] = {
-    "UNKNOWN",
-    "image/tiff",
-    "image/jpeg",
-    "image/png",
-    "image/tiff",
-    "image/x-bil;bits=32",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff",
-    "image/tiff"
-};
+    const char *eformat_mime[] = {
+        "UNKNOWN",
+        "image/tiff",
+        "image/jpeg",
+        "image/png",
+        "image/tiff",
+        "image/tiff",
+        "image/tiff",
+        "image/x-bil;bits=32",
+        "image/tiff",
+        "image/tiff",
+        "image/tiff"
+    };
 
 
 
-eformat_data fromString ( std::string strFormat ) {
-    int i;
-    for ( i=eformat_size; i ; --i ) {
-        if ( strFormat.compare ( eformat_name[i] ) ==0 )
-            break;
+    eformat_data fromString ( std::string strFormat ) {
+        int i;
+        for ( i=eformat_size; i ; --i ) {
+            if ( strFormat.compare ( eformat_name[i] ) ==0 )
+                break;
+        }
+        return static_cast<eformat_data> ( i );
     }
-    return static_cast<eformat_data> ( i );
-}
 
-std::string toString ( eformat_data format ) {
-    return std::string ( eformat_name[format] );
-}
+    std::string toString ( eformat_data format ) {
+        return std::string ( eformat_name[format] );
+    }
 
-std::string toMimeType ( eformat_data format ) {
-    return std::string ( eformat_mime[format] );
-}
-
-
+    std::string toMimeType ( eformat_data format ) {
+        return std::string ( eformat_mime[format] );
+    }
 
 }

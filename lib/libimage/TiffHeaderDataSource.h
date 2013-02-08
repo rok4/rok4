@@ -2,7 +2,7 @@
 #define TIFFHEADERDATASOURCE_H
 
 #include "Data.h"
-#include "format.h"
+#include "Format.h"
 
 class TiffHeaderDataSource : public DataSource
 {
@@ -11,7 +11,7 @@ private:
 	size_t tileSize;
 	size_t dataSize;
 	uint8_t* data;
-	eformat_data format;
+	Format::eformat_data format;
 	int channel;
 	int width;
 	int height;
@@ -25,7 +25,7 @@ public:
 	 * @param height hauteur de l'image
 	 * @param tileSize taille de la tuile à définir si dataSource est nulle
 	 */
-	TiffHeaderDataSource(DataSource* dataSource, eformat_data format, 
+	TiffHeaderDataSource(DataSource* dataSource, Format::eformat_data format, 
 			     int channel, int width, int height, size_t tileSize=0);
 	
 	inline bool releaseData()                   {return dataSource->releaseData();}

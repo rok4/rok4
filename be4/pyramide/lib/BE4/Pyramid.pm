@@ -427,6 +427,17 @@ sub _load {
         # init. process hasn't checked all parameters,
         # so, we must read file pyramid to initialyze them...
         return FALSE if (! $self->fillFromAncestor($params,$path_temp));
+    } else {
+    ##### create TileMatrixSet !
+        my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
+
+        if (! defined $objTMS) {
+          ERROR ("Can not load TMS !");
+          return FALSE;
+        }
+
+        $self->{tms} = $objTMS;
+        DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
     }
 
     ##### create PyrImageSpec !
@@ -449,17 +460,6 @@ sub _load {
 
     $self->{pyrImgSpec} = $pyrImgSpec;
     DEBUG (sprintf "PyrImageSpec = %s", Dumper($pyrImgSpec));
-
-    ##### create TileMatrixSet !
-    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
-
-    if (! defined $objTMS) {
-      ERROR ("Can not load TMS !");
-      return FALSE;
-    }
-
-    $self->{tms} = $objTMS;
-    DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
 
     ##### create NoData !
     my $objNodata = BE4::NoData->new({
@@ -603,8 +603,19 @@ sub readConfPyramid {
         return FALSE;
     } else {
         INFO (sprintf "TMS's name value ('%s') in the XML file Pyramid is used",$tagtmsname);
-        $params->{tms_name} = $tagtmsname;
+        $params->{tms_name} = $tagtmsname.".tms";
     }
+
+    ##### create TileMatrixSet !
+    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
+
+    if (! defined $objTMS) {
+      ERROR ("Can not load TMS !");
+      return FALSE;
+    }
+
+    $self->{tms} = $objTMS;
+    DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
 
     # FORMAT
     my $tagformat = $root->findnodes('format')->to_literal;
@@ -1271,12 +1282,7 @@ sub writeListPyramid {
             if ($directories[1] ne $self->{dir_nodata}) {
                 $level = $directories[2];
                 my $b36path = File::Spec->catdir(@directories[3..-1]);
-=begin
-                my $b36path = "";
-                for (my $i = 3; $i < scalar @directories; $i++) {
-                    $b36path .= $directories[$i]."/";
-                }
-=cut
+
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
                 ($x,$y) = BE4::Base36::b36PathToIndices($b36path);

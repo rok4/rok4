@@ -68,19 +68,9 @@
 #include "tiff.h"
 #include "Logger.h"
 #include "LibtiffImage.h"
+#include "MergeImage.h"
 #include "math.h"
 #include "../be4version.h"
-
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
-
-#define  MERGEMETHOD_TRANSPARENCY  1
-#define      MERGEMETHOD_MULTIPLY  2
-#define          MERGEMETHOD_MASK  3
 
 /** \~french Chemin du fichier de configuration des images */
 char imageListFilename[256];
@@ -96,8 +86,9 @@ int mergeMethod = 0;
 /** \~french Nombre de canaux par pixel avec lequel on travaille */
 uint16_t work_samplesperpixel = 0;
 
-uint8_t transparent[3];
-uint8_t opaque[4];
+int transparent[3];
+
+int opaque[4];
 
 /**
  * \~french
@@ -156,9 +147,9 @@ int parseCommandLine(int argc, char** argv) {
                     break;
                 case 'm': // image merge method
                     if(i++ >= argc) {LOGGER_ERROR("Error with merge method (option -m)"); return -1;}
-                    if(strncmp(argv[i], "multiply",8) == 0) mergeMethod = MERGEMETHOD_MULTIPLY; // = 2
-                    else if(strncmp(argv[i], "transparency",12) == 0) mergeMethod = MERGEMETHOD_TRANSPARENCY; // = 1
-                    else if(strncmp(argv[i], "mask",4) == 0) mergeMethod = MERGEMETHOD_TRANSPARENCY; // = 3
+                    if(strncmp(argv[i], "multiply",8) == 0) mergeMethod = Merge::MULTIPLY;
+                    else if(strncmp(argv[i], "transparency",12) == 0) mergeMethod = Merge::TRANSPARENCY;
+                    else if(strncmp(argv[i], "mask",4) == 0) mergeMethod = Merge::MASK;
                     else {LOGGER_ERROR("Unknown value for merge method (option -m) : " << argv[i]); return -1;}
                     break;
                 case 's': // samplesperpixel

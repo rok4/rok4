@@ -46,6 +46,7 @@
 #include "TiledTiffWriter.h"
 #include "Logger.h"
 #include "Image.h"
+#include "Format.h"
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
@@ -262,8 +263,10 @@ int main(int argc, char* argv[]) {
     if (photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG) error("Gray jpeg not supported",-1);
     if (samplesperpixel == 4 && compression == COMPRESSION_JPEG) error("Jpeg with alpha is unconsistent",-1);
 
-    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ){
-        error("Supported sample format are 8-bit unsigned integer and 32-bit float",-1);
+    SampleType ST = SampleType(bitspersample, sampleformat);
+
+    if (! ST.isSupported() ){
+        error("Supported sample format are :\n" << ST.getHandledFormat(),-1);
     }
 
     // Conversion string->int[] du paramètre nodata

@@ -67,6 +67,7 @@
 
 #include "tiffio.h"
 #include "Image.h"
+#include "Format.h"
 #include "Logger.h"
 #include <cstdlib>
 #include <cmath>
@@ -109,12 +110,10 @@ uint32_t height;
 uint32_t rowsperstrip = 1;
 /** \~french Compression de l'image de sortie */
 uint16_t compression;
-/** \~french Nombre de bits par canal, dans les images en entrée et celle en sortie */
-uint16_t bitspersample;
+/** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
+SampleType sampleType;
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
-/** \~french Format du canal (entier, flottant), dans les images en entrée et celle en sortie */
-uint16_t sampleformat;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
 uint16_t photometric;
 /** \~french Agancement des canaux (ne gère que des canaux entremêlés : RGB RGB RGB...) */
@@ -348,15 +347,21 @@ int checkComponents(TIFF* image, bool isMask)
     if(width == 0) { // read the parameters of the first input file
         if( ! TIFFGetField(image, TIFFTAG_IMAGEWIDTH, &width)                   ||
         ! TIFFGetField(image, TIFFTAG_IMAGELENGTH, &height)                     ||
-        ! TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
+        ! TIFFGetField(image, TIFFTAG_BITSPERSAMPLE, &_bitspersample)            ||
         ! TIFFGetFieldDefaulted(image, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
         ! TIFFGetField(image, TIFFTAG_PHOTOMETRIC, &photometric)                ||
-        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &sampleformat)     ||
+        ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLEFORMAT, &_sampleformat)     ||
         ! TIFFGetFieldDefaulted(image, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel))
         {LOGGER_ERROR(std::string("Error reading input file: ") + TIFFFileName(image)); return -1;}
         
         if (planarconfig != 1) {LOGGER_ERROR("Sorry : only planarconfig = 1 is supported"); return -1;}
         if (width%2 || height%2) {LOGGER_ERROR("Sorry : only even dimensions for input images are supported"); return -1;}
+
+        sampleType = SampleType(_bitspersample, _sampleformat);
+
+        if (! sampleType.isSupported() ){
+            error("Supported sample format are :\n" << sampleType.getHandledFormat(),-1);
+        }
 
         return 0;
     }
@@ -378,7 +383,7 @@ int checkComponents(TIFF* image, bool isMask)
             return -1;
         }
     } else {
-        if (! (_width == width && _height == height && _bitspersample == bitspersample &&
+        if (! (_width == width && _height == height && _bitspersample == sampleType.getBitsPerSample() &&
                 _planarconfig == planarconfig && _photometric == photometric && _samplesperpixel == samplesperpixel)) {
             
             LOGGER_ERROR(std::string("Error : all input images must have the same parameters (width, height, etc...) : ")
@@ -473,13 +478,13 @@ int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
     
     if(! TIFFSetField(OUTPUTI, TIFFTAG_IMAGEWIDTH, width) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_IMAGELENGTH, height) ||
-         ! TIFFSetField(OUTPUTI, TIFFTAG_BITSPERSAMPLE, bitspersample) ||
+         ! TIFFSetField(OUTPUTI, TIFFTAG_BITSPERSAMPLE, sampleType.getBitsPerSample()) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_PHOTOMETRIC, photometric) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_ROWSPERSTRIP, rowsperstrip) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_PLANARCONFIG, planarconfig) ||
          ! TIFFSetField(OUTPUTI, TIFFTAG_COMPRESSION, compression) ||
-         ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLEFORMAT, sampleformat))
+         ! TIFFSetField(OUTPUTI, TIFFTAG_SAMPLEFORMAT, sampleType.getSampleFormat()))
         {
             LOGGER_ERROR("Error writting output image: " + std::string(outputImage));
             return -1;
@@ -501,11 +506,6 @@ int checkImages(TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
                 LOGGER_ERROR("Error writting output mask: " + std::string(outputMask));
                 return -1;
             }
-    }
-
-    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ){
-        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
-        return -1;
     }
 
     return 0;

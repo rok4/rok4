@@ -824,7 +824,7 @@ void Rok4Server::buildWMTSCapabilities() {
         }
 
         // Contrainte : 1 layer = 1 pyramide = 1 format
-        layerEl->LinkEndChild ( buildTextNode ( "Format",format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
+        layerEl->LinkEndChild ( buildTextNode ( "Format",Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
 
         /* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
          *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */

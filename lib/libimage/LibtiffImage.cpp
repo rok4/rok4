@@ -124,7 +124,9 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
         return NULL;
     }
 
-    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
+    SampleType ST = SampleType(bitspersample,sampleformat);
+
+    if (! ST.isSupported() ) {
         LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return NULL;
     }
@@ -142,8 +144,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
         }
     }
     
-    return new LibtiffImage(width, height, resx, resy, channels, bbox, tif, filename, bitspersample, sampleformat,
-                            photometric, compression, rowsperstrip);
+    return new LibtiffImage(width, height, resx, resy, channels, bbox, tif, filename, ST, photometric, compression, rowsperstrip);
 }
 
                                 /* ----- Pour l'écriture ----- */
@@ -160,7 +161,9 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    if (! Image::isSupportedSampleType(bitspersample,sampleformat) ) {
+    SampleType ST = SampleType(bitspersample,sampleformat);
+
+    if (! ST.isSupported() ) {
         LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
         return NULL;
     }
@@ -222,17 +225,16 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,bitspersample,sampleformat,photometric,
-                            compression,rowsperstrip);
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,ST,photometric,compression,rowsperstrip);
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
 LibtiffImage::LibtiffImage(int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
-                           TIFF* tif,char* name, int bitspersample, int sampleformat, int photometric, int compression,
+                           TIFF* tif,char* name, SampleType sampleType, int photometric, int compression,
                            int rowsperstrip) :
-                           Image(width,height,resx,resy,channels,bbox), tif(tif), bitspersample(bitspersample), sampleformat(sampleformat), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
+                           Image(width,height,resx,resy,channels,bbox), tif(tif), ST(sampleType), photometric(photometric), compression(compression), rowsperstrip(rowsperstrip)
 {
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy(filename,name);
@@ -289,7 +291,7 @@ int LibtiffImage::writeImage(Image* pIn)
     float* buf_f=0;
 
     // Ecriture de l'image
-    if (sampleformat == SAMPLEFORMAT_UINT){
+    if (ST.getSampleFormat() == SAMPLEFORMAT_UINT){
         buf_u = (unsigned char*)_TIFFmalloc(width * channels * getBitsPerSample() / 8);
         for( int line = 0; line < height; line++) {
             pIn->getline(buf_u,line);
@@ -298,7 +300,7 @@ int LibtiffImage::writeImage(Image* pIn)
                 return -1;
             }
         }
-    } else if(sampleformat == SAMPLEFORMAT_IEEEFP){
+    } else if(ST.getSampleFormat() == SAMPLEFORMAT_IEEEFP){
         buf_f = (float*)_TIFFmalloc(width * channels * getBitsPerSample()/8);
         for( int line = 0; line < height; line++) {
             pIn->getline(buf_f,line);
@@ -308,7 +310,7 @@ int LibtiffImage::writeImage(Image* pIn)
             }
         }
     } else {
-        LOGGER_DEBUG("Not handled sample format to write: " << sampleformat);
+        LOGGER_DEBUG("Not handled sample format to write: " << ST.getSampleFormat());
         return -1;
     }
 

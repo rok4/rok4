@@ -60,7 +60,7 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sampleformat,int position,uint mirrorSize)
+MirrorImage* MirrorImageFactory::createMirrorImage( Image* pImageSrc, SampleType sampleType, int position, uint mirrorSize )
 {
     int wTopBottom = pImageSrc->width+2*mirrorSize;
     int wLeftRight = mirrorSize;
@@ -86,7 +86,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         ymin=pImageSrc->getYmax();        
         ymax=pImageSrc->getYmax()+pImageSrc->getResY()*mirrorSize;        
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,0,mirrorSize);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleType,bbox,pImageSrc,0,mirrorSize);
     }
     else if (position == 1){
         // RIGHT
@@ -95,7 +95,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,1,mirrorSize);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleType,bbox,pImageSrc,1,mirrorSize);
     }
     else if (position == 2){
         // BOTTOM
@@ -104,7 +104,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         ymin=pImageSrc->getYmin()-pImageSrc->getResY()*mirrorSize;
         ymax=pImageSrc->getYmin();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleformat,bbox,pImageSrc,2,mirrorSize);
+        return new MirrorImage(wTopBottom,hTopBottom,pImageSrc->channels,sampleType,bbox,pImageSrc,2,mirrorSize);
     }
     else if (position == 3){
         // LEFT
@@ -113,7 +113,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage(Image* pImageSrc, uint16_t sa
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox(xmin,ymin,xmax,ymax);
-        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleformat,bbox,pImageSrc,3,mirrorSize);
+        return new MirrorImage(wLeftRight,hLeftRight,pImageSrc->channels,sampleType,bbox,pImageSrc,3,mirrorSize);
     } else {
         return NULL;
     }
@@ -183,7 +183,7 @@ int MirrorImage::getline(uint8_t* buffer, int line) {
 /* Implementation de getline pour les float */
 int MirrorImage::getline(float* buffer, int line)
 {
-    if (sampleformat==1) {
+    if (ST.getSampleFormat() == 1) {
         // les canaux sont des entiers, nécessite une conversion
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline(buffer_t,line);

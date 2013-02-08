@@ -391,7 +391,7 @@ sub _load {
 =begin nd
 Function: containsNode
 
-Returns a boolean : TRUE if the node belong to this forest, FALSE otherwise.
+Returns a boolean : TRUE if the node belong to this forest, FALSE otherwise (if a parameter is not defined too).
 
 Parameters (list):
     level - string - Level ID of the node we want to know if it is in the forest.
@@ -401,11 +401,13 @@ Parameters (list):
 sub containsNode {
     my $self = shift;
     my $level = shift;
-    my $x = shift;
-    my $y = shift;
+    my $i = shift;
+    my $j = shift;
+
+    return FALSE if (! defined $level || ! defined $i || ! defined $j);
     
     foreach my $graph (@{$self->{graphs}}) {
-        return TRUE if ($graph->containsNode($level,$x,$y));
+        return TRUE if ($graph->containsNode($level,$i,$j));
     }
     
     return FALSE;

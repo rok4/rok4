@@ -61,8 +61,8 @@
 
 #include "Logger.h"
 #include "Utils.h"
+#include "Format.h"
 #include "Image.h"
-//#include "tiffio.h"
 #include "MirrorImage.h"
 
 /**
@@ -108,10 +108,10 @@ class ExtendedCompoundImage : public Image {
         int* nodata;
 
         /**
-         * \~french \brief Format du canal, entier ou flottant
-         * \~english \brief Sample format, integer or float
+         * \~french \brief Type du canal
+         * \~english \brief Sample type
          */
-        uint16_t sampleformat;
+        SampleType ST;
 
         /** \~french
          * \brief Retourne une ligne, flottante ou entière
@@ -139,7 +139,7 @@ class ExtendedCompoundImage : public Image {
          * \param[in] bbox emprise rectangulaire de l'image
          * \param[in] images images sources
          * \param[in] nodata valeur de non-donnée
-         * \param[in] sampleformat format des canaux
+         * \param[in] sampleType type des canaux
          * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
          ** \~english
          * \brief Create an ExtendedCompoundImage object, from all attributes
@@ -149,15 +149,15 @@ class ExtendedCompoundImage : public Image {
          * \param[in] bbox bounding box
          * \param[in] images source images
          * \param[in] nodata nodata value
-         * \param[in] sampleformat samples' format
+         * \param[in] sampleType samples' type
          * \param[in] mirrors mirror images' number in source images (put in front)
          */
         ExtendedCompoundImage(int width, int height, int channels, BoundingBox<double> bbox,
-                              std::vector<Image*>& images, int* nodata, uint16_t sampleformat, uint mirrors) :
+                              std::vector<Image*>& images, int* nodata, SampleType sampleType, uint mirrors) :
             Image(width, height,images.at(0)->getResX(),images.at(0)->getResY(),channels,bbox),
             images(images),
             nodata(nodata),
-            sampleformat(sampleformat),
+            ST(sampleType),
             mirrors(mirrors) {}
 
     public:
@@ -227,7 +227,18 @@ class ExtendedCompoundImage : public Image {
          * \brief Return the sample format
          * \return sample format
          */
-        uint16_t getSampleFormat() { return sampleformat; }
+        uint16_t getSampleFormat() { return ST.getSampleFormat(); }
+
+        /**
+         * \~french
+         * \brief Retourne le type des canaux
+         * \return type des canaux
+         * \~english
+         * \brief Return the samples' type
+         * \return samples' type
+         */
+        SampleType getSampleType() { return ST; }
+        
         /**
          * \~french
          * \brief Retourne la valeur de non-donnée
@@ -263,9 +274,8 @@ class ExtendedCompoundImage : public Image {
             Image::print();
             LOGGER_INFO("\t- Number of images = " << images.size());
             LOGGER_INFO("\t- Number of mirrors = " << mirrors);
-            LOGGER_INFO("\t- Sampleformat " << sampleformat);
-            LOGGER_INFO("\t- Nodata value " << nodata);
-            LOGGER_INFO("");
+            LOGGER_INFO("\t- Sampleformat " << ST.getSampleFormat());
+            LOGGER_INFO("\t- Nodata value " << nodata << "\n");
         }
 };
 
@@ -281,7 +291,7 @@ class ExtendedCompoundImageFactory {
          * \details Largeur, hauteur, nombre de canaux et bbox sont déduits des composantes de l'image source et des paramètres. On vérifie la superposabilité des images sources.
          * \param[in] images images sources
          * \param[in] nodata valeur de non-donnée
-         * \param[in] sampleformat format des canaux
+         * \param[in] sampleType type des canaux
          * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
          * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
          ** \~english
@@ -289,12 +299,12 @@ class ExtendedCompoundImageFactory {
          * \details Height, width, samples' number and bbox are deduced from source image's components and parameters. We check if source images are superimpose.
          * \param[in] images source images
          * \param[in] nodata nodata value
-         * \param[in] sampleformat samples' format
+         * \param[in] sampleType samples' type
          * \param[in] mirrors mirror images' number in source images (put in front)
          * \return a ExtendedCompoundImage object pointer, NULL if error
          */
         ExtendedCompoundImage* createExtendedCompoundImage(std::vector<Image*>& images, int* nodata,
-                                                           uint16_t sampleformat, uint mirrors);
+                                                           SampleType sampleType, uint mirrors);
 
         /** \~french
          * \brief Vérifie la superposabilité des images sources et crée un objet ExtendedCompoundImage
@@ -304,7 +314,7 @@ class ExtendedCompoundImageFactory {
          * \param[in] bbox emprise rectangulaire de l'image
          * \param[in] images images sources
          * \param[in] nodata valeur de non-donnée
-         * \param[in] sampleformat format des canaux
+         * \param[in] sampleType type des canaux
          * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
          * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
          ** \~english
@@ -315,14 +325,14 @@ class ExtendedCompoundImageFactory {
          * \param[in] bbox bounding box
          * \param[in] images source images
          * \param[in] nodata nodata value
-         * \param[in] sampleformat samples' format
+         * \param[in] sampleType samples' type
          * \param[in] mirrors mirror images' number in source images (put in front)
          * \return a ExtendedCompoundImage object pointer, NULL if error
          */
         ExtendedCompoundImage* createExtendedCompoundImage(int width, int height, int channels,
                                                            BoundingBox<double> bbox,
                                                            std::vector<Image*>& images, int* nodata,
-                                                           uint16_t sampleformat, uint mirrors);
+                                                           SampleType sampleType, uint mirrors);
 };
 
 /**

@@ -37,7 +37,7 @@
 
 #ifndef _TIFFHEADER_
 #define _TIFFHEADER_
-#include "format.h"
+#include "Format.h"
 namespace TiffHeader {
 
 static const size_t headerSize(int channel) {
