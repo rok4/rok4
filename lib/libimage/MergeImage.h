@@ -117,6 +117,13 @@ class MergeImage : public Image {
          * \~english \brief Background value
          */
         int* bgValue;
+
+        /**
+         * \~french \brief Valeur de transparence
+         * \details On a une valeur entière par canal. Tous les pixel de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
+         * \~english \brief Transparent value
+         */
+        int* transparentValue;
         
         void mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front );
         void mergeline ( float* buffer, uint8_t* back, uint8_t* front );
@@ -132,16 +139,40 @@ class MergeImage : public Image {
 
     protected:
 
-        MergeImage ( std::vector< Image* >& images, int channels, SampleType ST, int* bgValue, Merge::MergeType composition = Merge::NORMAL ) :
+        MergeImage(std::vector< Image* >& images, int channels, SampleType ST,
+                   int* bgValue, int* transparentValue,
+                   Merge::MergeType composition = Merge::NORMAL ) :
             Image(images.at(0)->width,images.at(0)->height,images.at(0)->getResX(),images.at(0)->getResY(),
                   channels,images.at(0)->getBbox()),
-            images ( images ), composition ( composition ), bgValue(bgValue), ST(ST) {}
+            images ( images ), composition ( composition ), bgValue(bgValue), transparentValue(transparentValue), ST(ST) {}
         
 
     public:
         
         virtual int getline ( float* buffer, int line );
         virtual int getline ( uint8_t* buffer, int line );
+
+        /**
+         * \~french
+         * \brief Retourne le tableau des images sources
+         * \return images sources
+         * \~english
+         * \brief Return the array of source images
+         * \return source images
+         */
+        std::vector<Image*>* getImages() {return &images;}
+
+        /**
+         * \~french
+         * \brief Retourne le masque de l'image source d'indice i
+         * \param[in] i indice de l'image source sont on veut le masque
+         * \return masque
+         * \~english
+         * \brief Return the mask of source images with indice i
+         * \param[in] i source image indice, whose mask is wanted
+         * \return mask
+         */
+        Image* getMask(int i) { return images.at(i)->getMask(); }
 
         /**
          * \~french
@@ -176,7 +207,70 @@ class MergeImage : public Image {
  */
 class MergeImageFactory {
     public:
-        MergeImage* createMergeImage(std::vector< Image* >& images, SampleType ST, int* bgValue, Merge::MergeType composition = Merge::NORMAL);
+        MergeImage* createMergeImage(std::vector< Image* >& images, SampleType ST,
+                                     int* bgValue, int* transparentValue,
+                                     Merge::MergeType composition = Merge::NORMAL );
+};
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'un masque fusionné, s'appuyant sur une image fusionné
+ */
+class MergeMask : public Image {
+
+    private:
+        /**
+         * \~french \brief Image fusionnée, à laquelle le masque fusionné est associé
+         * \~english \brief Merged images, with which merged mask is associated
+         */
+        MergeImage* MI;
+
+        /** \~french
+         * \brief Retourne une ligne, flottante ou entière
+         * \details Lors ce que l'on veut récupérer une ligne d'un masque fusionné, on va se reporter sur tous les masques des images source de l'image fusionnée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
+         * \param[out] buffer Tableau contenant au moins width*channels valeurs
+         * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+         * \return taille utile du buffer, 0 si erreur
+         */
+        int _getline(uint8_t* buffer, int line);
+
+    public:
+        /** \~french
+         * \brief Crée un MergeMask
+         * \details Les caractéristiques du masque sont extraites de l'image fusionnée.
+         * \param[in] MI Image composée
+         ** \~english
+         * \brief Create a MergeMask
+         * \details Mask's components are extracted from the merged image.
+         * \param[in] MI Compounded image
+         */
+        MergeMask(MergeImage*& MI) :
+            Image(MI->width, MI->height, MI->getResX(), MI->getResY(), 1,MI->getBbox()),
+            MI(MI) {}
+
+        int getline(uint8_t* buffer, int line);
+        int getline(float* buffer, int line);
+
+        /**
+         * \~french
+         * \brief Destructeur par défaut
+         * \~english
+         * \brief Default destructor
+         */
+        virtual ~MergeMask() {}
+
+        /** \~french
+         * \brief Sortie des informations sur le masque fusionné
+         ** \~english
+         * \brief Merged mask description output
+         */
+        void print() {
+            LOGGER_INFO("");
+            LOGGER_INFO("------ MergeMask -------");
+            Image::print();
+        }
+
 };
 
 /** \~ \author Institut national de l'information géographique et forestière

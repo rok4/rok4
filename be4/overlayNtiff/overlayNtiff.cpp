@@ -69,6 +69,7 @@
 #include "Logger.h"
 #include "LibtiffImage.h"
 #include "MergeImage.h"
+#include "Format.h"
 #include "math.h"
 #include "../be4version.h"
 
@@ -76,15 +77,15 @@
 char imageListFilename[256];
 /** \~french Nombre de canaux par pixel de l'image en sortie */
 uint16_t samplesperpixel = 0;
+/** \~french Mode de fusion des images */
+SampleType sampleType(0,0);
 /** \~french Photométrie (rgb, gray), pour les images en sortie */
 uint16_t photometric = PHOTOMETRIC_RGB;
 /** \~french Compression de l'image de sortie */
 uint16_t compression = COMPRESSION_NONE;
 /** \~french Mode de fusion des images */
-int mergeMethod = 0;
+Merge::MergeType mergeMethod;
 
-/** \~french Nombre de canaux par pixel avec lequel on travaille */
-uint16_t work_samplesperpixel = 0;
 
 int transparent[3];
 
@@ -314,21 +315,23 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<LibtiffImage*>* pImageIn)
+int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage** ppMergeIn)
 {
     char inputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     char inputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
 
     char outputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     char outputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
-    
+
+    std::vector<Image*> ImageIn;
     BoundingBox<double> fakeBbox(0.,0.,0.,0.);
 
     uint16_t bitspersample, sampleformat;
     int width, height;
     
     bool hasMask;
-    LibtiffImageFactory factory;
+    LibtiffImageFactory LIF;
+    MergeImageFactory MIF;
 
 
     // Ouverture du fichier texte listant les images
@@ -352,7 +355,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
     LOGGER_INFO("**** En entrée ****");
     while ((out = readFileLine(file,inputImagePath,&hasMask,inputMaskPath)) == 0) {
 
-        LibtiffImage* pImage = factory.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
+        LibtiffImage* pImage = LIF.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
         if (pImage == NULL) {
             LOGGER_ERROR("Cannot create a LibtiffImage from the file " << inputImagePath);
             return -1;
@@ -381,7 +384,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
              *          - même dimensions que l'image
              *          - 1 seul canal (entier)
              */
-            LibtiffImage* pMask = factory.createLibtiffImageToRead(inputMaskPath, fakeBbox, -1., -1.);
+            LibtiffImage* pMask = LIF.createLibtiffImageToRead(inputMaskPath, fakeBbox, -1., -1.);
             if (pMask == NULL) {
                 LOGGER_ERROR("Cannot create a LibtiffImage (mask) from the file " << inputMaskPath);
                 return -1;
@@ -394,9 +397,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
             LOGGER_INFO("\t avec son masque " << inputMaskPath);
         }
 
-        if (pImage->channels > work_samplesperpixel) {work_samplesperpixel = pImage->channels;}
-
-        pImageIn->push_back(pImage);
+        ImageIn.push_back(pImage);
         inputNb++;
     }
 
@@ -408,15 +409,28 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
     // Fermeture du fichier
     file.close();
 
-    if (inputNb == 0) {
-        LOGGER_ERROR("Failure reading the file '" << imageListFilename << "' : no input data");
+    sampleType = SampleType(bitspersample, sampleformat);
+
+    if (! sampleType.isSupported() ) {
+        error("Supported sample format are :\n" + sampleType.getHandledFormat(),-1);
+    }
+
+    // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
+
+    *ppMergeIn = MIF.createMergeImage(ImageIn,sampleType,opaque,transparent,mergeMethod);
+
+    // Le masque fusionné est ajouté
+    MergeMask* pMM = new MergeMask(*ppMergeIn);
+
+    if (! (*ppMergeIn)->setMask(pMM)) {
+        LOGGER_ERROR("Cannot add mask to the merged image");
         return -1;
     }
 
     // Création des sorties
     LOGGER_INFO("**** En sortie ****");
-    *ppImageOut = factory.createLibtiffImageToWrite(outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
-                                                    bitspersample, sampleformat, photometric,compression,16);
+    *ppImageOut = LIF.createLibtiffImageToWrite(outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
+                                                    sampleType, photometric,compression,16);
 
     if (*ppImageOut == NULL) {
         LOGGER_ERROR("Impossible de creer l'image " << outputImagePath);
@@ -427,7 +441,8 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
 
     if (hasMask) {
 
-        *ppMaskOut = factory.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1, 8, 1,
+        *ppMaskOut = LIF.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1,
+                                                       SampleType(8,SAMPLEFORMAT_IEEEFP),
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
 
         if (*ppMaskOut == NULL) {
@@ -440,28 +455,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<
 
     return 0;
 }
-
-/**
-* @fn int compose(uint8_t PixA,uint8_t PixB)
-* @brief Calcule la valeur du pixel (4 canaux) résultant de la superposition des 2 pixels passés en paramètres
-*/
-void compose(uint8_t* PixA,uint8_t* PixB,uint8_t* PixR, bool rmAlpha) {
-
-    if (mergeMethod == MERGEMETHOD_TRANSPARENCY || rmAlpha) {
-        PixR[3] = PixA[3] + PixB[3]*(255-PixA[3])/255;
-        PixR[0] = (PixA[0]*PixA[3] + PixB[0]*PixB[3]*(255-PixA[3])/255)/PixR[3];
-        PixR[1] = (PixA[1]*PixA[3] + PixB[1]*PixB[3]*(255-PixA[3])/255)/PixR[3];
-        PixR[2] = (PixA[2]*PixA[3] + PixB[2]*PixB[3]*(255-PixA[3])/255)/PixR[3];
-    }
-    else if (mergeMethod == MERGEMETHOD_MULTIPLY) {
-        PixR[0] = PixA[0]*PixB[0]/255;
-        PixR[1] = PixA[1]*PixB[1]/255;
-        PixR[2] = PixA[2]*PixB[2]/255;
-        PixR[3] = PixA[3]*PixB[3]/255;
-    }
-
-}
-
+/*
 int mergeImages()
 {
     //
@@ -609,7 +603,7 @@ int mergeImages()
     delete[] PIXEL;
 
     return 0;
-}
+}*/
 
 /**
 * @fn int main(int argc, char **argv)
@@ -620,7 +614,7 @@ int main(int argc, char **argv) {
 
     LibtiffImage* pImageOut ;
     LibtiffImage* pMaskOut = NULL;
-    std::vector<LibtiffImage*> ImageIn;
+    MergeImage* pMergeIn;
 
     /* Initialisation des Loggers */
     Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
@@ -648,14 +642,21 @@ int main(int argc, char **argv) {
 
     LOGGER_INFO("Load");
     // Chargement des images
-    if (loadImages(&pImageOut,&pMaskOut,&ImageIn) < 0) {
+    if (loadImages(&pImageOut,&pMaskOut,&pMergeIn) < 0) {
         error("Cannot load images from the configuration file",-1);
     }
 
-    /*LOGGER_INFO("Cannot merge images");
-    if (mergeImages() < 0){
-        error("Echec fusion des images",-1);
-    }*/
+    LOGGER_DEBUG("Save image");
+    // Enregistrement de l'image fusionnée
+    if (pImageOut->writeImage(pMergeIn) < 0) {
+        error("Cannot write the merged image",-1);
+    }
+
+    LOGGER_DEBUG("Save mask");
+    // Enregistrement du masque fusionné, si demandé
+    if (pMaskOut != NULL && pMaskOut->writeImage(pMergeIn->Image::getMask()) < 0) {
+        error("Cannot write the merged mask",-1);
+    }
 
     delete acc;
     delete pImageOut;

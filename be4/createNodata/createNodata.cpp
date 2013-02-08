@@ -266,7 +266,7 @@ int main(int argc, char* argv[]) {
     SampleType ST = SampleType(bitspersample, sampleformat);
 
     if (! ST.isSupported() ){
-        error("Supported sample format are :\n" << ST.getHandledFormat(),-1);
+        error("Supported sample format are :\n" + ST.getHandledFormat(),-1);
     }
 
     // Conversion string->int[] du paramètre nodata

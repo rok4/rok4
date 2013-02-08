@@ -446,10 +446,8 @@ int* Level::getNoDataValue(int* nodatavalue) {
     return nodatavalue;
 }
 
-uint16_t Level::getSampleType() {
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32)
-        return 3;
-    return 1;
+SampleType Level::getSampleType() {
+    return Format::toSampleType(format);
 }
 
 

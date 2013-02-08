@@ -111,7 +111,7 @@ uint32_t rowsperstrip = 1;
 /** \~french Compression de l'image de sortie */
 uint16_t compression;
 /** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleType sampleType;
+SampleType sampleType(0,0);
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
@@ -360,7 +360,7 @@ int checkComponents(TIFF* image, bool isMask)
         sampleType = SampleType(_bitspersample, _sampleformat);
 
         if (! sampleType.isSupported() ){
-            error("Supported sample format are :\n" << sampleType.getHandledFormat(),-1);
+            error("Supported sample format are :\n" + sampleType.getHandledFormat(),-1);
         }
 
         return 0;
@@ -834,7 +834,7 @@ int main(int argc, char* argv[])
     }
     
     // Cas MNT
-    if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
+    if (sampleType.getSampleFormat() == SAMPLEFORMAT_IEEEFP && sampleType.getBitsPerSample() == 32) {
         LOGGER_DEBUG("Merge images (float)");
         nodataFloat32 = new float[samplesperpixel];
         for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodataInt[i];
@@ -842,7 +842,7 @@ int main(int argc, char* argv[])
         if (merge<float>(BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM) < 0) error("Unable to merge float images",-1);
     }
     // Cas images
-    else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
+    else if (sampleType.getSampleFormat() == SAMPLEFORMAT_UINT && sampleType.getBitsPerSample() == 8) {
         LOGGER_DEBUG("Merge images (uint8_t)");
         nodataUInt8 = new uint8_t[samplesperpixel];
         for (int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodataInt[i];

@@ -42,29 +42,6 @@
 #include <stdint.h>
 #include "tiff.h"
 
-//To declare a new format change the implementation too
-
-namespace Format {
-
-    enum eformat_data {
-        UNKNOWN = 0,
-        TIFF_RAW_INT8 = 1,
-        TIFF_JPG_INT8 = 2,
-        TIFF_PNG_INT8 = 3,
-        TIFF_LZW_INT8 = 4,
-        TIFF_ZIP_INT8 = 5,
-        TIFF_PKB_INT8 = 6,
-        TIFF_RAW_FLOAT32 = 7,
-        TIFF_LZW_FLOAT32 = 8,
-        TIFF_ZIP_FLOAT32 = 9,
-        TIFF_PKB_FLOAT32 = 10
-    };
-    
-    eformat_data fromString(std::string strFormat);
-    std::string toString(eformat_data format);
-    std::string toMimeType(eformat_data format);
-}
-
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -117,19 +94,12 @@ class SampleType {
 
         /**
          * \~french
-         * \brief Précise si le type des canaux (nombre de bits et format) est géré
-         * \details Sont gérés :
-         * \li les entiers non-signés sur 8 bits
-         * \li les flottants sur 32 bits
+         * \brief Renvoie la liste des types gérés
          * \~english
-         * \brief Precises if sample type (bits per sample and format) is supported
-         * \details Are supported :
-         * \li 8-bit unsigned integer
-         * \li 32-bit float
+         * \brief Return the handled type list
          */
-        static string getHandledFormat() {
-            return  "\t - 8-bit unsigned integer\n" <<
-                     "\t - 32-bit float\n";
+        static std::string getHandledFormat() {
+            return  "\t - 8-bit unsigned integer\n\t - 32-bit float\n";
         }
         
         /**
@@ -149,6 +119,34 @@ class SampleType {
                     (bitspersample == 8 && sampleformat == SAMPLEFORMAT_IEEEFP) ;
         }
 };
+
+
+//To declare a new format change the implementation too
+
+namespace Format {
+
+    enum eformat_data {
+        UNKNOWN = 0,
+        TIFF_RAW_INT8 = 1,
+        TIFF_JPG_INT8 = 2,
+        TIFF_PNG_INT8 = 3,
+        TIFF_LZW_INT8 = 4,
+        TIFF_ZIP_INT8 = 5,
+        TIFF_PKB_INT8 = 6,
+        TIFF_RAW_FLOAT32 = 7,
+        TIFF_LZW_FLOAT32 = 8,
+        TIFF_ZIP_FLOAT32 = 9,
+        TIFF_PKB_FLOAT32 = 10
+    };
+
+    const int eformat_size = 10;
+    const int eformat_float = 7;
+
+    eformat_data fromString(std::string strFormat);
+    std::string toString(eformat_data format);
+    std::string toMimeType(eformat_data format);
+    SampleType toSampleType(eformat_data format);
+}
 
 #endif //FORMAT_H
 

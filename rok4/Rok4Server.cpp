@@ -62,6 +62,7 @@
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
+#include "Format.h"
 #include "Message.h"
 #include "StyledImage.h"
 #include "Logger.h"
@@ -70,8 +71,8 @@
 #include "ServiceException.h"
 #include "fcgiapp.h"
 #include "PaletteDataSource.h"
-#include <EstompageImage.h>
-#include <MergeImage.h>
+#include "EstompageImage.h"
+#include "MergeImage.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -370,10 +371,16 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             default:
                 break;
         }
-        image = new MergeImage(images.at(0), images.at(1), Merge::NORMAL);
-        for (int i = 2 ; i < images.size()  ; i++) {
-            image = new MergeImage(image, images.at(i), Merge::NORMAL);
-        }
+
+        MergeImageFactory MIF;
+
+        int white[3] = {0,0,0};
+        image = MIF.createMergeImage(images, Format::toSampleType(pyrType), white, white, Merge::NORMAL);
+
+        if (image == NULL) {
+            LOGGER_ERROR ( "Impossible de fusionner les images des différentes couches" );
+            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+        }        
     }
 
     if ( format=="image/png" ) {
@@ -434,9 +441,12 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         }
     } else if ( format == "image/jpeg" ) {
         return new JPEGEncoder ( image );
-    } else if ( format == "image/x-bil;bits=32" )
+    } else if ( format == "image/x-bil;bits=32" ) {
         return new BilEncoder ( image );
+    }
+    
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
+    
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 

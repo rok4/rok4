@@ -428,7 +428,7 @@ sub _load {
         # so, we must read file pyramid to initialyze them...
         return FALSE if (! $self->fillFromAncestor($params,$path_temp));
     } else {
-    ##### create TileMatrixSet !
+        ##### create TileMatrixSet !
         my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
         if (! defined $objTMS) {
@@ -1281,7 +1281,16 @@ sub writeListPyramid {
             
             if ($directories[1] ne $self->{dir_nodata}) {
                 $level = $directories[2];
-                my $b36path = File::Spec->catdir(@directories[3..-1]);
+                
+                my $b36pathtest = File::Spec->catdir(@directories[3..-1]);
+                INFO("b36 path test : $b36pathtest");
+
+                my $b36path = "";
+                for (my $i = 3; $i < scalar @directories; $i++) {
+                    $b36path .= $directories[$i]."/";
+                }
+
+                INFO("b36 path correct : $b36path");
 
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
@@ -1328,7 +1337,7 @@ sub writeListPyramid {
 
             my $result = eval { symlink ($reloldtile, $newtile); };
             if (! $result) {
-                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s) ?",$reloldtile,$newtile,$!);
+                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s)",$reloldtile,$newtile,$!);
                 return FALSE;
             }
         }

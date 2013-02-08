@@ -360,11 +360,11 @@ class ExtendedCompoundMask : public Image {
 
     public:
         /** \~french
-         * \brief Crée une ExtendedCompoundImage
+         * \brief Crée un ExtendedCompoundMask
          * \details Les caractéristiques du masque sont extraites de l'image composée.
          * \param[in] ECI Image composée
          ** \~english
-         * \brief Create a ExtendedCompoundImage
+         * \brief Create a ExtendedCompoundMask
          * \details Mask's components are extracted from the compounded image.
          * \param[in] ECI Compounded image
          */

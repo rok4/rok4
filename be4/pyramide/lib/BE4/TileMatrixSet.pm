@@ -172,7 +172,7 @@ sub new {
     return undef if (! defined $pathfile);
 
     if (! -f $pathfile) {
-      ERROR ("File TMS doesn't exist !");
+      ERROR ("File TMS doesn't exist ($pathfile)!");
       return undef;
     }
 

@@ -138,7 +138,7 @@ char strnodata[256];
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
 /** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleType sampleType;
+SampleType sampleType(0,0);
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
 uint16_t photometric;
 /** \~french Compression de l'image de sortie */
@@ -334,8 +334,8 @@ int parseCommandLine(int argc, char** argv) {
     sampleType = SampleType(bitspersample,sampleformat);
 
     if (! sampleType.isSupported() ) {
-        LOGGER_ERROR("Supported sample format are :\n" << sampleType.getHandledFormat());
-        return NULL;
+        LOGGER_ERROR("Supported sample format are :\n" + sampleType.getHandledFormat());
+        return -1;
     }
     
     return 0;

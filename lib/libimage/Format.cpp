@@ -54,9 +54,6 @@ namespace Format {
         "TIFF_PKB_FLOAT32"
     };
 
-    const int eformat_size = 10;
-    const int eformat_float = 7;
-
     const char *eformat_mime[] = {
         "UNKNOWN",
         "image/tiff",
@@ -70,8 +67,6 @@ namespace Format {
         "image/tiff",
         "image/tiff"
     };
-
-
 
     eformat_data fromString ( std::string strFormat ) {
         int i;
@@ -88,6 +83,16 @@ namespace Format {
 
     std::string toMimeType ( eformat_data format ) {
         return std::string ( eformat_mime[format] );
+    }
+
+    SampleType toSampleType ( eformat_data format ) {
+        if ( format >= Format::eformat_float ) {
+            // Canaux flottants
+            return SampleType(32,SAMPLEFORMAT_IEEEFP);
+        } else {
+            // Canaux entiers
+            return SampleType(32,SAMPLEFORMAT_IEEEFP);
+        }
     }
 
 }

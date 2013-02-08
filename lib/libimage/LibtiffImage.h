@@ -305,8 +305,7 @@ class LibtiffImageFactory {
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] channel nombre de canaux par pixel
-         * \param[in] bitspersample nombre de bits par canal
-         * \param[in] sampleformat format des canaux
+         * \param[in] sampleType type des canaux
          * \param[in] photometric photométie des données
          * \param[in] compression compression des données
          * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
@@ -321,15 +320,14 @@ class LibtiffImageFactory {
          * \param[in] width image width, in pixel
          * \param[in] height image height, in pixel
          * \param[in] channel number of samples per pixel
-         * \param[in] bitspersample number of bits per sample
-         * \param[in] sampleformat samples' format
+         * \param[in] sampleType samples' type
          * \param[in] photometric data photometric
          * \param[in] compression data compression
          * \param[in] rowsperstrip data buffering size, in line number
          * \return a LibtiffImage object pointer, NULL if error
          */
         LibtiffImage* createLibtiffImageToWrite(char* filename, BoundingBox<double> bbox, double resx, double resy,
-                                                int width, int height, int channels, uint16_t bitspersample, uint16_t sampleformat,
+                                                int width, int height, int channels, SampleType sampleType,
                                                 uint16_t photometric, uint16_t compression, uint16_t rowsperstrip );
 };
 

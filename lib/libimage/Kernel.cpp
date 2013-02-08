@@ -58,7 +58,7 @@ int Kernel::weight(float* W, int length, double x, int max) const {
 
     double step = 1024. / rayon;
     double sum = 0;              // somme des poids pour normaliser en fin de calcul.
-    double indf = (x - xmin)*step;    // index flottant dans le tableau coeff
+    double indf = (x - xmin) * step;    // index flottant dans le tableau coeff
     int i = 0;
     
     for (;indf >= 0; indf -= step) {

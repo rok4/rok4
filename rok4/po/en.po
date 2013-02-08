@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-02-08 10:18+0100\n"
+"POT-Creation-Date: 2013-02-08 15:03+0100\n"
 "PO-Revision-Date: 2012-08-27 16:49+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -972,39 +972,39 @@ msgstr "Reloading configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
-#: Pyramid.cpp:164
+#: Pyramid.cpp:165
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:170
+#: Pyramid.cpp:171
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:177
+#: Pyramid.cpp:178
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:177
+#: Pyramid.cpp:178
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:186
+#: Pyramid.cpp:187
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:190
+#: Pyramid.cpp:191
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:197
+#: Pyramid.cpp:198
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:197
+#: Pyramid.cpp:198
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:204
+#: Pyramid.cpp:205
 msgid "Image decoupe valide"
 msgstr ""
 
@@ -1196,7 +1196,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:794 Rok4Server.cpp:440
+#: Request.cpp:794 Rok4Server.cpp:450
 msgid "Le format "
 msgstr ""
 
@@ -1320,11 +1320,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:508
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:508
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1402,84 +1402,84 @@ msgstr ""
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:454
+#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:464
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:485
+#: Rok4Api.cpp:457 Rok4Server.cpp:495
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:483 Rok4Server.cpp:485 Rok4Server.cpp:495
-#: Rok4Server.cpp:497
+#: Rok4Api.cpp:457 Rok4Server.cpp:493 Rok4Server.cpp:495 Rok4Server.cpp:505
+#: Rok4Server.cpp:507
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Server.cpp:80
+#: Rok4Server.cpp:81
 msgid "Le listener FCGI ne peut etre initialise"
 msgstr ""
 
-#: Rok4Server.cpp:90
+#: Rok4Server.cpp:91
 msgid "FCGX_InitRequest renvoie le code d'erreur"
 msgstr ""
 
-#: Rok4Server.cpp:114
+#: Rok4Server.cpp:115
 msgid "Request Content :"
 msgstr "Request Content :"
 
-#: Rok4Server.cpp:141
+#: Rok4Server.cpp:142
 msgid "Extinction du thread"
 msgstr "Thread shutdown"
 
-#: Rok4Server.cpp:154
+#: Rok4Server.cpp:155
 msgid "Build WMS Capabilities"
 msgstr "Build WMS Capabilities"
 
-#: Rok4Server.cpp:158
+#: Rok4Server.cpp:159
 msgid "Build WMTS Capabilities"
 msgstr "Build WMTS Capabilities"
 
-#: Rok4Server.cpp:173
+#: Rok4Server.cpp:174
 msgid "Listening on "
 msgstr "Listening on "
 
-#: Rok4Server.cpp:227 Rok4Server.cpp:250
+#: Rok4Server.cpp:228 Rok4Server.cpp:251
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr ""
 
-#: Rok4Server.cpp:279
+#: Rok4Server.cpp:280
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:288
+#: Rok4Server.cpp:289
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:288
+#: Rok4Server.cpp:289
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:294
+#: Rok4Server.cpp:295
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:297
+#: Rok4Server.cpp:298
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:300
+#: Rok4Server.cpp:301 Rok4Server.cpp:382
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:309
+#: Rok4Server.cpp:310
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:440
+#: Rok4Server.cpp:450
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:460
+#: Rok4Server.cpp:470
 msgid "No data found"
 msgstr ""
 

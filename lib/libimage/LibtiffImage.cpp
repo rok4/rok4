@@ -149,7 +149,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
 
                                 /* ----- Pour l'écriture ----- */
 LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, BoundingBox<double> bbox, double resx, double resy,
-                                                int width, int height, int channels, uint16_t bitspersample, uint16_t sampleformat,
+                                                int width, int height, int channels, SampleType sampleType,
                                                 uint16_t photometric, uint16_t compression, uint16_t rowsperstrip )
 {
     if ( width <= 0 || height <= 0) {
@@ -161,10 +161,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    SampleType ST = SampleType(bitspersample,sampleformat);
-
-    if (! ST.isSupported() ) {
-        LOGGER_ERROR("Supported sample format are 8-bit unsigned integer and 32-bit float");
+    if (! sampleType.isSupported() ) {
+        LOGGER_ERROR("Supported sample format are :\n" + sampleType.getHandledFormat());
         return NULL;
     }
 
@@ -195,12 +193,12 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    if (TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE,bitspersample) < 1) {
+    if (TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE,sampleType.getBitsPerSample()) < 1) {
         LOGGER_ERROR( "Unable to write number of bits per sample for file " << filename);
         return NULL;
     }
 
-    if (TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT,sampleformat) < 1) {
+    if (TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT,sampleType.getSampleFormat()) < 1) {
         LOGGER_ERROR( "Unable to write sample format for file " << filename);
         return NULL;
     }
@@ -225,7 +223,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,ST,photometric,compression,rowsperstrip);
+    return new LibtiffImage(width,height,resx,resy,channels,bbox,tif,filename,sampleType,photometric,compression,rowsperstrip);
 }
 
 /* ------------------------------------------------------------------------------------------------ */
