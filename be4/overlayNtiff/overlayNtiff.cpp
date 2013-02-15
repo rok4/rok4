@@ -87,9 +87,9 @@ uint16_t compression = COMPRESSION_NONE;
 Merge::MergeType mergeMethod;
 
 
-int transparent[3];
+int transparent[4] = {0,0,0,0};
 
-int opaque[4];
+int background[4];
 
 /**
  * \~french
@@ -133,8 +133,8 @@ void error(std::string message, int errorCode) {
  */
 int parseCommandLine(int argc, char** argv) {
 
-    char* strTransparent = 0;
-    char* strOpaque = 0;
+    char strTransparent[256];
+    char strBg[256];
 
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
@@ -182,7 +182,7 @@ int parseCommandLine(int argc, char** argv) {
                     break;
                 case 'b': // background color
                     if(i++ >= argc) {LOGGER_ERROR("Error with background color (option -b)"); return -1;}
-                    strcpy(strOpaque,argv[i]);
+                    strcpy(strBg,argv[i]);
                     break;
                 default:
                     LOGGER_ERROR("Unknown option : -" << argv[i][1]);
@@ -209,61 +209,64 @@ int parseCommandLine(int argc, char** argv) {
         return -1;
     }
 
-    if (strTransparent != 0) {
+    if (strlen(strTransparent) != 0) {
         // Transparent interpretation
         char* charValue = strtok(strTransparent,",");
         if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+            LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
             return -1;
         }
         int value = atoi(charValue);
         if(value < 0 || value > 255) {
-            LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+            LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
             return -1;
         }
         transparent[0] = value;
         for(int i = 1; i < 3; i++) {
             charValue = strtok (NULL, ",");
             if(charValue == NULL) {
-                LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+                LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
                 return -1;
             }
             value = atoi(charValue);
             if(value < 0 || value > 255) {
-                LOGGER_ERROR("Error with option -transparent : 3 integer values (between 0 and 255) seperated by comma");
+                LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
                 return -1;
             }
             transparent[i] = value;
         }
     }
 
-    if (strOpaque != 0) {
+    if (strlen(strBg) != 0) {
         // Opaque interpretation
-        opaque[3] = 255;
-        char* charValue = strtok(strOpaque,",");
+        background[3] = 255;
+        char* charValue = strtok(strBg,",");
         if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+            LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
             return -1;
         }
         int value = atoi(charValue);
         if(value < 0 || value > 255) {
-            LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+            LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
             return -1;
         }
-        opaque[0] = value;
-        for(int i = 1; i < 3; i++) {
+        background[0] = value;
+        for(int i = 1; i < samplesperpixel; i++) {
             charValue = strtok (NULL, ",");
             if(charValue == NULL) {
-                LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+                LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
                 return -1;
             }
             value = atoi(charValue);
             if(value < 0 || value > 255) {
-                LOGGER_ERROR("Error with option -opaque : 3 integer values (between 0 and 255) seperated by comma");
+                LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
                 return -1;
             }
-            opaque[i] = value;
+            background[i] = value;
         }
+    } else {
+        LOGGER_ERROR("We have to know the background value (option -b)");
+        return -1;
     }
 
     return 0;
@@ -352,7 +355,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     // Lecture et création des images sources
     int inputNb = 0;
     int out = 0;
-    LOGGER_INFO("**** En entrée ****");
     while ((out = readFileLine(file,inputImagePath,&hasMask,inputMaskPath)) == 0) {
 
         LibtiffImage* pImage = LIF.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
@@ -377,8 +379,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
             }
         }
 
-        LOGGER_INFO("L'image " << inputImagePath);
-
         if (hasMask) {
             /* On a un masque associé, on en fait une image à lire et on vérifie qu'elle est cohérentes :
              *          - même dimensions que l'image
@@ -394,7 +394,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
                 LOGGER_ERROR("Cannot add mask " << inputMaskPath);
                 return -1;
             }
-            LOGGER_INFO("\t avec son masque " << inputMaskPath);
         }
 
         ImageIn.push_back(pImage);
@@ -417,7 +416,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
 
     // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
 
-    *ppMergeIn = MIF.createMergeImage(ImageIn,sampleType,opaque,transparent,mergeMethod);
+    *ppMergeIn = MIF.createMergeImage(ImageIn, sampleType, samplesperpixel, background, transparent, mergeMethod);
 
     // Le masque fusionné est ajouté
     MergeMask* pMM = new MergeMask(*ppMergeIn);
@@ -428,7 +427,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     }
 
     // Création des sorties
-    LOGGER_INFO("**** En sortie ****");
     *ppImageOut = LIF.createLibtiffImageToWrite(outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
                                                     sampleType, photometric,compression,16);
 
@@ -437,173 +435,20 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
         return -1;
     }
 
-    LOGGER_INFO("L'image " << outputImagePath);
-
     if (hasMask) {
 
         *ppMaskOut = LIF.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1,
-                                                       SampleType(8,SAMPLEFORMAT_IEEEFP),
+                                                       SampleType(8,SAMPLEFORMAT_UINT),
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
 
         if (*ppMaskOut == NULL) {
             LOGGER_ERROR("Impossible de creer le masque " << outputMaskPath);
             return -1;
         }
-
-        LOGGER_INFO("\t avec son masque " << outputMaskPath);
     }
 
     return 0;
 }
-/*
-int mergeImages()
-{
-    //
-
-    TIFF *TIFF_FILE = 0;
-
-    uint32 width, height, rowsperstrip = -1;
-    uint16 bitspersample, sampleperpixel, photometric, compression = -1, planarconfig;
-
-    // FIRST IMAGE READING
-    // we determine image's characteristics from the first image
-    TIFF_FILE = TIFFOpen(input.at(0), "r");
-    if(!TIFF_FILE) error("Unable to open file for reading: " + std::string(input.at(0)));
-    if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &width)                       ||
-        ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, &height)                     ||
-        ! TIFFGetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersample)            ||
-        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfig)     ||
-        ! TIFFGetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, &photometric)                ||
-        ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel)||
-        ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compression)                ||
-        ! TIFFGetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, &rowsperstrip))
-    {
-        error("Error reading file: " +  std::string(input.at(0)));
-    }
-
-    if (planarconfig != 1) error("Sorry : only planarconfig = 1 is supported (" + std::string(input.at(0)) +")");
-    if (sampleperpixel != 4) error("Sorry : only sampleperpixel = 4 is supported (" + std::string(input.at(0)) +")");
-    if (bitspersample != 8) error("Sorry : only bitspersample = 8 is supported (" + std::string(input.at(0)) +")");
-
-    uint8_t *IM = new uint8_t[width * height * 4];
-    uint8_t *LINE = new uint8_t[width * 4];
-    uint8_t *PIXEL = new uint8_t[4];
-
-    for(int h = 0; h < height; h++) {
-        if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
-        if (mergeMethod == MERGEMETHOD_TRANSPARENCY) {
-            // merge method is transparency, we want to make transparent the 'transparent' color (given in parameters)
-            for(int w = 0; w < width; w++) {
-                if (! memcmp(LINE+w*4,&transparent,3)) {
-                    memset(LINE+w*4,0,4);
-                }
-            }
-        }
-        memcpy(&IM[h*width*4],LINE,width*4);
-    }
-    TIFFClose(TIFF_FILE);
-
-    // FOLLOWING IMAGE READING
-    for (int i = 1; i < input.size(); i++) {
-
-        uint32 widthp, heightp;
-        uint16 bitspersamplep, sampleperpixelp, compressionp = -1, planarconfigp;
-
-        TIFF_FILE = TIFFOpen(input.at(i), "r");
-        if(!TIFF_FILE) error("Unable to open file for reading: " + std::string(input.at(i)));
-        if( ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, &widthp)                       ||
-            ! TIFFGetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, &heightp)                     ||
-            ! TIFFGetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersamplep)            ||
-            ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfigp)     ||
-            ! TIFFGetFieldDefaulted(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixelp)||
-            ! TIFFGetField(TIFF_FILE, TIFFTAG_COMPRESSION, &compressionp))
-        {
-            error("Error reading file: " +  std::string(input.at(i)));
-        }
-
-        if (planarconfigp != 1) error("Sorry : only planarconfig = 1 is supported (" + std::string(input.at(i)) +")");
-        if (sampleperpixelp != 4) error("Sorry : only sampleperpixel = 4 is supported (" + std::string(input.at(i)) +")");
-        if (bitspersamplep != 8) error("Sorry : only bitspersample = 8 is supported (" + std::string(input.at(i)) +")");
-
-        if (widthp != width || heightp != height) error("All images must have same size (width and height)");
-
-        for(int h = 0; h < height; h++) {
-            if(TIFFReadScanline(TIFF_FILE,LINE, h) == -1) error("Unable to read data");
-            for(int w = 0; w < width; w++) {
-                if (mergeMethod == MERGEMETHOD_TRANSPARENCY && (LINE[w*4+3] == 0 || ! memcmp(LINE+w*4,&transparent,3))) {
-                    continue;
-                }
-                compose(LINE+w*4,IM+(h*width+w)*4,PIXEL,false);
-                memcpy(&IM[h*width*4+w*4],PIXEL,4);
-            }
-        }
-        TIFFClose(TIFF_FILE);
-    }
-
-    // OUTPUT IMAGE WRITTING
-    uint16_t extrasample = EXTRASAMPLE_ASSOCALPHA;
-    TIFF_FILE = TIFFOpen(output, "w");
-    if(!TIFF_FILE) error("Unable to open file for writting: " + std::string(output));
-
-    if( ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGEWIDTH, width)               ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_IMAGELENGTH, height)             ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_BITSPERSAMPLE, 8)                ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel) ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip)      ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig)      ||
-        ! TIFFSetField(TIFF_FILE, TIFFTAG_COMPRESSION, compression))
-            error("Error writting file: " +  std::string(output));
-
-    if (samplesperpixel == 4) {
-        if (! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
-            error("Error writting file: " +  std::string(output));
-    }
-
-
-    if (samplesperpixel == 4) {
-        if (! TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) ||
-            ! TIFFSetField(TIFF_FILE, TIFFTAG_EXTRASAMPLES,1,&extrasample))
-            error("Error writting file: " +  std::string(output));
-
-        for(int h = 0; h < height; h++) {
-            memcpy(LINE, IM+h*width*samplesperpixel, width * samplesperpixel);
-            if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
-        }
-    }
-    else if (samplesperpixel == 3) {
-        if (!TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB))
-            error("Error writting file: " +  std::string(output));
-
-        for(int h = 0; h < height; h++) {
-            for(int i = 0; i < width; i++) {
-                compose(IM+h*width*4+i*4,opaque,PIXEL,true);
-                memcpy(LINE+i*3,PIXEL,3);
-            }
-            if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
-        }
-    }
-    else {
-        if (!TIFFSetField(TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK))
-            error("Error writting file: " +  std::string(output));
-
-        for(int h = 0; h < height; h++) {
-            for(int i = 0; i < width; i++) {
-                compose(IM+h*width*4+i*4,opaque,PIXEL,true);
-                LINE[i] = 0.2125*PIXEL[0] + 0.7154*PIXEL[1] + 0.0721*PIXEL[2];
-            }
-            if(TIFFWriteScanline(TIFF_FILE, LINE, h) == -1) error("Unable to write line to " + std::string(output));
-        }
-
-    }
-
-    TIFFClose(TIFF_FILE);
-
-    delete[] IM;
-    delete[] LINE;
-    delete[] PIXEL;
-
-    return 0;
-}*/
 
 /**
 * @fn int main(int argc, char **argv)
@@ -646,13 +491,13 @@ int main(int argc, char **argv) {
         error("Cannot load images from the configuration file",-1);
     }
 
-    LOGGER_DEBUG("Save image");
+    LOGGER_INFO("Save image");
     // Enregistrement de l'image fusionnée
     if (pImageOut->writeImage(pMergeIn) < 0) {
         error("Cannot write the merged image",-1);
     }
 
-    LOGGER_DEBUG("Save mask");
+    LOGGER_INFO("Save mask");
     // Enregistrement du masque fusionné, si demandé
     if (pMaskOut != NULL && pMaskOut->writeImage(pMergeIn->Image::getMask()) < 0) {
         error("Cannot write the merged mask",-1);

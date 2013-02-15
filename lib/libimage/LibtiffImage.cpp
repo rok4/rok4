@@ -67,27 +67,27 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
         return NULL;
     } else {
         // Lecture de l'en-tête pour récupérer les informations sur l'image
-        if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width)<1) {
+        if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width) < 1) {
             LOGGER_ERROR( "Unable to read pixel width for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height)<1) {
+        if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height) < 1) {
             LOGGER_ERROR( "Unable to read pixel height for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL,&channels)<1) {
+        if (TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL,&channels) < 1) {
             LOGGER_ERROR( "Unable to read number of samples per pixel for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG,&planarconfig)<1) {
+        if (TIFFGetField(tif, TIFFTAG_PLANARCONFIG,&planarconfig) < 1) {
             LOGGER_ERROR( "Unable to read planar configuration for file " << filename);
             return NULL;
         }
         
-        if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE,&bitspersample)<1) {
+        if (TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE,&bitspersample) < 1) {
             LOGGER_ERROR( "Unable to read number of bits per sample for file " << filename);
             return NULL;
         }
@@ -289,7 +289,7 @@ int LibtiffImage::writeImage(Image* pIn)
     float* buf_f=0;
 
     // Ecriture de l'image
-    if (ST.getSampleFormat() == SAMPLEFORMAT_UINT){
+    if (ST.isUInt8()){
         buf_u = (unsigned char*)_TIFFmalloc(width * channels * getBitsPerSample() / 8);
         for( int line = 0; line < height; line++) {
             pIn->getline(buf_u,line);
@@ -298,7 +298,7 @@ int LibtiffImage::writeImage(Image* pIn)
                 return -1;
             }
         }
-    } else if(ST.getSampleFormat() == SAMPLEFORMAT_IEEEFP){
+    } else if(ST.isFloat()){
         buf_f = (float*)_TIFFmalloc(width * channels * getBitsPerSample()/8);
         for( int line = 0; line < height; line++) {
             pIn->getline(buf_f,line);
@@ -308,7 +308,7 @@ int LibtiffImage::writeImage(Image* pIn)
             }
         }
     } else {
-        LOGGER_DEBUG("Not handled sample format to write: " << ST.getSampleFormat());
+        LOGGER_DEBUG("Not handled sample format to write. Are handled: " << ST.getSampleFormat());
         return -1;
     }
 

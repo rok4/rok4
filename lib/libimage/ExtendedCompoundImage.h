@@ -350,7 +350,7 @@ class ExtendedCompoundMask : public Image {
         ExtendedCompoundImage* ECI;
 
         /** \~french
-         * \brief Retourne une ligne, flottante ou entière
+         * \brief Retourne une ligne entière
          * \details Lors ce que l'on veut récupérer une ligne d'un masque composé, on va se reporter sur tous les masques des images source de l'image composée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
          * \param[out] buffer Tableau contenant au moins width*channels valeurs
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)

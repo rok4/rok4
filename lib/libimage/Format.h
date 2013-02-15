@@ -94,12 +94,22 @@ class SampleType {
 
         /**
          * \~french
-         * \brief Renvoie la liste des types gérés
+         * \brief Précise si le type correspondant est uint8_t
          * \~english
-         * \brief Return the handled type list
+         * \brief Precise if corresponding type is uint8_t
          */
-        static std::string getHandledFormat() {
-            return  "\t - 8-bit unsigned integer\n\t - 32-bit float\n";
+        bool isUInt8() {
+            return (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT);
+        }
+
+        /**
+         * \~french
+         * \brief Précise si le type correspondant est float
+         * \~english
+         * \brief Precise if corresponding type is float
+         */
+        bool isFloat() {
+            return (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP);
         }
         
         /**
@@ -115,8 +125,18 @@ class SampleType {
          * \li 32-bit float
          */
         bool isSupported() {
-            return  (bitspersample == 32 && sampleformat == SAMPLEFORMAT_UINT) ||
-                    (bitspersample == 8 && sampleformat == SAMPLEFORMAT_IEEEFP) ;
+            return  (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) ||
+                    (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) ;
+        }
+        
+        /**
+         * \~french
+         * \brief Renvoie la liste des types gérés
+         * \~english
+         * \brief Return the handled type list
+         */
+        static std::string getHandledFormat() {
+            return  "\t - 8-bit unsigned integer\n\t - 32-bit float\n";
         }
 };
 

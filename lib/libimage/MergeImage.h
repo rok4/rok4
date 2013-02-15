@@ -38,23 +38,24 @@
 /**
  * \file MergeImage.h
  ** \~french
- * \brief Définition des classes MergeImage, MergeImageFactory et Pixel
+ * \brief Définition des classes MergeImage, MergeImageFactory et MergeMask
  * \details
  * \li MergeImage : image résultant de la fusion d'images semblables, selon différents modes de composition
  * \li MergeImageFactory : usine de création d'objet MergeImage
- * \li Pixel
+ * \li MergeMask : masque fusionné, associé à une image fusionnée
  ** \~english
- * \brief Define classes MergeImage, MergeImageFactory and ExtendedCompoundImageFactory
+ * \brief Define classes MergeImage, MergeImageFactory and MergeMask
  * \details
  * \li MergeImage : image merged with similar images, with different merge methods
  * \li MergeImageFactory : factory to create MergeImage object
- * \li Pixel
+ * \li MergeMask : merged mask, associated with a merged image
  */
 
 #ifndef MERGEIMAGE_H
 #define MERGEIMAGE_H
 
 #include "Image.h"
+#include "Pixel.h"
 #include "Format.h"
 
 namespace Merge {
@@ -106,6 +107,12 @@ class MergeImage : public Image {
         Merge::MergeType composition;
 
         /**
+         * \~french \brief Nombre de canaux dans le format de travail
+         * \~english \brief Work format's number of samples per pixel
+         */
+        int workSpp;
+
+        /**
          * \~french \brief Type du canal
          * \~english \brief Sample type
          */
@@ -124,9 +131,6 @@ class MergeImage : public Image {
          * \~english \brief Transparent value
          */
         int* transparentValue;
-        
-        void mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front );
-        void mergeline ( float* buffer, uint8_t* back, uint8_t* front );
 
         /** \~french
          * \brief Retourne une ligne, flottante ou entière
@@ -139,12 +143,12 @@ class MergeImage : public Image {
 
     protected:
 
-        MergeImage(std::vector< Image* >& images, int channels, SampleType ST,
-                   int* bgValue, int* transparentValue,
-                   Merge::MergeType composition = Merge::NORMAL ) :
+        MergeImage(std::vector< Image* >& images, int channels, int workSpp, SampleType ST,
+                   int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL ) :
             Image(images.at(0)->width,images.at(0)->height,images.at(0)->getResX(),images.at(0)->getResY(),
                   channels,images.at(0)->getBbox()),
-            images ( images ), composition ( composition ), bgValue(bgValue), transparentValue(transparentValue), ST(ST) {}
+            images ( images ), composition ( composition ), workSpp(workSpp),
+            bgValue(bgValue), transparentValue(transparentValue), ST(ST) {}
         
 
     public:
@@ -207,7 +211,7 @@ class MergeImage : public Image {
  */
 class MergeImageFactory {
     public:
-        MergeImage* createMergeImage(std::vector< Image* >& images, SampleType ST,
+        MergeImage* createMergeImage(std::vector< Image* >& images, SampleType ST, int channels,
                                      int* bgValue, int* transparentValue,
                                      Merge::MergeType composition = Merge::NORMAL );
 };
@@ -227,7 +231,7 @@ class MergeMask : public Image {
         MergeImage* MI;
 
         /** \~french
-         * \brief Retourne une ligne, flottante ou entière
+         * \brief Retourne une ligne entière
          * \details Lors ce que l'on veut récupérer une ligne d'un masque fusionné, on va se reporter sur tous les masques des images source de l'image fusionnée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
          * \param[out] buffer Tableau contenant au moins width*channels valeurs
          * \param[in] line Indice de la ligne à retourner (0 <= line < height)
@@ -271,31 +275,6 @@ class MergeMask : public Image {
             Image::print();
         }
 
-};
-
-/** \~ \author Institut national de l'information géographique et forestière
- ** \~french
- * \brief Représentation d'un pixel
- */
-class Pixel {
-    public:
-        float Sr, Sg, Sb, Sa;
-        float Sra, Sga, Sba;
-        
-        // 3 Chan + Alpha
-        Pixel ( uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : Sr(r), Sb(b), Sg(g) {
-            Sa  = a/255.;
-            Sra = r * Sa;
-            Sga = g * Sa;
-            Sba = b * Sa;
-        }
-        
-        // 1 Chan + Alpha
-        Pixel ( uint8_t x, uint8_t a = 255) : Sr(x/255), Sb(x/255), Sg(x/255), Sa(a/255) {
-            Sra = Sr * Sa;
-            Sga = Sra;
-            Sba = Sra;
-        }
 };
 
 #endif // MERGEIMAGE_H

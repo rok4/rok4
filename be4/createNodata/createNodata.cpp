@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
     int bytesperpixel = samplesperpixel*bitspersample/8;
     uint8_t data[imageheight*imagewidth*bytesperpixel];
 
-    if (sampleformat == SAMPLEFORMAT_IEEEFP && bitspersample == 32) {
+    if (ST.isFloat()) {
         // Case float32
         float nodataFloat32[samplesperpixel];
         for(int i = 0; i < samplesperpixel; i++) nodataFloat32[i] = (float) nodata[i];
@@ -296,7 +296,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i<imageheight*imagewidth; i++)
             memcpy(data+i*bytesperpixel, nodataFloat32, bytesperpixel);
     }
-    else if (sampleformat == SAMPLEFORMAT_UINT && bitspersample == 8) {
+    else if (ST.isUInt8()) {
         // Case int8
         uint8_t nodataUInt8[samplesperpixel];
         for (int i = 0; i < samplesperpixel; i++) nodataUInt8[i] = (uint8_t) nodata[i];
