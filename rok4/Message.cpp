@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Message.cpp
+ * \~french
+ * \brief Implémentation des classes de gérant les messages utilisateurs
+ * \~english
+ * \brief Implement classes handling user messages
+ */
+
 #include "Message.h"
 #include "Logger.h"
 #include <iostream>

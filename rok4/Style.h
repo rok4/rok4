@@ -151,7 +151,7 @@ private :
 public:
    /**
      * \~french
-     * \brief Crée un Style à partir des ses éléments constitutifs
+     * \brief Crée un Style à partir de ses éléments constitutifs
      * \param[in] id identifiant WMS/WMTS du style
      * \param[in] titles liste des titres
      * \param[in] abstracts liste des résumés
@@ -162,7 +162,7 @@ public:
      * \param[in] exaggeration facteur d'éxagération de la pente
      * \param[in] center valeur d'un pixel de pente nulle
      * \~english
-     * \brief Create a ResourceLocator
+     * \brief Create a Style
      * \param[in] id WMS/WMTS style identifier
      * \param[in] titles list of titles
      * \param[in] abstracts list of abstracts

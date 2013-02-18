@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Message.h
+ * \~french
+ * \brief Définition des classes de gérant les messages utilisateurs
+ * \~english
+ * \brief Define classes handling user messages
+ */
+
 #ifndef _MESSAGE_
 #define _MESSAGE_
 
@@ -43,24 +51,77 @@
 #include "ServiceException.h"
 #include <vector>
 
-
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * Une instance de MessageDataSource définit un message renvoyé à l'utilisateur.
+ * Le message est renvoyé comme un fichier.
+ * \brief Gestion des messages sous forme de fichier
+ * \~english
+ * A MessageDataSource define a message send to the user.
+ * The message is send as a file.
+ * \brief File messages handler
+ * \~ \see MessageDataStream
+ */
 class MessageDataSource : public DataSource {
 private:
+    /**
+     * \~french Type MIME du message
+     * \~english MIME type
+     */
     std::string type;
 protected:
+    /**
+     * \~french Message à envoyer
+     * \~english Sended message
+     */
     std::string message;
 public:
+    /**
+     * \~french
+     * \brief Crée un MessageDataSource à partir de ses éléments constitutifs
+     * \param[in] message contenu du message
+     * \param[in] type type MIME
+     * \~english
+     * \param[in] message message content
+     * \param[in] type MIME type
+     */
     MessageDataSource ( std::string message, std::string type ) : message ( message ), type ( type ) {}
     const uint8_t* getData ( size_t& size ) {
         size=message.length();
         return ( const uint8_t* ) message.data();
     }
+    /**
+     * \~french
+     * \brief Retourne le code de retour HTTP associé au message
+     * \return code
+     * \~english
+     * \brief Return the associated HTTP return code
+     * \return code
+     */
     int getHttpStatus() {
         return 200;
     }
+    /**
+     * \~french
+     * \brief Retourne le type MIME du message
+     * \return type
+     * \~english
+     * \brief Return the message's MIME type
+     * \return type
+     */
     std::string getType() {
         return type.c_str();
     }
+    /**
+     * \~french
+     * \brief Libère les données mémoire allouées.
+     * \return true en cas de succès
+     * \~english
+     * \brief Free the allocated memories
+     * \return true if successful
+     * \~ \see libimage : DataSource
+     */
     bool releaseData() {}
 };
 
@@ -96,11 +157,34 @@ public:
     }
 };
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * Une instance de MessageDataStream définit un message renvoyé à l'utilisateur.
+ * Le message est renvoyé sous forme de flux
+ * \brief Gestion des messages sous forme de flux
+ * \~english
+ * A MessageDataStream define a message send to the user.
+ * \brief Streamed messages handler
+ * \~ \see MessageDataSource
+ */
 class MessageDataStream : public DataStream {
 private:
+    /**
+     * \~french Type MIME du message
+     * \~english MIME type
+     */
     std::string type;
+    /**
+     * \~french Position courante dans le flux
+     * \~english Current stream position
+     */
     uint32_t pos;
 protected:
+    /**
+     * \~french Message à envoyer
+     * \~english Sended message
+     */
     std::string message;
 
 public:
