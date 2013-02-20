@@ -430,17 +430,22 @@ int* Level::getNoDataValue(int* nodatavalue) {
     DataSource *nd =  getDecodedNoDataTile();
     
     size_t size;
-    if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
-        const uint8_t * buffer = nd->getData(size);
-        const float* fbuf =  (const float*) buffer;
-        for (int pixel = 0; pixel < this->channels; pixel++) {
-            *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+    const uint8_t * buffer = nd->getData(size);
+    if ( buffer ) { 
+        if ( format==TIFF_RAW_FLOAT32 || format == TIFF_LZW_FLOAT32 || format == TIFF_ZIP_FLOAT32 || format == TIFF_PKB_FLOAT32) {
+            const float* fbuf =  (const float*) buffer;
+            for (int pixel = 0; pixel < this->channels; pixel++) {
+                *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+            }
+        } else {
+            for (int pixel = 0; pixel < this->channels; pixel++) {
+                *(nodatavalue + pixel)  = *(buffer + pixel);
+            }
         }
     } else {
-        const uint8_t * buffer = nd->getData(size);
-        for (int pixel = 0; pixel < this->channels; pixel++) {
-            *(nodatavalue + pixel)  = *(buffer + pixel);
-        }
+            for (int pixel = 0; pixel < this->channels; pixel++) {
+                *(nodatavalue + pixel)  = 0;
+            }
     }
     delete nd;
     return nodatavalue;
