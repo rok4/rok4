@@ -357,11 +357,11 @@ public:
     /**
      * \~french
      * \brief Calcule la BoundingBox incluse dans le domaine de définition du CRS courant
-     * \param[in] geographicBBox une emprise définit dans le CRS courant
+     * \param[in] BBox une emprise définit dans le CRS courant
      * \return l'emprise recadrée
      * \~english
      * \brief Compute a BoundingBox included in the current CRS definition area
-     * \param[in] geographicBBox a BoundingBox in the current CRS
+     * \param[in] BBox a BoundingBox in the current CRS
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBox ( BoundingBox< double > BBox );
@@ -382,6 +382,36 @@ public:
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBox ( double minx, double miny, double maxx, double maxy );
+    
+    /**
+     * \~french
+     * \brief Calcule la BoundingBox incluse dans le domaine de définition du CRS courant
+     * \param[in] geographicBBox une emprise définit en WGS84
+     * \return l'emprise recadrée
+     * \~english
+     * \brief Compute a BoundingBox included in the current CRS definition area
+     * \param[in] geographicBBox a BoundingBox in WGS84
+     * \return the cropped BoundingBox
+     */
+    BoundingBox<double> cropBBoxGeographic ( BoundingBox< double > BBox );
+    /**
+     * \~french
+     * \brief Calcule la BoundingBox Géographique incluse dans le domaine de définition du CRS courant
+     * \param[in] minx abscisse du coin inférieur gauche de l'emprise définit en WGS84
+     * \param[in] miny ordonnée du coin inférieur gauche de l'emprise définit en WGS84
+     * \param[in] maxx abscisse du coin supérieur droit de l'emprise définit en WGS84
+     * \param[in] maxy ordonnée du coin supérieur droit de l'emprise définit en WGS84
+     * \return l'emprise recadrée
+     * \~english
+     * \brief Compute a BoundingBox included in the current CRS definition area
+     * \param[in] minx x-coordinate of the bottom left corner of the boundingBox in WGS84
+     * \param[in] miny y-coordinate of the bottom left corner of the boundingBox in WGS84
+     * \param[in] maxx x-coordinate of the top right corner of the boundingBox in WGS84
+     * \param[in] maxy y-coordinate of the top right corner of the boundingBox in WGS84
+     * \return the cropped BoundingBox
+     */
+    BoundingBox<double> cropBBoxGeographic ( double minx, double miny, double maxx, double maxy );
+    
     /**
      * \~french
      * \brief Destructeur par défaut

@@ -331,6 +331,34 @@ BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, dou
     return cropBBox( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
+BoundingBox< double > CRS::cropBBoxGeographic ( BoundingBox< double > BBox ) {
+    double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
+    if (BBox.xmin < definitionArea.xmin) {
+        minx = definitionArea.xmin;
+    } 
+    if (BBox.xmax > definitionArea.xmax) {
+        maxx = definitionArea.xmax;
+    }
+    if (BBox.xmin > definitionArea.xmax || BBox.xmax < definitionArea.xmin) {
+        minx = maxx = 0;
+    }
+    if (BBox.ymin < definitionArea.ymin) {
+        miny = definitionArea.ymin;
+    }
+    if (BBox.ymax > definitionArea.ymax) {
+        maxy = definitionArea.ymax;
+    }
+    if (BBox.ymin > definitionArea.ymax || BBox.ymax < definitionArea.ymin) {
+        miny = maxy = 0;
+    }
+    return BoundingBox<double> ( minx,miny,maxx,maxy );
+}
+
+BoundingBox< double > CRS::cropBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
+    return cropBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
+
 
 CRS::~CRS() {
 
