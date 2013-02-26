@@ -91,7 +91,7 @@ namespace Format {
             return SampleType(32,SAMPLEFORMAT_IEEEFP);
         } else {
             // Canaux entiers
-            return SampleType(32,SAMPLEFORMAT_IEEEFP);
+            return SampleType(8,SAMPLEFORMAT_UINT);
         }
     }
 

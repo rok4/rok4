@@ -37,23 +37,48 @@
 
 /**
  * \file overlayNtiff.cpp
- * \brief Superposition de n images avec transparence
- * \author IGN
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Fusion de N images aux mêmes dimensions, selon différentes méthodes
+ * \~english \brief Merge N images with same dimensions, according to different merge methods
  *
- * Ce programme est destine a etre utilise dans la chaine de generation de cache joinCache.
- * Il est appele pour calculer les dalles avec plusieurs sources.
+ * \details Ce programme est destine à être utilisé dans la chaîne de génération de cache joinCache. Il est appele pour calculer les dalles avec plusieurs sources.
  *
- * Parametres d'entree :
- * 1. Une couleur qui sera considérée comme transparente
- * 2. Une couleur qui sera utilisée si on veut supprimer le canal alpha
- * 3. Le nombre de canaux de l'image de sortie
- * 4. Une liste d'images source à superposer
- * 5. Un fichier de sortie
+ * Les images en entrée et celle en sortie peuvent :
+ * \li avoir des nombres de canaux différents
  *
- * En sortie, un fichier TIFF au format dit de travail brut non compressé entrelace sur 1,3 ou 4 canaux entiers.
+ * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
+ * \li hauteur et largeur en pixels
+ * \li format des canaux
  *
- * Toutes les images ont la même taille et sont sur 4 canaux entiers.
- * Le canal alpha est considéré comme l'opacité (0 = transparent)
+ * Les formats des canaux gérés sont :
+ * \li entier non signé sur 8 bits
+ * \li flottant sur 32 bits
+ *
+ * On doit préciser en paramètre de la commande :
+ * \li Un fichier texte contenant l'image finale, puis les images sources. On peut trouver également les masques associés aux images. L'ordre a de l'importance, les premières images sources seront considérées comme allant sur le dessus, quelque soit la méthode utilisée pour la fusion.
+ * Format d'une ligne du fichier : \code<CHEMIN DE L'IMAGE> [<CHEMIN DU MASQUE ASSOCIÉ>]\endcode
+ * Exemple de configuration :
+ * \~ \code{.txt}
+ * IMAGE.tif MASK.tif
+ * IMG sources/image1.tif  sources/mask1.tif
+ * IMG sources/image2.tif
+ * \endcode
+ * \~french
+ * \li La compression de l'image de sortie
+ * \li La méthode de fusion
+ * \li Le nombre de canaux par pixel en sortie
+ * \li La valeur à considérer comme transparente
+ * \li la valeur à utiliser comme fond
+ *
+ * Les méthodes de fusion disponibles sont :
+ * \~
+ * \li TRANSPARENCY
+ * \image html merge_transparency.png
+ * \li MULTIPLY
+ * \image html merge_multiply.png
+ * \li MASK
+ * \image html merge_mask.png
+ * \~french
  */
 
 #include <iostream>
@@ -84,7 +109,7 @@ uint16_t photometric = PHOTOMETRIC_RGB;
 /** \~french Compression de l'image de sortie */
 uint16_t compression = COMPRESSION_NONE;
 /** \~french Mode de fusion des images */
-Merge::MergeType mergeMethod;
+Merge::MergeType mergeMethod = Merge::UNKNOWN;
 
 
 int transparent[4] = {0,0,0,0};
@@ -96,18 +121,72 @@ int background[4];
  * \brief Affiche l'utilisation et les différentes options de la commande overlayNtiff
  * \details L'affichage se fait dans le niveau de logger INFO
  * \~ \code
+ * overlayNtiff version X.X.X
+ * 
+ * Create one TIFF image, from several images with same dimensions, with different available merge methods.
+ * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one
+ * 
+ * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
+ * Parameters:
+ *     -f configuration file : list of output and source images and masks
+ *     -c output compression :
+ *             raw     no compression
+ *             none    no compression
+ *             jpg     Jpeg encoding
+ *             lzw     Lempel-Ziv & Welch encoding
+ *             pkb     PackBits encoding
+ *             zip     Deflate encoding
+ *     -n value to consider as transparent, 4 integers, seperated with comma
+ *     -b value to use as background, one integer per output sample, seperated with comma
+ *     -m merge method : used to merge input images :
+ *             TRANSPARENCY   images are merged by alpha blending
+ *             MULTIPLY       samples are multiplied one by one
+ *             MASK           associated mask are used to compose the output image
+ *     -s samples per pixel : 1, 3 or 4
+ *     -p photometric :
+ *             gray    min is black
+ *             rgb     for image with alpha too
+ * 
+ * Examples
+ *     - for gray orthophotography, with transparency (white is transparent)
+ *     overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0
+ *     - for DTM, with masks
+ *     overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999
  * \endcode
  */
 void usage() {
-    LOGGER_INFO("overlayNtiff version "<< BE4_VERSION);
-    LOGGER_INFO(" Usage : overlayNtiff -mode multiply -transparent 255,255,255 -opaque 0,0,0 -channels 4 "
-        "-input source1.tif source2.tif source3.tif -output result.tif\n"
-        "-mode : transparency/multiply\n"
-        "-transparent : color which will be considered to be transparent\n"
-        "-opaque : background color in case we have to remove alpha channel\n"
-        "-channels : precise number of samples per pixel in the output image\n"
-        "-input : list of source images\n"
-        "-output : output file path\n");
+    LOGGER_INFO("\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
+
+    "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
+    "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
+
+    "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
+
+    "Parameters:\n" <<
+    "    -f configuration file : list of output and source images and masks\n" <<
+    "    -c output compression :\n" <<
+    "            raw     no compression\n" <<
+    "            none    no compression\n" <<
+    "            jpg     Jpeg encoding\n" <<
+    "            lzw     Lempel-Ziv & Welch encoding\n" <<
+    "            pkb     PackBits encoding\n" <<
+    "            zip     Deflate encoding\n" <<
+    "    -n value to consider as transparent, 4 integers, seperated with comma\n" <<
+    "    -b value to use as background, one integer per output sample, seperated with comma\n" <<
+    "    -m merge method : used to merge input images :\n" <<
+    "            TRANSPARENCY   images are merged by alpha blending\n" <<
+    "            MULTIPLY       samples are multiplied one by one\n" <<
+    "            MASK           associated mask are used to compose the output image\n" <<
+    "    -s samples per pixel : 1, 3 or 4\n" <<
+    "    -p photometric :\n" <<
+    "            gray    min is black\n" <<
+    "            rgb     for image with alpha too\n\n" <<
+
+    "Examples\n" <<
+    "    - for gray orthophotography, with transparency (white is transparent)\n" <<
+    "    overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
+    "    - for DTM, with masks\n" <<
+    "    overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999\n\n");
 }
 
 /**
@@ -148,10 +227,11 @@ int parseCommandLine(int argc, char** argv) {
                     break;
                 case 'm': // image merge method
                     if(i++ >= argc) {LOGGER_ERROR("Error with merge method (option -m)"); return -1;}
-                    if(strncmp(argv[i], "multiply",8) == 0) mergeMethod = Merge::MULTIPLY;
-                    else if(strncmp(argv[i], "transparency",12) == 0) mergeMethod = Merge::TRANSPARENCY;
-                    else if(strncmp(argv[i], "mask",4) == 0) mergeMethod = Merge::MASK;
-                    else {LOGGER_ERROR("Unknown value for merge method (option -m) : " << argv[i]); return -1;}
+                    mergeMethod = Merge::fromString(argv[i]);
+                    if (mergeMethod == Merge::UNKNOWN) {
+                        LOGGER_ERROR("Unknown value for merge method (option -m) : " << argv[i]);
+                        return -1;
+                    }
                     break;
                 case 's': // samplesperpixel
                     if(i++ >= argc) {LOGGER_ERROR("Error with samples per pixel (option -s)"); return -1;}
@@ -192,7 +272,7 @@ int parseCommandLine(int argc, char** argv) {
     }
 
     // Merge method control
-    if (mergeMethod == 0) {
+    if (mergeMethod == Merge::UNKNOWN) {
         LOGGER_ERROR("We need to know the merge method");
         return -1;
     }
@@ -436,7 +516,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     }
 
     if (hasMask) {
-
         *ppMaskOut = LIF.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1,
                                                        SampleType(8,SAMPLEFORMAT_UINT),
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
@@ -451,10 +530,17 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
 }
 
 /**
-* @fn int main(int argc, char **argv)
-* @brief Fonction principale
-*/
-
+ ** \~french
+ * \brief Fonction principale de l'outil overlayNtiff
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ * \return code de retour, 0 si réussi, -1 sinon
+ ** \~english
+ * \brief Main function for tool overlayNtiff
+ * \param[in] argc parameters number
+ * \param[in] argv parameters array
+ * \return 0 if success, -1 otherwise
+ */
 int main(int argc, char **argv) {
 
     LibtiffImage* pImageOut ;
@@ -479,25 +565,25 @@ int main(int argc, char **argv) {
     logw.precision(16);
     logw.setf(std::ios::fixed,std::ios::floatfield);
 
-    LOGGER_INFO("Read parameters");
+    LOGGER_DEBUG("Read parameters");
     // Lecture des parametres de la ligne de commande
     if (parseCommandLine(argc,argv) < 0) {
         error("Cannot parse command line",-1);
     }
 
-    LOGGER_INFO("Load");
+    LOGGER_DEBUG("Load");
     // Chargement des images
     if (loadImages(&pImageOut,&pMaskOut,&pMergeIn) < 0) {
         error("Cannot load images from the configuration file",-1);
     }
 
-    LOGGER_INFO("Save image");
+    LOGGER_DEBUG("Save image");
     // Enregistrement de l'image fusionnée
     if (pImageOut->writeImage(pMergeIn) < 0) {
         error("Cannot write the merged image",-1);
     }
 
-    LOGGER_INFO("Save mask");
+    LOGGER_DEBUG("Save mask");
     // Enregistrement du masque fusionné, si demandé
     if (pMaskOut != NULL && pMaskOut->writeImage(pMergeIn->Image::getMask()) < 0) {
         error("Cannot write the merged mask",-1);

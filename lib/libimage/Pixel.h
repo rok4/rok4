@@ -46,17 +46,16 @@
 #ifndef PIXEL_H
 #define PIXEL_H
 
-#include <limits>
-
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
- * \brief Représentation d'un pixel flottant
+ * \brief Représentation d'un pixel entier ou flottant
  */
-template<typename T = float>
+template<typename T>
 class Pixel {
 
     public:
-        float s1, s2, s3, alpha;
+        T s1, s2, s3;
+        float alpha;
 
         // avec Alpha
         Pixel ( float* values, int srcSpp) {
@@ -76,6 +75,28 @@ class Pixel {
                 case 4:
                     s1 = values[0]; s2 = values[1]; s3 = values[2];
                     alpha = values[3];
+                    break;
+            }
+        }
+
+        Pixel ( uint8_t* values, int srcSpp) {
+            switch (srcSpp) {
+                case 1:
+                    s1 = s2 = s3 = values[0];
+                    alpha = 1.0;
+                    break;
+                case 2:
+                    s1 = s2 = s3 = values[0];
+                    alpha = (float) values[1]/255.;
+                    break;
+                case 3:
+                    s1 = values[0]; s2 = values[1]; s3 = values[2];
+                    alpha = 1.0;
+                    break;
+                case 4:
+                    s1 = values[0]; s2 = values[1]; s3 = values[2];
+                    // Sur 8 bits, la transparence va de 0 à 255, on la ramène donc entre 0 et 1
+                    alpha = (float) values[3]/255.;
                     break;
             }
         }
@@ -102,61 +123,6 @@ class Pixel {
                     break;
             }
         }
-};
-
-/** \~ \author Institut national de l'information géographique et forestière
- ** \~french
- * \brief Représentation d'un pixel entier
- */
-template<typename T = uint8_t>
-class Pixel {
-
-    public:
-        uint8_t s1, s2, s3;
-        float alpha;
-
-        // avec Alpha
-        Pixel ( T* values, int srcSpp) {
-            switch (srcSpp) {
-                case 1:
-                    s1 = s2 = s3 = values[0];
-                    alpha = 1.0;
-                    break;
-                case 2:
-                    s1 = s2 = s3 = values[0];
-                    alpha = (float) values[1]/255.;
-                    break;
-                case 3:
-                    s1 = values[0]; s2 = values[1]; s3 = values[2];
-                    alpha = 1.0;
-                    break;
-                case 4:
-                    s1 = values[0]; s2 = values[1]; s3 = values[2];
-                    // Sur 8 bits, la transparence va de 0 à 255, on la ramène donc entre 0 et 1
-                    alpha = (float) values[3]/255.;
-                    break;
-            }
-        }
-
-        void isItTransparent(Pixel* transparent) {
-            if (s1 == transparent->s1 && s2 == transparent->s2 && s3 == transparent->s3) {
-                alpha = 0.0;
-            }
-        }
-
-        void alphaBlending(Pixel* back) {
-            alpha = alpha + back->alpha * (1. - alpha);
-            s1 = (T) ((s1*alpha + back->s1 * back->alpha * (1 - alpha)) / alpha);
-            s2 = (T) ((s2*alpha + back->s2 * back->alpha * (1 - alpha)) / alpha);
-            s3 = (T) ((s3*alpha + back->s3 * back->alpha * (1 - alpha)) / alpha);
-        }
-
-        void multiply(Pixel* back) {
-            alpha *= back->alpha;
-            s1 = (s1 * back->s1) / 255;
-            s2 = (s2 * back->s2) / 255;
-            s3 = (s3 * back->s3) / 255;
-        }
 
         void write(uint8_t* buffer, int outChannels) {
             switch (outChannels) {
@@ -180,6 +146,27 @@ class Pixel {
                     break;
             }
         }
+
+        void isItTransparent(Pixel* transparent) {
+            if (s1 == transparent->s1 && s2 == transparent->s2 && s3 == transparent->s3) {
+                alpha = 0.0;
+            }
+        }
+
+        void alphaBlending(Pixel* back) {
+            float finalAlpha = alpha + back->alpha * (1. - alpha);
+            s1 = (T) ((alpha*s1 + back->alpha * back->s1 * (1 - alpha)) / finalAlpha);
+            s2 = (T) ((alpha*s2 + back->alpha * back->s2 * (1 - alpha)) / finalAlpha);
+            s3 = (T) ((alpha*s3 + back->alpha * back->s3 * (1 - alpha)) / finalAlpha);
+            alpha = finalAlpha;
+        }
+
+        void multiply(Pixel* back) {
+            alpha *= back->alpha;
+            s1 = (s1 * back->s1) / 255;
+            s2 = (s2 * back->s2) / 255;
+            s3 = (s3 * back->s3) / 255;
+        }        
 };
 
 #endif

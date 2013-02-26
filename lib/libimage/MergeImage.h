@@ -38,23 +38,26 @@
 /**
  * \file MergeImage.h
  ** \~french
- * \brief Définition des classes MergeImage, MergeImageFactory et MergeMask
+ * \brief Définition des classes MergeImage, MergeImageFactory et MergeMask et du namespace Merge
  * \details
  * \li MergeImage : image résultant de la fusion d'images semblables, selon différents modes de composition
  * \li MergeImageFactory : usine de création d'objet MergeImage
  * \li MergeMask : masque fusionné, associé à une image fusionnée
+ * \li Merge : énumère et manipule les différentes méthodes de fusion
  ** \~english
- * \brief Define classes MergeImage, MergeImageFactory and MergeMask
+ * \brief Define classes MergeImage, MergeImageFactory and MergeMask and the namespace Merge
  * \details
  * \li MergeImage : image merged with similar images, with different merge methods
  * \li MergeImageFactory : factory to create MergeImage object
  * \li MergeMask : merged mask, associated with a merged image
+ * \li Merge : enumerate and managed different merge methods
  */
 
 #ifndef MERGEIMAGE_H
 #define MERGEIMAGE_H
 
 #include "Image.h"
+#include <string.h>
 #include "Pixel.h"
 #include "Format.h"
 
@@ -72,6 +75,11 @@ namespace Merge {
         TRANSPARENCY = 5,
         MASK = 6
     };
+
+    const int mergeType_size = 6;
+
+    MergeType fromString ( std::string strMergeMethod );
+    std::string toString ( MergeType mergeMethod );
 }
 
 /**
@@ -83,10 +91,10 @@ namespace Merge {
  * \li le format de canaux
  *
  * On va disposer de plusieurs manières de fusionner les images :
- * \li Multiply
- * \li Transparency
- * \li Mask
- * \li Normal
+ * \li MULTIPLY
+ * \li TRANSPARENCY
+ * \li MASK
+ * \li NORMAL
  */
 class MergeImage : public Image {
 
@@ -120,14 +128,14 @@ class MergeImage : public Image {
 
         /**
          * \~french \brief Valeur de fond
-         * \details On a une valeur entière par canal. Tous les pixel de l'image fusionnée seront initialisés avec cette valeur.
+         * \details On a une valeur entière par canal. Tous les pixels de l'image fusionnée seront initialisés avec cette valeur.
          * \~english \brief Background value
          */
         int* bgValue;
 
         /**
          * \~french \brief Valeur de transparence
-         * \details On a une valeur entière par canal. Tous les pixel de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
+         * \details On a 4 valeurs entières. Tous les pixels de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
          * \~english \brief Transparent value
          */
         int* transparentValue;

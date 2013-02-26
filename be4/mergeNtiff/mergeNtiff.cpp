@@ -56,7 +56,7 @@
  * \li flottant sur 32 bits
  *
  * On doit préciser en paramètre de la commande :
- * \li Un fichier texte contenant les images sources et l'image finale avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
+ * \li Un fichier texte contenant l'image finale, puis les images sources, avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
  * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
  * Le chemin peut contenir un point d'interrogation comme premier caractère, cela voudra dire qu'on veut utiliser la racine placée en paramètre (option -r). Si celle-ci n'est pas précisée, le point d'interrogation est juste supprimé.
  * Exemple de configuration :
@@ -66,7 +66,6 @@
  * IMG sources/imagefond.tif      -499       1501    1501    -499       4       4
  * MSK sources/maskfond.tif
  * IMG sources/image1.tif      0       1000    1000    0       1       1
- * MSK sources/mask1.tif
  * IMG sources/image2.tif      500       1500    1500    500       1       1
  * MSK sources/mask2.tif
  * \endcode
@@ -85,7 +84,7 @@
  *
  * Pour réaliser la fusion des images en entrée, on traite différemment :
  * \li les images qui sont superposables à l'image de sortie (mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
- * \li les images non compatibles : un passage par le réechntillonnage (plus lourd en calcul) est indispensable.
+ * \li les images non compatibles : un passage par le réechantillonnage (plus lourd en calcul) est indispensable.
  *
  * Exemple d'appel à la commande :
  * \li pour des ortho-images \~english \li for orthoimage
@@ -155,8 +154,7 @@ Interpolation::KernelType interpolation;
  * \~ \code
  * mergeNtiff version X.X.X
  *
- * Usage: mergeNtiff -f <FILE> -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
- * All parameters are mandatory (parameters' number must be 17), no default value.
+ * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
  *
  * Parameters:
  *      -f configuration file : list of output and source images and masks
@@ -186,7 +184,6 @@ Interpolation::KernelType interpolation;
  * Examples
  *      - for orthophotography
  *      mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
- *
  *      - for DTM
  *      mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
  * \endcode
@@ -197,7 +194,6 @@ void usage() {
     "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
     
     "Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>\n" <<
-    "All parameters are mandatory (parameters' number must be 17), no default value.\n\n" <<
 
     "Parameters:\n" <<
     "    -f configuration file : list of output and source images and masks\n" <<
@@ -226,9 +222,9 @@ void usage() {
 
     "Examples\n" <<
     "    - for orthophotography\n" <<
-    "    mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255\n\n" <<
+    "    mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255\n" <<
     "    - for DTM\n" <<
-    "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n");
+    "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n\n");
 }
 
 /**
