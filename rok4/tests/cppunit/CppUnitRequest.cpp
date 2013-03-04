@@ -73,5 +73,7 @@ void CppUnitRequest::setUp() {
 
 void CppUnitRequest::testhex2int() {
     CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('0') == 0 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('1') == 1 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('1') != 0 ) ;
     CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int(monhaxedecimal) == 15 ) ;
 }
