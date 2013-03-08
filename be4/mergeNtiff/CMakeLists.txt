@@ -53,8 +53,6 @@ endif(DEBUG_BUILD)
 
 set(${PROJECT_NAME}_SRCS mergeNtiff.cpp )
 
-
-
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 ########################################
@@ -85,8 +83,7 @@ if(UNITTEST)
 
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
     # Exécution des tests unitaires CppUnit
-    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
-  "tests/cppunit/CppUnit*.cpp" )
+    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
     TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

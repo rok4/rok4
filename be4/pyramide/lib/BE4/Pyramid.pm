@@ -459,7 +459,7 @@ sub _load {
     }
 
     $self->{pyrImgSpec} = $pyrImgSpec;
-    DEBUG (sprintf "PyrImageSpec = %s", Dumper($pyrImgSpec));
+    DEBUG(sprintf "PYRIMAGESSPEC (debug export) = %s", $pyrImgSpec->exportForDebug());
 
     ##### create NoData !
     my $objNodata = BE4::NoData->new({
@@ -474,7 +474,7 @@ sub _load {
     }
     $self->{nodata} = $objNodata;
     
-    DEBUG (sprintf "NODATA = %s", Dumper($objNodata));
+    DEBUG (sprintf "NODATA (debug export) = %s", $objNodata->exportForDebug());
 
     return TRUE;
 }
@@ -649,7 +649,7 @@ sub readConfPyramid {
 
     # read mask directory name in the old pyramid, using a level, if exists
     my $maskPath = $level->findvalue('mask/baseDir');
-    if (defined $maskPath) {
+    if ($maskPath ne '') {
         @directories = File::Spec->splitdir($maskPath);
         # <baseDir> : rel_datapath_from_desc/dir_mask/level
         #                                       -2      -1
@@ -678,14 +678,13 @@ sub readConfPyramid {
                             $v->findvalue('TMSLimits/maxTileCol')
                           );
         #
-        my $baseimage = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $tagtm );
+        my $imageDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $tagtm );
         #
-        my $basenodata = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $tagtm );
+        my $nodataDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $tagtm );
         #
-        my $dirMask = undef;
-        if (defined $self->getDirMask()) {
-            my $basemask = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $tagtm );
-            $dirMask = File::Spec->abs2rel($basemask, $self->getNewDescriptorDir);
+        my $maskDir = undef;
+        if ($self->ownMasks()) {
+            $maskDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $tagtm );
         }
         #
         my $levelOrder = $self->getOrderfromID($tagtm);
@@ -696,12 +695,9 @@ sub readConfPyramid {
         my $objLevel = BE4::Level->new({
             id                => $tagtm,
             order             => $levelOrder,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getNewDescriptorDir),
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getNewDescriptorDir),
-            dir_mask          => $dirMask, # Can be undefined
-            dir_metadata      => undef,      # TODO !
-            compress_metadata => undef,      # TODO !
-            type_metadata     => undef,      # TODO !
+            dir_image         => $imageDir,
+            dir_nodata        => $nodataDir,
+            dir_mask          => $maskDir, # Can be undefined
             size              => [$tagsize[0],$tagsize[1]],
             dir_depth         => $tagdirdepth,
             limits            => [$taglimit[0],$taglimit[1],$taglimit[2],$taglimit[3]],
@@ -987,31 +983,24 @@ sub createLevels {
         }
 
         # base dir image
-        my $baseimage = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $ID);
+        my $imageDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $ID);
 
         # base dir nodata
-        my $basenodata = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $ID);
-        
-        my $dirMask = undef;
-        if (defined $self->getDirMask()) {
-            my $basemask = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $ID );
-            $dirMask = File::Spec->abs2rel($basemask, $self->getNewDescriptorDir);
-        }
+        my $nodataDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $ID);
 
-        # TODO : metadata
-        #   compression, type ...
-        my $basemetadata = File::Spec->catdir($self->getNewDataDir(), $self->getDirMetadata(), $ID);
+        # base dir mask
+        my $maskDir = undef;
+        if ($self->ownMasks()) {
+            $maskDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $ID );
+        }
 
         # params to level
         my $params = {
             id                => $ID,
             order             => $order,
-            dir_image         => File::Spec->abs2rel($baseimage, $self->getNewDescriptorDir),
-            dir_nodata        => File::Spec->abs2rel($basenodata, $self->getNewDescriptorDir),
-            dir_mask          => $dirMask,
-            dir_metadata      => undef, # TODO
-            compress_metadata => undef, # TODO
-            type_metadata     => undef, # TODO
+            dir_image         => $imageDir,
+            dir_nodata        => $nodataDir,
+            dir_mask          => $maskDir,
             size              => [$tilesperwidth, $tilesperheight],
             dir_depth         => $self->getDirDepth(),
         };
@@ -1120,6 +1109,9 @@ sub writeConfPyramid {
     }
     my $strpyrtmplt = $doctpl->toString(0);
   
+    my $descriptorFile = $self->getNewDescriptorFile();
+    my $descriptorDir = dirname($descriptorFile);
+  
     #
     my $tmsname = $self->getTmsName();
     $strpyrtmplt =~ s/__TMSNAME__/$tmsname/;
@@ -1143,33 +1135,30 @@ sub writeConfPyramid {
 
     for (my $i = scalar @levels -1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        my $levelXML = $levels[$i]->exportToXML;
+        my $levelXML = $levels[$i]->exportToXML($descriptorDir);
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
     $strpyrtmplt =~ s/^$//g;
-    $strpyrtmplt =~ s/^\n$//g;
-  
-    my $filepyramid = $self->getNewDescriptorFile();    
+    $strpyrtmplt =~ s/^\n$//g;  
 
-    if (-f $filepyramid) {
-        ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $filepyramid);
+    if (-f $descriptorFile) {
+        ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $descriptorFile);
         return FALSE;
     }
-    
-    my $dir = dirname($filepyramid);
-    if (! -d $dir) {
-        DEBUG (sprintf "Create the pyramid's descriptor directory '%s' !", $dir);
-        eval { mkpath([$dir]); };
+
+    if (! -d $descriptorDir) {
+        DEBUG (sprintf "Create the pyramid's descriptor directory '%s' !", $descriptorDir);
+        eval { mkpath([$descriptorDir]); };
         if ($@) {
-            ERROR(sprintf "Can not create the pyramid's descriptor directory '%s' : %s !", $dir , $@);
+            ERROR(sprintf "Can not create the pyramid's descriptor directory '%s' : %s !", $descriptorDir , $@);
             return FALSE;
         }
     }
     
     my $PYRAMID;
-    if (! open $PYRAMID, ">", $filepyramid) {
+    if (! open $PYRAMID, ">", $descriptorFile) {
         ERROR("");
         return FALSE;
     }
@@ -1400,9 +1389,9 @@ sub writeCachePyramid {
     
     my %levels = %{$self->getLevels};
     foreach my $objLevel (values %levels) {
-        #create folders for data and nodata (metadata not implemented) if they don't exist
+        # Create folders for data and nodata (metadata not implemented) if they don't exist
         ### DATA
-        my $dataDir = File::Spec->rel2abs($objLevel->getDirImage, $self->getNewDescriptorDir);
+        my $dataDir = $objLevel->getDirImage;
         if (! -d $dataDir) {
             eval { mkpath([$dataDir]); };
             if ($@) {
@@ -1412,7 +1401,7 @@ sub writeCachePyramid {
         }
         ### MASK
         if (defined $self->getDirMask) {
-            my $maskDir = File::Spec->rel2abs($objLevel->getDirMask, $self->getNewDescriptorDir);
+            my $maskDir = $objLevel->getDirMask;
             if (! -d $maskDir) {
                 eval { mkpath([$maskDir]); };
                 if ($@) {
@@ -1422,18 +1411,8 @@ sub writeCachePyramid {
             }
         }
 
-        ### METADATA
-        #my $metadataDir = File::Spec->rel2abs($objLevel->getDirMetadata, $self->getNewDescriptorDir);
-        #if (! -d $metadataDir) {
-        #    eval { mkpath([$metadataDir]); };
-        #    if ($@) {
-        #        ERROR(sprintf "Can not create the metadata directory '%s' : %s !", $metadataDir , $@);
-        #        return FALSE;
-        #    }
-        #}
-
         ### NODATA
-        my $nodataDir = File::Spec->rel2abs($objLevel->getDirNodata, $self->getNewDescriptorDir);
+        my $nodataDir = $objLevel->getDirNodata;
         my $nodataTilePath = File::Spec->catfile($nodataDir,$self->{nodata}->getNodataFilename);
         if (! -e $nodataTilePath) {
 
@@ -1837,11 +1816,13 @@ Examples:
 Parameters (list):
     type - string - Tile type : "data", "metadata", "nodata", "mask". Otherwise, use "data".
     absolute - boolean - If we want complete directory path.
+    level - string - Level ID, if we want it in the path. Optionnal.
 =cut
 sub getRootPerType {
     my $self = shift;
     my $type = shift;
     my $absolute = shift;
+    my $level = shift;
     
     my $dir;
     if ($type eq "metadata"){
@@ -1855,11 +1836,14 @@ sub getRootPerType {
     }
     
     if (! defined $absolute || $absolute) {
-        return File::Spec->catfile($self->getNewDataDir, $dir);   
-    } else {
-        return $dir;
+        $dir = File::Spec->catfile($self->getNewDataDir, $dir);   
     }
-    
+
+    if (defined $level) {
+        $dir = File::Spec->catfile($dir, $level);
+    }
+
+    return $dir;
 }
 
 ####################################################################################################
@@ -1873,6 +1857,36 @@ Returns all pyramid's information. Useful for debug.
 
 Example:
     (start code)
+    Object BE4::Pyramid :
+         New cache :
+                - Name : JC
+                - Descriptor path : /home/ign/desc
+                - Data path : /home/ign/data
+         Directories' name (depth = 2):
+                - Data : IMAGE
+                - Nodata : NODATA
+                - Mask : MASK
+         Image size (in pixel):
+                - width : 16
+                - height : 16
+         Image components :
+    Object BE4::PyrImageSpec :
+         Global information :
+                - Compression : raw
+                - Compression option : none
+                - Interpolation : bicubic
+                - Gamma : 1
+                - Format code : TIFF_RAW_INT8
+         Pixel components :
+    Object BE4::Pixel :
+         Bits per sample : 8
+         Photometric : rgb
+         Sample format : uint
+         Samples per pixel : 1
+
+
+         TMS : LAMB93_10cm
+         Number of levels : 0
     (end code)
 =cut
 sub exportForDebug {

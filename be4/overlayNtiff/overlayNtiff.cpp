@@ -111,10 +111,10 @@ uint16_t compression = COMPRESSION_NONE;
 /** \~french Mode de fusion des images */
 Merge::MergeType mergeMethod = Merge::UNKNOWN;
 
-
-int transparent[4] = {0,0,0,0};
-
-int background[4];
+/** \~french Couleur à considérer comme transparent dans le images en entrée. Vrai couleur (sur 3 canaux). Peut ne pas être définie */
+int* transparent;
+/** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il doit également être prémultiplié aux autres canaux */
+int* background;
 
 /**
  * \~french
@@ -136,8 +136,8 @@ int background[4];
  *             lzw     Lempel-Ziv & Welch encoding
  *             pkb     PackBits encoding
  *             zip     Deflate encoding
- *     -n value to consider as transparent, 4 integers, seperated with comma
- *     -b value to use as background, one integer per output sample, seperated with comma
+ *     -t value to consider as transparent, 3 integers, seperated with comma. Optionnal
+ *     -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
  *     -m merge method : used to merge input images :
  *             TRANSPARENCY   images are merged by alpha blending
  *             MULTIPLY       samples are multiplied one by one
@@ -171,8 +171,8 @@ void usage() {
     "            lzw     Lempel-Ziv & Welch encoding\n" <<
     "            pkb     PackBits encoding\n" <<
     "            zip     Deflate encoding\n" <<
-    "    -n value to consider as transparent, 4 integers, seperated with comma\n" <<
-    "    -b value to use as background, one integer per output sample, seperated with comma\n" <<
+    "    -t value to consider as transparent, 3 integers, seperated with comma. Optionnal\n" <<
+    "    -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
     "    -m merge method : used to merge input images :\n" <<
     "            TRANSPARENCY   images are merged by alpha blending\n" <<
     "            MULTIPLY       samples are multiplied one by one\n" <<
@@ -213,7 +213,9 @@ void error(std::string message, int errorCode) {
 int parseCommandLine(int argc, char** argv) {
 
     char strTransparent[256];
+    memset(strTransparent, 0, 256);
     char strBg[256];
+    memset(strBg, 0, 256);
 
     for(int i = 1; i < argc; i++) {
         if(argv[i][0] == '-') {
@@ -249,15 +251,15 @@ int parseCommandLine(int argc, char** argv) {
                     else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
                     else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
                     else {LOGGER_ERROR("Unknown value for compression (option -c) : " << argv[i]); return -1;}
-                    break;
+                    break; 
                 case 'p': // photometric
                     if(i++ >= argc) {LOGGER_ERROR("Error with photometric (option -p)"); return -1;}
                     if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
                     else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
                     else {LOGGER_ERROR("Unknown value for photometric (option -p) : " << argv[i]); return -1;}
                     break;
-                case 'n': // transparent color
-                    if(i++ >= argc) {LOGGER_ERROR("Error with transparent color (option -n)"); return -1;}
+                case 't': // transparent color
+                    if(i++ >= argc) {LOGGER_ERROR("Error with transparent color (option -t)"); return -1;}
                     strcpy(strTransparent,argv[i]);
                     break;
                 case 'b': // background color
@@ -273,64 +275,56 @@ int parseCommandLine(int argc, char** argv) {
 
     // Merge method control
     if (mergeMethod == Merge::UNKNOWN) {
-        LOGGER_ERROR("We need to know the merge method");
+        LOGGER_ERROR("We need to know the merge method (option -m)");
         return -1;
     }
 
     // Image list file control
     if (strlen(imageListFilename) == 0) {
-        LOGGER_ERROR("We need to have one images' list (text file)");
+        LOGGER_ERROR("We need to have one images' list (text file, option -f)");
         return -1;
     }
 
     // Samples per pixel control
     if (samplesperpixel == 0) {
-        LOGGER_ERROR("We need to know the number of samples per pixel in the output image");
+        LOGGER_ERROR("We need to know the number of samples per pixel in the output image (option -s)");
         return -1;
     }
 
     if (strlen(strTransparent) != 0) {
+        transparent = new int[3];
+        
         // Transparent interpretation
         char* charValue = strtok(strTransparent,",");
         if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
+            LOGGER_ERROR("Error with option -t : 3 integers values seperated by comma");
             return -1;
         }
         int value = atoi(charValue);
-        if(value < 0 || value > 255) {
-            LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
-            return -1;
-        }
         transparent[0] = value;
         for(int i = 1; i < 3; i++) {
             charValue = strtok (NULL, ",");
             if(charValue == NULL) {
-                LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
+                LOGGER_ERROR("Error with option -t : 3 integers values seperated by comma");
                 return -1;
             }
             value = atoi(charValue);
-            if(value < 0 || value > 255) {
-                LOGGER_ERROR("Error with option -n : 4 integer values seperated by comma");
-                return -1;
-            }
             transparent[i] = value;
         }
     }
 
     if (strlen(strBg) != 0) {
-        // Opaque interpretation
-        background[3] = 255;
+        background = new int[samplesperpixel];
+        
+        // Background interpretation
         char* charValue = strtok(strBg,",");
         if(charValue == NULL) {
             LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
             return -1;
         }
         int value = atoi(charValue);
-        if(value < 0 || value > 255) {
-            LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
-            return -1;
-        }
         background[0] = value;
+        
         for(int i = 1; i < samplesperpixel; i++) {
             charValue = strtok (NULL, ",");
             if(charValue == NULL) {
@@ -338,14 +332,10 @@ int parseCommandLine(int argc, char** argv) {
                 return -1;
             }
             value = atoi(charValue);
-            if(value < 0 || value > 255) {
-                LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
-                return -1;
-            }
             background[i] = value;
         }
     } else {
-        LOGGER_ERROR("We have to know the background value (option -b)");
+        LOGGER_ERROR("We need to know the background value for the output image (option -b)");
         return -1;
     }
 
@@ -412,7 +402,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     uint16_t bitspersample, sampleformat;
     int width, height;
     
-    bool hasMask;
+    bool hasMask, hasOutMask;
     LibtiffImageFactory LIF;
     MergeImageFactory MIF;
 
@@ -427,10 +417,12 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     }
 
     // Lecture de l'image de sortie
-    if (readFileLine(file,outputImagePath,&hasMask,outputMaskPath)) {
+    if (readFileLine(file,outputImagePath,&hasOutMask,outputMaskPath)) {
         LOGGER_ERROR("Cannot read output image in the file : " << imageListFilename);
         return -1;
     }
+
+    // On doit connaître les dimensions des images en entrée pour pouvoir créer les images de sortie
 
     // Lecture et création des images sources
     int inputNb = 0;
@@ -515,7 +507,7 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
         return -1;
     }
 
-    if (hasMask) {
+    if (hasOutMask) {
         *ppMaskOut = LIF.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1,
                                                        SampleType(8,SAMPLEFORMAT_UINT),
                                                        PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
@@ -592,6 +584,9 @@ int main(int argc, char **argv) {
     delete acc;
     delete pImageOut;
     delete pMaskOut;
+    
+    delete [] background;
+    if (transparent != NULL) { delete [] transparent; }
 
     return 0;
 }

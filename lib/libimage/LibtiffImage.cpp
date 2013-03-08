@@ -117,6 +117,22 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
             LOGGER_ERROR( "Unable to read number of rows per strip for file " << filename);
             return NULL;
         }
+
+        if (channels > 3) {
+            uint16_t extrasamplesCount;
+            uint16_t* extrasamples;
+            if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples) < 1) {
+                LOGGER_ERROR( "Unable to read number of extrasamples " << extrasamplesCount << " for file " << filename);
+                return NULL;
+            }
+
+            if (extrasamples[0] == EXTRASAMPLE_UNASSALPHA) {
+                LOGGER_ERROR( "Alpha sample is unassociated for the file " << filename);
+                return NULL;
+            }
+
+            delete [] extrasamples;
+        }
     }
 
     if (tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG) {
@@ -186,6 +202,14 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
     if (TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL,channels) < 1) {
         LOGGER_ERROR( "Unable to write number of samples per pixel for file " << filename);
         return NULL;
+    }
+
+    if (channels == 4) {
+        uint16_t extrasample = EXTRASAMPLE_ASSOCALPHA;
+        if (TIFFSetField(tif, TIFFTAG_EXTRASAMPLES,1,&extrasample) < 1) {
+            LOGGER_ERROR( "Unable to write number of samples per pixel for file " << filename);
+            return NULL;
+        }
     }
 
     if (TIFFSetField(tif, TIFFTAG_PLANARCONFIG,PLANARCONFIG_CONTIG) < 1) {

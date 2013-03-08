@@ -50,6 +50,7 @@ When we have several source images, we have to merge them. 3 ways are available:
     - transparency : alpha blending method. If images dont' own an alpha sample, white is considered as transparent. White is too the background color if we don't want alpha sample in the final images.
 (see merge_transparency.png)
     - masks : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
+(see merge_mask.png)
 
 Using:
     (start code)
@@ -64,7 +65,9 @@ Using:
 
 Attributes:
     pyramid - <BE4::Pyramid> - Allowed to know output format specifications and configure commands.
-    mergeMethod - string - Precise way to merge images.
+    mergeMethod - string - Precise way to merge images (in upper case).
+    ontConfDir - string - Directory, where to write overlayNtiff configuration files.
+    useMasks - boolean - Precise if masks have to be search and used. They are used if : user precise it (through the *use_masks" parameter OR the merge method is "MASK" OR user want masks in the final pyramid.
 
     list - stream - Stream to the pyramid's content list.
     roots - integer hash - Index all pyramid's roots. Values : root - string => ID - integer
@@ -87,6 +90,7 @@ use File::Path;
 use Data::Dumper;
 
 use JOINCACHE::Script;
+use JOINCACHE::Node;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -113,80 +117,67 @@ my %COMMANDS;
 =begin nd
 Constant: BASHFUNCTIONS
 Define bash functions, used to factorize and reduce scripts :
-    - PrepareImage
     - Cache2work
     - OverlayNtiff
     - Work2cache
 =cut
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
-PrepareImage () {
-  local imgSrc=$1
-  local imgDst=$2
-  local png=$3
-  local opt=$4
-
-  if [ $png ] ; then
-    mkdir ${TMP_DIR}/Untiled_PNG
-    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/Untiled_PNG.tif
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    rm -rf ${TMP_DIR}/Untiled_PNG
-
-    tiff2rgba -c zip ${TMP_DIR}/Untiled_PNG.tif $imgDst
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  else
-    tiff2rgba -c zip $imgSrc $imgDst
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  fi
-
-}
-
 Cache2work () {
-  local imgSrc=$1
-  local imgDst=$2
-  local png=$3
-  local opt=$4
+    local imgSrc=$1
+    local imgDst=$2
+    local type=$3
+    local opt=$4
 
-  if [ $png ] ; then
-    mkdir ${TMP_DIR}/Untiled_PNG
-    untile $imgSrc ${TMP_DIR}/Untiled_PNG/
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt $imgDst
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    rm -rf ${TMP_DIR}/Untiled_PNG
-  else
-    tiffcp __tcp__ $imgSrc $imgDst
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  fi
-
+    if [  "$type" == "png"  ] ; then
+        mkdir ${TMP_DIR}/Untiled_PNG
+        untile $imgSrc ${TMP_DIR}/Untiled_PNG/
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/$imgDst
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -rf ${TMP_DIR}/Untiled_PNG
+    elif [  "$type" == "msk"  ] ; then
+        tiffcp __tcpM__ $imgSrc ${TMP_DIR}/$imgDst
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    else
+        tiffcp __tcpI__ $imgSrc ${TMP_DIR}/$imgDst
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    fi
 }
 
 OverlayNtiff () {
-  local inputs=$1
+    local config=$1
 
-  overlayNtiff __oNt__ -input $inputs -output ${TMP_DIR}/result.tif
-  if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  rm -f $config
-  if [ $bg ] ; then
-    rm -f $bg
-  fi
+    overlayNtiff -f ${ONT_CONF_DIR}/$config __oNt__
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${ONT_CONF_DIR}/$config
 }
 
 Work2cache () {
-  local work=$1
-  local cache=$2
 
-  local dir=`dirname $cache`
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
 
-  if [ -r $cache ] ; then rm -f $cache ; fi
-  if [ ! -d  $dir ] ; then mkdir -p $dir ; fi
+    local dir=`dirname ${PYR_DIR}/$imgName`
 
-  if [ -f $work ] ; then
-    tiff2tile $work __t2t__  $cache
+    if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
+    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+    tiff2tile ${TMP_DIR}/$workImgName __t2tI__ ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-  fi
+
+    if [ $workMskName ] ; then
+
+        dir=`dirname ${PYR_DIR}/$mskName`
+
+        if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+        tiff2tile ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    fi
 }
 
 FUNCTIONS
@@ -197,7 +188,7 @@ BEGIN {}
 INIT {
 
     %COMMANDS = (
-        merge_method => ['replace','transparency','multiply'],
+        merge_method => ['REPLACE','TRANSPARENCY','MULTIPLY','MASK'],
     );
     
 }
@@ -215,11 +206,12 @@ Process constructor. Bless an instance.
 Parameters (list):
     pyr - <BE4::Pyramid> - Images pyramid to generate
     processParams - hash - Parameters in the section *process*
-|               merge_method - string - Way to merge several overlayed images
+|               merge_method - string - Way to merge several overlayed images (can be in lower case)
 |               job_number - integer - Level of parallelization for scripts
 |               path_temp - string - Directory, where to write proper temporary directory
 |               path_temp_common - string - Directory, where to write common temporary directory
 |               path_shell - string - Directory, where to write scripts
+|               use_masks - string - TRUE or FALSE, to precise if masks have to be used
 =cut
 sub new {
     my $this = shift;
@@ -231,6 +223,7 @@ sub new {
     my $self = {
         pyramid => undef,
         mergeMethod => undef,
+        ontConfDir => undef,
         
         currentScript => 0,
         scripts => [],
@@ -255,12 +248,19 @@ sub new {
         ERROR ("'merge_method' required !");
         return undef;
     } else {
-        if (! $self->isMergeMethod($processParams->{merge_method})) {
+        if (! $self->isMergeMethod(uc($processParams->{merge_method}))) {
             ERROR (sprintf "Unknown 'merge_method' : %s !", $processParams->{merge_method});
             return undef;
         }
     }
-    $self->{mergeMethod} = $processParams->{merge_method};
+    $self->{mergeMethod} = uc($processParams->{merge_method});
+
+    ######### Use masks ? #########
+    my $useMasks = $processParams->{use_masks};
+    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") || $self->{mergeMethod} eq "MASK" ) {
+        DEBUG("Masks will be used");
+        $self->{useMasks} = TRUE;
+    }
 
     ######### Scripts #########
 
@@ -336,6 +336,10 @@ sub new {
 
     $self->{list} = $LIST;
 
+    ######### OverlayNtiff configuration directory #########
+
+    $self->{ontConfDir} = $self->getCurrentScript()->getOntConfDir();
+
     return $self;
 }
 
@@ -347,65 +351,76 @@ sub new {
 Function: treatImage
 
 3 possibilities:
-    - the image is present in just one pyramid or merge_method = replace, and is compatible with the final cache -> we write a symbolic link.
-    - the image is present in just one pyramid or merge_method = replace, and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts.
-    - the image is preent in seve(ral pyramids and merge method is not 'replace' -> we use tool 'overlayNtiff', commands are written in scripts.
+    - the node owns just one source image and is compatible with the final cache -> we write a symbolic link : <makeLink>.
+    - the node owns just one source image and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts : <transformImage>.
+    - the node owns several source images -> we use tool 'overlayNtiff', commands are written in scripts : <mergeImages>.
 
 Parameters (list):
-    finaleImage - string - Absolute path to the finale pyramid's image (to generate)
-    sourceImages - hash array - Source images to merge
-|               img - string - Absolute path to the image
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
-
-See also:
-    <makeLink>, <transformImage>, <mergeImages>
+    node - <Node> - Node to treat
 =cut
 sub treatImage {
     my $self = shift;
-    my $finaleImage = shift;
-    my @sourceImages = @_;
+    my $node = shift;
 
     my $code = "";
 
-    if (scalar @sourceImages == 1 && $sourceImages[0]{sourcePyramid}->isCompatible() ) {
-        # We can just make a symbolic link, no code in a script
-        if (! $self->makeLink($finaleImage, $sourceImages[0]{img})) {
-            ERROR(sprintf "Cannot create link between %s and %s",$finaleImage,$sourceImages[0]);
+    my $path = $node->getPyramidName();
+
+    my $imageDir = $self->{pyramid}->getRootPerType("data", TRUE, $node->getLevel());
+    my $finalImage = File::Spec->catfile($imageDir,$path);
+
+    my $finalMask = undef;
+    if ($self->{pyramid}->ownMasks()) {
+        my $maskDir = $self->{pyramid}->getRootPerType("mask", TRUE, $node->getLevel());
+        $finalMask = File::Spec->catfile($imageDir,$path);
+    }
+
+    # On affecte le script courant au noeud. Le script courant n'est pas incrémenté dans le cas d'un lien, car rien n'est écrit dans le script.
+    $node->setScript($self->getCurrentScript());
+
+    if ($node->getSourcesNumber() == 1) {
+        my $sourceImage = $node->getSource(0);
+
+        if ($sourceImage->{sourcePyramid}->isCompatible()) {
+            # We can just make a symbolic link, no code in a script
+            if (! $self->makeLink($finalImage, $sourceImage->{img})) {
+                ERROR(sprintf "Cannot create link %s to %s", $sourceImage->{img}, $finalImage);
+                return FALSE;
+            }
+
+        } else {
+            # We have just one source image, but it is not compatible with the final cache
+            # We need to transform it.
+            if ( ! $self->transformImage($node) ) {
+                ERROR(sprintf "Cannot transform the image");
+                return FALSE;
+            }
+            
+            $node->writeInScript();
+            $self->{currentScript} = ($self->{currentScript}+1)%($self->{splitsNumber});
+        }
+
+        # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
+        if (exists $sourceImage->{msk} && $self->{pyramid}->ownMasks()) {
+            # We can just make a symbolic link, no code in a script
+            if (! $self->makeLink($finalMask, $sourceImage->{msk})) {
+                ERROR(sprintf "Cannot create link %s to %s", $sourceImage->{img}, $finalImage);
+                return FALSE;
+            }
+        }
+        
+    } else {
+        # We have several images, we merge them
+        if ( ! $self->mergeImages($node) ) {
+            ERROR(sprintf "Cannot merge the images");
             return FALSE;
         }
         
-        return TRUE;
+        $node->writeInScript($code);
+        $self->{currentScript} = ($self->{currentScript}+1)%($self->{splitsNumber});
     }
-
-    # We have to write commands in a script
-
-    # Use environment to short path, we remove the pyramid's data root
-    my $pyramidRoot = $self->{pyramid}->getNewDataDir;
-    $finaleImage =~ s/$pyramidRoot\/?//;
-
-    if (scalar @sourceImages == 1) {
-        # We have just one source image, but it is not compatible with the final cache
-        # We need to transform it.
-        $code = $self->transformImage($finaleImage, $sourceImages[0]);
-        if ( $code eq "" ) {
-            ERROR(sprintf "Cannot transform the image %s",$sourceImages[0]{img});
-            return FALSE;
-        }
-    } else {
-        # We have several images, we merge them
-        $code = $self->mergeImages($finaleImage,@sourceImages);
-        if ( $code eq "" ) {
-            ERROR("Cannot merge the images");
-            return FALSE;
-        }
-    }
-
-    # Storages
-    $self->storeInList(TRUE, $finaleImage);
-    $self->printInScript($code);
 
     return TRUE;
-
 }
 
 =begin nd
@@ -459,7 +474,7 @@ sub makeLink {
         return FALSE;
     }
 
-    $self->storeInList(FALSE, $absoluteTarget);
+    $self->storeInList($absoluteTarget);
 
     return TRUE;
 }
@@ -467,121 +482,165 @@ sub makeLink {
 =begin nd
 Function: transformImage
 
-Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel.
+Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel. Mask is not treated. Code is store into the node.
 
 Returns:
-    A string, the code to write in the script to transform image. An empty string if failure.
+    A boolean, TRUE if success, FALSE otherwise.
 
 Parameters (list):
-    finaleImage - string - Relative path to the finale pyramid's image (to generate), from the pyramid's root
-    sourceImage - hash - Source image to transform
-|               img - string - Absolute path to the image
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
-    
+    node - <Node> - Node to treat    
 =cut
 sub transformImage {
     my $self = shift;
-    my $finaleImage = shift;
-    my $sourceImage = shift;
+    my $node = shift;
 
     my $code = '';
-
-    # Pretreatment
-
+    my $outImgName = $node->getWorkName("I");
+    my $sourceImage = $node->getSource(0);
     my $format = $sourceImage->{sourcePyramid}->getFormatCode();
     my $sppSource = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
+    my $LIST = $self->{list};
 
+    #### Pretreatment
     if ($format =~ m/PNG/) {
         if ($sppSource == 4) {
-            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png \"-type TrueColorMatte -background none\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte -background none\"\n", $sourceImage->{img};
         } elsif ($sppSource == 3) {
-            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png \"-type TrueColorMatte\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte\"\n", $sourceImage->{img};
         } elsif ($sppSource == 1) {
-            $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif png \"-type Grayscale\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type Grayscale\"\n", $sourceImage->{img};
         } else {
             ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
-            return "";
+            return FALSE;
         }
     } else {
-        $code .= sprintf "Cache2work %s \${TMP_DIR}/img.tif\n", $sourceImage->{img};
+        $code .= sprintf "Cache2work %s tmp_$outImgName\n", $sourceImage->{img};
     }
 
     my $sppFinal = $self->{pyramid}->getSamplesPerPixel();
 
-    # We transform image with the samples per pixel of the final cache
+    #### We transform image with the samples per pixel of the final cache
     if ($sppFinal == 3) {
-        $code .= "tiff2rgba -c none -n \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+        $code .= "tiff2rgba -c none -n \${TMP_DIR}/tmp_$outImgName \${TMP_DIR}/$outImgName\n";
     }
     elsif ($sppFinal == 4) {
-        $code .= "tiff2rgba -c none \${TMP_DIR}/img.tif \${TMP_DIR}/transformedImg.tif\n";
+        $code .= "tiff2rgba -c none \${TMP_DIR}/tmp_$outImgName \${TMP_DIR}/$outImgName\n";
     }
     elsif ($sppFinal == 1) {
-        $code .= "convert \${TMP_DIR}/img.tif -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/transformedImg.tif\n";
+        $code .= "convert \${TMP_DIR}/tmp_$outImgName -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/$outImgName\n";
     }
+    
+    #### Final location writting
+    my $imgCacheName =
+        File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
+    $code .= sprintf ("Work2cache $outImgName $imgCacheName\n\n");
+    
+    printf ($LIST "0/%s\n", $imgCacheName);
 
-    # Final location writting
-    $code .= sprintf ("Work2cache \${TMP_DIR}/transformedImg.tif \${PYR_DIR}/%s\n\n", $finaleImage);
-
-    return $code;
+    $node->setCode($code);
+    return TRUE;
 }
 
 =begin nd
 Function: mergeImages
 
-Write commands in the current script to merge N images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge.
+Write commands in the current script to merge N images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
 
 Returns:
-    A string, the code to write in the script to transform image. An empty string if failure.
+    A boolean, TRUE if success, FALSE otherwise.
 
 Parameters (list):
-    finaleImage - string - Relative path to the finale pyramid's image (to generate), from the pyramid's root
-    sourceImages - hash array - Source images to merge
-|               img - string - Absolute path to the image
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+    node - <Node> - Node to treat
 =cut
 sub mergeImages {
     my $self = shift;
-    my $finaleImage = shift;
-    my @sourceImages = @_;
+    my $node = shift;
 
     my $code = "";
+    my $LIST = $self->{list};
+    my $nodeName = $node->getWorkBaseName();
 
-    # Pretreatment
+    #### Fichier de configuration ####
+    my $oNtConfFilename = "$nodeName.txt";
+    my $oNtConfFile = File::Spec->catfile($self->{ontConfDir},$oNtConfFilename);
+    
+    if (! open CFGF, ">", $oNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $oNtConfFile, en écriture.");
+        return FALSE;
+    }
 
-    for (my $i = 0; $i < scalar @sourceImages; $i++) {
+    #### Sorties ####
 
-        my $format = $sourceImages[$i]->{sourcePyramid}->getFormatCode();
-        my $spp = $sourceImages[$i]->{sourcePyramid}->getSamplesPerPixel();
+    my $outImgName = $node->getWorkName("I");
+    my $outImgPath = File::Spec->catfile($node->getScript->getTempDir, $outImgName);
+    
+    my $outMskPath = undef;
+    if ($self->{pyramid}->ownMasks()) {
+        $outMskPath = File::Spec->catfile($node->getScript->getTempDir, $node->getWorkName("M"));
+    }
+    
+    printf CFGF $node->exportForOntConf($outImgPath, $outMskPath);
+    
+    #### Entrées ####
+    for (my $i = 0; $i < $node->getSourcesNumber; $i++) {
+
+        my $sourceImage = $node->getSource($i);
+
+        my $inImgName = $node->getWorkName($i."_I");
+        my $inImgPath = File::Spec->catfile($node->getScript->getTempDir, $inImgName);
+
+        # Pretreatment
+        my $format = $sourceImage->{sourcePyramid}->getFormatCode();
+        my $spp = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
 
         if ($format =~ m/PNG/) {
             if ($spp == 4) {
-                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png \"-background none\"\n", $sourceImages[$i]{img} ,$i);
+                $code .= sprintf "Cache2work %s $inImgName png \"-background none\"\n", $sourceImage->{img};
             } elsif ($spp == 3) {
-                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png \"-type TrueColorMatte\"\n", $sourceImages[$i]{img} ,$i);
+                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColorMatte\"\n", $sourceImage->{img};
             } elsif ($spp == 1) {
-                $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif png \"-type Grayscale\"\n", $sourceImages[$i]{img} ,$i);
+                $code .= sprintf "Cache2work %s $inImgName png \"-type Grayscale\"\n", $sourceImage->{img};
             } else {
-                ERROR (sprintf "Samplesperpixel (%s) not supported ", $spp);
-                return "";
+                ERROR(sprintf "Samplesperpixel ($spp) not supported ");
+                return FALSE;
             }
         } else {
-            $code .= sprintf ("PrepareImage %s \${TMP_DIR}/img%s.tif\n", $sourceImages[$i]{img} ,$i);
+            $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
         }
+
+        my $inMskPath = undef;
+        if (exists $sourceImage->{msk}) {
+            my $inMskName = $node->getWorkName($i."_M");
+            $inMskPath = File::Spec->catfile($node->getScript->getTempDir, $inMskName);
+            $code .= sprintf ("Cache2work %s $inMskName\n", $sourceImage->{msk});
+        }
+
+        printf CFGF $node->exportForOntConf($inImgPath, $inMskPath);
     }
 
-    # Superposition
-    my $inputs = "";
+    close CFGF;
 
-    for (my $i = scalar @sourceImages - 1; $i >= 0; $i--) {
-        $inputs .= sprintf " \${TMP_DIR}/img%s.tif ",$i;
-    }
-
-    $code .= "OverlayNtiff \"$inputs\"\n";
+    $code .= "OverlayNtiff $oNtConfFilename\n";
 
     # Final location writting
-    $code .= sprintf ("Work2cache \${TMP_DIR}/result.tif \${PYR_DIR}/%s\n\n", $finaleImage);
+    my $imgCacheName =
+        File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
+    $code .= sprintf ("Work2cache $outImgName $imgCacheName");
+    printf ($LIST "0/%s\n", $imgCacheName);
+    
+    if (defined $outMskPath) {
+        my $outMskName = $node->getWorkName("M");
+        my $mskCacheName =
+            File::Spec->catfile($self->{pyramid}->getRootPerType('mask', FALSE, $node->getLevel()), $node->getPyramidName());
+        $code .= sprintf (" $outMskName $mskCacheName");
+        printf ($LIST "0/%s\n", $mskCacheName);
+    }
 
-    return $code;
+    $code .= "\n\n";
+
+    $node->setCode($code);
+    
+    return TRUE;
 }
 
 ####################################################################################################
@@ -601,56 +660,68 @@ sub configureFunctions {
     my $pyr = $self->{pyramid};
     my $configuredFunc = $BASHFUNCTIONS;
 
-    # congigure overlayNtiff
-    my $conf_oNt = "";
+    my $mm = $self->{mergeMethod};
+    my $spp = $pyr->getSamplesPerPixel;
+    my $ph = $pyr->getPhotometric;
+    my $nd = $self->{pyramid}->getNodata()->getValue();
 
-    $conf_oNt .= sprintf "-mode %s -transparent 255,255,255 -opaque 255,255,255 -channels %s",
-        $self->{mergeMethod}, $self->{pyramid}->getSamplesPerPixel;
+    ######## congigure overlayNtiff ########
+    
+    my $conf_oNt = "-c zip -m $mm -s $spp -p $ph -b $nd ";
+
+    if ($mm eq "TRANSPARENCY") {
+        $conf_oNt .= "-n 255,255,255,255 ";
+    }
 
     $configuredFunc =~ s/__oNt__/$conf_oNt/;
 
     # calculate image pixel size
 
-    my $tileWidth = $self->{pyramid}->getTileMatrixSet->getTileWidth;
-    my $tileHeight = $self->{pyramid}->getTileMatrixSet->getTileHeight;
+    my $tileWidth = $pyr->getTileMatrixSet->getTileWidth;
+    my $tileHeight = $pyr->getTileMatrixSet->getTileHeight;
 
-    my $imgHeight = $self->{pyramid}->getTilesPerHeight * $tileHeight;
+    my $imgHeight = $pyr->getTilesPerHeight * $tileHeight;
 
-    # congigure tiffcp
-    my $conf_tcp = "";
+    ######## tiffcp ########
 
-    $conf_tcp .= "-s -r $imgHeight ";
+    # pour les images
+    my $conf_tcp = "-s -r $imgHeight -c zip";
+    $configuredFunc =~ s/__tcpI__/$conf_tcp/;
 
-    $configuredFunc =~ s/__tcp__/$conf_tcp/;
+    # pour les masques
+    $conf_tcp = "-s -r $imgHeight -c zip";
+    $configuredFunc =~ s/__tcpM__/$conf_tcp/;
 
-    # configure montage
+    ######## configure montage ########
     my $conf_montageIn = "";
 
-    $conf_montageIn .= sprintf "-geometry %sx%s ",$tileWidth,$tileHeight;
-    $conf_montageIn .= sprintf "-tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
+    $conf_montageIn .= sprintf "-geometry %sx%s ",$tileWidth, $tileHeight;
+    $conf_montageIn .= sprintf "-tile %sx%s",$pyr->getTilesPerWidth, $pyr->getTilesPerHeight;
 
     $configuredFunc =~ s/__montageIn__/$conf_montageIn/g;
 
     my $conf_montageOut = "";
 
-    $conf_montageOut .= sprintf "-depth %s ",$self->{pyramid}->getBitsPerSample;
+    $conf_montageOut .= sprintf "-depth %s ", $pyr->getBitsPerSample;
 
     $conf_montageOut .= "-define tiff:rows-per-strip=$imgHeight -compress Zip";
 
     $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
-    # congigure tiff2tile
+    ######## congigure tiff2tile ########
     my $conf_t2t = "";
 
-    $conf_t2t .= sprintf "-c %s ", $self->{pyramid}->getCompression();
+    # pour les images
+    $conf_t2t .= sprintf "-c %s ", $pyr->getCompression();
+    $conf_t2t .= "-p $ph -t $tileWidth $tileHeight -s $spp ";
+    $conf_t2t .= sprintf "-b %s ", $pyr->getBitsPerSample();
+    $conf_t2t .= sprintf "-a %s ", $pyr->getSampleFormat();
 
-    $conf_t2t .= sprintf "-p %s ",$self->{pyramid}->getPhotometric();
-    $conf_t2t .= "-t $tileWidth $tileHeight ";
-    $conf_t2t .= sprintf "-b %s ",$self->{pyramid}->getBitsPerSample();
-    $conf_t2t .= sprintf "-a %s ",$self->{pyramid}->getSampleFormat();
-    $conf_t2t .= sprintf "-s %s ",$self->{pyramid}->getSamplesPerPixel();
+    $configuredFunc =~ s/__t2tI__/$conf_t2t/;
 
-    $configuredFunc =~ s/__t2t__/$conf_t2t/;
+    # pour les masques
+    $conf_t2t = "-c zip -p gray -t $tileWidth $tileHeight -b 8 -a uint -s 1";
+    $configuredFunc =~ s/__t2tM__/$conf_t2t/;
 
     return $configuredFunc;
 }
@@ -663,6 +734,12 @@ sub configureFunctions {
 sub getMergeMethod {
     my $self = shift;
     return $self->{pyramid}->getNodata; 
+}
+
+# Function: useMasks
+sub useMasks {
+    my $self = shift;
+    return $self->{useMasks};
 }
 
 =begin nd
@@ -698,41 +775,35 @@ Function: storeInList
 Writes file's path in the pyramid's content list and store the root.
 
 Parameters:
-    isNewImage - boolean - If TRUE, root is already remove and ID have to be '0'.
     path - string - Path to write in the cache list : root will be factorize.
 =cut
 sub storeInList {
     my $self = shift;
-    my $isNewImage = shift;
     my $path = shift;
 
-    if ($isNewImage) {
-        $path = "0/" . $path;
+    # We extract from the old tile path, the cache name (without the old cache root path)
+    my @directories = File::Spec->splitdir($path);
+    # $realName : abs_datapath/dir_image/level/XY/XY/XY.tif
+    #                             -5      -4  -3 -2   -1
+    #                     => -(3 + dir_depth)
+
+    my $deb = -3 - $self->{pyramid}->getDirDepth;
+
+    my @indexName = ($deb..-1);
+    my @indexRoot = (0..@directories+$deb-1);
+
+    my $name = File::Spec->catdir(@directories[@indexName]);
+    my $root = File::Spec->catdir(@directories[@indexRoot]);
+
+    my $rootID;
+    if (exists $self->{roots}->{$root}) {
+        $rootID = $self->{roots}->{$root};
     } else {
-        # We extract from the old tile path, the cache name (without the old cache root path)
-        my @directories = File::Spec->splitdir($path);
-        # $realName : abs_datapath/dir_image/level/XY/XY/XY.tif
-        #                             -5      -4  -3 -2   -1
-        #                     => -(3 + dir_depth)
-
-        my $deb = -3 - $self->{pyramid}->getDirDepth;
-
-        my @indexName = ($deb..-1);
-        my @indexRoot = (0..@directories+$deb-1);
-
-        my $name = File::Spec->catdir(@directories[@indexName]);
-        my $root = File::Spec->catdir(@directories[@indexRoot]);
-
-        my $rootID;
-        if (exists $self->{roots}->{$root}) {
-            $rootID = $self->{roots}->{$root};
-        } else {
-            $rootID = scalar (keys %{$self->{roots}}) + 1;
-            $self->{roots}->{$root} = $rootID;
-        }
-
-        $path = "$rootID/$name";
+        $rootID = scalar (keys %{$self->{roots}}) + 1;
+        $self->{roots}->{$root} = $rootID;
     }
+
+    $path = "$rootID/$name";
 
     my $STREAM = $self->{list};
     printf ($STREAM "%s\n", $path);
@@ -785,20 +856,10 @@ sub closeStreams {
     return TRUE;
 }
 
-=begin nd
-Function: printInScript
-
-Writes commands in the current script. Round robin method is used to fill different scripts.
-
-Parameters (list):
-    code - code to write in the current script.
-=cut
-sub printInScript {
+# Function: getCurrentScript
+sub getCurrentScript {
     my $self = shift;
-    my $code = shift;
-
-    $self->{scripts}[$self->{currentScript}]->write($code);
-    $self->{currentScript} = ($self->{currentScript}+1)%($self->{splitsNumber});
+    return $self->{scripts}->[$self->{currentScript}];
 }
 
 ####################################################################################################
@@ -812,6 +873,9 @@ Returns all commands' informations. Useful for debug.
 
 Example:
     (start code)
+    Object JOINCACHE::Process :
+         Merge method : MULTIPLY
+         Use masks
     (end code)
 =cut
 sub exportForDebug {
@@ -820,7 +884,9 @@ sub exportForDebug {
     my $export = "";
 
     $export .= "\nObject JOINCACHE::Process :\n";
-    $export .= sprintf "\t Merge method\n", $self->{mergeMethod};
+    $export .= sprintf "\t Merge method : %s\n", $self->{mergeMethod};
+    $export .= "\t Use masks\n" if $self->{useMasks};
+    $export .= "\t Doesn't use masks\n" if (! $self->{useMasks});
 
     return $export;
 }

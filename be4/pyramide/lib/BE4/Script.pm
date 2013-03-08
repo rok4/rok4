@@ -430,7 +430,7 @@ Example:
         Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
         Temporary directory : /home/IGN/TEMP/SCRIPT_2
         Common temporary directory : /home/IGN/TEMP/COMMON
-        MergeNtiff configuration directory : /home/IGN/TEMP/COMMON/mergeNtiff/SCRIPT_2
+        MergeNtiff configuration directory : /home/IGN/TEMP/COMMON/mergeNtiff
         Weight : 59
     (end code)
 =cut

@@ -53,7 +53,7 @@
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
- * \brief Représentation d'une ligne entière ou flottante
+ * \brief Représentation d'une ligne entière ou flottante, sur 4 canaux RGB + A, alpha prémultiplié.
  */
 template<typename T>
 class Line {
@@ -61,64 +61,181 @@ class Line {
     public:
         T* samples;
         float* alpha;
+        uint8_t* mask;
         int width;
 
-        // avec Alpha
-        Line ( float* values, int srcSpp, int width) : width(width) {
+        Line (int width) : width(width) {
             samples = new T[3*width];
             alpha = new float[width];
+            mask = new uint8_t[width];
+        }
+
+        Line ( T* imageIn, uint8_t* maskIn, int srcSpp, int width, T* transparent) : width(width) {
+            samples = new T[3*width];
+            alpha = new float[width];
+            mask = new uint8_t[width];
+            store(imageIn, mask, srcSpp, transparent);
+        }
+
+        Line ( T* imageIn, uint8_t* maskIn, int srcSpp, int width) : width(width) {
+            samples = new T[3*width];
+            alpha = new float[width];
+            mask = new uint8_t[width];
+            store(imageIn, mask, srcSpp);
+        }
+
+        void store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8_t* transparent) {
+            mask = maskIn;
             switch (srcSpp) {
                 case 1:
                     for (int i = 0; i < width; i++) {
-                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = values[i];
-                        alpha[i] = 1.0;
+                        if (! memcmp(samples+3*i, transparent, 3)) {
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = 0;
+                            alpha[i] = 0.0;
+                        } else {
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
+                            alpha[i] = 1.0;
+                        }
                     }
                     break;
                 case 2:
                     for (int i = 0; i < width; i++) {
-                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = values[2*i];
-                        alpha[i] = values[2*i+1];
+                        if (! memcmp(samples+3*i, transparent, 3)) {
+                            alpha[i] = 0.0;
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = 0;                            
+                        } else {
+                            alpha[i] = (float) imageIn[2*i+1] / 255;
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
+                        }
                     }
                     break;
                 case 3:
-                    memcpy(samples, values, sizeof(float)*3*width);
-                    for (int i = 0; i < width; i++) { alpha[i] = 1.0; }
+                    memcpy(samples, imageIn, 3*width);
+                    for (int i = 0; i < width; i++) {
+                        if (! memcmp(samples+3*i, transparent, 3)) {
+                            alpha[i] = 0.0;
+                            memcpy(samples+3*i, 0, 3);
+                        } else {
+                            alpha[i] = 1.0;
+                        }
+                    }
                     break;
                 case 4:
                     for (int i = 0; i < width; i++) {
-                        memcpy(samples+i*3,values+i*4,sizeof(float)*3);
-                        alpha[i] = values[i*4];
+                        if (! memcmp(samples+3*i, transparent, 3)) {
+                            memcpy(samples+i*3, 0, 3);
+                            alpha[i] = 0.0;
+                        } else {
+                            memcpy(samples+i*3,imageIn+i*4,3);
+                            alpha[i] = (float) imageIn[i*4+3] / 255.;
+                        }
                     }
                     break;
             }
         }
 
-        Line ( uint8_t* values, int srcSpp, int width) : width(width) {
-            
-            samples = new T[3*width];
-            alpha = new float[width];
-            
+        void store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp) {
+            mask = maskIn;
             switch (srcSpp) {
                 case 1:
                     for (int i = 0; i < width; i++) {
-                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = values[i];
+                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
                         alpha[i] = 1.0;
                     }
                     break;
                 case 2:
                     for (int i = 0; i < width; i++) {
-                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = values[2*i];
-                        alpha[i] = (float) values[2*i+1] / 255.;
+                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
+                        alpha[i] = (float) imageIn[2*i+1] / 255;
                     }
                     break;
                 case 3:
-                    memcpy(samples, values, 3*width);
+                    memcpy(samples, imageIn, 3*width);
                     for (int i = 0; i < width; i++) { alpha[i] = 1.0; }
                     break;
                 case 4:
                     for (int i = 0; i < width; i++) {
-                        memcpy(samples+i*3,values+i*4,sizeof(float)*3);
-                        alpha[i] = (float) values[i*4] / 255.;
+                        memcpy(samples+i*3,imageIn+i*4,3);
+                        alpha[i] = (float) imageIn[i*4+3] / 255.;
+                    }
+                    break;
+            }
+        }
+
+        void store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* transparent) {
+            mask = maskIn;
+            switch (srcSpp) {
+                case 1:
+                    for (int i = 0; i < width; i++) {
+                        if (! memcmp(samples+3*i, transparent, 3*sizeof(float))) {
+                            alpha[i] = 0.0;
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = 0.;
+                        } else {
+                            alpha[i] = 1.0;
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
+                        }
+                    }
+                    break;
+                case 2:
+                    for (int i = 0; i < width; i++) {
+                        if (! memcmp(samples+3*i, transparent, 3*sizeof(float))) {
+                            alpha[i] = 0.0;
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = 0.;
+                        } else {
+                            alpha[i] = imageIn[2*i+1];
+                            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
+                        }
+                    }
+                    break;
+                case 3:
+                    memcpy(samples, imageIn, sizeof(float)*3*width);
+                    for (int i = 0; i < width; i++) {
+                        if (! memcmp(samples+3*i, transparent, 3*sizeof(float))) {
+                            alpha[i] = 0.0;
+                            memcpy(samples+3*i, 0, sizeof(float)*3);
+                        } else {
+                            alpha[i] = 1.0;
+                        }
+                    }
+                    break;
+                case 4:
+                    for (int i = 0; i < width; i++) {
+                        memcpy(samples+i*3, imageIn+i*4, sizeof(float)*3);
+                        if (! memcmp(samples+3*i, transparent, 3*sizeof(float))) {
+                            memcpy(samples+i*3, 0, sizeof(float)*3);
+                            alpha[i] = 0.0;
+                        } else {
+                            memcpy(samples+i*3, imageIn+i*4, sizeof(float)*3);
+                            alpha[i] = imageIn[i*4+3];
+                        }
+                    }
+                    break;
+            }
+        }
+
+        void store ( float* imageIn, uint8_t* maskIn, int srcSpp) {
+            mask = maskIn;
+            switch (srcSpp) {
+                case 1:
+                    for (int i = 0; i < width; i++) {
+                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
+                        alpha[i] = 1.0;
+                    }
+                    break;
+                case 2:
+                    for (int i = 0; i < width; i++) {
+                        samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
+                        alpha[i] = imageIn[2*i+1];
+                    }
+                    break;
+                case 3:
+                    memcpy(samples, imageIn, sizeof(float)*3*width);
+                    for (int i = 0; i < width; i++) { alpha[i] = 1.0; }
+                    break;
+                case 4:
+                    for (int i = 0; i < width; i++) {
+                        memcpy(samples+i*3,imageIn+i*4,sizeof(float)*3);
+                        alpha[i] = imageIn[i*4+3];
                     }
                     break;
             }
@@ -128,20 +245,20 @@ class Line {
             switch (outChannels) {
                 case 1:
                     for (int i = 0; i < width; i++) {
-                        buffer[i] = (0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2])*alpha[i];
+                        buffer[i] = 0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2];
                     }
                     break;
                 case 2:
                     for (int i = 0; i < width; i++) {
-                        buffer[2*i] = (0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2])*alpha[i];
+                        buffer[2*i] = 0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2];
                         buffer[2*i+1] = alpha[i];
                     }
                     break;
                 case 3:
                     for (int i = 0; i < width; i++) {
-                        buffer[3*i] = alpha[i]*samples[3*i];
-                        buffer[3*i+1] = alpha[i]*samples[3*i+1];
-                        buffer[3*i+2] = alpha[i]*samples[3*i+2];
+                        buffer[3*i] = samples[3*i];
+                        buffer[3*i+1] = samples[3*i+1];
+                        buffer[3*i+2] = samples[3*i+2];
                     }
                     break;
                 case 4:
@@ -159,20 +276,20 @@ class Line {
             switch (outChannels) {
                 case 1:
                     for (int i = 0; i < width; i++) {
-                        buffer[i] = (uint8_t) ((0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2])*alpha[i]);
+                        buffer[i] = (uint8_t) (0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2]);
                     }
                     break;
                 case 2:
                     for (int i = 0; i < width; i++) {
-                        buffer[2*i] = (uint8_t) ((0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2])*alpha[i]);
+                        buffer[2*i] = (uint8_t) (0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2]);
                         buffer[2*i+1] = (uint8_t) (alpha[i]*255);
                     }
                     break;
                 case 3:
                     for (int i = 0; i < width; i++) {
-                        buffer[3*i] = (uint8_t) (alpha[i]*samples[3*i]);
-                        buffer[3*i+1] = (uint8_t) (alpha[i]*samples[3*i+1]);
-                        buffer[3*i+2] = (uint8_t) (alpha[i]*samples[3*i+2]);
+                        buffer[3*i] = samples[3*i];
+                        buffer[3*i+1] = samples[3*i+1];
+                        buffer[3*i+2] = samples[3*i+2];
                     }
                     break;
                 case 4:
@@ -186,27 +303,30 @@ class Line {
             }
         }
 
-        void alphaBlending(Line<T>* above, Pixel<T>* transparent) {
+        void alphaBlending(Line<T>* above) {
             float finalAlpha;
             for (int i = 0; i < width; i++) {
 
-                if (above->samples[3*i] == transparent->s1 &&
-                    above->samples[3*i+1] == transparent->s2 &&
-                    above->samples[3*i+2] == transparent->s3) {
-                    // Le pixel de la ligne du dessus est à considérer comme transparent, il ne change donc pas le pixel du dessous.
+                if (above->alpha[i] == 0. || ! above->mask[i]) {
+                    // Le pixel de la ligne du dessus est transparent, ou n'est pas de la donnée, il ne change donc pas le pixel du dessous.
                     continue;
                 }
+
+                alpha[i] = above->alpha[i] + alpha[i] * (1. - above->alpha[i]);
                 
-                finalAlpha = above->alpha[i] + alpha[i] * (1. - above->alpha[i]);
-                samples[3*i] = (T) ((above->alpha[i]*above->samples[3*i] + alpha[i] * samples[3*i] * (1 - above->alpha[i])) / finalAlpha);
-                samples[3*i+1] = (T) ((above->alpha[i]*above->samples[3*i+1] + alpha[i] * samples[3*i+1] * (1 - above->alpha[i])) / finalAlpha);
-                samples[3*i+2] = (T) ((above->alpha[i]*above->samples[3*i+2] + alpha[i] * samples[3*i+2] * (1 - above->alpha[i])) / finalAlpha);
-                alpha[i] = finalAlpha;
+                samples[3*i] = (T) (above->samples[3*i] + samples[3*i] * (1 - above->alpha[i]));
+                samples[3*i+1] = (T) (above->samples[3*i+1] + samples[3*i+1] * (1 - above->alpha[i]));
+                samples[3*i+2] = (T) (above->samples[3*i+2] + samples[3*i+2] * (1 - above->alpha[i]));
             }
         }
 
         void multiply(Line<T>* above) {
             for (int i = 0; i < width; i++) {
+                if (! above->mask[i]) {
+                    // Le pixel de la ligne du dessus n'est pas de la donnée, il ne change donc pas le pixel du dessous.
+                    continue;
+                }
+
                 alpha[i] *= above->alpha[i];
                 samples[3*i] = samples[3*i] * above->samples[3*i] / 255;
                 samples[3*i+1] = samples[3*i+1] * above->samples[3*i+1] / 255;
@@ -214,7 +334,7 @@ class Line {
             }
         }
 
-        void useMask(Line<T>* above, uint8_t* mask) {
+        void useMask(Line<T>* above) {
             for (int i = 0; i < width; i++) {
                 if (mask[i]) {
                     alpha[i] = above->alpha[i];

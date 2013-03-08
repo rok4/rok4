@@ -60,7 +60,7 @@ Using:
 Attributes:
     pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
-    useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a result mask. This processing is longer, that's why default behaviour is without mask.
+    useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
 =cut
 
 ################################################################################
@@ -877,11 +877,8 @@ sub configureFunctions {
         $conf_t2t .= "-crop ";
     }
 
-    $conf_t2t .= "-p $ph ";
+    $conf_t2t .= "-p $ph -b $bps -a $sf -s $spp ";
     $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
-    $conf_t2t .= "-b $bps ";
-    $conf_t2t .= "-a $sf ";
-    $conf_t2t .= "-s $spp ";
 
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
     

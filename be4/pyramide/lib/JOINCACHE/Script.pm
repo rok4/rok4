@@ -61,6 +61,7 @@ Attributes:
     filePath - string - Complete absolute script file path.
     tempDir - string - Directory used to write temporary images.
     commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
+    ontConfDir - string - Directory used to write overlayNtiff configuration files. *ontConfDir* is a subdirectory of *commonTempDir*.
     stream - stream - Stream to the script file, to write in.
 =cut
 
@@ -124,6 +125,7 @@ sub new {
         filePath => undef,
         tempDir => undef,
         commonTempDir => undef,
+        ontConfDir => undef,
         stream => undef,
     };
 
@@ -169,6 +171,10 @@ sub new {
     }
     $self->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
 
+    ########## Dossier des configurations des mergeNtiff pour ce script
+
+    $self->{ontConfDir} = File::Spec->catfile($self->{commonTempDir},"overlayNtiff");
+
     ########## Tests et création de l'ensemble des dossiers
     
     # Temporary directory
@@ -187,6 +193,17 @@ sub new {
         eval { mkpath([$self->{commonTempDir}]); };
         if ($@) {
             ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $self->{commonTempDir}, $@);
+            return undef;
+        }
+    }
+
+    # OverlayNtiff configurations directory
+    if (! -d $self->{ontConfDir}) {
+        DEBUG (sprintf "Create the OverlayNtiff configurations directory '%s' !", $self->{ontConfDir});
+        eval { mkpath([$self->{ontConfDir}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the OverlayNtiff configurations directory '%s' : %s !",
+                $self->{ontConfDir}, $@);
             return undef;
         }
     }
@@ -228,6 +245,13 @@ sub getTempDir {
     return $self->{tempDir};
 }
 
+# Function: getOntConfDir
+# Returns the overlayNtiff configuration's directory
+sub getOntConfDir {
+    my $self = shift;
+    return $self->{ontConfDir};
+}
+
 ####################################################################################################
 #                                   Group: Stream methods                                          #
 ####################################################################################################
@@ -247,6 +271,7 @@ Example:
     SCRIPT_ID="SCRIPT_1"
     COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
     TMP_DIR="/tmp/ORTHO/SCRIPT_1"
+    ONT_CONF_DIR="/tmp/ORTHO/COMMON/overlayNtiff"
     PYR_DIR="/home/ign/PYR/ORTHO"
     (end code)
 
@@ -263,6 +288,7 @@ sub prepare {
     $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
     $code   .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $self->{commonTempDir});
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
+    $code   .= sprintf ("ONT_CONF_DIR=\"%s\"\n", $self->{ontConfDir});
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
     $code   .= "\n";
     
@@ -317,6 +343,7 @@ Example:
         Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
         Temporary directory : /home/IGN/TEMP/SCRIPT_2
         Common temporary directory : /home/IGN/TEMP/COMMON
+        OverlayNtiff configuration directory : /home/IGN/TEMP/COMMON/overlayNtiff
     (end code)
 =cut
 sub exportForDebug {
@@ -333,6 +360,7 @@ sub exportForDebug {
     $export .= sprintf "\t Script path : %s\n", $self->{filePath};
     $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
     $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};
+    $export .= sprintf "\t OverlayNtiff configuration directory : %s\n", $self->{ontConfDir};
 
     return $export;
 }

@@ -352,6 +352,21 @@ sub getImageDirectory {
     return $self->{levels}->{$levelID}->getDirImage();
 }
 
+=begin nd
+Function: getMaskDirectory
+
+Returns the mask directory for the provided level, using <JOINCACHE::SourceLevel::getDirMask>.
+
+Parameters (list):
+    levelID - string - Identifiant of the asked level
+=cut
+sub getMaskDirectory {
+    my $self = shift;
+    my $levelID = shift;
+
+    return $self->{levels}->{$levelID}->getDirMask();
+}
+
 # Function: isCompatible
 sub isCompatible {
     my $self = shift;
@@ -382,6 +397,14 @@ Returns all source pyramid's information. Useful for debug.
 
 Example:
     (start code)
+    Object JOINCACHE::SourcePyramid :
+        Descriptor : /home/ign/desc/ORTHO_RAW_LAMB93_D075-O.pyr
+        Image components :
+            Format code : TIFF_RAW_INT8
+            Samples per pixel : 3
+            Photometric : rgb
+        Is NOT compatible with the final pyramid
+        Number of levels : 20
     (end code)
 =cut
 sub exportForDebug {

@@ -148,7 +148,7 @@ bool TiffNodataManager::treatNodata(char* input, char* output)
         changeNodataValue(IM, width , height, samplesperpixel);
     }
     
-    uint16_t extrasample = EXTRASAMPLE_ASSOCALPHA;
+    uint16_t extrasample = EXTRASAMPLE_UNASSALPHA;
     TIFF_FILE = TIFFOpen(output, "w");
     if(!TIFF_FILE) {
         LOGGER_ERROR("Unable to open file for writting: " + string(output));

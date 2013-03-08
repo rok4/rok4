@@ -328,6 +328,11 @@ Returns all pixel's components. Useful for debug.
 
 Example:
     (start code)
+    Object BE4::Pixel :
+         Bits per sample : 8
+         Photometric : rgb
+         Sample format : uint
+         Samples per pixel : 1
     (end code)
 =cut
 sub exportForDebug {

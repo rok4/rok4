@@ -121,7 +121,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Data::Dumper;
 use Geo::GDAL;
 
 # My module

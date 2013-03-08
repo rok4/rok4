@@ -65,64 +65,70 @@
 template <typename T>
 int MergeImage::_getline(T* buffer, int line)
 {
+    Line<T> aboveLine(width);
+    T* imageLine = new T[width*4];
+    uint8_t* maskLine = new uint8_t[width];
+    memset(maskLine, 0, width);
         
     T bg[channels*width];
     for (int i = 0; i < channels*width; i++) {
         bg[i] = (T) bgValue[i%channels];
     }
-    Line<T> workLine(bg, channels, width);
+    Line<T> workLine(bg, maskLine, channels, width);
 
-    T transparent[4];
-    for (int i = 0; i < 4; i++) {
-        transparent[i] = (T) transparentValue[i];
+    T* transparent;
+    if (transparentValue != NULL) {
+        transparent = new T[3];
+        for (int i = 0; i < 3; i++) {
+            transparent[i] = (T) transparentValue[i];
+        }
     }
-    Pixel<T> *transparentPix = new Pixel<T>(transparent, 4);
 
     for (int i = images.size()-1; i >= 0; i--) {
 
         int srcSpp = images[i]->channels;
-        T* imageLine = new T[width*srcSpp];
         images[i]->getline(imageLine,line);
 
-        uint8_t* maskLine;
-        if (composition == Merge::MASK) {
-            maskLine = new uint8_t[width];
-            if (images[i]->getMask() == NULL) {
-                memset(maskLine, 255, width);
-            } else {
-                images[i]->getMask()->getline(maskLine,line);
-            }
+        if (images[i]->getMask() == NULL) {
+            memset(maskLine, 255, width);
+        } else {
+            images[i]->getMask()->getline(maskLine,line);
         }
 
-        Line<T> aboveLine(imageLine, srcSpp, width);
+        if (transparentValue == NULL) {
+            aboveLine.store(imageLine, maskLine, srcSpp);
+        } else {
+            aboveLine.store(imageLine, maskLine, srcSpp, transparent);
+        }
 
         switch ( composition ) {
             case Merge::NORMAL:
-                //composeNormal(workLine + p*workSpp, workSpp, backPix, frontPix );
+                workLine.alphaBlending(&aboveLine);
                 break;
             case Merge::MASK:
-                workLine.useMask(&aboveLine, maskLine);
+                workLine.useMask(&aboveLine);
                 break;
             case Merge::MULTIPLY:
                 workLine.multiply(&aboveLine);
                 break;
             case Merge::TRANSPARENCY:
-                workLine.alphaBlending(&aboveLine, transparentPix);
+                workLine.alphaBlending(&aboveLine);
                 break;
             case Merge::LIGHTEN:
             case Merge::DARKEN:
             default:
-                //composeNormal(workLine + p*workSpp, workSpp, backPix, frontPix );
+                workLine.alphaBlending(&aboveLine);
                 break;
         }
 
-        delete [] imageLine;
     }
 
     // On repasse la ligne sur le nombre de canaux voulu
     workLine.write(buffer, channels);
-    
-    delete transparentPix;
+
+    if (transparentValue != NULL) { delete [] transparent; }
+    delete [] imageLine;
+    delete [] maskLine;
 
     return width*channels*sizeof(T);
 }

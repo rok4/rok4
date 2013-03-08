@@ -696,11 +696,11 @@ For more informations about properties, see <BE4::Pyramid>.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
 
-    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
+    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK. If dir_mask is not precised, masks will not be written in the final pyramid.
 
     tms_name - TMS file name, with extension *.tms*. Mandatory.
 
-    tms_path - Directory, where to find the TMS file. Mandatory
+    tms_path - Directory, where to find the TMS file. Mandatory.
 
     pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
 

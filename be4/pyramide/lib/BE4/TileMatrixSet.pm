@@ -71,7 +71,7 @@ Attributes:
     filename - string - Filename part of PATHFILENAME : SRS_RES.tms
     filepath - string - Directory part of PATHFILENAME : /path/to
 
-    levelsBind - hash - Link between Tile matrix identifiants (string) and order in ascending resolutions (integer).
+    levelsBind - hash - Link between Tile matrix identifiants (string, the key) and order in ascending resolutions (integer, the value).
     topID - string - Higher level ID.
     topResolution - double - Higher level resolution.
     bottomID - string - Lower level ID.
@@ -642,14 +642,46 @@ Returns all informations about the tile matrix set. Useful for debug.
 
 Example:
     (start code)
+    Object BE4::TileMatrixSet :
+         TMS file complete path : /home/ign/TMS/LAMB93_10cm.tms
+         Top level identifiant : 0
+         Top level resolution : 209715.2
+         Bottom level identifiant : 21
+         Bottom level resolution : 0.1
+         Spatial Reference System : IGNF:LAMB93
+         Coordinates have not to be inversed to harvest with WMS 1.3.0
+         This TMS is a quad tree
+         TileMatrix Array :
+                     ID    | Order |  Resolution
+                -----------+-------+------------------
+                        21 |  0    | 0.1
+                        20 |  1    | 0.2
+                        19 |  2    | 0.4
+                        18 |  3    | 0.8
+                        17 |  4    | 1.6
+                        16 |  5    | 3.2
+                        15 |  6    | 6.4
+                        14 |  7    | 12.8
+                        13 |  8    | 25.6
+                        12 |  9    | 51.2
+                        11 |  10   | 102.4
+                        10 |  11   | 204.8
+                         9 |  12   | 409.6
+                         8 |  13   | 819.2
+                         7 |  14   | 1638.4
+                         6 |  15   | 3276.8
+                         5 |  16   | 6553.6
+                         4 |  17   | 13107.2
+                         3 |  18   | 26214.4
+                         2 |  19   | 52428.8
+                         1 |  20   | 104857.6
+                         0 |  21   | 209715.2
     (end code)
 =cut
 sub exportForDebug {
     my $self = shift ;
 
-    my $export = "";
-
-    $export .= "\nObject BE4::TileMatrixSet :\n";
+    my $export = "\nObject BE4::TileMatrixSet :\n";
     $export .= sprintf "\t TMS file complete path : %s\n", $self->getPathFilename;
     $export .= sprintf "\t Top level identifiant : %s\n", $self->getTopLevel;
     $export .= sprintf "\t Top level resolution : %s\n", $self->getTopResolution;
@@ -664,24 +696,17 @@ sub exportForDebug {
     }
 
     if ( $self->isQTree() ) {
-        $export .= sprintf "\t This TMS is a quad tree";
+        $export .= sprintf "\t This TMS is a quad tree\n";
     } else {
-        $export .= sprintf "\t This TMS is not a quad tree";
+        $export .= sprintf "\t This TMS is not a quad tree\n";
     }
 
-
-    $export .= sprintf "\t levelsBind hash :\n";
-    $export .= sprintf "\t\t   ID   |  Order\n";
-    $export .= sprintf "\t\t--------+--------\n";
-    my %levelsBind = %{$self->{levelsBind}};
-    foreach my $key (keys %levelsBind ) {
-        $export .= sprintf "\t\t %6s | %-6s .\n",$key,$levelsBind{$key};
-    }
     $export .= sprintf "\t TileMatrix Array :\n";
-    $export .= sprintf "\t\t   ID   |  Resolution\n";
-    $export .= sprintf "\t\t--------+------------------\n";
+    $export .= sprintf "\t\t     ID    | Order |  Resolution\n";
+    $export .= sprintf "\t\t-----------+-------+------------------\n";
     foreach my $tm ( $self->getTileMatrixByArray ) {
-        $export .= sprintf "\t\t %6s | %-.14d .\n",$tm->getID(),$tm->getResolution();
+        my $id = $tm->getID();
+        $export .= sprintf "\t\t %9s |  %-4s | %-14s \n", $id, $self->{levelsBind}->{$id}, $tm->getResolution();
     }
     
     return $export;

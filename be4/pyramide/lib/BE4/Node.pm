@@ -329,7 +329,7 @@ sub getWorkBaseName {
     my $self = shift;
     my $suffix = shift;
     
-    # si un prefixe est préciser
+    # si un prefixe est précisé
     return (sprintf "%s_%s_%s_%s", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
     # si pas de prefixe
     return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
@@ -347,7 +347,7 @@ sub getWorkName {
     my $self = shift;
     my $suffix = shift;
     
-    # si un prefixe est préciser
+    # si un prefixe est précisé
     return (sprintf "%s_%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
     # si pas de prefixe
     return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
@@ -513,8 +513,11 @@ sub getChildren {
 =begin nd
 Function: exportForMntConf
 
-Export attributs of the Node for mergNtiff configuration file.
+Export attributes of the Node for mergeNtiff configuration file. Provided paths will be written as is, so can be relative or absolute (or use environment variables).
 
+Parameters (list):
+    imagePath - string - Path to the image, have to be defined
+    maskPath - string - Path to the associated mask, can be undefined
 =cut
 sub exportForMntConf {
     my $self = shift;

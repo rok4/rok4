@@ -384,7 +384,7 @@ sub doIt {
     my $xmax = $bottomTM->columnToX($imax+1);
     my $ymin = $bottomTM->rowToY($jmax+1);
 
-    ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s\n", $xmin,$xmax,$ymin,$ymax);
+    ALWAYS(sprintf "BBOX : xmin %s xmax %s ymin %s ymax %s", $xmin,$xmax,$ymin,$ymax);
 
     ALWAYS(">>> Loading layer ...");
 

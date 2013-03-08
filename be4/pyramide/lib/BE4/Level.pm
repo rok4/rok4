@@ -49,9 +49,9 @@ Using:
     my $params = {
         id                => level_5,
         order             => 12,
-        dir_image         => "./BDORTHO/IMAGE/level_5/",
-        dir_nodata        => "./BDORTHO/NODATA/level_5/",
-        dir_mask          => "./BDORTHO/MASK/level_5/",
+        dir_image         => "/home/ign/BDORTHO/IMAGE/level_5/",
+        dir_nodata        => "/home/ign/BDORTHO/NODATA/level_5/",
+        dir_mask          => "/home/ign/BDORTHO/MASK/level_5/",
         dir_metadata      => undef,
         compress_metadata => undef,
         type_metadata     => undef,
@@ -66,9 +66,9 @@ Using:
 Attributes:
     id - string - Level identifiant.
     order - integer - Level order (ascending resolution)
-    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
-    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
-    dir_mask - string - Relative mask' directory path for this level, from the pyramid's descriptor.
+    dir_image - string - Absolute images' directory path for this level.
+    dir_nodata - string - Absolute nodata's directory path for this level.
+    dir_mask - string - Absolute mask' directory path for this level.
     dir_metadata - NOT IMPLEMENTED
     compress_metadata - NOT IMPLEMENTED
     type_metadata - NOT IMPLEMENTED
@@ -167,9 +167,9 @@ Parameters (hash):
     size - integer array - Number of tile in one image for this level
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
     dir_depth - integer - Number of subdirectories from the level root to the image
-    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
-    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
-    dir_mask - string - Optionnal (if we want to kkep mask in the final images' pyramid). Relative mask' directory path for this level, from the pyramid's descriptor.
+    dir_image - string - Absolute images' directory path for this level.
+    dir_nodata - string - Absolute nodata's directory path for this level.
+    dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
 
 See also:
     <_init>
@@ -218,9 +218,9 @@ Parameters (hash):
     size - integer array - Number of tile in one image for this level
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
     dir_depth - integer - Number of subdirectories from the level root to the image
-    dir_image - string - Relative images' directory path for this level, from the pyramid's descriptor.
-    dir_nodata - string - Relative nodata's directory path for this level, from the pyramid's descriptor.
-    dir_mask - string - Optionnal (if we want to kkep mask in the final images' pyramid). Relative mask' directory path for this level, from the pyramid's descriptor.
+    dir_image - string - Absolute images' directory path for this level.
+    dir_nodata - string - Absolute nodata's directory path for this level.
+    dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
 =cut
 sub _init {
     my $self   = shift;
@@ -353,6 +353,9 @@ Insert Level's attributes in the XML template, write in the pyramid's descriptor
 
 Returns a string to XML format.
 
+Parameter (list):
+    descriptorDir - string - Pyramid's descriptor directory, to make relative data's paths.
+
 Example:
     (start code)
     <level>
@@ -378,16 +381,17 @@ Example:
 =cut
 sub exportToXML {
     my $self = shift;
+    my $descriptorDir = shift;
 
     my $levelXML = $STRLEVELTMPLT;
 
     my $id       = $self->{id};
     $levelXML =~ s/__ID__/$id/;
 
-    my $dirimg   = $self->{dir_image};
+    my $dirimg = File::Spec->abs2rel($self->{dir_image},$descriptorDir);
     $levelXML =~ s/__DIRIMG__/$dirimg/;
 
-    my $pathnd = $self->{dir_nodata}."/nd.tif";
+    my $pathnd = File::Spec->abs2rel($self->{dir_nodata}."/nd.tif",$descriptorDir);
     $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
     my $tilew    = $self->{size}[0];
@@ -411,7 +415,7 @@ sub exportToXML {
     if (defined $self->{dir_mask}) {
         $levelXML =~ s/<!-- __MASK__ -->\n/$STRLEVELTMPLTMASK/;
 
-        my $dirmask   = $self->{dir_mask};
+        my $dirmask = File::Spec->abs2rel($self->{dir_mask},$descriptorDir);
         $levelXML =~ s/__DIRMASK__/$dirmask/;
         
         $levelXML =~ s/__FMTMASK__/TIFF_ZIP_INT8/;
@@ -442,6 +446,20 @@ Returns all level's informations. Useful for debug.
 
 Example:
     (start code)
+    Object BE4::Level :
+         ID (string) : 16, and order (integer) : 5
+         Directories (depth = 2):
+                - Images : /home/ign/data/pyramid/IMAGE/16
+                - Nodata : /home/ign/data/pyramid/NODATA/16
+                - Mask : /home/ign/data/pyramid/MASK/16
+         Tile limits :
+                - Column min : 783
+                - Column max : 797
+                - Row min : 6265
+                - Row max : 6276
+         Tiles per image :
+                - widthwise : 16
+                - heightwise : 16
     (end code)
 =cut
 sub exportForDebug {

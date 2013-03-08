@@ -101,6 +101,7 @@ use BE4::Base36;
 use JOINCACHE::PropertiesLoader;
 use JOINCACHE::Process;
 use JOINCACHE::SourcePyramid;
+use JOINCACHE::Node;
 
 ################################################################################
 # Constantes
@@ -410,6 +411,8 @@ sub validate {
         return FALSE;
     }
 
+    DEBUG(sprintf "FINAL PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
+
     $this{pyramid} = $objPyramid;
 
     ##################
@@ -423,6 +426,8 @@ sub validate {
         ERROR ("Cannot create the JOINCACHE::Process object !");
         return FALSE;
     }
+
+    DEBUG(sprintf "PROCESS (debug export) = %s", $objProcess->exportForDebug);
 
     $this{process} = $objProcess;
 
@@ -444,8 +449,6 @@ sub validate {
         return FALSE;
     }
 
-    DEBUG(sprintf "BBOXES : %s",Dumper($this{bboxes}));
-
     ##################
 
     ALWAYS(">>> Validate composition");
@@ -453,8 +456,6 @@ sub validate {
         ERROR ("Cannot validate composition !");
         return FALSE;
     }
-
-    DEBUG(sprintf "COMPOSITION : %s",Dumper($this{composition}));
 
     ##################
 
@@ -487,6 +488,8 @@ sub validateSourcePyramids {
             return FALSE;
         }
 
+        DEBUG(sprintf "SOURCE PYRAMID (debug export) = %s", $sourcePyramid->exportForDebug);
+
         $this{sourcePyramids}->{$pyr} = $sourcePyramid;
     }
 
@@ -516,6 +519,9 @@ sub validateBboxes {
             return FALSE;
         }
 
+        DEBUG("BBOX (debug export) = ID : $bboxId");
+        DEBUG("\t $bbox");
+
         # we store the controlled BBOX in %this
         @{$this{bboxes}->{$bboxId}} = @bboxArray;
     }
@@ -538,7 +544,6 @@ sub validateComposition {
     TRACE;
 
     my %composition = %{$this{propertiesLoader}->getCompositionSection()};
-
     my $TMS = $this{pyramid}->getTileMatrixSet;
 
     while( my ($levelId,$sources) = each(%composition) ) {
@@ -569,7 +574,6 @@ sub validateComposition {
             $this{composition}->{$levelId}->{$priority}->{sourcePyramid} = $sourcePyr;
 
             # on convertit les coordonnées de la bbox en indices des tuiles, en accord avec le tile matrix associé
-            ALWAYS(sprintf "BBOX : %s, %s, %s, %s",$BBOX[0],$BBOX[1],$BBOX[2],$BBOX[3]);
             my @bboxIndices = $TM->bboxToIndices($BBOX[0],$BBOX[1],$BBOX[2],$BBOX[3],1,1); # ($iMin,$jMin,$iMax,$jMax)
             
             $sourcePyr->getLevel($levelId)->intersectBboxIndices(\@bboxIndices);
@@ -577,6 +581,9 @@ sub validateComposition {
             @{$this{composition}->{$levelId}->{$priority}->{extremTiles}} = @bboxIndices;
             @{$this{composition}->{$levelId}->{$priority}->{extremImages}} = main::tileToImage(@bboxIndices);
         }
+
+        DEBUG("COMPOSITION (debug export) = level ID : $levelId");
+        DEBUG(sprintf "\t %s source(s)", scalar keys %{$sources});
 
     }
 
@@ -623,6 +630,11 @@ sub doIt {
         my $imageDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirImage, $levelId);
         # base dir nodata
         my $nodataDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirNodata, $levelId);
+        # mask dir nodata
+        my $maskDir = undef;
+        if ($pyramid->ownMasks()) {
+            $maskDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirMask, $levelId);
+        }
 
         # tuiles extrêmes pour ce niveau
         my ($imin,$jmin,$imax,$jmax);
@@ -649,28 +661,21 @@ sub doIt {
                         next;
                     }
 
-                    my $base36path = BE4::Base36->indicesToB36Path($I,$J,$this{pyramid}->getDirDepth+1);
-                    my $imagePath = "$base36path.tif";
-                    
-                    my $sourceImage = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$imagePath);
+                    my $node = JOINCACHE::Node->new($I, $J, $levelId, $this{pyramid}->getDirDepth);
+                    if (! defined $node) {
+                        ERROR(sprintf "Cannot create the node %s,%s", $I, $J);
+                        return FALSE;
+                    }
 
-                    if (! -f $sourceImage) {
-                        # No data source
+                    main::searchImage($node, $priority);
+
+                    if ($node->getSourcesNumber() == 0) {
+                        # Pas de source pour cette image, pour cette priorité
                         next;
                     }
 
-                    my @images;
-
-                    push @images, { img => $sourceImage, sourcePyramid => $source->{sourcePyramid} };
-
-                    if ($this{process}->getMergeMethod() ne 'replace') {
-                        main::searchImage($levelId, $priority+1, $I, $J, $imagePath, \@images);
-                    }
-
-                    my $finaleImage = File::Spec->catfile($imageDir,$imagePath);
-
-                    if (! $this{process}->treatImage($finaleImage,@images)) {
-                        ERROR(sprintf "Cannot generate the image %s", $finaleImage);
+                    if (! $this{process}->treatImage($node)) {
+                        ERROR(sprintf "Cannot generate the node %s", $node->exportForDebug());
                         return FALSE;
                     }
 
@@ -684,8 +689,9 @@ sub doIt {
         my $objLevel = BE4::Level->new({
             id => $levelId,
             order => $levelOrder,
-            dir_image => File::Spec->abs2rel($imageDir,$pyramid->getNewDescriptorDir),
-            dir_nodata => File::Spec->abs2rel($nodataDir,$pyramid->getNewDescriptorDir),
+            dir_image => $imageDir,
+            dir_nodata => $nodataDir,
+            dir_mask => $maskDir,
             size => [$pyramid->getTilesPerWidth,$pyramid->getTilesPerHeight],
             dir_depth => $pyramid->getDirDepth,
             limits => [$jmin,$jmax,$imin,$imax],
@@ -695,6 +701,8 @@ sub doIt {
             ERROR(sprintf "Can not create the pyramid Level object for the level '%s'", $levelId);
             return FALSE;
         }
+
+        DEBUG(sprintf "FINAL PYRAMID LEVEL (debug export) = %s", $objLevel->exportForDebug);
 
         $pyramid->addLevel($levelId, $objLevel);
 
@@ -739,44 +747,90 @@ Search a tile in source pyramids with a lower priority.
 
 Parameters (list):
     levelId - string - Level in which we serach tiles
-    priority - integer - Source's priority from which we search tiles
+    basePriority - integer - Source's priority from which we search tiles
     i,j - integer - Searched tile's indices
-    imagePath - string - Relative image path, from the image directory ("19/00/M4/12.tif")
     images - array reference - To store other found source images
 =cut
 sub searchImage {
-    my $levelId = shift;
-    my $priority = shift;
-    my $I = shift;
-    my $J = shift;
-    my $imagePath = shift;
-    my $images = shift;
+    my $node = shift;
+    my $basePriority = shift;
+    
+    my $I = $node->getColumn();
+    my $J = $node->getRow();
+    my $levelId = $node->getLevel();
+    my $path = $node->getPyramidName();
 
     TRACE();
-
+    
     my $sources = $this{composition}->{$levelId};
+    my $priority = $basePriority;
+    my $base36path = $node->getPyramidName();
 
+    # On traite séparément le cas de la source principale (la plus prioritaire car :
+    #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée dans la fonction appellante
+    #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
+    #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
+    my $source = $sources->{$priority};
+    my $sourceImagePath = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$path);
+
+    if (-f $sourceImagePath) {
+        # L'image existe, voyons également si elle a un masque associé
+        my %sourceImage = ( img => $sourceImagePath, sourcePyramid => $source->{sourcePyramid} );
+
+        my $dirMask = $source->{sourcePyramid}->getMaskDirectory($levelId);
+        if (defined $dirMask && $this{process}->useMasks()) {
+            my $sourceMaskPath = File::Spec->catfile($dirMask,$path);
+            if (-f $sourceMaskPath) {
+                $sourceImage{msk} = $sourceMaskPath;
+            }
+        }
+        
+        $node->addSource(\%sourceImage);
+    } else {
+        return;
+    }
+
+    if ($this{process}->getMergeMethod() eq 'REPLACE') {
+        return;
+    }
+
+    $priority++;
+
+    # On cherche maintenant cette dalle dans les sources moins prioritaires
     while( exists $sources->{$priority}) {
-        my $source = $sources->{$priority};
-        $priority++;
+        $source = $sources->{$priority};
         my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
 
+        # La dalle appartient-elle à la BBOX de cette source ?
         if ($I < $IMIN || $I > $IMAX || $J < $JMIN || $J > $JMAX) {
             next;
         }
 
-        my $sourceImage = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$imagePath);
+        my $sourceImagePath = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$path);
 
-        if (-f $sourceImage) {
-            push @$images, { img => $sourceImage, sourcePyramid => $source->{sourcePyramid} };
+        if (-f $sourceImagePath) {
+            # L'image existe, voyons également si elle a un masque associé
+            my %sourceImage = ( img => $sourceImagePath, sourcePyramid => $source->{sourcePyramid} );
+            
+            my $dirMask = $source->{sourcePyramid}->getMaskDirectory($levelId);
+            if ($this{process}->getMergeMethod() eq 'MASK' && defined $dirMask) {
+                my $sourceMaskPath = File::Spec->catfile($dirMask,$path);
+                if (-f $sourceMaskPath) {
+                    $sourceImage{msk} = $sourceMaskPath;
+                }
+            }
+            
+            $node->addSource(\%sourceImage);
         }
+
+        $priority++;
     }
 }
 
 =begin nd
 Function: tileToImage
 
-A pyramid's image can contain several tiles. We convert tiles indices into image indices, dividing by tiles per width and tiles or height.
+A pyramid's image can contain several tiles. We convert tiles indices into image indices, dividing by tiles per width or tiles per height.
 
 Parameters (list):
     extremTiles - array - Extrem tiles, to convert into extrem images
@@ -897,7 +951,7 @@ Examples:
     samplesperpixel     = 3
     interpolation       = bicubic
 
-    color               = 255,0,0 ; red as nodata color
+    color               = 255,0,0 ; red as final nodata color
     (end code)
 
 Topic: process
@@ -912,6 +966,8 @@ Topic: process
 
     merge_method - Way to merge several source pyramid's images. Possible values are : transparency, replace, multiply, mask. See details in <JOINCACHE::Process>.
 
+    use_masks - Precise if we want to use masks. Make heavier genrations. Optionnal, FALSE if not provided.
+
 Example:
     (start code)
     [ process ]
@@ -920,6 +976,7 @@ Example:
     path_temp_common = /tmp/COMMON/
     path_shell  = /home/IGN/SCRIPT/ORTHO
     job_number = 16
+    use_masks = TRUE
     (end code)
 
 Topic: bboxes
@@ -962,6 +1019,4 @@ Group: Paths in brief
     - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
     - Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
 
-
 =cut
-
