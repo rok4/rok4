@@ -51,29 +51,72 @@ class CppUnitRequest : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST_SUITE ( CppUnitRequest );
     // enregistrement des methodes de tests à jouer :
     CPPUNIT_TEST ( testhex2int );
+    CPPUNIT_TEST ( testsplit );
+    CPPUNIT_TEST ( testurl_decode );
     CPPUNIT_TEST_SUITE_END();
 
 protected:
-    unsigned char monhaxedecimal;
+    unsigned char monhaxedecimal_majuscule;
+    Request* marequete;
 
 public:
     // Cette fonction est toujours appelée lors du démarage des tests de ce fichier
     void setUp();
 
+    void tearDown();
+
 protected:
     void testhex2int();
+    void testsplit();
+    void testurl_decode();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitRequest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION ( CppUnitRequest, "CppUnitRequest" );
 
 void CppUnitRequest::setUp() {
-    monhaxedecimal = 'f';
-}
+    std::string strquerystring("www.marequete.com/adresse");
+    char* strquery = new char[strquerystring.size()+1];
+    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
+    std::string hostNamestring("127.0.0.1");
+    char* hostName = new char[hostNamestring.size()+1];
+    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
+    std::string pathNamestring("/chemin/chemin2");
+    char* path = new char[pathNamestring.size()+1];
+    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
+    std::string httpsstring("https://");
+    char* https = new char[httpsstring.size()+1];
+    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
+    marequete = new Request(strquery,hostName,path,https);
+    
+    monhaxedecimal_majuscule = 'E';
+ }
 
 void CppUnitRequest::testhex2int() {
     CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('0') == 0 ) ;
     CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('1') == 1 ) ;
     CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('1') != 0 ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int(monhaxedecimal) == 15 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('f') == 15 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int(monhaxedecimal_majuscule) == 14 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion hex2int :\n", hex2int('G') != 16  ) ;
+}
+
+void CppUnitRequest::testsplit() {
+    CPPUNIT_ASSERT_MESSAGE ( "split string :\n", split("salut les poulets",' ').size() == 3 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "split string :\n", split("salut les poulets",' ')[0] == "salut" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "split string :\n", split("salut les poulets",'l').size() == 4 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "split string :\n", split("salut les poulets",'l')[0] == "sa" ) ;
+}
+
+void CppUnitRequest::testurl_decode() {
+    std::string mystring("Hello");
+    char* myword = new char[mystring.size()+1];
+    memcpy(myword,mystring.c_str(),mystring.size()+1);
+    marequete->url_decode(myword);
+    CPPUNIT_ASSERT_MESSAGE ( "use url_decode :\n", mystring.compare(myword) == 0 ) ;
+    delete myword;
+}
+
+void CppUnitRequest::tearDown() {
+    delete marequete;
 }

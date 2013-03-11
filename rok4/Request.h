@@ -76,6 +76,7 @@
  * \brief HTTP requests handler
  */
 class Request {
+friend class CppUnitRequest;
 private:
     /**
      * \~french

@@ -69,12 +69,14 @@
  */
 char hex2int ( unsigned char hex ) {
     hex = hex - '0';
+    // Si hex <= 9 on a le résultat
+    //   Sinon
     if ( hex > 9 ) {
-        hex = ( hex + '0' - 1 ) | 0x20;
+        hex = ( hex + '0' - 1 ) | 0x20; // Pour le passage des majuscules aux minuscules dans la table ASCII
         hex = hex - 'a' + 11;
     }
-    if ( hex > 15 )
-        hex = 0xFF;
+    if ( hex > 15 ) // En cas d'erreur
+        hex = 0xFF; 
 
     return hex;
 }
