@@ -53,6 +53,8 @@ class CppUnitRequest : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST ( testhex2int );
     CPPUNIT_TEST ( testsplit );
     CPPUNIT_TEST ( testurl_decode );
+    CPPUNIT_TEST ( testtoLowerCase );
+    CPPUNIT_TEST ( testremoveNameSpace );
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -69,6 +71,8 @@ protected:
     void testhex2int();
     void testsplit();
     void testurl_decode();
+    void testtoLowerCase();
+    void testremoveNameSpace();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitRequest );
@@ -115,6 +119,55 @@ void CppUnitRequest::testurl_decode() {
     marequete->url_decode(myword);
     CPPUNIT_ASSERT_MESSAGE ( "use url_decode :\n", mystring.compare(myword) == 0 ) ;
     delete myword;
+}
+
+void CppUnitRequest::testtoLowerCase() {
+    std::string mystring("TEST");
+    char* myword = new char[mystring.size()+1];
+    memcpy(myword,mystring.c_str(),mystring.size()+1);
+    toLowerCase(myword);
+    std::string mystring2("TeSt");
+    char* myword2 = new char[mystring2.size()+1];
+    memcpy(myword2,mystring2.c_str(),mystring2.size()+1);
+    toLowerCase(myword2);
+    std::string mystring3("test");
+    char* myword3 = new char[mystring3.size()+1];
+    memcpy(myword3,mystring3.c_str(),mystring3.size()+1);
+    toLowerCase(myword3);
+    std::string mystringresult("test");
+    CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword == mystringresult ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword2 == mystringresult ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword3 == mystringresult ) ;
+    std::string mystring4("");
+    char* myword4 = new char[mystring4.size()+1];
+    memcpy(myword4,mystring4.c_str(),mystring4.size()+1);
+    toLowerCase(myword4);
+    std::string mystringresult2("");
+    CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword4 == mystringresult2 ) ;
+    delete myword;
+    delete myword2;
+    delete myword3;
+    delete myword4;
+}
+
+void CppUnitRequest::testremoveNameSpace() {
+    std::string balise("");
+    std::string result("");
+    result = balise;
+    removeNameSpace(result);
+    CPPUNIT_ASSERT_MESSAGE ( "remove namespace :\n", result == "" ) ;
+    balise = "oneelement";
+    result = balise;
+    removeNameSpace(result);
+    CPPUNIT_ASSERT_MESSAGE ( "remove namespace :\n", result == "oneelement" ) ;
+    balise = "oneelement:";
+    result = balise;
+    removeNameSpace(result);
+    CPPUNIT_ASSERT_MESSAGE ( "remove namespace :\n", result == ":" ) ;
+    balise = "left:right";
+    result = balise;
+    removeNameSpace(result);
+    CPPUNIT_ASSERT_MESSAGE ( "remove namespace :\n", result == ":right" ) ;
 }
 
 void CppUnitRequest::tearDown() {

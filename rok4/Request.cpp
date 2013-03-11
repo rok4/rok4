@@ -179,6 +179,7 @@ void removeNameSpace ( std::string& elementName ) {
     if ( elementName.size() <= pos ) {
         return;
     }
+    // Garde le ":" -> "left:right" devient ":right"
     elementName.erase ( elementName.begin(),elementName.begin() +pos );
 }
 
