@@ -72,7 +72,6 @@ my $nodataFloat32 = BE4::NoData->new({
 });
 
 ok (defined $nodataFloat32, "Float32 NoData created");
-ok (! $nodataFloat32->getNoWhite, "Default value for nowhite : FALSE");
 
 my $nodataUInt8 = BE4::NoData->new({
     pixel => $pixelUInt8,
@@ -114,18 +113,6 @@ $nodata = BE4::NoData->new({
 });
 
 ok (! defined $nodata, "Incorrect value detected for 'value' : Float32 Pixel, 1 sample per pixel <=> 'FFFFFF'");
-undef $nodata;
-
-######################################################
-
-# Test on parameter 'nowhite'
-$nodata = BE4::NoData->new({
-    pixel => $pixelUInt8,
-    value => "255,255,255",
-    nowhite => "notgood",
-});
-
-ok (! defined $nodata, "Incorrect value detected for 'nowhite'");
 undef $nodata;
 
 ######################################################

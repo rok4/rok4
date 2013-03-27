@@ -189,9 +189,6 @@ Cache2work () {
         montage __montageIn__ $workName/*.png __montageOut__ $workName.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -rf $workName/
-    elif [  "$opt" == "msk"  ] ; then
-        tiffcp __tcpM__ $imgSrc $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         tiffcp __tcpI__ $imgSrc $workName.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -506,7 +503,7 @@ sub cache2work {
         $fileName = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",FALSE),$node->getPyramidName);
         $workBaseName = $node->getWorkBaseName("BgM");
         
-        $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s msk\n", $fileName , $workBaseName);
+        $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $workBaseName);
         $weight += TIFFCP_W;
     }
     
@@ -858,13 +855,8 @@ sub configureFunctions {
     ######## tiffcp ########
     my $imgS = $self->{pyramid}->getCacheImageHeight;
     
-    # pour les images
     my $conf_tcp = "-s -r $imgS -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
-    
-    # pour les masques
-    $conf_tcp = "-s -r $imgS -c zip";
-    $configuredFunc =~ s/__tcpM__/$conf_tcp/;
     
     ######## tiff2tile ########
     my $conf_t2t = "";

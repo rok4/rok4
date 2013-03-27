@@ -35,6 +35,20 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Format.h
+ ** \~french
+ * \brief Définition de la classe SampleType du namespace Format
+ * \details
+ * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li Format : énumère et manipule les différentes format d'image
+ ** \~english
+ * \brief Define class SampleType and the namespace Format
+ * \details
+ * \li SampleType : managed sample type accepted by Image classes
+ * \li Format : enumerate and managed different formats
+ */
+
 #ifndef FORMAT_H
 #define FORMAT_H
 
@@ -56,7 +70,16 @@
  */
 class SampleType {
     private :
+        /**
+         * \~french \brief Nombre de bits occupé par le canal
+         * \~english \brief Number of bits used by the sample
+         */
         uint16_t bitspersample;
+
+        /**
+         * \~french \brief Format du canal : entier, flottant, signé ou non...
+         * \~english \brief Sample format : integer, float, signed or not...
+         */
         uint16_t sampleformat;
 
     public:
@@ -140,31 +163,83 @@ class SampleType {
         }
 };
 
-
-//To declare a new format change the implementation too
-
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées au format des données
+ * \~english \brief Manage informations in connection with data format
+ */
 namespace Format {
 
+    /**
+     * \~french \brief Énumération des formats d'images disponibles
+     * \~english \brief Available images formats enumeration
+     */
     enum eformat_data {
         UNKNOWN = 0,
+        // Les formats entiers en premier
         TIFF_RAW_INT8 = 1,
         TIFF_JPG_INT8 = 2,
         TIFF_PNG_INT8 = 3,
         TIFF_LZW_INT8 = 4,
         TIFF_ZIP_INT8 = 5,
         TIFF_PKB_INT8 = 6,
+        // Les formats flottant doivent bien être à partir d'ici (et corriger eformat_float si le nombre de format entier augmente)
         TIFF_RAW_FLOAT32 = 7,
         TIFF_LZW_FLOAT32 = 8,
         TIFF_ZIP_FLOAT32 = 9,
         TIFF_PKB_FLOAT32 = 10
     };
 
+    /**
+     * \~french \brief Nombre de formats disponibles
+     * \~english \brief Number of available formats
+     */
     const int eformat_size = 10;
+
+    /**
+     * \~french \brief Indice du premier format flottant dans l'énumération
+     * \~english \brief First float format indice into enumeration
+     */
     const int eformat_float = 7;
 
+    /**
+     * \~french \brief Conversion d'une chaîne de caractère vers un format
+     * \param[in] strFormat chaîne de caractère à convertir
+     * \return le format correspondant, UNKNOWN (0) si la chaîne n'est pas reconnue
+     * \~english \brief Convert a string to a format
+     * \param[in] strFormat string to convert
+     * \return the binding format, UNKNOWN (0) if string is not recognized
+     */
     eformat_data fromString(std::string strFormat);
+
+    /**
+     * \~french \brief Conversion d'un format vers une chaîne de caractère
+     * \param[in] format format à convertir
+     * \return la chaîne de caractère nommant le format
+     * \~english \brief Convert a format to a string
+     * \param[in] format format to convert
+     * \return string namming the format
+     */
     std::string toString(eformat_data format);
+
+    /**
+     * \~french \brief Conversion d'un format vers une chaîne de caractère (type MIME)
+     * \param[in] format format à convertir
+     * \return type MIME du format
+     * \~english \brief Convert a format to a string (type MIME)
+     * \param[in] format format to convert
+     * \return MIME type of the format
+     */
     std::string toMimeType(eformat_data format);
+
+    /**
+     * \~french \brief Conversion d'un format vers un objet SampleType
+     * \param[in] format format à convertir
+     * \return objet SampleType correspondant au format
+     * \~english \brief Convert a format to a SampleType object
+     * \param[in] format format to convert
+     * \return corresponding SampleType object 
+     */
     SampleType toSampleType(eformat_data format);
 }
 

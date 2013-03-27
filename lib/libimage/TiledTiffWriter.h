@@ -137,10 +137,6 @@ class TiledTiffWriter {
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr       jerr;
 
-
-//    struct jpeg_compress_struct cinfo;
-//    struct jpeg_error_mgr       jerr;
-
     size_t computeRawTile (uint8_t *buffer, uint8_t *data);
     size_t computeJpegTile(uint8_t *buffer, uint8_t *data, bool crop);
     void emptyWhiteBlock(uint8_t *buffheight, int l);

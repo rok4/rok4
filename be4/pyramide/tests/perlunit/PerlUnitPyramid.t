@@ -169,13 +169,13 @@ is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyr
 
 ######################################################
 
-is ($updatePyr->getCachePathOfImage("data","level12",12,4),
-    $Bin."/../pyramid/updatePyramid/IMG/level12/00/00/C4.tif",
+is ($updatePyr->getRootPerType("data", 1, "level12"),
+    $Bin."/../pyramid/updatePyramid/IMG/level12",
     "Compose path of image");
 
 ######################################################
 
-ok ($updatePyr->createLevels(0,5),"Levels updated with nex top/bottom level's orders");
+ok ($updatePyr->createLevels(0,5),"Levels updated with new top/bottom level's orders");
 
 is (scalar keys %{$updatePyr->getLevels()}, 22, "Levels number expected");
 

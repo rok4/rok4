@@ -142,7 +142,7 @@ class MirrorImage : public Image {
     protected:
         /** \~french
          * \brief Crée un objet MirrorImage à partir de tous ses éléments constitutifs
-         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine mirrorImageFactory, qui fera toute sorte de tests et calculs.
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine mirrorImageFactory, qui fera différents tests et calculs.
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] channel nombre de canaux par pixel

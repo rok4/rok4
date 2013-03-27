@@ -435,6 +435,7 @@ sub computeGraphs {
         }
         INFO("Graph $graphInd/$graphNumber computed");
         DEBUG($graph->exportForDebug);
+        $graphInd++;
     }
     
     foreach my $script (@{$self->{scripts}}) {

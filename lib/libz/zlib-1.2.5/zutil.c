@@ -298,7 +298,7 @@ extern void   free   OF((voidpf ptr));
 #endif
 
 voidpf ZLIB_INTERNAL zcalloc (opaque, items, size)
-    voidpf backGround;
+    voidpf opaque;
     unsigned items;
     unsigned size;
 {
@@ -308,7 +308,7 @@ voidpf ZLIB_INTERNAL zcalloc (opaque, items, size)
 }
 
 void ZLIB_INTERNAL zcfree (opaque, ptr)
-    voidpf backGround;
+    voidpf opaque;
     voidpf ptr;
 {
     free(ptr);

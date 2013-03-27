@@ -114,22 +114,6 @@ $objBadHarvesting = BE4::Harvesting->new({
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
     wms_request => "getMap",
-    wms_format  => "image/png",
-    wms_bgcolor => "0xFFFFFF",
-    wms_transparent  => "TRUE",
-    wms_style  => "line",
-    max_width  => 1024,
-    max_height  => 1024
-});
-
-ok (! defined $objBadHarvesting, "'wms_bgcolor' <-> 'wms_transparent' conflict detected");
-undef $objBadHarvesting;
-
-$objBadHarvesting = BE4::Harvesting->new({
-    wms_layer   => "BDD_WLD_WM",
-    wms_url     => "http://localhost/wmts/rok4",
-    wms_version => "1.3.0",
-    wms_request => "getMap",
     wms_format  => "image/jpeg",
     wms_bgcolor => "0xFFFFFF",
     wms_transparent  => "FALSE",

@@ -132,7 +132,7 @@ class ExtendedCompoundImage : public Image {
 
         /** \~french
          * \brief Crée un objet ExtendedCompoundImage à partir de tous ses éléments constitutifs
-         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine extendedCompoundImageFactory, qui fera toute sorte de tests et calculs.
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine ExtendedCompoundImageFactory, qui fera différents tests et calculs.
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] channel nombre de canaux par pixel
@@ -189,7 +189,7 @@ class ExtendedCompoundImage : public Image {
         /**
          * \~french
          * \brief Retourne le masque de l'image source d'indice i
-         * \param[in] i indice de l'image source sont on veut le masque
+         * \param[in] i indice de l'image source dont on veut le masque
          * \return masque
          * \~english
          * \brief Return the mask of source images with indice i

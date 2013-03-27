@@ -58,9 +58,13 @@
 
 #include "Image.h"
 #include <string.h>
-#include "Pixel.h"
 #include "Format.h"
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées à la méthode de fusion
+ * \~english \brief Manage informations in connection with merge method
+ */
 namespace Merge {
     /**
      * \~french \brief Énumération des méthodes de fusion disponibles
@@ -76,9 +80,30 @@ namespace Merge {
         MASK = 6
     };
 
+    /**
+     * \~french \brief Nombre de méthodes disponibles
+     * \~english \brief Number of available merge methods
+     */
     const int mergeType_size = 6;
 
+    /**
+     * \~french \brief Conversion d'une chaîne de caractère vers une méthode de fusion de l'énumération
+     * \param[in] strMergeMethod chaîne de caractère à convertir
+     * \return la méthode de fusion correspondante, UNKNOWN (0) si la chaîne n'est pas reconnue
+     * \~english \brief Convert a string to a merge methods enumeration member
+     * \param[in] strMergeMethod string to convert
+     * \return the binding merge method, UNKNOWN (0) if string is not recognized
+     */
     MergeType fromString ( std::string strMergeMethod );
+
+    /**
+     * \~french \brief Conversion d'une métthode de fusion vers une chaîne de caractère
+     * \param[in] mergeMethod méthode de fusion à convertir
+     * \return la chaîne de caractère nommant la méthode de fusion
+     * \~english \brief Convert a merge method to a string
+     * \param[in] mergeMethod merge method to convert
+     * \return string namming the merge method
+     */
     std::string toString ( MergeType mergeMethod );
 }
 
@@ -95,6 +120,8 @@ namespace Merge {
  * \li TRANSPARENCY
  * \li MASK
  * \li NORMAL
+ *
+ * \todo Travailler sur un nombre de canaux variable (pour l'instant, systématiquement 4).
  */
 class MergeImage : public Image {
 
@@ -113,13 +140,7 @@ class MergeImage : public Image {
          * \~english \brief Way to merge images
          */
         Merge::MergeType composition;
-
-        /**
-         * \~french \brief Nombre de canaux dans le format de travail
-         * \~english \brief Work format's number of samples per pixel
-         */
-        int workSpp;
-
+        
         /**
          * \~french \brief Type du canal
          * \~english \brief Sample type
@@ -151,12 +172,38 @@ class MergeImage : public Image {
 
     protected:
 
-        MergeImage(std::vector< Image* >& images, int channels, int workSpp, SampleType ST,
-                   int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL ) :
+        /** \~french
+         * \brief Crée un objet MergeImage à partir de tous ses éléments constitutifs
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine MergeImageFactory, qui fera différents tests et calculs.
+         * \param[in] images images sources
+         * \param[in] channel nombre de canaux par pixel en sortie
+         * \param[in] sampleType type des canaux
+         * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
+         * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
+         * \param[in] composition méthode de fusion à utiliser
+         ** \~english
+         * \brief Create an MergeImage object, from all attributes
+         * \param[in] images source images
+         * \param[in] channel number of samples per output pixel
+         * \param[in] sampleType samples' type
+         * \param[in] bgValue pixel's value to use as background, one integer per output sample
+         * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
+         * \param[in] composition merge method to use
+         */
+        MergeImage(std::vector< Image* >& images, int channels, SampleType ST,
+                   int* bg, int* transparent, Merge::MergeType composition = Merge::NORMAL ) :
             Image(images.at(0)->width,images.at(0)->height,images.at(0)->getResX(),images.at(0)->getResY(),
                   channels,images.at(0)->getBbox()),
-            images ( images ), composition ( composition ), workSpp(workSpp),
-            bgValue(bgValue), transparentValue(transparentValue), ST(ST) {}
+            images ( images ), composition ( composition ), bgValue(bg), transparentValue(transparent), ST(ST) {
+
+                if (transparentValue != NULL) {
+                    transparentValue = new int[3];
+                    memcpy(transparentValue, transparent, 3*sizeof(int));
+                }
+
+                bgValue = new int[channels];
+                memcpy(bgValue, bg, channels*sizeof(int));
+            }
         
 
     public:
@@ -177,7 +224,7 @@ class MergeImage : public Image {
         /**
          * \~french
          * \brief Retourne le masque de l'image source d'indice i
-         * \param[in] i indice de l'image source sont on veut le masque
+         * \param[in] i indice de l'image source dont on veut le masque
          * \return masque
          * \~english
          * \brief Return the mask of source images with indice i
@@ -207,7 +254,7 @@ class MergeImage : public Image {
             LOGGER_INFO("------ MergeImage -------");
             Image::print();
             LOGGER_INFO("\t- Number of images = " << images.size());
-            LOGGER_INFO("\t- Merge method : " << composition << "\n");
+            LOGGER_INFO("\t- Merge method : " << toString(composition) << "\n");
             LOGGER_INFO("\t- Background value : " << bgValue << "\n");
         }
 };
@@ -219,9 +266,28 @@ class MergeImage : public Image {
  */
 class MergeImageFactory {
     public:
+
+        /** \~french
+         * \brief Teste et calcule les caractéristiques d'une image fusionnée et crée un objet MergeImage
+         * \details Toutes les images sources doivent avoir les même dimensions pixel.
+         * \param[in] images images sources
+         * \param[in] sampleType type des canaux
+         * \param[in] channel nombre de canaux par pixel en sortie
+         * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
+         * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
+         * \param[in] composition méthode de fusion à utiliser
+         ** \~english
+         * \brief Check and calculate compounded image components and create an MergeImage object
+         * \details All source images have to own same dimesions.
+         * \param[in] images source images
+         * \param[in] sampleType samples' type
+         * \param[in] channel number of samples per output pixel
+         * \param[in] bgValue pixel's value to use as background, one integer per output sample
+         * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
+         * \param[in] composition merge method to use
+         */
         MergeImage* createMergeImage(std::vector< Image* >& images, SampleType ST, int channels,
-                                     int* bgValue, int* transparentValue,
-                                     Merge::MergeType composition = Merge::NORMAL );
+                                     int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL );
 };
 
 /**

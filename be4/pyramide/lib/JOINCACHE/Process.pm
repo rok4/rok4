@@ -136,9 +136,6 @@ Cache2work () {
         montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/$imgDst
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -rf ${TMP_DIR}/Untiled_PNG
-    elif [  "$type" == "msk"  ] ; then
-        tiffcp __tcpM__ $imgSrc ${TMP_DIR}/$imgDst
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         tiffcp __tcpI__ $imgSrc ${TMP_DIR}/$imgDst
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -147,9 +144,11 @@ Cache2work () {
 
 OverlayNtiff () {
     local config=$1
+    local inTemplate=$2
 
     overlayNtiff -f ${ONT_CONF_DIR}/$config __oNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$inTemplate
     rm -f ${ONT_CONF_DIR}/$config
 }
 
@@ -167,6 +166,7 @@ Work2cache () {
 
     tiff2tile ${TMP_DIR}/$workImgName __t2tI__ ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
 
@@ -177,6 +177,7 @@ Work2cache () {
 
         tiff2tile ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f tiff2tile ${TMP_DIR}/$workMskName
     fi
 }
 
@@ -372,7 +373,7 @@ sub treatImage {
     my $finalMask = undef;
     if ($self->{pyramid}->ownMasks()) {
         my $maskDir = $self->{pyramid}->getRootPerType("mask", TRUE, $node->getLevel());
-        $finalMask = File::Spec->catfile($imageDir,$path);
+        $finalMask = File::Spec->catfile($maskDir,$path);
     }
 
     # On affecte le script courant au noeud. Le script courant n'est pas incrémenté dans le cas d'un lien, car rien n'est écrit dans le script.
@@ -506,7 +507,7 @@ sub transformImage {
         if ($sppSource == 4) {
             $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte -background none\"\n", $sourceImage->{img};
         } elsif ($sppSource == 3) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColor\"\n", $sourceImage->{img};
         } elsif ($sppSource == 1) {
             $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type Grayscale\"\n", $sourceImage->{img};
         } else {
@@ -582,6 +583,8 @@ sub mergeImages {
     printf CFGF $node->exportForOntConf($outImgPath, $outMskPath);
     
     #### Entrées ####
+    my $inTemplate = $node->getWorkName("*_*");
+    
     for (my $i = 0; $i < $node->getSourcesNumber; $i++) {
 
         my $sourceImage = $node->getSource($i);
@@ -597,7 +600,7 @@ sub mergeImages {
             if ($spp == 4) {
                 $code .= sprintf "Cache2work %s $inImgName png \"-background none\"\n", $sourceImage->{img};
             } elsif ($spp == 3) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColorMatte\"\n", $sourceImage->{img};
+                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColor\"\n", $sourceImage->{img};
             } elsif ($spp == 1) {
                 $code .= sprintf "Cache2work %s $inImgName png \"-type Grayscale\"\n", $sourceImage->{img};
             } else {
@@ -612,7 +615,7 @@ sub mergeImages {
         if (exists $sourceImage->{msk}) {
             my $inMskName = $node->getWorkName($i."_M");
             $inMskPath = File::Spec->catfile($node->getScript->getTempDir, $inMskName);
-            $code .= sprintf ("Cache2work %s $inMskName\n", $sourceImage->{msk});
+            $code .= sprintf "Cache2work %s $inMskName\n", $sourceImage->{msk};
         }
 
         printf CFGF $node->exportForOntConf($inImgPath, $inMskPath);
@@ -620,7 +623,7 @@ sub mergeImages {
 
     close CFGF;
 
-    $code .= "OverlayNtiff $oNtConfFilename\n";
+    $code .= "OverlayNtiff $oNtConfFilename $inTemplate\n";
 
     # Final location writting
     my $imgCacheName =
@@ -670,7 +673,7 @@ sub configureFunctions {
     my $conf_oNt = "-c zip -m $mm -s $spp -p $ph -b $nd ";
 
     if ($mm eq "TRANSPARENCY") {
-        $conf_oNt .= "-n 255,255,255,255 ";
+        $conf_oNt .= "-t 0,255,0 ";
     }
 
     $configuredFunc =~ s/__oNt__/$conf_oNt/;
@@ -684,13 +687,8 @@ sub configureFunctions {
 
     ######## tiffcp ########
 
-    # pour les images
     my $conf_tcp = "-s -r $imgHeight -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
-
-    # pour les masques
-    $conf_tcp = "-s -r $imgHeight -c zip";
-    $configuredFunc =~ s/__tcpM__/$conf_tcp/;
 
     ######## configure montage ########
     my $conf_montageIn = "";

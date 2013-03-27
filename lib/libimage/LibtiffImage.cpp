@@ -118,21 +118,17 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead(char* filename, Boun
             return NULL;
         }
 
-        if (channels > 3) {
-            uint16_t extrasamplesCount;
-            uint16_t* extrasamples;
-            if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples) < 1) {
-                LOGGER_ERROR( "Unable to read number of extrasamples " << extrasamplesCount << " for file " << filename);
-                return NULL;
-            }
-
+        uint16_t extrasamplesCount;
+        uint16_t* extrasamples;
+        if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples) > 0) {
+            // On a des canaux en plus, si c'est de l'alpha, il doit être associé
             if (extrasamples[0] == EXTRASAMPLE_UNASSALPHA) {
                 LOGGER_ERROR( "Alpha sample is unassociated for the file " << filename);
                 return NULL;
             }
-
             delete [] extrasamples;
         }
+
     }
 
     if (tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG) {
@@ -204,10 +200,10 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite(char* filename, Bou
         return NULL;
     }
 
-    if (channels == 4) {
+    if (channels == 4 || channels == 2) {
         uint16_t extrasample = EXTRASAMPLE_ASSOCALPHA;
         if (TIFFSetField(tif, TIFFTAG_EXTRASAMPLES,1,&extrasample) < 1) {
-            LOGGER_ERROR( "Unable to write number of samples per pixel for file " << filename);
+            LOGGER_ERROR( "Unable to write number of extra samples for file " << filename);
             return NULL;
         }
     }

@@ -115,8 +115,13 @@ my %IMAGESPEC;
 # Define default values for attributes interpolation, compression, compressionoption and gamma.
 my %DEFAULT;
 
-my %CODE2SAMPLEFORMAT;
+# Constant: SAMPLEFORMAT2CODE
+# Convert the sample format parameter to the code element.
 my %SAMPLEFORMAT2CODE;
+
+# Constant: CODES
+# Define all available formats' codes, and parse them.
+my %CODES;
 
 ################################################################################
 
@@ -135,14 +140,23 @@ INIT {
         gamma => 1
     );
 
-    %CODE2SAMPLEFORMAT = (
-        INT => "uint",
-        FLOAT => "float"
-    );
-
     %SAMPLEFORMAT2CODE = (
         uint => "INT",
         float => "FLOAT"
+    );
+
+    %CODES = (
+        TIFF_RAW_INT8 => ("raw", "uint", 8),
+        TIFF_JPG_INT8 => ("jpg", "uint", 8),
+        TIFF_PNG_INT8 => ("png", "uint", 8),
+        TIFF_LZW_INT8 => ("lzw", "uint", 8),
+        TIFF_ZIP_INT8 => ("zip", "uint", 8),
+        TIFF_PKB_INT8 => ("pkb", "uint", 8),
+
+        TIFF_RAW_FLOAT32 => ("raw", "float", 32),
+        TIFF_LZW_FLOAT32 => ("lzw", "float", 32),
+        TIFF_ZIP_FLOAT32 => ("zip", "float", 32),
+        TIFF_PKB_FLOAT32 => ("pkb", "float", 32)
     );
 }
 END {}
@@ -232,9 +246,8 @@ sub _init {
     return FALSE if (! defined $params);
 
     if (exists $params->{formatCode} && defined $params->{formatCode}) {
-        (my $formatimg, $params->{compression}, $params->{sampleformat}, $params->{bitspersample})
-            = $self->decodeFormat($params->{formatCode});
-        if (! defined $formatimg) {
+        ($params->{compression}, $params->{sampleformat}, $params->{bitspersample}) = $self->decodeFormat($params->{formatCode});
+        if (! defined $params->{compression}) {
             ERROR (sprintf "Can not decode formatCode '%s' !",$params->{formatCode});
             return FALSE;
         }
@@ -319,6 +332,11 @@ sub _init {
     ### Format code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
     $self->{formatCode} = sprintf "TIFF_%s_%s%s",
         uc $self->{compression}, $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}}, $self->{pixel}->{bitspersample};
+
+    if (! exists $CODES{$self->{formatCode}}) {
+        ERROR(sprintf "Format code is not handled '%s' !", $self->{formatCode});
+        return undef;
+    }
 
     return TRUE;
 }
@@ -416,7 +434,7 @@ sub isInterpolation {
 =begin nd
 method: decodeFormat
 
-Extracts bits per sample, compression and sample format from a code (present in pyramid's descriptor). Returns a string array : [image format,compression,sample format,bits per sample] ( ["TIFF","png","uint",8] ), *undef* if error.
+Extracts bits per sample, compression and sample format from a code (present in pyramid's descriptor). Returns a list : (compression, sample format, bits per sample) : ("png", "uint", 8), *undef* if error.
 
 Parameters (list):
     formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
@@ -435,34 +453,16 @@ sub decodeFormat {
         $formatCode = 'TIFF_RAW_FLOAT32';
     }
 
-    $self->{formatCode} = $formatCode;
-    
-    my @value = split(/_/, $formatCode);
-    if (scalar @value != 3) {
+    if (! exists $CODES{$formatCode}) {
         ERROR(sprintf "Format code is not valid '%s' !", $formatCode);
         return undef;
     }
 
-    $value[2] =~ m/([A-Z]+)([0-9]+)/;
+    $self->{formatCode} = $formatCode;
 
-    # Contrôle de la valeur sampleFormat extraite
-    my $sampleformatCode = $1;
+    my ($comp, $sf, $bps) = $CODES{$formatCode};
 
-    if (! exists $CODE2SAMPLEFORMAT{$sampleformatCode}) {
-        ERROR(sprintf "Extracted sampleFormat is not valid '%s' !", $sampleformatCode);
-        return undef;
-    }
-    my $sampleformat = $CODE2SAMPLEFORMAT{$sampleformatCode};
-
-    # Contrôle de la valeur compression extraite
-    if (! $self->isCompression(lc $value[1])) {
-        ERROR(sprintf "Extracted compression is not valid '%s' !", $value[1]);
-        return undef;
-    }
-
-    my $bitspersample = $2;
-    
-    return ($value[0], lc $value[1], $sampleformat, $bitspersample);
+    return ($comp, $sf, $bps);
     
 }
 

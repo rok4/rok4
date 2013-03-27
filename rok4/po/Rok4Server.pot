@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-02-15 10:16+0100\n"
+"POT-Creation-Date: 2013-03-27 11:22+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1192,7 +1192,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:794 Rok4Server.cpp:450
+#: Request.cpp:794 Rok4Server.cpp:451
 msgid "Le format "
 msgstr ""
 
@@ -1316,11 +1316,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1398,16 +1398,16 @@ msgstr ""
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:464
+#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:465
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:495
+#: Rok4Api.cpp:457 Rok4Server.cpp:496
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:493 Rok4Server.cpp:495 Rok4Server.cpp:505
-#: Rok4Server.cpp:507
+#: Rok4Api.cpp:457 Rok4Server.cpp:494 Rok4Server.cpp:496 Rok4Server.cpp:506
+#: Rok4Server.cpp:508
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
@@ -1463,7 +1463,7 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:382
+#: Rok4Server.cpp:301 Rok4Server.cpp:383
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -1471,11 +1471,11 @@ msgstr ""
 msgid "Estompage"
 msgstr ""
 
-#: Rok4Server.cpp:450
+#: Rok4Server.cpp:451
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:470
+#: Rok4Server.cpp:471
 msgid "No data found"
 msgstr ""
 

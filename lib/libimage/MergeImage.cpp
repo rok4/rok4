@@ -51,12 +51,9 @@
  * \li MergeImageFactory : factory to create MergeImage object
  * \li MergeMask : merged mask, associated with a merged image
  * \li Merge : enumerate and managed different merge methods
- *
- * \todo Travailler sur un nombre de canaux variable (pour l'instant, systématiquement 4).
  */
 
 #include "MergeImage.h"
-#include "Pixel.h"
 #include "Line.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -64,7 +61,7 @@
 
 template <typename T>
 int MergeImage::_getline(T* buffer, int line)
-{
+{    
     Line<T> aboveLine(width);
     T* imageLine = new T[width*4];
     uint8_t* maskLine = new uint8_t[width];
@@ -103,7 +100,7 @@ int MergeImage::_getline(T* buffer, int line)
 
         switch ( composition ) {
             case Merge::NORMAL:
-                workLine.alphaBlending(&aboveLine);
+                workLine.useMask(&aboveLine);
                 break;
             case Merge::MASK:
                 workLine.useMask(&aboveLine);
@@ -114,15 +111,15 @@ int MergeImage::_getline(T* buffer, int line)
             case Merge::TRANSPARENCY:
                 workLine.alphaBlending(&aboveLine);
                 break;
-            case Merge::LIGHTEN:
-            case Merge::DARKEN:
+            //case Merge::LIGHTEN:
+            //case Merge::DARKEN:
             default:
-                workLine.alphaBlending(&aboveLine);
+                workLine.useMask(&aboveLine);
                 break;
         }
 
     }
-
+        
     // On repasse la ligne sur le nombre de canaux voulu
     workLine.write(buffer, channels);
 
@@ -152,8 +149,7 @@ int MergeImage::getline(float* buffer, int line)
 }
 
 MergeImage* MergeImageFactory::createMergeImage( std::vector< Image* >& images, SampleType ST, int channels,
-                                                 int* bgValue, int* transparentValue,
-                                                 Merge::MergeType composition )
+                                                 int* bgValue, int* transparentValue, Merge::MergeType composition )
 {
     if (images.size() == 0) {
         LOGGER_ERROR("No source images to defined merged image");
@@ -162,9 +158,6 @@ MergeImage* MergeImageFactory::createMergeImage( std::vector< Image* >& images, 
 
     int width = images.at(0)->width;
     int height = images.at(0)->height;
-
-    // On travaille pour l'instant toujours sur 4 canaux RGBA
-    int workSpp = 4;
 
     for (int i = 1; i < images.size(); i++) {
         if (images.at(i)->width != width || images.at(i)->height != height) {
@@ -175,12 +168,12 @@ MergeImage* MergeImageFactory::createMergeImage( std::vector< Image* >& images, 
         }
     }
 
-    if (ST.isFloat() && ! (composition == Merge::MASK || composition == Merge::NORMAL)) {
-        LOGGER_ERROR("Merge method is not consistent with the sample type. For float sample : MASK or NORMAL");
+    if (bgValue == NULL) {
+        LOGGER_ERROR("We have to precise a value used as background in the MergeImage");
         return NULL;
     }
 
-    return new MergeImage(images, channels, workSpp, ST, bgValue, transparentValue, composition);
+    return new MergeImage(images, channels, ST, bgValue, transparentValue, composition);
 }
 
 

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-02-15 10:16+0100\n"
+"POT-Creation-Date: 2013-03-27 11:22+0100\n"
 "PO-Revision-Date: 2012-08-27 11:15+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1197,7 +1197,7 @@ msgstr " format pyramide : "
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:794 Rok4Server.cpp:450
+#: Request.cpp:794 Rok4Server.cpp:451
 msgid "Le format "
 msgstr "Le format ["
 
@@ -1327,11 +1327,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:518
+#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -1411,16 +1411,16 @@ msgstr "Impossible de charger la configuration des Styles"
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:464
+#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:465
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:495
+#: Rok4Api.cpp:457 Rok4Server.cpp:496
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:493 Rok4Server.cpp:495 Rok4Server.cpp:505
-#: Rok4Server.cpp:507
+#: Rok4Api.cpp:457 Rok4Server.cpp:494 Rok4Server.cpp:496 Rok4Server.cpp:506
+#: Rok4Server.cpp:508
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
@@ -1476,7 +1476,7 @@ msgstr "La BoundingBox demandée est invalide"
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:382
+#: Rok4Server.cpp:301 Rok4Server.cpp:383
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -1484,11 +1484,11 @@ msgstr "Impossible de répondre a la requête"
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:450
+#: Rok4Server.cpp:451
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:470
+#: Rok4Server.cpp:471
 msgid "No data found"
 msgstr "Aucune donnée"
 

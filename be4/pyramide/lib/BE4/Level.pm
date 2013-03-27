@@ -322,6 +322,12 @@ sub getDirMask {
     return $self->{dir_mask};
 }
 
+# Function: getLimits
+sub getLimits {
+    my $self = shift;
+    return ($self->{limits}[0], $self->{limits}[1], $self->{limits}[2], $self->{limits}[3]);
+}
+
 =begin nd
 method: updateExtremTiles
 

@@ -54,7 +54,7 @@ my $BDA = BE4::GeoImage->new($Bin."/../images/BDALTI/BDALTI.tif");
 ok (defined $BDA, "BDALTI GeoImage created");
 
 my $BDO = BE4::GeoImage->new($Bin."/../images/BDORTHO/BDORTHO.tif");
-ok (defined $BDO, "BDO GeoImage created");
+ok (defined $BDO, "BDO GeoImage created (with associated mask)");
 
 my $error = BE4::GeoImage->new($Bin."/../fake/path.tif");
 ok (! defined $error, "Wrong path detected");
@@ -77,9 +77,15 @@ is_deeply ([$bps,$ph,$sf,$spp], [8,"rgb","uint",3],"Extract information from BDO
 # Test on exportForMntConf
 
 my $expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n",
-    $Bin."/../images/BDPARCELLAIRE/BDPARCELLAIRE.tif", 653000, 6858000, 654000, 6857000, 0.1,0.1;
+    "IMG $Bin/../images/BDPARCELLAIRE/BDPARCELLAIRE.tif", 653000, 6858000, 654000, 6857000, 0.1,0.1;
     
 is ($BDP->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration");
+
+$expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n%s\n",
+    "IMG $Bin/../images/BDORTHO/BDORTHO.tif", 642000, 6862000, 643000, 6861000, 0.5, 0.5,
+    "MSK $Bin/../images/BDORTHO/BDORTHO.msk";
+    
+is ($BDO->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration (image + mask)");
 
 ######################################################
 

@@ -66,6 +66,8 @@
  * \details Une image TIFF est une vraie image dans ce sens où elle est rattachée à un fichier, que ce soit pour la lecture ou l'écriture de données au format TIFF. Seule cette classe ne va pas s'appuyer sur une autre image pour êtr manipulée.
  *
  * Cette classe va utiliser la librairie TIFF afin de lire/écrire les données et de récupérer/fournir les informations sur les images.
+ *
+ * Si les images lues possèdent un canal alpha, celui-ci doit être associé, c'est-à-dire prémultiplié aux autres canaux. De même en écriture, on considère que s'il y a un canal alpha, il a été prémultiplié aux autres canaux lors des traitements.
  */
 class LibtiffImage : public Image {
 
@@ -82,11 +84,6 @@ class LibtiffImage : public Image {
          * \~english \brief Path to th image file
          */
         char* filename;
-        /**
-         * \~french \brief Nombre de bits par canal
-         * \~english \brief Number of bits per sample
-         */
-        uint16_t bitspersample;
         /**
          * \~french \brief Photométrie des données (rgb, gray...)
          * \~english \brief Data photometric (rgb, gray...)
@@ -137,7 +134,7 @@ class LibtiffImage : public Image {
     protected:
         /** \~french
          * \brief Crée un objet LibtiffImage à partir de tous ses éléments constitutifs
-         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine LibtiffImageFactory, qui fera toute sorte de tests et calculs.
+         * \details Ce constructeur est protégé afin de n'être appelé que par l'usine LibtiffImageFactory, qui fera différents tests et calculs.
          * \param[in] width largeur de l'image en pixel
          * \param[in] height hauteur de l'image en pixel
          * \param[in] resx résolution dans le sens des X
@@ -262,7 +259,7 @@ class LibtiffImage : public Image {
             LOGGER_INFO("\t- File name : " << filename);
             LOGGER_INFO("\t- Compression : " << compression);
             LOGGER_INFO("\t- Photometric : " << photometric);
-            LOGGER_INFO("\t- Bits per sample : " << bitspersample);
+            LOGGER_INFO("\t- Bits per sample : " << ST.getBitsPerSample());
             LOGGER_INFO("\t- Sample format : " << ST.getSampleFormat());
             LOGGER_INFO("\t- Rows per strip : " << rowsperstrip);
             LOGGER_INFO("");

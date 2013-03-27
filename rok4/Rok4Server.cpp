@@ -354,6 +354,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at(0);
     if ( images.size() > 1 ) {
+        
         switch ( pyrType ) {
             //Only use int8 output with estompage
             case Format::TIFF_RAW_FLOAT32 :
@@ -375,7 +376,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         MergeImageFactory MIF;
 
         int white[4] = {255,255,255,255};
-        image = MIF.createMergeImage(images, Format::toSampleType(pyrType), images.at(0)->channels, white, white, Merge::NORMAL);
+        image = MIF.createMergeImage(images, Format::toSampleType(pyrType), images.at(0)->channels, white, NULL, Merge::MASK);
 
         if (image == NULL) {
             LOGGER_ERROR ( "Impossible de fusionner les images des différentes couches" );

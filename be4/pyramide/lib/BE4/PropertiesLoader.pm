@@ -152,7 +152,7 @@ sub _initParams {
     
     # init. params
     if (! -f $file) {
-        ERROR ("File properties doesn't exist !?");
+        ERROR (sprintf "File properties '%s' doesn't exist !?", $file);
         return FALSE;
     }
     $self->{CFGFILE} = $file;

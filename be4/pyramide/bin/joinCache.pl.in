@@ -653,10 +653,14 @@ sub doIt {
 
             my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
 
+            DEBUG("Images' extrem indices : $IMIN,$JMIN,$IMAX,$JMAX");
+
             for (my $I = $IMIN; $I <= $IMAX; $I++) {
                 for (my $J = $JMIN; $J <= $JMAX; $J++) {
 
-                    if (exists $this{doneImages}->{$I."_".$J}) {
+                    my $imageKey = $I."_".$J;
+
+                    if (exists $this{doneImages}->{$imageKey}) {
                         # Image already treated
                         next;
                     }
@@ -679,7 +683,7 @@ sub doIt {
                         return FALSE;
                     }
 
-                    $this{doneImages}->{$I."_".$J} = TRUE;
+                    $this{doneImages}->{$imageKey} = TRUE;
                 }
             }
             $priority++;
@@ -803,6 +807,7 @@ sub searchImage {
 
         # La dalle appartient-elle à la BBOX de cette source ?
         if ($I < $IMIN || $I > $IMAX || $J < $JMIN || $J > $JMAX) {
+            $priority++;
             next;
         }
 
@@ -813,7 +818,7 @@ sub searchImage {
             my %sourceImage = ( img => $sourceImagePath, sourcePyramid => $source->{sourcePyramid} );
             
             my $dirMask = $source->{sourcePyramid}->getMaskDirectory($levelId);
-            if ($this{process}->getMergeMethod() eq 'MASK' && defined $dirMask) {
+            if (defined $dirMask && $this{process}->useMasks()) {
                 my $sourceMaskPath = File::Spec->catfile($dirMask,$path);
                 if (-f $sourceMaskPath) {
                     $sourceImage{msk} = $sourceMaskPath;

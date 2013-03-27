@@ -36,7 +36,7 @@
 ################################################################################
 
 =begin nd
-File: Pyramid.pm
+File: SourcePyramid.pm
 
 Class: JOINCACHE::SourcePyramid
 

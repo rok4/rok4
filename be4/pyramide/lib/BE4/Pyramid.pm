@@ -465,7 +465,6 @@ sub _load {
     my $objNodata = BE4::NoData->new({
         pixel   => $self->getPixel(),
         value   => $params->{color},
-        nowhite => $params->{nowhite}
     });
 
     if (! defined $objNodata) {

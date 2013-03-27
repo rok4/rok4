@@ -107,6 +107,7 @@ Group: Classes  {
 
          File: Process  (no auto-title, lib/JOINCACHE/Process.pm)
          File: Script  (no auto-title, lib/JOINCACHE/Script.pm)
+         File: Node  (no auto-title, lib/JOINCACHE/Node.pm)
          }  # Group: For generation
          
       Group: Utils  {

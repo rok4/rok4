@@ -101,18 +101,18 @@ class Lanczos : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
 
     private:
-    double kernel_function(double d) {
-        if (d > s) return 0.;
-        else if (d == 0.) return 1.;
-        else {
-            d *= 3.14159265358979323846;
-            return (sin(d) / d) * (sin(d/s) / d * s);
+        double kernel_function(double d) {
+            if (d > s) return 0.;
+            else if (d == 0.) return 1.;
+            else {
+                d *= 3.14159265358979323846;
+                return (sin(d) / d) * (sin(d/s) / d * s);
+            }
         }
-    }
 
-    Lanczos() : Kernel(s) {
-        init();
-    }
+        Lanczos() : Kernel(s) {
+            init();
+        }
 };
 
 /**
@@ -128,14 +128,15 @@ class Lanczos : public Kernel {
  */
 class NearestNeighbour : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
+    
     private:
-    double kernel_function(double d) {
-        if (d > 0.5) return 0.;
-        else return 1.;
-    }
-    NearestNeighbour() : Kernel(0.5, true) {
-        init();
-    }
+        double kernel_function(double d) {
+            if (d > 0.5) return 0.;
+            else return 1.;
+        }
+        NearestNeighbour() : Kernel(0.5, true) {
+            init();
+        }
 };
 
 /**
@@ -151,14 +152,15 @@ class NearestNeighbour : public Kernel {
  */
 class Linear : public Kernel {
     friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-private:
-    double kernel_function(double d) {
-        if (d > 1) return 0.;
-        else return 1.-d;
-    }
-    Linear() : Kernel(1.) {
-        init();
-    }
+    
+    private:
+        double kernel_function(double d) {
+            if (d > 1) return 0.;
+            else return 1.-d;
+        }
+        Linear() : Kernel(1.) {
+            init();
+        }
 };
 
 /**

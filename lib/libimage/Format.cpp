@@ -35,6 +35,20 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Format.cpp
+ ** \~french
+ * \brief Implémentation de la classe SampleType du namespace Format
+ * \details
+ * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li Format : énumère et manipule les différentes format d'image
+ ** \~english
+ * \brief Implement class SampleType and the namespace Format
+ * \details
+ * \li SampleType : managed sample type accepted by Image classes
+ * \li Format : enumerate and managed different formats
+ */
+
 #include "Format.h"
 #include <string.h>
 

@@ -177,7 +177,7 @@ void usage() {
     "            TRANSPARENCY   images are merged by alpha blending\n" <<
     "            MULTIPLY       samples are multiplied one by one\n" <<
     "            MASK           associated mask are used to compose the output image\n" <<
-    "    -s samples per pixel : 1, 3 or 4\n" <<
+    "    -s samples per pixel : 1, 2, 3 or 4\n" <<
     "    -p photometric :\n" <<
     "            gray    min is black\n" <<
     "            rgb     for image with alpha too\n\n" <<
@@ -238,6 +238,7 @@ int parseCommandLine(int argc, char** argv) {
                 case 's': // samplesperpixel
                     if(i++ >= argc) {LOGGER_ERROR("Error with samples per pixel (option -s)"); return -1;}
                     if(strncmp(argv[i], "1",1) == 0) samplesperpixel = 1 ;
+                    else if(strncmp(argv[i], "2",1) == 0) samplesperpixel = 2 ;
                     else if(strncmp(argv[i], "3",1) == 0) samplesperpixel = 3 ;
                     else if(strncmp(argv[i], "4",1) == 0) samplesperpixel = 4 ;
                     else {LOGGER_ERROR("Unknown value for samples per pixel (option -s) : " << argv[i]); return -1;}
@@ -364,11 +365,6 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
         std::getline(file,str);
     }
 
-    int pos;
-    int nb;
-
-    char type[3];
-
     if (std::sscanf(str.c_str(),"%s %s", imageFileName, maskFileName) == 2) {
         *hasMask = true;
     } else {
@@ -406,7 +402,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     LibtiffImageFactory LIF;
     MergeImageFactory MIF;
 
-
     // Ouverture du fichier texte listant les images
     std::ifstream file;
 
@@ -428,7 +423,6 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     int inputNb = 0;
     int out = 0;
     while ((out = readFileLine(file,inputImagePath,&hasMask,inputMaskPath)) == 0) {
-
         LibtiffImage* pImage = LIF.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
         if (pImage == NULL) {
             LOGGER_ERROR("Cannot create a LibtiffImage from the file " << inputImagePath);
@@ -533,7 +527,8 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
  * \param[in] argv parameters array
  * \return 0 if success, -1 otherwise
  */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     LibtiffImage* pImageOut ;
     LibtiffImage* pMaskOut = NULL;
@@ -550,7 +545,7 @@ int main(int argc, char **argv) {
     Logger::setAccumulator(FATAL, acc);
 
     std::ostream &logd = LOGGER(DEBUG);
-          logd.precision(16);
+    logd.precision(16);
     logd.setf(std::ios::fixed,std::ios::floatfield);
 
     std::ostream &logw = LOGGER(WARN);
