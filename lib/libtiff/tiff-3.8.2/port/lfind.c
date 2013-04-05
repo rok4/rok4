@@ -34,7 +34,7 @@
 
 #if 0
 static char sccsid[] = "@(#)lsearch.c	8.1 (Berkeley) 6/4/93";
-__RCSID("$NetBSD: lsearch.c,v 1.2 2005/07/06 15:47:15 drochner Exp $");
+__RCSID ( "$NetBSD: lsearch.c,v 1.2 2005/07/06 15:47:15 drochner Exp $" );
 #endif
 
 #include <sys/types.h>
@@ -44,15 +44,14 @@ __RCSID("$NetBSD: lsearch.c,v 1.2 2005/07/06 15:47:15 drochner Exp $");
 #endif
 
 void *
-lfind(const void *key, const void *base, size_t *nmemb, size_t size,
-      int(*compar)(const void *, const void *))
-{
-	char *element, *end;
+lfind ( const void *key, const void *base, size_t *nmemb, size_t size,
+        int ( *compar ) ( const void *, const void * ) ) {
+    char *element, *end;
 
-	end = (char *)base + *nmemb * size;
-	for (element = (char *)base; element < end; element += size)
-		if (!compar(element, key))		/* key found */
-			return element;
+    end = ( char * ) base + *nmemb * size;
+    for ( element = ( char * ) base; element < end; element += size )
+        if ( !compar ( element, key ) )		/* key found */
+            return element;
 
-	return NULL;
+    return NULL;
 }

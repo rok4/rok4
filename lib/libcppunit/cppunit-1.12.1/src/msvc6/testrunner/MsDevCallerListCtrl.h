@@ -10,14 +10,13 @@
 /////////////////////////////////////////////////////////////////////////////
 // MsDevCallerListCtrl window
 
-class MsDevCallerListCtrl : public CListCtrl
-{
+class MsDevCallerListCtrl : public CListCtrl {
 // Construction
 public:
-	MsDevCallerListCtrl();
+    MsDevCallerListCtrl();
 
-  void setLineNumberSubItem( int subItemIndex );
-  void setFileNameSubItem( int fileNameItemIndex );
+    void setLineNumberSubItem ( int subItemIndex );
+    void setFileNameSubItem ( int fileNameItemIndex );
 
 // Attributes
 public:
@@ -26,26 +25,26 @@ public:
 public:
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(MsDevCallerListCtrl)
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(MsDevCallerListCtrl)
+    //}}AFX_VIRTUAL
 
 // Implementation
 public:
-	virtual ~MsDevCallerListCtrl();
+    virtual ~MsDevCallerListCtrl();
 
-	// Generated message map functions
+    // Generated message map functions
 protected:
-	//{{AFX_MSG(MsDevCallerListCtrl)
-	afx_msg void OnDblclk(NMHDR* pNMHDR, LRESULT* pResult);
-	//}}AFX_MSG
+    //{{AFX_MSG(MsDevCallerListCtrl)
+    afx_msg void OnDblclk ( NMHDR* pNMHDR, LRESULT* pResult );
+    //}}AFX_MSG
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 
 private:
-  int m_lineNumberSubItem;
-  int m_fileNameSubItem;
-  bool m_initialized;
+    int m_lineNumberSubItem;
+    int m_fileNameSubItem;
+    bool m_initialized;
 };
 
 /////////////////////////////////////////////////////////////////////////////

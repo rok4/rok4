@@ -55,13 +55,12 @@ static PJ_GRIDINFO *grid_list = NULL;
 void pj_deallocate_grids()
 
 {
-    while( grid_list != NULL )
-    {
+    while ( grid_list != NULL ) {
         PJ_GRIDINFO *item = grid_list;
         grid_list = grid_list->next;
         item->next = NULL;
 
-        pj_gridinfo_free( pj_get_default_ctx(), item );
+        pj_gridinfo_free ( pj_get_default_ctx(), item );
     }
 }
 
@@ -72,43 +71,39 @@ void pj_deallocate_grids()
 /*      last_nadgrids_list.                                             */
 /************************************************************************/
 
-static int pj_gridlist_merge_gridfile( projCtx ctx, 
-                                       const char *gridname,
-                                       PJ_GRIDINFO ***p_gridlist,
-                                       int *p_gridcount, 
-                                       int *p_gridmax )
+static int pj_gridlist_merge_gridfile ( projCtx ctx,
+                                        const char *gridname,
+                                        PJ_GRIDINFO ***p_gridlist,
+                                        int *p_gridcount,
+                                        int *p_gridmax )
 
 {
     int got_match=0;
     PJ_GRIDINFO *this_grid, *tail = NULL;
 
-/* -------------------------------------------------------------------- */
-/*      Try to find in the existing list of loaded grids.  Add all      */
-/*      matching grids as with NTv2 we can get many grids from one      */
-/*      file (one shared gridname).                                     */
-/* -------------------------------------------------------------------- */
-    for( this_grid = grid_list; this_grid != NULL; this_grid = this_grid->next)
-    {
-        if( strcmp(this_grid->gridname,gridname) == 0 )
-        {
+    /* -------------------------------------------------------------------- */
+    /*      Try to find in the existing list of loaded grids.  Add all      */
+    /*      matching grids as with NTv2 we can get many grids from one      */
+    /*      file (one shared gridname).                                     */
+    /* -------------------------------------------------------------------- */
+    for ( this_grid = grid_list; this_grid != NULL; this_grid = this_grid->next ) {
+        if ( strcmp ( this_grid->gridname,gridname ) == 0 ) {
             got_match = 1;
 
             /* dont add to the list if it is invalid. */
-            if( this_grid->ct == NULL )
+            if ( this_grid->ct == NULL )
                 return 0;
 
             /* do we need to grow the list? */
-            if( *p_gridcount >= *p_gridmax - 2 )
-            {
+            if ( *p_gridcount >= *p_gridmax - 2 ) {
                 PJ_GRIDINFO **new_list;
                 int new_max = *p_gridmax + 20;
 
-                new_list = (PJ_GRIDINFO **) pj_malloc(sizeof(void*) * new_max);
-                if( *p_gridlist != NULL )
-                {
-                    memcpy( new_list, *p_gridlist,
-                            sizeof(void*) * (*p_gridmax) );
-                    pj_dalloc( *p_gridlist );
+                new_list = ( PJ_GRIDINFO ** ) pj_malloc ( sizeof ( void* ) * new_max );
+                if ( *p_gridlist != NULL ) {
+                    memcpy ( new_list, *p_gridlist,
+                             sizeof ( void* ) * ( *p_gridmax ) );
+                    pj_dalloc ( *p_gridlist );
                 }
 
                 *p_gridlist = new_list;
@@ -116,38 +111,37 @@ static int pj_gridlist_merge_gridfile( projCtx ctx,
             }
 
             /* add to the list */
-            (*p_gridlist)[(*p_gridcount)++] = this_grid;
-            (*p_gridlist)[*p_gridcount] = NULL;
+            ( *p_gridlist ) [ ( *p_gridcount ) ++] = this_grid;
+            ( *p_gridlist ) [*p_gridcount] = NULL;
         }
 
         tail = this_grid;
     }
 
-    if( got_match )
+    if ( got_match )
         return 1;
 
-/* -------------------------------------------------------------------- */
-/*      Try to load the named grid.                                     */
-/* -------------------------------------------------------------------- */
-    this_grid = pj_gridinfo_init( ctx, gridname );
+    /* -------------------------------------------------------------------- */
+    /*      Try to load the named grid.                                     */
+    /* -------------------------------------------------------------------- */
+    this_grid = pj_gridinfo_init ( ctx, gridname );
 
-    if( this_grid == NULL )
-    {
+    if ( this_grid == NULL ) {
         /* we should get at least a stub grid with a missing "ct" member */
-        assert( FALSE );
+        assert ( FALSE );
         return 0;
     }
-    
-    if( tail != NULL )
+
+    if ( tail != NULL )
         tail->next = this_grid;
     else
         grid_list = this_grid;
 
-/* -------------------------------------------------------------------- */
-/*      Recurse to add the grid now that it is loaded.                  */
-/* -------------------------------------------------------------------- */
-    return pj_gridlist_merge_gridfile( ctx, gridname, p_gridlist, 
-                                       p_gridcount, p_gridmax );
+    /* -------------------------------------------------------------------- */
+    /*      Recurse to add the grid now that it is loaded.                  */
+    /* -------------------------------------------------------------------- */
+    return pj_gridlist_merge_gridfile ( ctx, gridname, p_gridlist,
+                                        p_gridcount, p_gridmax );
 }
 
 /************************************************************************/
@@ -160,8 +154,8 @@ static int pj_gridlist_merge_gridfile( projCtx ctx,
 /*      the cost of building the list of tables each time.              */
 /************************************************************************/
 
-PJ_GRIDINFO **pj_gridlist_from_nadgrids( projCtx ctx, const char *nadgrids, 
-                                         int *grid_count)
+PJ_GRIDINFO **pj_gridlist_from_nadgrids ( projCtx ctx, const char *nadgrids,
+        int *grid_count )
 
 {
     const char *s;
@@ -173,48 +167,43 @@ PJ_GRIDINFO **pj_gridlist_from_nadgrids( projCtx ctx, const char *nadgrids,
 
     pj_acquire_lock();
 
-/* -------------------------------------------------------------------- */
-/*      Loop processing names out of nadgrids one at a time.            */
-/* -------------------------------------------------------------------- */
-    for( s = nadgrids; *s != '\0'; )
-    {
+    /* -------------------------------------------------------------------- */
+    /*      Loop processing names out of nadgrids one at a time.            */
+    /* -------------------------------------------------------------------- */
+    for ( s = nadgrids; *s != '\0'; ) {
         int   end_char;
         int   required = 1;
         char  name[128];
 
-        if( *s == '@' )
-        {
+        if ( *s == '@' ) {
             required = 0;
             s++;
         }
 
-        for( end_char = 0; 
-             s[end_char] != '\0' && s[end_char] != ','; 
-             end_char++ ) {}
+        for ( end_char = 0;
+                s[end_char] != '\0' && s[end_char] != ',';
+                end_char++ ) {}
 
-        if( end_char >= sizeof(name) )
-        {
-            pj_ctx_set_errno( ctx, -38 );
+        if ( end_char >= sizeof ( name ) ) {
+            pj_ctx_set_errno ( ctx, -38 );
             pj_release_lock();
             return NULL;
         }
-        
-        strncpy( name, s, end_char );
+
+        strncpy ( name, s, end_char );
         name[end_char] = '\0';
 
         s += end_char;
-        if( *s == ',' )
+        if ( *s == ',' )
             s++;
 
-        if( !pj_gridlist_merge_gridfile( ctx, name, &gridlist, grid_count, 
-                                         &grid_max) 
-            && required )
-        {
-            pj_ctx_set_errno( ctx, -38 );
+        if ( !pj_gridlist_merge_gridfile ( ctx, name, &gridlist, grid_count,
+                                           &grid_max )
+                && required ) {
+            pj_ctx_set_errno ( ctx, -38 );
             pj_release_lock();
             return NULL;
-        }
-        else
+        } else
             pj_errno = 0;
     }
 

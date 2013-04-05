@@ -56,7 +56,7 @@ public class PJException extends Exception {
      *
      * @param message A message that describe the cause for the failure.
      */
-    public PJException(final String message) {
-        super(message);
+    public PJException ( final String message ) {
+        super ( message );
     }
 }

@@ -19,59 +19,54 @@ CPPUNIT_NS_BEGIN
  *
  * See src/msvc6/MfcSynchronizedObject.h for an example.
  */
-class CPPUNIT_API SynchronizedObject
-{
+class CPPUNIT_API SynchronizedObject {
 public:
-  /*! \brief Abstract synchronization object (mutex)
-   */
-  class SynchronizationObject
-  {
+    /*! \brief Abstract synchronization object (mutex)
+     */
+    class SynchronizationObject {
     public:
-      SynchronizationObject() {}
-      virtual ~SynchronizationObject() {}
+        SynchronizationObject() {}
+        virtual ~SynchronizationObject() {}
 
-      virtual void lock() {}
-      virtual void unlock() {}
-  };
+        virtual void lock() {}
+        virtual void unlock() {}
+    };
 
-  /*! Constructs a SynchronizedObject object.
-   */
-  SynchronizedObject( SynchronizationObject *syncObject =0 );
+    /*! Constructs a SynchronizedObject object.
+     */
+    SynchronizedObject ( SynchronizationObject *syncObject =0 );
 
-  /// Destructor.
-  virtual ~SynchronizedObject();
+    /// Destructor.
+    virtual ~SynchronizedObject();
 
 protected:
-  /*! \brief Locks a synchronization object in the current scope.
-   */
-  class ExclusiveZone
-  {
+    /*! \brief Locks a synchronization object in the current scope.
+     */
+    class ExclusiveZone {
+        SynchronizationObject *m_syncObject;
+
+    public:
+        ExclusiveZone ( SynchronizationObject *syncObject )
+            : m_syncObject ( syncObject ) {
+            m_syncObject->lock();
+        }
+
+        ~ExclusiveZone() {
+            m_syncObject->unlock ();
+        }
+    };
+
+    virtual void setSynchronizationObject ( SynchronizationObject *syncObject );
+
+protected:
     SynchronizationObject *m_syncObject;
 
-  public:
-    ExclusiveZone( SynchronizationObject *syncObject ) 
-        : m_syncObject( syncObject ) 
-    { 
-      m_syncObject->lock(); 
-    }
-
-    ~ExclusiveZone() 
-    { 
-      m_syncObject->unlock (); 
-    }
-  };
-
-  virtual void setSynchronizationObject( SynchronizationObject *syncObject );
-
-protected:
-  SynchronizationObject *m_syncObject;
-
 private:
-  /// Prevents the use of the copy constructor.
-  SynchronizedObject( const SynchronizedObject &copy );
+    /// Prevents the use of the copy constructor.
+    SynchronizedObject ( const SynchronizedObject &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const SynchronizedObject &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const SynchronizedObject &copy );
 };
 
 

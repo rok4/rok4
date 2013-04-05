@@ -4,9 +4,8 @@
 #include <cppunit/Portability.h>
 #include <string>
 
-inline std::string unitTestToolSuiteName()
-{
-  return "UnitTestTool";
+inline std::string unitTestToolSuiteName() {
+    return "UnitTestTool";
 }
 
 #endif // CPPUNITTEST_UNITTESTTOOLSUITE_H

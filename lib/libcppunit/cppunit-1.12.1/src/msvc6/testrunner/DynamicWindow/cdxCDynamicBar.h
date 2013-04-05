@@ -32,7 +32,7 @@
  *
  *    if (!m_wndMyBar.Create(_T("My Bar"), this, CSize(200, 100),
  *         TRUE, AFX_IDW_CONTROLBAR_FIRST + 32))
- *    { 
+ *    {
  *			 TRACE0("Failed to create mybar\n");
  *			 return -1;      // fail to create
  *    }
@@ -54,41 +54,44 @@
  * The child dialog.
  */
 
-class cdxCDynamicBarDlg : public cdxCDynamicChildDlg
-{
-	DECLARE_DYNAMIC(cdxCDynamicBarDlg);
+class cdxCDynamicBarDlg : public cdxCDynamicChildDlg {
+    DECLARE_DYNAMIC ( cdxCDynamicBarDlg );
 
-	friend class cdxCDynamicBar;
-
-public:
-	const UINT	m_nID;
+    friend class cdxCDynamicBar;
 
 public:
-	cdxCDynamicBarDlg(UINT idd, CWnd *pParent = NULL) : m_nID(idd), cdxCDynamicChildDlg(idd,pParent) { }
-	virtual ~cdxCDynamicBarDlg() {}
+    const UINT	m_nID;
 
-	//
-	// Create() without parameters :)
-	//
+public:
+    cdxCDynamicBarDlg ( UINT idd, CWnd *pParent = NULL ) : m_nID ( idd ), cdxCDynamicChildDlg ( idd,pParent ) { }
+    virtual ~cdxCDynamicBarDlg() {}
 
-	virtual bool Create(cdxCDynamicBar *pBar);
+    //
+    // Create() without parameters :)
+    //
 
-	//
-	// this handler might be used to update things
-	//
+    virtual bool Create ( cdxCDynamicBar *pBar );
+
+    //
+    // this handler might be used to update things
+    //
 protected:
-	virtual void OnUpdateCmdUI(CFrameWnd* pTarget, BOOL bDisableIfNoHndler) { UpdateDialogControls(pTarget,bDisableIfNoHndler); }
+    virtual void OnUpdateCmdUI ( CFrameWnd* pTarget, BOOL bDisableIfNoHndler ) {
+        UpdateDialogControls ( pTarget,bDisableIfNoHndler );
+    }
 
-	//
-	// this catches OnOK, OnCancel and OnClose
-	// to protect the dialog from being closed accidentially
-	//
+    //
+    // this catches OnOK, OnCancel and OnClose
+    // to protect the dialog from being closed accidentially
+    //
 protected:
-	virtual void OnOK() {}
-	virtual void OnCancel() {}
-	afx_msg void OnClose() { OnCancel(); }
+    virtual void OnOK() {}
+    virtual void OnCancel() {}
+    afx_msg void OnClose() {
+        OnCancel();
+    }
 
-	DECLARE_MESSAGE_MAP();
+    DECLARE_MESSAGE_MAP();
 };
 
 /*
@@ -97,48 +100,47 @@ protected:
  * The bar.
  */
 
-class cdxCDynamicBar : public CSizingControlBar
-{
-	DECLARE_DYNAMIC(cdxCDynamicBar);
+class cdxCDynamicBar : public CSizingControlBar {
+    DECLARE_DYNAMIC ( cdxCDynamicBar );
 
 private:
-	cdxCDynamicBarDlg	& m_rDlg;
-	CRect					m_rectBorder;
+    cdxCDynamicBarDlg	& m_rDlg;
+    CRect					m_rectBorder;
 
 public:
-	cdxCDynamicBar(cdxCDynamicBarDlg & rDlg) : m_rDlg(rDlg), m_rectBorder(0,0,0,0) {}
-	virtual ~cdxCDynamicBar() {}
+    cdxCDynamicBar ( cdxCDynamicBarDlg & rDlg ) : m_rDlg ( rDlg ), m_rectBorder ( 0,0,0,0 ) {}
+    virtual ~cdxCDynamicBar() {}
 
 // Attributes
 public:
-    virtual BOOL Create(LPCTSTR lpszWindowName, CWnd* pParentWnd,
-        CSize sizeDefault, BOOL bHasGripper, UINT nID,
-        DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_TOP);
+    virtual BOOL Create ( LPCTSTR lpszWindowName, CWnd* pParentWnd,
+                          CSize sizeDefault, BOOL bHasGripper, UINT nID,
+                          DWORD dwStyle = WS_CHILD | WS_VISIBLE | CBRS_TOP );
 
 // Operations
 public:
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(cdxCDynamicBar)
-	public:
-	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-	protected:
-	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(cdxCDynamicBar)
+public:
+    virtual BOOL OnCmdMsg ( UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo );
+protected:
+    virtual BOOL OnCommand ( WPARAM wParam, LPARAM lParam );
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-    virtual void OnUpdateCmdUI(CFrameWnd* pTarget, BOOL bDisableIfNoHndler);
+    virtual void OnUpdateCmdUI ( CFrameWnd* pTarget, BOOL bDisableIfNoHndler );
 
-	// Generated message map functions
+    // Generated message map functions
 protected:
-	//{{AFX_MSG(cdxCDynamicBar)
-	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS FAR* lpncsp);
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP();
+    //{{AFX_MSG(cdxCDynamicBar)
+    afx_msg void OnSizing ( UINT fwSide, LPRECT pRect );
+    afx_msg void OnSize ( UINT nType, int cx, int cy );
+    afx_msg void OnNcCalcSize ( BOOL bCalcValidRects, NCCALCSIZE_PARAMS FAR* lpncsp );
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP();
 };
 
 /*
@@ -148,14 +150,16 @@ protected:
  */
 
 template<class DLG>
-class cdxCDynamicBarT : public cdxCDynamicBar
-{
+class cdxCDynamicBarT : public cdxCDynamicBar {
 public:
-	DLG		m_wndDlg;
+    DLG		m_wndDlg;
 
 public:
-	cdxCDynamicBarT() : m_wndDlg(), cdxCDynamicBar(m_wndDlg) {}
-	virtual ~cdxCDynamicBarT() {  m_wndDlg.DestroyWindow(); cdxCDynamicBar::DestroyWindow(); }
+    cdxCDynamicBarT() : m_wndDlg(), cdxCDynamicBar ( m_wndDlg ) {}
+    virtual ~cdxCDynamicBarT() {
+        m_wndDlg.DestroyWindow();
+        cdxCDynamicBar::DestroyWindow();
+    }
 };
 
 /////////////////////////////////////////////////////////////////////////////

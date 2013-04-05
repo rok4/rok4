@@ -14,21 +14,19 @@ class TestResult;
  * Implementation detail.
  * \internal Context use to report failure in Protector.
  */
-class CPPUNIT_API ProtectorContext
-{
+class CPPUNIT_API ProtectorContext {
 public:
-  ProtectorContext( Test *test,
-                    TestResult *result,
-                    const std::string &shortDescription )
-      : m_test( test )
-      , m_result( result )
-      , m_shortDescription( shortDescription )
-  {
-  }
+    ProtectorContext ( Test *test,
+                       TestResult *result,
+                       const std::string &shortDescription )
+        : m_test ( test )
+        , m_result ( result )
+        , m_shortDescription ( shortDescription ) {
+    }
 
-  Test *m_test;
-  TestResult *m_result;
-  std::string m_shortDescription;
+    Test *m_test;
+    TestResult *m_result;
+    std::string m_shortDescription;
 };
 
 

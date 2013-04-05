@@ -12,24 +12,23 @@
 /*! \class TestRunnerThreadFinishedEvent
  * \brief This class represents an event indicating that the TestRunnerThread finished.
  */
-class TestRunnerThreadFinishedEvent : public TestRunnerThreadEvent
-{
+class TestRunnerThreadFinishedEvent : public TestRunnerThreadEvent {
 public:
-  /*! Constructs a TestRunnerThreadFinishedEvent object.
-   */
-  TestRunnerThreadFinishedEvent();
+    /*! Constructs a TestRunnerThreadFinishedEvent object.
+     */
+    TestRunnerThreadFinishedEvent();
 
-  /// Destructor.
-  virtual ~TestRunnerThreadFinishedEvent();
+    /// Destructor.
+    virtual ~TestRunnerThreadFinishedEvent();
 
-  void process( TestRunnerModelThreadInterface *target );
+    void process ( TestRunnerModelThreadInterface *target );
 
 private:
-  /// Prevents the use of the copy constructor.
-  TestRunnerThreadFinishedEvent( const TestRunnerThreadFinishedEvent &copy );
+    /// Prevents the use of the copy constructor.
+    TestRunnerThreadFinishedEvent ( const TestRunnerThreadFinishedEvent &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const TestRunnerThreadFinishedEvent &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestRunnerThreadFinishedEvent &copy );
 };
 
 

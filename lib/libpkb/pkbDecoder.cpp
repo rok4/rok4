@@ -49,21 +49,21 @@ pkbDecoder::pkbDecoder() {
 }
 
 
-uint8_t * pkbDecoder::decode(const uint8_t * in, size_t inSize, size_t &outSize) {
+uint8_t * pkbDecoder::decode ( const uint8_t * in, size_t inSize, size_t &outSize ) {
     outSize = inSize * 2;
     uint8_t * out = new uint8_t[outSize];
     int8_t header;
     int count;
     size_t inPos = 0, outPos = 0;
-    while (inPos < inSize -1 ) {
-        header = (int8_t) *(in+inPos++);
-        if (header <= 0) { // Run
+    while ( inPos < inSize -1 ) {
+        header = ( int8_t ) * ( in+inPos++ );
+        if ( header <= 0 ) { // Run
             count = 1 - header;
-            if (outPos + count > outSize) {
-                uint8_t* tmpBuffer = new uint8_t[(outSize*2)];
-                if (tmpBuffer) { // Enlarge your Buffer
-                    memset(tmpBuffer+outSize ,0,outSize);
-                    memcpy(tmpBuffer, out, outSize);
+            if ( outPos + count > outSize ) {
+                uint8_t* tmpBuffer = new uint8_t[ ( outSize*2 )];
+                if ( tmpBuffer ) { // Enlarge your Buffer
+                    memset ( tmpBuffer+outSize ,0,outSize );
+                    memcpy ( tmpBuffer, out, outSize );
                     delete[] out;
                     out = tmpBuffer;
                     outSize *=2;
@@ -72,18 +72,18 @@ uint8_t * pkbDecoder::decode(const uint8_t * in, size_t inSize, size_t &outSize)
                     return NULL;
                 }
             }
-            
-            memset(out+outPos,*(in+inPos),count);
+
+            memset ( out+outPos,* ( in+inPos ),count );
             outPos+=count;
             inPos++;
-            
+
         } else if ( header < 128 ) { // Literal
             count = 1 + header;
-            if (outPos + count > outSize) {
-                uint8_t* tmpBuffer = new uint8_t[(outSize*2)];
-                if (tmpBuffer) { // Enlarge your Buffer
-                    memset(tmpBuffer+outSize ,0,outSize);
-                    memcpy(tmpBuffer, out, outSize);
+            if ( outPos + count > outSize ) {
+                uint8_t* tmpBuffer = new uint8_t[ ( outSize*2 )];
+                if ( tmpBuffer ) { // Enlarge your Buffer
+                    memset ( tmpBuffer+outSize ,0,outSize );
+                    memcpy ( tmpBuffer, out, outSize );
                     delete[] out;
                     out = tmpBuffer;
                     outSize *=2;
@@ -92,11 +92,11 @@ uint8_t * pkbDecoder::decode(const uint8_t * in, size_t inSize, size_t &outSize)
                     return NULL;
                 }
             }
-            
-            memcpy(out+outPos,in+inPos,count);
+
+            memcpy ( out+outPos,in+inPos,count );
             outPos+=count;
             inPos+= count;
-        } 
+        }
     }
     outSize = outPos;
     return out;

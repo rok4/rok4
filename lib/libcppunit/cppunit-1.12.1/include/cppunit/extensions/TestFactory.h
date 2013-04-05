@@ -10,15 +10,14 @@ class Test;
 
 /*! \brief Abstract Test factory.
  */
-class CPPUNIT_API TestFactory 
-{
+class CPPUNIT_API TestFactory {
 public:
-  virtual ~TestFactory() {}
+    virtual ~TestFactory() {}
 
-  /*! Makes a new test.
-   * \return A new Test.
-   */
-  virtual Test* makeTest() = 0;
+    /*! Makes a new test.
+     * \return A new Test.
+     */
+    virtual Test* makeTest() = 0;
 };
 
 

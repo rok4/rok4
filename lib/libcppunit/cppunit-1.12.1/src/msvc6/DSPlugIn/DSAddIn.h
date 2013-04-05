@@ -15,42 +15,41 @@
 /////////////////////////////////////////////////////////////////////////////
 // CDSAddIn
 
-class CDSAddIn : 
-	public CComObjectRoot,
-	public CComCoClass<CDSAddIn, &CLSID_DSAddIn>,
-	public IDSAddIn,
-  public ITestRunnerDSPlugin
-{
+class CDSAddIn :
+    public CComObjectRoot,
+    public CComCoClass<CDSAddIn, &CLSID_DSAddIn>,
+    public IDSAddIn,
+    public ITestRunnerDSPlugin {
 public:
-  DECLARE_REGISTRY_RESOURCEID( IDR_DSADDIN)
+    DECLARE_REGISTRY_RESOURCEID ( IDR_DSADDIN )
 
-  CDSAddIn(): classRegistrationId_( 0) {}
-  ~CDSAddIn();
+    CDSAddIn() : classRegistrationId_ ( 0 ) {}
+    ~CDSAddIn();
 
-	BEGIN_COM_MAP(CDSAddIn)
-		COM_INTERFACE_ENTRY(IDSAddIn)
-    COM_INTERFACE_ENTRY(ITestRunnerDSPlugin)
-	END_COM_MAP()
-	DECLARE_NOT_AGGREGATABLE(CDSAddIn)
+    BEGIN_COM_MAP ( CDSAddIn )
+    COM_INTERFACE_ENTRY ( IDSAddIn )
+    COM_INTERFACE_ENTRY ( ITestRunnerDSPlugin )
+    END_COM_MAP()
+    DECLARE_NOT_AGGREGATABLE ( CDSAddIn )
 
-  DECLARE_CLASSFACTORY_SINGLETON( CDSAddIn)
+    DECLARE_CLASSFACTORY_SINGLETON ( CDSAddIn )
 
 // IDSAddIns
 public:
-	STDMETHOD( OnConnection)(THIS_ IApplication* pApp, VARIANT_BOOL bFirstTime,
-		long dwCookie, VARIANT_BOOL* OnConnection);
-	STDMETHOD( OnDisconnection)(THIS_ VARIANT_BOOL bLastTime);
+    STDMETHOD ( OnConnection ) ( THIS_ IApplication* pApp, VARIANT_BOOL bFirstTime,
+                                 long dwCookie, VARIANT_BOOL* OnConnection );
+    STDMETHOD ( OnDisconnection ) ( THIS_ VARIANT_BOOL bLastTime );
 
 // ITestRunnerDSPlugin
-  STDMETHOD( goToLineInSourceCode)( BSTR fileName, int lineNumber);
+    STDMETHOD ( goToLineInSourceCode ) ( BSTR fileName, int lineNumber );
 
 
 protected:
-  CComPtr< IApplication> pIApp_;
-  DWORD classRegistrationId_;
-	DWORD m_dwCookie;
-  
-  static COMUtility::COMExceptionThrower cex_;
+    CComPtr< IApplication> pIApp_;
+    DWORD classRegistrationId_;
+    DWORD m_dwCookie;
+
+    static COMUtility::COMExceptionThrower cex_;
 };
 
 //{{AFX_INSERT_LOCATION}}

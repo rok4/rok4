@@ -6,27 +6,26 @@
 
 class QListViewItem;
 
-class TestBrowser : public TestBrowserBase
-{ 
+class TestBrowser : public TestBrowserBase {
     Q_OBJECT
 
 public:
-  TestBrowser( QWidget* parent = 0, const char* name = 0, bool modal = FALSE, WFlags fl = 0 );
-  ~TestBrowser();
+    TestBrowser ( QWidget* parent = 0, const char* name = 0, bool modal = FALSE, WFlags fl = 0 );
+    ~TestBrowser();
 
-  void setRootTest( CPPUNIT_NS::Test *rootTest );
+    void setRootTest ( CPPUNIT_NS::Test *rootTest );
 
-  CPPUNIT_NS::Test *selectedTest();
+    CPPUNIT_NS::Test *selectedTest();
 
 protected slots:
-  void accept();
+    void accept();
 
 private:
-  void insertItemFor( CPPUNIT_NS::Test *test,
-                      QListViewItem *parentItem );
+    void insertItemFor ( CPPUNIT_NS::Test *test,
+                         QListViewItem *parentItem );
 
 private:
-  CPPUNIT_NS::Test *_selectedTest;
+    CPPUNIT_NS::Test *_selectedTest;
 };
 
 #endif // TESTBROWSER_H

@@ -4,9 +4,8 @@
 #include <cppunit/Portability.h>
 #include <string>
 
-inline std::string coreSuiteName()
-{
-  return "Core";
+inline std::string coreSuiteName() {
+    return "Core";
 }
 
 #endif // CPPUNITTEST_CORESUITE_H

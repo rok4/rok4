@@ -40,16 +40,16 @@
 #include "Format.h"
 namespace TiffHeader {
 
-static const size_t headerSize(int channel) {
-    switch (channel) {
-        case 1:
-            return 134;
-        case 3:
-            return 146;
-        case 4:
-            return 162;
+static const size_t headerSize ( int channel ) {
+    switch ( channel ) {
+    case 1:
+        return 134;
+    case 3:
+        return 146;
+    case 4:
+        return 162;
     }
-    
+
 }
 
 static const uint8_t TIFF_HEADER_RAW_INT8_GRAY[134]  = {
@@ -105,7 +105,7 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGB[146]  = {
     1, 0,   1, 0,   1, 0                           // 140| 3x 8 sur 16 bits (pointés par les samplesperpixels)
 };                                                 // 146
 
-static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[162]  = { 
+static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[162]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     14, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -123,7 +123,7 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[162]  = {
     0, 0, 0, 0,                                    // 142| fin de l'IFD
     8, 0,   8, 0,   8, 0,   8, 0,                  // 146| 4x 8 sur 16 bits (pointés par les samplesperpixels)
     1, 0,   1, 0,   1, 0,   1, 0                   // 154| 4x 8 sur 16 bits (pointés par les samplesperpixels)
-};                         
+};
 // 162
 
 
@@ -181,7 +181,7 @@ static const uint8_t TIFF_HEADER_LZW_INT8_RGB[146]  = {
     1, 0,   1, 0,   1, 0                           // 140| 3x 8 sur 16 bits (pointés par les samplesperpixels)
 };                                                 // 146
 
-static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[162]  = { 
+static const uint8_t TIFF_HEADER_LZW_INT8_RGBA[162]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     11, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -254,7 +254,7 @@ static const uint8_t TIFF_HEADER_ZIP_INT8_RGB[146]  = {
     1, 0,   1, 0,   1, 0                           // 140| 3x 8 sur 16 bits (pointés par les samplesperpixels)
 };                                                 // 146                                               // 150
 
-static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[162]  = { 
+static const uint8_t TIFF_HEADER_ZIP_INT8_RGBA[162]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     11, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
@@ -327,7 +327,7 @@ static const uint8_t TIFF_HEADER_PKB_INT8_RGB[146]  = {
     1, 0,   1, 0,   1, 0                           // 140| 3x 8 sur 16 bits (pointés par les samplesperpixels)
 };                                                 // 146
 
-static const uint8_t TIFF_HEADER_PKB_INT8_RGBA[162]  = { 
+static const uint8_t TIFF_HEADER_PKB_INT8_RGBA[162]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
     11, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE

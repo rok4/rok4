@@ -3,17 +3,16 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 
 
-int main( int argc, char** argv )
-{
-	QApplication app( argc, argv );
+int main ( int argc, char** argv ) {
+    QApplication app ( argc, argv );
 
-	//CPPUNIT_NS::QtUi::TestRunner runner;
-	
-    CPPUNIT_NS::QtTestRunner runner; 
-		
-	runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
-	runner.run( true );
+    //CPPUNIT_NS::QtUi::TestRunner runner;
 
-	return 0;
+    CPPUNIT_NS::QtTestRunner runner;
+
+    runner.addTest ( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+    runner.run ( true );
+
+    return 0;
 }
 

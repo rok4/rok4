@@ -5,47 +5,46 @@
 #include "MockTestListener.h"
 
 
-class HelperMacrosTest : public CPPUNIT_NS::TestFixture
-{
-  CPPUNIT_TEST_SUITE( HelperMacrosTest );
-  CPPUNIT_TEST( testNoSubclassing );
-  CPPUNIT_TEST( testSubclassing );
-  CPPUNIT_TEST( testFail );
-  CPPUNIT_TEST( testFailToFail );
-  CPPUNIT_TEST( testException );
-  CPPUNIT_TEST( testExceptionNotCaught );
-  CPPUNIT_TEST( testCustomTests );
-  CPPUNIT_TEST( testAddTest );
-  CPPUNIT_TEST_SUITE_END();
+class HelperMacrosTest : public CPPUNIT_NS::TestFixture {
+    CPPUNIT_TEST_SUITE ( HelperMacrosTest );
+    CPPUNIT_TEST ( testNoSubclassing );
+    CPPUNIT_TEST ( testSubclassing );
+    CPPUNIT_TEST ( testFail );
+    CPPUNIT_TEST ( testFailToFail );
+    CPPUNIT_TEST ( testException );
+    CPPUNIT_TEST ( testExceptionNotCaught );
+    CPPUNIT_TEST ( testCustomTests );
+    CPPUNIT_TEST ( testAddTest );
+    CPPUNIT_TEST_SUITE_END();
 
 public:
-  HelperMacrosTest();
-  virtual ~HelperMacrosTest();
+    HelperMacrosTest();
+    virtual ~HelperMacrosTest();
 
-  virtual void setUp();
-  virtual void tearDown();
+    virtual void setUp();
+    virtual void tearDown();
 
-  void testNoSubclassing();
+    void testNoSubclassing();
 
-  void testSubclassing();
+    void testSubclassing();
 
-  void testFail();
-  void testFailToFail();
+    void testFail();
+    void testFailToFail();
 
-  void testException();
-  void testExceptionNotCaught();
+    void testException();
+    void testExceptionNotCaught();
 
-  void testCustomTest();
-  void testCustomTests();
-  void testAddTest();
-
-private:
-  HelperMacrosTest( const HelperMacrosTest &copy );
-  void operator =( const HelperMacrosTest &copy );
+    void testCustomTest();
+    void testCustomTests();
+    void testAddTest();
 
 private:
-  CPPUNIT_NS::TestResult *m_result;
-  MockTestListener *m_testListener;
+    HelperMacrosTest ( const HelperMacrosTest &copy );
+    void operator = ( const HelperMacrosTest &copy );
+
+private:
+    CPPUNIT_NS::TestResult *m_result;
+    MockTestListener *m_testListener;
 };
 
 

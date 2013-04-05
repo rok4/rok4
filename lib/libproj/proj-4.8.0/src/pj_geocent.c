@@ -32,26 +32,29 @@
 #define PJ_LIB__
 #include <projects.h>
 
-PJ_CVSID("$Id: pj_geocent.c 1504 2009-01-06 02:11:57Z warmerdam $");
+PJ_CVSID ( "$Id: pj_geocent.c 1504 2009-01-06 02:11:57Z warmerdam $" );
 
-PROJ_HEAD(geocent, "Geocentric")  "\n\t";
+PROJ_HEAD ( geocent, "Geocentric" )  "\n\t";
 
-FORWARD(forward);
-        xy.x = lp.lam;
-        xy.y = lp.phi;
-        return xy;
+FORWARD ( forward );
+xy.x = lp.lam;
+xy.y = lp.phi;
+return xy;
 }
-INVERSE(inverse);
-        lp.phi = xy.y;
-        lp.lam = xy.x;
-        return lp;
+INVERSE ( inverse );
+lp.phi = xy.y;
+         lp.lam = xy.x;
+                  return lp;
 }
-FREEUP; if (P) pj_dalloc(P); }
+                         FREEUP;
+                         if ( P ) pj_dalloc ( P );
+}
 
-ENTRY0(geocent)
-    P->is_geocent = 1; 
-    P->x0 = 0.0;
-    P->y0 = 0.0;
-    P->inv = inverse; P->fwd = forward;
-ENDENTRY(P)
+                         ENTRY0 ( geocent )
+                         P->is_geocent = 1;
+                                 P->x0 = 0.0;
+                                         P->y0 = 0.0;
+                                                 P->inv = inverse;
+                                                         P->fwd = forward;
+                                                                 ENDENTRY ( P )
 

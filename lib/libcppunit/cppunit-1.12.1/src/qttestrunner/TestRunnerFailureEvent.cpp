@@ -8,21 +8,18 @@
 #include "TestRunnerModelThreadInterface.h"
 
 
-TestRunnerFailureEvent::TestRunnerFailureEvent( TestFailureInfo *failure,
-                                                int numberOfFailure ) :
-    _failure( failure ),
-    _numberOfFailure( numberOfFailure )
-{
+TestRunnerFailureEvent::TestRunnerFailureEvent ( TestFailureInfo *failure,
+        int numberOfFailure ) :
+    _failure ( failure ),
+    _numberOfFailure ( numberOfFailure ) {
 }
 
 
-TestRunnerFailureEvent::~TestRunnerFailureEvent()
-{
+TestRunnerFailureEvent::~TestRunnerFailureEvent() {
 }
 
 
-void 
-TestRunnerFailureEvent::process( TestRunnerModelThreadInterface *target )
-{
-  target->eventNewFailure( _failure, _numberOfFailure );
+void
+TestRunnerFailureEvent::process ( TestRunnerModelThreadInterface *target ) {
+    target->eventNewFailure ( _failure, _numberOfFailure );
 }

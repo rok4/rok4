@@ -96,13 +96,13 @@ typedef byte os_f;
 #undef  OSGBPB_Read
 #define OSGBPB_Read                             0x4
 
-extern os_error *xosgbpb_write (os_f file,
-      byte *data,
-      int size,
-      int *unwritten);
-extern int osgbpb_write (os_f file,
-      byte *data,
-      int size);
+extern os_error *xosgbpb_write ( os_f file,
+                                 byte *data,
+                                 int size,
+                                 int *unwritten );
+extern int osgbpb_write ( os_f file,
+                          byte *data,
+                          int size );
 
 #define	xosgbpb_write(file, data, size, unwritten) \
 	(os_error*) _swix(OS_GBPB, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_IN(4)|_OUT(3), \
@@ -119,13 +119,13 @@ extern int osgbpb_write (os_f file,
 		data, \
 		size)
 
-extern os_error *xosgbpb_read (os_f file,
-      byte *buffer,
-      int size,
-      int *unread);
-extern int osgbpb_read (os_f file,
-      byte *buffer,
-      int size);
+extern os_error *xosgbpb_read ( os_f file,
+                                byte *buffer,
+                                int size,
+                                int *unread );
+extern int osgbpb_read ( os_f file,
+                         byte *buffer,
+                         int size );
 
 #define	xosgbpb_read(file, buffer, size, unread) \
 	(os_error*) _swix(OS_GBPB, _IN(0)|_IN(1)|_IN(2)|_IN(3)|_OUT(3), \
@@ -162,13 +162,13 @@ extern int osgbpb_read (os_f file,
 	(os_f) _swi(OS_Find, _IN(0)|_IN(1)|_IN(2)|_RETURN(0), \
 		reason, file_name, path)
 
-extern os_error *xosfind_openin (bits flags,
-      char *file_name,
-      char *path,
-      os_f *file);
-extern os_f osfind_openin (bits flags,
-      char *file_name,
-      char *path);
+extern os_error *xosfind_openin ( bits flags,
+                                  char *file_name,
+                                  char *path,
+                                  os_f *file );
+extern os_f osfind_openin ( bits flags,
+                            char *file_name,
+                            char *path );
 
 #define	xosfind_openin(flags, file_name, path, file) \
 	xosfind_open(flags | OSFind_Openin, file_name, path, file)
@@ -176,13 +176,13 @@ extern os_f osfind_openin (bits flags,
 #define	osfind_openin(flags, file_name, path) \
 	osfind_open(flags | OSFind_Openin, file_name, path)
 
-extern os_error *xosfind_openout (bits flags,
-      char *file_name,
-      char *path,
-      os_f *file);
-extern os_f osfind_openout (bits flags,
-      char *file_name,
-      char *path);
+extern os_error *xosfind_openout ( bits flags,
+                                   char *file_name,
+                                   char *path,
+                                   os_f *file );
+extern os_f osfind_openout ( bits flags,
+                             char *file_name,
+                             char *path );
 
 #define	xosfind_openout(flags, file_name, path, file) \
 	xosfind_open(flags | OSFind_Openout, file_name, path, file)
@@ -190,13 +190,13 @@ extern os_f osfind_openout (bits flags,
 #define	osfind_openout(flags, file_name, path) \
 	osfind_open(flags | OSFind_Openout, file_name, path)
 
-extern os_error *xosfind_openup (bits flags,
-      char *file_name,
-      char *path,
-      os_f *file);
-extern os_f osfind_openup (bits flags,
-      char *file_name,
-      char *path);
+extern os_error *xosfind_openup ( bits flags,
+                                  char *file_name,
+                                  char *path,
+                                  os_f *file );
+extern os_f osfind_openup ( bits flags,
+                            char *file_name,
+                            char *path );
 
 #define	xosfind_openup(flags, file_name, path, file) \
 	xosfind_open(flags | OSFind_Openup, file_name, path, file)
@@ -204,8 +204,8 @@ extern os_f osfind_openup (bits flags,
 #define	osfind_openup(flags, file_name, path) \
 	osfind_open(flags | OSFind_Openup, file_name, path)
 
-extern os_error *xosfind_close (os_f file);
-extern void osfind_close (os_f file);
+extern os_error *xosfind_close ( os_f file );
+extern void osfind_close ( os_f file );
 
 #define	xosfind_close(file) \
 	(os_error*) _swix(OS_Find, _IN(0)|_IN(1), \
@@ -227,9 +227,9 @@ extern void osfind_close (os_f file);
 #undef  OSArgs_ReadExt
 #define OSArgs_ReadExt                          0x2
 
-extern os_error *xosargs_read_ptr (os_f file,
-      int *ptr);
-extern int osargs_read_ptr (os_f file);
+extern os_error *xosargs_read_ptr ( os_f file,
+                                    int *ptr );
+extern int osargs_read_ptr ( os_f file );
 
 #define	xosargs_read_ptr(file, ptr) \
 	(os_error*) _swix(OS_Args, _IN(0)|_IN(1)|_OUT(2), \
@@ -242,10 +242,10 @@ extern int osargs_read_ptr (os_f file);
 		OSArgs_ReadPtr, \
 		file)
 
-extern os_error *xosargs_set_ptr (os_f file,
-      int ptr);
-extern void osargs_set_ptr (os_f file,
-      int ptr);
+extern os_error *xosargs_set_ptr ( os_f file,
+                                   int ptr );
+extern void osargs_set_ptr ( os_f file,
+                             int ptr );
 
 #define	xosargs_set_ptr(file, ptr) \
 	(os_error*) _swix(OS_Args, _IN(0)|_IN(1)|_IN(2), \
@@ -259,9 +259,9 @@ extern void osargs_set_ptr (os_f file,
 		file, \
 		ptr)
 
-extern os_error *xosargs_read_ext (os_f file,
-      int *ext);
-extern int osargs_read_ext (os_f file);
+extern os_error *xosargs_read_ext ( os_f file,
+                                    int *ext );
+extern int osargs_read_ext ( os_f file );
 
 #define	xosargs_read_ext(file, ext) \
 	(os_error*) _swix(OS_Args, _IN(0)|_IN(1)|_OUT(2), \
@@ -282,115 +282,96 @@ extern int osargs_read_ext (os_f file);
 /* Will be set or not during tiffcomp.h */
 /* You get this to compile under C++? Please say how! */
 
-extern int open(const char* name, int flags, int mode)
-{
-	/* From what I can tell, should return <0 for failure */
-	os_error* e = (os_error*) 1; /* Cheeky way to use a pointer eh? :-) */
-	os_f file = (os_f) -1;
+extern int open ( const char* name, int flags, int mode ) {
+    /* From what I can tell, should return <0 for failure */
+    os_error* e = ( os_error* ) 1; /* Cheeky way to use a pointer eh? :-) */
+    os_f file = ( os_f ) -1;
 
-	flags = flags;
+    flags = flags;
 
-	switch(mode)
-	{
-		case O_RDONLY:
-		{
-			e = xosfind_openin(SKIP, name, SKIP, &file);
-			break;
-		}
-		case O_WRONLY:
-		case O_RDWR|O_CREAT:
-		case O_RDWR|O_CREAT|O_TRUNC:
-		{
-			e = xosfind_openout(SKIP, name, SKIP, &file);
-			break;
-		}
-		case O_RDWR:
-		{
-			e = xosfind_openup(SKIP, name, SKIP, &file);
-			break;
-		}
-	}
-	if (e)
-	{
-		file = (os_f) -1;
-	}
-	return (file);
+    switch ( mode ) {
+    case O_RDONLY: {
+        e = xosfind_openin ( SKIP, name, SKIP, &file );
+        break;
+    }
+    case O_WRONLY:
+    case O_RDWR|O_CREAT:
+    case O_RDWR|O_CREAT|O_TRUNC: {
+        e = xosfind_openout ( SKIP, name, SKIP, &file );
+        break;
+    }
+    case O_RDWR: {
+        e = xosfind_openup ( SKIP, name, SKIP, &file );
+        break;
+    }
+    }
+    if ( e ) {
+        file = ( os_f ) -1;
+    }
+    return ( file );
 }
 
-extern int close(int fd)
-{
-	return ((int) xosfind_close((os_f) fd));
+extern int close ( int fd ) {
+    return ( ( int ) xosfind_close ( ( os_f ) fd ) );
 }
 
-extern int write(int fd, const char *buf, int nbytes)
-{
-	/* Returns number of bytes written */
-	return (nbytes - osgbpb_write((os_f) fd, (const byte*) buf, nbytes));
+extern int write ( int fd, const char *buf, int nbytes ) {
+    /* Returns number of bytes written */
+    return ( nbytes - osgbpb_write ( ( os_f ) fd, ( const byte* ) buf, nbytes ) );
 }
 
-extern int read(int fd, char *buf, int nbytes)
-{
-	/* Returns number of bytes read */
-	return (nbytes - osgbpb_read((os_f) fd, (byte*) buf, nbytes));
+extern int read ( int fd, char *buf, int nbytes ) {
+    /* Returns number of bytes read */
+    return ( nbytes - osgbpb_read ( ( os_f ) fd, ( byte* ) buf, nbytes ) );
 }
 
-extern off_t lseek(int fd, off_t offset, int whence)
-{
-	int absolute = 0;
+extern off_t lseek ( int fd, off_t offset, int whence ) {
+    int absolute = 0;
 
-	switch (whence)
-	{
-		case SEEK_SET:
-		{
-			absolute = (int) offset;
-			break;
-		}
-		case SEEK_CUR:
-		{
-			absolute = osargs_read_ptr((os_f) fd) + (int) offset;
-			break;
-		}
-		case SEEK_END:
-		{
-			absolute = osargs_read_ext((os_f) fd) + (int) offset;
-			break;
-		}
-	}
+    switch ( whence ) {
+    case SEEK_SET: {
+        absolute = ( int ) offset;
+        break;
+    }
+    case SEEK_CUR: {
+        absolute = osargs_read_ptr ( ( os_f ) fd ) + ( int ) offset;
+        break;
+    }
+    case SEEK_END: {
+        absolute = osargs_read_ext ( ( os_f ) fd ) + ( int ) offset;
+        break;
+    }
+    }
 
-	osargs_set_ptr((os_f) fd, absolute);
+    osargs_set_ptr ( ( os_f ) fd, absolute );
 
-	return ((off_t) osargs_read_ptr((os_f) fd));
+    return ( ( off_t ) osargs_read_ptr ( ( os_f ) fd ) );
 }
 #endif
 
 static tsize_t
-_tiffReadProc(thandle_t fd, tdata_t buf, tsize_t size)
-{
-	return ((tsize_t) read((int) fd, buf, (size_t) size));
+_tiffReadProc ( thandle_t fd, tdata_t buf, tsize_t size ) {
+    return ( ( tsize_t ) read ( ( int ) fd, buf, ( size_t ) size ) );
 }
 
 static tsize_t
-_tiffWriteProc(thandle_t fd, tdata_t buf, tsize_t size)
-{
-	return ((tsize_t) write((int) fd, buf, (size_t) size));
+_tiffWriteProc ( thandle_t fd, tdata_t buf, tsize_t size ) {
+    return ( ( tsize_t ) write ( ( int ) fd, buf, ( size_t ) size ) );
 }
 
 static toff_t
-_tiffSeekProc(thandle_t fd, toff_t off, int whence)
-{
-	return ((toff_t) lseek((int) fd, (off_t) off, whence));
+_tiffSeekProc ( thandle_t fd, toff_t off, int whence ) {
+    return ( ( toff_t ) lseek ( ( int ) fd, ( off_t ) off, whence ) );
 }
 
 static int
-_tiffCloseProc(thandle_t fd)
-{
-	return (close((int) fd));
+_tiffCloseProc ( thandle_t fd ) {
+    return ( close ( ( int ) fd ) );
 }
 
 static toff_t
-_tiffSizeProc(thandle_t fd)
-{
-	return (lseek((int) fd, SEEK_END, SEEK_SET));
+_tiffSizeProc ( thandle_t fd ) {
+    return ( lseek ( ( int ) fd, SEEK_END, SEEK_SET ) );
 }
 
 #ifdef HAVE_MMAP
@@ -399,121 +380,108 @@ _tiffSizeProc(thandle_t fd)
 
 /* !HAVE_MMAP */
 static int
-_tiffMapProc(thandle_t fd, tdata_t* pbase, toff_t* psize)
-{
-	(void) fd; (void) pbase; (void) psize;
-	return (0);
+_tiffMapProc ( thandle_t fd, tdata_t* pbase, toff_t* psize ) {
+    ( void ) fd;
+    ( void ) pbase;
+    ( void ) psize;
+    return ( 0 );
 }
 
 static void
-_tiffUnmapProc(thandle_t fd, tdata_t base, toff_t size)
-{
-	(void) fd; (void) base; (void) size;
+_tiffUnmapProc ( thandle_t fd, tdata_t base, toff_t size ) {
+    ( void ) fd;
+    ( void ) base;
+    ( void ) size;
 }
 
 /*
  * Open a TIFF file descriptor for read/writing.
  */
 TIFF*
-TIFFFdOpen(int fd, const char* name, const char* mode)
-{
-	TIFF* tif;
+TIFFFdOpen ( int fd, const char* name, const char* mode ) {
+    TIFF* tif;
 
-	tif = TIFFClientOpen(name, mode,
-		(thandle_t) fd,
-		_tiffReadProc, _tiffWriteProc,
-		_tiffSeekProc, _tiffCloseProc, _tiffSizeProc,
-		_tiffMapProc, _tiffUnmapProc);
-	if (tif)
-	{
-		tif->tif_fd = fd;
-	}
-	return (tif);
+    tif = TIFFClientOpen ( name, mode,
+                           ( thandle_t ) fd,
+                           _tiffReadProc, _tiffWriteProc,
+                           _tiffSeekProc, _tiffCloseProc, _tiffSizeProc,
+                           _tiffMapProc, _tiffUnmapProc );
+    if ( tif ) {
+        tif->tif_fd = fd;
+    }
+    return ( tif );
 }
 
 /*
  * Open a TIFF file for read/writing.
  */
 TIFF*
-TIFFOpen(const char* name, const char* mode)
-{
-	static const char module[] = "TIFFOpen";
-	int m, fd;
+TIFFOpen ( const char* name, const char* mode ) {
+    static const char module[] = "TIFFOpen";
+    int m, fd;
 
-	m = _TIFFgetMode(mode, module);
+    m = _TIFFgetMode ( mode, module );
 
-	if (m == -1)
-	{
-		return ((TIFF*) 0);
-	}
+    if ( m == -1 ) {
+        return ( ( TIFF* ) 0 );
+    }
 
-	fd = open(name, 0, m);
+    fd = open ( name, 0, m );
 
-	if (fd < 0)
-	{
-		TIFFErrorExt(0, module, "%s: Cannot open", name);
-		return ((TIFF *)0);
-	}
-	return (TIFFFdOpen(fd, name, mode));
+    if ( fd < 0 ) {
+        TIFFErrorExt ( 0, module, "%s: Cannot open", name );
+        return ( ( TIFF * ) 0 );
+    }
+    return ( TIFFFdOpen ( fd, name, mode ) );
 }
 
 void*
-_TIFFmalloc(tsize_t s)
-{
-	return (malloc((size_t) s));
+_TIFFmalloc ( tsize_t s ) {
+    return ( malloc ( ( size_t ) s ) );
 }
 
 void
-_TIFFfree(tdata_t p)
-{
-	free(p);
+_TIFFfree ( tdata_t p ) {
+    free ( p );
 }
 
 void*
-_TIFFrealloc(tdata_t p, tsize_t s)
-{
-	return (realloc(p, (size_t) s));
+_TIFFrealloc ( tdata_t p, tsize_t s ) {
+    return ( realloc ( p, ( size_t ) s ) );
 }
 
 void
-_TIFFmemset(tdata_t p, int v, tsize_t c)
-{
-	memset(p, v, (size_t) c);
+_TIFFmemset ( tdata_t p, int v, tsize_t c ) {
+    memset ( p, v, ( size_t ) c );
 }
 
 void
-_TIFFmemcpy(tdata_t d, const tdata_t s, tsize_t c)
-{
-	memcpy(d, s, (size_t) c);
+_TIFFmemcpy ( tdata_t d, const tdata_t s, tsize_t c ) {
+    memcpy ( d, s, ( size_t ) c );
 }
 
 int
-_TIFFmemcmp(const tdata_t p1, const tdata_t p2, tsize_t c)
-{
-	return (memcmp(p1, p2, (size_t) c));
+_TIFFmemcmp ( const tdata_t p1, const tdata_t p2, tsize_t c ) {
+    return ( memcmp ( p1, p2, ( size_t ) c ) );
 }
 
 static void
-acornWarningHandler(const char* module, const char* fmt, va_list ap)
-{
-	if (module != NULL)
-	{
-		fprintf(stderr, "%s: ", module);
-	}
-	fprintf(stderr, "Warning, ");
-	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, ".\n");
+acornWarningHandler ( const char* module, const char* fmt, va_list ap ) {
+    if ( module != NULL ) {
+        fprintf ( stderr, "%s: ", module );
+    }
+    fprintf ( stderr, "Warning, " );
+    vfprintf ( stderr, fmt, ap );
+    fprintf ( stderr, ".\n" );
 }
 TIFFErrorHandler _TIFFwarningHandler = acornWarningHandler;
 
 static void
-acornErrorHandler(const char* module, const char* fmt, va_list ap)
-{
-	if (module != NULL)
-	{
-		fprintf(stderr, "%s: ", module);
-	}
-	vfprintf(stderr, fmt, ap);
-	fprintf(stderr, ".\n");
+acornErrorHandler ( const char* module, const char* fmt, va_list ap ) {
+    if ( module != NULL ) {
+        fprintf ( stderr, "%s: ", module );
+    }
+    vfprintf ( stderr, fmt, ap );
+    fprintf ( stderr, ".\n" );
 }
 TIFFErrorHandler _TIFFerrorHandler = acornErrorHandler;

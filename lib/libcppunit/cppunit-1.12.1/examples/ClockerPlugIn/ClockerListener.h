@@ -12,48 +12,47 @@ class ClockerModel;
 
 
 /// TestListener that prints a flatten or hierarchical view of the test tree.
-class ClockerListener : public CPPUNIT_NS::TestListener
-{
+class ClockerListener : public CPPUNIT_NS::TestListener {
 public:
-  ClockerListener( ClockerModel *model,
-                   bool text );
+    ClockerListener ( ClockerModel *model,
+                      bool text );
 
-  virtual ~ClockerListener();
+    virtual ~ClockerListener();
 
-  void startTestRun( CPPUNIT_NS::Test *test, 
-                     CPPUNIT_NS::TestResult *eventManager );
+    void startTestRun ( CPPUNIT_NS::Test *test,
+                        CPPUNIT_NS::TestResult *eventManager );
 
-  void endTestRun( CPPUNIT_NS::Test *test, 
-                   CPPUNIT_NS::TestResult *eventManager );
+    void endTestRun ( CPPUNIT_NS::Test *test,
+                      CPPUNIT_NS::TestResult *eventManager );
 
-  void startTest( CPPUNIT_NS::Test *test );
+    void startTest ( CPPUNIT_NS::Test *test );
 
-  void endTest( CPPUNIT_NS::Test *test );
+    void endTest ( CPPUNIT_NS::Test *test );
 
-  void startSuite( CPPUNIT_NS::Test *suite );
+    void startSuite ( CPPUNIT_NS::Test *suite );
 
-  void endSuite( CPPUNIT_NS::Test *suite );
-
-private:
-  void printStatistics() const;
-
-  void printTest( int testIndex,
-                  const std::string &indentString ) const;
-
-  void printTestIndent( const std::string &indent,
-                        const int indentLength ) const;
-
-  void printTime( double time ) const;
-
-  /// Prevents the use of the copy constructor.
-  ClockerListener( const ClockerListener &other );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const ClockerListener &other );
+    void endSuite ( CPPUNIT_NS::Test *suite );
 
 private:
-  ClockerModel *m_model;
-  bool m_text;
+    void printStatistics() const;
+
+    void printTest ( int testIndex,
+                     const std::string &indentString ) const;
+
+    void printTestIndent ( const std::string &indent,
+                           const int indentLength ) const;
+
+    void printTime ( double time ) const;
+
+    /// Prevents the use of the copy constructor.
+    ClockerListener ( const ClockerListener &other );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const ClockerListener &other );
+
+private:
+    ClockerModel *m_model;
+    bool m_text;
 };
 
 

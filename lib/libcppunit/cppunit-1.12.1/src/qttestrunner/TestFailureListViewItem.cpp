@@ -7,23 +7,20 @@
 #include "TestFailureListViewItem.h"
 
 
-TestFailureListViewItem::TestFailureListViewItem(
-                           TestFailureInfo *failure,
-                           QListView *parent ) : 
-    QListViewItem( parent ),
-    _failure( failure )
-{
-	setMultiLinesEnabled (true);
+TestFailureListViewItem::TestFailureListViewItem (
+    TestFailureInfo *failure,
+    QListView *parent ) :
+    QListViewItem ( parent ),
+    _failure ( failure ) {
+    setMultiLinesEnabled ( true );
 }
 
 
-TestFailureListViewItem::~TestFailureListViewItem()
-{
+TestFailureListViewItem::~TestFailureListViewItem() {
 }
 
 
 TestFailureInfo *
-TestFailureListViewItem::failure()
-{
-  return _failure;
+TestFailureListViewItem::failure() {
+    return _failure;
 }

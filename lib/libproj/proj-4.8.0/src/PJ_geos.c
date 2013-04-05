@@ -42,151 +42,140 @@ LIBPROJ_ID[] = "$Id: PJ_geos.c 2176 2012-02-27 07:56:32Z warmerdam $";
 #define PJ_LIB__
 #include	<projects.h>
 
-PROJ_HEAD(geos, "Geostationary Satellite View") "\n\tAzi, Sph&Ell\n\th=";
+PROJ_HEAD ( geos, "Geostationary Satellite View" ) "\n\tAzi, Sph&Ell\n\th=";
 
-FORWARD(s_forward); /* spheroid */
-	double Vx, Vy, Vz, tmp;
+FORWARD ( s_forward ); /* spheroid */
+double Vx, Vy, Vz, tmp;
 
 /* Calculation of the three components of the vector from satellite to
 ** position on earth surface (lon,lat).*/
-	tmp = cos(lp.phi);
-	Vx = cos (lp.lam) * tmp;
-	Vy = sin (lp.lam) * tmp;
-	Vz = sin (lp.phi);
+tmp = cos ( lp.phi );
+Vx = cos ( lp.lam ) * tmp;
+Vy = sin ( lp.lam ) * tmp;
+Vz = sin ( lp.phi );
 /* Check visibility.*/
-	if (((P->radius_g - Vx) * Vx - Vy * Vy - Vz * Vz) < 0.) F_ERROR;
+if ( ( ( P->radius_g - Vx ) * Vx - Vy * Vy - Vz * Vz ) < 0. ) F_ERROR;
 /* Calculation based on view angles from satellite.*/
-	tmp = P->radius_g - Vx;
-        if(P->flip_axis)
-          {
-            xy.x = P->radius_g_1 * atan(Vy / hypot(Vz, tmp));
-            xy.y = P->radius_g_1 * atan(Vz / tmp);
-          }
-        else
-          {
-            xy.x = P->radius_g_1 * atan(Vy / tmp);
-            xy.y = P->radius_g_1 * atan(Vz / hypot(Vy, tmp));
-          }
-	return (xy);
+tmp = P->radius_g - Vx;
+if ( P->flip_axis ) {
+    xy.x = P->radius_g_1 * atan ( Vy / hypot ( Vz, tmp ) );
+    xy.y = P->radius_g_1 * atan ( Vz / tmp );
+} else {
+    xy.x = P->radius_g_1 * atan ( Vy / tmp );
+    xy.y = P->radius_g_1 * atan ( Vz / hypot ( Vy, tmp ) );
 }
-FORWARD(e_forward); /* ellipsoid */
-	double r, Vx, Vy, Vz, tmp;
+return ( xy );
+}
+FORWARD ( e_forward ); /* ellipsoid */
+double r, Vx, Vy, Vz, tmp;
 
 /* Calculation of geocentric latitude. */
-	lp.phi = atan (P->radius_p2 * tan (lp.phi));
-/* Calculation of the three components of the vector from satellite to
-** position on earth surface (lon,lat).*/
-	r = (P->radius_p) / hypot(P->radius_p * cos (lp.phi), sin (lp.phi));
-	Vx = r * cos (lp.lam) * cos (lp.phi);
-	Vy = r * sin (lp.lam) * cos (lp.phi);
-	Vz = r * sin (lp.phi);
-/* Check visibility. */
-	if (((P->radius_g - Vx) * Vx - Vy * Vy - Vz * Vz * P->radius_p_inv2) < 0.)
-		F_ERROR;
-/* Calculation based on view angles from satellite. */
-	tmp = P->radius_g - Vx;
-        if(P->flip_axis)
-          {
-            xy.x = P->radius_g_1 * atan (Vy / hypot (Vz, tmp));
-            xy.y = P->radius_g_1 * atan (Vz / tmp);
-          }
-        else
-          {
-            xy.x = P->radius_g_1 * atan (Vy / tmp);
-            xy.y = P->radius_g_1 * atan (Vz / hypot (Vy, tmp));
-          }
-	return (xy);
+lp.phi = atan ( P->radius_p2 * tan ( lp.phi ) );
+         /* Calculation of the three components of the vector from satellite to
+         ** position on earth surface (lon,lat).*/
+         r = ( P->radius_p ) / hypot ( P->radius_p * cos ( lp.phi ), sin ( lp.phi ) );
+             Vx = r * cos ( lp.lam ) * cos ( lp.phi );
+                  Vy = r * sin ( lp.lam ) * cos ( lp.phi );
+                       Vz = r * sin ( lp.phi );
+                            /* Check visibility. */
+                            if ( ( ( P->radius_g - Vx ) * Vx - Vy * Vy - Vz * Vz * P->radius_p_inv2 ) < 0. )
+                                F_ERROR;
+                            /* Calculation based on view angles from satellite. */
+                            tmp = P->radius_g - Vx;
+if ( P->flip_axis ) {
+    xy.x = P->radius_g_1 * atan ( Vy / hypot ( Vz, tmp ) );
+    xy.y = P->radius_g_1 * atan ( Vz / tmp );
+} else {
+    xy.x = P->radius_g_1 * atan ( Vy / tmp );
+    xy.y = P->radius_g_1 * atan ( Vz / hypot ( Vy, tmp ) );
 }
-INVERSE(s_inverse); /* spheroid */
-	double Vx, Vy, Vz, a, b, det, k;
+return ( xy );
+}
+       INVERSE ( s_inverse ); /* spheroid */
+       double Vx, Vy, Vz, a, b, det, k;
 
-/* Setting three components of vector from satellite to position.*/
-	Vx = -1.0;
-	if(P->flip_axis)
-          {
-            Vz = tan (xy.y / (P->radius_g - 1.0));
-            Vy = tan (xy.x / (P->radius_g - 1.0)) * sqrt (1.0 + Vz * Vz);
-          }
-        else
-          {
-            Vy = tan (xy.x / (P->radius_g - 1.0));
-            Vz = tan (xy.y / (P->radius_g - 1.0)) * sqrt (1.0 + Vy * Vy);
-          }
-/* Calculation of terms in cubic equation and determinant.*/
-	a   = Vy * Vy + Vz * Vz + Vx * Vx;
-	b   = 2 * P->radius_g * Vx;
-	if ((det = (b * b) - 4 * a * P->C) < 0.) I_ERROR;
-/* Calculation of three components of vector from satellite to position.*/
-	k  = (-b - sqrt(det)) / (2 * a);
-	Vx = P->radius_g + k * Vx;
-	Vy *= k;
-	Vz *= k;
-/* Calculation of longitude and latitude.*/
-	lp.lam = atan2 (Vy, Vx);
-	lp.phi = atan (Vz * cos (lp.lam) / Vx);
-	return (lp);
+       /* Setting three components of vector from satellite to position.*/
+       Vx = -1.0;
+if ( P->flip_axis ) {
+    Vz = tan ( xy.y / ( P->radius_g - 1.0 ) );
+    Vy = tan ( xy.x / ( P->radius_g - 1.0 ) ) * sqrt ( 1.0 + Vz * Vz );
+} else {
+    Vy = tan ( xy.x / ( P->radius_g - 1.0 ) );
+    Vz = tan ( xy.y / ( P->radius_g - 1.0 ) ) * sqrt ( 1.0 + Vy * Vy );
 }
-INVERSE(e_inverse); /* ellipsoid */
-	double Vx, Vy, Vz, a, b, det, k;
+/* Calculation of terms in cubic equation and determinant.*/
+a   = Vy * Vy + Vz * Vz + Vx * Vx;
+      b   = 2 * P->radius_g * Vx;
+            if ( ( det = ( b * b ) - 4 * a * P->C ) < 0. ) I_ERROR;
+            /* Calculation of three components of vector from satellite to position.*/
+            k  = ( -b - sqrt ( det ) ) / ( 2 * a );
+                 Vx = P->radius_g + k * Vx;
+                      Vy *= k;
+                            Vz *= k;
+                                  /* Calculation of longitude and latitude.*/
+                                  lp.lam = atan2 ( Vy, Vx );
+                                          lp.phi = atan ( Vz * cos ( lp.lam ) / Vx );
+                                                  return ( lp );
+}
+                                                          INVERSE ( e_inverse ); /* ellipsoid */
+                                                          double Vx, Vy, Vz, a, b, det, k;
 
-/* Setting three components of vector from satellite to position.*/
-	Vx = -1.0;
-        if(P->flip_axis)
-          {
-            Vz = tan (xy.y / P->radius_g_1);
-            Vy = tan (xy.x / P->radius_g_1) * hypot(1.0, Vz);
-          }
-        else
-          {
-            Vy = tan (xy.x / P->radius_g_1);
-            Vz = tan (xy.y / P->radius_g_1) * hypot(1.0, Vy);
-          }
-/* Calculation of terms in cubic equation and determinant.*/
-	a = Vz / P->radius_p;
-	a   = Vy * Vy + a * a + Vx * Vx;
-	b   = 2 * P->radius_g * Vx;
-	if ((det = (b * b) - 4 * a * P->C) < 0.) I_ERROR;
-/* Calculation of three components of vector from satellite to position.*/
-	k  = (-b - sqrt(det)) / (2. * a);
-	Vx = P->radius_g + k * Vx;
-	Vy *= k;
-	Vz *= k;
-/* Calculation of longitude and latitude.*/
-	lp.lam  = atan2 (Vy, Vx);
-	lp.phi = atan (Vz * cos (lp.lam) / Vx);
-	lp.phi = atan (P->radius_p_inv2 * tan (lp.phi));
-	return (lp);
+                                                          /* Setting three components of vector from satellite to position.*/
+                                                          Vx = -1.0;
+if ( P->flip_axis ) {
+    Vz = tan ( xy.y / P->radius_g_1 );
+    Vy = tan ( xy.x / P->radius_g_1 ) * hypot ( 1.0, Vz );
+} else {
+    Vy = tan ( xy.x / P->radius_g_1 );
+    Vz = tan ( xy.y / P->radius_g_1 ) * hypot ( 1.0, Vy );
 }
-FREEUP; if (P) free(P); }
-ENTRY0(geos)
-	if ((P->h = pj_param(P->ctx, P->params, "dh").f) <= 0.) E_ERROR(-30);
-	if (P->phi0) E_ERROR(-46);
-        P->sweep_axis = pj_param(P->ctx, P->params, "ssweep").s;
-        if (P->sweep_axis == NULL)
-          P->flip_axis = 0;
-        else
-          {
-            if (P->sweep_axis[1] != '\0' ||
-                (P->sweep_axis[0] != 'x' &&
-                 P->sweep_axis[0] != 'y'))
-              E_ERROR(-49);
-            if (P->sweep_axis[0] == 'y')
-              P->flip_axis = 1;
-            else
-              P->flip_axis = 0;
-          }
-        P->radius_g_1 = P->h / P->a;
-	P->radius_g = 1. + P->radius_g_1;
-	P->C  = P->radius_g * P->radius_g - 1.0;
-	if (P->es) {
-		P->radius_p      = sqrt (P->one_es);
-		P->radius_p2     = P->one_es;
-		P->radius_p_inv2 = P->rone_es;
-		P->inv = e_inverse;
-		P->fwd = e_forward;
-	} else {
-		P->radius_p = P->radius_p2 = P->radius_p_inv2 = 1.0;
-		P->inv = s_inverse;
-		P->fwd = s_forward;
-	}
-ENDENTRY(P)
+/* Calculation of terms in cubic equation and determinant.*/
+a = Vz / P->radius_p;
+    a   = Vy * Vy + a * a + Vx * Vx;
+          b   = 2 * P->radius_g * Vx;
+                if ( ( det = ( b * b ) - 4 * a * P->C ) < 0. ) I_ERROR;
+                /* Calculation of three components of vector from satellite to position.*/
+                k  = ( -b - sqrt ( det ) ) / ( 2. * a );
+                     Vx = P->radius_g + k * Vx;
+                          Vy *= k;
+                                Vz *= k;
+                                      /* Calculation of longitude and latitude.*/
+                                      lp.lam  = atan2 ( Vy, Vx );
+                                              lp.phi = atan ( Vz * cos ( lp.lam ) / Vx );
+                                                      lp.phi = atan ( P->radius_p_inv2 * tan ( lp.phi ) );
+                                                              return ( lp );
+}
+                                                                      FREEUP;
+                                                                      if ( P ) free ( P );
+}
+                                                                      ENTRY0 ( geos )
+                                                                      if ( ( P->h = pj_param ( P->ctx, P->params, "dh" ).f ) <= 0. ) E_ERROR ( -30 );
+                                                                      if ( P->phi0 ) E_ERROR ( -46 );
+                                                                      P->sweep_axis = pj_param ( P->ctx, P->params, "ssweep" ).s;
+                                                                              if ( P->sweep_axis == NULL )
+                                                                                  P->flip_axis = 0;
+else {
+    if ( P->sweep_axis[1] != '\0' ||
+            ( P->sweep_axis[0] != 'x' &&
+              P->sweep_axis[0] != 'y' ) )
+        E_ERROR ( -49 );
+    if ( P->sweep_axis[0] == 'y' )
+        P->flip_axis = 1;
+    else
+        P->flip_axis = 0;
+}
+P->radius_g_1 = P->h / P->a;
+                P->radius_g = 1. + P->radius_g_1;
+                              P->C  = P->radius_g * P->radius_g - 1.0;
+if ( P->es ) {
+    P->radius_p      = sqrt ( P->one_es );
+    P->radius_p2     = P->one_es;
+    P->radius_p_inv2 = P->rone_es;
+    P->inv = e_inverse;
+    P->fwd = e_forward;
+} else {
+    P->radius_p = P->radius_p2 = P->radius_p_inv2 = 1.0;
+    P->inv = s_inverse;
+    P->fwd = s_forward;
+}
+ENDENTRY ( P )

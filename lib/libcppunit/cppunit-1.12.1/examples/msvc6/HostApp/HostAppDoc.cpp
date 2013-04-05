@@ -15,30 +15,27 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppDoc
 
-IMPLEMENT_DYNCREATE(CHostAppDoc, CDocument)
+IMPLEMENT_DYNCREATE ( CHostAppDoc, CDocument )
 
-BEGIN_MESSAGE_MAP(CHostAppDoc, CDocument)
+BEGIN_MESSAGE_MAP ( CHostAppDoc, CDocument )
     //{{AFX_MSG_MAP(CHostAppDoc)
-	//}}AFX_MSG_MAP
+    //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppDoc construction/destruction
 
-CHostAppDoc::CHostAppDoc()
-{
+CHostAppDoc::CHostAppDoc() {
     // TODO: add one-time construction code here
 }
 
-CHostAppDoc::~CHostAppDoc()
-{
+CHostAppDoc::~CHostAppDoc() {
 }
 
 
 
-BOOL CHostAppDoc::OnNewDocument()
-{
-    if (!CDocument::OnNewDocument())
+BOOL CHostAppDoc::OnNewDocument() {
+    if ( !CDocument::OnNewDocument() )
         return FALSE;
 
     return TRUE;
@@ -49,14 +46,10 @@ BOOL CHostAppDoc::OnNewDocument()
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppDoc serialization
 
-void CHostAppDoc::Serialize(CArchive& ar)
-{
-    if (ar.IsStoring())
-    {
+void CHostAppDoc::Serialize ( CArchive& ar ) {
+    if ( ar.IsStoring() ) {
         // TODO: add storing code here
-    }
-    else
-    {
+    } else {
         // TODO: add loading code here
     }
 }
@@ -65,14 +58,12 @@ void CHostAppDoc::Serialize(CArchive& ar)
 // CHostAppDoc diagnostics
 
 #ifdef _DEBUG
-void CHostAppDoc::AssertValid() const
-{
+void CHostAppDoc::AssertValid() const {
     CDocument::AssertValid();
 }
 
-void CHostAppDoc::Dump(CDumpContext& dc) const
-{
-    CDocument::Dump(dc);
+void CHostAppDoc::Dump ( CDumpContext& dc ) const {
+    CDocument::Dump ( dc );
 }
 #endif //_DEBUG
 

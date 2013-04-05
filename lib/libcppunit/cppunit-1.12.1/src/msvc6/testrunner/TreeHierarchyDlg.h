@@ -15,64 +15,62 @@
 /////////////////////////////////////////////////////////////////////////////
 // TreeHierarchyDlg dialog
 
-class TreeHierarchyDlg : public cdxCDynamicDialog
-{
+class TreeHierarchyDlg : public cdxCDynamicDialog {
 // Construction
 public:
-	TreeHierarchyDlg(CWnd* pParent = NULL);   // standard constructor
+    TreeHierarchyDlg ( CWnd* pParent = NULL ); // standard constructor
 
-  void setRootTest( CPPUNIT_NS::Test *test );
-  CPPUNIT_NS::Test *getSelectedTest() const;
+    void setRootTest ( CPPUNIT_NS::Test *test );
+    CPPUNIT_NS::Test *getSelectedTest() const;
 
-  static bool isSuite( CPPUNIT_NS::Test *test );
+    static bool isSuite ( CPPUNIT_NS::Test *test );
 
-  // Dialog Data
-	//{{AFX_DATA(TreeHierarchyDlg)
-	CTreeCtrl	m_treeTests;
-	//}}AFX_DATA
+    // Dialog Data
+    //{{AFX_DATA(TreeHierarchyDlg)
+    CTreeCtrl	m_treeTests;
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(TreeHierarchyDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(TreeHierarchyDlg)
+protected:
+    virtual void DoDataExchange ( CDataExchange* pDX ); // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-  virtual void initializeLayout();
-  void storeDialogBounds();
+    virtual void initializeLayout();
+    void storeDialogBounds();
 
-	// Generated message map functions
-	//{{AFX_MSG(TreeHierarchyDlg)
-	virtual BOOL OnInitDialog();
-  virtual void OnOK( );
-	virtual void OnCancel();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP();
+    // Generated message map functions
+    //{{AFX_MSG(TreeHierarchyDlg)
+    virtual BOOL OnInitDialog();
+    virtual void OnOK( );
+    virtual void OnCancel();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP();
 
 private:
-  typedef std::vector<CPPUNIT_NS::Test *> Tests;
+    typedef std::vector<CPPUNIT_NS::Test *> Tests;
 
-  void fillTree();
-  HTREEITEM addTest( CPPUNIT_NS::Test *test, 
-                     HTREEITEM hParent );
-  void addTestSuiteChildrenTo( CPPUNIT_NS::Test *suite,
-                               HTREEITEM hItemSuite );
+    void fillTree();
+    HTREEITEM addTest ( CPPUNIT_NS::Test *test,
+                        HTREEITEM hParent );
+    void addTestSuiteChildrenTo ( CPPUNIT_NS::Test *suite,
+                                  HTREEITEM hItemSuite );
 
-  void sortByName( Tests &tests ) const;
-  CPPUNIT_NS::Test *findSelectedTest();
+    void sortByName ( Tests &tests ) const;
+    CPPUNIT_NS::Test *findSelectedTest();
 
-  enum
-  {
-    imgSuite =0,
-    imgUnitTest,
-  };
+    enum {
+        imgSuite =0,
+        imgUnitTest,
+    };
 
-  CImageList m_imageList;
-  CPPUNIT_NS::Test *m_selectedTest;
-  CPPUNIT_NS::Test *m_rootTest;
+    CImageList m_imageList;
+    CPPUNIT_NS::Test *m_selectedTest;
+    CPPUNIT_NS::Test *m_rootTest;
 };
 
 //{{AFX_INSERT_LOCATION}}

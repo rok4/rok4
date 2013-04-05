@@ -16,7 +16,7 @@ static char THIS_FILE[]=__FILE__;
 #pragma warning(disable: 4706)
 
 
-IMPLEMENT_DYNAMIC(cdxCDynamicLayoutInfo,CObject);
+IMPLEMENT_DYNAMIC ( cdxCDynamicLayoutInfo,CObject );
 
 //////////////////////////////////////////////////////////////////////
 // cdxCDynamicWnd::Position
@@ -36,55 +36,47 @@ IMPLEMENT_DYNAMIC(cdxCDynamicLayoutInfo,CObject);
  * (it will be moved outside the client area).
  */
 
-void cdxCDynamicWnd::Position::Apply(HWND hwnd, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li) const
-{
-	if(li.m_bUseScrollPos)
-	{
-		rectNewPos.left	=	left   - li.m_pntScrollPos.x;
-		rectNewPos.right	=	right  - li.m_pntScrollPos.x;
-		rectNewPos.top		=	top    - li.m_pntScrollPos.y;
-		rectNewPos.bottom	=	bottom - li.m_pntScrollPos.y;
+void cdxCDynamicWnd::Position::Apply ( HWND hwnd, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li ) const {
+    if ( li.m_bUseScrollPos ) {
+        rectNewPos.left	=	left   - li.m_pntScrollPos.x;
+        rectNewPos.right	=	right  - li.m_pntScrollPos.x;
+        rectNewPos.top		=	top    - li.m_pntScrollPos.y;
+        rectNewPos.bottom	=	bottom - li.m_pntScrollPos.y;
 
-		if(li.m_szDelta.cx >= 0)
-		{
-			rectNewPos.left	+=	(m_Bytes[X1] * li.m_szDelta.cx) / 100;
-			rectNewPos.right	+=	(m_Bytes[X2] * li.m_szDelta.cx) / 100;
-		}
-		if(li.m_szDelta.cy >= 0)
-		{
-			rectNewPos.top		+=	(m_Bytes[Y1] * li.m_szDelta.cy) / 100;
-			rectNewPos.bottom	+=	(m_Bytes[Y2] * li.m_szDelta.cy) / 100;
-		}
-	}
-	else
-	{
-		rectNewPos.left	=	left   + (m_Bytes[X1] * li.m_szDelta.cx) / 100;
-		rectNewPos.right	=	right  + (m_Bytes[X2] * li.m_szDelta.cx) / 100;
-		rectNewPos.top		=	top    + (m_Bytes[Y1] * li.m_szDelta.cy) / 100;
-		rectNewPos.bottom	=	bottom + (m_Bytes[Y2] * li.m_szDelta.cy) / 100;
-	}
+        if ( li.m_szDelta.cx >= 0 ) {
+            rectNewPos.left	+=	( m_Bytes[X1] * li.m_szDelta.cx ) / 100;
+            rectNewPos.right	+=	( m_Bytes[X2] * li.m_szDelta.cx ) / 100;
+        }
+        if ( li.m_szDelta.cy >= 0 ) {
+            rectNewPos.top		+=	( m_Bytes[Y1] * li.m_szDelta.cy ) / 100;
+            rectNewPos.bottom	+=	( m_Bytes[Y2] * li.m_szDelta.cy ) / 100;
+        }
+    } else {
+        rectNewPos.left	=	left   + ( m_Bytes[X1] * li.m_szDelta.cx ) / 100;
+        rectNewPos.right	=	right  + ( m_Bytes[X2] * li.m_szDelta.cx ) / 100;
+        rectNewPos.top		=	top    + ( m_Bytes[Y1] * li.m_szDelta.cy ) / 100;
+        rectNewPos.bottom	=	bottom + ( m_Bytes[Y2] * li.m_szDelta.cy ) / 100;
+    }
 
-	if(rectNewPos.left + m_szMin.cx >= rectNewPos.right)
-	{
-		rectNewPos.right	=	-10;
-		rectNewPos.left	=	rectNewPos.right - m_szMin.cx;
-	}
-	if(rectNewPos.top + m_szMin.cy >= rectNewPos.bottom)
-	{
-		rectNewPos.bottom	=	-10;
-		rectNewPos.top		=	rectNewPos.bottom - m_szMin.cy;
-	}
+    if ( rectNewPos.left + m_szMin.cx >= rectNewPos.right ) {
+        rectNewPos.right	=	-10;
+        rectNewPos.left	=	rectNewPos.right - m_szMin.cx;
+    }
+    if ( rectNewPos.top + m_szMin.cy >= rectNewPos.bottom ) {
+        rectNewPos.bottom	=	-10;
+        rectNewPos.top		=	rectNewPos.bottom - m_szMin.cy;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
 // cdxCDynamicWnd
 //////////////////////////////////////////////////////////////////////
 
-const CSize	cdxCDynamicWnd::M_szNull(0,0);
+const CSize	cdxCDynamicWnd::M_szNull ( 0,0 );
 const cdxCDynamicWnd::SBYTES	cdxCDynamicWnd::TopLeft		=	{ 0,0,0,0 },
-										cdxCDynamicWnd::TopRight	=	{ 100,0,100,0 },
-										cdxCDynamicWnd::BotLeft		=	{ 0,100,0,100 },
-										cdxCDynamicWnd::BotRight	=	{ 100,100,100,100 };
+                                                   cdxCDynamicWnd::TopRight	=	{ 100,0,100,0 },
+                                                                      cdxCDynamicWnd::BotLeft		=	{ 0,100,0,100 },
+                                                                                         cdxCDynamicWnd::BotRight	=	{ 100,100,100,100 };
 
 
 //////////////////////////////////////////////////////////////////////
@@ -95,19 +87,18 @@ const cdxCDynamicWnd::SBYTES	cdxCDynamicWnd::TopLeft		=	{ 0,0,0,0 },
  * construction
  */
 
-cdxCDynamicWnd::cdxCDynamicWnd(Freedom fd, UINT nFlags)
-:	m_pWnd(NULL),
-	m_iDisabled(0),
-	m_Freedom(fd),
-	m_szInitial(M_szNull),
-	m_szMin(0,0),
-	m_szMax(0,0),
-	m_bUseScrollPos(false),
-	m_pSizeIcon(NULL),
-	m_idSizeIcon(AFX_IDW_SIZE_BOX),
-	m_nMyTimerID(0),
-	m_nFlags(nFlags)
-{
+cdxCDynamicWnd::cdxCDynamicWnd ( Freedom fd, UINT nFlags )
+    :	m_pWnd ( NULL ),
+        m_iDisabled ( 0 ),
+        m_Freedom ( fd ),
+        m_szInitial ( M_szNull ),
+        m_szMin ( 0,0 ),
+        m_szMax ( 0,0 ),
+        m_bUseScrollPos ( false ),
+        m_pSizeIcon ( NULL ),
+        m_idSizeIcon ( AFX_IDW_SIZE_BOX ),
+        m_nMyTimerID ( 0 ),
+        m_nFlags ( nFlags ) {
 }
 
 
@@ -128,26 +119,23 @@ cdxCDynamicWnd::cdxCDynamicWnd(Freedom fd, UINT nFlags)
  * returns false if an invalid window has been passed to this funciton.
  */
 
-bool cdxCDynamicWnd::AddSzControl(HWND hwnd, const Position & pos, bool bReposNow)
-{
-	if(!IsWindow())
-	{
-		ASSERT(IsWindow());
-		return false;			// NO assert if hwnd is invalid
-	}
+bool cdxCDynamicWnd::AddSzControl ( HWND hwnd, const Position & pos, bool bReposNow ) {
+    if ( !IsWindow() ) {
+        ASSERT ( IsWindow() );
+        return false;			// NO assert if hwnd is invalid
+    }
 
-	if(!::IsWindow(hwnd))
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,const Position &,bool)]: Handle 0x%lx is not a valid window.\n"),(DWORD)hwnd);
-		return false;
-	}
+    if ( !::IsWindow ( hwnd ) ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,const Position &,bool)]: Handle 0x%lx is not a valid window.\n" ), ( DWORD ) hwnd );
+        return false;
+    }
 
-	m_Map.SetAt(hwnd,pos);
+    m_Map.SetAt ( hwnd,pos );
 
-	if(bReposNow)
-		UpdateControlPosition(hwnd);
+    if ( bReposNow )
+        UpdateControlPosition ( hwnd );
 
-	return true;
+    return true;
 }
 
 /*
@@ -161,26 +149,23 @@ bool cdxCDynamicWnd::AddSzControl(HWND hwnd, const Position & pos, bool bReposNo
  *							In the latter case you may like to call Layout() afterwards.
  */
 
-void cdxCDynamicWnd::AllControls(const SBYTES & bytes, bool bOverwrite, bool bReposNow)
-{
-	if(!IsWindow())
-	{
-		ASSERT(false);
-		return;
-	}
+void cdxCDynamicWnd::AllControls ( const SBYTES & bytes, bool bOverwrite, bool bReposNow ) {
+    if ( !IsWindow() ) {
+        ASSERT ( false );
+        return;
+    }
 
-	Position	pos;
-	UINT		nCnt	=	0;
+    Position	pos;
+    UINT		nCnt	=	0;
 
-	for(HWND hwnd = ::GetWindow(m_pWnd->m_hWnd,GW_CHILD); hwnd; hwnd = ::GetNextWindow(hwnd,GW_HWNDNEXT))
-	{
-		if(bOverwrite || !m_Map.Lookup(hwnd,pos))
-			if(AddSzControl(hwnd,bytes,false))
-				++nCnt;
-	}
+    for ( HWND hwnd = ::GetWindow ( m_pWnd->m_hWnd,GW_CHILD ); hwnd; hwnd = ::GetNextWindow ( hwnd,GW_HWNDNEXT ) ) {
+        if ( bOverwrite || !m_Map.Lookup ( hwnd,pos ) )
+            if ( AddSzControl ( hwnd,bytes,false ) )
+                ++nCnt;
+    }
 
-	if(nCnt && bReposNow)
-		Layout();
+    if ( nCnt && bReposNow )
+        Layout();
 }
 
 /*
@@ -191,24 +176,22 @@ void cdxCDynamicWnd::AllControls(const SBYTES & bytes, bool bOverwrite, bool bRe
  * Returns false if an error occured.
  */
 
-bool cdxCDynamicWnd::RemSzControl(HWND hwnd, bool bMoveToInitialPos)
-{
-	if(!::IsWindow(hwnd) || !IsWindow())
-		return false;
+bool cdxCDynamicWnd::RemSzControl ( HWND hwnd, bool bMoveToInitialPos ) {
+    if ( !::IsWindow ( hwnd ) || !IsWindow() )
+        return false;
 
-	if(bMoveToInitialPos)
-	{
-		Position	pos;
+    if ( bMoveToInitialPos ) {
+        Position	pos;
 
-		if(!m_Map.Lookup(hwnd,pos))
-			return false;
+        if ( !m_Map.Lookup ( hwnd,pos ) )
+            return false;
 
-		VERIFY( ::SetWindowPos(hwnd,HWND_TOP,
-									pos.left,pos.top,pos.Width(),pos.Height(),
-									SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER) );
-	}
+        VERIFY ( ::SetWindowPos ( hwnd,HWND_TOP,
+                                  pos.left,pos.top,pos.Width(),pos.Height(),
+                                  SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER ) );
+    }
 
-	return m_Map.RemoveKey(hwnd) != FALSE;
+    return m_Map.RemoveKey ( hwnd ) != FALSE;
 }
 
 /*
@@ -218,52 +201,44 @@ bool cdxCDynamicWnd::RemSzControl(HWND hwnd, bool bMoveToInitialPos)
  * returns false if HWND is not valid.
  */
 
-bool cdxCDynamicWnd::UpdateControlPosition(HWND hwnd)
-{
-	if(!IsWindow())
-	{
-		ASSERT(IsWindow());
-		return false;			// NO assert if hwnd is invalid
-	}
+bool cdxCDynamicWnd::UpdateControlPosition ( HWND hwnd ) {
+    if ( !IsWindow() ) {
+        ASSERT ( IsWindow() );
+        return false;			// NO assert if hwnd is invalid
+    }
 
-	if(!::IsWindow(hwnd))
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWnd::UpdateControlPosition()]: Handle 0x%lx is not a valid window.\n"),(DWORD)hwnd);
-		return false;
-	}
+    if ( !::IsWindow ( hwnd ) ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::UpdateControlPosition()]: Handle 0x%lx is not a valid window.\n" ), ( DWORD ) hwnd );
+        return false;
+    }
 
-	cdxCDynamicLayoutInfo	*pli	=	DoCreateLayoutInfo();
-	ASSERT(pli != NULL);
+    cdxCDynamicLayoutInfo	*pli	=	DoCreateLayoutInfo();
+    ASSERT ( pli != NULL );
 
-	if(!pli || !pli->IsInitial())
-	{
-		try
-		{
-			CRect							rectNew;
-			WINDOWPLACEMENT			wpl;
-			wpl.length	=	sizeof(WINDOWPLACEMENT);
-			VERIFY(::GetWindowPlacement(hwnd,&wpl) );
+    if ( !pli || !pli->IsInitial() ) {
+        try {
+            CRect							rectNew;
+            WINDOWPLACEMENT			wpl;
+            wpl.length	=	sizeof ( WINDOWPLACEMENT );
+            VERIFY ( ::GetWindowPlacement ( hwnd,&wpl ) );
 
-			rectNew	=	wpl.rcNormalPosition;
+            rectNew	=	wpl.rcNormalPosition;
 
-			if(DoMoveCtrl(hwnd,::GetDlgCtrlID(hwnd),rectNew,*pli) &&
-				(rectNew != wpl.rcNormalPosition) )
-			{
-				VERIFY( ::SetWindowPos(hwnd,HWND_TOP,
-												rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
-												SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER) );
-			}
-		}
-		catch(...)
-		{
-			delete pli;
-			throw;
-		}
-	}
+            if ( DoMoveCtrl ( hwnd,::GetDlgCtrlID ( hwnd ),rectNew,*pli ) &&
+                    ( rectNew != wpl.rcNormalPosition ) ) {
+                VERIFY ( ::SetWindowPos ( hwnd,HWND_TOP,
+                                          rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
+                                          SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER ) );
+            }
+        } catch ( ... ) {
+            delete pli;
+            throw;
+        }
+    }
 
-	delete pli;
+    delete pli;
 
-	return true;
+    return true;
 }
 
 
@@ -285,100 +260,83 @@ bool cdxCDynamicWnd::UpdateControlPosition(HWND hwnd)
  *    An example can be found in the example project, anytime.
  */
 
-void cdxCDynamicWnd::Layout()
-{
-	if(!IsWindow())
-	{
-		ASSERT(IsWindow());
-		return;
-	}
-	
-	// resize stuff
+void cdxCDynamicWnd::Layout() {
+    if ( !IsWindow() ) {
+        ASSERT ( IsWindow() );
+        return;
+    }
 
-	cdxCDynamicLayoutInfo	*pli		=	DoCreateLayoutInfo();
+    // resize stuff
 
-	if(!pli)
-	{
-		ASSERT(false);		// YOU MUST PROVIDE A LAYOUT INFO BLOCK !
-		return;
-	}
+    cdxCDynamicLayoutInfo	*pli		=	DoCreateLayoutInfo();
 
-	try
-	{
-		HDWP							hdwp		=	::BeginDeferWindowPos(pli->m_nCtrlCnt);
-		HWND							hwnd;
-		bool							bRepeat;
-		CRect							rectNew;
-		UINT							id;
-		WINDOWPLACEMENT			wpl;
-		DWORD							swpFlags	=	SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER|(!(m_nFlags & flSWPCopyBits) ? SWP_NOCOPYBITS : 0);
+    if ( !pli ) {
+        ASSERT ( false );		// YOU MUST PROVIDE A LAYOUT INFO BLOCK !
+        return;
+    }
 
-		if(!( hwnd = ::GetWindow(m_pWnd->m_hWnd,GW_CHILD) ))
-		{
-			TRACE(_T("*** NOTE[cdxCDynamicWnd::Layout()]: The window at 0x%lx does not have child windows.\n"),(DWORD)m_pWnd->m_hWnd);
-			return;
-		}
+    try {
+        HDWP							hdwp		=	::BeginDeferWindowPos ( pli->m_nCtrlCnt );
+        HWND							hwnd;
+        bool							bRepeat;
+        CRect							rectNew;
+        UINT							id;
+        WINDOWPLACEMENT			wpl;
+        DWORD							swpFlags	=	SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER| ( ! ( m_nFlags & flSWPCopyBits ) ? SWP_NOCOPYBITS : 0 );
 
-		do
-		{
-			bRepeat				=	false;
+        if ( ! ( hwnd = ::GetWindow ( m_pWnd->m_hWnd,GW_CHILD ) ) ) {
+            TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::Layout()]: The window at 0x%lx does not have child windows.\n" ), ( DWORD ) m_pWnd->m_hWnd );
+            return;
+        }
 
-			for(; hwnd; hwnd = ::GetNextWindow(hwnd,GW_HWNDNEXT))
-			{
-				wpl.length	=	sizeof(WINDOWPLACEMENT);
+        do {
+            bRepeat				=	false;
 
-				if(!::GetWindowPlacement(hwnd,&wpl))
-				{
-					ASSERT(false);		// GetWindowPlacement() failed
-					continue;
-				}
+            for ( ; hwnd; hwnd = ::GetNextWindow ( hwnd,GW_HWNDNEXT ) ) {
+                wpl.length	=	sizeof ( WINDOWPLACEMENT );
 
-				rectNew	=	wpl.rcNormalPosition;
-				ASSERT(rectNew.left >= 0);
-				id			=	::GetDlgCtrlID(hwnd);
+                if ( !::GetWindowPlacement ( hwnd,&wpl ) ) {
+                    ASSERT ( false );		// GetWindowPlacement() failed
+                    continue;
+                }
 
-				if(!DoMoveCtrl(hwnd,id,rectNew,*pli) ||
-					(rectNew == wpl.rcNormalPosition) )
-				{
-					// window doesn't need to be moved
-					// (position is not been changed)
-					continue;
-				}
+                rectNew	=	wpl.rcNormalPosition;
+                ASSERT ( rectNew.left >= 0 );
+                id			=	::GetDlgCtrlID ( hwnd );
 
-				if(hdwp)
-				{
-					if(!( hdwp = ::DeferWindowPos(hdwp,hwnd,HWND_TOP,
-															rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
-															swpFlags) ))
-					{
-						TRACE(_T("*** ERROR[cdxCDynamicWnd::ReorganizeControls()]: DeferWindowPos() failed ??\n"));
-						bRepeat	=	true;
-						break;		// error; we'll repeat the loop by using SetWindòwPos()
-										// this won't look good, but work :)
-					}
-				}
-				else
-				{
-					VERIFY( ::SetWindowPos(hwnd,HWND_TOP,
-												rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
-												swpFlags) );
-				}
-			}
-		}
-		while(bRepeat);
+                if ( !DoMoveCtrl ( hwnd,id,rectNew,*pli ) ||
+                        ( rectNew == wpl.rcNormalPosition ) ) {
+                    // window doesn't need to be moved
+                    // (position is not been changed)
+                    continue;
+                }
 
-		if(hdwp)
-		{
-			VERIFY( ::EndDeferWindowPos(hdwp) );
-		}
-	}
-	catch(...)
-	{
-		delete pli;
-		throw;
-	}
+                if ( hdwp ) {
+                    if ( ! ( hdwp = ::DeferWindowPos ( hdwp,hwnd,HWND_TOP,
+                                                       rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
+                                                       swpFlags ) ) ) {
+                        TRACE ( _T ( "*** ERROR[cdxCDynamicWnd::ReorganizeControls()]: DeferWindowPos() failed ??\n" ) );
+                        bRepeat	=	true;
+                        break;		// error; we'll repeat the loop by using SetWindï¿½wPos()
+                        // this won't look good, but work :)
+                    }
+                } else {
+                    VERIFY ( ::SetWindowPos ( hwnd,HWND_TOP,
+                                              rectNew.left,rectNew.top,rectNew.Width(),rectNew.Height(),
+                                              swpFlags ) );
+                }
+            }
+        } while ( bRepeat );
 
-	delete pli;
+        if ( hdwp ) {
+            VERIFY ( ::EndDeferWindowPos ( hdwp ) );
+        }
+    } catch ( ... ) {
+        delete pli;
+        throw;
+    }
+
+    delete pli;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -418,16 +376,15 @@ void cdxCDynamicWnd::Layout()
  *      that as little flickering as possible will occur.
  */
 
-bool cdxCDynamicWnd::DoMoveCtrl(HWND hwnd, UINT id, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li)
-{
-	Position	pos;
+bool cdxCDynamicWnd::DoMoveCtrl ( HWND hwnd, UINT id, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li ) {
+    Position	pos;
 
-	if(!GetControlPosition(hwnd,pos))
-		return false;
+    if ( !GetControlPosition ( hwnd,pos ) )
+        return false;
 
-	pos.Apply(hwnd,rectNewPos,li);
-	return true;
-}	
+    pos.Apply ( hwnd,rectNewPos,li );
+    return true;
+}
 
 /*
  * DoDestroyCtrl()
@@ -435,10 +392,9 @@ bool cdxCDynamicWnd::DoMoveCtrl(HWND hwnd, UINT id, CRect & rectNewPos, const cd
  * Called when a child window is about being destroyed.
  * We use it to remove our "Position" data from our database.
  */
- 
-void cdxCDynamicWnd::DoDestroyCtrl(HWND hwnd)
-{
-	m_Map.RemoveKey(hwnd);
+
+void cdxCDynamicWnd::DoDestroyCtrl ( HWND hwnd ) {
+    m_Map.RemoveKey ( hwnd );
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -469,114 +425,106 @@ void cdxCDynamicWnd::DoDestroyCtrl(HWND hwnd)
  *		[szInitial	-	initial client size]
  */
 
-void cdxCDynamicWnd::DoInitWindow(CWnd & rWnd)
-{
-	ASSERT(::IsWindow(rWnd.m_hWnd));	// ensure the window exists ...
+void cdxCDynamicWnd::DoInitWindow ( CWnd & rWnd ) {
+    ASSERT ( ::IsWindow ( rWnd.m_hWnd ) );	// ensure the window exists ...
 
-	m_pWnd		=	&rWnd;
-	DoInitWindow(rWnd,GetCurrentClientSize());
+    m_pWnd		=	&rWnd;
+    DoInitWindow ( rWnd,GetCurrentClientSize() );
 }
 
-void cdxCDynamicWnd::DoInitWindow(CWnd & rWnd, const CSize & szInitial)
-{
-	ASSERT(::IsWindow(rWnd.m_hWnd) && szInitial.cx && szInitial.cy);	// ensure the window exists ...
+void cdxCDynamicWnd::DoInitWindow ( CWnd & rWnd, const CSize & szInitial ) {
+    ASSERT ( ::IsWindow ( rWnd.m_hWnd ) && szInitial.cx && szInitial.cy );	// ensure the window exists ...
 
-	m_pWnd		=	&rWnd;
-	m_szInitial	=	szInitial;
-	m_szMin		=	szInitial;
+    m_pWnd		=	&rWnd;
+    m_szInitial	=	szInitial;
+    m_szMin		=	szInitial;
 
-	/*
-	 * this window will flicker somewhat deadly if you do not have the
-	 * WS_CLIPCHILDREN style set for you window.
-	 * You may like to use the following line anywhere
-	 * to apply it:
-	 
-		  CWnd::ModifyStyle(0,WS_CLIPCHILDREN);
+    /*
+     * this window will flicker somewhat deadly if you do not have the
+     * WS_CLIPCHILDREN style set for you window.
+     * You may like to use the following line anywhere
+     * to apply it:
+
+    	  CWnd::ModifyStyle(0,WS_CLIPCHILDREN);
 
     */
 
 #ifdef _DEBUG
-	if(!(rWnd.GetStyle() & WS_CLIPCHILDREN) && !(m_nFlags & flSWPCopyBits))
-	{
-		TRACE(_T("***\n")
-					_T("*** cdxCDynamicWnd class note: If your window flickers too much, add the WS_CLIPCHILDREN style to it\n")
-					_T("***                            or try to set the flSWPCopyBits flags !!!\n")
-					_T("***\n"));
-	}
+    if ( ! ( rWnd.GetStyle() & WS_CLIPCHILDREN ) && ! ( m_nFlags & flSWPCopyBits ) ) {
+        TRACE ( _T ( "***\n" )
+                _T ( "*** cdxCDynamicWnd class note: If your window flickers too much, add the WS_CLIPCHILDREN style to it\n" )
+                _T ( "***                            or try to set the flSWPCopyBits flags !!!\n" )
+                _T ( "***\n" ) );
+    }
 #endif
 
-	//
-	// now, if a DYNAMIC MAP is been defined,
-	// we start working with it
-	//
+    //
+    // now, if a DYNAMIC MAP is been defined,
+    // we start working with it
+    //
 
-	const __dynEntry	*pEntry,*pLast	=	NULL;
-	UINT					nInitCnt	=	GetCtrlCount();
+    const __dynEntry	*pEntry,*pLast	=	NULL;
+    UINT					nInitCnt	=	GetCtrlCount();
 
-	if(pLast = __getDynMap(pLast))
-	{
-		HWND		hwnd;
-		SBYTES	bytes;
+    if ( pLast = __getDynMap ( pLast ) ) {
+        HWND		hwnd;
+        SBYTES	bytes;
 
-		for(pEntry = pLast; pEntry->type != __end; ++pEntry)
-		{
-			if((pEntry->id != DYNAMIC_MAP_DEFAULT_ID)
-				&& !( hwnd = ::GetDlgItem(m_pWnd->m_hWnd,pEntry->id) ))
-			{
-				TRACE(_T("*** NOTE[cdxCDynamicWnd::DoInitWindow()]: Dynamic map initialization: There's no control with the id 0x%lx !\n"),pEntry->id);
-				continue;
-			}
+        for ( pEntry = pLast; pEntry->type != __end; ++pEntry ) {
+            if ( ( pEntry->id != DYNAMIC_MAP_DEFAULT_ID )
+                    && ! ( hwnd = ::GetDlgItem ( m_pWnd->m_hWnd,pEntry->id ) ) ) {
+                TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::DoInitWindow()]: Dynamic map initialization: There's no control with the id 0x%lx !\n" ),pEntry->id );
+                continue;
+            }
 
-			switch(pEntry->type)
-			{
-				case	__bytes:
+            switch ( pEntry->type ) {
+            case	__bytes:
 
-					bytes[X1]	=	pEntry->b1;
-					bytes[Y1]	=	pEntry->b2;
-					bytes[X2]	=	pEntry->b3;
-					bytes[Y2]	=	pEntry->b4;
-					break;
+                bytes[X1]	=	pEntry->b1;
+                bytes[Y1]	=	pEntry->b2;
+                bytes[X2]	=	pEntry->b3;
+                bytes[Y2]	=	pEntry->b4;
+                break;
 
-				case	__modes:
-					
-					_translate((Mode)pEntry->b1,bytes[X1],bytes[X2]);
-					_translate((Mode)pEntry->b2,bytes[Y1],bytes[Y2]);
-					break;
+            case	__modes:
 
-				default:
+                _translate ( ( Mode ) pEntry->b1,bytes[X1],bytes[X2] );
+                _translate ( ( Mode ) pEntry->b2,bytes[Y1],bytes[Y2] );
+                break;
 
-					ASSERT(false);		// never come here !!!!!
-					break;
-			}
+            default:
 
-			if(pEntry->id == DYNAMIC_MAP_DEFAULT_ID)
-				AllControls(bytes,false,false);
-			else
-				AddSzControl(hwnd,bytes,M_szNull,false);
-		}
-	}
+                ASSERT ( false );		// never come here !!!!!
+                break;
+            }
 
-	//
-	// handle creation flags
-	//
+            if ( pEntry->id == DYNAMIC_MAP_DEFAULT_ID )
+                AllControls ( bytes,false,false );
+            else
+                AddSzControl ( hwnd,bytes,M_szNull,false );
+        }
+    }
 
-	if(m_nFlags & flSizeIcon)
-	{
-		m_pSizeIcon	=	new cdxCSizeIconCtrl;
-		VERIFY( m_pSizeIcon->Create(m_pWnd) );
+    //
+    // handle creation flags
+    //
 
-		AddSzControl(m_pSizeIcon->m_hWnd,BotRight,M_szNull,false);
-		m_pSizeIcon->ShowWindow(SW_SHOW);
-	}
+    if ( m_nFlags & flSizeIcon ) {
+        m_pSizeIcon	=	new cdxCSizeIconCtrl;
+        VERIFY ( m_pSizeIcon->Create ( m_pWnd ) );
 
-	m_bIsAntiFlickering	=	false;
-	m_nMyTimerID			=	DEFAULT_TIMER_ID;
-	m_dwClassStyle			=	::GetClassLong(*m_pWnd,GCL_STYLE) & (CS_VREDRAW|CS_HREDRAW);
+        AddSzControl ( m_pSizeIcon->m_hWnd,BotRight,M_szNull,false );
+        m_pSizeIcon->ShowWindow ( SW_SHOW );
+    }
 
-	OnInitialized();
+    m_bIsAntiFlickering	=	false;
+    m_nMyTimerID			=	DEFAULT_TIMER_ID;
+    m_dwClassStyle			=	::GetClassLong ( *m_pWnd,GCL_STYLE ) & ( CS_VREDRAW|CS_HREDRAW );
 
-	if(nInitCnt < GetCtrlCount())
-		Layout();
+    OnInitialized();
+
+    if ( nInitCnt < GetCtrlCount() )
+        Layout();
 }
 
 
@@ -586,22 +534,20 @@ void cdxCDynamicWnd::DoInitWindow(CWnd & rWnd, const CSize & szInitial)
  * Clean up.
  */
 
-void cdxCDynamicWnd::DoOnDestroy()
-{
-	if(IsWindow())
-		OnDestroying();
+void cdxCDynamicWnd::DoOnDestroy() {
+    if ( IsWindow() )
+        OnDestroying();
 
-	m_iDisabled		=	1;
-	m_pWnd			=	NULL;
-	m_Map.RemoveAll();
+    m_iDisabled		=	1;
+    m_pWnd			=	NULL;
+    m_Map.RemoveAll();
 
-	if(m_pSizeIcon)
-	{
-		m_pSizeIcon->DestroyWindow();
-		delete m_pSizeIcon;
+    if ( m_pSizeIcon ) {
+        m_pSizeIcon->DestroyWindow();
+        delete m_pSizeIcon;
 
-		m_pSizeIcon	=	NULL;
-	}
+        m_pSizeIcon	=	NULL;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -614,14 +560,12 @@ void cdxCDynamicWnd::DoOnDestroy()
  * Calls Layout() if necessary.
  */
 
-void cdxCDynamicWnd::DoOnSize(UINT nType, int cx, int cy)
-{
-	if(!IsDisabled() &&
-		IsWindow() &&
-		(nType != SIZE_MINIMIZED))
-	{
-		Layout();
-	}
+void cdxCDynamicWnd::DoOnSize ( UINT nType, int cx, int cy ) {
+    if ( !IsDisabled() &&
+            IsWindow() &&
+            ( nType != SIZE_MINIMIZED ) ) {
+        Layout();
+    }
 }
 
 /*
@@ -631,12 +575,11 @@ void cdxCDynamicWnd::DoOnSize(UINT nType, int cx, int cy)
  * StartAntiFlickering() is called by the following handler.
  */
 
-void cdxCDynamicWnd::DoOnSizing(UINT fwSide, LPRECT pRect)
-{
-	if(m_nMyTimerID && !IsDisabled() && IsWindow() && (m_nFlags & flAntiFlicker))
-		StartAntiFlickering(	(fwSide == WMSZ_BOTTOM) ||
-									(fwSide == WMSZ_BOTTOMRIGHT) ||
-									(fwSide == WMSZ_RIGHT));
+void cdxCDynamicWnd::DoOnSizing ( UINT fwSide, LPRECT pRect ) {
+    if ( m_nMyTimerID && !IsDisabled() && IsWindow() && ( m_nFlags & flAntiFlicker ) )
+        StartAntiFlickering (	( fwSide == WMSZ_BOTTOM ) ||
+                                ( fwSide == WMSZ_BOTTOMRIGHT ) ||
+                                ( fwSide == WMSZ_RIGHT ) );
 }
 
 /*
@@ -648,25 +591,22 @@ void cdxCDynamicWnd::DoOnSizing(UINT fwSide, LPRECT pRect)
  *		bIsBotRight	-	true if the window is sized in right, bottom or bot/right direction.
  */
 
-void cdxCDynamicWnd::StartAntiFlickering(bool bIsBotRight)
-{
-	if(IsWindow() && m_nMyTimerID)
-	{
-		DWORD	dw	=	m_dwClassStyle;
-		if(bIsBotRight)
-			dw	&=	~(CS_VREDRAW|CS_HREDRAW);
-		else
-			dw	|=	CS_VREDRAW|CS_HREDRAW;
+void cdxCDynamicWnd::StartAntiFlickering ( bool bIsBotRight ) {
+    if ( IsWindow() && m_nMyTimerID ) {
+        DWORD	dw	=	m_dwClassStyle;
+        if ( bIsBotRight )
+            dw	&=	~ ( CS_VREDRAW|CS_HREDRAW );
+        else
+            dw	|=	CS_VREDRAW|CS_HREDRAW;
 
-		m_pWnd->KillTimer(m_nMyTimerID);
-		m_pWnd->SetTimer(m_nMyTimerID,120,NULL);
+        m_pWnd->KillTimer ( m_nMyTimerID );
+        m_pWnd->SetTimer ( m_nMyTimerID,120,NULL );
 
-		if(!m_bIsAntiFlickering)
-		{
-			::SetClassLong(*m_pWnd,GCL_STYLE,dw);
-			m_bIsAntiFlickering	=	true;
-		}
-	}
+        if ( !m_bIsAntiFlickering ) {
+            ::SetClassLong ( *m_pWnd,GCL_STYLE,dw );
+            m_bIsAntiFlickering	=	true;
+        }
+    }
 }
 
 /*
@@ -676,17 +616,14 @@ void cdxCDynamicWnd::StartAntiFlickering(bool bIsBotRight)
  * Changes back the class style.
  */
 
-void cdxCDynamicWnd::DoOnTimer(UINT nIDEvent) 
-{
-	if(IsWindow() && (nIDEvent == m_nMyTimerID))
-	{
-		m_pWnd->KillTimer(m_nMyTimerID);
-		if(m_bIsAntiFlickering)
-		{
-			::SetClassLong(*m_pWnd,GCL_STYLE,m_dwClassStyle);
-			m_bIsAntiFlickering	=	false;
-		}
-	}
+void cdxCDynamicWnd::DoOnTimer ( UINT nIDEvent ) {
+    if ( IsWindow() && ( nIDEvent == m_nMyTimerID ) ) {
+        m_pWnd->KillTimer ( m_nMyTimerID );
+        if ( m_bIsAntiFlickering ) {
+            ::SetClassLong ( *m_pWnd,GCL_STYLE,m_dwClassStyle );
+            m_bIsAntiFlickering	=	false;
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -699,31 +636,25 @@ void cdxCDynamicWnd::DoOnTimer(UINT nIDEvent)
  * [changed due to a bug reported by Michel Wassink <mww@mitutoyo.nl>]
  */
 
-void cdxCDynamicWnd::DoOnGetMinMaxInfo(MINMAXINFO FAR* lpMMI)
-{
-	if(IsWindow() && !IsDisabled()  &&  IsUp())
-	{
-		CSize	szDelta	=	GetBorderSize();
+void cdxCDynamicWnd::DoOnGetMinMaxInfo ( MINMAXINFO FAR* lpMMI ) {
+    if ( IsWindow() && !IsDisabled()  &&  IsUp() ) {
+        CSize	szDelta	=	GetBorderSize();
 
-		lpMMI->ptMinTrackSize.x	=	m_szMin.cx + szDelta.cx;
-		lpMMI->ptMinTrackSize.y	=	m_szMin.cy + szDelta.cy;
+        lpMMI->ptMinTrackSize.x	=	m_szMin.cx + szDelta.cx;
+        lpMMI->ptMinTrackSize.y	=	m_szMin.cy + szDelta.cy;
 
-		if(m_Freedom & fdHoriz)
-		{
-			if(m_szMax.cx > 0)
-				lpMMI->ptMaxTrackSize.x	=	m_szMax.cx + szDelta.cx;
-		}
-		else
-			lpMMI->ptMaxTrackSize.x	=	lpMMI->ptMinTrackSize.x;
+        if ( m_Freedom & fdHoriz ) {
+            if ( m_szMax.cx > 0 )
+                lpMMI->ptMaxTrackSize.x	=	m_szMax.cx + szDelta.cx;
+        } else
+            lpMMI->ptMaxTrackSize.x	=	lpMMI->ptMinTrackSize.x;
 
-		if(m_Freedom & fdVert)
-		{
-			if(m_szMax.cy > 0)
-				lpMMI->ptMaxTrackSize.y	=	m_szMax.cy + szDelta.cy;
-		}
-		else
-			lpMMI->ptMaxTrackSize.y	=	lpMMI->ptMinTrackSize.y;
-	}
+        if ( m_Freedom & fdVert ) {
+            if ( m_szMax.cy > 0 )
+                lpMMI->ptMaxTrackSize.y	=	m_szMax.cy + szDelta.cy;
+        } else
+            lpMMI->ptMaxTrackSize.y	=	lpMMI->ptMinTrackSize.y;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -735,12 +666,11 @@ void cdxCDynamicWnd::DoOnGetMinMaxInfo(MINMAXINFO FAR* lpMMI)
  * HWND entries.
  */
 
-void cdxCDynamicWnd::DoOnParentNotify(UINT message, LPARAM lParam) 
-{
-	if(!lParam || (message != WM_DESTROY))
-		return;
+void cdxCDynamicWnd::DoOnParentNotify ( UINT message, LPARAM lParam ) {
+    if ( !lParam || ( message != WM_DESTROY ) )
+        return;
 
-	DoDestroyCtrl((HWND)lParam);
+    DoDestroyCtrl ( ( HWND ) lParam );
 }
 
 

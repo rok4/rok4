@@ -176,8 +176,8 @@ public:
     StreamAccumulator ( std::ostream &out = std::cerr, int capacity = 1024 ) : Accumulator ( capacity ), out ( out ) {}
 
     /** Implémentation de la fonction virtuelle de la classe mère */
-    void close(){}
-    
+    void close() {}
+
     /**
      * Destructeur apellant la fonction stop.
      * Le flux out n'est pas fermé, ceci est laissé du programmeur si nécessaire.
@@ -223,7 +223,7 @@ public:
 
     /** Implémentation de la fonction virtuelle de la classe mère */
     void close();
-    
+
     /**
      * Destructeur apellant la fonction stop.
      * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.
@@ -260,7 +260,7 @@ public:
 
     /** Implémentation de la fonction virtuelle de la classe mère */
     void close();
-    
+
     /**
      * Destructeur apellant la fonction stop.
      * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.

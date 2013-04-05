@@ -58,24 +58,23 @@ boolean     dummyinput = False;
 char       *pname;		/* program name (used for error messages) */
 
 void
-error(s1, s2)
-    char       *s1,
-               *s2;
+error ( s1, s2 )
+char       *s1,
+           *s2;
 {
-    fprintf(stderr, s1, pname, s2);
-    exit(1);
+    fprintf ( stderr, s1, pname, s2 );
+    exit ( 1 );
 }
 
 void
-usage()
-{
-    error("usage: %s -[vq] [-|rasterfile] TIFFfile\n", NULL);
+usage() {
+    error ( "usage: %s -[vq] [-|rasterfile] TIFFfile\n", NULL );
 }
 
 
-main(argc, argv)
-    int         argc;
-    char       *argv[];
+main ( argc, argv )
+int         argc;
+char       *argv[];
 {
     char       *inf = NULL;
     char       *outf = NULL;
@@ -94,7 +93,7 @@ main(argc, argv)
     long        width,
                 height;
     long        rowsperstrip;
-    int         year; 
+    int         year;
     short       photometric;
     short       samplesperpixel;
     short       bitspersample;
@@ -102,146 +101,146 @@ main(argc, argv)
     static char *version = "ras2tif 1.0";
     static char *datetime = "1990:01:01 12:00:00";
 
-    gettimeofday(&tv, (struct timezone *) NULL);
-    ct = localtime(&tv.tv_sec);
-    year=1900 + ct->tm_year; 
-    sprintf(datetime, "%04d:%02d:%02d %02d:%02d:%02d",
-	    year, ct->tm_mon + 1, ct->tm_mday,
-	    ct->tm_hour, ct->tm_min, ct->tm_sec);
+    gettimeofday ( &tv, ( struct timezone * ) NULL );
+    ct = localtime ( &tv.tv_sec );
+    year=1900 + ct->tm_year;
+    sprintf ( datetime, "%04d:%02d:%02d %02d:%02d:%02d",
+              year, ct->tm_mon + 1, ct->tm_mday,
+              ct->tm_hour, ct->tm_min, ct->tm_sec );
 
-    setbuf(stderr, NULL);
+    setbuf ( stderr, NULL );
     pname = argv[0];
 
-    while (--argc) {
-	if ((++argv)[0][0] == '-') {
-	    switch (argv[0][1]) {
-	    case 'v':
-		Verbose = True;
-		break;
-	    case 'q':
-		usage();
-		break;
-	    case '\0':
-		if (inf == NULL)
-		    dummyinput = True;
-		else
-		    usage();
-		break;
-	    default:
-		fprintf(stderr, "%s: illegal option -%c.\n", pname,
-			argv[0][1]);
-		exit(1);
-	    }
-	} else if (inf == NULL && !dummyinput) {
-	    inf = argv[0];
-	} else if (outf == NULL)
-	    outf = argv[0];
-	else
-	    usage();
+    while ( --argc ) {
+        if ( ( ++argv ) [0][0] == '-' ) {
+            switch ( argv[0][1] ) {
+            case 'v':
+                Verbose = True;
+                break;
+            case 'q':
+                usage();
+                break;
+            case '\0':
+                if ( inf == NULL )
+                    dummyinput = True;
+                else
+                    usage();
+                break;
+            default:
+                fprintf ( stderr, "%s: illegal option -%c.\n", pname,
+                          argv[0][1] );
+                exit ( 1 );
+            }
+        } else if ( inf == NULL && !dummyinput ) {
+            inf = argv[0];
+        } else if ( outf == NULL )
+            outf = argv[0];
+        else
+            usage();
     }
 
-    if (outf == NULL)
-	error("%s: can't write output file to a stream.\n", NULL);
+    if ( outf == NULL )
+        error ( "%s: can't write output file to a stream.\n", NULL );
 
-    if (dummyinput || inf == NULL) {
-	inf = "Standard Input";
-	fp = stdin;
-    } else if ((fp = fopen(inf, "r")) == NULL)
-	error("%s: %s couldn't be opened.\n", inf);
+    if ( dummyinput || inf == NULL ) {
+        inf = "Standard Input";
+        fp = stdin;
+    } else if ( ( fp = fopen ( inf, "r" ) ) == NULL )
+        error ( "%s: %s couldn't be opened.\n", inf );
 
-    if (Verbose)
-	fprintf(stderr, "Reading rasterfile from %s...", inf);
+    if ( Verbose )
+        fprintf ( stderr, "Reading rasterfile from %s...", inf );
 
-    pix = pr_load(fp, &Colormap);
-    if (pix == NULL)
-	error("%s: %s is not a raster file.\n", inf);
+    pix = pr_load ( fp, &Colormap );
+    if ( pix == NULL )
+        error ( "%s: %s is not a raster file.\n", inf );
 
-    if (Verbose)
-	fprintf(stderr, "done.\n");
+    if ( Verbose )
+        fprintf ( stderr, "done.\n" );
 
-    if (Verbose)
-	fprintf(stderr, "Writing %s...", outf);
+    if ( Verbose )
+        fprintf ( stderr, "Writing %s...", outf );
 
-    tif = TIFFOpen(outf, "w");
+    tif = TIFFOpen ( outf, "w" );
 
-    if (tif == NULL)
-	error("%s: error opening TIFF file %s", outf);
+    if ( tif == NULL )
+        error ( "%s: error opening TIFF file %s", outf );
 
     width = pix->pr_width;
     height = pix->pr_height;
     depth = pix->pr_depth;
 
-    switch (depth) {
+    switch ( depth ) {
     case 1:
-	samplesperpixel = 1;
-	bitspersample = 1;
-	photometric = PHOTOMETRIC_MINISBLACK;
-	break;
+        samplesperpixel = 1;
+        bitspersample = 1;
+        photometric = PHOTOMETRIC_MINISBLACK;
+        break;
     case 8:
-	samplesperpixel = 1;
-	bitspersample = 8;
-	photometric = PHOTOMETRIC_PALETTE;
-	break;
+        samplesperpixel = 1;
+        bitspersample = 8;
+        photometric = PHOTOMETRIC_PALETTE;
+        break;
     case 24:
-	samplesperpixel = 3;
-	bitspersample = 8;
-	photometric = PHOTOMETRIC_RGB;
-	break;
+        samplesperpixel = 3;
+        bitspersample = 8;
+        photometric = PHOTOMETRIC_RGB;
+        break;
     case 32:
-	samplesperpixel = 4;
-	bitspersample = 8;
-	photometric = PHOTOMETRIC_RGB;
-	break;
+        samplesperpixel = 4;
+        bitspersample = 8;
+        photometric = PHOTOMETRIC_RGB;
+        break;
     default:
-	error("%s: bogus depth: %d\n", depth);
+        error ( "%s: bogus depth: %d\n", depth );
     }
 
-    bpsl = ((depth * width + 15) >> 3) & ~1;
-    rowsperstrip = (8 * 1024) / bpsl;
+    bpsl = ( ( depth * width + 15 ) >> 3 ) & ~1;
+    rowsperstrip = ( 8 * 1024 ) / bpsl;
 
-    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
-    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bitspersample);
-    TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
-    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, photometric);
-    TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, inf);
-    TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, "converted Sun rasterfile");
-    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel);
-    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, rowsperstrip);
-    TIFFSetField(tif, TIFFTAG_STRIPBYTECOUNTS, height / rowsperstrip);
-    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-    TIFFSetField(tif, TIFFTAG_SOFTWARE, version);
-    TIFFSetField(tif, TIFFTAG_DATETIME, datetime);
+    TIFFSetField ( tif, TIFFTAG_IMAGEWIDTH, width );
+    TIFFSetField ( tif, TIFFTAG_IMAGELENGTH, height );
+    TIFFSetField ( tif, TIFFTAG_BITSPERSAMPLE, bitspersample );
+    TIFFSetField ( tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT );
+    TIFFSetField ( tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW );
+    TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, photometric );
+    TIFFSetField ( tif, TIFFTAG_DOCUMENTNAME, inf );
+    TIFFSetField ( tif, TIFFTAG_IMAGEDESCRIPTION, "converted Sun rasterfile" );
+    TIFFSetField ( tif, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel );
+    TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP, rowsperstrip );
+    TIFFSetField ( tif, TIFFTAG_STRIPBYTECOUNTS, height / rowsperstrip );
+    TIFFSetField ( tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
+    TIFFSetField ( tif, TIFFTAG_SOFTWARE, version );
+    TIFFSetField ( tif, TIFFTAG_DATETIME, datetime );
 
-    memset(red, 0, sizeof(red));
-    memset(green, 0, sizeof(green));
-    memset(blue, 0, sizeof(blue));
-    if (depth == 8) {
-	TIFFSetField(tif, TIFFTAG_COLORMAP, red, green, blue);
-	for (i = 0; i < Colormap.length; i++) {
-	    red[i] = SCALE(Colormap.map[0][i]);
-	    green[i] = SCALE(Colormap.map[1][i]);
-	    blue[i] = SCALE(Colormap.map[2][i]);
-	}
+    memset ( red, 0, sizeof ( red ) );
+    memset ( green, 0, sizeof ( green ) );
+    memset ( blue, 0, sizeof ( blue ) );
+    if ( depth == 8 ) {
+        TIFFSetField ( tif, TIFFTAG_COLORMAP, red, green, blue );
+        for ( i = 0; i < Colormap.length; i++ ) {
+            red[i] = SCALE ( Colormap.map[0][i] );
+            green[i] = SCALE ( Colormap.map[1][i] );
+            blue[i] = SCALE ( Colormap.map[2][i] );
+        }
     }
-    if (Verbose)
-	fprintf(stderr, "%dx%dx%d image, ", width, height, depth);
+    if ( Verbose )
+        fprintf ( stderr, "%dx%dx%d image, ", width, height, depth );
 
-    for (row = 0; row < height; row++)
-	if (TIFFWriteScanline(tif,
-			      (u_char *) mprd_addr(mpr_d(pix), 0, row),
-			      row, 0) < 0) {
-	    fprintf("failed a scanline write (%d)\n", row);
-	    break;
-	}
-    TIFFFlushData(tif);
-    TIFFClose(tif);
+    for ( row = 0; row < height; row++ )
+        if ( TIFFWriteScanline ( tif,
+                                 ( u_char * ) mprd_addr ( mpr_d ( pix ), 0, row ),
+                                 row, 0 ) < 0 ) {
+            fprintf ( "failed a scanline write (%d)\n", row );
+            break;
+        }
+    TIFFFlushData ( tif );
+    TIFFClose ( tif );
 
-    if (Verbose)
-	fprintf(stderr, "done.\n");
+    if ( Verbose )
+        fprintf ( stderr, "done.\n" );
 
-    pr_destroy(pix);
+    pr_destroy ( pix );
 
-    exit(0);
+    exit ( 0 );
 }

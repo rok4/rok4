@@ -1,12 +1,12 @@
 /*
  * Copyright 2001,2002,2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,14 +34,14 @@ import org.apache.xerces.xni.XNIException;
 import org.apache.xerces.xni.parser.XMLInputSource;
 
 /**
- * This example is a very simple parser configuration that can 
+ * This example is a very simple parser configuration that can
  * parse files with comma-separated values (CSV) to generate XML
  * events. For example, the following CSV document:
  * <pre>
  * Andy Clark,16 Jan 1973,Cincinnati
  * </pre>
- * produces the following XML "document" as represented by the 
- * XNI streaming document information: 
+ * produces the following XML "document" as represented by the
+ * XNI streaming document information:
  * <pre>
  * &lt;?xml version='1.0' encoding='UTF-8' standalone='true'?&gt;
  * &lt;!DOCTYPE csv [
@@ -57,7 +57,7 @@ import org.apache.xerces.xni.parser.XMLInputSource;
  *  &lt;/row&gt;
  * &lt;/csv&gt;
  * </pre>
- * 
+ *
  * @author Andy Clark, IBM
  *
  * @version $Id: CSVConfiguration.java 320203 2005-01-11 13:47:23Z mrglavas $
@@ -70,31 +70,31 @@ public class CSVConfiguration
     //
 
     /** A QName for the &lt;csv&gt; element name. */
-    protected static final QName CSV = new QName(null, null, "csv", null);
+    protected static final QName CSV = new QName ( null, null, "csv", null );
 
     /** A QName for the &lt;row&gt; element name. */
-    protected static final QName ROW = new QName(null, null, "row", null);
+    protected static final QName ROW = new QName ( null, null, "row", null );
 
     /** A QName for the &lt;col&gt; element name. */
-    protected static final QName COL = new QName(null, null, "col", null);
-    
+    protected static final QName COL = new QName ( null, null, "col", null );
+
     /** An empty list of attributes. */
     protected static final XMLAttributes EMPTY_ATTRS = new XMLAttributesImpl();
 
     /** A newline XMLString. */
-    private final XMLString NEWLINE = new XMLStringBuffer("\n");
+    private final XMLString NEWLINE = new XMLStringBuffer ( "\n" );
 
     /** A newline + one space XMLString. */
-    private final XMLString NEWLINE_ONE_SPACE = new XMLStringBuffer("\n ");
+    private final XMLString NEWLINE_ONE_SPACE = new XMLStringBuffer ( "\n " );
 
     /** A newline + two spaces XMLString. */
-    private final XMLString NEWLINE_TWO_SPACES = new XMLStringBuffer("\n  ");
+    private final XMLString NEWLINE_TWO_SPACES = new XMLStringBuffer ( "\n  " );
 
     //
     // Data
     //
 
-    /** 
+    /**
      * A string buffer for use in copying string into an XMLString
      * object for passing to the characters method.
      */
@@ -116,111 +116,115 @@ public class CSVConfiguration
      * document.
      * <p>
      * This method is synchronous: it will not return until parsing
-     * has ended.  If a client application wants to terminate 
+     * has ended.  If a client application wants to terminate
      * parsing early, it should throw an exception.
      *
      * @param source The input source for the top-level of the
      *               XML document.
      *
-     * @exception XNIException Any XNI exception, possibly wrapping 
+     * @exception XNIException Any XNI exception, possibly wrapping
      *                         another exception.
      * @exception IOException  An IO exception from the parser, possibly
      *                         from a byte stream or character stream
      *                         supplied by the parser.
      */
-    public void parse(XMLInputSource source) 
-        throws IOException, XNIException {
+    public void parse ( XMLInputSource source )
+    throws IOException, XNIException {
 
         // get reader
-        openInputSourceStream(source);
+        openInputSourceStream ( source );
         Reader reader = source.getCharacterStream();
-        if (reader == null) {
+        if ( reader == null ) {
             InputStream stream = source.getByteStream();
-            reader = new InputStreamReader(stream);
+            reader = new InputStreamReader ( stream );
         }
-        BufferedReader bufferedReader = new BufferedReader(reader);
+        BufferedReader bufferedReader = new BufferedReader ( reader );
 
         // start document
-        if (fDocumentHandler != null) {
-            fDocumentHandler.startDocument(null, "UTF-8", new NamespaceSupport(), null);
-            fDocumentHandler.xmlDecl("1.0", "UTF-8", "true", null);
-            fDocumentHandler.doctypeDecl("csv", null, null, null);
+        if ( fDocumentHandler != null ) {
+            fDocumentHandler.startDocument ( null, "UTF-8", new NamespaceSupport(), null );
+            fDocumentHandler.xmlDecl ( "1.0", "UTF-8", "true", null );
+            fDocumentHandler.doctypeDecl ( "csv", null, null, null );
         }
-        if (fDTDHandler != null) {
-            fDTDHandler.startDTD(null, null);
-            fDTDHandler.elementDecl("csv", "(row)*", null);
-            fDTDHandler.elementDecl("row", "(col)*", null);
-            fDTDHandler.elementDecl("col", "(#PCDATA)", null);
+        if ( fDTDHandler != null ) {
+            fDTDHandler.startDTD ( null, null );
+            fDTDHandler.elementDecl ( "csv", "(row)*", null );
+            fDTDHandler.elementDecl ( "row", "(col)*", null );
+            fDTDHandler.elementDecl ( "col", "(#PCDATA)", null );
         }
-        if (fDTDContentModelHandler != null) {
-            fDTDContentModelHandler.startContentModel("csv", null);
-            fDTDContentModelHandler.startGroup(null);
-            fDTDContentModelHandler.element("row", null);
-            fDTDContentModelHandler.endGroup(null);
+        if ( fDTDContentModelHandler != null ) {
+            fDTDContentModelHandler.startContentModel ( "csv", null );
+            fDTDContentModelHandler.startGroup ( null );
+            fDTDContentModelHandler.element ( "row", null );
+            fDTDContentModelHandler.endGroup ( null );
             short csvOccurs = XMLDTDContentModelHandler.OCCURS_ZERO_OR_MORE;
-            fDTDContentModelHandler.occurrence(csvOccurs, null);
-            fDTDContentModelHandler.endContentModel(null);
-            
-            fDTDContentModelHandler.startContentModel("row", null);
-            fDTDContentModelHandler.startGroup(null);
-            fDTDContentModelHandler.element("col", null);
-            fDTDContentModelHandler.endGroup(null);
+            fDTDContentModelHandler.occurrence ( csvOccurs, null );
+            fDTDContentModelHandler.endContentModel ( null );
+
+            fDTDContentModelHandler.startContentModel ( "row", null );
+            fDTDContentModelHandler.startGroup ( null );
+            fDTDContentModelHandler.element ( "col", null );
+            fDTDContentModelHandler.endGroup ( null );
             short rowOccurs = XMLDTDContentModelHandler.OCCURS_ZERO_OR_MORE;
-            fDTDContentModelHandler.occurrence(rowOccurs, null);
-            fDTDContentModelHandler.endContentModel(null);
-        
-            fDTDContentModelHandler.startContentModel("col", null);
-            fDTDContentModelHandler.startGroup(null);
-            fDTDContentModelHandler.pcdata(null);
-            fDTDContentModelHandler.endGroup(null);
-            fDTDContentModelHandler.endContentModel(null);
+            fDTDContentModelHandler.occurrence ( rowOccurs, null );
+            fDTDContentModelHandler.endContentModel ( null );
+
+            fDTDContentModelHandler.startContentModel ( "col", null );
+            fDTDContentModelHandler.startGroup ( null );
+            fDTDContentModelHandler.pcdata ( null );
+            fDTDContentModelHandler.endGroup ( null );
+            fDTDContentModelHandler.endContentModel ( null );
         }
-        if (fDTDHandler != null) {
-            fDTDHandler.endDTD(null);
+        if ( fDTDHandler != null ) {
+            fDTDHandler.endDTD ( null );
         }
-        if (fDocumentHandler != null) {
-            fDocumentHandler.startElement(CSV, EMPTY_ATTRS, null);
+        if ( fDocumentHandler != null ) {
+            fDocumentHandler.startElement ( CSV, EMPTY_ATTRS, null );
         }
 
         // read lines
         String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            if (fDocumentHandler != null) {
-                fDocumentHandler.ignorableWhitespace(NEWLINE_ONE_SPACE, null);
-                fDocumentHandler.startElement(ROW, EMPTY_ATTRS, null);
-                StringTokenizer tokenizer = new StringTokenizer(line, ",");
-                while (tokenizer.hasMoreTokens()) {
-                    fDocumentHandler.ignorableWhitespace(NEWLINE_TWO_SPACES, null);
-                    fDocumentHandler.startElement(COL, EMPTY_ATTRS, null);
+        while ( ( line = bufferedReader.readLine() ) != null ) {
+            if ( fDocumentHandler != null ) {
+                fDocumentHandler.ignorableWhitespace ( NEWLINE_ONE_SPACE, null );
+                fDocumentHandler.startElement ( ROW, EMPTY_ATTRS, null );
+                StringTokenizer tokenizer = new StringTokenizer ( line, "," );
+                while ( tokenizer.hasMoreTokens() ) {
+                    fDocumentHandler.ignorableWhitespace ( NEWLINE_TWO_SPACES, null );
+                    fDocumentHandler.startElement ( COL, EMPTY_ATTRS, null );
                     String token = tokenizer.nextToken();
                     fStringBuffer.clear();
-                    fStringBuffer.append(token);
-                    fDocumentHandler.characters(fStringBuffer, null);
-                    fDocumentHandler.endElement(COL, null);
+                    fStringBuffer.append ( token );
+                    fDocumentHandler.characters ( fStringBuffer, null );
+                    fDocumentHandler.endElement ( COL, null );
                 }
-                fDocumentHandler.ignorableWhitespace(NEWLINE_ONE_SPACE, null);
-                fDocumentHandler.endElement(ROW, null);
+                fDocumentHandler.ignorableWhitespace ( NEWLINE_ONE_SPACE, null );
+                fDocumentHandler.endElement ( ROW, null );
             }
         }
         bufferedReader.close();
 
         // end document
-        if (fDocumentHandler != null) {
-            fDocumentHandler.ignorableWhitespace(NEWLINE, null);
-            fDocumentHandler.endElement(CSV, null);
-            fDocumentHandler.endDocument(null);
+        if ( fDocumentHandler != null ) {
+            fDocumentHandler.ignorableWhitespace ( NEWLINE, null );
+            fDocumentHandler.endElement ( CSV, null );
+            fDocumentHandler.endDocument ( null );
         }
 
     } // parse(XMLInputSource)
-    
+
     // NOTE: The following methods are overloaded to ignore setting
     //       of parser state so that this configuration does not
     //       throw configuration exceptions for features and properties
     //       that it doesn't care about.
 
-    public void setFeature(String featureId, boolean state) {}
-    public boolean getFeature(String featureId) { return false; }
-    public void setProperty(String propertyId, Object value) {}
-    public Object getProperty(String propertyId) { return null; }
+    public void setFeature ( String featureId, boolean state ) {}
+    public boolean getFeature ( String featureId ) {
+        return false;
+    }
+    public void setProperty ( String propertyId, Object value ) {}
+    public Object getProperty ( String propertyId ) {
+        return null;
+    }
 
 } // class CSVConfiguration

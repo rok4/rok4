@@ -12,20 +12,17 @@
 /*! \class LightweightSynchronizationObject
  * \brief This class represents a lock object for synchronized object.
  */
-class MfcSynchronizationObject 
-    : public CPPUNIT_NS::SynchronizedObject::SynchronizationObject
-{
-  CCriticalSection m_syncObject;
+class MfcSynchronizationObject
+        : public CPPUNIT_NS::SynchronizedObject::SynchronizationObject {
+    CCriticalSection m_syncObject;
 
 public:
-    void lock()
-    {
-      m_syncObject.Lock();
+    void lock() {
+        m_syncObject.Lock();
     }
-    
-    void unlock()
-    {
-      m_syncObject.Unlock();
+
+    void unlock() {
+        m_syncObject.Unlock();
     }
 };
 

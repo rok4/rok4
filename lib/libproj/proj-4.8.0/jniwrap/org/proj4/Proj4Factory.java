@@ -47,31 +47,30 @@ import java.util.LinkedHashMap;
  * @deprecated Replaced by {@link PJ}. See package description for usage example.
  */
 @Deprecated
-public interface Proj4Factory
-{
-  /**
-   * method to reproject a dataset from the source projection to the destination
-   * projection as defined in the constructor
-   *
-   * @param dataTP the data set to reproject
-   * @param point_count
-   * @param point_offset
-   */
-  public void transform(ProjectionData dataTP, long point_count, int point_offset);
+public interface Proj4Factory {
+    /**
+     * method to reproject a dataset from the source projection to the destination
+     * projection as defined in the constructor
+     *
+     * @param dataTP the data set to reproject
+     * @param point_count
+     * @param point_offset
+     */
+    public void transform ( ProjectionData dataTP, long point_count, int point_offset );
 
-  /**
-   * @return the projection info as a hashmap
-   */
-  public LinkedHashMap getProjInfo();
+    /**
+     * @return the projection info as a hashmap
+     */
+    public LinkedHashMap getProjInfo();
 
-  /**
-   * @return the source projection info as a hashmap
-   */
-  public LinkedHashMap getSrcProjInfo();
+    /**
+     * @return the source projection info as a hashmap
+     */
+    public LinkedHashMap getSrcProjInfo();
 
-  /**
-   * @return the destination projection info as a hashmap
-   */
-  public LinkedHashMap getDestProjInfo();
+    /**
+     * @return the destination projection info as a hashmap
+     */
+    public LinkedHashMap getDestProjInfo();
 
 }

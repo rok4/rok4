@@ -14,7 +14,7 @@ CPPUNIT_NS_BEGIN
 
 /*! \brief Traits used by CPPUNIT_ASSERT_EQUAL().
  *
- * Here is an example of specialising these traits: 
+ * Here is an example of specialising these traits:
  *
  * \code
  * template<>
@@ -24,7 +24,7 @@ CPPUNIT_NS_BEGIN
  *   {
  *     return x == y;
  *   }
- * 
+ *
  *   static std::string toString( const std::string& x )
  *   {
  *     std::string text = '"' + x + '"';    // adds quote around the string to see whitespace
@@ -36,15 +36,12 @@ CPPUNIT_NS_BEGIN
  * \endcode
  */
 template <class T>
-struct assertion_traits 
-{  
-    static bool equal( const T& x, const T& y )
-    {
+struct assertion_traits {
+    static bool equal ( const T& x, const T& y ) {
         return x == y;
     }
 
-    static std::string toString( const T& x )
-    {
+    static std::string toString ( const T& x ) {
         OStringStream ost;
         ost << x;
         return ost.str();
@@ -52,36 +49,33 @@ struct assertion_traits
 };
 
 
-/*! \brief Traits used by CPPUNIT_ASSERT_DOUBLES_EQUAL(). 
- * 
- * This specialisation from @c struct @c assertion_traits<> ensures that 
- * doubles are converted in full, instead of being rounded to the default 
- * 6 digits of precision. Use the system defined ISO C99 macro DBL_DIG 
+/*! \brief Traits used by CPPUNIT_ASSERT_DOUBLES_EQUAL().
+ *
+ * This specialisation from @c struct @c assertion_traits<> ensures that
+ * doubles are converted in full, instead of being rounded to the default
+ * 6 digits of precision. Use the system defined ISO C99 macro DBL_DIG
  * within float.h is available to define the maximum precision, otherwise
  * use the hard-coded maximum precision of 15.
  */
 template <>
-struct assertion_traits<double>
-{  
-    static bool equal( double x, double y )
-    {
+struct assertion_traits<double> {
+    static bool equal ( double x, double y ) {
         return x == y;
     }
 
-    static std::string toString( double x )
-    {
+    static std::string toString ( double x ) {
 #ifdef DBL_DIG
-       const int precision = DBL_DIG;
+        const int precision = DBL_DIG;
 #else
-       const int precision = 15;
+        const int precision = 15;
 #endif  // #ifdef DBL_DIG
-       char buffer[128];
+        char buffer[128];
 #ifdef __STDC_SECURE_LIB__ // Use secure version with visual studio 2005 to avoid warning.
-       sprintf_s(buffer, sizeof(buffer), "%.*g", precision, x); 
-#else	
-       sprintf(buffer, "%.*g", precision, x); 
+        sprintf_s ( buffer, sizeof ( buffer ), "%.*g", precision, x );
+#else
+        sprintf ( buffer, "%.*g", precision, x );
 #endif
-       return buffer;
+        return buffer;
     }
 };
 
@@ -91,18 +85,16 @@ struct assertion_traits<double>
  * \sa assertion_traits, Asserter::failNotEqual().
  */
 template <class T>
-void assertEquals( const T& expected,
-                   const T& actual,
-                   SourceLine sourceLine,
-                   const std::string &message )
-{
-  if ( !assertion_traits<T>::equal(expected,actual) ) // lazy toString conversion...
-  {
-    Asserter::failNotEqual( assertion_traits<T>::toString(expected),
-                            assertion_traits<T>::toString(actual),
-                            sourceLine,
-                            message );
-  }
+void assertEquals ( const T& expected,
+                    const T& actual,
+                    SourceLine sourceLine,
+                    const std::string &message ) {
+    if ( !assertion_traits<T>::equal ( expected,actual ) ) { // lazy toString conversion...
+        Asserter::failNotEqual ( assertion_traits<T>::toString ( expected ),
+                                 assertion_traits<T>::toString ( actual ),
+                                 sourceLine,
+                                 message );
+    }
 }
 
 
@@ -111,11 +103,11 @@ void assertEquals( const T& expected,
  * \sa Asserter::failNotEqual().
  * \sa CPPUNIT_ASSERT_DOUBLES_EQUAL for detailed semantic of the assertion.
  */
-void CPPUNIT_API assertDoubleEquals( double expected,
-                                     double actual,
-                                     double delta,
-                                     SourceLine sourceLine, 
-                                     const std::string &message );
+void CPPUNIT_API assertDoubleEquals ( double expected,
+                                      double actual,
+                                      double delta,
+                                      SourceLine sourceLine,
+                                      const std::string &message );
 
 
 /* A set of macros which allow us to get the line number
@@ -181,7 +173,7 @@ void CPPUNIT_API assertDoubleEquals( double expected,
  * Requirement for \a expected and \a actual parameters:
  * - They are exactly of the same type
  * - They are serializable into a std::strstream using operator <<.
- * - They can be compared using operator ==. 
+ * - They can be compared using operator ==.
  *
  * The last two requirements (serialization and comparison) can be
  * removed by specializing the CppUnit::assertion_traits.
@@ -205,7 +197,7 @@ void CPPUNIT_API assertDoubleEquals( double expected,
  * Requirement for \a expected and \a actual parameters:
  * - They are exactly of the same type
  * - They are serializable into a std::strstream using operator <<.
- * - They can be compared using operator ==. 
+ * - They can be compared using operator ==.
  *
  * The last two requirements (serialization and comparison) can be
  * removed by specializing the CppUnit::assertion_traits.
@@ -217,12 +209,12 @@ void CPPUNIT_API assertDoubleEquals( double expected,
                               (message) ) )
 #endif
 
-/*! \brief Macro for primitive double value comparisons. 
+/*! \brief Macro for primitive double value comparisons.
  * \ingroup Assertions
  *
  * The assertion pass if both expected and actual are finite and
  * \c fabs( \c expected - \c actual ) <= \c delta.
- * If either \c expected or actual are infinite (+/- inf), the 
+ * If either \c expected or actual are infinite (+/- inf), the
  * assertion pass if \c expected == \c actual.
  * If either \c expected or \c actual is a NaN (not a number), then
  * the assertion fails.
@@ -235,8 +227,8 @@ void CPPUNIT_API assertDoubleEquals( double expected,
                                     "" ) )
 
 
-/*! \brief Macro for primitive double value comparisons, setting a 
- * user-supplied message in case of failure. 
+/*! \brief Macro for primitive double value comparisons, setting a
+ * user-supplied message in case of failure.
  * \ingroup Assertions
  * \sa CPPUNIT_ASSERT_DOUBLES_EQUAL for detailed semantic of the assertion.
  */
@@ -248,7 +240,7 @@ void CPPUNIT_API assertDoubleEquals( double expected,
                                     (message) ) )
 
 
-/** Asserts that the given expression throws an exception of the specified type. 
+/** Asserts that the given expression throws an exception of the specified type.
  * \ingroup Assertions
  * Example of usage:
  * \code
@@ -274,8 +266,8 @@ void CPPUNIT_API assertDoubleEquals( double expected,
 // implementation detail
 #define CPPUNIT_GET_PARAMETER_STRING( parameter ) #parameter
 
-/** Asserts that the given expression throws an exception of the specified type, 
- * setting a user supplied message in case of failure. 
+/** Asserts that the given expression throws an exception of the specified type,
+ * setting a user supplied message in case of failure.
  * \ingroup Assertions
  * Example of usage:
  * \code
@@ -326,8 +318,8 @@ void CPPUNIT_API assertDoubleEquals( double expected,
                                     expression )
 
 
-/** Asserts that the given expression does not throw any exceptions, 
- * setting a user supplied message in case of failure. 
+/** Asserts that the given expression does not throw any exceptions,
+ * setting a user supplied message in case of failure.
  * \ingroup Assertions
  * Example of usage:
  * \code
@@ -370,7 +362,7 @@ void CPPUNIT_API assertDoubleEquals( double expected,
    CPPUNIT_ASSERT_THROW( assertion, CPPUNIT_NS::Exception )
 
 
-/** Asserts that an assertion fail, with a user-supplied message in 
+/** Asserts that an assertion fail, with a user-supplied message in
  * case of error.
  * \ingroup Assertions
  * Use to test assertions.
@@ -395,8 +387,8 @@ void CPPUNIT_API assertDoubleEquals( double expected,
    CPPUNIT_ASSERT_NO_THROW( assertion )
 
 
-/** Asserts that an assertion pass, with a user-supplied message in 
- * case of failure. 
+/** Asserts that an assertion pass, with a user-supplied message in
+ * case of failure.
  * \ingroup Assertions
  * Use to test assertions.
  * Example of usage:

@@ -1,12 +1,12 @@
 /*
  * Copyright 2001,2002,2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,16 +27,16 @@ import xni.PSVIWriter;
  * This is the DTD/ XML Schema parser configuration that includes PSVIWriter component.
  * The document will be fully assessed and will produce PSVI as required by XML Schema specification
  * configuration including XML Schema Validator in the pipeline.
- * 
+ *
  * @author Elena Litani, IBM
  * @version $Id: PSVIConfiguration.java 320470 2005-06-14 21:00:09Z mrglavas $
  */
 public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
 
 
-     /** PSVI Writer */
+    /** PSVI Writer */
     protected PSVIWriter fPSVIWriter;
-    
+
     //
     // Constructors
     //
@@ -46,7 +46,7 @@ public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
      * pool or the ones specified by the application (through the properties).
      */
     public PSVIConfiguration() {
-        this(null, null);
+        this ( null, null );
     } // <init>()
 
     /**
@@ -54,8 +54,8 @@ public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
      *
      * @param symbolTable    The symbol table to use.
      */
-    public PSVIConfiguration(SymbolTable symbolTable) {
-        this(symbolTable, null);
+    public PSVIConfiguration ( SymbolTable symbolTable ) {
+        this ( symbolTable, null );
     } // <init>(SymbolTable)
 
     /**
@@ -69,9 +69,9 @@ public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
      * @param symbolTable    The symbol table to use.
      * @param grammarPool    The grammar pool to use.
      */
-    public PSVIConfiguration(SymbolTable symbolTable,
-                                     XMLGrammarPool grammarPool) {
-        this(symbolTable, grammarPool, null);
+    public PSVIConfiguration ( SymbolTable symbolTable,
+                               XMLGrammarPool grammarPool ) {
+        this ( symbolTable, grammarPool, null );
     } // <init>(SymbolTable,XMLGrammarPool)
 
     /**
@@ -86,14 +86,14 @@ public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
      * @param grammarPool    The grammar pool to use.
      * @param parentSettings The parent settings.
      */
-    public PSVIConfiguration(SymbolTable symbolTable,
-                                    XMLGrammarPool grammarPool,
-                                    XMLComponentManager parentSettings) {
-        super(symbolTable, grammarPool, parentSettings);
+    public PSVIConfiguration ( SymbolTable symbolTable,
+                               XMLGrammarPool grammarPool,
+                               XMLComponentManager parentSettings ) {
+        super ( symbolTable, grammarPool, parentSettings );
 
         fPSVIWriter = createPSVIWriter();
-        if (fPSVIWriter != null) {
-            addComponent(fPSVIWriter);
+        if ( fPSVIWriter != null ) {
+            addComponent ( fPSVIWriter );
         }
 
     } // <init>(SymbolTable,XMLGrammarPool)
@@ -103,17 +103,17 @@ public class PSVIConfiguration extends XIncludeAwareParserConfiguration {
     protected void configurePipeline() {
 
         super.configurePipeline();
-        if (fSchemaValidator != null) {
-            fSchemaValidator.setDocumentHandler(fPSVIWriter);
-            fPSVIWriter.setDocumentHandler(fDocumentHandler);
-            fPSVIWriter.setDocumentSource(fSchemaValidator);
+        if ( fSchemaValidator != null ) {
+            fSchemaValidator.setDocumentHandler ( fPSVIWriter );
+            fPSVIWriter.setDocumentHandler ( fDocumentHandler );
+            fPSVIWriter.setDocumentSource ( fSchemaValidator );
         }
 
     } // configurePipeline()
 
 
     /** Create a PSVIWriter */
-    protected PSVIWriter createPSVIWriter(){
+    protected PSVIWriter createPSVIWriter() {
         return new PSVIWriter();
     }
 

@@ -61,7 +61,7 @@ typedef void gzlog;
    lock file, and "foo.repairs" to log recovery operations performed due to
    interrupted gzlog operations.  A gzlog_open() followed by a gzlog_close()
    will recover a previously interrupted operation, if any. */
-gzlog *gzlog_open(char *path);
+gzlog *gzlog_open ( char *path );
 
 /* Write to a gzlog object.  Return zero on success, -1 if there is a file i/o
    error on any of the gzlog files (this should not happen if gzlog_open()
@@ -72,7 +72,7 @@ gzlog *gzlog_open(char *path);
    file uncompressed, until 1 MB has been accumulated, at which time that data
    will be compressed.  The log file will be a valid gzip file upon successful
    return. */
-int gzlog_write(gzlog *log, void *data, size_t len);
+int gzlog_write ( gzlog *log, void *data, size_t len );
 
 /* Force compression of any uncompressed data in the log.  This should be used
    sparingly, if at all.  The main application would be when a log file will
@@ -80,10 +80,10 @@ int gzlog_write(gzlog *log, void *data, size_t len);
    appending, it will both significantly increase the execution time and
    reduce the compression ratio.  The return codes are the same as for
    gzlog_write(). */
-int gzlog_compress(gzlog *log);
+int gzlog_compress ( gzlog *log );
 
 /* Close a gzlog object.  Return zero on success, -3 if the log argument is
    invalid.  The log object is freed, and so cannot be referenced again. */
-int gzlog_close(gzlog *log);
+int gzlog_close ( gzlog *log );
 
 #endif

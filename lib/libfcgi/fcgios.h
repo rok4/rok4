@@ -19,7 +19,7 @@
 #define _FCGIOS_H
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
 #endif
@@ -58,15 +58,15 @@ extern "C" {
 #endif
 
 
-/* This is the initializer for a "struct timeval" used in a select() call
- * right after a new request is accept()ed to determine readablity.  Its
- * a drop-dead timer.  Its only used for AF_UNIX sockets (not TCP sockets).
- * Its a workaround for a kernel bug in Linux 2.0.x and SCO Unixware.
- * Making this as small as possible, yet remain reliable would be best.
- * 2 seconds is very conservative.  0,0 is not reliable.  The shorter the
- * timeout, the faster request processing will recover.  The longer the
- * timeout, the more likely this application being "busy" will cause other
- * requests to abort and cause more dead sockets that need this timeout. */
+    /* This is the initializer for a "struct timeval" used in a select() call
+     * right after a new request is accept()ed to determine readablity.  Its
+     * a drop-dead timer.  Its only used for AF_UNIX sockets (not TCP sockets).
+     * Its a workaround for a kernel bug in Linux 2.0.x and SCO Unixware.
+     * Making this as small as possible, yet remain reliable would be best.
+     * 2 seconds is very conservative.  0,0 is not reliable.  The shorter the
+     * timeout, the faster request processing will recover.  The longer the
+     * timeout, the more likely this application being "busy" will cause other
+     * requests to abort and cause more dead sockets that need this timeout. */
 #define READABLE_UNIX_FD_DROP_DEAD_TIMEVAL 2,0
 
 #ifndef STDIN_FILENO
@@ -98,30 +98,30 @@ extern "C" {
 #define _CLIENTDATA
 #endif
 
-typedef void (*OS_AsyncProc) (ClientData clientData, int len);
+    typedef void ( *OS_AsyncProc ) ( ClientData clientData, int len );
 
-DLLAPI int OS_LibInit(int stdioFds[3]);
-DLLAPI void OS_LibShutdown(void);
-DLLAPI int OS_CreateLocalIpcFd(const char *bindPath, int backlog);
-DLLAPI int OS_FcgiConnect(char *bindPath);
-DLLAPI int OS_Read(int fd, char * buf, size_t len);
-DLLAPI int OS_Write(int fd, char * buf, size_t len);
-DLLAPI int OS_SpawnChild(char *execPath, int listenFd);
-DLLAPI int OS_AsyncReadStdin(void *buf, int len, OS_AsyncProc procPtr,
-                      ClientData clientData);
-DLLAPI int OS_AsyncRead(int fd, int offset, void *buf, int len,
-		 OS_AsyncProc procPtr, ClientData clientData);
-DLLAPI int OS_AsyncWrite(int fd, int offset, void *buf, int len,
-		  OS_AsyncProc procPtr, ClientData clientData);
-DLLAPI int OS_Close(int fd);
-DLLAPI int OS_CloseRead(int fd);
-DLLAPI int OS_DoIo(struct timeval *tmo);
-DLLAPI int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs);
-DLLAPI int OS_IpcClose(int ipcFd);
-DLLAPI int OS_IsFcgi(int sock);
-DLLAPI void OS_SetFlags(int fd, int flags);
+    DLLAPI int OS_LibInit ( int stdioFds[3] );
+    DLLAPI void OS_LibShutdown ( void );
+    DLLAPI int OS_CreateLocalIpcFd ( const char *bindPath, int backlog );
+    DLLAPI int OS_FcgiConnect ( char *bindPath );
+    DLLAPI int OS_Read ( int fd, char * buf, size_t len );
+    DLLAPI int OS_Write ( int fd, char * buf, size_t len );
+    DLLAPI int OS_SpawnChild ( char *execPath, int listenFd );
+    DLLAPI int OS_AsyncReadStdin ( void *buf, int len, OS_AsyncProc procPtr,
+                                   ClientData clientData );
+    DLLAPI int OS_AsyncRead ( int fd, int offset, void *buf, int len,
+                              OS_AsyncProc procPtr, ClientData clientData );
+    DLLAPI int OS_AsyncWrite ( int fd, int offset, void *buf, int len,
+                               OS_AsyncProc procPtr, ClientData clientData );
+    DLLAPI int OS_Close ( int fd );
+    DLLAPI int OS_CloseRead ( int fd );
+    DLLAPI int OS_DoIo ( struct timeval *tmo );
+    DLLAPI int OS_Accept ( int listen_sock, int fail_on_intr, const char *webServerAddrs );
+    DLLAPI int OS_IpcClose ( int ipcFd );
+    DLLAPI int OS_IsFcgi ( int sock );
+    DLLAPI void OS_SetFlags ( int fd, int flags );
 
-DLLAPI void OS_ShutdownPending(void);
+    DLLAPI void OS_ShutdownPending ( void );
 
 #if defined (__cplusplus) || defined (c_plusplus)
 } /* terminate extern "C" { */

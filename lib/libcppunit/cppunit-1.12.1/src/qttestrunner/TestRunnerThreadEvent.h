@@ -12,24 +12,23 @@ class TestRunnerModelThreadInterface;
 /*! \class TestRunnerThreadEvent
  * \brief This class represents an event send by the test runner thread.
  */
-class TestRunnerThreadEvent : public QCustomEvent
-{
+class TestRunnerThreadEvent : public QCustomEvent {
 public:
-  /*! Constructs a TestRunnerThreadEvent object.
-   */
-  TestRunnerThreadEvent();
+    /*! Constructs a TestRunnerThreadEvent object.
+     */
+    TestRunnerThreadEvent();
 
-  /// Destructor.
-  virtual ~TestRunnerThreadEvent();
+    /// Destructor.
+    virtual ~TestRunnerThreadEvent();
 
-  virtual void process( TestRunnerModelThreadInterface *target ) =0;
+    virtual void process ( TestRunnerModelThreadInterface *target ) =0;
 
 private:
-  /// Prevents the use of the copy constructor.
-  TestRunnerThreadEvent( const TestRunnerThreadEvent &copy );
+    /// Prevents the use of the copy constructor.
+    TestRunnerThreadEvent ( const TestRunnerThreadEvent &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const TestRunnerThreadEvent &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestRunnerThreadEvent &copy );
 };
 
 

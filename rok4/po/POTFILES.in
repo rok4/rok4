@@ -3,8 +3,6 @@
 CapabilitiesBuilder.cpp
 ConfLoader.cpp
 ConfLoader.h
-CRS.cpp
-CRS.h
 Layer.cpp
 Layer.h
 LegendURL.cpp

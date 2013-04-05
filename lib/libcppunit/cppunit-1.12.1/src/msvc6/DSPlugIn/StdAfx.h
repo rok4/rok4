@@ -47,7 +47,7 @@ extern CComModule _Module;
 
 #ifdef _DEBUG
 
-void GetLastErrorDescription(CComBSTR& bstr);		// Defined in DSPlugIn.cpp
+void GetLastErrorDescription ( CComBSTR& bstr );		// Defined in DSPlugIn.cpp
 #define VERIFY_OK(f) \
 	{ \
 		HRESULT hr = (f); \

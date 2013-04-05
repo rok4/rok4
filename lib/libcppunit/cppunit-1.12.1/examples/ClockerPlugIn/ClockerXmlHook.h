@@ -13,42 +13,41 @@ class ClockerModel;
 
 
 /// XML output hook to add test timing and test hierarchy timing.
-class ClockerXmlHook : public CPPUNIT_NS::XmlOutputterHook
-{
+class ClockerXmlHook : public CPPUNIT_NS::XmlOutputterHook {
 public:
-  /*! Constructs a ClockerXmlHook object.
-   */
-  ClockerXmlHook( ClockerModel *model );
+    /*! Constructs a ClockerXmlHook object.
+     */
+    ClockerXmlHook ( ClockerModel *model );
 
-  /// Destructor.
-  virtual ~ClockerXmlHook();
+    /// Destructor.
+    virtual ~ClockerXmlHook();
 
-  void endDocument( CPPUNIT_NS::XmlDocument *document );
+    void endDocument ( CPPUNIT_NS::XmlDocument *document );
 
-  void failTestAdded( CPPUNIT_NS::XmlDocument *document,
-                      CPPUNIT_NS::XmlElement *testElement,
-                      CPPUNIT_NS::Test *test,
-                      CPPUNIT_NS::TestFailure *failure );
+    void failTestAdded ( CPPUNIT_NS::XmlDocument *document,
+                         CPPUNIT_NS::XmlElement *testElement,
+                         CPPUNIT_NS::Test *test,
+                         CPPUNIT_NS::TestFailure *failure );
 
-  void successfulTestAdded( CPPUNIT_NS::XmlDocument *document,
-                            CPPUNIT_NS::XmlElement *testElement,
-                            CPPUNIT_NS::Test *test );
+    void successfulTestAdded ( CPPUNIT_NS::XmlDocument *document,
+                               CPPUNIT_NS::XmlElement *testElement,
+                               CPPUNIT_NS::Test *test );
 
-  void statisticsAdded( CPPUNIT_NS::XmlDocument *document,
-                        CPPUNIT_NS::XmlElement *statisticsElement );
-
-private:
-  /// Prevents the use of the copy constructor.
-  ClockerXmlHook( const ClockerXmlHook &other );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const ClockerXmlHook &other );
-
-  void addTimedTest( CPPUNIT_NS::XmlElement *parentElement, 
-                     int testIndex );
+    void statisticsAdded ( CPPUNIT_NS::XmlDocument *document,
+                           CPPUNIT_NS::XmlElement *statisticsElement );
 
 private:
-  ClockerModel *m_model;
+    /// Prevents the use of the copy constructor.
+    ClockerXmlHook ( const ClockerXmlHook &other );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const ClockerXmlHook &other );
+
+    void addTimedTest ( CPPUNIT_NS::XmlElement *parentElement,
+                        int testIndex );
+
+private:
+    ClockerModel *m_model;
 };
 
 

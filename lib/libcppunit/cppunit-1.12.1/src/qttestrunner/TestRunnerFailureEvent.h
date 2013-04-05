@@ -13,29 +13,28 @@ class TestFailureInfo;
 /*! \class TestRunnerFailureEvent
  * \brief This class represents a new TestCase failure event.
  */
-class TestRunnerFailureEvent : public TestRunnerThreadEvent
-{
+class TestRunnerFailureEvent : public TestRunnerThreadEvent {
 public:
-  /*! Constructs a TestRunnerFailureEvent object.
-   */
-  TestRunnerFailureEvent( TestFailureInfo *failure,
-                          int numberOfFailure );
+    /*! Constructs a TestRunnerFailureEvent object.
+     */
+    TestRunnerFailureEvent ( TestFailureInfo *failure,
+                             int numberOfFailure );
 
-  /// Destructor.
-  virtual ~TestRunnerFailureEvent();
-
-private:
-  /// Prevents the use of the copy constructor.
-  TestRunnerFailureEvent( const TestRunnerFailureEvent &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const TestRunnerFailureEvent &copy );
-
-  void process( TestRunnerModelThreadInterface *target );
+    /// Destructor.
+    virtual ~TestRunnerFailureEvent();
 
 private:
-  TestFailureInfo *_failure;
-  int _numberOfFailure;
+    /// Prevents the use of the copy constructor.
+    TestRunnerFailureEvent ( const TestRunnerFailureEvent &copy );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestRunnerFailureEvent &copy );
+
+    void process ( TestRunnerModelThreadInterface *target );
+
+private:
+    TestFailureInfo *_failure;
+    int _numberOfFailure;
 };
 
 

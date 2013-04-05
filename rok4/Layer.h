@@ -84,12 +84,12 @@ public:
      * \~french \brief maxy ordonnée du coin supérieur droit de l'emprise
      * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
      */
-    double maxy; 
+    double maxy;
     GeographicBoundingBoxWMS() {}
 };
 
 /**
- * \~french \brief Structure de stockage d'une emprise 
+ * \~french \brief Structure de stockage d'une emprise
  * \~english \brief Storage structure for a bounding box
  */
 struct BoundingBoxWMS {
@@ -118,7 +118,7 @@ public:
      * \~french \brief maxy ordonnée du coin supérieur droit de l'emprise
      * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
      */
-    double maxy; 
+    double maxy;
     BoundingBoxWMS() {}
 };
 
@@ -127,13 +127,13 @@ public:
  * \~french
  * Une instance Layer représente une couche du service WMS ou WMTS.
  * Une couche est défini par :
- * \li Une source de données 
+ * \li Une source de données
  * \li Les styles diponibles
  * \li Les systèmes de coordonnées authorisées
  * \li Une emprise
- * 
+ *
  * Exemple de fichier de layer complet :
- * \brief Gestion des couches 
+ * \brief Gestion des couches
  * \~english
  * A Layer represent a service layer either WMS or WMTS
  * The layer contain reference to :
@@ -141,8 +141,8 @@ public:
  * \li availlable styles
  * \li availlable coordinates systems
  * \li a bounding box
- * 
- * Layer file sample : 
+ *
+ * Layer file sample :
  * \brief Layer handler
  * \details \~ \code{.xml}
  * <layer>
@@ -272,7 +272,7 @@ public:
     /**
      * \~french
      * \brief Crée un Layer à partir des ses éléments constitutifs
-     * \param[in] id identifiant 
+     * \param[in] id identifiant
      * \param[in] title titre
      * \param[in] abstract résumé
      * \param[in] keyWords liste des mots-clés
@@ -311,14 +311,14 @@ public:
             std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
-            :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
-            dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
-            maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
-            authority ( authority ),resampling ( resampling ),
-            geographicBoundingBox ( geographicBoundingBox ),
-            boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle(styles.at(0)->getId()) {
+        :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
+         dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
+         maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
+         authority ( authority ),resampling ( resampling ),
+         geographicBoundingBox ( geographicBoundingBox ),
+         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ) {
     }
-    
+
     /**
      * \~french
      * \brief Retourne l'indentifiant de la couche
@@ -330,7 +330,7 @@ public:
     std::string getId();
     /**
      * \~french
-     * Deux possibilités : 
+     * Deux possibilités :
      * - la tuile existe dans la pyramide : la tuile est retournée
      * - la tuile n'existe pas dans la pyramide : retourne une tuile de NoData si errorDataSource est nulle, errorDataSource sinon
      * \brief Retourne une tuile
@@ -340,9 +340,9 @@ public:
      * \param [in] errorDataSource Réponse alternative à renvoyer si la tuile demandée n'existe pas dans la pyramide
      * \return une tuile ou un message d'erreur
      * \~english
-     * Two possibilities : 
+     * Two possibilities :
      * - the tile is present in the pyramid : the tile is returned
-     * - the tile is not present in the pyramid : a NoData tile is returned if errorDataSource is null, else errorDataSource is returned 
+     * - the tile is not present in the pyramid : a NoData tile is returned if errorDataSource is null, else errorDataSource is returned
      * \brief Return a tile
      * \param [in] x Column index of the tile
      * \param [in] y Line index of the tile
@@ -357,7 +357,7 @@ public:
      * Code d'erreur possible :
      *  - \b 0 pas d'erreur
      *  - \b 1 erreur de reprojection de l'emprise demandé dans le système de coordonnées de la pyramide
-     *  - \b 2 l'emprise demandée nécessite plus de tuiles que le nombre authorisé. 
+     *  - \b 2 l'emprise demandée nécessite plus de tuiles que le nombre authorisé.
      * \brief Retourne une l'image correspondant à l'emprise demandée
      * \param [in] servicesConf paramètre de configuration du service WMS
      * \param [in] bbox rectangle englobant demandé
@@ -368,7 +368,7 @@ public:
      * \return une image ou un poiteur nul
      * \~english
      * The resulting image is cropped on the coordinates system definition area.
-     * \brief 
+     * \brief
      * \param [in] servicesConf WMS service configuration
      * \param [in] bbox requested bounding box
      * \param [in] width requested image widht
@@ -377,15 +377,15 @@ public:
      * \param [in,out] error error code
      * \return an image or a null pointer
      */
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
-     /**
-     * \~french
-     * \brief Retourne le résumé
-     * \return résumé
-     * \~english
-     * \brief Return the abstract
-     * \return abstract
-     */
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    /**
+    * \~french
+    * \brief Retourne le résumé
+    * \return résumé
+    * \~english
+    * \brief Return the abstract
+    * \return abstract
+    */
     std::string              getAbstract()   const {
         return abstract;
     }

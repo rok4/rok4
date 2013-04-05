@@ -31,20 +31,19 @@
 
 #if 0
 static char sccsid[] = "@(#)strcasecmp.c	8.1 (Berkeley) 6/4/93";
-__RCSID("$NetBSD: strcasecmp.c,v 1.16 2003/08/07 16:43:49 agc Exp $");
+__RCSID ( "$NetBSD: strcasecmp.c,v 1.16 2003/08/07 16:43:49 agc Exp $" );
 #endif
 
 #include <ctype.h>
 #include <string.h>
 
 int
-strcasecmp(const char *s1, const char *s2)
-{
-	const unsigned char *us1 = (const unsigned char *)s1,
-			*us2 = (const unsigned char *)s2;
+strcasecmp ( const char *s1, const char *s2 ) {
+    const unsigned char *us1 = ( const unsigned char * ) s1,
+                         *us2 = ( const unsigned char * ) s2;
 
-	while (tolower(*us1) == tolower(*us2++))
-		if (*us1++ == '\0')
-			return (0);
-	return (tolower(*us1) - tolower(*--us2));
+    while ( tolower ( *us1 ) == tolower ( *us2++ ) )
+        if ( *us1++ == '\0' )
+            return ( 0 );
+    return ( tolower ( *us1 ) - tolower ( *--us2 ) );
 }

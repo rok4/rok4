@@ -4,27 +4,26 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 
-class BaseTestCase : public CPPUNIT_NS::TestCase
-{
-  CPPUNIT_TEST_SUITE( BaseTestCase );
-  CPPUNIT_TEST( testUsingCheckIt );
-  CPPUNIT_TEST_SUITE_END();
+class BaseTestCase : public CPPUNIT_NS::TestCase {
+    CPPUNIT_TEST_SUITE ( BaseTestCase );
+    CPPUNIT_TEST ( testUsingCheckIt );
+    CPPUNIT_TEST_SUITE_END();
 
 public:
-  BaseTestCase();
-  virtual ~BaseTestCase();
+    BaseTestCase();
+    virtual ~BaseTestCase();
 
-  virtual void setUp();
-  virtual void tearDown();
+    virtual void setUp();
+    virtual void tearDown();
 
-  void testUsingCheckIt();
+    void testUsingCheckIt();
 
 protected:
-  virtual void checkIt();
+    virtual void checkIt();
 
 private:
-  BaseTestCase( const BaseTestCase &copy );
-  void operator =( const BaseTestCase &copy );
+    BaseTestCase ( const BaseTestCase &copy );
+    void operator = ( const BaseTestCase &copy );
 };
 
 

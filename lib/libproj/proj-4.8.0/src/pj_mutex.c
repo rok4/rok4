@@ -32,7 +32,7 @@
 
 #ifndef _WIN32
 #include <projects.h>
-PJ_CVSID("$Id: pj_transform.c 1504 2009-01-06 02:11:57Z warmerdam $");
+PJ_CVSID ( "$Id: pj_transform.c 1504 2009-01-06 02:11:57Z warmerdam $" );
 #else
 #include <proj_api.h>
 #endif
@@ -63,8 +63,7 @@ static void pj_init_lock();
 /*      Acquire the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_acquire_lock()
-{
+void pj_acquire_lock() {
 }
 
 /************************************************************************/
@@ -73,15 +72,13 @@ void pj_acquire_lock()
 /*      Release the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_release_lock()
-{
+void pj_release_lock() {
 }
 
 /************************************************************************/
 /*                          pj_cleanup_lock()                           */
 /************************************************************************/
-void pj_cleanup_lock()
-{
+void pj_cleanup_lock() {
 }
 
 #endif // def MUTEX_stub
@@ -104,9 +101,8 @@ static pthread_mutex_t pj_core_lock = PTHREAD_MUTEX_INITIALIZER;
 /*      Acquire the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_acquire_lock()
-{
-    pthread_mutex_lock( &pj_core_lock);
+void pj_acquire_lock() {
+    pthread_mutex_lock ( &pj_core_lock );
 }
 
 /************************************************************************/
@@ -115,16 +111,14 @@ void pj_acquire_lock()
 /*      Release the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_release_lock()
-{
-    pthread_mutex_unlock( &pj_core_lock );
+void pj_release_lock() {
+    pthread_mutex_unlock ( &pj_core_lock );
 }
 
 /************************************************************************/
 /*                          pj_cleanup_lock()                           */
 /************************************************************************/
-void pj_cleanup_lock()
-{
+void pj_cleanup_lock() {
 }
 
 #endif // def MUTEX_pthread
@@ -147,12 +141,11 @@ static HANDLE mutex_lock = NULL;
 /*      Acquire the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_acquire_lock()
-{
-    if( mutex_lock == NULL )
+void pj_acquire_lock() {
+    if ( mutex_lock == NULL )
         pj_init_lock();
 
-    WaitForSingleObject( mutex_lock, INFINITE );
+    WaitForSingleObject ( mutex_lock, INFINITE );
 }
 
 /************************************************************************/
@@ -161,22 +154,19 @@ void pj_acquire_lock()
 /*      Release the PROJ.4 lock.                                        */
 /************************************************************************/
 
-void pj_release_lock()
-{
-    if( mutex_lock == NULL )
+void pj_release_lock() {
+    if ( mutex_lock == NULL )
         pj_init_lock();
     else
-        ReleaseMutex( mutex_lock );
+        ReleaseMutex ( mutex_lock );
 }
 
 /************************************************************************/
 /*                          pj_cleanup_lock()                           */
 /************************************************************************/
-void pj_cleanup_lock()
-{
-    if( mutex_lock != NULL )
-    {
-        CloseHandle( mutex_lock );
+void pj_cleanup_lock() {
+    if ( mutex_lock != NULL ) {
+        CloseHandle ( mutex_lock );
         mutex_lock = NULL;
     }
 }
@@ -188,8 +178,8 @@ void pj_cleanup_lock()
 static void pj_init_lock()
 
 {
-    if( mutex_lock == NULL )
-        mutex_lock = CreateMutex( NULL, FALSE, NULL );
+    if ( mutex_lock == NULL )
+        mutex_lock = CreateMutex ( NULL, FALSE, NULL );
 }
 
 #endif // def MUTEX_win32

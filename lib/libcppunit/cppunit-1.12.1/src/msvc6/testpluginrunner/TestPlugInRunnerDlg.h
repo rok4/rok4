@@ -18,47 +18,46 @@
 /////////////////////////////////////////////////////////////////////////////
 // TestPlugInRunnerDlg dialog
 
-class TestPlugInRunnerDlg : public TestRunnerDlg
-{
+class TestPlugInRunnerDlg : public TestRunnerDlg {
 // Construction
 public:
-  TestPlugInRunnerDlg( TestPlugInRunnerModel *model,
-                       CWnd* pParent = NULL);
+    TestPlugInRunnerDlg ( TestPlugInRunnerModel *model,
+                          CWnd* pParent = NULL );
 
 // Dialog Data
-  //{{AFX_DATA(TestPlugInRunnerDlg)
-  //}}AFX_DATA
+    //{{AFX_DATA(TestPlugInRunnerDlg)
+    //}}AFX_DATA
 
-  // ClassWizard generated virtual function overrides
-  //{{AFX_VIRTUAL(TestPlugInRunnerDlg)
-  protected:
-  virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
-  //}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(TestPlugInRunnerDlg)
+protected:
+    virtual void DoDataExchange ( CDataExchange* pDX );	// DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-  HICON m_hIcon;
+    HICON m_hIcon;
 
-  // Generated message map functions
-  //{{AFX_MSG(TestPlugInRunnerDlg)
-  virtual BOOL OnInitDialog();
-  afx_msg void OnPaint();
-  afx_msg HCURSOR OnQueryDragIcon();
-  afx_msg void OnChooseDll();
-  afx_msg void OnReloadDll();
-  //}}AFX_MSG
-  DECLARE_MESSAGE_MAP();
+    // Generated message map functions
+    //{{AFX_MSG(TestPlugInRunnerDlg)
+    virtual BOOL OnInitDialog();
+    afx_msg void OnPaint();
+    afx_msg HCURSOR OnQueryDragIcon();
+    afx_msg void OnChooseDll();
+    afx_msg void OnReloadDll();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP();
 
 protected:
-  virtual void initializeLayout();
+    virtual void initializeLayout();
 
 
 private:
-  TestPlugInRunnerModel &plugInModel();
+    TestPlugInRunnerModel &plugInModel();
 
-  static std::list<std::string> getCommandLineArguments();
-  void loadPluginIfNesseccary();
-  void loadDll( std::string path );
+    static std::list<std::string> getCommandLineArguments();
+    void loadPluginIfNesseccary();
+    void loadDll ( std::string path );
 };
 
 //{{AFX_INSERT_LOCATION}}

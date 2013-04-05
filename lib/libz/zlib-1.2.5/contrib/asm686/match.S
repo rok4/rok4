@@ -33,7 +33,7 @@
 /* stack frame offsets */
 
 #define	chainlenwmask		0	/* high word: current chain len	*/
-					/* low word: s->wmask		*/
+/* low word: s->wmask		*/
 #define	window			4	/* local copy of s->window	*/
 #define	windowbestlen		8	/* s->window + bestlen		*/
 #define	scanstart		16	/* first two bytes of string	*/
@@ -89,19 +89,19 @@ longest_match:
 /* Save registers that the compiler may be using, and adjust %esp to	*/
 /* make room for our stack frame.					*/
 
-		pushl	%ebp
-		pushl	%edi
-		pushl	%esi
-		pushl	%ebx
-		subl	$LocalVarsSize, %esp
+pushl	%ebp
+pushl	%edi
+pushl	%esi
+pushl	%ebx
+subl	$LocalVarsSize, %esp
 
 /* Retrieve the function arguments. %ecx will hold cur_match		*/
 /* throughout the entire function. %edx will hold the pointer to the	*/
 /* deflate_state structure during the function's setup (before		*/
 /* entering the main loop).						*/
 
-		movl	deflatestate(%esp), %edx
-		movl	curmatch(%esp), %ecx
+movl	deflatestate ( %esp ), %edx
+movl	curmatch ( %esp ), %ecx
 
 /* uInt wmask = s->w_mask;						*/
 /* unsigned chain_length = s->max_chain_length;				*/
@@ -109,13 +109,13 @@ longest_match:
 /*     chain_length >>= 2;						*/
 /* }									*/
 
-		movl	dsPrevLen(%edx), %eax
-		movl	dsGoodMatch(%edx), %ebx
-		cmpl	%ebx, %eax
-		movl	dsWMask(%edx), %eax
-		movl	dsMaxChainLen(%edx), %ebx
-		jl	LastMatchGood
-		shrl	$2, %ebx
+movl	dsPrevLen ( %edx ), %eax
+movl	dsGoodMatch ( %edx ), %ebx
+cmpl	%ebx, %eax
+movl	dsWMask ( %edx ), %eax
+movl	dsMaxChainLen ( %edx ), %ebx
+jl	LastMatchGood
+shrl	$2, %ebx
 LastMatchGood:
 
 /* chainlen is decremented once beforehand so that the function can	*/
@@ -123,70 +123,71 @@ LastMatchGood:
 /* It is then shifted into the high word, to make room for the wmask	*/
 /* value, which it will always accompany.				*/
 
-		decl	%ebx
-		shll	$16, %ebx
-		orl	%eax, %ebx
-		movl	%ebx, chainlenwmask(%esp)
+decl	%ebx
+shll	$16, %ebx
+orl	%eax, %ebx
+movl	%ebx, chainlenwmask ( %esp )
 
 /* if ((uInt)nice_match > s->lookahead) nice_match = s->lookahead;	*/
 
-		movl	dsNiceMatch(%edx), %eax
-		movl	dsLookahead(%edx), %ebx
-		cmpl	%eax, %ebx
-		jl	LookaheadLess
-		movl	%eax, %ebx
-LookaheadLess:	movl	%ebx, nicematch(%esp)
+movl	dsNiceMatch ( %edx ), %eax
+movl	dsLookahead ( %edx ), %ebx
+cmpl	%eax, %ebx
+jl	LookaheadLess
+movl	%eax, %ebx
+LookaheadLess:
+movl	%ebx, nicematch ( %esp )
 
 /* register Bytef *scan = s->window + s->strstart;			*/
 
-		movl	dsWindow(%edx), %esi
-		movl	%esi, window(%esp)
-		movl	dsStrStart(%edx), %ebp
-		lea	(%esi,%ebp), %edi
-		movl	%edi, scan(%esp)
+movl	dsWindow ( %edx ), %esi
+movl	%esi, window ( %esp )
+movl	dsStrStart ( %edx ), %ebp
+lea	( %esi,%ebp ), %edi
+movl	%edi, scan ( %esp )
 
 /* Determine how many bytes the scan ptr is off from being		*/
 /* dword-aligned.							*/
 
-		movl	%edi, %eax
-		negl	%eax
-		andl	$3, %eax
-		movl	%eax, scanalign(%esp)
+movl	%edi, %eax
+negl	%eax
+andl	$3, %eax
+movl	%eax, scanalign ( %esp )
 
 /* IPos limit = s->strstart > (IPos)MAX_DIST(s) ?			*/
 /*     s->strstart - (IPos)MAX_DIST(s) : NIL;				*/
 
-		movl	dsWSize(%edx), %eax
-		subl	$MIN_LOOKAHEAD, %eax
-		subl	%eax, %ebp
-		jg	LimitPositive
-		xorl	%ebp, %ebp
+movl	dsWSize ( %edx ), %eax
+subl	$MIN_LOOKAHEAD, %eax
+subl	%eax, %ebp
+jg	LimitPositive
+xorl	%ebp, %ebp
 LimitPositive:
 
 /* int best_len = s->prev_length;					*/
 
-		movl	dsPrevLen(%edx), %eax
-		movl	%eax, bestlen(%esp)
+movl	dsPrevLen ( %edx ), %eax
+movl	%eax, bestlen ( %esp )
 
 /* Store the sum of s->window + best_len in %esi locally, and in %esi.	*/
 
-		addl	%eax, %esi
-		movl	%esi, windowbestlen(%esp)
+addl	%eax, %esi
+movl	%esi, windowbestlen ( %esp )
 
 /* register ush scan_start = *(ushf*)scan;				*/
 /* register ush scan_end   = *(ushf*)(scan+best_len-1);			*/
 /* Posf *prev = s->prev;						*/
 
-		movzwl	(%edi), %ebx
-		movl	%ebx, scanstart(%esp)
-		movzwl	-1(%edi,%eax), %ebx
-		movl	%ebx, scanend(%esp)
-		movl	dsPrev(%edx), %edi
+movzwl	( %edi ), %ebx
+movl	%ebx, scanstart ( %esp )
+movzwl	-1 ( %edi,%eax ), %ebx
+movl	%ebx, scanend ( %esp )
+movl	dsPrev ( %edx ), %edi
 
 /* Jump into the main loop.						*/
 
-		movl	chainlenwmask(%esp), %edx
-		jmp	LoopEntry
+movl	chainlenwmask ( %esp ), %edx
+jmp	LoopEntry
 
 .balign 16
 
@@ -211,36 +212,37 @@ LimitPositive:
  * %ebp = limit
  */
 LookupLoop:
-		andl	%edx, %ecx
-		movzwl	(%edi,%ecx,2), %ecx
-		cmpl	%ebp, %ecx
-		jbe	LeaveNow
-		subl	$0x00010000, %edx
-		js	LeaveNow
-LoopEntry:	movzwl	-1(%esi,%ecx), %eax
-		cmpl	%ebx, %eax
-		jnz	LookupLoop
-		movl	window(%esp), %eax
-		movzwl	(%eax,%ecx), %eax
-		cmpl	scanstart(%esp), %eax
-		jnz	LookupLoop
+andl	%edx, %ecx
+movzwl	( %edi,%ecx,2 ), %ecx
+cmpl	%ebp, %ecx
+jbe	LeaveNow
+subl	$0x00010000, %edx
+js	LeaveNow
+LoopEntry:
+movzwl	-1 ( %esi,%ecx ), %eax
+cmpl	%ebx, %eax
+jnz	LookupLoop
+movl	window ( %esp ), %eax
+movzwl	( %eax,%ecx ), %eax
+cmpl	scanstart ( %esp ), %eax
+jnz	LookupLoop
 
 /* Store the current value of chainlen.					*/
 
-		movl	%edx, chainlenwmask(%esp)
+movl	%edx, chainlenwmask ( %esp )
 
 /* Point %edi to the string under scrutiny, and %esi to the string we	*/
 /* are hoping to match it up with. In actuality, %esi and %edi are	*/
 /* both pointed (MAX_MATCH_8 - scanalign) bytes ahead, and %edx is	*/
 /* initialized to -(MAX_MATCH_8 - scanalign).				*/
 
-		movl	window(%esp), %esi
-		movl	scan(%esp), %edi
-		addl	%ecx, %esi
-		movl	scanalign(%esp), %eax
-		movl	$(-MAX_MATCH_8), %edx
-		lea	MAX_MATCH_8(%edi,%eax), %edi
-		lea	MAX_MATCH_8(%esi,%eax), %esi
+movl	window ( %esp ), %esi
+movl	scan ( %esp ), %edi
+addl	%ecx, %esi
+movl	scanalign ( %esp ), %eax
+movl	$ ( -MAX_MATCH_8 ), %edx
+lea	MAX_MATCH_8 ( %edi,%eax ), %edi
+lea	MAX_MATCH_8 ( %esi,%eax ), %esi
 
 /* Test the strings for equality, 8 bytes at a time. At the end,
  * adjust %edx so that it is offset to the exact byte that mismatched.
@@ -257,87 +259,93 @@ LoopEntry:	movzwl	-1(%esi,%ecx), %eax
  * performance.
  */
 LoopCmps:
-		movl	(%esi,%edx), %eax
-		xorl	(%edi,%edx), %eax
-		jnz	LeaveLoopCmps
-		movl	4(%esi,%edx), %eax
-		xorl	4(%edi,%edx), %eax
-		jnz	LeaveLoopCmps4
-		addl	$8, %edx
-		jnz	LoopCmps
-		jmp	LenMaximum
-LeaveLoopCmps4:	addl	$4, %edx
-LeaveLoopCmps:	testl	$0x0000FFFF, %eax
-		jnz	LenLower
-		addl	$2, %edx
-		shrl	$16, %eax
-LenLower:	subb	$1, %al
-		adcl	$0, %edx
+movl	( %esi,%edx ), %eax
+xorl	( %edi,%edx ), %eax
+jnz	LeaveLoopCmps
+movl	4 ( %esi,%edx ), %eax
+xorl	4 ( %edi,%edx ), %eax
+jnz	LeaveLoopCmps4
+addl	$8, %edx
+jnz	LoopCmps
+jmp	LenMaximum
+LeaveLoopCmps4:
+addl	$4, %edx
+LeaveLoopCmps:
+testl	$0x0000FFFF, %eax
+jnz	LenLower
+addl	$2, %edx
+shrl	$16, %eax
+LenLower:
+subb	$1, %al
+adcl	$0, %edx
 
 /* Calculate the length of the match. If it is longer than MAX_MATCH,	*/
 /* then automatically accept it as the best possible match and leave.	*/
 
-		lea	(%edi,%edx), %eax
-		movl	scan(%esp), %edi
-		subl	%edi, %eax
-		cmpl	$MAX_MATCH, %eax
-		jge	LenMaximum
+lea	( %edi,%edx ), %eax
+movl	scan ( %esp ), %edi
+subl	%edi, %eax
+cmpl	$MAX_MATCH, %eax
+jge	LenMaximum
 
 /* If the length of the match is not longer than the best match we	*/
 /* have so far, then forget it and return to the lookup loop.		*/
 
-		movl	deflatestate(%esp), %edx
-		movl	bestlen(%esp), %ebx
-		cmpl	%ebx, %eax
-		jg	LongerMatch
-		movl	windowbestlen(%esp), %esi
-		movl	dsPrev(%edx), %edi
-		movl	scanend(%esp), %ebx
-		movl	chainlenwmask(%esp), %edx
-		jmp	LookupLoop
+movl	deflatestate ( %esp ), %edx
+movl	bestlen ( %esp ), %ebx
+cmpl	%ebx, %eax
+jg	LongerMatch
+movl	windowbestlen ( %esp ), %esi
+movl	dsPrev ( %edx ), %edi
+movl	scanend ( %esp ), %ebx
+movl	chainlenwmask ( %esp ), %edx
+jmp	LookupLoop
 
 /*         s->match_start = cur_match;					*/
 /*         best_len = len;						*/
 /*         if (len >= nice_match) break;				*/
 /*         scan_end = *(ushf*)(scan+best_len-1);			*/
 
-LongerMatch:	movl	nicematch(%esp), %ebx
-		movl	%eax, bestlen(%esp)
-		movl	%ecx, dsMatchStart(%edx)
-		cmpl	%ebx, %eax
-		jge	LeaveNow
-		movl	window(%esp), %esi
-		addl	%eax, %esi
-		movl	%esi, windowbestlen(%esp)
-		movzwl	-1(%edi,%eax), %ebx
-		movl	dsPrev(%edx), %edi
-		movl	%ebx, scanend(%esp)
-		movl	chainlenwmask(%esp), %edx
-		jmp	LookupLoop
+LongerMatch:
+movl	nicematch ( %esp ), %ebx
+movl	%eax, bestlen ( %esp )
+movl	%ecx, dsMatchStart ( %edx )
+cmpl	%ebx, %eax
+jge	LeaveNow
+movl	window ( %esp ), %esi
+addl	%eax, %esi
+movl	%esi, windowbestlen ( %esp )
+movzwl	-1 ( %edi,%eax ), %ebx
+movl	dsPrev ( %edx ), %edi
+movl	%ebx, scanend ( %esp )
+movl	chainlenwmask ( %esp ), %edx
+jmp	LookupLoop
 
 /* Accept the current string, with the maximum possible length.		*/
 
-LenMaximum:	movl	deflatestate(%esp), %edx
-		movl	$MAX_MATCH, bestlen(%esp)
-		movl	%ecx, dsMatchStart(%edx)
+LenMaximum:
+movl	deflatestate ( %esp ), %edx
+movl	$MAX_MATCH, bestlen ( %esp )
+movl	%ecx, dsMatchStart ( %edx )
 
 /* if ((uInt)best_len <= s->lookahead) return (uInt)best_len;		*/
 /* return s->lookahead;							*/
 
 LeaveNow:
-		movl	deflatestate(%esp), %edx
-		movl	bestlen(%esp), %ebx
-		movl	dsLookahead(%edx), %eax
-		cmpl	%eax, %ebx
-		jg	LookaheadRet
-		movl	%ebx, %eax
+movl	deflatestate ( %esp ), %edx
+movl	bestlen ( %esp ), %ebx
+movl	dsLookahead ( %edx ), %eax
+cmpl	%eax, %ebx
+jg	LookaheadRet
+movl	%ebx, %eax
 LookaheadRet:
 
 /* Restore the stack and return from whence we came.			*/
 
-		addl	$LocalVarsSize, %esp
-		popl	%ebx
-		popl	%esi
-		popl	%edi
-		popl	%ebp
-match_init:	ret
+addl	$LocalVarsSize, %esp
+popl	%ebx
+popl	%esi
+popl	%edi
+popl	%ebp
+match_init:
+ret

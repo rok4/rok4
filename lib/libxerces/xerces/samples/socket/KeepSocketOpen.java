@@ -1,12 +1,12 @@
 /*
  * Copyright 2000,2001,2004 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,7 +57,7 @@ import org.xml.sax.SAXParseException;
  * encodings.
  * <p>
  * The solution that this sample introduces wraps both the input and
- * output stream on both ends of the socket. The stream wrappers 
+ * output stream on both ends of the socket. The stream wrappers
  * introduce a protocol that allows arbitrary length data to be sent
  * as separate, localized input streams. While the socket stream
  * remains open, a separate input stream is created to "wrap" an
@@ -80,7 +80,7 @@ import org.xml.sax.SAXParseException;
  * <strong>Note:</strong> Do not send any XML documents with associated
  * grammars to the client. In other words, don't send any documents
  * that contain a DOCTYPE line that references an external DTD because
- * the client will not be able to resolve the location of the DTD and 
+ * the client will not be able to resolve the location of the DTD and
  * an error will be issued by the client.
  *
  * @see socket.io.WrappedInputStream
@@ -97,24 +97,24 @@ public class KeepSocketOpen {
     //
 
     /** Main program entry. */
-    public static void main(String[] argv) throws Exception {
+    public static void main ( String[] argv ) throws Exception {
 
         // constants
         final int port = 6789;
 
         // check args
-        if (argv.length == 0) {
-            System.out.println("usage: java socket.KeepSocketOpen file(s)");
-            System.exit(1);
+        if ( argv.length == 0 ) {
+            System.out.println ( "usage: java socket.KeepSocketOpen file(s)" );
+            System.exit ( 1 );
         }
 
         // create server and client
-        Server server = new Server(port, argv);
-        Client client = new Client("localhost", port);
+        Server server = new Server ( port, argv );
+        Client client = new Client ( "localhost", port );
 
         // start it running
-        new Thread(server).start();
-        new Thread(client).start();
+        new Thread ( server ).start();
+        new Thread ( client ).start();
 
     } // main(String[])
 
@@ -122,13 +122,13 @@ public class KeepSocketOpen {
     // Classes
     //
 
-    /** 
-     * Server. 
+    /**
+     * Server.
      *
      * @author Andy Clark, IBM
      */
-    public static final class Server 
-        extends ServerSocket 
+    public static final class Server
+        extends ServerSocket
         implements Runnable {
 
         //
@@ -148,22 +148,22 @@ public class KeepSocketOpen {
         // Constructors
         //
 
-        /** 
+        /**
          * Constructs a server on the specified port and with the given
-         * file list in terse mode. 
+         * file list in terse mode.
          */
-        public Server(int port, String[] filenames) throws IOException {
-            this(port, filenames, false);
+        public Server ( int port, String[] filenames ) throws IOException {
+            this ( port, filenames, false );
         }
 
-        /** 
+        /**
          * Constructs a server on the specified port and with the given
          * file list and verbosity.
          */
-        public Server(int port, String[] filenames, boolean verbose) 
-            throws IOException {
-            super(port);
-            System.out.println("Server: Created.");
+        public Server ( int port, String[] filenames, boolean verbose )
+        throws IOException {
+            super ( port );
+            System.out.println ( "Server: Created." );
             fFilenames = filenames;
             fVerbose = verbose;
             //fBuffer = new byte[1024];
@@ -177,65 +177,64 @@ public class KeepSocketOpen {
         /** Runs the server. */
         public void run() {
 
-            System.out.println("Server: Running.");
-            final Random random = new Random(System.currentTimeMillis());
+            System.out.println ( "Server: Running." );
+            final Random random = new Random ( System.currentTimeMillis() );
             try {
 
                 // accept connection
-                if (fVerbose) System.out.println("Server: Waiting for Client connection...");
+                if ( fVerbose ) System.out.println ( "Server: Waiting for Client connection..." );
                 final Socket clientSocket = accept();
                 final OutputStream clientStream = clientSocket.getOutputStream();
-                System.out.println("Server: Client connected.");
+                System.out.println ( "Server: Client connected." );
 
                 // send files, one at a time
-                for (int i = 0; i < fFilenames.length; i++) {
+                for ( int i = 0; i < fFilenames.length; i++ ) {
 
                     // open file
                     String filename = fFilenames[i];
-                    System.out.println("Server: Opening file \""+filename+'"');
-                    FileInputStream fileIn = new FileInputStream(filename);
-                    
+                    System.out.println ( "Server: Opening file \""+filename+'"' );
+                    FileInputStream fileIn = new FileInputStream ( filename );
+
                     // wrap stream
-                    if (fVerbose) System.out.println("Server: Wrapping output stream.");
-                    WrappedOutputStream wrappedOut = new WrappedOutputStream(clientStream);
-                    
+                    if ( fVerbose ) System.out.println ( "Server: Wrapping output stream." );
+                    WrappedOutputStream wrappedOut = new WrappedOutputStream ( clientStream );
+
                     // read file, writing to output
                     int total = 0;
-                    while (true) {
+                    while ( true ) {
 
                         // read random amount
                         //int length = (Math.abs(random.nextInt()) % fBuffer.length) + 1;
                         int length = fBuffer.length;
-                        if (fVerbose) System.out.println("Server: Attempting to read "+length+" byte(s).");
-                        int count = fileIn.read(fBuffer, 0, length);
-                        if (count == -1) {
-                            if (fVerbose) System.out.println("Server: EOF.");
+                        if ( fVerbose ) System.out.println ( "Server: Attempting to read "+length+" byte(s)." );
+                        int count = fileIn.read ( fBuffer, 0, length );
+                        if ( count == -1 ) {
+                            if ( fVerbose ) System.out.println ( "Server: EOF." );
                             break;
                         }
-                        if (fVerbose) System.out.println("Server: Writing "+count+" byte(s) to wrapped output stream.");
-                        wrappedOut.write(fBuffer, 0, count);
+                        if ( fVerbose ) System.out.println ( "Server: Writing "+count+" byte(s) to wrapped output stream." );
+                        wrappedOut.write ( fBuffer, 0, count );
                         total += count;
                     }
-                    System.out.println("Server: Wrote "+total+" byte(s) total.");
+                    System.out.println ( "Server: Wrote "+total+" byte(s) total." );
 
                     // close stream
-                    if (fVerbose) System.out.println("Server: Closing output stream.");
+                    if ( fVerbose ) System.out.println ( "Server: Closing output stream." );
                     wrappedOut.close();
-                    
+
                     // close file
-                    if (fVerbose) System.out.println("Server: Closing file.");
+                    if ( fVerbose ) System.out.println ( "Server: Closing file." );
                     fileIn.close();
                 }
 
                 // close connection to client
-                if (fVerbose) System.out.println("Server: Closing socket.");
+                if ( fVerbose ) System.out.println ( "Server: Closing socket." );
                 clientSocket.close();
 
+            } catch ( IOException e ) {
+                System.out.println ( "Server ERROR: "+e.getMessage() );
             }
-            catch (IOException e) {
-                System.out.println("Server ERROR: "+e.getMessage());
-            }
-            System.out.println("Server: Exiting.");
+            System.out.println ( "Server: Exiting." );
 
         } // run()
 
@@ -290,25 +289,25 @@ public class KeepSocketOpen {
         // Constructors
         //
 
-        /** 
+        /**
          * Constructs a Client that connects to the given port in terse
-         * output mode. 
+         * output mode.
          */
-        public Client(String address, int port) throws IOException {
-            this(address, port, false);
+        public Client ( String address, int port ) throws IOException {
+            this ( address, port, false );
             fParser = new SAXParser();
-            fParser.setDocumentHandler(this);
-            fParser.setErrorHandler(this);
+            fParser.setDocumentHandler ( this );
+            fParser.setErrorHandler ( this );
         }
 
-        /** 
+        /**
          * Constructs a Client that connects to the given address:port and
-         * with the specified verbosity. 
+         * with the specified verbosity.
          */
-        public Client(String address, int port, boolean verbose) 
-            throws IOException {
-            System.out.println("Client: Created.");
-            fServerSocket = new Socket(address, port);
+        public Client ( String address, int port, boolean verbose )
+        throws IOException {
+            System.out.println ( "Client: Created." );
+            fServerSocket = new Socket ( address, port );
             fVerbose = verbose;
             fBuffer = new byte[1024];
         } // <init>(String,int)
@@ -320,42 +319,40 @@ public class KeepSocketOpen {
         /** Runs the client. */
         public void run() {
 
-            System.out.println("Client: Running.");
+            System.out.println ( "Client: Running." );
             try {
                 // get input stream
                 final InputStream serverStream = fServerSocket.getInputStream();
 
                 // read files from server
-                while (!Thread.interrupted()) {
+                while ( !Thread.interrupted() ) {
                     // wrap input stream
-                    if (fVerbose) System.out.println("Client: Wrapping input stream.");
-                    fWrappedInputStream = new WrappedInputStream(serverStream);
-                    InputStream in = new InputStreamReporter(fWrappedInputStream);
+                    if ( fVerbose ) System.out.println ( "Client: Wrapping input stream." );
+                    fWrappedInputStream = new WrappedInputStream ( serverStream );
+                    InputStream in = new InputStreamReporter ( fWrappedInputStream );
 
                     // parse file
-                    if (fVerbose) System.out.println("Client: Parsing XML document.");
-                    InputSource source = new InputSource(in);
-                    fParser.parse(source);
+                    if ( fVerbose ) System.out.println ( "Client: Parsing XML document." );
+                    InputSource source = new InputSource ( in );
+                    fParser.parse ( source );
                     fWrappedInputStream = null;
 
                     // close stream
-                    if (fVerbose) System.out.println("Client: Closing input stream.");
+                    if ( fVerbose ) System.out.println ( "Client: Closing input stream." );
                     in.close();
 
                 }
 
                 // close socket
-                if (fVerbose) System.out.println("Client: Closing socket.");
+                if ( fVerbose ) System.out.println ( "Client: Closing socket." );
                 fServerSocket.close();
 
-            }
-            catch (EOFException e) {
+            } catch ( EOFException e ) {
                 // server closed connection; ignore
+            } catch ( Exception e ) {
+                System.out.println ( "Client ERROR: "+e.getMessage() );
             }
-            catch (Exception e) {
-                System.out.println("Client ERROR: "+e.getMessage());
-            }
-            System.out.println("Client: Exiting.");
+            System.out.println ( "Client: Exiting." );
 
         } // run()
 
@@ -373,35 +370,35 @@ public class KeepSocketOpen {
         } // startDocument()
 
         /** Start element. */
-        public void startElement(String name, AttributeList attrs) {
+        public void startElement ( String name, AttributeList attrs ) {
             fElementCount++;
             fAttributeCount += attrs != null ? attrs.getLength() : 0;
         } // startElement(String,AttributeList)
 
         /** Ignorable whitespace. */
-        public void ignorableWhitespace(char[] ch, int offset, int length) {
+        public void ignorableWhitespace ( char[] ch, int offset, int length ) {
             fIgnorableWhitespaceCount += length;
         } // ignorableWhitespace(char[],int,int)
 
         /** Characters. */
-        public void characters(char[] ch, int offset, int length) {
+        public void characters ( char[] ch, int offset, int length ) {
             fCharactersCount += length;
         } // characters(char[],int,int)
 
         /** End document. */
         public void endDocument() {
             long timeAfter = System.currentTimeMillis();
-            System.out.print("Client: ");
-            System.out.print(timeAfter - fTimeBefore);
-            System.out.print(" ms (");
-            System.out.print(fElementCount);
-            System.out.print(" elems, ");
-            System.out.print(fAttributeCount);
-            System.out.print(" attrs, ");
-            System.out.print(fIgnorableWhitespaceCount);
-            System.out.print(" spaces, ");
-            System.out.print(fCharactersCount);
-            System.out.print(" chars)");
+            System.out.print ( "Client: " );
+            System.out.print ( timeAfter - fTimeBefore );
+            System.out.print ( " ms (" );
+            System.out.print ( fElementCount );
+            System.out.print ( " elems, " );
+            System.out.print ( fAttributeCount );
+            System.out.print ( " attrs, " );
+            System.out.print ( fIgnorableWhitespaceCount );
+            System.out.print ( " spaces, " );
+            System.out.print ( fCharactersCount );
+            System.out.print ( " chars)" );
             System.out.println();
         } // endDocument()
 
@@ -410,23 +407,22 @@ public class KeepSocketOpen {
         //
 
         /** Warning. */
-        public void warning(SAXParseException e) throws SAXException {
-            System.out.println("Client: [warning] "+e.getMessage());
+        public void warning ( SAXParseException e ) throws SAXException {
+            System.out.println ( "Client: [warning] "+e.getMessage() );
         } // warning(SAXParseException)
 
         /** Error. */
-        public void error(SAXParseException e) throws SAXException {
-            System.out.println("Client: [error] "+e.getMessage());
+        public void error ( SAXParseException e ) throws SAXException {
+            System.out.println ( "Client: [error] "+e.getMessage() );
         } // error(SAXParseException)
 
         /** Fatal error. */
-        public void fatalError(SAXParseException e) throws SAXException {
-            System.out.println("Client: [fatal error] "+e.getMessage());
+        public void fatalError ( SAXParseException e ) throws SAXException {
+            System.out.println ( "Client: [fatal error] "+e.getMessage() );
             // on fatal error, skip to end of stream and end parse
             try {
                 fWrappedInputStream.close();
-            }
-            catch (IOException ioe) {
+            } catch ( IOException ioe ) {
                 // ignore
             }
             throw e;
@@ -457,8 +453,8 @@ public class KeepSocketOpen {
             //
 
             /** Constructs a reporter from the specified input stream. */
-            public InputStreamReporter(InputStream stream) {
-                super(stream);
+            public InputStreamReporter ( InputStream stream ) {
+                super ( stream );
             } // <init>(InputStream)
 
             //
@@ -468,8 +464,8 @@ public class KeepSocketOpen {
             /** Reads a single byte. */
             public int read() throws IOException {
                 int b = super.in.read();
-                if (b == -1) {
-                    System.out.println("Client: Read "+fTotal+" byte(s) total.");
+                if ( b == -1 ) {
+                    System.out.println ( "Client: Read "+fTotal+" byte(s) total." );
                     return -1;
                 }
                 fTotal++;
@@ -477,15 +473,15 @@ public class KeepSocketOpen {
             } // read():int
 
             /** Reads a block of bytes. */
-            public int read(byte[] b, int offset, int length) 
-                throws IOException {
-                int count = super.in.read(b, offset, length);
-                if (count == -1) {
-                    System.out.println("Client: Read "+fTotal+" byte(s) total.");
+            public int read ( byte[] b, int offset, int length )
+            throws IOException {
+                int count = super.in.read ( b, offset, length );
+                if ( count == -1 ) {
+                    System.out.println ( "Client: Read "+fTotal+" byte(s) total." );
                     return -1;
                 }
                 fTotal += count;
-                if (Client.this.fVerbose) System.out.println("Client: Actually read "+count+" byte(s).");
+                if ( Client.this.fVerbose ) System.out.println ( "Client: Actually read "+count+" byte(s)." );
                 return count;
             } // read(byte[],int,int):int
 

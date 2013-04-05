@@ -10,50 +10,42 @@
 CPPUNIT_NS_BEGIN
 
 
-TestPlugInDefaultImpl::TestPlugInDefaultImpl() 
-{
+TestPlugInDefaultImpl::TestPlugInDefaultImpl() {
 }
 
 
-TestPlugInDefaultImpl::~TestPlugInDefaultImpl()
-{
+TestPlugInDefaultImpl::~TestPlugInDefaultImpl() {
 }
 
 
-void 
-TestPlugInDefaultImpl::initialize( TestFactoryRegistry *registry,
-                                   const PlugInParameters &parameters )
-{
+void
+TestPlugInDefaultImpl::initialize ( TestFactoryRegistry *registry,
+                                    const PlugInParameters &parameters ) {
 }
 
 
-void 
-TestPlugInDefaultImpl::addListener( TestResult *eventManager )
-{
+void
+TestPlugInDefaultImpl::addListener ( TestResult *eventManager ) {
 }
 
 
-void 
-TestPlugInDefaultImpl::removeListener( TestResult *eventManager )
-{
+void
+TestPlugInDefaultImpl::removeListener ( TestResult *eventManager ) {
 }
 
 
-void 
-TestPlugInDefaultImpl::addXmlOutputterHooks( XmlOutputter *outputter )
-{
+void
+TestPlugInDefaultImpl::addXmlOutputterHooks ( XmlOutputter *outputter ) {
 }
 
 
-void 
-TestPlugInDefaultImpl::removeXmlOutputterHooks()
-{
+void
+TestPlugInDefaultImpl::removeXmlOutputterHooks() {
 }
 
 
-void 
-TestPlugInDefaultImpl::uninitialize( TestFactoryRegistry *registry )
-{
+void
+TestPlugInDefaultImpl::uninitialize ( TestFactoryRegistry *registry ) {
 }
 
 

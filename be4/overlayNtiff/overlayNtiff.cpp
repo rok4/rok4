@@ -103,7 +103,7 @@ char imageListFilename[256];
 /** \~french Nombre de canaux par pixel de l'image en sortie */
 uint16_t samplesperpixel = 0;
 /** \~french Mode de fusion des images */
-SampleType sampleType(0,0);
+SampleType sampleType ( 0,0 );
 /** \~french Photométrie (rgb, gray), pour les images en sortie */
 uint16_t photometric = PHOTOMETRIC_RGB;
 /** \~french Compression de l'image de sortie */
@@ -122,10 +122,10 @@ int* background;
  * \details L'affichage se fait dans le niveau de logger INFO
  * \~ \code
  * overlayNtiff version X.X.X
- * 
+ *
  * Create one TIFF image, from several images with same dimensions, with different available merge methods.
  * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one
- * 
+ *
  * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
  * Parameters:
  *     -f configuration file : list of output and source images and masks
@@ -146,7 +146,7 @@ int* background;
  *     -p photometric :
  *             gray    min is black
  *             rgb     for image with alpha too
- * 
+ *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
  *     overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0
@@ -155,38 +155,38 @@ int* background;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO("\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
 
-    "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
-    "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
+                  "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
+                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
 
-    "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
+                  "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
 
-    "Parameters:\n" <<
-    "    -f configuration file : list of output and source images and masks\n" <<
-    "    -c output compression :\n" <<
-    "            raw     no compression\n" <<
-    "            none    no compression\n" <<
-    "            jpg     Jpeg encoding\n" <<
-    "            lzw     Lempel-Ziv & Welch encoding\n" <<
-    "            pkb     PackBits encoding\n" <<
-    "            zip     Deflate encoding\n" <<
-    "    -t value to consider as transparent, 3 integers, seperated with comma. Optionnal\n" <<
-    "    -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
-    "    -m merge method : used to merge input images :\n" <<
-    "            TRANSPARENCY   images are merged by alpha blending\n" <<
-    "            MULTIPLY       samples are multiplied one by one\n" <<
-    "            MASK           associated mask are used to compose the output image\n" <<
-    "    -s samples per pixel : 1, 2, 3 or 4\n" <<
-    "    -p photometric :\n" <<
-    "            gray    min is black\n" <<
-    "            rgb     for image with alpha too\n\n" <<
+                  "Parameters:\n" <<
+                  "    -f configuration file : list of output and source images and masks\n" <<
+                  "    -c output compression :\n" <<
+                  "            raw     no compression\n" <<
+                  "            none    no compression\n" <<
+                  "            jpg     Jpeg encoding\n" <<
+                  "            lzw     Lempel-Ziv & Welch encoding\n" <<
+                  "            pkb     PackBits encoding\n" <<
+                  "            zip     Deflate encoding\n" <<
+                  "    -t value to consider as transparent, 3 integers, seperated with comma. Optionnal\n" <<
+                  "    -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
+                  "    -m merge method : used to merge input images :\n" <<
+                  "            TRANSPARENCY   images are merged by alpha blending\n" <<
+                  "            MULTIPLY       samples are multiplied one by one\n" <<
+                  "            MASK           associated mask are used to compose the output image\n" <<
+                  "    -s samples per pixel : 1, 2, 3 or 4\n" <<
+                  "    -p photometric :\n" <<
+                  "            gray    min is black\n" <<
+                  "            rgb     for image with alpha too\n\n" <<
 
-    "Examples\n" <<
-    "    - for gray orthophotography, with transparency (white is transparent)\n" <<
-    "    overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
-    "    - for DTM, with masks\n" <<
-    "    overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999\n\n");
+                  "Examples\n" <<
+                  "    - for gray orthophotography, with transparency (white is transparent)\n" <<
+                  "    overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
+                  "    - for DTM, with masks\n" <<
+                  "    overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999\n\n" );
 }
 
 /**
@@ -195,12 +195,12 @@ void usage() {
  * \param[in] message message d'erreur
  * \param[in] errorCode code de retour
  */
-void error(std::string message, int errorCode) {
-    LOGGER_ERROR(message);
-    LOGGER_ERROR("Configuration file : " << imageListFilename);
+void error ( std::string message, int errorCode ) {
+    LOGGER_ERROR ( message );
+    LOGGER_ERROR ( "Configuration file : " << imageListFilename );
     usage();
-    sleep(1);
-    exit(errorCode);
+    sleep ( 1 );
+    exit ( errorCode );
 }
 
 /**
@@ -210,133 +210,163 @@ void error(std::string message, int errorCode) {
  * \param[in] argv tableau des paramètres
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int parseCommandLine(int argc, char** argv) {
+int parseCommandLine ( int argc, char** argv ) {
 
     char strTransparent[256];
-    memset(strTransparent, 0, 256);
+    memset ( strTransparent, 0, 256 );
     char strBg[256];
-    memset(strBg, 0, 256);
+    memset ( strBg, 0, 256 );
 
-    for(int i = 1; i < argc; i++) {
-        if(argv[i][0] == '-') {
-            switch(argv[i][1]) {
-                case 'h': // help
-                    usage();
-                    exit(0);
-                case 'f': // Images' list file
-                    if(i++ >= argc) {LOGGER_ERROR("Error with images' list file (option -f)"); return -1;}
-                    strcpy(imageListFilename,argv[i]);
-                    break;
-                case 'm': // image merge method
-                    if(i++ >= argc) {LOGGER_ERROR("Error with merge method (option -m)"); return -1;}
-                    mergeMethod = Merge::fromString(argv[i]);
-                    if (mergeMethod == Merge::UNKNOWN) {
-                        LOGGER_ERROR("Unknown value for merge method (option -m) : " << argv[i]);
-                        return -1;
-                    }
-                    break;
-                case 's': // samplesperpixel
-                    if(i++ >= argc) {LOGGER_ERROR("Error with samples per pixel (option -s)"); return -1;}
-                    if(strncmp(argv[i], "1",1) == 0) samplesperpixel = 1 ;
-                    else if(strncmp(argv[i], "2",1) == 0) samplesperpixel = 2 ;
-                    else if(strncmp(argv[i], "3",1) == 0) samplesperpixel = 3 ;
-                    else if(strncmp(argv[i], "4",1) == 0) samplesperpixel = 4 ;
-                    else {LOGGER_ERROR("Unknown value for samples per pixel (option -s) : " << argv[i]); return -1;}
-                    break;
-                case 'c': // compression
-                    if(i++ >= argc) {LOGGER_ERROR("Error with compression (option -c)"); return -1;}
-                    if(strncmp(argv[i], "raw",3) == 0) compression = COMPRESSION_NONE;
-                    else if(strncmp(argv[i], "none",4) == 0) compression = COMPRESSION_NONE;
-                    else if(strncmp(argv[i], "zip",3) == 0) compression = COMPRESSION_ADOBE_DEFLATE;
-                    else if(strncmp(argv[i], "pkb",3) == 0) compression = COMPRESSION_PACKBITS;
-                    else if(strncmp(argv[i], "jpg",3) == 0) compression = COMPRESSION_JPEG;
-                    else if(strncmp(argv[i], "lzw",3) == 0) compression = COMPRESSION_LZW;
-                    else {LOGGER_ERROR("Unknown value for compression (option -c) : " << argv[i]); return -1;}
-                    break; 
-                case 'p': // photometric
-                    if(i++ >= argc) {LOGGER_ERROR("Error with photometric (option -p)"); return -1;}
-                    if(strncmp(argv[i], "gray",4) == 0) photometric = PHOTOMETRIC_MINISBLACK;
-                    else if(strncmp(argv[i], "rgb",3) == 0) photometric = PHOTOMETRIC_RGB;
-                    else {LOGGER_ERROR("Unknown value for photometric (option -p) : " << argv[i]); return -1;}
-                    break;
-                case 't': // transparent color
-                    if(i++ >= argc) {LOGGER_ERROR("Error with transparent color (option -t)"); return -1;}
-                    strcpy(strTransparent,argv[i]);
-                    break;
-                case 'b': // background color
-                    if(i++ >= argc) {LOGGER_ERROR("Error with background color (option -b)"); return -1;}
-                    strcpy(strBg,argv[i]);
-                    break;
-                default:
-                    LOGGER_ERROR("Unknown option : -" << argv[i][1]);
+    for ( int i = 1; i < argc; i++ ) {
+        if ( argv[i][0] == '-' ) {
+            switch ( argv[i][1] ) {
+            case 'h': // help
+                usage();
+                exit ( 0 );
+            case 'f': // Images' list file
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with images' list file (option -f)" );
                     return -1;
+                }
+                strcpy ( imageListFilename,argv[i] );
+                break;
+            case 'm': // image merge method
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with merge method (option -m)" );
+                    return -1;
+                }
+                mergeMethod = Merge::fromString ( argv[i] );
+                if ( mergeMethod == Merge::UNKNOWN ) {
+                    LOGGER_ERROR ( "Unknown value for merge method (option -m) : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 's': // samplesperpixel
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with samples per pixel (option -s)" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                else if ( strncmp ( argv[i], "2",1 ) == 0 ) samplesperpixel = 2 ;
+                else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
+                else {
+                    LOGGER_ERROR ( "Unknown value for samples per pixel (option -s) : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'c': // compression
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with compression (option -c)" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = COMPRESSION_NONE;
+                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = COMPRESSION_NONE;
+                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = COMPRESSION_ADOBE_DEFLATE;
+                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = COMPRESSION_PACKBITS;
+                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = COMPRESSION_JPEG;
+                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = COMPRESSION_LZW;
+                else {
+                    LOGGER_ERROR ( "Unknown value for compression (option -c) : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'p': // photometric
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with photometric (option -p)" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = PHOTOMETRIC_MINISBLACK;
+                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = PHOTOMETRIC_RGB;
+                else {
+                    LOGGER_ERROR ( "Unknown value for photometric (option -p) : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 't': // transparent color
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with transparent color (option -t)" );
+                    return -1;
+                }
+                strcpy ( strTransparent,argv[i] );
+                break;
+            case 'b': // background color
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error with background color (option -b)" );
+                    return -1;
+                }
+                strcpy ( strBg,argv[i] );
+                break;
+            default:
+                LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
+                return -1;
             }
         }
     }
 
     // Merge method control
-    if (mergeMethod == Merge::UNKNOWN) {
-        LOGGER_ERROR("We need to know the merge method (option -m)");
+    if ( mergeMethod == Merge::UNKNOWN ) {
+        LOGGER_ERROR ( "We need to know the merge method (option -m)" );
         return -1;
     }
 
     // Image list file control
-    if (strlen(imageListFilename) == 0) {
-        LOGGER_ERROR("We need to have one images' list (text file, option -f)");
+    if ( strlen ( imageListFilename ) == 0 ) {
+        LOGGER_ERROR ( "We need to have one images' list (text file, option -f)" );
         return -1;
     }
 
     // Samples per pixel control
-    if (samplesperpixel == 0) {
-        LOGGER_ERROR("We need to know the number of samples per pixel in the output image (option -s)");
+    if ( samplesperpixel == 0 ) {
+        LOGGER_ERROR ( "We need to know the number of samples per pixel in the output image (option -s)" );
         return -1;
     }
 
-    if (strlen(strTransparent) != 0) {
+    if ( strlen ( strTransparent ) != 0 ) {
         transparent = new int[3];
-        
+
         // Transparent interpretation
-        char* charValue = strtok(strTransparent,",");
-        if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -t : 3 integers values seperated by comma");
+        char* charValue = strtok ( strTransparent,"," );
+        if ( charValue == NULL ) {
+            LOGGER_ERROR ( "Error with option -t : 3 integers values seperated by comma" );
             return -1;
         }
-        int value = atoi(charValue);
+        int value = atoi ( charValue );
         transparent[0] = value;
-        for(int i = 1; i < 3; i++) {
-            charValue = strtok (NULL, ",");
-            if(charValue == NULL) {
-                LOGGER_ERROR("Error with option -t : 3 integers values seperated by comma");
+        for ( int i = 1; i < 3; i++ ) {
+            charValue = strtok ( NULL, "," );
+            if ( charValue == NULL ) {
+                LOGGER_ERROR ( "Error with option -t : 3 integers values seperated by comma" );
                 return -1;
             }
-            value = atoi(charValue);
+            value = atoi ( charValue );
             transparent[i] = value;
         }
     }
 
-    if (strlen(strBg) != 0) {
+    if ( strlen ( strBg ) != 0 ) {
         background = new int[samplesperpixel];
-        
+
         // Background interpretation
-        char* charValue = strtok(strBg,",");
-        if(charValue == NULL) {
-            LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
+        char* charValue = strtok ( strBg,"," );
+        if ( charValue == NULL ) {
+            LOGGER_ERROR ( "Error with option -b : one integer value per final sample seperated by comma" );
             return -1;
         }
-        int value = atoi(charValue);
+        int value = atoi ( charValue );
         background[0] = value;
-        
-        for(int i = 1; i < samplesperpixel; i++) {
-            charValue = strtok (NULL, ",");
-            if(charValue == NULL) {
-                LOGGER_ERROR("Error with option -b : one integer value per final sample seperated by comma");
+
+        for ( int i = 1; i < samplesperpixel; i++ ) {
+            charValue = strtok ( NULL, "," );
+            if ( charValue == NULL ) {
+                LOGGER_ERROR ( "Error with option -b : one integer value per final sample seperated by comma" );
                 return -1;
             }
-            value = atoi(charValue);
+            value = atoi ( charValue );
             background[i] = value;
         }
     } else {
-        LOGGER_ERROR("We need to know the background value for the output image (option -b)");
+        LOGGER_ERROR ( "We need to know the background value for the output image (option -b)" );
         return -1;
     }
 
@@ -353,24 +383,23 @@ int parseCommandLine(int argc, char** argv) {
  * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
  * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
  */
-int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName)
-{
+int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName ) {
     std::string str;
 
-    while (str.empty()) {
-        if (file.eof()) {
-            LOGGER_DEBUG("Configuration file end reached");
+    while ( str.empty() ) {
+        if ( file.eof() ) {
+            LOGGER_DEBUG ( "Configuration file end reached" );
             return -1;
         }
-        std::getline(file,str);
+        std::getline ( file,str );
     }
 
-    if (std::sscanf(str.c_str(),"%s %s", imageFileName, maskFileName) == 2) {
+    if ( std::sscanf ( str.c_str(),"%s %s", imageFileName, maskFileName ) == 2 ) {
         *hasMask = true;
     } else {
         *hasMask = false;
     }
-    
+
     return 0;
 }
 
@@ -384,8 +413,7 @@ int readFileLine(std::ifstream& file, char* imageFileName, bool* hasMask, char* 
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage** ppMergeIn)
-{
+int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage** ppMergeIn ) {
     char inputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     char inputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
 
@@ -393,11 +421,11 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     char outputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
 
     std::vector<Image*> ImageIn;
-    BoundingBox<double> fakeBbox(0.,0.,0.,0.);
+    BoundingBox<double> fakeBbox ( 0.,0.,0.,0. );
 
     uint16_t bitspersample, sampleformat;
     int width, height;
-    
+
     bool hasMask, hasOutMask;
     LibtiffImageFactory LIF;
     MergeImageFactory MIF;
@@ -405,15 +433,15 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     // Ouverture du fichier texte listant les images
     std::ifstream file;
 
-    file.open(imageListFilename);
-    if (!file) {
-        LOGGER_ERROR("Cannot open the file " << imageListFilename);
+    file.open ( imageListFilename );
+    if ( !file ) {
+        LOGGER_ERROR ( "Cannot open the file " << imageListFilename );
         return -1;
     }
 
     // Lecture de l'image de sortie
-    if (readFileLine(file,outputImagePath,&hasOutMask,outputMaskPath)) {
-        LOGGER_ERROR("Cannot read output image in the file : " << imageListFilename);
+    if ( readFileLine ( file,outputImagePath,&hasOutMask,outputMaskPath ) ) {
+        LOGGER_ERROR ( "Cannot read output image in the file : " << imageListFilename );
         return -1;
     }
 
@@ -422,14 +450,14 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
     // Lecture et création des images sources
     int inputNb = 0;
     int out = 0;
-    while ((out = readFileLine(file,inputImagePath,&hasMask,inputMaskPath)) == 0) {
-        LibtiffImage* pImage = LIF.createLibtiffImageToRead(inputImagePath, fakeBbox, -1., -1.);
-        if (pImage == NULL) {
-            LOGGER_ERROR("Cannot create a LibtiffImage from the file " << inputImagePath);
+    while ( ( out = readFileLine ( file,inputImagePath,&hasMask,inputMaskPath ) ) == 0 ) {
+        LibtiffImage* pImage = LIF.createLibtiffImageToRead ( inputImagePath, fakeBbox, -1., -1. );
+        if ( pImage == NULL ) {
+            LOGGER_ERROR ( "Cannot create a LibtiffImage from the file " << inputImagePath );
             return -1;
         }
 
-        if (inputNb == 0) {
+        if ( inputNb == 0 ) {
             // C'est notre première image en entrée, on mémorise lse caractéristiques)
             bitspersample = pImage->getBitsPerSample();
             sampleformat = pImage->getSampleFormat();
@@ -437,77 +465,77 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
             height = pImage->height;
         } else {
             // Toutes les images en entrée doivent avoir certaines caractéristiques en commun
-            if (bitspersample != pImage->getBitsPerSample() || sampleformat != pImage->getSampleFormat() ||
-                width != pImage->width || height != pImage->height) {
-                
-                LOGGER_ERROR("All input images must have same dimension and sample format");
+            if ( bitspersample != pImage->getBitsPerSample() || sampleformat != pImage->getSampleFormat() ||
+                    width != pImage->width || height != pImage->height ) {
+
+                LOGGER_ERROR ( "All input images must have same dimension and sample format" );
                 return -1;
             }
         }
 
-        if (hasMask) {
+        if ( hasMask ) {
             /* On a un masque associé, on en fait une image à lire et on vérifie qu'elle est cohérentes :
              *          - même dimensions que l'image
              *          - 1 seul canal (entier)
              */
-            LibtiffImage* pMask = LIF.createLibtiffImageToRead(inputMaskPath, fakeBbox, -1., -1.);
-            if (pMask == NULL) {
-                LOGGER_ERROR("Cannot create a LibtiffImage (mask) from the file " << inputMaskPath);
+            LibtiffImage* pMask = LIF.createLibtiffImageToRead ( inputMaskPath, fakeBbox, -1., -1. );
+            if ( pMask == NULL ) {
+                LOGGER_ERROR ( "Cannot create a LibtiffImage (mask) from the file " << inputMaskPath );
                 return -1;
             }
-            
-            if (! pImage->setMask(pMask)) {
-                LOGGER_ERROR("Cannot add mask " << inputMaskPath);
+
+            if ( ! pImage->setMask ( pMask ) ) {
+                LOGGER_ERROR ( "Cannot add mask " << inputMaskPath );
                 return -1;
             }
         }
 
-        ImageIn.push_back(pImage);
+        ImageIn.push_back ( pImage );
         inputNb++;
     }
 
-    if (out != -1) {
-        LOGGER_ERROR("Failure reading the file " << imageListFilename);
+    if ( out != -1 ) {
+        LOGGER_ERROR ( "Failure reading the file " << imageListFilename );
         return -1;
     }
 
     // Fermeture du fichier
     file.close();
 
-    sampleType = SampleType(bitspersample, sampleformat);
+    sampleType = SampleType ( bitspersample, sampleformat );
 
-    if (! sampleType.isSupported() ) {
-        error("Supported sample format are :\n" + sampleType.getHandledFormat(),-1);
+    if ( ! sampleType.isSupported() ) {
+        error ( "Supported sample format are :\n" + sampleType.getHandledFormat(),-1 );
     }
 
     // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
 
-    *ppMergeIn = MIF.createMergeImage(ImageIn, sampleType, samplesperpixel, background, transparent, mergeMethod);
+    *ppMergeIn = MIF.createMergeImage ( ImageIn, sampleType, samplesperpixel, background, transparent, mergeMethod );
 
     // Le masque fusionné est ajouté
-    MergeMask* pMM = new MergeMask(*ppMergeIn);
+    MergeMask* pMM = new MergeMask ( *ppMergeIn );
 
-    if (! (*ppMergeIn)->setMask(pMM)) {
-        LOGGER_ERROR("Cannot add mask to the merged image");
+    if ( ! ( *ppMergeIn )->setMask ( pMM ) ) {
+        LOGGER_ERROR ( "Cannot add mask to the merged image" );
         return -1;
     }
 
     // Création des sorties
-    *ppImageOut = LIF.createLibtiffImageToWrite(outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
-                                                    sampleType, photometric,compression,16);
+    *ppImageOut = LIF.createLibtiffImageToWrite ( outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
+                  sampleType, photometric,compression,16 );
 
-    if (*ppImageOut == NULL) {
-        LOGGER_ERROR("Impossible de creer l'image " << outputImagePath);
+    if ( *ppImageOut == NULL ) {
+        LOGGER_ERROR ( "Impossible de creer l'image " << outputImagePath );
         return -1;
     }
 
-    if (hasOutMask) {
-        *ppMaskOut = LIF.createLibtiffImageToWrite(outputMaskPath, fakeBbox, -1., -1., width, height, 1,
-                                                       SampleType(8,SAMPLEFORMAT_UINT),
-                                                       PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16);
+    if ( hasOutMask ) {
+        *ppMaskOut = LIF.createLibtiffImageToWrite ( outputMaskPath, fakeBbox, -1., -1., width, height, 1,
+                     SampleType ( 8,SAMPLEFORMAT_UINT ),
+                     PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16 );
 
-        if (*ppMaskOut == NULL) {
-            LOGGER_ERROR("Impossible de creer le masque " << outputMaskPath);
+        if ( *ppMaskOut == NULL ) {
+            LOGGER_ERROR ( "Impossible de creer le masque " << outputMaskPath );
             return -1;
         }
     }
@@ -527,61 +555,62 @@ int loadImages(LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage**
  * \param[in] argv parameters array
  * \return 0 if success, -1 otherwise
  */
-int main(int argc, char **argv)
-{
+int main ( int argc, char **argv ) {
 
     LibtiffImage* pImageOut ;
     LibtiffImage* pMaskOut = NULL;
     MergeImage* pMergeIn;
 
     /* Initialisation des Loggers */
-    Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
+    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
     //Logger::setAccumulator(DEBUG, acc);
-    Logger::setAccumulator(INFO , acc);
-    Logger::setAccumulator(WARN , acc);
-    Logger::setAccumulator(ERROR, acc);
-    Logger::setAccumulator(FATAL, acc);
+    Logger::setAccumulator ( INFO , acc );
+    Logger::setAccumulator ( WARN , acc );
+    Logger::setAccumulator ( ERROR, acc );
+    Logger::setAccumulator ( FATAL, acc );
 
-    std::ostream &logd = LOGGER(DEBUG);
-    logd.precision(16);
-    logd.setf(std::ios::fixed,std::ios::floatfield);
+    std::ostream &logd = LOGGER ( DEBUG );
+    logd.precision ( 16 );
+    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
-    std::ostream &logw = LOGGER(WARN);
-    logw.precision(16);
-    logw.setf(std::ios::fixed,std::ios::floatfield);
+    std::ostream &logw = LOGGER ( WARN );
+    logw.precision ( 16 );
+    logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    LOGGER_DEBUG("Read parameters");
+    LOGGER_DEBUG ( "Read parameters" );
     // Lecture des parametres de la ligne de commande
-    if (parseCommandLine(argc,argv) < 0) {
-        error("Cannot parse command line",-1);
+    if ( parseCommandLine ( argc,argv ) < 0 ) {
+        error ( "Cannot parse command line",-1 );
     }
 
-    LOGGER_DEBUG("Load");
+    LOGGER_DEBUG ( "Load" );
     // Chargement des images
-    if (loadImages(&pImageOut,&pMaskOut,&pMergeIn) < 0) {
-        error("Cannot load images from the configuration file",-1);
+    if ( loadImages ( &pImageOut,&pMaskOut,&pMergeIn ) < 0 ) {
+        error ( "Cannot load images from the configuration file",-1 );
     }
 
-    LOGGER_DEBUG("Save image");
+    LOGGER_DEBUG ( "Save image" );
     // Enregistrement de l'image fusionnée
-    if (pImageOut->writeImage(pMergeIn) < 0) {
-        error("Cannot write the merged image",-1);
+    if ( pImageOut->writeImage ( pMergeIn ) < 0 ) {
+        error ( "Cannot write the merged image",-1 );
     }
 
-    LOGGER_DEBUG("Save mask");
+    LOGGER_DEBUG ( "Save mask" );
     // Enregistrement du masque fusionné, si demandé
-    if (pMaskOut != NULL && pMaskOut->writeImage(pMergeIn->Image::getMask()) < 0) {
-        error("Cannot write the merged mask",-1);
+    if ( pMaskOut != NULL && pMaskOut->writeImage ( pMergeIn->Image::getMask() ) < 0 ) {
+        error ( "Cannot write the merged mask",-1 );
     }
 
     delete acc;
     delete pImageOut;
     delete pMaskOut;
-    
+
     delete [] background;
-    if (transparent != NULL) { delete [] transparent; }
+    if ( transparent != NULL ) {
+        delete [] transparent;
+    }
 
     return 0;
 }

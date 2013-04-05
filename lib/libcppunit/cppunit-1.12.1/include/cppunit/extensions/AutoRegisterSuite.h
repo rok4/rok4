@@ -25,35 +25,31 @@ CPPUNIT_NS_BEGIN
  * \see CppUnit::TestFactoryRegistry.
  */
 template<class TestCaseType>
-class AutoRegisterSuite
-{
+class AutoRegisterSuite {
 public:
-  /** Auto-register the suite factory in the global registry.
-   */
-  AutoRegisterSuite()
-      : m_registry( &TestFactoryRegistry::getRegistry() )
-  {
-    m_registry->registerFactory( &m_factory );
-  }
+    /** Auto-register the suite factory in the global registry.
+     */
+    AutoRegisterSuite()
+        : m_registry ( &TestFactoryRegistry::getRegistry() ) {
+        m_registry->registerFactory ( &m_factory );
+    }
 
-  /** Auto-register the suite factory in the specified registry.
-   * \param name Name of the registry.
-   */
-  AutoRegisterSuite( const std::string &name )
-      : m_registry( &TestFactoryRegistry::getRegistry( name ) )
-  {
-    m_registry->registerFactory( &m_factory );
-  }
+    /** Auto-register the suite factory in the specified registry.
+     * \param name Name of the registry.
+     */
+    AutoRegisterSuite ( const std::string &name )
+        : m_registry ( &TestFactoryRegistry::getRegistry ( name ) ) {
+        m_registry->registerFactory ( &m_factory );
+    }
 
-  ~AutoRegisterSuite()
-  {
-    if ( TestFactoryRegistry::isValid() )
-      m_registry->unregisterFactory( &m_factory );
-  }
+    ~AutoRegisterSuite() {
+        if ( TestFactoryRegistry::isValid() )
+            m_registry->unregisterFactory ( &m_factory );
+    }
 
 private:
-  TestFactoryRegistry *m_registry;
-  TestSuiteFactory<TestCaseType> m_factory;
+    TestFactoryRegistry *m_registry;
+    TestSuiteFactory<TestCaseType> m_factory;
 };
 
 
@@ -62,19 +58,16 @@ private:
  * Don't use this class. Use the macros CPPUNIT_REGISTRY_ADD() and
  * CPPUNIT_REGISTRY_ADD_TO_DEFAULT() instead.
  */
-class AutoRegisterRegistry
-{
+class AutoRegisterRegistry {
 public:
-  AutoRegisterRegistry( const std::string &which,
-                        const std::string &to )
-  {
-    TestFactoryRegistry::getRegistry( to ).addRegistry( which );
-  }
+    AutoRegisterRegistry ( const std::string &which,
+                           const std::string &to ) {
+        TestFactoryRegistry::getRegistry ( to ).addRegistry ( which );
+    }
 
-  AutoRegisterRegistry( const std::string &which )
-  {
-    TestFactoryRegistry::getRegistry().addRegistry( which );
-  }
+    AutoRegisterRegistry ( const std::string &which ) {
+        TestFactoryRegistry::getRegistry().addRegistry ( which );
+    }
 };
 
 

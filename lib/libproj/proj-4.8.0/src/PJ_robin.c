@@ -1,11 +1,11 @@
 #define PJ_LIB__
 #include	<projects.h>
-PROJ_HEAD(robin, "Robinson") "\n\tPCyl., Sph.";
+PROJ_HEAD ( robin, "Robinson" ) "\n\tPCyl., Sph.";
 #define V(C,z) (C.c0 + z * (C.c1 + z * (C.c2 + z * C.c3)))
 #define DV(C,z) (C.c1 + z * (C.c2 + C.c2 + z * 3. * C.c3))
 /* note: following terms based upon 5 deg. intervals in degrees. */
 static struct COEFS {
-	float c0, c1, c2, c3;
+    float c0, c1, c2, c3;
 } X[] = {
     {1,	-5.67239e-12,	-7.15511e-05,	3.11028e-06},
     {0.9986,	-0.000482241,	-2.4897e-05,	-1.33094e-06},
@@ -25,7 +25,8 @@ static struct COEFS {
     {0.6732,	-0.00986209,	-0.000199572,	1.91978e-05},
     {0.6213,	-0.010418,	8.83948e-05,	6.24031e-06},
     {0.5722,	-0.00906601,	0.000181999,	6.24033e-06},
-    {0.5322, 0.,0.,0.}  },
+    {0.5322, 0.,0.,0.}
+},
 Y[] = {
     {0,	0.0124,	3.72529e-10,	1.15484e-09},
     {0.062,	0.0124001,	1.76951e-08,	-5.92321e-09},
@@ -45,7 +46,8 @@ Y[] = {
     {0.8936,	0.00969679,	-6.46129e-05,	-8.54894e-06},
     {0.9394,	0.00840949,	-0.000192847,	-4.21023e-06},
     {0.9761,	0.00616525,	-0.000256001,	-4.21021e-06},
-    {1., 0.,0.,0} };
+    {1., 0.,0.,0}
+};
 #define FXC	0.8487
 #define FYC	1.3523
 #define C1	11.45915590261646417544
@@ -53,53 +55,58 @@ Y[] = {
 #define NODES	18
 #define ONEEPS	1.000001
 #define EPS	1e-8
-FORWARD(s_forward); /* spheroid */
-	int i;
-	double dphi;
+FORWARD ( s_forward ); /* spheroid */
+int i;
+double dphi;
 
-	i = floor((dphi = fabs(lp.phi)) * C1);
-	if (i >= NODES) i = NODES - 1;
-	dphi = RAD_TO_DEG * (dphi - RC1 * i);
-	xy.x = V(X[i], dphi) * FXC * lp.lam;
-	xy.y = V(Y[i], dphi) * FYC;
-	if (lp.phi < 0.) xy.y = -xy.y;
-	return (xy);
+i = floor ( ( dphi = fabs ( lp.phi ) ) * C1 );
+if ( i >= NODES ) i = NODES - 1;
+dphi = RAD_TO_DEG * ( dphi - RC1 * i );
+xy.x = V ( X[i], dphi ) * FXC * lp.lam;
+xy.y = V ( Y[i], dphi ) * FYC;
+if ( lp.phi < 0. ) xy.y = -xy.y;
+return ( xy );
 }
-INVERSE(s_inverse); /* spheroid */
-	int i;
-	double t, t1;
-	struct COEFS T;
+INVERSE ( s_inverse ); /* spheroid */
+int i;
+double t, t1;
+struct COEFS T;
 
-	lp.lam = xy.x / FXC;
-	lp.phi = fabs(xy.y / FYC);
-	if (lp.phi >= 1.) { /* simple pathologic cases */
-		if (lp.phi > ONEEPS) I_ERROR
-		else {
-			lp.phi = xy.y < 0. ? -HALFPI : HALFPI;
-			lp.lam /= X[NODES].c0;
-		}
-	} else { /* general problem */
-		/* in Y space, reduce to table interval */
-		for (i = floor(lp.phi * NODES);;) {
-			if (Y[i].c0 > lp.phi) --i;
-			else if (Y[i+1].c0 <= lp.phi) ++i;
-			else break;
-		}
-		T = Y[i];
-		/* first guess, linear interp */
-		t = 5. * (lp.phi - T.c0)/(Y[i+1].c0 - T.c0);
-		/* make into root */
-		T.c0 -= lp.phi;
-		for (;;) { /* Newton-Raphson reduction */
-			t -= t1 = V(T,t) / DV(T,t);
-			if (fabs(t1) < EPS)
-				break;
-		}
-		lp.phi = (5 * i + t) * DEG_TO_RAD;
-		if (xy.y < 0.) lp.phi = -lp.phi;
-		lp.lam /= V(X[i], t);
-	}
-	return (lp);
+lp.lam = xy.x / FXC;
+         lp.phi = fabs ( xy.y / FYC );
+if ( lp.phi >= 1. ) { /* simple pathologic cases */
+    if ( lp.phi > ONEEPS ) I_ERROR
+        else {
+            lp.phi = xy.y < 0. ? -HALFPI : HALFPI;
+            lp.lam /= X[NODES].c0;
+        }
+} else { /* general problem */
+    /* in Y space, reduce to table interval */
+    for ( i = floor ( lp.phi * NODES );; ) {
+        if ( Y[i].c0 > lp.phi ) --i;
+        else if ( Y[i+1].c0 <= lp.phi ) ++i;
+        else break;
+    }
+    T = Y[i];
+    /* first guess, linear interp */
+    t = 5. * ( lp.phi - T.c0 ) / ( Y[i+1].c0 - T.c0 );
+    /* make into root */
+    T.c0 -= lp.phi;
+    for ( ;; ) { /* Newton-Raphson reduction */
+        t -= t1 = V ( T,t ) / DV ( T,t );
+        if ( fabs ( t1 ) < EPS )
+            break;
+    }
+    lp.phi = ( 5 * i + t ) * DEG_TO_RAD;
+    if ( xy.y < 0. ) lp.phi = -lp.phi;
+    lp.lam /= V ( X[i], t );
 }
-FREEUP; if (P) pj_dalloc(P); }
-ENTRY0(robin) P->es = 0.; P->inv = s_inverse; P->fwd = s_forward; ENDENTRY(P)
+return ( lp );
+}
+       FREEUP;
+       if ( P ) pj_dalloc ( P );
+}
+       ENTRY0 ( robin ) P->es = 0.;
+                                P->inv = s_inverse;
+                                        P->fwd = s_forward;
+                                                ENDENTRY ( P )

@@ -46,38 +46,36 @@
 #include <string>
 #include <list>
 
-class lzwEncoder
-{
-    struct lzwEncoderWord 
-    {
+class lzwEncoder {
+    struct lzwEncoderWord {
         uint16_t nextValue[256];
     };
 private:
     uint8_t maxBit;
-    
+
     std::vector<lzwEncoderWord> dict;
     uint16_t maxCode;
     uint8_t bitSize;
     uint16_t nextCode;
-    
+
     uint16_t lastCode;
-    
+
     uint32_t buffer;
     uint8_t nWriteBits;
     bool firstPass;
     void clearDict();
-    inline void writeBits(uint16_t lzwCode, uint8_t* out, size_t& outPos);
-    
-    uint8_t* encodeAlt(const uint8_t * in, size_t inSize, size_t &outSize);
-    
-    uint8_t* streamEncode(const uint8_t * in, size_t inSize, uint8_t* outbuffer , size_t &outSize);
-    void streamEnd(uint8_t* out, size_t& outSize);
-    
+    inline void writeBits ( uint16_t lzwCode, uint8_t* out, size_t& outPos );
+
+    uint8_t* encodeAlt ( const uint8_t * in, size_t inSize, size_t &outSize );
+
+    uint8_t* streamEncode ( const uint8_t * in, size_t inSize, uint8_t* outbuffer , size_t &outSize );
+    void streamEnd ( uint8_t* out, size_t& outSize );
+
 public:
     lzwEncoder();
-    uint8_t* encode(const uint8_t * in, size_t inSize, size_t &outSize);
+    uint8_t* encode ( const uint8_t * in, size_t inSize, size_t &outSize );
 
-    
+
     virtual ~lzwEncoder();
 };
 

@@ -1,7 +1,6 @@
 #include "Chess.h"
 
-int 
-Chess::getNumberOfPieces() const
-{
-  return 32;
+int
+Chess::getNumberOfPieces() const {
+    return 32;
 }

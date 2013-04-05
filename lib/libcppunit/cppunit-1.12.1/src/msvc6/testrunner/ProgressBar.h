@@ -7,61 +7,59 @@
 
 
 
-class ProgressBar : public CWnd
-{
+class ProgressBar : public CWnd {
 public:
-	ProgressBar();
-	virtual ~ProgressBar();
+    ProgressBar();
+    virtual ~ProgressBar();
 
-  void step( bool successful );
+    void step ( bool successful );
 
-  int scale( int value );
+    int scale ( int value );
 
-  void reset();
+    void reset();
 
-  void start( int total );
+    void start ( int total );
 
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(ProgressBar)
-	//}}AFX_VIRTUAL
-
-protected:
-	//{{AFX_MSG(ProgressBar)
-	afx_msg void OnPaint();
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP();
-
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(ProgressBar)
+    //}}AFX_VIRTUAL
 
 protected:
-  void paint( CDC &dc );
+    //{{AFX_MSG(ProgressBar)
+    afx_msg void OnPaint();
+    afx_msg void OnSize ( UINT nType, int cx, int cy );
+    afx_msg BOOL OnEraseBkgnd ( CDC* pDC );
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP();
 
-  void paintBackground( CDC &dc );
 
-  void paintStatus( CDC &dc );
+protected:
+    void paint ( CDC &dc );
 
-  COLORREF getStatusColor();
+    void paintBackground ( CDC &dc );
 
-  void paintStep( int startX, 
-                  int endX );
+    void paintStatus ( CDC &dc );
+
+    COLORREF getStatusColor();
+
+    void paintStep ( int startX,
+                     int endX );
 
 private:
-  CRect m_bounds;
-  bool m_error;
-  int m_total;
-  int m_progress;
-  int m_progressX;
+    CRect m_bounds;
+    bool m_error;
+    int m_total;
+    int m_progress;
+    int m_progressX;
 };
 
 
 
 // Get the current color
-inline COLORREF 
-ProgressBar::getStatusColor ()
-{ 
-  return m_error ? RGB (255, 0, 0) : 
-                   RGB (0, 255, 0); 
+inline COLORREF
+ProgressBar::getStatusColor () {
+    return m_error ? RGB ( 255, 0, 0 ) :
+           RGB ( 0, 255, 0 );
 }
 
 

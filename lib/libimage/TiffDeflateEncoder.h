@@ -106,11 +106,11 @@ public:
         if ( linebuffer ) delete[] linebuffer;
         if ( deflateBuffer ) delete[] deflateBuffer;
         deflateEnd ( &zstream );
-        
+
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize(image->channels), linesize=image->width*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->width*image->channels, dataToCopy=0;
         if ( !deflateBuffer ) {
             deflateBufferSize = linesize * image->height ;
             deflateBuffer = new uint8_t[deflateBufferSize];

@@ -1,12 +1,12 @@
 /*
  * Copyright 2000,2004 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,7 @@ import java.io.OutputStream;
  * <p>
  * The output stream writes the requested bytes as packets of binary
  * information. The packet consists of a header and payload. The header
- * is two bytes of a single unsigned short (written in network order) 
+ * is two bytes of a single unsigned short (written in network order)
  * that specifies the length of bytes in the payload. A header value of
  * 0 indicates that the stream is "closed".
  * <p>
@@ -70,7 +70,7 @@ public class WrappedOutputStream
     /** Buffer position. */
     protected int fPosition;
 
-    /** 
+    /**
      * Data output stream. This stream is used to output the block sizes
      * into the data stream that are read by the WrappedInputStream.
      * <p>
@@ -85,55 +85,55 @@ public class WrappedOutputStream
     //
 
     /** Constructs a wrapper for the given output stream. */
-    public WrappedOutputStream(OutputStream stream) {
-        this(stream, DEFAULT_BUFFER_SIZE);
+    public WrappedOutputStream ( OutputStream stream ) {
+        this ( stream, DEFAULT_BUFFER_SIZE );
     } // <init>(OutputStream)
 
-    /** 
+    /**
      * Constructs a wrapper for the given output stream with the
      * given buffer size.
      */
-    public WrappedOutputStream(OutputStream stream, int bufferSize) {
-        super(stream);
+    public WrappedOutputStream ( OutputStream stream, int bufferSize ) {
+        super ( stream );
         fBuffer = new byte[bufferSize];
-        fDataOutputStream = new DataOutputStream(stream);
+        fDataOutputStream = new DataOutputStream ( stream );
     } // <init>(OutputStream)
 
     //
     // OutputStream methods
     //
 
-    /** 
-     * Writes a single byte to the output. 
+    /**
+     * Writes a single byte to the output.
      * <p>
      * <strong>Note:</strong> Single bytes written to the output stream
      * will be buffered
      */
-    public void write(int b) throws IOException {
-        fBuffer[fPosition++] = (byte)b;
-        if (fPosition == fBuffer.length) {
+    public void write ( int b ) throws IOException {
+        fBuffer[fPosition++] = ( byte ) b;
+        if ( fPosition == fBuffer.length ) {
             fPosition = 0;
-            fDataOutputStream.writeInt(fBuffer.length);
-            super.out.write(fBuffer, 0, fBuffer.length);
+            fDataOutputStream.writeInt ( fBuffer.length );
+            super.out.write ( fBuffer, 0, fBuffer.length );
         }
     } // write(int)
 
     /** Writes an array of bytes to the output. */
-    public void write(byte[] b, int offset, int length) 
-        throws IOException {
+    public void write ( byte[] b, int offset, int length )
+    throws IOException {
 
         // flush existing buffer
-        if (fPosition > 0) {
+        if ( fPosition > 0 ) {
             flush0();
         }
 
         // write header followed by actual bytes
-        fDataOutputStream.writeInt(length);
-        super.out.write(b, offset, length);
+        fDataOutputStream.writeInt ( length );
+        super.out.write ( b, offset, length );
 
     } // write(byte[])
 
-    /** 
+    /**
      * Flushes the output buffer, writing all bytes currently in
      * the buffer to the output.
      */
@@ -142,7 +142,7 @@ public class WrappedOutputStream
         super.out.flush();
     } // flush()
 
-    /** 
+    /**
      * Closes the output stream. This method <strong>must</strong> be
      * called when done writing all data to the output stream.
      * <p>
@@ -152,7 +152,7 @@ public class WrappedOutputStream
      */
     public void close() throws IOException {
         flush0();
-        fDataOutputStream.writeInt(0);
+        fDataOutputStream.writeInt ( 0 );
         super.out.flush();
     } // close()
 
@@ -160,7 +160,7 @@ public class WrappedOutputStream
     // Protected methods
     //
 
-    /** 
+    /**
      * Flushes the output buffer, writing all bytes currently in
      * the buffer to the output. This method does not call the
      * flush() method of the output stream; it merely writes the
@@ -169,9 +169,9 @@ public class WrappedOutputStream
     public void flush0() throws IOException {
         int length = fPosition;
         fPosition = 0;
-        if (length > 0) {
-            fDataOutputStream.writeInt(length);
-            super.out.write(fBuffer, 0, length);
+        if ( length > 0 ) {
+            fDataOutputStream.writeInt ( length );
+            super.out.write ( fBuffer, 0, length );
         }
     } // flush0()
 

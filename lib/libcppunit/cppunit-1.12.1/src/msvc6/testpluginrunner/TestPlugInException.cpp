@@ -15,36 +15,31 @@ static char THIS_FILE[] = __FILE__;
 
 
 
-TestPlugInException::TestPlugInException( std::string message, 
-                                          Cause cause ) : 
-    runtime_error( message ),
-    m_cause( cause )
-{
+TestPlugInException::TestPlugInException ( std::string message,
+        Cause cause ) :
+    runtime_error ( message ),
+    m_cause ( cause ) {
 }
 
 
-TestPlugInException::TestPlugInException( const TestPlugInException &copy ) : 
-    runtime_error( copy )
-{
+TestPlugInException::TestPlugInException ( const TestPlugInException &copy ) :
+    runtime_error ( copy ) {
 }
 
 
-TestPlugInException::~TestPlugInException()
-{
+TestPlugInException::~TestPlugInException() {
 }
 
 
 TestPlugInException &
-TestPlugInException::operator =( const TestPlugInException &copy )
-{
-  runtime_error::operator =( copy );
-  m_cause = copy.m_cause;
-  return *this;
+TestPlugInException::operator = ( const TestPlugInException &copy ) {
+    runtime_error::operator = ( copy );
+    m_cause = copy.m_cause;
+    return *this;
 }
 
 
-TestPlugInException::Cause 
-TestPlugInException::getCause() const
-{
-  return m_cause;
+TestPlugInException::Cause
+TestPlugInException::getCause() const {
+    return m_cause;
 }

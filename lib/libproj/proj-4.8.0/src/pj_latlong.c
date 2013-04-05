@@ -2,7 +2,7 @@
  * $Id: pj_latlong.c 1504 2009-01-06 02:11:57Z warmerdam $
  *
  * Project:  PROJ.4
- * Purpose:  Stub projection implementation for lat/long coordinates. We 
+ * Purpose:  Stub projection implementation for lat/long coordinates. We
  *           don't actually change the coordinates, but we want proj=latlong
  *           to act sort of like a projection.
  * Author:   Frank Warmerdam, warmerdam@pobox.com
@@ -32,49 +32,55 @@
 /* very loosely based upon DMA code by Bradford W. Drew */
 #define PJ_LIB__
 #include	<projects.h>
-PROJ_HEAD(lonlat, "Lat/long (Geodetic)")  "\n\t";
-PROJ_HEAD(latlon, "Lat/long (Geodetic alias)")  "\n\t";
-PROJ_HEAD(latlong, "Lat/long (Geodetic alias)")  "\n\t";
-PROJ_HEAD(longlat, "Lat/long (Geodetic alias)")  "\n\t";
+PROJ_HEAD ( lonlat, "Lat/long (Geodetic)" )  "\n\t";
+PROJ_HEAD ( latlon, "Lat/long (Geodetic alias)" )  "\n\t";
+PROJ_HEAD ( latlong, "Lat/long (Geodetic alias)" )  "\n\t";
+PROJ_HEAD ( longlat, "Lat/long (Geodetic alias)" )  "\n\t";
 
-FORWARD(forward);
+FORWARD ( forward );
 
-        xy.x = lp.lam / P->a;
-        xy.y = lp.phi / P->a;
-        return xy;
+xy.x = lp.lam / P->a;
+xy.y = lp.phi / P->a;
+return xy;
 }
-INVERSE(inverse);
+INVERSE ( inverse );
 
-        lp.phi = xy.y * P->a;
-        lp.lam = xy.x * P->a;
-        return lp;
+lp.phi = xy.y * P->a;
+         lp.lam = xy.x * P->a;
+                  return lp;
 }
-FREEUP; if (P) pj_dalloc(P); }
+                         FREEUP;
+                         if ( P ) pj_dalloc ( P );
+}
 
-ENTRY0(latlong)
-        P->is_latlong = 1;
-        P->x0 = 0.0;
-        P->y0 = 0.0;
-	P->inv = inverse; P->fwd = forward;
-ENDENTRY(P)
+                         ENTRY0 ( latlong )
+                         P->is_latlong = 1;
+                                 P->x0 = 0.0;
+                                         P->y0 = 0.0;
+                                                 P->inv = inverse;
+                                                         P->fwd = forward;
+                                                                 ENDENTRY ( P )
 
-ENTRY0(longlat)
-        P->is_latlong = 1;
-        P->x0 = 0.0;
-        P->y0 = 0.0;
-	P->inv = inverse; P->fwd = forward;
-ENDENTRY(P)
+                                                                 ENTRY0 ( longlat )
+                                                                 P->is_latlong = 1;
+                                                                         P->x0 = 0.0;
+                                                                                 P->y0 = 0.0;
+                                                                                         P->inv = inverse;
+                                                                                                 P->fwd = forward;
+                                                                                                         ENDENTRY ( P )
 
-ENTRY0(latlon)
-        P->is_latlong = 1;
-        P->x0 = 0.0;
-        P->y0 = 0.0;
-	P->inv = inverse; P->fwd = forward;
-ENDENTRY(P)
+                                                                                                         ENTRY0 ( latlon )
+                                                                                                         P->is_latlong = 1;
+                                                                                                                 P->x0 = 0.0;
+                                                                                                                         P->y0 = 0.0;
+                                                                                                                                 P->inv = inverse;
+                                                                                                                                         P->fwd = forward;
+                                                                                                                                                 ENDENTRY ( P )
 
-ENTRY0(lonlat)
-        P->is_latlong = 1;
-        P->x0 = 0.0;
-        P->y0 = 0.0;
-	P->inv = inverse; P->fwd = forward;
-ENDENTRY(P)
+                                                                                                                                                 ENTRY0 ( lonlat )
+                                                                                                                                                 P->is_latlong = 1;
+                                                                                                                                                         P->x0 = 0.0;
+                                                                                                                                                                 P->y0 = 0.0;
+                                                                                                                                                                         P->inv = inverse;
+                                                                                                                                                                                 P->fwd = forward;
+                                                                                                                                                                                         ENDENTRY ( P )

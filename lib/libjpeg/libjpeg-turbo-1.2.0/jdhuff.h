@@ -25,35 +25,35 @@
 #define HUFF_LOOKAHEAD	8	/* # of bits of lookahead */
 
 typedef struct {
-  /* Basic tables: (element [0] of each array is unused) */
-  INT32 maxcode[18];		/* largest code of length k (-1 if none) */
-  /* (maxcode[17] is a sentinel to ensure jpeg_huff_decode terminates) */
-  INT32 valoffset[18];		/* huffval[] offset for codes of length k */
-  /* valoffset[k] = huffval[] index of 1st symbol of code length k, less
-   * the smallest code of length k; so given a code of length k, the
-   * corresponding symbol is huffval[code + valoffset[k]]
-   */
+    /* Basic tables: (element [0] of each array is unused) */
+    INT32 maxcode[18];		/* largest code of length k (-1 if none) */
+    /* (maxcode[17] is a sentinel to ensure jpeg_huff_decode terminates) */
+    INT32 valoffset[18];		/* huffval[] offset for codes of length k */
+    /* valoffset[k] = huffval[] index of 1st symbol of code length k, less
+     * the smallest code of length k; so given a code of length k, the
+     * corresponding symbol is huffval[code + valoffset[k]]
+     */
 
-  /* Link to public Huffman table (needed only in jpeg_huff_decode) */
-  JHUFF_TBL *pub;
+    /* Link to public Huffman table (needed only in jpeg_huff_decode) */
+    JHUFF_TBL *pub;
 
-  /* Lookahead table: indexed by the next HUFF_LOOKAHEAD bits of
-   * the input data stream.  If the next Huffman code is no more
-   * than HUFF_LOOKAHEAD bits long, we can obtain its length and
-   * the corresponding symbol directly from this tables.
-   *
-   * The lower 8 bits of each table entry contain the number of
-   * bits in the corresponding Huffman code, or HUFF_LOOKAHEAD + 1
-   * if too long.  The next 8 bits of each entry contain the
-   * symbol.
-   */
-  int lookup[1<<HUFF_LOOKAHEAD];
+    /* Lookahead table: indexed by the next HUFF_LOOKAHEAD bits of
+     * the input data stream.  If the next Huffman code is no more
+     * than HUFF_LOOKAHEAD bits long, we can obtain its length and
+     * the corresponding symbol directly from this tables.
+     *
+     * The lower 8 bits of each table entry contain the number of
+     * bits in the corresponding Huffman code, or HUFF_LOOKAHEAD + 1
+     * if too long.  The next 8 bits of each entry contain the
+     * symbol.
+     */
+    int lookup[1<<HUFF_LOOKAHEAD];
 } d_derived_tbl;
 
 /* Expand a Huffman table definition into the derived format */
-EXTERN(void) jpeg_make_d_derived_tbl
-	JPP((j_decompress_ptr cinfo, boolean isDC, int tblno,
-	     d_derived_tbl ** pdtbl));
+EXTERN ( void ) jpeg_make_d_derived_tbl
+JPP ( ( j_decompress_ptr cinfo, boolean isDC, int tblno,
+        d_derived_tbl ** pdtbl ) );
 
 
 /*
@@ -94,22 +94,22 @@ typedef INT32 bit_buf_type;	/* type of bit-extraction buffer */
  */
 
 typedef struct {		/* Bitreading state saved across MCUs */
-  bit_buf_type get_buffer;	/* current bit-extraction buffer */
-  int bits_left;		/* # of unused bits in it */
+    bit_buf_type get_buffer;	/* current bit-extraction buffer */
+    int bits_left;		/* # of unused bits in it */
 } bitread_perm_state;
 
 typedef struct {		/* Bitreading working state within an MCU */
-  /* Current data source location */
-  /* We need a copy, rather than munging the original, in case of suspension */
-  const JOCTET * next_input_byte; /* => next byte to read from source */
-  size_t bytes_in_buffer;	/* # of bytes remaining in source buffer */
-  /* Bit input buffer --- note these values are kept in register variables,
-   * not in this struct, inside the inner loops.
-   */
-  bit_buf_type get_buffer;	/* current bit-extraction buffer */
-  int bits_left;		/* # of unused bits in it */
-  /* Pointer needed by jpeg_fill_bit_buffer. */
-  j_decompress_ptr cinfo;	/* back link to decompress master record */
+    /* Current data source location */
+    /* We need a copy, rather than munging the original, in case of suspension */
+    const JOCTET * next_input_byte; /* => next byte to read from source */
+    size_t bytes_in_buffer;	/* # of bytes remaining in source buffer */
+    /* Bit input buffer --- note these values are kept in register variables,
+     * not in this struct, inside the inner loops.
+     */
+    bit_buf_type get_buffer;	/* current bit-extraction buffer */
+    int bits_left;		/* # of unused bits in it */
+    /* Pointer needed by jpeg_fill_bit_buffer. */
+    j_decompress_ptr cinfo;	/* back link to decompress master record */
 } bitread_working_state;
 
 /* Macros to declare and load/save bitread local variables. */
@@ -165,9 +165,9 @@ typedef struct {		/* Bitreading working state within an MCU */
 	(bits_left -= (nbits))
 
 /* Load up the bit buffer to a depth of at least nbits */
-EXTERN(boolean) jpeg_fill_bit_buffer
-	JPP((bitread_working_state * state, register bit_buf_type get_buffer,
-	     register int bits_left, int nbits));
+EXTERN ( boolean ) jpeg_fill_bit_buffer
+JPP ( ( bitread_working_state * state, register bit_buf_type get_buffer,
+        register int bits_left, int nbits ) );
 
 
 /*
@@ -229,6 +229,6 @@ slowlabel: \
   }
 
 /* Out-of-line case for Huffman code fetching */
-EXTERN(int) jpeg_huff_decode
-	JPP((bitread_working_state * state, register bit_buf_type get_buffer,
-	     register int bits_left, d_derived_tbl * htbl, int min_bits));
+EXTERN ( int ) jpeg_huff_decode
+JPP ( ( bitread_working_state * state, register bit_buf_type get_buffer,
+        register int bits_left, d_derived_tbl * htbl, int min_bits ) );

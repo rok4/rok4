@@ -5,7 +5,7 @@
 #include <cppunit/TestSuite.h>
 
 #if !defined(WINAPI)
-#define WIN32_LEAN_AND_MEAN 
+#define WIN32_LEAN_AND_MEAN
 #define NOGDI
 #define NOUSER
 #define NOKERNEL
@@ -26,28 +26,27 @@
  * \endcode
  *
  * When loading the DLL, the TestPlugIn runner look-up this function and
- * retreives the 
+ * retreives the
  *
  * See the TestPlugIn example for VC++ for details.
  */
-class TestPlugInInterface
-{
+class TestPlugInInterface {
 public:
-  virtual ~TestPlugInInterface() {}
+    virtual ~TestPlugInInterface() {}
 
-  /*! Returns an instance of the "All Tests" suite.
-   *
-   * \return Instance of the top-level suite that contains all test. Ownership
-   *         is granted to the method caller.
-   */
-  virtual CppUnit::Test *makeTest() =0;
+    /*! Returns an instance of the "All Tests" suite.
+     *
+     * \return Instance of the top-level suite that contains all test. Ownership
+     *         is granted to the method caller.
+     */
+    virtual CppUnit::Test *makeTest() =0;
 };
 
-typedef TestPlugInInterface* (WINAPI *GetTestPlugInInterfaceFunction)(void);
+typedef TestPlugInInterface* ( WINAPI *GetTestPlugInInterfaceFunction ) ( void );
 
 
 extern "C" {
-  __declspec(dllexport) TestPlugInInterface *GetTestPlugInInterface();
+    __declspec ( dllexport ) TestPlugInInterface *GetTestPlugInInterface();
 }
 
 

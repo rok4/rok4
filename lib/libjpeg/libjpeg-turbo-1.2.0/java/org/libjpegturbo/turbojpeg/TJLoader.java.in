@@ -29,7 +29,7 @@
 package org.libjpegturbo.turbojpeg;
 
 final class TJLoader {
-  static void load() {
-    System.loadLibrary("@TURBOJPEG_DLL_NAME@");
-  }
+    static void load() {
+        System.loadLibrary ( "@TURBOJPEG_DLL_NAME@" );
+    }
 };

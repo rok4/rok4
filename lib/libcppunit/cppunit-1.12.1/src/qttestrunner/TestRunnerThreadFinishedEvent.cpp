@@ -8,18 +8,15 @@
 #include "TestRunnerModelThreadInterface.h"
 
 
-TestRunnerThreadFinishedEvent::TestRunnerThreadFinishedEvent()
-{
+TestRunnerThreadFinishedEvent::TestRunnerThreadFinishedEvent() {
 }
 
 
-TestRunnerThreadFinishedEvent::~TestRunnerThreadFinishedEvent()
-{
+TestRunnerThreadFinishedEvent::~TestRunnerThreadFinishedEvent() {
 }
 
 
-void 
-TestRunnerThreadFinishedEvent::process( TestRunnerModelThreadInterface *target )
-{
-  target->eventTestRunnerThreadFinished();
+void
+TestRunnerThreadFinishedEvent::process ( TestRunnerModelThreadInterface *target ) {
+    target->eventTestRunnerThreadFinished();
 }

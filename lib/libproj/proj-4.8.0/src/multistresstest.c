@@ -42,12 +42,12 @@ typedef struct {
 
     double  src_x, src_y, src_z;
     double  dst_x, dst_y, dst_z;
-    
+
     int     dst_error;
     int     skip;
-    
 
-} TestItem; 
+
+} TestItem;
 
 TestItem test_list[] = {
     {
@@ -58,7 +58,7 @@ TestItem test_list[] = {
     {
         "+proj=utm +zone=11 +datum=NAD83",
         "+proj=latlong +datum=NAD27",
-        150000.0, 3000000.0, 0.0,  
+        150000.0, 3000000.0, 0.0,
     },
     {
         "+proj=utm +zone=11 +datum=NAD83",
@@ -133,100 +133,94 @@ static volatile int active_thread_count = 0;
 /*                             TestThread()                             */
 /************************************************************************/
 
-static void *TestThread( void *pData )
+static void *TestThread ( void *pData )
 
 {
-    int i, test_count = sizeof(test_list) / sizeof(TestItem); 
+    int i, test_count = sizeof ( test_list ) / sizeof ( TestItem );
 
-/* -------------------------------------------------------------------- */
-/*      Initialize coordinate system definitions.                       */
-/* -------------------------------------------------------------------- */
+    /* -------------------------------------------------------------------- */
+    /*      Initialize coordinate system definitions.                       */
+    /* -------------------------------------------------------------------- */
     projPJ *src_pj_list, *dst_pj_list;
     projCtx ctx = pj_ctx_alloc();
 //    projCtx ctx = pj_get_default_ctx();
-    
-    src_pj_list = (projPJ *) calloc(test_count,sizeof(projPJ));
-    dst_pj_list = (projPJ *) calloc(test_count,sizeof(projPJ));
-                                
+
+    src_pj_list = ( projPJ * ) calloc ( test_count,sizeof ( projPJ ) );
+    dst_pj_list = ( projPJ * ) calloc ( test_count,sizeof ( projPJ ) );
+
 #if reinit_every_iteration == 0
-    for( i = 0; i < test_count; i++ )
-    {
+    for ( i = 0; i < test_count; i++ ) {
         TestItem *test = test_list + i;
 
-        src_pj_list[i] = pj_init_plus_ctx( ctx, test->src_def );
-        dst_pj_list[i] = pj_init_plus_ctx( ctx, test->dst_def );
+        src_pj_list[i] = pj_init_plus_ctx ( ctx, test->src_def );
+        dst_pj_list[i] = pj_init_plus_ctx ( ctx, test->dst_def );
     }
 #endif
-    
-/* -------------------------------------------------------------------- */
-/*      Perform tests - over and over.                                  */
-/* -------------------------------------------------------------------- */
+
+    /* -------------------------------------------------------------------- */
+    /*      Perform tests - over and over.                                  */
+    /* -------------------------------------------------------------------- */
     int repeat_count = num_iterations, i_iter;
-    
-    for( i_iter = 0; i_iter < repeat_count; i_iter++ )
-    {
-        for( i = 0; i < test_count; i++ )
-        {
+
+    for ( i_iter = 0; i_iter < repeat_count; i_iter++ ) {
+        for ( i = 0; i < test_count; i++ ) {
             TestItem *test = test_list + i;
             double x, y, z;
             int error;
 
-            if( test->skip )
+            if ( test->skip )
                 continue;
-            
+
             x = test->src_x;
             y = test->src_y;
             z = test->src_z;
 
 #if reinit_every_iteration == 1
-            src_pj_list[i] = pj_init_plus_ctx( ctx, test->src_def );
-            dst_pj_list[i] = pj_init_plus_ctx( ctx, test->dst_def );
+            src_pj_list[i] = pj_init_plus_ctx ( ctx, test->src_def );
+            dst_pj_list[i] = pj_init_plus_ctx ( ctx, test->dst_def );
 #endif
 
-            error = pj_transform( src_pj_list[i], dst_pj_list[i], 1, 0, 
-                                  &x, &y, &z );
-            
+            error = pj_transform ( src_pj_list[i], dst_pj_list[i], 1, 0,
+                                   &x, &y, &z );
 
-            if( error != test->dst_error )
-            {
-                fprintf( stderr, "Got error %d, expected %d\n", 
-                         error, test->dst_error );
+
+            if ( error != test->dst_error ) {
+                fprintf ( stderr, "Got error %d, expected %d\n",
+                          error, test->dst_error );
             }
 
-            if( x != test->dst_x || y != test->dst_y || z != test->dst_z )
-            {
-                fprintf( stderr, 
-                         "Got %.15g,%.15g,%.15g\n"
-                         "Expected %.15g,%.15g,%.15g\n",
-                         x, y, z, 
-                         test->dst_x, test->dst_y, test->dst_z );
+            if ( x != test->dst_x || y != test->dst_y || z != test->dst_z ) {
+                fprintf ( stderr,
+                          "Got %.15g,%.15g,%.15g\n"
+                          "Expected %.15g,%.15g,%.15g\n",
+                          x, y, z,
+                          test->dst_x, test->dst_y, test->dst_z );
             }
 
 #if reinit_every_iteration == 1
-            pj_free( src_pj_list[i] );
-            pj_free( dst_pj_list[i] );
+            pj_free ( src_pj_list[i] );
+            pj_free ( dst_pj_list[i] );
 #endif
         }
     }
 
-/* -------------------------------------------------------------------- */
-/*      Cleanup                                                         */
-/* -------------------------------------------------------------------- */
+    /* -------------------------------------------------------------------- */
+    /*      Cleanup                                                         */
+    /* -------------------------------------------------------------------- */
 #if reinit_every_iteration == 0
-    for( i = 0; i < test_count; i++ )
-    {
-        pj_free( src_pj_list[i] );
-        pj_free( dst_pj_list[i] );
+    for ( i = 0; i < test_count; i++ ) {
+        pj_free ( src_pj_list[i] );
+        pj_free ( dst_pj_list[i] );
     }
 #endif
-    
-    free( src_pj_list );
-    free( dst_pj_list );
 
-    pj_ctx_free( ctx );
+    free ( src_pj_list );
+    free ( dst_pj_list );
 
-    printf( "%d iterations of the %d tests complete in thread X\n", 
-            repeat_count, test_count );
+    pj_ctx_free ( ctx );
+
+    printf ( "%d iterations of the %d tests complete in thread X\n",
+             repeat_count, test_count );
 
     active_thread_count--;
 
@@ -236,82 +230,78 @@ static void *TestThread( void *pData )
 /************************************************************************/
 /*                                main()                                */
 /************************************************************************/
-int main( int argc, char **argv )
+int main ( int argc, char **argv )
 
 {
-/* -------------------------------------------------------------------- */
-/*      Our first pass is to establish the correct answers for all      */
-/*      the tests.                                                      */
-/* -------------------------------------------------------------------- */
-    int i, test_count = sizeof(test_list) / sizeof(TestItem); 
+    /* -------------------------------------------------------------------- */
+    /*      Our first pass is to establish the correct answers for all      */
+    /*      the tests.                                                      */
+    /* -------------------------------------------------------------------- */
+    int i, test_count = sizeof ( test_list ) / sizeof ( TestItem );
 
-    for( i = 0; i < test_count; i++ )
-    {
+    for ( i = 0; i < test_count; i++ ) {
         TestItem *test = test_list + i;
 
         projPJ src_pj, dst_pj;
 
-        src_pj = pj_init_plus( test->src_def );
-        dst_pj = pj_init_plus( test->dst_def );
+        src_pj = pj_init_plus ( test->src_def );
+        dst_pj = pj_init_plus ( test->dst_def );
 
-        if( src_pj == NULL )
-        {
-            printf( "Unable to translate:\n%s\n", test->src_def );
+        if ( src_pj == NULL ) {
+            printf ( "Unable to translate:\n%s\n", test->src_def );
             test->skip = 1;
             continue;
         }
 
-        if( dst_pj == NULL )
-        {
-            printf( "Unable to translate:\n%s\n", test->dst_def );
+        if ( dst_pj == NULL ) {
+            printf ( "Unable to translate:\n%s\n", test->dst_def );
             test->skip = 1;
             continue;
         }
-        
+
         test->dst_x = test->src_x;
         test->dst_y = test->src_y;
         test->dst_z = test->src_z;
 
-        test->dst_error = pj_transform( src_pj, dst_pj, 1, 0, 
-                                        &(test->dst_x), 
-                                        &(test->dst_y),
-                                        &(test->dst_z) );
-     
-        pj_free( src_pj );
-        pj_free( dst_pj );
+        test->dst_error = pj_transform ( src_pj, dst_pj, 1, 0,
+                                         & ( test->dst_x ),
+                                         & ( test->dst_y ),
+                                         & ( test->dst_z ) );
+
+        pj_free ( src_pj );
+        pj_free ( dst_pj );
 
         test->skip = 0;
 
 #ifdef notdef
-        printf( "Test %d - output %.14g,%.14g,%g\n", i, test->dst_x, test->dst_y, test->dst_z );
+        printf ( "Test %d - output %.14g,%.14g,%g\n", i, test->dst_x, test->dst_y, test->dst_z );
 #endif
     }
 
-    printf( "%d tests initialized.\n", test_count );
+    printf ( "%d tests initialized.\n", test_count );
 
-/* -------------------------------------------------------------------- */
-/*      Now launch a bunch of threads to repeat the tests.              */
-/* -------------------------------------------------------------------- */
+    /* -------------------------------------------------------------------- */
+    /*      Now launch a bunch of threads to repeat the tests.              */
+    /* -------------------------------------------------------------------- */
     pthread_t ahThread[num_threads];
     pthread_attr_t hThreadAttr;
 
-    pthread_attr_init( &hThreadAttr );
-    pthread_attr_setdetachstate( &hThreadAttr, PTHREAD_CREATE_DETACHED );
+    pthread_attr_init ( &hThreadAttr );
+    pthread_attr_setdetachstate ( &hThreadAttr, PTHREAD_CREATE_DETACHED );
 
-    for( i = 0; i < num_threads; i++ )
-    {
+    for ( i = 0; i < num_threads; i++ ) {
         active_thread_count++;
-        
-        pthread_create( &(ahThread[i]), &hThreadAttr, 
-                        TestThread, NULL );
+
+        pthread_create ( & ( ahThread[i] ), &hThreadAttr,
+                         TestThread, NULL );
     }
 
-    printf( "%d test threads launched.\n", num_threads );
-            
-    while( active_thread_count > 0 )				       
-        sleep( 1 );
+    printf ( "%d test threads launched.\n", num_threads );
 
-    printf( "all tests complete.\n" );
+    while ( active_thread_count > 0 )
+        sleep ( 1 );
+
+    printf ( "all tests complete.\n" );
 
     return 0;
 }

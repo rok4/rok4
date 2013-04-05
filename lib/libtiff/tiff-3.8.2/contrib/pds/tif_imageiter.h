@@ -7,9 +7,9 @@ typedef struct _TIFFImageIter TIFFImageIter;
    img->samplesperpixel consecutive samples each containing img->bitspersample
    bits of data. The array pp is ordered in h consecutive rows of w+fromskew
    pixels each. */
-typedef void (*ImageIterTileContigRoutine)
-    (TIFFImageIter*, void *, uint32, uint32, uint32, uint32, int32,
-	unsigned char*);
+typedef void ( *ImageIterTileContigRoutine )
+( TIFFImageIter*, void *, uint32, uint32, uint32, uint32, int32,
+  unsigned char* );
 #define	DECLAREContigCallbackFunc(name) \
 static void name(\
     TIFFImageIter* img, \
@@ -20,9 +20,9 @@ static void name(\
     u_char* pp \
 )
 
-typedef void (*ImageIterTileSeparateRoutine)
-    (TIFFImageIter*, void *, uint32, uint32, uint32, uint32, int32,
-	unsigned char*, unsigned char*, unsigned char*, unsigned char*);
+typedef void ( *ImageIterTileSeparateRoutine )
+( TIFFImageIter*, void *, uint32, uint32, uint32, uint32, int32,
+  unsigned char*, unsigned char*, unsigned char*, unsigned char* );
 #define	DECLARESepCallbackFunc(name) \
 static void name(\
     TIFFImageIter* img, \
@@ -34,24 +34,24 @@ static void name(\
 )
 
 struct _TIFFImageIter {
-	TIFF*	tif;				/* image handle */
-	int	stoponerr;			/* stop on read error */
-	int	isContig;			/* data is packed/separate */
-	int	alpha;				/* type of alpha data present */
-	uint32	width;				/* image width */
-	uint32	height;				/* image height */
-	uint16	bitspersample;			/* image bits/sample */
-	uint16	samplesperpixel;		/* image samples/pixel */
-	uint16	orientation;			/* image orientation */
-	uint16	photometric;			/* image photometric interp */
-	uint16*	redcmap;			/* colormap pallete */
-	uint16*	greencmap;
-	uint16*	bluecmap;
-						/* get image data routine */
-	int	(*get)(TIFFImageIter*, void *udata, uint32, uint32);
-	union {
-	    void (*any)(TIFFImageIter*);
-	    ImageIterTileContigRoutine		contig;
-	    ImageIterTileSeparateRoutine	separate;
-	} callback;				/* fn to exec for each block */
+    TIFF*	tif;				/* image handle */
+    int	stoponerr;			/* stop on read error */
+    int	isContig;			/* data is packed/separate */
+    int	alpha;				/* type of alpha data present */
+    uint32	width;				/* image width */
+    uint32	height;				/* image height */
+    uint16	bitspersample;			/* image bits/sample */
+    uint16	samplesperpixel;		/* image samples/pixel */
+    uint16	orientation;			/* image orientation */
+    uint16	photometric;			/* image photometric interp */
+    uint16*	redcmap;			/* colormap pallete */
+    uint16*	greencmap;
+    uint16*	bluecmap;
+    /* get image data routine */
+    int	( *get ) ( TIFFImageIter*, void *udata, uint32, uint32 );
+    union {
+        void ( *any ) ( TIFFImageIter* );
+        ImageIterTileContigRoutine		contig;
+        ImageIterTileSeparateRoutine	separate;
+    } callback;				/* fn to exec for each block */
 };

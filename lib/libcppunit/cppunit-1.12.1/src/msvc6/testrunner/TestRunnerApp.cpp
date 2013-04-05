@@ -16,17 +16,15 @@ static AFX_EXTENSION_MODULE TestRunnerDLL = { NULL, NULL };
 HINSTANCE g_testRunnerResource;
 
 extern "C" int APIENTRY
-DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
-{
+DllMain ( HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved ) {
     // Remove this if you use lpReserved
-    UNREFERENCED_PARAMETER(lpReserved);
+    UNREFERENCED_PARAMETER ( lpReserved );
 
-    if (dwReason == DLL_PROCESS_ATTACH)
-    {
-        TRACE0("TESTRUNNER.DLL Initializing!\n");
-        
+    if ( dwReason == DLL_PROCESS_ATTACH ) {
+        TRACE0 ( "TESTRUNNER.DLL Initializing!\n" );
+
         // Extension DLL one-time initialization
-        if (!AfxInitExtensionModule(TestRunnerDLL, hInstance))
+        if ( !AfxInitExtensionModule ( TestRunnerDLL, hInstance ) )
             return 0;
 
         // Can't find any other way to have LoadAccelerators working...
@@ -44,13 +42,11 @@ DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         //  Regular DLL's resource chain, and serious problems will
         //  result.
 
-        new CDynLinkLibrary(TestRunnerDLL);
-    }
-    else if (dwReason == DLL_PROCESS_DETACH)
-    {
-        TRACE0("TESTRUNNER.DLL Terminating!\n");
+        new CDynLinkLibrary ( TestRunnerDLL );
+    } else if ( dwReason == DLL_PROCESS_DETACH ) {
+        TRACE0 ( "TESTRUNNER.DLL Terminating!\n" );
         // Terminate the library before destructors are called
-        AfxTermExtensionModule(TestRunnerDLL);
+        AfxTermExtensionModule ( TestRunnerDLL );
     }
     return 1;   // ok
 }

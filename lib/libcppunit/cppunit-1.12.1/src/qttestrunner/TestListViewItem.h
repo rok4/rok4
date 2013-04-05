@@ -13,29 +13,28 @@
 /*! \class TestListViewItem
  * \brief This class represents an list item pointing to a Test.
  */
-class TestListViewItem : public QListViewItem
-{
+class TestListViewItem : public QListViewItem {
 public:
-  /*! Constructs a TestListViewItem object.
-   */
-  TestListViewItem( CPPUNIT_NS::Test *test,
-                    QListViewItem *parent );
+    /*! Constructs a TestListViewItem object.
+     */
+    TestListViewItem ( CPPUNIT_NS::Test *test,
+                       QListViewItem *parent );
 
-  /*! Destructor.
-   */
-  virtual ~TestListViewItem();
+    /*! Destructor.
+     */
+    virtual ~TestListViewItem();
 
-  CPPUNIT_NS::Test *test() const;
-
-private:
-  /// Prevents the use of the copy constructor.
-  TestListViewItem( const TestListViewItem &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const TestListViewItem &copy );
+    CPPUNIT_NS::Test *test() const;
 
 private:
-  CPPUNIT_NS::Test *_test;
+    /// Prevents the use of the copy constructor.
+    TestListViewItem ( const TestListViewItem &copy );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestListViewItem &copy );
+
+private:
+    CPPUNIT_NS::Test *_test;
 };
 
 

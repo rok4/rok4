@@ -21,40 +21,39 @@ CPPUNIT_NS_BEGIN
  * \ingroup BrowsingCollectedTestResult
  *
  * Used to capture the failure location in assertion.
- * 
+ *
  * Use the CPPUNIT_SOURCELINE() macro to construct that object. Typically used when
  * writing an assertion macro in association with Asserter.
  *
  * \see Asserter.
  */
-class CPPUNIT_API SourceLine
-{
+class CPPUNIT_API SourceLine {
 public:
-  SourceLine();
+    SourceLine();
 
-  // Ensure thread-safe copy by detaching the string buffer.
-  SourceLine( const SourceLine &other );
+    // Ensure thread-safe copy by detaching the string buffer.
+    SourceLine ( const SourceLine &other );
 
-  SourceLine( const std::string &fileName,
-              int lineNumber );
+    SourceLine ( const std::string &fileName,
+                 int lineNumber );
 
-  SourceLine &operator =( const SourceLine &other );
+    SourceLine &operator = ( const SourceLine &other );
 
-  /// Destructor.
-  virtual ~SourceLine();
+    /// Destructor.
+    virtual ~SourceLine();
 
-  bool isValid() const;
+    bool isValid() const;
 
-  int lineNumber() const;
+    int lineNumber() const;
 
-  std::string fileName() const;
+    std::string fileName() const;
 
-  bool operator ==( const SourceLine &other ) const;
-  bool operator !=( const SourceLine &other ) const;
+    bool operator == ( const SourceLine &other ) const;
+    bool operator != ( const SourceLine &other ) const;
 
 private:
-  std::string m_fileName;
-  int m_lineNumber;
+    std::string m_fileName;
+    int m_lineNumber;
 };
 
 

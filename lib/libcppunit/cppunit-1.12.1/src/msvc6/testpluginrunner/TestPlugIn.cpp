@@ -19,83 +19,68 @@ static char THIS_FILE[] = __FILE__;
 
 
 
-TestPlugIn::TestPlugIn( const std::string fileName ) :
-    m_fileName( fileName )
-{
-  m_copyFileName = m_fileName + "-hotrunner";
+TestPlugIn::TestPlugIn ( const std::string fileName ) :
+    m_fileName ( fileName ) {
+    m_copyFileName = m_fileName + "-hotrunner";
 }
 
 
-TestPlugIn::~TestPlugIn()
-{
-  deleteDllCopy();
+TestPlugIn::~TestPlugIn() {
+    deleteDllCopy();
 }
 
 
-void 
-TestPlugIn::deleteDllCopy()
-{
-  m_manager.unload( m_copyFileName );
-  ::DeleteFile( m_copyFileName.c_str() );
+void
+TestPlugIn::deleteDllCopy() {
+    m_manager.unload ( m_copyFileName );
+    ::DeleteFile ( m_copyFileName.c_str() );
 }
 
 
-class NullTest : public CPPUNIT_NS::TestCase
-{
+class NullTest : public CPPUNIT_NS::TestCase {
 public:
-  NullTest( std::string name ) : TestCase( name ) 
-  {
-  }
+    NullTest ( std::string name ) : TestCase ( name ) {
+    }
 
-  ~NullTest() 
-  {
-  }
+    ~NullTest() {
+    }
 
-  void runTests()
-  {
-    CPPUNIT_ASSERT_MESSAGE( "Failed to load" + getName(), FALSE );
-  }
+    void runTests() {
+        CPPUNIT_ASSERT_MESSAGE ( "Failed to load" + getName(), FALSE );
+    }
 };
 
 
 CPPUNIT_NS::Test *
-TestPlugIn::makeTest()
-{
-  reloadDll();
-  return CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest();
+TestPlugIn::makeTest() {
+    reloadDll();
+    return CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest();
 }
 
 
-void 
-TestPlugIn::reloadDll()
-{
-  m_manager.unload( m_copyFileName );
-  makeDllCopy();
-  loadDll();
+void
+TestPlugIn::reloadDll() {
+    m_manager.unload ( m_copyFileName );
+    makeDllCopy();
+    loadDll();
 }
 
 
-void 
-TestPlugIn::makeDllCopy()
-{
-  if ( ::CopyFile( m_fileName.c_str(), m_copyFileName.c_str(), FALSE ) == FALSE )
-  {
-    throw TestPlugInException( "Failed to copy DLL" + m_fileName +
-        " to " + m_copyFileName, TestPlugInException::failedToCopyDll );
-  }
+void
+TestPlugIn::makeDllCopy() {
+    if ( ::CopyFile ( m_fileName.c_str(), m_copyFileName.c_str(), FALSE ) == FALSE ) {
+        throw TestPlugInException ( "Failed to copy DLL" + m_fileName +
+                                    " to " + m_copyFileName, TestPlugInException::failedToCopyDll );
+    }
 }
 
 
-void 
-TestPlugIn::loadDll()
-{
-  try
-  {
-    m_manager.load( m_copyFileName );
-  }
-  catch ( CPPUNIT_NS::DynamicLibraryManagerException &e )
-  {
-    throw TestPlugInException( e.what(), 
-                               TestPlugInException::failedToLoadDll );
-  }
+void
+TestPlugIn::loadDll() {
+    try {
+        m_manager.load ( m_copyFileName );
+    } catch ( CPPUNIT_NS::DynamicLibraryManagerException &e ) {
+        throw TestPlugInException ( e.what(),
+                                    TestPlugInException::failedToLoadDll );
+    }
 }

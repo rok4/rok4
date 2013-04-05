@@ -19,30 +19,35 @@
 #include <afxext.h>
 #endif
 
-class cdxCDynamicFormView : public CFormView, public cdxCDynamicWnd
-{
-	DECLARE_DYNCREATE(cdxCDynamicFormView);
+class cdxCDynamicFormView : public CFormView, public cdxCDynamicWnd {
+    DECLARE_DYNCREATE ( cdxCDynamicFormView );
 
-	enum { flDefault = flAntiFlicker };
-
-public:
-	cdxCDynamicFormView(UINT idd = 0, Freedom fd = fdAll, UINT nFlags = flDefault) : CFormView(idd), cdxCDynamicWnd(fd,nFlags) { m_bUseScrollPos = true; }
-	cdxCDynamicFormView(LPCTSTR lpszTemplateName, Freedom fd = fdAll, UINT nFlags = flDefault) : CFormView(lpszTemplateName), cdxCDynamicWnd(fd,nFlags) { m_bUseScrollPos = true; }
-	virtual ~cdxCDynamicFormView() { DoOnDestroy(); }
+    enum { flDefault = flAntiFlicker };
 
 public:
-	virtual void OnInitialUpdate();
-	virtual BOOL DestroyWindow();
+    cdxCDynamicFormView ( UINT idd = 0, Freedom fd = fdAll, UINT nFlags = flDefault ) : CFormView ( idd ), cdxCDynamicWnd ( fd,nFlags ) {
+        m_bUseScrollPos = true;
+    }
+    cdxCDynamicFormView ( LPCTSTR lpszTemplateName, Freedom fd = fdAll, UINT nFlags = flDefault ) : CFormView ( lpszTemplateName ), cdxCDynamicWnd ( fd,nFlags ) {
+        m_bUseScrollPos = true;
+    }
+    virtual ~cdxCDynamicFormView() {
+        DoOnDestroy();
+    }
+
+public:
+    virtual void OnInitialUpdate();
+    virtual BOOL DestroyWindow();
 
 protected:
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
-	afx_msg void OnTimer(UINT nIDEvent);
-	afx_msg void OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
-	afx_msg void OnParentNotify(UINT message, LPARAM lParam);
-	afx_msg void OnDestroy();
+    afx_msg void OnSize ( UINT nType, int cx, int cy );
+    afx_msg void OnSizing ( UINT fwSide, LPRECT pRect );
+    afx_msg void OnTimer ( UINT nIDEvent );
+    afx_msg void OnGetMinMaxInfo ( MINMAXINFO FAR* lpMMI );
+    afx_msg void OnParentNotify ( UINT message, LPARAM lParam );
+    afx_msg void OnDestroy();
 
-	DECLARE_MESSAGE_MAP();
+    DECLARE_MESSAGE_MAP();
 };
 
 //{{AFX_INSERT_LOCATION}}

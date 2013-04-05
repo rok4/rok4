@@ -12,25 +12,24 @@
 /*! \class TestFailureInfo
  * \brief This class represents a test failure.
  */
-class TestFailureInfo : public CPPUNIT_NS::TestFailure
-{
+class TestFailureInfo : public CPPUNIT_NS::TestFailure {
 public:
-  /*! Constructs a TestFailureInfo object.
-   */
-  TestFailureInfo( CPPUNIT_NS::Test *failedTest, 
-                   CPPUNIT_NS::Exception *thrownException,
-                   bool isError );
+    /*! Constructs a TestFailureInfo object.
+     */
+    TestFailureInfo ( CPPUNIT_NS::Test *failedTest,
+                      CPPUNIT_NS::Exception *thrownException,
+                      bool isError );
 
-  /*! Destructor.
-   */
-  virtual ~TestFailureInfo();
+    /*! Destructor.
+     */
+    virtual ~TestFailureInfo();
 
 private:
-  /// Prevents the use of the copy constructor.
-  TestFailureInfo( const TestFailureInfo &copy );
+    /// Prevents the use of the copy constructor.
+    TestFailureInfo ( const TestFailureInfo &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const TestFailureInfo &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestFailureInfo &copy );
 };
 
 

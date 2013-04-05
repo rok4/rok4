@@ -27,7 +27,7 @@ CPPUNIT_NS_END
  * This class define the interface implemented by test plug-in. A pointer to that
  * interface is returned by the function exported by the test plug-in.
  *
- * Plug-in are loaded/unloaded by PlugInManager. When a plug-in is loaded, 
+ * Plug-in are loaded/unloaded by PlugInManager. When a plug-in is loaded,
  * initialize() is called. Before unloading the plug-in, the PlugInManager
  * call uninitialize().
  *
@@ -40,60 +40,59 @@ CPPUNIT_NS_END
  * \see CPPUNIT_PLUGIN_IMPLEMENT, CPPUNIT_PLUGIN_EXPORTED_FUNCTION_IMPL
  * \see CppUnit::TestPlugInDefaultImpl, CppUnit::XmlOutputter.
  */
-struct CppUnitTestPlugIn
-{
-  /*! \brief Called just after loading the dynamic library. 
-   *
-   * Override this method to add additional suite to the registry, though this
-   * is preferably done using the macros (CPPUNIT_TEST_SUITE_REGISTRATION...).
-   * If you are creating a custom listener to extends the plug-in runner,
-   * you can use this to configure the listener using the \a parameters.
-   *
-   * You could also use the parameters to specify some global parameter, such
-   * as test datas location, database name...
-   *
-   * N.B.: Parameters interface is not define yet, and the plug-in runner does
-   * not yet support plug-in parameter.
-   */
-  virtual void initialize( CPPUNIT_NS::TestFactoryRegistry *registry,
-                           const CPPUNIT_NS::PlugInParameters &parameters ) =0;
+struct CppUnitTestPlugIn {
+    /*! \brief Called just after loading the dynamic library.
+     *
+     * Override this method to add additional suite to the registry, though this
+     * is preferably done using the macros (CPPUNIT_TEST_SUITE_REGISTRATION...).
+     * If you are creating a custom listener to extends the plug-in runner,
+     * you can use this to configure the listener using the \a parameters.
+     *
+     * You could also use the parameters to specify some global parameter, such
+     * as test datas location, database name...
+     *
+     * N.B.: Parameters interface is not define yet, and the plug-in runner does
+     * not yet support plug-in parameter.
+     */
+    virtual void initialize ( CPPUNIT_NS::TestFactoryRegistry *registry,
+                              const CPPUNIT_NS::PlugInParameters &parameters ) =0;
 
-  /*! \brief Gives a chance to the plug-in to register TestListener.
-   * 
-   * Override this method to add a TestListener for the test run. This is useful
-   * if you are writing a custom TestListener, but also if you need to
-   * setUp some global resource: listen to TestListener::startTestRun(), 
-   * and TestListener::endTestRun().
-   */
-  virtual void addListener( CPPUNIT_NS::TestResult *eventManager ) =0;
+    /*! \brief Gives a chance to the plug-in to register TestListener.
+     *
+     * Override this method to add a TestListener for the test run. This is useful
+     * if you are writing a custom TestListener, but also if you need to
+     * setUp some global resource: listen to TestListener::startTestRun(),
+     * and TestListener::endTestRun().
+     */
+    virtual void addListener ( CPPUNIT_NS::TestResult *eventManager ) =0;
 
-  /*! \brief Gives a chance to the plug-in to remove its registered TestListener.
-   *
-   * Override this method to remove a TestListener that has been added.
-   */
-  virtual void removeListener( CPPUNIT_NS::TestResult *eventManager ) =0;
+    /*! \brief Gives a chance to the plug-in to remove its registered TestListener.
+     *
+     * Override this method to remove a TestListener that has been added.
+     */
+    virtual void removeListener ( CPPUNIT_NS::TestResult *eventManager ) =0;
 
-  /*! \brief Provides a way for the plug-in to register some XmlOutputterHook.
-   */
-  virtual void addXmlOutputterHooks( CPPUNIT_NS::XmlOutputter *outputter ) =0;
+    /*! \brief Provides a way for the plug-in to register some XmlOutputterHook.
+     */
+    virtual void addXmlOutputterHooks ( CPPUNIT_NS::XmlOutputter *outputter ) =0;
 
-  /*! \brief Called when the XmlOutputter is destroyed.
-   * 
-   * Can be used to free some resources allocated by addXmlOutputterHooks().
-   */
-  virtual void removeXmlOutputterHooks() = 0;
+    /*! \brief Called when the XmlOutputter is destroyed.
+     *
+     * Can be used to free some resources allocated by addXmlOutputterHooks().
+     */
+    virtual void removeXmlOutputterHooks() = 0;
 
-  /*! \brief Called just before unloading the dynamic library.
-   * 
-   * Override this method to unregister test factory added in initialize().
-   * This is necessary to keep the TestFactoryRegistry 'clean'. When
-   * the plug-in is unloaded from memory, the TestFactoryRegistry will hold
-   * reference on test that are no longer available if they are not 
-   * unregistered.
-   */
-  virtual void uninitialize( CPPUNIT_NS::TestFactoryRegistry *registry ) =0;
+    /*! \brief Called just before unloading the dynamic library.
+     *
+     * Override this method to unregister test factory added in initialize().
+     * This is necessary to keep the TestFactoryRegistry 'clean'. When
+     * the plug-in is unloaded from memory, the TestFactoryRegistry will hold
+     * reference on test that are no longer available if they are not
+     * unregistered.
+     */
+    virtual void uninitialize ( CPPUNIT_NS::TestFactoryRegistry *registry ) =0;
 
-  virtual ~CppUnitTestPlugIn() {}
+    virtual ~CppUnitTestPlugIn() {}
 };
 
 
@@ -111,7 +110,7 @@ struct CppUnitTestPlugIn
 /*! \brief Type of the function exported by a plug-in.
  * \ingroup WritingTestPlugIn
  */
-typedef CppUnitTestPlugIn *(*TestPlugInSignature)();
+typedef CppUnitTestPlugIn * ( *TestPlugInSignature ) ();
 
 
 /*! \brief Implements the function exported by the test plug-in
@@ -134,14 +133,14 @@ typedef CppUnitTestPlugIn *(*TestPlugInSignature)();
  * \brief Implements the 'main' function for the plug-in.
  *
  * This macros implements the main() function for dynamic library.
- * For example, WIN32 requires a DllMain function, while some Unix 
+ * For example, WIN32 requires a DllMain function, while some Unix
  * requires a main() function. This macros takes care of the implementation.
  */
 
 // Win32
 #if defined(CPPUNIT_HAVE_WIN32_DLL_LOADER)
 #if !defined(APIENTRY)
-#define WIN32_LEAN_AND_MEAN 
+#define WIN32_LEAN_AND_MEAN
 #define NOGDI
 #define NOUSER
 #define NOKERNEL
@@ -178,12 +177,12 @@ typedef CppUnitTestPlugIn *(*TestPlugInSignature)();
 /*! \brief Implements and exports the test plug-in interface.
  * \ingroup WritingTestPlugIn
  *
- * This macro exports the test plug-in function using the subclass, 
- * and implements the 'main' function for the plug-in using 
+ * This macro exports the test plug-in function using the subclass,
+ * and implements the 'main' function for the plug-in using
  * CPPUNIT_PLUGIN_IMPLEMENT_MAIN().
  *
  * When using this macro, CppUnit must be linked as a DLL (shared library).
- * Otherwise, tests registered to the TestFactoryRegistry in the DLL will 
+ * Otherwise, tests registered to the TestFactoryRegistry in the DLL will
  * not be visible to the DllPlugInTester.
  *
  * \see CppUnitTestPlugIn

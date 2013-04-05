@@ -44,8 +44,7 @@
 #include <cstdlib>
 #include <ctype.h>
 
-class pkbEncoder
-{
+class pkbEncoder {
 
 private:
     enum compression_state { BASE,
@@ -54,10 +53,10 @@ private:
                             LITERAL_RUN*/
                            };
 
-  
+
 public:
     pkbEncoder();
-    uint8_t* encode(const uint8_t * in, size_t inSize, size_t &outSize);
+    uint8_t* encode ( const uint8_t * in, size_t inSize, size_t &outSize );
     virtual ~pkbEncoder();
 };
 

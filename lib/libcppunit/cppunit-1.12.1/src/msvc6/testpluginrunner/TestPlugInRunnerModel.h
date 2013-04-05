@@ -13,35 +13,34 @@ class TestPlugIn;
 /*! \class TestPlugInRunnerModel
  * \brief This class represents a model for the plug in runner.
  */
-class TestPlugInRunnerModel : public TestRunnerModel
-{
+class TestPlugInRunnerModel : public TestRunnerModel {
 public:
-  /*! Constructs a TestPlugInRunnerModel object.
-   */
-  TestPlugInRunnerModel();
+    /*! Constructs a TestPlugInRunnerModel object.
+     */
+    TestPlugInRunnerModel();
 
-  /*! Destructor.
-   */
-  virtual ~TestPlugInRunnerModel();
+    /*! Destructor.
+     */
+    virtual ~TestPlugInRunnerModel();
 
-  void setPlugIn( TestPlugIn *plugIn );
+    void setPlugIn ( TestPlugIn *plugIn );
 
-  void reloadPlugIn();
+    void reloadPlugIn();
 
 public: // overridden from TestRunnerModel
-  void setRootTest( CPPUNIT_NS::Test *rootTest );
+    void setRootTest ( CPPUNIT_NS::Test *rootTest );
 
 private:
-  /// Prevents the use of the copy constructor.
-  TestPlugInRunnerModel( const TestPlugInRunnerModel &copy );
+    /// Prevents the use of the copy constructor.
+    TestPlugInRunnerModel ( const TestPlugInRunnerModel &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const TestPlugInRunnerModel &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestPlugInRunnerModel &copy );
 
-  void freeRootTest();
+    void freeRootTest();
 
 private:
-  TestPlugIn *m_plugIn;
+    TestPlugIn *m_plugIn;
 };
 
 

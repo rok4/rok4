@@ -7,21 +7,18 @@
 #include "TestListViewItem.h"
 
 
-TestListViewItem::TestListViewItem( CPPUNIT_NS::Test *test,
-                                    QListViewItem *parent ) : 
-    QListViewItem( parent ),
-    _test( test )
-{
+TestListViewItem::TestListViewItem ( CPPUNIT_NS::Test *test,
+                                     QListViewItem *parent ) :
+    QListViewItem ( parent ),
+    _test ( test ) {
 }
 
 
-TestListViewItem::~TestListViewItem()
-{
+TestListViewItem::~TestListViewItem() {
 }
 
 
 CPPUNIT_NS::Test *
-TestListViewItem::test() const
-{
-  return _test;
+TestListViewItem::test() const {
+    return _test;
 }

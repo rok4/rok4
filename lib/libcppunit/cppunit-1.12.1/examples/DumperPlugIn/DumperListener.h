@@ -12,49 +12,48 @@
 
 
 /// TestListener that prints a flatten or hierarchical view of the test tree.
-class DumperListener : public CPPUNIT_NS::TestListener
-{
+class DumperListener : public CPPUNIT_NS::TestListener {
 public:
-  DumperListener( bool flatten );
+    DumperListener ( bool flatten );
 
-  virtual ~DumperListener();
+    virtual ~DumperListener();
 
-  void startTest( CPPUNIT_NS::Test *test );
+    void startTest ( CPPUNIT_NS::Test *test );
 
-  void endTest( CPPUNIT_NS::Test *test );
+    void endTest ( CPPUNIT_NS::Test *test );
 
-  void startSuite( CPPUNIT_NS::Test *suite );
+    void startSuite ( CPPUNIT_NS::Test *suite );
 
-  void endSuite( CPPUNIT_NS::Test *suite );
+    void endSuite ( CPPUNIT_NS::Test *suite );
 
-  void endTestRun( CPPUNIT_NS::Test *test, 
-                   CPPUNIT_NS::TestResult *eventManager );
-
-private:
-  /// Prevents the use of the copy constructor.
-  DumperListener( const DumperListener &other );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const DumperListener &other );
-
-  void printPath( CPPUNIT_NS::Test *test, 
-                  bool isSuite );
-
-  void printFlattenedPath( bool isSuite );
-
-  void printIndentedPathChild();
-
-  std::string makeIndentString( int indentLevel );
+    void endTestRun ( CPPUNIT_NS::Test *test,
+                      CPPUNIT_NS::TestResult *eventManager );
 
 private:
-  bool m_flatten;
-  CPPUNIT_NS::TestPath m_path;
-  
-  int m_suiteCount;
-  int m_testCount;
-  int m_suiteWithTestCount;
+    /// Prevents the use of the copy constructor.
+    DumperListener ( const DumperListener &other );
 
-  CppUnitStack<bool> m_suiteHasTest;
+    /// Prevents the use of the copy operator.
+    void operator = ( const DumperListener &other );
+
+    void printPath ( CPPUNIT_NS::Test *test,
+                     bool isSuite );
+
+    void printFlattenedPath ( bool isSuite );
+
+    void printIndentedPathChild();
+
+    std::string makeIndentString ( int indentLevel );
+
+private:
+    bool m_flatten;
+    CPPUNIT_NS::TestPath m_path;
+
+    int m_suiteCount;
+    int m_testCount;
+    int m_suiteWithTestCount;
+
+    CppUnitStack<bool> m_suiteHasTest;
 };
 
 

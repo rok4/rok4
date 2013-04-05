@@ -28,15 +28,15 @@ static char THIS_FILE[]=__FILE__;
  * (for StoreWindowPosition()/RestoreWindowPosition())
  */
 
-static LPCTSTR	lpszRegVal_Left		=	_T("Left"),
-					lpszRegVal_Right		=	_T("Right"),
-					lpszRegVal_Top			=	_T("Top"),
-					lpszRegVal_Bottom		=	_T("Bottom"),
-					lpszRegVal_Visible	=	_T("Visibility"),
-					lpszRegVal_State		=	_T("State"),
-					lpszRegVal_Valid		=	_T("(valid)");
+static LPCTSTR	lpszRegVal_Left		=	_T ( "Left" ),
+                   lpszRegVal_Right		=	_T ( "Right" ),
+                         lpszRegVal_Top			=	_T ( "Top" ),
+                                lpszRegVal_Bottom		=	_T ( "Bottom" ),
+                                     lpszRegVal_Visible	=	_T ( "Visibility" ),
+                                      lpszRegVal_State		=	_T ( "State" ),
+                                            lpszRegVal_Valid		=	_T ( "(valid)" );
 
-LPCTSTR	cdxCDynamicWndEx::M_lpszAutoPosProfileSection	=	_T("WindowPositions");
+LPCTSTR	cdxCDynamicWndEx::M_lpszAutoPosProfileSection	=	_T ( "WindowPositions" );
 
 /////////////////////////////////////////////////////////////////////////////
 // cdxCDynamicWndEx
@@ -46,39 +46,35 @@ LPCTSTR	cdxCDynamicWndEx::M_lpszAutoPosProfileSection	=	_T("WindowPositions");
 // cdxCDynamicWndEx stretches windows
 /////////////////////////////////////////////////////////////////////////////
 
-static inline CString _makeFullProfile(LPCTSTR lpszBase, const CString & str)
-{
-	CString	s	=	lpszBase;
+static inline CString _makeFullProfile ( LPCTSTR lpszBase, const CString & str ) {
+    CString	s	=	lpszBase;
 
-	if(s.GetLength() && (s[s.GetLength()-1] != _T('\\')))
-		s	+=	_T('\\');
+    if ( s.GetLength() && ( s[s.GetLength()-1] != _T ( '\\' ) ) )
+        s	+=	_T ( '\\' );
 
-	s	+=	str;
-	return s;
+    s	+=	str;
+    return s;
 }
 
-void cdxCDynamicWndEx::OnInitialized()
-{
-	ASSERT(IsWindow());
+void cdxCDynamicWndEx::OnInitialized() {
+    ASSERT ( IsWindow() );
 
-	if(!m_strAutoPos.IsEmpty())
-	{
+    if ( !m_strAutoPos.IsEmpty() ) {
 #if _MSC_VER < 1300   // vc6
-		if(!RestoreWindowPosition(_makeFullProfile(M_lpszAutoPosProfileSection,m_strAutoPos),rflg_all))
+        if ( !RestoreWindowPosition ( _makeFullProfile ( M_lpszAutoPosProfileSection,m_strAutoPos ),rflg_all ) )
 #else                 // vc7
-		if(!RestoreWindowPosition(_makeFullProfile(M_lpszAutoPosProfileSection,m_strAutoPos),"",rflg_all))
+        if ( !RestoreWindowPosition ( _makeFullProfile ( M_lpszAutoPosProfileSection,m_strAutoPos ),"",rflg_all ) )
 #endif
-		{
-			Window()->CenterWindow();
-			StretchWindow(10);
-		}
-	}
+        {
+            Window()->CenterWindow();
+            StretchWindow ( 10 );
+        }
+    }
 }
 
-void cdxCDynamicWndEx::OnDestroying()
-{
-	if(!m_strAutoPos.IsEmpty() && IsWindow())
-		StoreWindowPosition(_makeFullProfile(M_lpszAutoPosProfileSection,m_strAutoPos));
+void cdxCDynamicWndEx::OnDestroying() {
+    if ( !m_strAutoPos.IsEmpty() && IsWindow() )
+        StoreWindowPosition ( _makeFullProfile ( M_lpszAutoPosProfileSection,m_strAutoPos ) );
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -97,37 +93,35 @@ void cdxCDynamicWndEx::OnDestroying()
  * STATIC
  */
 
-bool cdxCDynamicWndEx::StretchWindow(const CSize & szDelta)
-{
-	if(!IsWindow())
-	{
-		ASSERT(false);
-		return false;
-	}
+bool cdxCDynamicWndEx::StretchWindow ( const CSize & szDelta ) {
+    if ( !IsWindow() ) {
+        ASSERT ( false );
+        return false;
+    }
 
-	CWnd	*pWnd	=	Window();
+    CWnd	*pWnd	=	Window();
 
-	WINDOWPLACEMENT	wpl;
-	pWnd->GetWindowPlacement(&wpl);
+    WINDOWPLACEMENT	wpl;
+    pWnd->GetWindowPlacement ( &wpl );
 
-	wpl.rcNormalPosition.left		-=	szDelta.cx / 2;
-	wpl.rcNormalPosition.right		+=	(szDelta.cx + 1) / 2;
-	wpl.rcNormalPosition.top		-=	szDelta.cy / 2;
-	wpl.rcNormalPosition.bottom	+=	(szDelta.cy + 1) / 2;
+    wpl.rcNormalPosition.left		-=	szDelta.cx / 2;
+    wpl.rcNormalPosition.right		+=	( szDelta.cx + 1 ) / 2;
+    wpl.rcNormalPosition.top		-=	szDelta.cy / 2;
+    wpl.rcNormalPosition.bottom	+=	( szDelta.cy + 1 ) / 2;
 //	wpl.flags	=	SW_SHOWNA|SW_SHOWNOACTIVATE;
 
-	if((wpl.rcNormalPosition.left >= wpl.rcNormalPosition.right) ||
-		(wpl.rcNormalPosition.top >= wpl.rcNormalPosition.bottom))
-		return false;
+    if ( ( wpl.rcNormalPosition.left >= wpl.rcNormalPosition.right ) ||
+            ( wpl.rcNormalPosition.top >= wpl.rcNormalPosition.bottom ) )
+        return false;
 
-	VERIFY( pWnd->SetWindowPos(NULL,
-										wpl.rcNormalPosition.left,
-										wpl.rcNormalPosition.top,
-										wpl.rcNormalPosition.right - wpl.rcNormalPosition.left,
-										wpl.rcNormalPosition.bottom - wpl.rcNormalPosition.top,
-										SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER) );
+    VERIFY ( pWnd->SetWindowPos ( NULL,
+                                  wpl.rcNormalPosition.left,
+                                  wpl.rcNormalPosition.top,
+                                  wpl.rcNormalPosition.right - wpl.rcNormalPosition.left,
+                                  wpl.rcNormalPosition.bottom - wpl.rcNormalPosition.top,
+                                  SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOZORDER ) );
 
-	return true;
+    return true;
 }
 
 /*
@@ -142,20 +136,18 @@ bool cdxCDynamicWndEx::StretchWindow(const CSize & szDelta)
  * The function will return false if the new size would be empty.
  */
 
-bool cdxCDynamicWndEx::StretchWindow(int iAddPcnt)
-{
-	if(!IsWindow())
-	{
-		ASSERT(false);
-		return false;
-	}
+bool cdxCDynamicWndEx::StretchWindow ( int iAddPcnt ) {
+    if ( !IsWindow() ) {
+        ASSERT ( false );
+        return false;
+    }
 
-	CSize	szDelta	=	GetCurrentClientSize() + GetBorderSize();
+    CSize	szDelta	=	GetCurrentClientSize() + GetBorderSize();
 
-	szDelta.cx	=	(szDelta.cx * iAddPcnt) / 100;
-	szDelta.cy	=	(szDelta.cy * iAddPcnt) / 100;
+    szDelta.cx	=	( szDelta.cx * iAddPcnt ) / 100;
+    szDelta.cy	=	( szDelta.cy * iAddPcnt ) / 100;
 
-	return StretchWindow(szDelta);
+    return StretchWindow ( szDelta );
 }
 
 
@@ -168,45 +160,41 @@ bool cdxCDynamicWndEx::StretchWindow(int iAddPcnt)
  *	return false if any error occured
  */
 
-bool cdxCDynamicWndEx::StoreWindowPosition(LPCTSTR lpszProfile, 
-                                           const CString &entryPrefix)
-{
-	if(!IsWindow() || !lpszProfile || !*lpszProfile)
-	{
-		ASSERT(false);
-		return false;
-	}
+bool cdxCDynamicWndEx::StoreWindowPosition ( LPCTSTR lpszProfile,
+        const CString &entryPrefix ) {
+    if ( !IsWindow() || !lpszProfile || !*lpszProfile ) {
+        ASSERT ( false );
+        return false;
+    }
 
-	CWnd	*pWnd	=	Window();
+    CWnd	*pWnd	=	Window();
 
-	WINDOWPLACEMENT	wpl;
-	VERIFY( pWnd->GetWindowPlacement(&wpl) );
+    WINDOWPLACEMENT	wpl;
+    VERIFY ( pWnd->GetWindowPlacement ( &wpl ) );
 
-	BOOL	bVisible	=	pWnd->IsWindowVisible();
-	int	iState	=	REGVAL_NOSTATE;
+    BOOL	bVisible	=	pWnd->IsWindowVisible();
+    int	iState	=	REGVAL_NOSTATE;
 
-	if(pWnd->IsIconic())
-		iState	=	REGVAL_ICONIC;
-	else
-		if(pWnd->IsZoomed())
-			iState	=	REGVAL_MAXIMIZED;
+    if ( pWnd->IsIconic() )
+        iState	=	REGVAL_ICONIC;
+    else if ( pWnd->IsZoomed() )
+        iState	=	REGVAL_MAXIMIZED;
 
-	CWinApp	*app	=	AfxGetApp();
+    CWinApp	*app	=	AfxGetApp();
 
-	if(!app->m_pszRegistryKey || !*app->m_pszRegistryKey)
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWndEx::StoreWindowPosition()]: To properly store and restore a window's position, please call CWinApp::SetRegistryKey() in you app's InitInstance() !\n"));
-		return false;
-	}
+    if ( !app->m_pszRegistryKey || !*app->m_pszRegistryKey ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWndEx::StoreWindowPosition()]: To properly store and restore a window's position, please call CWinApp::SetRegistryKey() in you app's InitInstance() !\n" ) );
+        return false;
+    }
 
-	return	app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Valid,	REGVAL_INVALID) &&	// invalidate first
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Left,		wpl.rcNormalPosition.left) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Right,		wpl.rcNormalPosition.right) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Top,		wpl.rcNormalPosition.top) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Bottom,	wpl.rcNormalPosition.bottom) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Visible,	bVisible ? REGVAL_VISIBLE : REGVAL_HIDDEN) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_State,		iState) &&
-				app->WriteProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Valid,	REGVAL_VALID);		// validate position
+    return	app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Valid,	REGVAL_INVALID ) &&	// invalidate first
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Left,		wpl.rcNormalPosition.left ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Right,		wpl.rcNormalPosition.right ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Top,		wpl.rcNormalPosition.top ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Bottom,	wpl.rcNormalPosition.bottom ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Visible,	bVisible ? REGVAL_VISIBLE : REGVAL_HIDDEN ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_State,		iState ) &&
+            app->WriteProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Valid,	REGVAL_VALID );		// validate position
 }
 
 /*
@@ -214,114 +202,104 @@ bool cdxCDynamicWndEx::StoreWindowPosition(LPCTSTR lpszProfile,
  * returns true if data have been found in the registry
  */
 
-bool cdxCDynamicWndEx::RestoreWindowPosition(LPCTSTR lpszProfile, 
-                                             const CString &entryPrefix, 
-                                             UINT restoreFlags)
-{
-	if(!IsWindow() || !lpszProfile || !*lpszProfile)
-	{
-		ASSERT(false);
-		return false;
-	}
+bool cdxCDynamicWndEx::RestoreWindowPosition ( LPCTSTR lpszProfile,
+        const CString &entryPrefix,
+        UINT restoreFlags ) {
+    if ( !IsWindow() || !lpszProfile || !*lpszProfile ) {
+        ASSERT ( false );
+        return false;
+    }
 
-	CWnd		*pWnd	=	Window();
-	CWinApp	*app	=	AfxGetApp();
+    CWnd		*pWnd	=	Window();
+    CWinApp	*app	=	AfxGetApp();
 
-	if(!app->m_pszRegistryKey || !*app->m_pszRegistryKey)
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWndEx::RestoreWindowPosition()]: To properly store and restore a window's position, please call CWinApp::SetRegistryKey() in you app's InitInstance() !\n"));
-		return false;
-	}
+    if ( !app->m_pszRegistryKey || !*app->m_pszRegistryKey ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWndEx::RestoreWindowPosition()]: To properly store and restore a window's position, please call CWinApp::SetRegistryKey() in you app's InitInstance() !\n" ) );
+        return false;
+    }
 
-	//
-	// first, we check whether the position had been saved successful any time before
-	//
+    //
+    // first, we check whether the position had been saved successful any time before
+    //
 
-	if( app->GetProfileInt(lpszProfile,entryPrefix+lpszRegVal_Valid,REGVAL_INVALID) != REGVAL_VALID )
-		return false;
+    if ( app->GetProfileInt ( lpszProfile,entryPrefix+lpszRegVal_Valid,REGVAL_INVALID ) != REGVAL_VALID )
+        return false;
 
-	//
-	// get old position
-	//
+    //
+    // get old position
+    //
 
-	WINDOWPLACEMENT	wpl;
-	VERIFY( pWnd->GetWindowPlacement(&wpl) );
+    WINDOWPLACEMENT	wpl;
+    VERIFY ( pWnd->GetWindowPlacement ( &wpl ) );
 
-	//
-	// read registry
-	//
+    //
+    // read registry
+    //
 
-	int	iState	=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_State, REGVAL_NOSTATE);
+    int	iState	=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_State, REGVAL_NOSTATE );
 
-	//
-	// get window's previous normal position
-	//
+    //
+    // get window's previous normal position
+    //
 
-	wpl.rcNormalPosition.left		=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Left,		wpl.rcNormalPosition.left);
-	wpl.rcNormalPosition.right		=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Right,		wpl.rcNormalPosition.right);
-	wpl.rcNormalPosition.top		=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Top,		wpl.rcNormalPosition.top);
-	wpl.rcNormalPosition.bottom	=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Bottom,	wpl.rcNormalPosition.bottom);
+    wpl.rcNormalPosition.left		=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Left,		wpl.rcNormalPosition.left );
+    wpl.rcNormalPosition.right		=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Right,		wpl.rcNormalPosition.right );
+    wpl.rcNormalPosition.top		=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Top,		wpl.rcNormalPosition.top );
+    wpl.rcNormalPosition.bottom	=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Bottom,	wpl.rcNormalPosition.bottom );
 
-	if(wpl.rcNormalPosition.left > wpl.rcNormalPosition.right)
-	{
-		long	l	=	wpl.rcNormalPosition.right;
-		wpl.rcNormalPosition.right	=	wpl.rcNormalPosition.left;
-		wpl.rcNormalPosition.left	=	l;
-	}
-	if(wpl.rcNormalPosition.top > wpl.rcNormalPosition.bottom)
-	{
-		long	l	=	wpl.rcNormalPosition.bottom;
-		wpl.rcNormalPosition.bottom	=	wpl.rcNormalPosition.top;
-		wpl.rcNormalPosition.top	=	l;
-	}
+    if ( wpl.rcNormalPosition.left > wpl.rcNormalPosition.right ) {
+        long	l	=	wpl.rcNormalPosition.right;
+        wpl.rcNormalPosition.right	=	wpl.rcNormalPosition.left;
+        wpl.rcNormalPosition.left	=	l;
+    }
+    if ( wpl.rcNormalPosition.top > wpl.rcNormalPosition.bottom ) {
+        long	l	=	wpl.rcNormalPosition.bottom;
+        wpl.rcNormalPosition.bottom	=	wpl.rcNormalPosition.top;
+        wpl.rcNormalPosition.top	=	l;
+    }
 
-	//
-	// get restore stuff
-	//
+    //
+    // get restore stuff
+    //
 
-	UINT	showCmd	=	SW_SHOWNA;
-	
-	if(restoreFlags & rflg_state)
-	{
-		if(iState == REGVAL_MAXIMIZED)
-			showCmd	=	SW_MAXIMIZE;
-		else
-			if(iState == REGVAL_ICONIC)
-				showCmd	=	SW_MINIMIZE;
-	}
+    UINT	showCmd	=	SW_SHOWNA;
 
-	//
-	// use MoveWindow() which takes care of WM_GETMINMAXINFO
-	//
+    if ( restoreFlags & rflg_state ) {
+        if ( iState == REGVAL_MAXIMIZED )
+            showCmd	=	SW_MAXIMIZE;
+        else if ( iState == REGVAL_ICONIC )
+            showCmd	=	SW_MINIMIZE;
+    }
 
-	pWnd->MoveWindow(	wpl.rcNormalPosition.left,wpl.rcNormalPosition.top,
-							wpl.rcNormalPosition.right - wpl.rcNormalPosition.left,
-							wpl.rcNormalPosition.bottom - wpl.rcNormalPosition.top,
-							showCmd == SW_SHOWNA);
+    //
+    // use MoveWindow() which takes care of WM_GETMINMAXINFO
+    //
 
-	if(showCmd != SW_SHOWNA)
-	{
-		// read updated position
+    pWnd->MoveWindow (	wpl.rcNormalPosition.left,wpl.rcNormalPosition.top,
+                        wpl.rcNormalPosition.right - wpl.rcNormalPosition.left,
+                        wpl.rcNormalPosition.bottom - wpl.rcNormalPosition.top,
+                        showCmd == SW_SHOWNA );
 
-		VERIFY( pWnd->GetWindowPlacement(&wpl) );
-		wpl.showCmd	=	showCmd;
-		pWnd->SetWindowPlacement(&wpl);
-	}
-	
-	//
-	// get visiblity
-	//
+    if ( showCmd != SW_SHOWNA ) {
+        // read updated position
 
-	if(restoreFlags & rflg_visibility)
-	{
-		int	i	=	app->GetProfileInt(lpszProfile,	entryPrefix+lpszRegVal_Visible, REGVAL_NOSTATE);
-		if(i == REGVAL_VISIBLE)
-			pWnd->ShowWindow(SW_SHOW);
-		else
-			if(i == REGVAL_HIDDEN)
-				pWnd->ShowWindow(SW_HIDE);
-	}
+        VERIFY ( pWnd->GetWindowPlacement ( &wpl ) );
+        wpl.showCmd	=	showCmd;
+        pWnd->SetWindowPlacement ( &wpl );
+    }
 
-	return true;
+    //
+    // get visiblity
+    //
+
+    if ( restoreFlags & rflg_visibility ) {
+        int	i	=	app->GetProfileInt ( lpszProfile,	entryPrefix+lpszRegVal_Visible, REGVAL_NOSTATE );
+        if ( i == REGVAL_VISIBLE )
+            pWnd->ShowWindow ( SW_SHOW );
+        else if ( i == REGVAL_HIDDEN )
+            pWnd->ShowWindow ( SW_HIDE );
+    }
+
+    return true;
 }
 

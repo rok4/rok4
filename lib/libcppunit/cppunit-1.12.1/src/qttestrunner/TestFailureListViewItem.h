@@ -13,29 +13,28 @@ class TestFailureInfo;
 /*! \class TestFailureListViewItem
  * \brief This class represents a test failure item.
  */
-class TestFailureListViewItem : public QListViewItem
-{
+class TestFailureListViewItem : public QListViewItem {
 public:
-  /*! Constructs a TestFailureListViewItem object.
-   */
-  TestFailureListViewItem( TestFailureInfo *failure,
-                           QListView *parent );
+    /*! Constructs a TestFailureListViewItem object.
+     */
+    TestFailureListViewItem ( TestFailureInfo *failure,
+                              QListView *parent );
 
-  /*! Destructor.
-   */
-  virtual ~TestFailureListViewItem();
+    /*! Destructor.
+     */
+    virtual ~TestFailureListViewItem();
 
-  TestFailureInfo *failure();
-
-private:
-  /// Prevents the use of the copy constructor.
-  TestFailureListViewItem( const TestFailureListViewItem &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const TestFailureListViewItem &copy );
+    TestFailureInfo *failure();
 
 private:
-  TestFailureInfo *_failure;
+    /// Prevents the use of the copy constructor.
+    TestFailureListViewItem ( const TestFailureListViewItem &copy );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestFailureListViewItem &copy );
+
+private:
+    TestFailureInfo *_failure;
 };
 
 

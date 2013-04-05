@@ -34,52 +34,57 @@ LIBPROJ_ID[] = "$Id: PJ_sterea.c 2022 2011-05-20 13:04:08Z warmerdam $";
 #define PJ_LIB__
 #include	<projects.h>
 
-PROJ_HEAD(sterea, "Oblique Stereographic Alternative")
-	"\n\tAzimuthal, Sph&Ell";
+PROJ_HEAD ( sterea, "Oblique Stereographic Alternative" )
+"\n\tAzimuthal, Sph&Ell";
 # define DEL_TOL	1.e-14
 # define MAX_ITER	10
 
-FORWARD(e_forward); /* ellipsoid */
-	double cosc, sinc, cosl, k;
+FORWARD ( e_forward ); /* ellipsoid */
+double cosc, sinc, cosl, k;
 
-	lp = pj_gauss(P->ctx, lp, P->en);
-	sinc = sin(lp.phi);
-	cosc = cos(lp.phi);
-	cosl = cos(lp.lam);
-	k = P->k0 * P->R2 / (1. + P->sinc0 * sinc + P->cosc0 * cosc * cosl);
-	xy.x = k * cosc * sin(lp.lam);
-	xy.y = k * (P->cosc0 * sinc - P->sinc0 * cosc * cosl);
-	return (xy);
+lp = pj_gauss ( P->ctx, lp, P->en );
+sinc = sin ( lp.phi );
+cosc = cos ( lp.phi );
+cosl = cos ( lp.lam );
+k = P->k0 * P->R2 / ( 1. + P->sinc0 * sinc + P->cosc0 * cosc * cosl );
+xy.x = k * cosc * sin ( lp.lam );
+xy.y = k * ( P->cosc0 * sinc - P->sinc0 * cosc * cosl );
+return ( xy );
 }
-INVERSE(e_inverse); /* ellipsoid */
-	double rho, c, sinc, cosc;
+INVERSE ( e_inverse ); /* ellipsoid */
+double rho, c, sinc, cosc;
 
-	xy.x /= P->k0;
-	xy.y /= P->k0;
-	if((rho = hypot(xy.x, xy.y))) {
-		c = 2. * atan2(rho, P->R2);
-		sinc = sin(c);
-		cosc = cos(c);
-		lp.phi = asin(cosc * P->sinc0 + xy.y * sinc * P->cosc0 / rho);
-		lp.lam = atan2(xy.x * sinc, rho * P->cosc0 * cosc -
-			xy.y * P->sinc0 * sinc);
-	} else {
-		lp.phi = P->phic0;
-		lp.lam = 0.;
-	}
-	return(pj_inv_gauss(P->ctx, lp, P->en));
+xy.x /= P->k0;
+        xy.y /= P->k0;
+if ( ( rho = hypot ( xy.x, xy.y ) ) ) {
+    c = 2. * atan2 ( rho, P->R2 );
+    sinc = sin ( c );
+    cosc = cos ( c );
+    lp.phi = asin ( cosc * P->sinc0 + xy.y * sinc * P->cosc0 / rho );
+    lp.lam = atan2 ( xy.x * sinc, rho * P->cosc0 * cosc -
+                     xy.y * P->sinc0 * sinc );
+} else {
+    lp.phi = P->phic0;
+    lp.lam = 0.;
 }
-FREEUP; if (P) { if (P->en) free(P->en); free(P); } }
-ENTRYA(sterea)
+return ( pj_inv_gauss ( P->ctx, lp, P->en ) );
+}
+       FREEUP;
+if ( P ) {
+    if ( P->en ) free ( P->en );
+    free ( P );
+}
+}
+ENTRYA ( sterea )
 
-        P->en=0; 
-ENTRYX
-	double R;
+P->en=0;
+      ENTRYX
+      double R;
 
-	if (!(P->en = pj_gauss_ini(P->e, P->phi0, &(P->phic0), &R))) E_ERROR_0;
-	P->sinc0 = sin(P->phic0);
-	P->cosc0 = cos(P->phic0);
-	P->R2 = 2. * R;
-	P->inv = e_inverse;
-	P->fwd = e_forward;
-ENDENTRY(P)
+      if ( ! ( P->en = pj_gauss_ini ( P->e, P->phi0, & ( P->phic0 ), &R ) ) ) E_ERROR_0;
+      P->sinc0 = sin ( P->phic0 );
+                 P->cosc0 = cos ( P->phic0 );
+                            P->R2 = 2. * R;
+                                    P->inv = e_inverse;
+                                            P->fwd = e_forward;
+                                                    ENDENTRY ( P )

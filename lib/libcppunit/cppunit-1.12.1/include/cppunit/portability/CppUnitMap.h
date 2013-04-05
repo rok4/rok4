@@ -2,7 +2,7 @@
 #define CPPUNIT_PORTABILITY_CPPUNITMAP_H
 
 // The technic used is similar to the wrapper of STLPort.
- 
+
 #include <cppunit/Portability.h>
 #include <functional>
 #include <map>
@@ -12,10 +12,9 @@
 
 template<class Key, class T>
 class CppUnitMap : public std::map<Key
-                                  ,T
-                                  ,std::less<Key>
-                                  ,CPPUNIT_STD_ALLOCATOR>
-{
+    ,T
+    ,std::less<Key>
+        ,CPPUNIT_STD_ALLOCATOR> {
 public:
 };
 

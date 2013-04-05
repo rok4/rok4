@@ -8,19 +8,16 @@
 #include "TestRunnerTestCaseRunEvent.h"
 
 
-TestRunnerTestCaseRunEvent::TestRunnerTestCaseRunEvent( int numberOfRun ) :
-    _numberOfRun( numberOfRun )
-{
+TestRunnerTestCaseRunEvent::TestRunnerTestCaseRunEvent ( int numberOfRun ) :
+    _numberOfRun ( numberOfRun ) {
 }
 
 
-TestRunnerTestCaseRunEvent::~TestRunnerTestCaseRunEvent()
-{
+TestRunnerTestCaseRunEvent::~TestRunnerTestCaseRunEvent() {
 }
 
 
-void 
-TestRunnerTestCaseRunEvent::process( TestRunnerModelThreadInterface *target )
-{
-  target->eventNumberOfTestRunChanged( _numberOfRun );
+void
+TestRunnerTestCaseRunEvent::process ( TestRunnerModelThreadInterface *target ) {
+    target->eventNumberOfTestRunChanged ( _numberOfRun );
 }

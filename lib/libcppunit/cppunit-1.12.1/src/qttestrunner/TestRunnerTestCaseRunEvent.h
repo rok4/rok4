@@ -12,27 +12,26 @@
 /*! \class TestRunnerTestCaseRunEvent
  * \brief This class represents a new TestCase run event.
  */
-class TestRunnerTestCaseRunEvent : public TestRunnerThreadEvent
-{
+class TestRunnerTestCaseRunEvent : public TestRunnerThreadEvent {
 public:
-  /*! Constructs a TestRunnerTestCaseRunEvent object.
-   */
-  TestRunnerTestCaseRunEvent( int numberOfRun );
+    /*! Constructs a TestRunnerTestCaseRunEvent object.
+     */
+    TestRunnerTestCaseRunEvent ( int numberOfRun );
 
-  /// Destructor.
-  virtual ~TestRunnerTestCaseRunEvent();
-
-private:
-  /// Prevents the use of the copy constructor.
-  TestRunnerTestCaseRunEvent( const TestRunnerTestCaseRunEvent &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const TestRunnerTestCaseRunEvent &copy );
-
-  void process( TestRunnerModelThreadInterface *target );
+    /// Destructor.
+    virtual ~TestRunnerTestCaseRunEvent();
 
 private:
-  int _numberOfRun;
+    /// Prevents the use of the copy constructor.
+    TestRunnerTestCaseRunEvent ( const TestRunnerTestCaseRunEvent &copy );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const TestRunnerTestCaseRunEvent &copy );
+
+    void process ( TestRunnerModelThreadInterface *target );
+
+private:
+    int _numberOfRun;
 };
 
 

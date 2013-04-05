@@ -9,11 +9,10 @@
 #pragma once
 #endif // _MSC_VER >= 1000
 
-class CHostAppView : public CView
-{
+class CHostAppView : public CView {
 protected: // create from serialization only
     CHostAppView();
-    DECLARE_DYNCREATE(CHostAppView)
+    DECLARE_DYNCREATE ( CHostAppView )
 
 // Attributes
 public:
@@ -25,13 +24,13 @@ public:
 // Overrides
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(CHostAppView)
-    public:
-    virtual void OnDraw(CDC* pDC);  // overridden to draw this view
-    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-    protected:
-    virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
-    virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
-    virtual void OnEndPrinting(CDC* pDC, CPrintInfo* pInfo);
+public:
+    virtual void OnDraw ( CDC* pDC ); // overridden to draw this view
+    virtual BOOL PreCreateWindow ( CREATESTRUCT& cs );
+protected:
+    virtual BOOL OnPreparePrinting ( CPrintInfo* pInfo );
+    virtual void OnBeginPrinting ( CDC* pDC, CPrintInfo* pInfo );
+    virtual void OnEndPrinting ( CDC* pDC, CPrintInfo* pInfo );
     //}}AFX_VIRTUAL
 
 // Implementation
@@ -39,7 +38,7 @@ public:
     virtual ~CHostAppView();
 #ifdef _DEBUG
     virtual void AssertValid() const;
-    virtual void Dump(CDumpContext& dc) const;
+    virtual void Dump ( CDumpContext& dc ) const;
 #endif
 
 protected:
@@ -47,15 +46,16 @@ protected:
 // Generated message map functions
 protected:
     //{{AFX_MSG(CHostAppView)
-        // NOTE - the ClassWizard will add and remove member functions here.
-        //    DO NOT EDIT what you see in these blocks of generated code !
+    // NOTE - the ClassWizard will add and remove member functions here.
+    //    DO NOT EDIT what you see in these blocks of generated code !
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
 };
 
 #ifndef _DEBUG  // debug version in HostAppView.cpp
-inline CHostAppDoc* CHostAppView::GetDocument()
-   { return (CHostAppDoc*)m_pDocument; }
+inline CHostAppDoc* CHostAppView::GetDocument() {
+    return ( CHostAppDoc* ) m_pDocument;
+}
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

@@ -4,9 +4,8 @@
 #include <cppunit/Portability.h>
 #include <string>
 
-inline std::string extensionSuiteName()
-{
-  return "Extensions";
+inline std::string extensionSuiteName() {
+    return "Extensions";
 }
 
 #endif // CPPUNITTEST_EXTENSIONSSUITE_H

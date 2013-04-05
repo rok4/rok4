@@ -10,7 +10,7 @@
 
 /* Refer to MSDN documentation to know how to write and use MFC extension DLL:
    mk:@MSITStore:h:\DevStudio\MSDN\98VSa\1036\vcmfc.chm::/html/_mfcnotes_tn033.htm#_mfcnotes_how_to_write_an_mfc_extension_dll
-   
+
    This can be found in the index with "mfc extension"
    The basic:
    Using:
@@ -25,8 +25,8 @@
 
 CPPUNIT_NS_BEGIN
 
-  class Test;
-  class TestSuite;
+class Test;
+class TestSuite;
 
 
 /*! \brief MFC test runner.
@@ -38,36 +38,35 @@ CPPUNIT_NS_BEGIN
  * #include <cppunit/ui/mfc/MfcTestRunner.h>
  * #include <cppunit/extensions/TestFactoryRegistry.h>
  *
- * void 
+ * void
  * CHostAppApp::RunUnitTests()
  * {
  *   CppUnit::MfcTestRunner runner;
  *   runner.addTest( CppUnit::TestFactoryRegistry::getRegistry().makeTest() );
  *
- *   runner.run();    
+ *   runner.run();
  * }
  * \endcode
  * \see CppUnit::TextTestRunner, CppUnit::TestFactoryRegistry.
  */
-class AFX_EXT_CLASS MfcTestRunner
-{
+class AFX_EXT_CLASS MfcTestRunner {
 public:
-  MfcTestRunner();
-  virtual ~MfcTestRunner();
+    MfcTestRunner();
+    virtual ~MfcTestRunner();
 
-  void run();
+    void run();
 
-  void addTest( Test *test );
+    void addTest ( Test *test );
 
-  void addTests( const CppUnitVector<Test *> &tests );
+    void addTests ( const CppUnitVector<Test *> &tests );
 
 protected:
-  Test *getRootTest();
+    Test *getRootTest();
 
-  TestSuite *m_suite;
+    TestSuite *m_suite;
 
-  typedef CppUnitVector<Test *> Tests;
-  Tests m_tests;
+    typedef CppUnitVector<Test *> Tests;
+    Tests m_tests;
 };
 
 

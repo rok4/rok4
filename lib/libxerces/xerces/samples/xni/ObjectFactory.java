@@ -1,12 +1,12 @@
 /*
  * Copyright 2001-2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,7 +53,7 @@ final class ObjectFactory {
 
     /** Set to true for debugging */
     private static final boolean DEBUG = false;
-    
+
     /**
      * Default columns per line.
      */
@@ -95,9 +95,9 @@ final class ObjectFactory {
      *
      * @exception ObjectFactory.ConfigurationError
      */
-    static Object createObject(String factoryId, String fallbackClassName)
-        throws ConfigurationError {
-        return createObject(factoryId, null, fallbackClassName);
+    static Object createObject ( String factoryId, String fallbackClassName )
+    throws ConfigurationError {
+        return createObject ( factoryId, null, fallbackClassName );
     } // createObject(String,String):Object
 
     /**
@@ -122,136 +122,133 @@ final class ObjectFactory {
      *
      * @exception ObjectFactory.ConfigurationError
      */
-    static Object createObject(String factoryId,
-                                      String propertiesFilename,
-                                      String fallbackClassName)
-        throws ConfigurationError
-    {
-        if (DEBUG) debugPrintln("debug is on");
+    static Object createObject ( String factoryId,
+                                 String propertiesFilename,
+                                 String fallbackClassName )
+    throws ConfigurationError {
+        if ( DEBUG ) debugPrintln ( "debug is on" );
 
         SecuritySupport ss = SecuritySupport.getInstance();
         ClassLoader cl = findClassLoader();
 
         // Use the system property first
         try {
-            String systemProp = ss.getSystemProperty(factoryId);
-            if (systemProp != null) {
-                if (DEBUG) debugPrintln("found system property, value=" + systemProp);
-                return newInstance(systemProp, cl, true);
+            String systemProp = ss.getSystemProperty ( factoryId );
+            if ( systemProp != null ) {
+                if ( DEBUG ) debugPrintln ( "found system property, value=" + systemProp );
+                return newInstance ( systemProp, cl, true );
             }
-        } catch (SecurityException se) {
+        } catch ( SecurityException se ) {
             // Ignore and continue w/ next location
         }
 
         // Try to read from propertiesFilename, or $java.home/lib/xerces.properties
         String factoryClassName = null;
         // no properties file name specified; use $JAVA_HOME/lib/xerces.properties:
-        if (propertiesFilename == null) {
+        if ( propertiesFilename == null ) {
             File propertiesFile = null;
             boolean propertiesFileExists = false;
             try {
-                String javah = ss.getSystemProperty("java.home");
+                String javah = ss.getSystemProperty ( "java.home" );
                 propertiesFilename = javah + File.separator +
-                    "lib" + File.separator + DEFAULT_PROPERTIES_FILENAME;
-                propertiesFile = new File(propertiesFilename);
-                propertiesFileExists = ss.getFileExists(propertiesFile);
-            } catch (SecurityException e) {
+                                     "lib" + File.separator + DEFAULT_PROPERTIES_FILENAME;
+                propertiesFile = new File ( propertiesFilename );
+                propertiesFileExists = ss.getFileExists ( propertiesFile );
+            } catch ( SecurityException e ) {
                 // try again...
                 fLastModified = -1;
                 fXercesProperties = null;
             }
-            
-            synchronized (ObjectFactory.class) {
+
+            synchronized ( ObjectFactory.class ) {
                 boolean loadProperties = false;
                 FileInputStream fis = null;
                 try {
                     // file existed last time
-                    if(fLastModified >= 0) {
-                        if(propertiesFileExists &&
-                                (fLastModified < (fLastModified = ss.getLastModified(propertiesFile)))) {
+                    if ( fLastModified >= 0 ) {
+                        if ( propertiesFileExists &&
+                                ( fLastModified < ( fLastModified = ss.getLastModified ( propertiesFile ) ) ) ) {
                             loadProperties = true;
                         } else {
                             // file has stopped existing...
-                            if(!propertiesFileExists) {
+                            if ( !propertiesFileExists ) {
                                 fLastModified = -1;
                                 fXercesProperties = null;
                             } // else, file wasn't modified!
                         }
                     } else {
                         // file has started to exist:
-                        if(propertiesFileExists) {
+                        if ( propertiesFileExists ) {
                             loadProperties = true;
-                            fLastModified = ss.getLastModified(propertiesFile);
+                            fLastModified = ss.getLastModified ( propertiesFile );
                         } // else, nothing's changed
                     }
-                    if(loadProperties) {
+                    if ( loadProperties ) {
                         // must never have attempted to read xerces.properties before (or it's outdeated)
                         fXercesProperties = new Properties();
-                        fis = ss.getFileInputStream(propertiesFile);
-                        fXercesProperties.load(fis);
+                        fis = ss.getFileInputStream ( propertiesFile );
+                        fXercesProperties.load ( fis );
                     }
-                } catch (Exception x) {
+                } catch ( Exception x ) {
                     fXercesProperties = null;
                     fLastModified = -1;
                     // assert(x instanceof FileNotFoundException
                     //        || x instanceof SecurityException)
                     // In both cases, ignore and continue w/ next location
-                }
-                finally {
+                } finally {
                     // try to close the input stream if one was opened.
-                    if (fis != null) {
+                    if ( fis != null ) {
                         try {
                             fis.close();
                         }
                         // Ignore the exception.
-                        catch (IOException exc) {}
+                        catch ( IOException exc ) {}
                     }
                 }
             }
-            if(fXercesProperties != null) {
-                factoryClassName = fXercesProperties.getProperty(factoryId);
+            if ( fXercesProperties != null ) {
+                factoryClassName = fXercesProperties.getProperty ( factoryId );
             }
         } else {
             FileInputStream fis = null;
             try {
-                fis = ss.getFileInputStream(new File(propertiesFilename));
+                fis = ss.getFileInputStream ( new File ( propertiesFilename ) );
                 Properties props = new Properties();
-                props.load(fis);
-                factoryClassName = props.getProperty(factoryId);
-            } catch (Exception x) {
+                props.load ( fis );
+                factoryClassName = props.getProperty ( factoryId );
+            } catch ( Exception x ) {
                 // assert(x instanceof FileNotFoundException
                 //        || x instanceof SecurityException)
                 // In both cases, ignore and continue w/ next location
-            }
-            finally {
+            } finally {
                 // try to close the input stream if one was opened.
-                if (fis != null) {
+                if ( fis != null ) {
                     try {
                         fis.close();
                     }
                     // Ignore the exception.
-                    catch (IOException exc) {}
+                    catch ( IOException exc ) {}
                 }
             }
         }
-        if (factoryClassName != null) {
-            if (DEBUG) debugPrintln("found in " + propertiesFilename + ", value=" + factoryClassName);
-            return newInstance(factoryClassName, cl, true);
+        if ( factoryClassName != null ) {
+            if ( DEBUG ) debugPrintln ( "found in " + propertiesFilename + ", value=" + factoryClassName );
+            return newInstance ( factoryClassName, cl, true );
         }
 
         // Try Jar Service Provider Mechanism
-        Object provider = findJarServiceProvider(factoryId);
-        if (provider != null) {
+        Object provider = findJarServiceProvider ( factoryId );
+        if ( provider != null ) {
             return provider;
         }
 
-        if (fallbackClassName == null) {
-            throw new ConfigurationError(
-                "Provider for " + factoryId + " cannot be found", null);
+        if ( fallbackClassName == null ) {
+            throw new ConfigurationError (
+                "Provider for " + factoryId + " cannot be found", null );
         }
 
-        if (DEBUG) debugPrintln("using fallback, value=" + fallbackClassName);
-        return newInstance(fallbackClassName, cl, true);
+        if ( DEBUG ) debugPrintln ( "using fallback, value=" + fallbackClassName );
+        return newInstance ( fallbackClassName, cl, true );
     } // createObject(String,String,String):Object
 
     //
@@ -259,9 +256,9 @@ final class ObjectFactory {
     //
 
     /** Prints a message to standard error if debugging is enabled. */
-    private static void debugPrintln(String msg) {
-        if (DEBUG) {
-            System.err.println("JAXP: " + msg);
+    private static void debugPrintln ( String msg ) {
+        if ( DEBUG ) {
+            System.err.println ( "JAXP: " + msg );
         }
     } // debugPrintln(String)
 
@@ -270,8 +267,7 @@ final class ObjectFactory {
      * the context ClassLoader.
      */
     static ClassLoader findClassLoader()
-        throws ConfigurationError
-    {
+    throws ConfigurationError {
         SecuritySupport ss = SecuritySupport.getInstance();
 
         // Figure out which ClassLoader to use for loading the provider
@@ -280,8 +276,8 @@ final class ObjectFactory {
         ClassLoader system = ss.getSystemClassLoader();
 
         ClassLoader chain = system;
-        while (true) {
-            if (context == chain) {
+        while ( true ) {
+            if ( context == chain ) {
                 // Assert: we are on JDK 1.1 or we have no Context ClassLoader
                 // or any Context ClassLoader in chain of system classloader
                 // (including extension ClassLoader) so extend to widest
@@ -293,16 +289,16 @@ final class ObjectFactory {
                 ClassLoader current = ObjectFactory.class.getClassLoader();
 
                 chain = system;
-                while (true) {
-                    if (current == chain) {
+                while ( true ) {
+                    if ( current == chain ) {
                         // Assert: Current ClassLoader in chain of
                         // boot/extension/system ClassLoaders
                         return system;
                     }
-                    if (chain == null) {
+                    if ( chain == null ) {
                         break;
                     }
-                    chain = ss.getParentClassLoader(chain);
+                    chain = ss.getParentClassLoader ( chain );
                 }
 
                 // Assert: Current ClassLoader not in chain of
@@ -310,14 +306,14 @@ final class ObjectFactory {
                 return current;
             }
 
-            if (chain == null) {
+            if ( chain == null ) {
                 // boot ClassLoader reached
                 break;
             }
 
             // Check for any extension ClassLoaders in chain up to
             // boot ClassLoader
-            chain = ss.getParentClassLoader(chain);
+            chain = ss.getParentClassLoader ( chain );
         };
 
         // Assert: Context ClassLoader not in chain of
@@ -328,45 +324,43 @@ final class ObjectFactory {
     /**
      * Create an instance of a class using the specified ClassLoader
      */
-    static Object newInstance(String className, ClassLoader cl,
-                                      boolean doFallback)
-        throws ConfigurationError
-    {
+    static Object newInstance ( String className, ClassLoader cl,
+                                boolean doFallback )
+    throws ConfigurationError {
         // assert(className != null);
-        try{
-            Class providerClass = findProviderClass(className, cl, doFallback);
+        try {
+            Class providerClass = findProviderClass ( className, cl, doFallback );
             Object instance = providerClass.newInstance();
-            if (DEBUG) debugPrintln("created new instance of " + providerClass +
-                   " using ClassLoader: " + cl);
+            if ( DEBUG ) debugPrintln ( "created new instance of " + providerClass +
+                                            " using ClassLoader: " + cl );
             return instance;
-        } catch (ClassNotFoundException x) {
-            throw new ConfigurationError(
-                "Provider " + className + " not found", x);
-        } catch (Exception x) {
-            throw new ConfigurationError(
+        } catch ( ClassNotFoundException x ) {
+            throw new ConfigurationError (
+                "Provider " + className + " not found", x );
+        } catch ( Exception x ) {
+            throw new ConfigurationError (
                 "Provider " + className + " could not be instantiated: " + x,
-                x);
+                x );
         }
     }
 
     /**
      * Find a Class using the specified ClassLoader
      */
-    static Class findProviderClass(String className, ClassLoader cl,
-                                      boolean doFallback)
-        throws ClassNotFoundException, ConfigurationError
-    {
+    static Class findProviderClass ( String className, ClassLoader cl,
+                                     boolean doFallback )
+    throws ClassNotFoundException, ConfigurationError {
         //throw security exception if the calling thread is not allowed to access the package
         //restrict the access to package as speicified in java.security policy
         SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            final int lastDot = className.lastIndexOf(".");
+        if ( security != null ) {
+            final int lastDot = className.lastIndexOf ( "." );
             String packageName = className;
-            if (lastDot != -1) packageName = className.substring(0, lastDot);
-            security.checkPackageAccess(packageName);
+            if ( lastDot != -1 ) packageName = className.substring ( 0, lastDot );
+            security.checkPackageAccess ( packageName );
         }
         Class providerClass;
-        if (cl == null) {
+        if ( cl == null ) {
             // XXX Use the bootstrap ClassLoader.  There is no way to
             // load a class using the bootstrap ClassLoader that works
             // in both JDK 1.1 and Java 2.  However, this should still
@@ -376,19 +370,19 @@ final class ObjectFactory {
             //
             // Thus Class.forName(String) will use the current
             // ClassLoader which will be the bootstrap ClassLoader.
-            providerClass = Class.forName(className);
+            providerClass = Class.forName ( className );
         } else {
             try {
-                providerClass = cl.loadClass(className);
-            } catch (ClassNotFoundException x) {
-                if (doFallback) {
+                providerClass = cl.loadClass ( className );
+            } catch ( ClassNotFoundException x ) {
+                if ( doFallback ) {
                     // Fall back to current classloader
                     ClassLoader current = ObjectFactory.class.getClassLoader();
-                    if (current == null) {
-                        providerClass = Class.forName(className);
-                    } else if (cl != current) {
+                    if ( current == null ) {
+                        providerClass = Class.forName ( className );
+                    } else if ( cl != current ) {
                         cl = current;
-                        providerClass = cl.loadClass(className);
+                        providerClass = cl.loadClass ( className );
                     } else {
                         throw x;
                     }
@@ -406,9 +400,8 @@ final class ObjectFactory {
      *
      * @return instance of provider class if found or null
      */
-    private static Object findJarServiceProvider(String factoryId)
-        throws ConfigurationError
-    {
+    private static Object findJarServiceProvider ( String factoryId )
+    throws ConfigurationError {
         SecuritySupport ss = SecuritySupport.getInstance();
         String serviceId = "META-INF/services/" + factoryId;
         InputStream is = null;
@@ -416,24 +409,24 @@ final class ObjectFactory {
         // First try the Context ClassLoader
         ClassLoader cl = findClassLoader();
 
-        is = ss.getResourceAsStream(cl, serviceId);
+        is = ss.getResourceAsStream ( cl, serviceId );
 
         // If no provider found then try the current ClassLoader
-        if (is == null) {
+        if ( is == null ) {
             ClassLoader current = ObjectFactory.class.getClassLoader();
-            if (cl != current) {
+            if ( cl != current ) {
                 cl = current;
-                is = ss.getResourceAsStream(cl, serviceId);
+                is = ss.getResourceAsStream ( cl, serviceId );
             }
         }
 
-        if (is == null) {
+        if ( is == null ) {
             // No provider found
             return null;
         }
 
-        if (DEBUG) debugPrintln("found jar resource=" + serviceId +
-               " using ClassLoader: " + cl);
+        if ( DEBUG ) debugPrintln ( "found jar resource=" + serviceId +
+                                        " using ClassLoader: " + cl );
 
         // Read the service provider name in UTF-8 as specified in
         // the jar spec.  Unfortunately this fails in Microsoft
@@ -453,9 +446,9 @@ final class ObjectFactory {
         // jkesselm]
         BufferedReader rd;
         try {
-            rd = new BufferedReader(new InputStreamReader(is, "UTF-8"), DEFAULT_LINE_LENGTH);
-        } catch (java.io.UnsupportedEncodingException e) {
-            rd = new BufferedReader(new InputStreamReader(is), DEFAULT_LINE_LENGTH);
+            rd = new BufferedReader ( new InputStreamReader ( is, "UTF-8" ), DEFAULT_LINE_LENGTH );
+        } catch ( java.io.UnsupportedEncodingException e ) {
+            rd = new BufferedReader ( new InputStreamReader ( is ), DEFAULT_LINE_LENGTH );
         }
 
         String factoryClassName = null;
@@ -463,29 +456,28 @@ final class ObjectFactory {
             // XXX Does not handle all possible input as specified by the
             // Jar Service Provider specification
             factoryClassName = rd.readLine();
-        } catch (IOException x) {
+        } catch ( IOException x ) {
             // No provider found
             return null;
-        }
-        finally {
+        } finally {
             try {
                 // try to close the reader.
                 rd.close();
             }
             // Ignore the exception.
-            catch (IOException exc) {}
+            catch ( IOException exc ) {}
         }
 
-        if (factoryClassName != null &&
-            ! "".equals(factoryClassName)) {
-            if (DEBUG) debugPrintln("found in resource, value="
-                   + factoryClassName);
+        if ( factoryClassName != null &&
+                ! "".equals ( factoryClassName ) ) {
+            if ( DEBUG ) debugPrintln ( "found in resource, value="
+                                            + factoryClassName );
 
             // Note: here we do not want to fall back to the current
             // ClassLoader because we want to avoid the case where the
             // resource file was found using one ClassLoader and the
             // provider class was instantiated using a different one.
-            return newInstance(factoryClassName, cl, false);
+            return newInstance ( factoryClassName, cl, false );
         }
 
         // No provider found
@@ -501,7 +493,7 @@ final class ObjectFactory {
      */
     static final class ConfigurationError
         extends Error {
-        
+
         /** Serialization version. */
         private static final long serialVersionUID = 3689636882459932976L;
 
@@ -520,8 +512,8 @@ final class ObjectFactory {
          * Construct a new instance with the specified detail string and
          * exception.
          */
-        ConfigurationError(String msg, Exception x) {
-            super(msg);
+        ConfigurationError ( String msg, Exception x ) {
+            super ( msg );
             this.exception = x;
         } // <init>(String,Exception)
 

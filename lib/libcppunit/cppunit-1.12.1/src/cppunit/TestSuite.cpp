@@ -6,57 +6,50 @@ CPPUNIT_NS_BEGIN
 
 
 /// Default constructor
-TestSuite::TestSuite( std::string name )
-    : TestComposite( name )
-{
+TestSuite::TestSuite ( std::string name )
+    : TestComposite ( name ) {
 }
 
 
 /// Destructor
-TestSuite::~TestSuite()
-{ 
-  deleteContents(); 
+TestSuite::~TestSuite() {
+    deleteContents();
 }
 
 
 /// Deletes all tests in the suite.
-void 
-TestSuite::deleteContents()
-{
-  int childCount = getChildTestCount();
-  for ( int index =0; index < childCount; ++index )
-    delete getChildTestAt( index );
+void
+TestSuite::deleteContents() {
+    int childCount = getChildTestCount();
+    for ( int index =0; index < childCount; ++index )
+        delete getChildTestAt ( index );
 
-  m_tests.clear();
+    m_tests.clear();
 }
 
 
-/// Adds a test to the suite. 
-void 
-TestSuite::addTest( Test *test )
-{ 
-  m_tests.push_back( test ); 
+/// Adds a test to the suite.
+void
+TestSuite::addTest ( Test *test ) {
+    m_tests.push_back ( test );
 }
 
 
 const CppUnitVector<Test *> &
-TestSuite::getTests() const
-{
-  return m_tests;
+TestSuite::getTests() const {
+    return m_tests;
 }
 
 
-int 
-TestSuite::getChildTestCount() const
-{
-  return m_tests.size();
+int
+TestSuite::getChildTestCount() const {
+    return m_tests.size();
 }
 
 
 Test *
-TestSuite::doGetChildTestAt( int index ) const
-{
-  return m_tests[index];
+TestSuite::doGetChildTestAt ( int index ) const {
+    return m_tests[index];
 }
 
 

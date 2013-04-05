@@ -14,11 +14,10 @@ CPPUNIT_NS_BEGIN
  * - std::exception
  * - ...
  */
-class DefaultProtector : public Protector
-{
+class DefaultProtector : public Protector {
 public:
-  bool protect( const Functor &functor,
-                const ProtectorContext &context );
+    bool protect ( const Functor &functor,
+                   const ProtectorContext &context );
 };
 
 CPPUNIT_NS_END

@@ -1,12 +1,12 @@
 /*
  * Copyright 1999,2000,2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package ui;                    
-   
+package ui;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -83,14 +83,14 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
     //
 
     static final boolean DEBUG = true;
-  
+
     /** Default parser name. */
-    static final String 
-        DEFAULT_PARSER_NAME = "org.apache.xerces.parsers.DOMParser";
+    static final String
+    DEFAULT_PARSER_NAME = "org.apache.xerces.parsers.DOMParser";
     static int WARNING = 0;
     static int ERROR=1;
     static int FATAL_ERROR=2;
-        
+
 
     static final String title = "TreeViewer";
     static final String openString = "Open";
@@ -118,14 +118,14 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
      *  Constructor
      */
     public TreeView() {
-        this(null);
+        this ( null );
     }
 
     /**
      *  Constructor
      */
-    public TreeView(String uri) {
-        super(uri);
+    public TreeView ( String uri ) {
+        super ( uri );
         openFolder = DefaultImages.createOpenFolderImage();
         closedFolder = DefaultImages.createClosedFolderImage();
         leafImage = DefaultImages.createLeafImage();
@@ -133,219 +133,219 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
         ef = new ErrorStorer();
         fname = uri;
         JMenuBar jmb = new JMenuBar();
-        JMenu fileMenu = new JMenu("File");
+        JMenu fileMenu = new JMenu ( "File" );
         JMenuItem item;
 
-        item = new JMenuItem(openString);
-        fileMenu.add(item);
-        item.addActionListener(this);
+        item = new JMenuItem ( openString );
+        fileMenu.add ( item );
+        item.addActionListener ( this );
 
-        item = new JMenuItem(quitString);
-        fileMenu.add(item);
-        item.addActionListener(this);
+        item = new JMenuItem ( quitString );
+        fileMenu.add ( item );
+        item.addActionListener ( this );
 
-        JMenu shortcutMenu = new JMenu("Shortcuts");
+        JMenu shortcutMenu = new JMenu ( "Shortcuts" );
 
-        item = new JMenuItem(expandString);
-        shortcutMenu.add(item);
-        item.addActionListener(this);
+        item = new JMenuItem ( expandString );
+        shortcutMenu.add ( item );
+        item.addActionListener ( this );
 
-        item = new JMenuItem(collapseString);
-        shortcutMenu.add(item);
-        item.addActionListener(this);
+        item = new JMenuItem ( collapseString );
+        shortcutMenu.add ( item );
+        item.addActionListener ( this );
 
-        item = new JMenuItem(reloadString);
-        shortcutMenu.add(item);
-        item.addActionListener(this);
+        item = new JMenuItem ( reloadString );
+        shortcutMenu.add ( item );
+        item.addActionListener ( this );
 
-        jmb.add(fileMenu);
-        jmb.add(shortcutMenu);
-        setJMenuBar(jmb);
+        jmb.add ( fileMenu );
+        jmb.add ( shortcutMenu );
+        setJMenuBar ( jmb );
 
-        getContentPane().add(createUI(fname));
-        
+        getContentPane().add ( createUI ( fname ) );
+
     }
 
     /** create and return the entire UI from the root TreeNode
      */
-    JComponent createUI(String filename) {
-        if (DEBUG) System.out.println("START createUI:"+filename);
+    JComponent createUI ( String filename ) {
+        if ( DEBUG ) System.out.println ( "START createUI:"+filename );
 
         // create the message panel first so we can send messages to it...
-        messageText = new JTextArea(3,40);
-        messageText.setFont(new Font("dialog", Font.PLAIN, 12));
-        JPanel messagePanel = new JPanel(new BorderLayout());
-        messagePanel.add(new JScrollPane(messageText) {
+        messageText = new JTextArea ( 3,40 );
+        messageText.setFont ( new Font ( "dialog", Font.PLAIN, 12 ) );
+        JPanel messagePanel = new JPanel ( new BorderLayout() );
+        messagePanel.add ( new JScrollPane ( messageText ) {
             private static final long serialVersionUID = 3978426918603075632L;
-            public Dimension getPreferredSize(){
+            public Dimension getPreferredSize() {
                 Dimension size = TreeView.this.getSize();
-                return new Dimension(size.width, size.height / 4);
-                }
-            public Dimension getMinimumSize(){
-                return new Dimension(100, 100);
-                }
-            },
-            BorderLayout.CENTER);
-        messagePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("Messages"),
-            BorderFactory.createEmptyBorder(4, 4, 4, 4)
-            ));
+                return new Dimension ( size.width, size.height / 4 );
+            }
+            public Dimension getMinimumSize() {
+                return new Dimension ( 100, 100 );
+            }
+        },
+        BorderLayout.CENTER );
+        messagePanel.setBorder ( BorderFactory.createCompoundBorder (
+                                     BorderFactory.createTitledBorder ( "Messages" ),
+                                     BorderFactory.createEmptyBorder ( 4, 4, 4, 4 )
+                                 ) );
 
         // create the TextArea for XML source
         sourceText = new JTextArea();
-        sourceText.setFont(new Font("monospaced", Font.PLAIN, 12));
-        sourceText.setBackground(Color.white);
-        sourceText.setForeground(Color.black);
-        sourceText.setSelectedTextColor(Color.black);
-        sourceText.setSelectionColor(Color.red);
-        sourceText.setEditable(false);
-        JPanel sourcePanel = new JPanel(new BorderLayout());
-        sourcePanel.add(new JScrollPane(sourceText){
+        sourceText.setFont ( new Font ( "monospaced", Font.PLAIN, 12 ) );
+        sourceText.setBackground ( Color.white );
+        sourceText.setForeground ( Color.black );
+        sourceText.setSelectedTextColor ( Color.black );
+        sourceText.setSelectionColor ( Color.red );
+        sourceText.setEditable ( false );
+        JPanel sourcePanel = new JPanel ( new BorderLayout() );
+        sourcePanel.add ( new JScrollPane ( sourceText ) {
             private static final long serialVersionUID = 4121135831458068789L;
-            public Dimension getPreferredSize(){
+            public Dimension getPreferredSize() {
                 Dimension size = TreeView.this.getSize();
-                return new Dimension(size.width / 2, size.height * 3 / 5);
-                }
-            public Dimension getMinimumSize(){
-                return new Dimension(100, 100);
-                }
-            },
-            BorderLayout.CENTER);
-        sourcePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("Source View"),
-            BorderFactory.createEmptyBorder(4, 4, 4, 4)
-            ));
+                return new Dimension ( size.width / 2, size.height * 3 / 5 );
+            }
+            public Dimension getMinimumSize() {
+                return new Dimension ( 100, 100 );
+            }
+        },
+        BorderLayout.CENTER );
+        sourcePanel.setBorder ( BorderFactory.createCompoundBorder (
+                                    BorderFactory.createTitledBorder ( "Source View" ),
+                                    BorderFactory.createEmptyBorder ( 4, 4, 4, 4 )
+                                ) );
 
         // create the JTree and scroll pane.
-        JPanel treePanel = new JPanel(new BorderLayout());
+        JPanel treePanel = new JPanel ( new BorderLayout() );
         m_tree = new DOMTree();
-        m_tree.setCellRenderer(new XMLTreeCellRenderer());
+        m_tree.setCellRenderer ( new XMLTreeCellRenderer() );
         m_tree.getSelectionModel().setSelectionMode
-            (TreeSelectionModel.SINGLE_TREE_SELECTION);
+        ( TreeSelectionModel.SINGLE_TREE_SELECTION );
 
         // Listen for when the selection changes, call nodeSelected(node)
-        m_tree.addTreeSelectionListener(
-            new TreeSelectionListener() {
-                public void valueChanged(TreeSelectionEvent e) {
-                    TreeNode node = (TreeNode)
-                        (e.getPath().getLastPathComponent());
+        m_tree.addTreeSelectionListener (
+        new TreeSelectionListener() {
+            public void valueChanged ( TreeSelectionEvent e ) {
+                TreeNode node = ( TreeNode )
+                                ( e.getPath().getLastPathComponent() );
 
-                    nodeSelected(node);
-                }
+                nodeSelected ( node );
             }
+        }
         );
-        m_tree.setRowHeight(18);
-        m_tree.setFont(new Font("dialog", Font.PLAIN, 12));
+        m_tree.setRowHeight ( 18 );
+        m_tree.setFont ( new Font ( "dialog", Font.PLAIN, 12 ) );
 
-        treePanel.add(new JScrollPane(m_tree) {
+        treePanel.add ( new JScrollPane ( m_tree ) {
             private static final long serialVersionUID = 3977860665971126320L;
-            public Dimension getPreferredSize(){
+            public Dimension getPreferredSize() {
                 Dimension size = TreeView.this.getSize();
-                return new Dimension(size.width / 2, size.height * 3 / 5);
-                }
-            public Dimension getMinimumSize(){
-                return new Dimension(100, 100);
-                }
-            },
-            BorderLayout.CENTER);
+                return new Dimension ( size.width / 2, size.height * 3 / 5 );
+            }
+            public Dimension getMinimumSize() {
+                return new Dimension ( 100, 100 );
+            }
+        },
+        BorderLayout.CENTER );
 
-        treePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("Tree View"),
-            BorderFactory.createEmptyBorder(4, 4, 4, 4)
-            ));
+        treePanel.setBorder ( BorderFactory.createCompoundBorder (
+                                  BorderFactory.createTitledBorder ( "Tree View" ),
+                                  BorderFactory.createEmptyBorder ( 4, 4, 4, 4 )
+                              ) );
 
         // refreshUI loads everthything!
-        refreshUI(filename);
+        refreshUI ( filename );
 
         // use the new JSplitPane to dynamically resize...
-        JComponent split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-            true, treePanel, sourcePanel);
+        JComponent split = new JSplitPane ( JSplitPane.HORIZONTAL_SPLIT,
+                                            true, treePanel, sourcePanel );
 
         JComponent mainSplitPane =
-            new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                           true, split, messagePanel);
+            new JSplitPane ( JSplitPane.VERTICAL_SPLIT,
+                             true, split, messagePanel );
 
-        if (DEBUG) System.out.println("END createUI:"+filename);
+        if ( DEBUG ) System.out.println ( "END createUI:"+filename );
         return mainSplitPane;
     }
 
     /** refreshUI is called when we have a new filename to parse.
      */
-    void refreshUI(String filename) {
-        if (DEBUG) System.out.println("START refreshUI:"+filename);
+    void refreshUI ( String filename ) {
+        if ( DEBUG ) System.out.println ( "START refreshUI:"+filename );
 
         messageText.selectAll();
         messageText.cut();
 
-        if (filename == null || filename.equals("")) {
-            messageText.setForeground(Color.red);
-            messageText.append("No input XML filename specified:"+filename+"\n");
+        if ( filename == null || filename.equals ( "" ) ) {
+            messageText.setForeground ( Color.red );
+            messageText.append ( "No input XML filename specified:"+filename+"\n" );
             return;
         }
 
         fname = filename;
-        Document newRoot = getRoot(filename);
-        if (newRoot == null) {
-            messageText.setForeground(Color.red);
-            messageText.append("Unable to get new DOM Tree for:"+filename+"\n");
+        Document newRoot = getRoot ( filename );
+        if ( newRoot == null ) {
+            messageText.setForeground ( Color.red );
+            messageText.append ( "Unable to get new DOM Tree for:"+filename+"\n" );
             return;
         }
-        m_tree.setDocument(newRoot);
+        m_tree.setDocument ( newRoot );
 
         // new Source
         sourceText.selectAll();
         sourceText.cut();
-        readXMLFile(fname, sourceText);
+        readXMLFile ( fname, sourceText );
 
-        setTitle(title+": "+filename);
+        setTitle ( title+": "+filename );
 
-        if (m_tree!= null)
+        if ( m_tree!= null )
             expandTree();
 
 
-        if (ef != null && ef.getErrorNodes()!=null       
-                    && ef.getErrorNodes().size() > 0 ) {
-            messageText.setForeground(Color.red);
-            messageText.append("XML source, "+fname+" has errors.\n");
-            messageText.append("Please click on red Tree View items for details.\n");
+        if ( ef != null && ef.getErrorNodes() !=null
+                && ef.getErrorNodes().size() > 0 ) {
+            messageText.setForeground ( Color.red );
+            messageText.append ( "XML source, "+fname+" has errors.\n" );
+            messageText.append ( "Please click on red Tree View items for details.\n" );
             /***/
             Hashtable errors = ef.getErrorNodes();
             Enumeration keys = errors.keys();
-            while (keys.hasMoreElements()) {
-                Node node = (Node)keys.nextElement();
-                messageText.append("node="+node.getNodeName()
-                +", error="+((ParseError)errors.get(node)).getMsg()+"\n");
+            while ( keys.hasMoreElements() ) {
+                Node node = ( Node ) keys.nextElement();
+                messageText.append ( "node="+node.getNodeName()
+                                     +", error="+ ( ( ParseError ) errors.get ( node ) ).getMsg() +"\n" );
             }
         }
-        if (DEBUG) System.out.println("END refreshUI:"+filename);
+        if ( DEBUG ) System.out.println ( "END refreshUI:"+filename );
     }
 
     /**
      *  Invoke the Parser on fname and return the root TreeNode.
      */
-    public Document getRoot(String filename) {
-        if (DEBUG) System.out.println("START getRoot:"+filename);
+    public Document getRoot ( String filename ) {
+        if ( DEBUG ) System.out.println ( "START getRoot:"+filename );
 
-        if (filename == null || filename.equals(""))
-        return null;
+        if ( filename == null || filename.equals ( "" ) )
+            return null;
 
         try {
             //
             // Reset the Error Storage and handling
             //
-     
+
             ef.resetErrors();
-            parser.setErrorHandler(ef);
-            parser.setFeature("http://apache.org/xml/features/dom/defer-node-expansion", false); // otherwise parser.getCurrentNode() == null
-            parser.setFeature("http://apache.org/xml/features/continue-after-fatal-error", true);
-            parser.setFeature("http://apache.org/xml/features/allow-java-encodings", true);
-            parser.parse(filename);
+            parser.setErrorHandler ( ef );
+            parser.setFeature ( "http://apache.org/xml/features/dom/defer-node-expansion", false ); // otherwise parser.getCurrentNode() == null
+            parser.setFeature ( "http://apache.org/xml/features/continue-after-fatal-error", true );
+            parser.setFeature ( "http://apache.org/xml/features/allow-java-encodings", true );
+            parser.parse ( filename );
             Document document = parser.getDocument();
             /***/
             return document;
-        } catch (Exception e) {
-             System.err.println( "Error: Invalid XML document could not get ROOT" );
-             System.exit( 1 );
+        } catch ( Exception e ) {
+            System.err.println ( "Error: Invalid XML document could not get ROOT" );
+            System.exit ( 1 );
             //e.printStackTrace(System.err);
         }
         return null;
@@ -353,28 +353,25 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
 
     /** read the xml file from filename and append it to the JTextArea
      */
-    synchronized void readXMLFile(String filename, JTextArea ta) {
+    synchronized void readXMLFile ( String filename, JTextArea ta ) {
 
-        if (DEBUG) System.out.println("START readXMLFile"+filename);
-        if (filename == null || filename.equals(""))
+        if ( DEBUG ) System.out.println ( "START readXMLFile"+filename );
+        if ( filename == null || filename.equals ( "" ) )
             return;
         InputStream fis = null;
         BufferedReader dis = null;
         try {
-            java.net.URL file = createURL(filename);
+            java.net.URL file = createURL ( filename );
             fis = file.openStream();
 
             String javaEncoding = parser.getJavaEncoding(); // get saved java encoding
-            try
-            {
-            dis = new BufferedReader(new InputStreamReader(fis, javaEncoding ));
+            try {
+                dis = new BufferedReader ( new InputStreamReader ( fis, javaEncoding ) );
+            } catch ( UnsupportedEncodingException ex ) {
+                dis = new BufferedReader ( new InputStreamReader ( fis ) );
             }
-            catch( UnsupportedEncodingException ex )
-            {
-            dis = new BufferedReader(new InputStreamReader(fis ));
-            }
-        } catch (Exception ex) {
-            System.err.println("ERROR: Xerces.readXMLFile: "+ex);
+        } catch ( Exception ex ) {
+            System.err.println ( "ERROR: Xerces.readXMLFile: "+ex );
             return;
         }
 
@@ -385,33 +382,33 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
         int nllen = nl.length();
         StringBuffer sb = new StringBuffer();
 
-        try{
-            readline: while ((line = dis.readLine()) != null) {
-                sb.append(line+nl);
-                textLine.addElement(new Integer(len));
-                len += line.length()+nllen;
+        try {
+            readline: while ( ( line = dis.readLine() ) != null ) {
+                sb.append ( line+nl );
+                textLine.addElement ( new Integer ( len ) );
+                len += line.length() +nllen;
             }
-            ta.append(sb.toString());
-        } catch (IOException io) {
-            System.err.println(io);
+            ta.append ( sb.toString() );
+        } catch ( IOException io ) {
+            System.err.println ( io );
             return;
         }
 
         // relayout because contents have changed
         //ta.revalidate();
 
-        if (DEBUG) System.out.println("END readXMLFile"+filename);
+        if ( DEBUG ) System.out.println ( "END readXMLFile"+filename );
         return;
 
     }
 
     /** called when our JTree's nodes are selected.
      */
-    void nodeSelected(TreeNode treeNode) {
+    void nodeSelected ( TreeNode treeNode ) {
 
-        Node node = m_tree.getNode(treeNode);
+        Node node = m_tree.getNode ( treeNode );
 
-        if( node == null )     // It is possible to get a null node
+        if ( node == null )    // It is possible to get a null node
             return;
 
         StringBuffer sb = new StringBuffer();
@@ -421,104 +418,96 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
 
         //fix
 
-       //JTextArea sourceText = sourceText;
-       Object errorObject = ef == null ? null : ef.getError(node);
-       if (errorObject != null) {
-           // There *is* an error in this node.
-           messageText.setForeground(Color.red);
-           ParseError eip = (ParseError)errorObject;
-           sb.append("Error: "+eip.getMsg()+"\n");
-           int lineNo = eip.getLineNo();
-           int pos  = 0;
-           int next = 0;                       
-           int sizeOfTextLine = textLine.size();
+        //JTextArea sourceText = sourceText;
+        Object errorObject = ef == null ? null : ef.getError ( node );
+        if ( errorObject != null ) {
+            // There *is* an error in this node.
+            messageText.setForeground ( Color.red );
+            ParseError eip = ( ParseError ) errorObject;
+            sb.append ( "Error: "+eip.getMsg() +"\n" );
+            int lineNo = eip.getLineNo();
+            int pos  = 0;
+            int next = 0;
+            int sizeOfTextLine = textLine.size();
 
-           if( lineNo < sizeOfTextLine )
-              {
-              pos = ((Integer)textLine.elementAt(lineNo-1)).intValue();
-              next = (lineNo == sizeOfTextLine ) ?
-               pos :
-               (((Integer)textLine.elementAt(lineNo)).intValue());
-              }
-           else
-              {
-              pos  = (( Integer) textLine.elementAt( sizeOfTextLine - 1 )).intValue();
-              next = pos + 2;
-              }
+            if ( lineNo < sizeOfTextLine ) {
+                pos = ( ( Integer ) textLine.elementAt ( lineNo-1 ) ).intValue();
+                next = ( lineNo == sizeOfTextLine ) ?
+                       pos :
+                       ( ( ( Integer ) textLine.elementAt ( lineNo ) ).intValue() );
+            } else {
+                pos  = ( ( Integer ) textLine.elementAt ( sizeOfTextLine - 1 ) ).intValue();
+                next = pos + 2;
+            }
 
-           sourceText.select(pos, next );
-           //m_textScrollPane.repaint();
-       } else {
-           messageText.setForeground(Color.black);
-           sourceText.select(0, 0 );
-       }
-        
+            sourceText.select ( pos, next );
+            //m_textScrollPane.repaint();
+        } else {
+            messageText.setForeground ( Color.black );
+            sourceText.select ( 0, 0 );
+        }
+
         //fix
 
-        
-        if (node.getNodeType() == Node.ELEMENT_NODE
-                    || node.getNodeType() == Node.TEXT_NODE 
-                || node.getNodeType() == Node.CDATA_SECTION_NODE )
-                 {
-                    sb.append(node.toString());
-            }
-       
-        messageText.append(sb.toString());
+
+        if ( node.getNodeType() == Node.ELEMENT_NODE
+                || node.getNodeType() == Node.TEXT_NODE
+                || node.getNodeType() == Node.CDATA_SECTION_NODE ) {
+            sb.append ( node.toString() );
+        }
+
+        messageText.append ( sb.toString() );
     }
 
     /** called when a the text value has changed in the FileNameInput.
      *  read in new XML file.
      */
-    public void textValueChanged(TextEvent e) {
+    public void textValueChanged ( TextEvent e ) {
         try {
-            if (fni != null)
-                fni.setVisible(false);
-            fname = ((JTextField)e.getSource()).getText();
-            if (DEBUG) System.out.println("textValueChanged:"+fname);
-            refreshUI(fname);
+            if ( fni != null )
+                fni.setVisible ( false );
+            fname = ( ( JTextField ) e.getSource() ).getText();
+            if ( DEBUG ) System.out.println ( "textValueChanged:"+fname );
+            refreshUI ( fname );
 
-        } catch (Exception ex) {
-           System.err.println( "Error: while trying to refresh gui" );
-           System.exit( 1 );
-        //    ex.printStackTrace();
+        } catch ( Exception ex ) {
+            System.err.println ( "Error: while trying to refresh gui" );
+            System.exit ( 1 );
+            //    ex.printStackTrace();
         }
     }
 
     /** called to handle menu actions.
      */
-    public void actionPerformed(java.awt.event.ActionEvent e) {
-        if (DEBUG) System.err.println("ACTION: "+e.getActionCommand()+", "+e.paramString());
+    public void actionPerformed ( java.awt.event.ActionEvent e ) {
+        if ( DEBUG ) System.err.println ( "ACTION: "+e.getActionCommand() +", "+e.paramString() );
 
-        if (e.getActionCommand().equals(quitString)) {
-          System.exit(0);
-        }
-        else if (e.getActionCommand().equals(openString)) {
+        if ( e.getActionCommand().equals ( quitString ) ) {
+            System.exit ( 0 );
+        } else if ( e.getActionCommand().equals ( openString ) ) {
 
-            fni = new FileNameInput("Open File");
-            fni.addTextListener(this);
-            fni.setVisible(true);
-        }
-        else if (e.getActionCommand().equals(expandString)) {
+            fni = new FileNameInput ( "Open File" );
+            fni.addTextListener ( this );
+            fni.setVisible ( true );
+        } else if ( e.getActionCommand().equals ( expandString ) ) {
             expandTree();
-        }
-        else if (e.getActionCommand().equals(collapseString)) {
+        } else if ( e.getActionCommand().equals ( collapseString ) ) {
             int rows = m_tree.getRowCount();
-            for (int i = 0; i < rows; i++) {
-                m_tree.collapseRow(i);
+            for ( int i = 0; i < rows; i++ ) {
+                m_tree.collapseRow ( i );
             }
-        }
-        else
-        //if (e.getActionCommand().equals(reloadString)) {
-            refreshUI(fname);
+        } else
+            //if (e.getActionCommand().equals(reloadString)) {
+            refreshUI ( fname );
         //}
     }
 
     void expandTree() {
         int rows = 0;
-        for (int levels=0; levels <= 4; levels++) {
+        for ( int levels=0; levels <= 4; levels++ ) {
             rows=m_tree.getRowCount();
-            for (int i = 0; i < rows; i++) {
-                m_tree.expandRow(i);
+            for ( int i = 0; i < rows; i++ ) {
+                m_tree.expandRow ( i );
             }
         }
     }
@@ -529,47 +518,45 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
      * as different icons.
      */
     class XMLTreeCellRenderer extends DefaultTreeCellRenderer {
-        
+
         private static final long serialVersionUID = 3761130444229720113L;
 
-        public Component getTreeCellRendererComponent(JTree tree, Object value,
-                          boolean selected, boolean expanded,
-                          boolean leaf, int row,
-                              boolean hasFocus)
-        {
-            Node node = ((DOMTree)tree).getNode(value);
-            Component comp = super.getTreeCellRendererComponent(tree, value,
-                           selected,  expanded, leaf,  row, hasFocus);
-            if (selected) {
-                comp.setBackground(Color.blue);
+        public Component getTreeCellRendererComponent ( JTree tree, Object value,
+                boolean selected, boolean expanded,
+                boolean leaf, int row,
+                boolean hasFocus ) {
+            Node node = ( ( DOMTree ) tree ).getNode ( value );
+            Component comp = super.getTreeCellRendererComponent ( tree, value,
+                             selected,  expanded, leaf,  row, hasFocus );
+            if ( selected ) {
+                comp.setBackground ( Color.blue );
             }
-            if (ef != null
-            && ef.getErrorNodes() != null
-            && value != null
-            && node != null
-            && ef.getErrorNodes().containsKey( node )) {
-                comp.setForeground(Color.red);
+            if ( ef != null
+                    && ef.getErrorNodes() != null
+                    && value != null
+                    && node != null
+                    && ef.getErrorNodes().containsKey ( node ) ) {
+                comp.setForeground ( Color.red );
             }
 
-            if (node != null) {
-                if (leaf) {
-                    setIcon(new ImageIcon(leafImage));
-                } else if (expanded) {
-                    setIcon(new ImageIcon(openFolder));
+            if ( node != null ) {
+                if ( leaf ) {
+                    setIcon ( new ImageIcon ( leafImage ) );
+                } else if ( expanded ) {
+                    setIcon ( new ImageIcon ( openFolder ) );
                 } else {
-                    setIcon(new ImageIcon(closedFolder));
+                    setIcon ( new ImageIcon ( closedFolder ) );
                 }
             }
-            if (node != null && node instanceof Element) {
-                
-                Element txNode = (Element)node;
-                Attr txAtt = (Attr)txNode.getAttributeNode("gender");
-                if (txAtt != null) {
-                    if (txAtt.getValue().equals("male")) {
-                        setIcon(new ImageIcon("male.gif"));
-                    } else
-                    if (txAtt.getValue().equals("female")) {
-                        setIcon(new ImageIcon("female.gif"));
+            if ( node != null && node instanceof Element ) {
+
+                Element txNode = ( Element ) node;
+                Attr txAtt = ( Attr ) txNode.getAttributeNode ( "gender" );
+                if ( txAtt != null ) {
+                    if ( txAtt.getValue().equals ( "male" ) ) {
+                        setIcon ( new ImageIcon ( "male.gif" ) );
+                    } else if ( txAtt.getValue().equals ( "female" ) ) {
+                        setIcon ( new ImageIcon ( "female.gif" ) );
                     }
                 }
             }
@@ -586,7 +573,7 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
     class FileNameInput extends JFrame implements ActionListener {
 
         private static final long serialVersionUID = 3257562893292615472L;
-        
+
         JLabel fileLabel;
         JTextField textField;
         JButton ok;
@@ -594,40 +581,39 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
         Vector textListeners;
 
         public FileNameInput() {
-            this("");
+            this ( "" );
         }
 
-        public FileNameInput(String title) {
+        public FileNameInput ( String title ) {
 
-            super(title);
+            super ( title );
 
-            fileLabel = new JLabel("Enter XML file name:");
+            fileLabel = new JLabel ( "Enter XML file name:" );
             textField = new JTextField();
-            textField.addActionListener(this);
-            ok = new JButton("ok");
-            cancel = new JButton("cancel");
+            textField.addActionListener ( this );
+            ok = new JButton ( "ok" );
+            cancel = new JButton ( "cancel" );
             JPanel buttonPanel = new JPanel();
-            buttonPanel.add(ok);
-            buttonPanel.add(cancel);
-            ok.addActionListener(this);
-            cancel.addActionListener(this);
-            getContentPane().add(fileLabel, BorderLayout.NORTH);
-            getContentPane().add(textField, BorderLayout.CENTER);
-            getContentPane().add(buttonPanel, BorderLayout.SOUTH);
-            setSize(400,100);
+            buttonPanel.add ( ok );
+            buttonPanel.add ( cancel );
+            ok.addActionListener ( this );
+            cancel.addActionListener ( this );
+            getContentPane().add ( fileLabel, BorderLayout.NORTH );
+            getContentPane().add ( textField, BorderLayout.CENTER );
+            getContentPane().add ( buttonPanel, BorderLayout.SOUTH );
+            setSize ( 400,100 );
         }
 
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed ( ActionEvent e ) {
 
-            if (e.getSource() == ok || e.getSource() == textField) {
-                System.out.println("FileNameInput: pressed OK");
-                    TextEvent event = new TextEvent(textField, TextEvent.TEXT_VALUE_CHANGED);
-                    deliverEvent(event);
-                    setVisible(false);
-            } else
-            if (e.getSource() == cancel) {
-                System.out.println("FileNameInput: pressed cancel");
-                    setVisible(false);
+            if ( e.getSource() == ok || e.getSource() == textField ) {
+                System.out.println ( "FileNameInput: pressed OK" );
+                TextEvent event = new TextEvent ( textField, TextEvent.TEXT_VALUE_CHANGED );
+                deliverEvent ( event );
+                setVisible ( false );
+            } else if ( e.getSource() == cancel ) {
+                System.out.println ( "FileNameInput: pressed cancel" );
+                setVisible ( false );
             }
         }
 
@@ -638,18 +624,18 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
          *
          * @see #removeTextListener
          */
-        public void addTextListener(TextListener listener) {
+        public void addTextListener ( TextListener listener ) {
 
             // is there anything to do?
-            if (listener == null)
+            if ( listener == null )
                 return;
 
-            if (textListeners == null)
-               textListeners = new Vector();
+            if ( textListeners == null )
+                textListeners = new Vector();
 
             // add listener
-            textListeners.addElement(listener);
-            }
+            textListeners.addElement ( listener );
+        }
 
         /**
          * Removes a TextListener event listener.
@@ -658,15 +644,15 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
          *
          * @see #addTextListener
          */
-        public void removeTextListener(TextListener listener) {
+        public void removeTextListener ( TextListener listener ) {
 
             // is there anything to do?
-            if (listener == null || textListeners == null)
+            if ( listener == null || textListeners == null )
                 return;
 
             // add listener
-            textListeners.removeElement(listener);
-            }
+            textListeners.removeElement ( listener );
+        }
 
 
         /**
@@ -675,34 +661,36 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
          *
          * @param evt The event to deliver.
          */
-        protected void deliverEvent(EventObject evt) {
+        protected void deliverEvent ( EventObject evt ) {
 
-            if (evt instanceof TextEvent) {
-                TextEvent event = (TextEvent)evt;
+            if ( evt instanceof TextEvent ) {
+                TextEvent event = ( TextEvent ) evt;
 
                 Vector l;
-                synchronized (textListeners) { l = (Vector)textListeners.clone(); }
+                synchronized ( textListeners ) {
+                    l = ( Vector ) textListeners.clone();
+                }
 
                 int size = l.size();
-                for (int i = 0; i < size; i++)
-                    ((TextListener)l.elementAt(i)).textValueChanged(event);
-                }
+                for ( int i = 0; i < size; i++ )
+                    ( ( TextListener ) l.elementAt ( i ) ).textValueChanged ( event );
             }
+        }
     }
 
     //
     // Create a URL object from either a URL string or a plain file name.
     //
-    static URL createURL(String name) throws Exception {
+    static URL createURL ( String name ) throws Exception {
         try {
-                URL u = new URL(name);
-                return u;
-        } catch (MalformedURLException ex) {
+            URL u = new URL ( name );
+            return u;
+        } catch ( MalformedURLException ex ) {
         }
-        URL u = new URL("file:" + new File(name).getAbsolutePath());
+        URL u = new URL ( "file:" + new File ( name ).getAbsolutePath() );
         return u;
-    }    
-    
+    }
+
     /**
      * The ErrorStorer maps Nodes to errors. It receives a reference
      * to the ErrorTreeFactory in the Constructor.
@@ -716,16 +704,16 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
      * the ErrorListener to provide error storage for later reference.
      *
      */
-    class ErrorStorer 
+    class ErrorStorer
         implements ErrorHandler
-        
+
     {
 
         //
         // Data
         //
         Hashtable errorNodes = null;
-        
+
         /**
          * Constructor
          */
@@ -744,86 +732,83 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
          * The ParseError object for the node key is returned.
          * If the node doesn't have errors, null is returned.
          */
-        public Object getError(Node node) {
-            if (errorNodes == null)
+        public Object getError ( Node node ) {
+            if ( errorNodes == null )
                 return null;
-            return errorNodes.get(node);
+            return errorNodes.get ( node );
         }
-        
+
         /**
          * Reset the error storage.
          */
         public void resetErrors() {
-            if (errorNodes != null)
-            errorNodes.clear();
+            if ( errorNodes != null )
+                errorNodes.clear();
         }
-        
+
         /***/
-        public void warning(SAXParseException ex) {
-            handleError(ex, WARNING);
+        public void warning ( SAXParseException ex ) {
+            handleError ( ex, WARNING );
         }
 
-        public void error(SAXParseException ex) {
-            handleError(ex, ERROR);
+        public void error ( SAXParseException ex ) {
+            handleError ( ex, ERROR );
         }
 
-        public void fatalError(SAXParseException ex) throws SAXException {
-            handleError(ex, FATAL_ERROR);
+        public void fatalError ( SAXParseException ex ) throws SAXException {
+            handleError ( ex, FATAL_ERROR );
         }
-        
-        private void handleError(SAXParseException ex, int type) {
-            System.out.println("!!! handleError: "+ex.getMessage());
+
+        private void handleError ( SAXParseException ex, int type ) {
+            System.out.println ( "!!! handleError: "+ex.getMessage() );
 
             StringBuffer errorString = new StringBuffer();
-            errorString.append("at line number, ");
-            errorString.append(ex.getLineNumber());
-            errorString.append(": ");
-            errorString.append(ex.getMessage());
+            errorString.append ( "at line number, " );
+            errorString.append ( ex.getLineNumber() );
+            errorString.append ( ": " );
+            errorString.append ( ex.getMessage() );
 
             // Node current = parser.getCurrentNode();
 
             Node current = null ;
 
-            try
-              {
-              current = ( Node ) parser.getProperty( "http://apache.org/xml/properties/dom/current-element-node" );
-              
-              }
-            catch( SAXException exception  )
-              {
-               ;
-              }
+            try {
+                current = ( Node ) parser.getProperty ( "http://apache.org/xml/properties/dom/current-element-node" );
 
-            if (current == null) {
-                System.err.println("Error in handleError. getCurrentNode()==null!");
+            } catch ( SAXException exception ) {
+                ;
+            }
+
+            if ( current == null ) {
+                System.err.println ( "Error in handleError. getCurrentNode()==null!" );
                 return;
             }
-            
-            if (errorNodes == null)
+
+            if ( errorNodes == null )
                 errorNodes = new Hashtable();
-            ParseError previous = (ParseError) errorNodes.get(current);
+            ParseError previous = ( ParseError ) errorNodes.get ( current );
             ParseError eip  = null;
             // if a Node already has an error, we accumulate the text here...
-            if (previous != null) {
+            if ( previous != null ) {
                 eip = previous;
-                errorString = new StringBuffer(previous.getMsg()+"\n"+errorString.toString());
-                eip.setMsg(errorString.toString());
+                errorString = new StringBuffer ( previous.getMsg() +"\n"+errorString.toString() );
+                eip.setMsg ( errorString.toString() );
             } else {
                 eip = new
-                    ParseError(
-                        ex.getSystemId(), 
-                        ex.getLineNumber(), 
-                        ex.getColumnNumber(),
-                        "",  
-                        errorString.toString());
+                ParseError (
+                    ex.getSystemId(),
+                    ex.getLineNumber(),
+                    ex.getColumnNumber(),
+                    "",
+                    errorString.toString() );
             }
 
             // put it in the Hashtable.
-            errorNodes.put(current, eip);
+            errorNodes.put ( current, eip );
         }
-        
+
     }
-    
+
     /**
      * The ParseError class wraps up all the error info from
      * the ErrorStorer's error method.
@@ -845,10 +830,9 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
         /**
          * Constructor
          */
-        public ParseError(String fileName, int lineNo, int charOffset,
-                           Object key, 
-                           String msg)
-        {
+        public ParseError ( String fileName, int lineNo, int charOffset,
+                            Object key,
+                            String msg ) {
             this. fileName=fileName;
             this. lineNo=lineNo;
             this. charOffset=charOffset;
@@ -859,77 +843,89 @@ public class TreeView extends JFrame implements ActionListener, TextListener {
         //
         // Getters...
         //
-        public String getFileName() { return fileName; }
-        public int getLineNo() { return lineNo; }
-        public int getCharOffset() { return charOffset;}
-        public Object getKey() { return key; }
-        public String getMsg() { return msg; }
-        public void setMsg(String s) { msg = s; }
+        public String getFileName() {
+            return fileName;
+        }
+        public int getLineNo() {
+            return lineNo;
+        }
+        public int getCharOffset() {
+            return charOffset;
+        }
+        public Object getKey() {
+            return key;
+        }
+        public String getMsg() {
+            return msg;
+        }
+        public void setMsg ( String s ) {
+            msg = s;
+        }
     }
 
 
     //
     // Main
     //
-    
+
     /** Main program entry point. */
-    public static void main(String argv[]) {
-        
+    public static void main ( String argv[] ) {
+
         // vars
         int parserNameIndex = -1;
         String parserName = DEFAULT_PARSER_NAME;
 
         // check parameters
-        for (int i = 0; i < argv.length; i++) {
+        for ( int i = 0; i < argv.length; i++ ) {
             String arg = argv[i];
 
             // options
-            if (arg.startsWith("-")) {
-                if (arg.equals("-p")) {
-                    if (i == argv.length - 1) {
-                        System.err.println("error: missing parser class");
-                        System.exit(1);
+            if ( arg.startsWith ( "-" ) ) {
+                if ( arg.equals ( "-p" ) ) {
+                    if ( i == argv.length - 1 ) {
+                        System.err.println ( "error: missing parser class" );
+                        System.exit ( 1 );
                     }
                     parserName = argv[++i];
                     parserNameIndex = i;
                     continue;
                 }
 
-                if (arg.equals("-h")) {
+                if ( arg.equals ( "-h" ) ) {
                     printUsage();
-                    System.exit(1);
+                    System.exit ( 1 );
                 }
             }
 
             // print uri
-            System.err.println(arg+':');
-   
+            System.err.println ( arg+':' );
+
             JFrame frame = null;
-            if (parserNameIndex == argv.length-1) {
+            if ( parserNameIndex == argv.length-1 ) {
                 // null behaviour is blank screen - eg no JTree, or file dispalyed
-                frame = new TreeView("");
+                frame = new TreeView ( "" );
             } else {
-                frame = new TreeView(arg);
+                frame = new TreeView ( arg );
             }
-            frame.addWindowListener(new java.awt.event.WindowAdapter() {
-             public void windowClosing(java.awt.event.WindowEvent e) {
-                 System.exit(0);
-             }
-            });
-            frame.setSize(790, 590);
-            frame.setVisible(true);
+            frame.addWindowListener ( new java.awt.event.WindowAdapter() {
+                public void windowClosing ( java.awt.event.WindowEvent e ) {
+                    System.exit ( 0 );
+                }
+            } );
+            frame.setSize ( 790, 590 );
+            frame.setVisible ( true );
         }
     } // main(String[])
 
     /** Prints the usage. */
     private static void printUsage() {
 
-        System.err.println("usage: java ui.TreeViewer (options) uri ...");
+        System.err.println ( "usage: java ui.TreeViewer (options) uri ..." );
         System.err.println();
-        System.err.println("options:");
-        System.err.println("  -p name  Specify DOM parser class by name.");
-        System.err.println("           Default parser: "+DEFAULT_PARSER_NAME);
-        System.err.println("  -h       This help screen.");
+        System.err.println ( "options:" );
+        System.err.println ( "  -p name  Specify DOM parser class by name." );
+        System.err.println ( "           Default parser: "+DEFAULT_PARSER_NAME );
+        System.err.println ( "  -h       This help screen." );
 
     } // printUsage()
 

@@ -11,36 +11,35 @@
 /////////////////////////////////////////////////////////////////////////////
 // CppUnitTestAppDlg dialog
 
-class CppUnitTestAppDlg : public CDialog
-{
+class CppUnitTestAppDlg : public CDialog {
 // Construction
 public:
-	CppUnitTestAppDlg(CWnd* pParent = NULL);	// standard constructor
+    CppUnitTestAppDlg ( CWnd* pParent = NULL );	// standard constructor
 
 // Dialog Data
-	//{{AFX_DATA(CppUnitTestAppDlg)
-	enum { IDD = IDD_CPPUNITTESTAPP_DIALOG };
-		// NOTE: the ClassWizard will add data members here
-	//}}AFX_DATA
+    //{{AFX_DATA(CppUnitTestAppDlg)
+    enum { IDD = IDD_CPPUNITTESTAPP_DIALOG };
+    // NOTE: the ClassWizard will add data members here
+    //}}AFX_DATA
 
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CppUnitTestAppDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(CppUnitTestAppDlg)
+protected:
+    virtual void DoDataExchange ( CDataExchange* pDX );	// DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	HICON m_hIcon;
+    HICON m_hIcon;
 
-	// Generated message map functions
-	//{{AFX_MSG(CppUnitTestAppDlg)
-	virtual BOOL OnInitDialog();
-	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	afx_msg void OnPaint();
-	afx_msg HCURSOR OnQueryDragIcon();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(CppUnitTestAppDlg)
+    virtual BOOL OnInitDialog();
+    afx_msg void OnSysCommand ( UINT nID, LPARAM lParam );
+    afx_msg void OnPaint();
+    afx_msg HCURSOR OnQueryDragIcon();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

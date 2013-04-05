@@ -36,23 +36,23 @@
 #include <string.h>
 #include <errno.h>
 
-PJ_CVSID("$Id: pj_open_lib.c 2130 2011-12-15 01:20:23Z warmerdam $");
+PJ_CVSID ( "$Id: pj_open_lib.c 2130 2011-12-15 01:20:23Z warmerdam $" );
 
-static const char *(*pj_finder)(const char *) = NULL;
+static const char * ( *pj_finder ) ( const char * ) = NULL;
 static int path_count = 0;
 static char **search_path = NULL;
 static char * proj_lib_name =
 #ifdef PROJ_LIB
-PROJ_LIB;
+    PROJ_LIB;
 #else
-0;
+    0;
 #endif
 
 /************************************************************************/
 /*                           pj_set_finder()                            */
 /************************************************************************/
 
-void pj_set_finder( const char *(*new_finder)(const char *) )
+void pj_set_finder ( const char * ( *new_finder ) ( const char * ) )
 
 {
     pj_finder = new_finder;
@@ -66,31 +66,26 @@ void pj_set_finder( const char *(*new_finder)(const char *) )
 /*      to clear the searchpath set.                                    */
 /************************************************************************/
 
-void pj_set_searchpath ( int count, const char **path )
-{
+void pj_set_searchpath ( int count, const char **path ) {
     int i;
 
-    if (path_count > 0 && search_path != NULL)
-    {
-        for (i = 0; i < path_count; i++)
-        {
-            pj_dalloc(search_path[i]);
+    if ( path_count > 0 && search_path != NULL ) {
+        for ( i = 0; i < path_count; i++ ) {
+            pj_dalloc ( search_path[i] );
         }
-        pj_dalloc(search_path);
+        pj_dalloc ( search_path );
         path_count = 0;
         search_path = NULL;
     }
 
-    if( count > 0 )
-    {
-        search_path = pj_malloc(sizeof *search_path * count);
-        for (i = 0; i < count; i++)
-        {
-            search_path[i] = pj_malloc(strlen(path[i]) + 1);
-            strcpy(search_path[i], path[i]);
+    if ( count > 0 ) {
+        search_path = pj_malloc ( sizeof *search_path * count );
+        for ( i = 0; i < count; i++ ) {
+            search_path[i] = pj_malloc ( strlen ( path[i] ) + 1 );
+            strcpy ( search_path[i], path[i] );
         }
     }
-        
+
     path_count = count;
 }
 
@@ -99,7 +94,7 @@ void pj_set_searchpath ( int count, const char **path )
 /************************************************************************/
 
 FILE *
-pj_open_lib(projCtx ctx, char *name, char *mode) {
+pj_open_lib ( projCtx ctx, char *name, char *mode ) {
     char fname[MAX_PATH_FILENAME+1];
     const char *sysname;
     FILE *fid;
@@ -114,62 +109,60 @@ pj_open_lib(projCtx ctx, char *name, char *mode) {
 #ifndef _WIN32_WCE
 
     /* check if ~/name */
-    if (*name == '~' && strchr(dir_chars,name[1]) )
-        if ((sysname = getenv("HOME")) != NULL) {
-            (void)strcpy(fname, sysname);
-            fname[n = strlen(fname)] = DIR_CHAR;
+    if ( *name == '~' && strchr ( dir_chars,name[1] ) )
+        if ( ( sysname = getenv ( "HOME" ) ) != NULL ) {
+            ( void ) strcpy ( fname, sysname );
+            fname[n = strlen ( fname )] = DIR_CHAR;
             fname[++n] = '\0';
-            (void)strcpy(fname+n, name + 1);
+            ( void ) strcpy ( fname+n, name + 1 );
             sysname = fname;
         } else
             return NULL;
 
     /* or fixed path: /name, ./name or ../name */
-    else if (strchr(dir_chars,*name)
-             || (*name == '.' && strchr(dir_chars,name[1])) 
-             || (!strncmp(name, "..", 2) && strchr(dir_chars,name[2]))
-             || (name[1] == ':' && strchr(dir_chars,name[2])) )
+    else if ( strchr ( dir_chars,*name )
+              || ( *name == '.' && strchr ( dir_chars,name[1] ) )
+              || ( !strncmp ( name, "..", 2 ) && strchr ( dir_chars,name[2] ) )
+              || ( name[1] == ':' && strchr ( dir_chars,name[2] ) ) )
         sysname = name;
 
     /* or try to use application provided file finder */
-    else if( pj_finder != NULL && pj_finder( name ) != NULL )
-        sysname = pj_finder( name );
+    else if ( pj_finder != NULL && pj_finder ( name ) != NULL )
+        sysname = pj_finder ( name );
 
     /* or is environment PROJ_LIB defined */
-    else if ((sysname = getenv("PROJ_LIB")) || (sysname = proj_lib_name)) {
-        (void)strcpy(fname, sysname);
-        fname[n = strlen(fname)] = DIR_CHAR;
+    else if ( ( sysname = getenv ( "PROJ_LIB" ) ) || ( sysname = proj_lib_name ) ) {
+        ( void ) strcpy ( fname, sysname );
+        fname[n = strlen ( fname )] = DIR_CHAR;
         fname[++n] = '\0';
-        (void)strcpy(fname+n, name);
+        ( void ) strcpy ( fname+n, name );
         sysname = fname;
     } else /* just try it bare bones */
         sysname = name;
 
-    if ((fid = fopen(sysname, mode)) != NULL)
+    if ( ( fid = fopen ( sysname, mode ) ) != NULL )
         errno = 0;
 
     /* If none of those work and we have a search path, try it */
-    if (!fid && path_count > 0)
-    {
-        for (i = 0; fid == NULL && i < path_count; i++)
-        {
-            sprintf(fname, "%s%c%s", search_path[i], DIR_CHAR, name);
+    if ( !fid && path_count > 0 ) {
+        for ( i = 0; fid == NULL && i < path_count; i++ ) {
+            sprintf ( fname, "%s%c%s", search_path[i], DIR_CHAR, name );
             sysname = fname;
-            fid = fopen (sysname, mode);
+            fid = fopen ( sysname, mode );
         }
-        if (fid)
+        if ( fid )
             errno = 0;
     }
 
-    if( ctx->last_errno == 0 && errno != 0 )
-        pj_ctx_set_errno( ctx, errno );
+    if ( ctx->last_errno == 0 && errno != 0 )
+        pj_ctx_set_errno ( ctx, errno );
 
-    pj_log( ctx, PJ_LOG_DEBUG_MAJOR, 
-            "pj_open_lib(%s): call fopen(%s) - %s\n",
-            name, sysname,
-            fid == NULL ? "failed" : "succeeded" );
+    pj_log ( ctx, PJ_LOG_DEBUG_MAJOR,
+             "pj_open_lib(%s): call fopen(%s) - %s\n",
+             name, sysname,
+             fid == NULL ? "failed" : "succeeded" );
 
-    return(fid);
+    return ( fid );
 #else
     return NULL;
 #endif /* _WIN32_WCE */

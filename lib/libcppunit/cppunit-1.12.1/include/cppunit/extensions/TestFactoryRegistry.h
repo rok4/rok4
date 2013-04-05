@@ -28,7 +28,7 @@ class TestSuite;
  * Notes that the registry \b DON'T assumes lifetime control for any registered tests
  * anymore.
  *
- * The <em>default</em> registry is the registry returned by getRegistry() with the 
+ * The <em>default</em> registry is the registry returned by getRegistry() with the
  * default name parameter value.
  *
  * To register tests, use the macros:
@@ -71,104 +71,103 @@ class TestSuite;
  * CppUnit::TestSuite *suite = registry.makeTest();
  * \endcode
  *
- * Since a TestFactoryRegistry is a TestFactory, the named registries can be 
+ * Since a TestFactoryRegistry is a TestFactory, the named registries can be
  * registered in the unnamed registry, creating the hierarchy links.
  *
  * \see TestSuiteFactory, AutoRegisterSuite
  * \see CPPUNIT_TEST_SUITE_REGISTRATION, CPPUNIT_TEST_SUITE_NAMED_REGISTRATION
  */
-class CPPUNIT_API TestFactoryRegistry : public TestFactory
-{
+class CPPUNIT_API TestFactoryRegistry : public TestFactory {
 public:
-  /** Constructs the registry with the specified name.
-   * \param name Name of the registry. It is the name of TestSuite returned by
-   *             makeTest().
-   */
-  TestFactoryRegistry( std::string name );
+    /** Constructs the registry with the specified name.
+     * \param name Name of the registry. It is the name of TestSuite returned by
+     *             makeTest().
+     */
+    TestFactoryRegistry ( std::string name );
 
-  /// Destructor.
-  virtual ~TestFactoryRegistry();
+    /// Destructor.
+    virtual ~TestFactoryRegistry();
 
-  /** Returns a new TestSuite that contains the registered test.
-   * \return A new TestSuite which contains all the test added using 
-   * registerFactory(TestFactory *).
-   */
-  virtual Test *makeTest();
+    /** Returns a new TestSuite that contains the registered test.
+     * \return A new TestSuite which contains all the test added using
+     * registerFactory(TestFactory *).
+     */
+    virtual Test *makeTest();
 
-  /** Returns a named registry.
-   *
-   * If the \a name is left to its default value, then the registry that is returned is
-   * the one used by CPPUNIT_TEST_SUITE_REGISTRATION(): the 'top' level registry.
-   *
-   * \param name Name of the registry to return.
-   * \return Registry. If the registry does not exist, it is created with the
-   *         specified name.
-   */
-  static TestFactoryRegistry &getRegistry( const std::string &name = "All Tests" );
+    /** Returns a named registry.
+     *
+     * If the \a name is left to its default value, then the registry that is returned is
+     * the one used by CPPUNIT_TEST_SUITE_REGISTRATION(): the 'top' level registry.
+     *
+     * \param name Name of the registry to return.
+     * \return Registry. If the registry does not exist, it is created with the
+     *         specified name.
+     */
+    static TestFactoryRegistry &getRegistry ( const std::string &name = "All Tests" );
 
-  /** Adds the registered tests to the specified suite.
-   * \param suite Suite the tests are added to.
-   */
-  void addTestToSuite( TestSuite *suite );
+    /** Adds the registered tests to the specified suite.
+     * \param suite Suite the tests are added to.
+     */
+    void addTestToSuite ( TestSuite *suite );
 
-  /** Adds the specified TestFactory to the registry.
-   *
-   * \param factory Factory to register. 
-   */
-  void registerFactory( TestFactory *factory );
+    /** Adds the specified TestFactory to the registry.
+     *
+     * \param factory Factory to register.
+     */
+    void registerFactory ( TestFactory *factory );
 
-  /*! Removes the specified TestFactory from the registry.
-   * 
-   * The specified factory is not destroyed.
-   * \param factory Factory to remove from the registry.
-   * \todo Address case when trying to remove a TestRegistryFactory.
-   */
-  void unregisterFactory( TestFactory *factory );
+    /*! Removes the specified TestFactory from the registry.
+     *
+     * The specified factory is not destroyed.
+     * \param factory Factory to remove from the registry.
+     * \todo Address case when trying to remove a TestRegistryFactory.
+     */
+    void unregisterFactory ( TestFactory *factory );
 
-  /*! Adds a registry to the registry.
-   * 
-   * Convenience method to help create test hierarchy. See TestFactoryRegistry detail
-   * for examples of use. Calling this method is equivalent to:
-   * \code
-   * this->registerFactory( TestFactoryRegistry::getRegistry( name ) );
-   * \endcode
-   *
-   * \param name Name of the registry to add.
-   */
-  void addRegistry( const std::string &name );
+    /*! Adds a registry to the registry.
+     *
+     * Convenience method to help create test hierarchy. See TestFactoryRegistry detail
+     * for examples of use. Calling this method is equivalent to:
+     * \code
+     * this->registerFactory( TestFactoryRegistry::getRegistry( name ) );
+     * \endcode
+     *
+     * \param name Name of the registry to add.
+     */
+    void addRegistry ( const std::string &name );
 
-  /*! Tests if the registry is valid.
-   *
-   * This method should be used when unregistering test factory on static variable 
-   * destruction to ensure that the registry has not been already destroyed (in 
-   * that case there is no need to unregister the test factory).
-   *
-   * You should not concern yourself with this method unless you are writing a class
-   * like AutoRegisterSuite.
-   *
-   * \return \c true if the specified registry has not been destroyed, 
-   *         otherwise returns \c false.
-   * \see AutoRegisterSuite.
-   */
-  static bool isValid();
+    /*! Tests if the registry is valid.
+     *
+     * This method should be used when unregistering test factory on static variable
+     * destruction to ensure that the registry has not been already destroyed (in
+     * that case there is no need to unregister the test factory).
+     *
+     * You should not concern yourself with this method unless you are writing a class
+     * like AutoRegisterSuite.
+     *
+     * \return \c true if the specified registry has not been destroyed,
+     *         otherwise returns \c false.
+     * \see AutoRegisterSuite.
+     */
+    static bool isValid();
 
-  /** Adds the specified TestFactory with a specific name (DEPRECATED).
-   * \param name Name associated to the factory.
-   * \param factory Factory to register. 
-   * \deprecated Use registerFactory( TestFactory *) instead.
-   */
-  void registerFactory( const std::string &name,
-                        TestFactory *factory );
-
-private:
-  TestFactoryRegistry( const TestFactoryRegistry &copy );
-  void operator =( const TestFactoryRegistry &copy );
+    /** Adds the specified TestFactory with a specific name (DEPRECATED).
+     * \param name Name associated to the factory.
+     * \param factory Factory to register.
+     * \deprecated Use registerFactory( TestFactory *) instead.
+     */
+    void registerFactory ( const std::string &name,
+                           TestFactory *factory );
 
 private:
-  typedef CppUnitSet<TestFactory *, std::less<TestFactory*> > Factories;
-  Factories m_factories;
+    TestFactoryRegistry ( const TestFactoryRegistry &copy );
+    void operator = ( const TestFactoryRegistry &copy );
 
-  std::string m_name;
+private:
+    typedef CppUnitSet<TestFactory *, std::less<TestFactory*> > Factories;
+    Factories m_factories;
+
+    std::string m_name;
 };
 
 

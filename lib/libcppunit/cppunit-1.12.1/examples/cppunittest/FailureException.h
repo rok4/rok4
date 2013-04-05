@@ -2,8 +2,7 @@
 #define FAILUREEXCEPTION_H
 
 
-class FailureException
-{
+class FailureException {
 };
 
 

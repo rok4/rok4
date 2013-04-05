@@ -31,14 +31,14 @@
  */
 
 
-typedef unsigned (*blast_in)(void *how, unsigned char **buf);
-typedef int (*blast_out)(void *how, unsigned char *buf, unsigned len);
+typedef unsigned ( *blast_in ) ( void *how, unsigned char **buf );
+typedef int ( *blast_out ) ( void *how, unsigned char *buf, unsigned len );
 /* Definitions for input/output functions passed to blast().  See below for
  * what the provided functions need to do.
  */
 
 
-int blast(blast_in infun, void *inhow, blast_out outfun, void *outhow);
+int blast ( blast_in infun, void *inhow, blast_out outfun, void *outhow );
 /* Decompress input to output using the provided infun() and outfun() calls.
  * On success, the return value of blast() is zero.  If there is an error in
  * the source data, i.e. it is not in the proper format, then a negative value

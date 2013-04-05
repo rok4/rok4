@@ -47,35 +47,42 @@
 #include "Kernel.h"
 #include "Logger.h"
 
-int Kernel::weight(float* W, int length, double x, int max) const {
+int Kernel::weight ( float* W, int& length, double x, int max ) const {
 
-    double rayon = (double)length/2.;
-    int xmin = ceil(x - rayon - 1E-7);
-    
-    // On ne sort pas de l'image à interpoler
-    if (xmin < 0) xmin = 0;
-    if (xmin + length > max) xmin = max - length;
+    double rayon = ( double ) length/2.;
+    int xmin = ceil ( x - rayon - 1E-7 );
+
+    // On ne sort pas de l'image à interpoler à gauche ...
+    if ( xmin < 0 ) {
+        xmin = 0;
+    }
+    // ... comme à droite, quitte à diminuer le nombre de poids
+    if ( xmin + length > max ) {
+        length = max - xmin;
+    }
 
     double step = 1024. / rayon;
     double sum = 0;              // somme des poids pour normaliser en fin de calcul.
-    double indf = (x - xmin) * step;    // index flottant dans le tableau coeff
+    double indf = ( x - xmin ) * step;  // index flottant dans le tableau coeff
     int i = 0;
-    
-    for (;indf >= 0; indf -= step) {
-        int ind = (int) indf;
+
+    for ( ; indf >= 0; indf -= step ) {
+        int ind = ( int ) indf;
         // le coefficient est interpolé linéairement par rapport au deux coefficients qui l'entourent
-        sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+        sum += W[i++] = coeff[ind] + ( coeff[ind+1] - coeff[ind] ) * ( indf - ind );
     }
-    
-    for (indf = -indf; indf < 1024. && i < length; indf += step) {
-        int ind = (int) indf;
-        sum += W[i++] = coeff[ind] + (coeff[ind+1] - coeff[ind]) * (indf - ind);
+
+    for ( indf = -indf; indf < 1024. && i < length; indf += step ) {
+        int ind = ( int ) indf;
+        sum += W[i++] = coeff[ind] + ( coeff[ind+1] - coeff[ind] ) * ( indf - ind );
     }
 
     // On remplit le reste du tableau des poids avec des zéros (on veut toujours avoir "length" éléments)
-    while (i < length) W[i++] = 0.;
+    //while ( lg < length ) W[lg++] = 0.;
 
-    while (i--) {W[i] /= sum;}    // On normalise pour que la somme des poids fasse 1.
+    while ( i-- ) {
+        W[i] /= sum;   // On normalise pour que la somme des poids fasse 1.
+    }
 
     return xmin;
 }
@@ -98,21 +105,21 @@ int Kernel::weight(float* W, int length, double x, int max) const {
  */
 template<int s>
 class Lanczos : public Kernel {
-    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
+    friend const Kernel& Kernel::getInstance ( Interpolation::KernelType T );
 
-    private:
-        double kernel_function(double d) {
-            if (d > s) return 0.;
-            else if (d == 0.) return 1.;
-            else {
-                d *= 3.14159265358979323846;
-                return (sin(d) / d) * (sin(d/s) / d * s);
-            }
+private:
+    double kernel_function ( double d ) {
+        if ( d > s ) return 0.;
+        else if ( d == 0. ) return 1.;
+        else {
+            d *= 3.14159265358979323846;
+            return ( sin ( d ) / d ) * ( sin ( d/s ) / d * s );
         }
+    }
 
-        Lanczos() : Kernel(s) {
-            init();
-        }
+    Lanczos() : Kernel ( s ) {
+        init();
+    }
 };
 
 /**
@@ -127,16 +134,16 @@ class Lanczos : public Kernel {
  * \image html ppv.png
  */
 class NearestNeighbour : public Kernel {
-    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-    
-    private:
-        double kernel_function(double d) {
-            if (d > 0.5) return 0.;
-            else return 1.;
-        }
-        NearestNeighbour() : Kernel(0.5, true) {
-            init();
-        }
+    friend const Kernel& Kernel::getInstance ( Interpolation::KernelType T );
+
+private:
+    double kernel_function ( double d ) {
+        if ( d > 0.5 ) return 0.;
+        else return 1.;
+    }
+    NearestNeighbour() : Kernel ( 0.5, true ) {
+        init();
+    }
 };
 
 /**
@@ -151,16 +158,16 @@ class NearestNeighbour : public Kernel {
  * \image html linear.png
  */
 class Linear : public Kernel {
-    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
-    
-    private:
-        double kernel_function(double d) {
-            if (d > 1) return 0.;
-            else return 1.-d;
-        }
-        Linear() : Kernel(1.) {
-            init();
-        }
+    friend const Kernel& Kernel::getInstance ( Interpolation::KernelType T );
+
+private:
+    double kernel_function ( double d ) {
+        if ( d > 1 ) return 0.;
+        else return 1.-d;
+    }
+    Linear() : Kernel ( 1. ) {
+        init();
+    }
 };
 
 /**
@@ -176,45 +183,45 @@ class Linear : public Kernel {
  */
 class CatRom : public Kernel {
 
-/*
- * Pris dans Image Magick
- *
-   Cubic Filters using B,C determined values:
+    /*
+     * Pris dans Image Magick
+     *
+       Cubic Filters using B,C determined values:
 
-   Catmull-Rom         B= 0  C=1/2   Cublic Interpolation Function
+       Catmull-Rom         B= 0  C=1/2   Cublic Interpolation Function
 
-   Coefficents are determined from B,C values
-      P0 = (  6 - 2*B       )/6     = 1
-      P1 =         0                = 0
-      P2 = (-18 +12*B + 6*C )/6     = -5/2
-      P3 = ( 12 - 9*B - 6*C )/6     = 3/2
-      Q0 = (      8*B +24*C )/6     = 2
-      Q1 = (    -12*B -48*C )/6     = -4
-      Q2 = (      6*B +30*C )/6     = 5/2
-      Q3 = (    - 1*B - 6*C )/6     = -1/2
+       Coefficents are determined from B,C values
+          P0 = (  6 - 2*B       )/6     = 1
+          P1 =         0                = 0
+          P2 = (-18 +12*B + 6*C )/6     = -5/2
+          P3 = ( 12 - 9*B - 6*C )/6     = 3/2
+          Q0 = (      8*B +24*C )/6     = 2
+          Q1 = (    -12*B -48*C )/6     = -4
+          Q2 = (      6*B +30*C )/6     = 5/2
+          Q3 = (    - 1*B - 6*C )/6     = -1/2
 
-   Which is used to define the filter...
-      P0 + P1*x + P2*x^2 + P3*x^3      0 <= x < 1
-      Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x <= 2
+       Which is used to define the filter...
+          P0 + P1*x + P2*x^2 + P3*x^3      0 <= x < 1
+          Q0 + Q1*x + Q2*x^2 + Q3*x^3      1 <= x <= 2
 
-   Which ensures function is continuous in value and derivative (slope).
- */
-    
-    friend const Kernel& Kernel::getInstance(Interpolation::KernelType T);
+       Which ensures function is continuous in value and derivative (slope).
+     */
+
+    friend const Kernel& Kernel::getInstance ( Interpolation::KernelType T );
 private:
-    double kernel_function(double d) {
-        if (d > 2) return 0.;
-        else if (d > 1) return 2. + d*(-4. + d*(2.5 - 0.5*d));
-        else return 1. + d*d*(1.5*d - 2.5);
+    double kernel_function ( double d ) {
+        if ( d > 2 ) return 0.;
+        else if ( d > 1 ) return 2. + d* ( -4. + d* ( 2.5 - 0.5*d ) );
+        else return 1. + d*d* ( 1.5*d - 2.5 );
     }
-    CatRom() : Kernel(2.) {
+    CatRom() : Kernel ( 2. ) {
         init();
     }
 };
 
 
 
-const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
+const Kernel& Kernel::getInstance ( Interpolation::KernelType T ) {
     static NearestNeighbour nearest_neighbour;
     static Linear linear;
     static CatRom catrom;
@@ -222,7 +229,7 @@ const Kernel& Kernel::getInstance(Interpolation::KernelType T) {
     static Lanczos<3> lanczos_3;
     static Lanczos<4> lanczos_4;
 
-    switch (T) {
+    switch ( T ) {
     case Interpolation::NEAREST_NEIGHBOUR:
         return nearest_neighbour;
         break;

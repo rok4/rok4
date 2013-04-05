@@ -10,13 +10,12 @@ CPPUNIT_NS_BEGIN
 /*! \brief Abstract outputter to print test result summary.
  * \ingroup WritingTestResult
  */
-class CPPUNIT_API Outputter
-{
+class CPPUNIT_API Outputter {
 public:
-  /// Destructor.
-  virtual ~Outputter() {}
+    /// Destructor.
+    virtual ~Outputter() {}
 
-  virtual void write() =0;
+    virtual void write() =0;
 };
 
 

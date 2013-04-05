@@ -21,35 +21,34 @@ class Test;
  * TestFailure assumes lifetime control for any exception
  * passed to it.
  */
-class CPPUNIT_API TestFailure 
-{
+class CPPUNIT_API TestFailure {
 public:
-  TestFailure( Test *failedTest,
-               Exception *thrownException,
-               bool isError );
+    TestFailure ( Test *failedTest,
+                  Exception *thrownException,
+                  bool isError );
 
-  virtual ~TestFailure ();
+    virtual ~TestFailure ();
 
-  virtual Test *failedTest() const;
+    virtual Test *failedTest() const;
 
-  virtual Exception *thrownException() const;
+    virtual Exception *thrownException() const;
 
-  virtual SourceLine sourceLine() const;
+    virtual SourceLine sourceLine() const;
 
-  virtual bool isError() const;
+    virtual bool isError() const;
 
-  virtual std::string failedTestName() const;
+    virtual std::string failedTestName() const;
 
-  virtual TestFailure *clone() const;
+    virtual TestFailure *clone() const;
 
 protected:
-  Test *m_failedTest;
-  Exception *m_thrownException;
-  bool m_isError;
+    Test *m_failedTest;
+    Exception *m_thrownException;
+    bool m_isError;
 
-private: 
-  TestFailure( const TestFailure &other ); 
-  TestFailure &operator =( const TestFailure& other ); 
+private:
+    TestFailure ( const TestFailure &other );
+    TestFailure &operator = ( const TestFailure& other );
 };
 
 

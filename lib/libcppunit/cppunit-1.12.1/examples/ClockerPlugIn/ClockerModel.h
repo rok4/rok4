@@ -21,72 +21,70 @@ typedef WinNtTimer Timer;
 
 
 /// Model that represents test timing.
-class ClockerModel
-{
+class ClockerModel {
 public:
-  /*! Constructs a ClockerModel object.
-   */
-  ClockerModel();
+    /*! Constructs a ClockerModel object.
+     */
+    ClockerModel();
 
-  /// Destructor.
-  virtual ~ClockerModel();
+    /// Destructor.
+    virtual ~ClockerModel();
 
-  void setExpectedTestCount( int count );
+    void setExpectedTestCount ( int count );
 
-  void enterTest( CPPUNIT_NS::Test *test,
-                  bool isSuite );
+    void enterTest ( CPPUNIT_NS::Test *test,
+                     bool isSuite );
 
-  void exitTest( CPPUNIT_NS::Test *test,
-                 bool isSuite );
+    void exitTest ( CPPUNIT_NS::Test *test,
+                    bool isSuite );
 
-  double totalElapsedTime() const;
+    double totalElapsedTime() const;
 
-  double averageTestCaseTime() const;
+    double averageTestCaseTime() const;
 
-  double testTimeFor( CPPUNIT_NS::Test *test ) const;
+    double testTimeFor ( CPPUNIT_NS::Test *test ) const;
 
-  double testTimeFor( int testIndex ) const;
+    double testTimeFor ( int testIndex ) const;
 
-  static std::string timeStringFor( double time );
+    static std::string timeStringFor ( double time );
 
-  bool isSuite( int testIndex ) const;
+    bool isSuite ( int testIndex ) const;
 
-  const CPPUNIT_NS::TestPath &testPathFor( int testIndex ) const;
+    const CPPUNIT_NS::TestPath &testPathFor ( int testIndex ) const;
 
-  // -1 is none
-  int indexOf( CPPUNIT_NS::Test *test ) const;
+    // -1 is none
+    int indexOf ( CPPUNIT_NS::Test *test ) const;
 
-  int childCountFor( int testIndex ) const;
+    int childCountFor ( int testIndex ) const;
 
-  int childAtFor( int testIndex, 
-                  int chidIndex ) const;
-
-private:
-  struct TestInfo
-  {
-    CPPUNIT_NS::TestPath m_path;
-    Timer m_timer;
-    bool m_isSuite;
-    CppUnitVector<int> m_childIndexes;
-  };
-
-  /// Prevents the use of the copy constructor.
-  ClockerModel( const ClockerModel &other );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const ClockerModel &other );
+    int childAtFor ( int testIndex,
+                     int chidIndex ) const;
 
 private:
-  CPPUNIT_NS::TestPath m_currentPath;
-  
-  int m_testCaseCount;
-  double m_totalTestCaseTime;
+    struct TestInfo {
+        CPPUNIT_NS::TestPath m_path;
+        Timer m_timer;
+        bool m_isSuite;
+        CppUnitVector<int> m_childIndexes;
+    };
 
-  typedef CppUnitMap<CPPUNIT_NS::Test *, int> TestToIndexes;
-  
-  TestToIndexes m_testToIndexes;
-  CppUnitStack<int> m_testIndexes;
-  CppUnitVector<TestInfo> m_tests;
+    /// Prevents the use of the copy constructor.
+    ClockerModel ( const ClockerModel &other );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const ClockerModel &other );
+
+private:
+    CPPUNIT_NS::TestPath m_currentPath;
+
+    int m_testCaseCount;
+    double m_totalTestCaseTime;
+
+    typedef CppUnitMap<CPPUNIT_NS::Test *, int> TestToIndexes;
+
+    TestToIndexes m_testToIndexes;
+    CppUnitStack<int> m_testIndexes;
+    CppUnitVector<TestInfo> m_tests;
 };
 
 

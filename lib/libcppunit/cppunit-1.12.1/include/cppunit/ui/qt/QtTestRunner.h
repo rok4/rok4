@@ -12,11 +12,11 @@
 CPPUNIT_NS_BEGIN
 
 
-  class Test;
-  class TestSuite;
+class Test;
+class TestSuite;
 
 
-/*! 
+/*!
  * \brief QT test runner.
  * \ingroup ExecutingTest
  *
@@ -27,7 +27,7 @@ CPPUNIT_NS_BEGIN
  *
  * [...]
  *
- * void 
+ * void
  * QDepWindow::runTests()
  * {
  *   CppUnit::QtUi::TestRunner runner;
@@ -37,46 +37,44 @@ CPPUNIT_NS_BEGIN
  * \endcode
  *
  */
-class QTTESTRUNNER_API QtTestRunner
-{
+class QTTESTRUNNER_API QtTestRunner {
 public:
-  /*! Constructs a TestRunner object.
-   */
-  QtTestRunner();
+    /*! Constructs a TestRunner object.
+     */
+    QtTestRunner();
 
-  /*! Destructor.
-   */
-  virtual ~QtTestRunner();
+    /*! Destructor.
+     */
+    virtual ~QtTestRunner();
 
-  void run( bool autoRun =false );
+    void run ( bool autoRun =false );
 
-  void addTest( Test *test );
-
-private:
-  /// Prevents the use of the copy constructor.
-  QtTestRunner( const QtTestRunner &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const QtTestRunner &copy );
-
-  Test *getRootTest();
+    void addTest ( Test *test );
 
 private:
-  typedef CppUnitVector<Test *> Tests;
-  Tests *_tests;
+    /// Prevents the use of the copy constructor.
+    QtTestRunner ( const QtTestRunner &copy );
 
-  TestSuite *_suite;
+    /// Prevents the use of the copy operator.
+    void operator = ( const QtTestRunner &copy );
+
+    Test *getRootTest();
+
+private:
+    typedef CppUnitVector<Test *> Tests;
+    Tests *_tests;
+
+    TestSuite *_suite;
 };
 
 
 #if CPPUNIT_HAVE_NAMESPACES
-  namespace QtUi
-  {
-    /*! Qt TestRunner (DEPRECATED).
-     * \deprecated Use CppUnit::QtTestRunner instead.
-     */
-    typedef CPPUNIT_NS::QtTestRunner TestRunner;
-  }
+namespace QtUi {
+/*! Qt TestRunner (DEPRECATED).
+ * \deprecated Use CppUnit::QtTestRunner instead.
+ */
+typedef CPPUNIT_NS::QtTestRunner TestRunner;
+}
 #endif
 
 

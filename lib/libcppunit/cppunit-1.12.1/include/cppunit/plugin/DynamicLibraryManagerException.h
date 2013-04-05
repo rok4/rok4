@@ -16,33 +16,30 @@ CPPUNIT_NS_BEGIN
  * Use getCause() to know what function caused the failure.
  *
  */
-class DynamicLibraryManagerException : public std::runtime_error
-{
+class DynamicLibraryManagerException : public std::runtime_error {
 public:
-  enum Cause
-  {
-    /// Failed to load the dynamic library
-    loadingFailed =0,
-    /// Symbol not found in the dynamic library
-    symbolNotFound
-  };
+    enum Cause {
+        /// Failed to load the dynamic library
+        loadingFailed =0,
+        /// Symbol not found in the dynamic library
+        symbolNotFound
+    };
 
-  /// Failed to load the dynamic library or Symbol not found in the dynamic library.
-  DynamicLibraryManagerException( const std::string &libraryName,
-                                  const std::string &errorDetail,
-                                  Cause cause );
+    /// Failed to load the dynamic library or Symbol not found in the dynamic library.
+    DynamicLibraryManagerException ( const std::string &libraryName,
+                                     const std::string &errorDetail,
+                                     Cause cause );
 
-  ~DynamicLibraryManagerException() throw()
-  {
-  }
+    ~DynamicLibraryManagerException() throw() {
+    }
 
-  Cause getCause() const;
+    Cause getCause() const;
 
-  const char *what() const throw();
+    const char *what() const throw();
 
 private:
-  std::string m_message;
-  Cause m_cause;
+    std::string m_message;
+    Cause m_cause;
 };
 
 

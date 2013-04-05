@@ -9,12 +9,11 @@
 #undef main
 
 int
-main()
-{
-	int argc;
-	char **argv;
-	
-	argc=ccommand(&argv);
+main() {
+    int argc;
+    char **argv;
 
-	return tool_main(argc,argv);  // Call the tool "main()" routine
+    argc=ccommand ( &argv );
+
+    return tool_main ( argc,argv ); // Call the tool "main()" routine
 }

@@ -8,14 +8,12 @@
 #include <cppunit/Exception.h>
 
 
-TestFailureInfo::TestFailureInfo( CPPUNIT_NS::Test *failedTest, 
-                                  CPPUNIT_NS::Exception *thrownException,
-                                  bool isError ) : 
-    CPPUNIT_NS::TestFailure( failedTest, thrownException->clone(), isError )
-{
+TestFailureInfo::TestFailureInfo ( CPPUNIT_NS::Test *failedTest,
+                                   CPPUNIT_NS::Exception *thrownException,
+                                   bool isError ) :
+    CPPUNIT_NS::TestFailure ( failedTest, thrownException->clone(), isError ) {
 }
 
 
-TestFailureInfo::~TestFailureInfo()
-{
+TestFailureInfo::~TestFailureInfo() {
 }

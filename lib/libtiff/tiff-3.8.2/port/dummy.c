@@ -5,8 +5,7 @@
  */
 
 static void
-libport_dummy_function()
-{
-        return;
+libport_dummy_function() {
+    return;
 }
 

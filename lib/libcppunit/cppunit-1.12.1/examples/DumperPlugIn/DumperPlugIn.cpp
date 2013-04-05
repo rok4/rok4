@@ -4,62 +4,53 @@
 
 
 
-class DumperPlugIn : public CppUnitTestPlugIn
-{
+class DumperPlugIn : public CppUnitTestPlugIn {
 public:
-  DumperPlugIn()
-    : m_dumper( NULL )
-  {
-  }
+    DumperPlugIn()
+        : m_dumper ( NULL ) {
+    }
 
-  ~DumperPlugIn()
-  {
-    delete m_dumper;
-  }
+    ~DumperPlugIn() {
+        delete m_dumper;
+    }
 
 
-  void initialize( CPPUNIT_NS::TestFactoryRegistry *registry,
-                   const CPPUNIT_NS::PlugInParameters &parameters )
-  {
-    bool flatten = false;
-    if ( parameters.getCommandLine() == "flat" )
-      flatten = true;
+    void initialize ( CPPUNIT_NS::TestFactoryRegistry *registry,
+                      const CPPUNIT_NS::PlugInParameters &parameters ) {
+        bool flatten = false;
+        if ( parameters.getCommandLine() == "flat" )
+            flatten = true;
 
-    m_dumper = new DumperListener( flatten );
-  }
-
-
-  void addListener( CPPUNIT_NS::TestResult *eventManager )
-  {
-    eventManager->addListener( m_dumper );
-  }
+        m_dumper = new DumperListener ( flatten );
+    }
 
 
-  void removeListener( CPPUNIT_NS::TestResult *eventManager )
-  {
-    eventManager->removeListener( m_dumper );
-  }
+    void addListener ( CPPUNIT_NS::TestResult *eventManager ) {
+        eventManager->addListener ( m_dumper );
+    }
 
 
-  void addXmlOutputterHooks( CPPUNIT_NS::XmlOutputter *outputter )
-  {
-  }
+    void removeListener ( CPPUNIT_NS::TestResult *eventManager ) {
+        eventManager->removeListener ( m_dumper );
+    }
 
 
-  void removeXmlOutputterHooks()
-  {
-  }
+    void addXmlOutputterHooks ( CPPUNIT_NS::XmlOutputter *outputter ) {
+    }
 
 
-  void uninitialize( CPPUNIT_NS::TestFactoryRegistry *registry )
-  {
-  }
+    void removeXmlOutputterHooks() {
+    }
+
+
+    void uninitialize ( CPPUNIT_NS::TestFactoryRegistry *registry ) {
+    }
 
 private:
-  DumperListener *m_dumper;
+    DumperListener *m_dumper;
 };
 
 
-CPPUNIT_PLUGIN_EXPORTED_FUNCTION_IMPL( DumperPlugIn );
+CPPUNIT_PLUGIN_EXPORTED_FUNCTION_IMPL ( DumperPlugIn );
 
 CPPUNIT_PLUGIN_IMPLEMENT_MAIN();

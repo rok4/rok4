@@ -48,26 +48,22 @@ package org.proj4;
  * by Proj.4 about the CRS type.
  */
 @Deprecated
-public class Others extends Projections
-{
+public class Others extends Projections {
 
-  public Others(String src)
-  {
-    proj = src;
-  }
+    public Others ( String src ) {
+        proj = src;
+    }
 
-  /* (non-Javadoc)
-   * @see Projections#prepareData(DataToProject)
-   */
-  public void prepareData(ProjectionData dataTP)
-  {
-  }
+    /* (non-Javadoc)
+     * @see Projections#prepareData(DataToProject)
+     */
+    public void prepareData ( ProjectionData dataTP ) {
+    }
 
-  /* (non-Javadoc)
-   * @see java.Projections#returnTransformedCoordinates()
-   */
-  public void prepareTransformedData(ProjectionData dataTP)
-  {
-  }
+    /* (non-Javadoc)
+     * @see java.Projections#returnTransformedCoordinates()
+     */
+    public void prepareTransformedData ( ProjectionData dataTP ) {
+    }
 
 }

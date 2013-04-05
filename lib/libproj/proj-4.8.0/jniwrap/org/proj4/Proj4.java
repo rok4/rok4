@@ -62,128 +62,108 @@ import java.util.LinkedHashMap;
  * @deprecated Replaced by {@link PJ}. See package description for usage example.
  */
 @Deprecated
-public class Proj4 implements Proj4Factory
-{
-  Projections srcProjection = null;
-  Projections destProjection = null;
-  Projections projection = null;
+public class Proj4 implements Proj4Factory {
+    Projections srcProjection = null;
+    Projections destProjection = null;
+    Projections projection = null;
 
-  /**
-   * constructor used to instatiate a single projection. This is used
-   * if the goal is to simply get information about a projection definition
-   *
-   * @param proj the projection definition
-   */
-  public Proj4(String proj)
-  {
-    if (proj.indexOf("latlong") != -1)
-    {
-      projection = new LatLong(proj);
+    /**
+     * constructor used to instatiate a single projection. This is used
+     * if the goal is to simply get information about a projection definition
+     *
+     * @param proj the projection definition
+     */
+    public Proj4 ( String proj ) {
+        if ( proj.indexOf ( "latlong" ) != -1 ) {
+            projection = new LatLong ( proj );
+        } else {
+            projection = new Others ( proj );
+        }
     }
-    else
-    {
-      projection = new Others(proj);
+
+    /**
+     * constructor used to instantiate the object for a further reproiection.
+     * From the definitions the source and destination projection are
+     * created.
+     *
+     * @param srcProj
+     * @param destProj
+     */
+    public Proj4 ( String srcProj, String destProj ) {
+        if ( srcProj.indexOf ( "latlong" ) != -1 ) {
+            srcProjection = new LatLong ( srcProj );
+        } else {
+            srcProjection = new Others ( srcProj );
+        }
+        if ( destProj.indexOf ( "latlong" ) != -1 ) {
+            destProjection = new LatLong ( destProj );
+        } else {
+            destProjection = new Others ( destProj );
+        }
     }
-  }
 
-  /**
-   * constructor used to instantiate the object for a further reproiection.
-   * From the definitions the source and destination projection are
-   * created.
-   *
-   * @param srcProj
-   * @param destProj
-   */
-  public Proj4(String srcProj, String destProj)
-  {
-    if (srcProj.indexOf("latlong") != -1)
-    {
-      srcProjection = new LatLong(srcProj);
+    /**
+     * method to reproject a dataset from the source projection to the destination
+     * projection as defined in the constructor
+     *
+     * @param dataTP the data set to reproject
+     * @param point_count
+     * @param point_offset
+     */
+    public void transform ( ProjectionData dataTP, long point_count, int point_offset ) {
+        srcProjection.prepareData ( dataTP );
+        destProjection.doTheTransform ( srcProjection, dataTP, point_count,
+                                        point_offset );
+        destProjection.prepareTransformedData ( dataTP );
+
+        System.out.println ( "Transformed coordinates and values:" );
+        for ( int i = 0; i < dataTP.rows; i++ ) {
+            System.out.println ( "x = " + dataTP.x[i] + " y = " + dataTP.y[i] + " z = "
+                                 + dataTP.z[i] );
+        }
     }
-    else
-    {
-      srcProjection = new Others(srcProj);
+
+    /**
+     * @return the projection info as a hashmap
+     */
+    public LinkedHashMap getProjInfo() {
+        return projection.mapProjInfo();
     }
-    if (destProj.indexOf("latlong") != -1)
-    {
-      destProjection = new LatLong(destProj);
+
+    /**
+     * @return the source projection info as a hashmap
+     */
+    public LinkedHashMap getSrcProjInfo() {
+        return srcProjection.mapProjInfo();
     }
-    else
-    {
-      destProjection = new Others(destProj);
+
+    /**
+     * @return the destination projection info as a hashmap
+     */
+    public LinkedHashMap getDestProjInfo() {
+        return destProjection.mapProjInfo();
     }
-  }
 
-  /**
-   * method to reproject a dataset from the source projection to the destination
-   * projection as defined in the constructor
-   *
-   * @param dataTP the data set to reproject
-   * @param point_count
-   * @param point_offset
-   */
-  public void transform(ProjectionData dataTP, long point_count, int point_offset)
-  {
-    srcProjection.prepareData(dataTP);
-    destProjection.doTheTransform(srcProjection, dataTP, point_count,
-        point_offset);
-    destProjection.prepareTransformedData(dataTP);
 
-    System.out.println("Transformed coordinates and values:");
-    for (int i = 0; i < dataTP.rows; i++)
-    {
-      System.out.println("x = " + dataTP.x[i] + " y = " + dataTP.y[i] + " z = "
-          + dataTP.z[i]);
+    /**
+     * print the projection info to standard output
+     */
+    public void printProjInfo() {
+        projection.printProjInfo();
     }
-  }
 
-  /**
-   * @return the projection info as a hashmap
-   */
-  public LinkedHashMap getProjInfo()
-  {
-    return projection.mapProjInfo();
-  }
+    /**
+     * print the source projection info to standard output
+     */
+    public void printSrcProjInfo() {
+        srcProjection.printProjInfo();
+    }
 
-  /**
-   * @return the source projection info as a hashmap
-   */
-  public LinkedHashMap getSrcProjInfo()
-  {
-    return srcProjection.mapProjInfo();
-  }
-
-  /**
-   * @return the destination projection info as a hashmap
-   */
-  public LinkedHashMap getDestProjInfo()
-  {
-    return destProjection.mapProjInfo();
-  }
-
-
-  /**
-   * print the projection info to standard output
-   */
-  public void printProjInfo()
-  {
-    projection.printProjInfo();
-  }
-
-  /**
-   * print the source projection info to standard output
-   */
-  public void printSrcProjInfo()
-  {
-    srcProjection.printProjInfo();
-  }
-
-  /**
-   * print the destination projection info to standard output
-   */
-  public void printDestProjInfo()
-  {
-    destProjection.printProjInfo();
-  }
+    /**
+     * print the destination projection info to standard output
+     */
+    public void printDestProjInfo() {
+        destProjection.printProjInfo();
+    }
 
 }

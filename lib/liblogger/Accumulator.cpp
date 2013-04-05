@@ -205,12 +205,12 @@ void StaticFileAccumulator::close() {
 /** Implémentation de la fonction virtuelle de la classe mère */
 std::ostream& StaticFileAccumulator::getStream() {
 
-     if (! out.is_open() ) {
+    if ( ! out.is_open() ) {
         // On ouvre le nouveau fichier
         char fileName[file.length() + 1];
-        sprintf ( fileName, "%s", file.c_str());
+        sprintf ( fileName, "%s", file.c_str() );
         out.open ( fileName, std::ios::app );
-        
+
         // Et on alerte en cas d'erreur  : on ne peut pas utiliser Logger car c'est justement lui qui est en train de planter.
         if ( out.fail() ) {
             std::cerr << "Impossible d'ouvrir le fichier de log: " << fileName << std::endl;

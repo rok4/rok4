@@ -10,40 +10,35 @@
 CPPUNIT_NS_BEGIN
 
 
-DynamicLibraryManager::LibraryHandle 
-DynamicLibraryManager::doLoadLibrary( const std::string &libraryName )
-{
-   return ::shl_load(libraryName.c_str(), BIND_IMMEDIATE, 0L);
+DynamicLibraryManager::LibraryHandle
+DynamicLibraryManager::doLoadLibrary ( const std::string &libraryName ) {
+    return ::shl_load ( libraryName.c_str(), BIND_IMMEDIATE, 0L );
 }
 
 
-void 
-DynamicLibraryManager::doReleaseLibrary()
-{
-  ::shl_unload( (shl_t)m_libraryHandle);
+void
+DynamicLibraryManager::doReleaseLibrary() {
+    ::shl_unload ( ( shl_t ) m_libraryHandle );
 }
 
 
-DynamicLibraryManager::Symbol 
-DynamicLibraryManager::doFindSymbol( const std::string &symbol )
-{
-   DynamicLibraryManager::Symbol L_symaddr = 0;
-   if ( ::shl_findsym( (shl_t*)(&m_libraryHandle), 
-                       symbol.c_str(), 
-                       TYPE_UNDEFINED, 
-                       &L_symaddr ) == 0 )
-   {
-      return L_symaddr;
-   } 
+DynamicLibraryManager::Symbol
+DynamicLibraryManager::doFindSymbol ( const std::string &symbol ) {
+    DynamicLibraryManager::Symbol L_symaddr = 0;
+    if ( ::shl_findsym ( ( shl_t* ) ( &m_libraryHandle ),
+                         symbol.c_str(),
+                         TYPE_UNDEFINED,
+                         &L_symaddr ) == 0 ) {
+        return L_symaddr;
+    }
 
-   return 0;
+    return 0;
 }
 
 
-std::string 
-DynamicLibraryManager::getLastErrorDetail() const
-{
-  return "";
+std::string
+DynamicLibraryManager::getLastErrorDetail() const {
+    return "";
 }
 
 

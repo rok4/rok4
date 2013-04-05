@@ -16,21 +16,20 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CppUnitTestApp
 
-BEGIN_MESSAGE_MAP(CppUnitTestApp, CWinApp)
-	//{{AFX_MSG_MAP(CppUnitTestApp)
-		// NOTE - the ClassWizard will add and remove mapping macros here.
-		//    DO NOT EDIT what you see in these blocks of generated code!
-	//}}AFX_MSG
-	ON_COMMAND(ID_HELP, CWinApp::OnHelp)
+BEGIN_MESSAGE_MAP ( CppUnitTestApp, CWinApp )
+    //{{AFX_MSG_MAP(CppUnitTestApp)
+    // NOTE - the ClassWizard will add and remove mapping macros here.
+    //    DO NOT EDIT what you see in these blocks of generated code!
+    //}}AFX_MSG
+    ON_COMMAND ( ID_HELP, CWinApp::OnHelp )
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CppUnitTestApp construction
 
-CppUnitTestApp::CppUnitTestApp()
-{
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
+CppUnitTestApp::CppUnitTestApp() {
+    // TODO: add construction code here,
+    // Place all significant initialization in InitInstance
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -41,41 +40,39 @@ CppUnitTestApp theApp;
 /////////////////////////////////////////////////////////////////////////////
 // CppUnitTestApp initialization
 
-BOOL 
-CppUnitTestApp::InitInstance()
-{
-	AfxEnableControlContainer();
+BOOL
+CppUnitTestApp::InitInstance() {
+    AfxEnableControlContainer();
 
-	// Standard initialization
-	// If you are not using these features and wish to reduce the size
-	//  of your final executable, you should remove from the following
-	//  the specific initialization routines you do not need.
+    // Standard initialization
+    // If you are not using these features and wish to reduce the size
+    //  of your final executable, you should remove from the following
+    //  the specific initialization routines you do not need.
 
 #ifdef _AFXDLL
 # if _MSC_VER < 1300   // vc6
-	Enable3dControls();			// Call this when using MFC in a shared DLL
+    Enable3dControls();			// Call this when using MFC in a shared DLL
 # endif
 #else
-	Enable3dControlsStatic();	// Call this when linking to MFC statically
+    Enable3dControlsStatic();	// Call this when linking to MFC statically
 #endif
 
-  SetRegistryKey(_T("Local AppWizard-Generated Applications"));
+    SetRegistryKey ( _T ( "Local AppWizard-Generated Applications" ) );
 
-  RunTests();        
+    RunTests();
 
-  
-  // Since the dialog has been closed, return FALSE so that we exit the
-	//  application, rather than start the application's message pump.
-	return FALSE;
+
+    // Since the dialog has been closed, return FALSE so that we exit the
+    //  application, rather than start the application's message pump.
+    return FALSE;
 }
 
 
-void 
-CppUnitTestApp::RunTests()
-{
-  CPPUNIT_NS::MfcUi::TestRunner runner;
+void
+CppUnitTestApp::RunTests() {
+    CPPUNIT_NS::MfcUi::TestRunner runner;
 
-  runner.addTest( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
+    runner.addTest ( CPPUNIT_NS::TestFactoryRegistry::getRegistry().makeTest() );
 
-  runner.run();
+    runner.run();
 }

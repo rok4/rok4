@@ -7,22 +7,19 @@
 #include "Timer.h"
 
 
-void 
-Timer::start()
-{
-  m_beginTime = clock();
+void
+Timer::start() {
+    m_beginTime = clock();
 }
 
 
-void 
-Timer::finish()
-{
-  m_elapsedTime = double(clock() - m_beginTime) / CLOCKS_PER_SEC;
+void
+Timer::finish() {
+    m_elapsedTime = double ( clock() - m_beginTime ) / CLOCKS_PER_SEC;
 }
 
 
-double 
-Timer::elapsedTime() const
-{
-  return m_elapsedTime;
+double
+Timer::elapsedTime() const {
+    return m_elapsedTime;
 }

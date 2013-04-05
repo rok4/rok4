@@ -16,47 +16,43 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppView
 
-IMPLEMENT_DYNCREATE(CHostAppView, CView)
+IMPLEMENT_DYNCREATE ( CHostAppView, CView )
 
-BEGIN_MESSAGE_MAP(CHostAppView, CView)
+BEGIN_MESSAGE_MAP ( CHostAppView, CView )
     //{{AFX_MSG_MAP(CHostAppView)
-        // NOTE - the ClassWizard will add and remove mapping macros here.
-        //    DO NOT EDIT what you see in these blocks of generated code!
+    // NOTE - the ClassWizard will add and remove mapping macros here.
+    //    DO NOT EDIT what you see in these blocks of generated code!
     //}}AFX_MSG_MAP
     // Standard printing commands
-    ON_COMMAND(ID_FILE_PRINT, CView::OnFilePrint)
-    ON_COMMAND(ID_FILE_PRINT_DIRECT, CView::OnFilePrint)
-    ON_COMMAND(ID_FILE_PRINT_PREVIEW, CView::OnFilePrintPreview)
+    ON_COMMAND ( ID_FILE_PRINT, CView::OnFilePrint )
+    ON_COMMAND ( ID_FILE_PRINT_DIRECT, CView::OnFilePrint )
+    ON_COMMAND ( ID_FILE_PRINT_PREVIEW, CView::OnFilePrintPreview )
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppView construction/destruction
 
-CHostAppView::CHostAppView()
-{
+CHostAppView::CHostAppView() {
     // TODO: add construction code here
 
 }
 
-CHostAppView::~CHostAppView()
-{
+CHostAppView::~CHostAppView() {
 }
 
-BOOL CHostAppView::PreCreateWindow(CREATESTRUCT& cs)
-{
+BOOL CHostAppView::PreCreateWindow ( CREATESTRUCT& cs ) {
     // TODO: Modify the Window class or styles here by modifying
     //  the CREATESTRUCT cs
 
-    return CView::PreCreateWindow(cs);
+    return CView::PreCreateWindow ( cs );
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppView drawing
 
-void CHostAppView::OnDraw(CDC* pDC)
-{
+void CHostAppView::OnDraw ( CDC* pDC ) {
     CHostAppDoc* pDoc = GetDocument();
-    ASSERT_VALID(pDoc);
+    ASSERT_VALID ( pDoc );
 
     // TODO: add draw code for native data here
 }
@@ -64,19 +60,16 @@ void CHostAppView::OnDraw(CDC* pDC)
 /////////////////////////////////////////////////////////////////////////////
 // CHostAppView printing
 
-BOOL CHostAppView::OnPreparePrinting(CPrintInfo* pInfo)
-{
+BOOL CHostAppView::OnPreparePrinting ( CPrintInfo* pInfo ) {
     // default preparation
-    return DoPreparePrinting(pInfo);
+    return DoPreparePrinting ( pInfo );
 }
 
-void CHostAppView::OnBeginPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
-{
+void CHostAppView::OnBeginPrinting ( CDC* /*pDC*/, CPrintInfo* /*pInfo*/ ) {
     // TODO: add extra initialization before printing
 }
 
-void CHostAppView::OnEndPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
-{
+void CHostAppView::OnEndPrinting ( CDC* /*pDC*/, CPrintInfo* /*pInfo*/ ) {
     // TODO: add cleanup after printing
 }
 
@@ -84,20 +77,17 @@ void CHostAppView::OnEndPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
 // CHostAppView diagnostics
 
 #ifdef _DEBUG
-void CHostAppView::AssertValid() const
-{
+void CHostAppView::AssertValid() const {
     CView::AssertValid();
 }
 
-void CHostAppView::Dump(CDumpContext& dc) const
-{
-    CView::Dump(dc);
+void CHostAppView::Dump ( CDumpContext& dc ) const {
+    CView::Dump ( dc );
 }
 
-CHostAppDoc* CHostAppView::GetDocument() // non-debug version is inline
-{
-    ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CHostAppDoc)));
-    return (CHostAppDoc*)m_pDocument;
+CHostAppDoc* CHostAppView::GetDocument() { // non-debug version is inline
+    ASSERT ( m_pDocument->IsKindOf ( RUNTIME_CLASS ( CHostAppDoc ) ) );
+    return ( CHostAppDoc* ) m_pDocument;
 }
 #endif //_DEBUG
 

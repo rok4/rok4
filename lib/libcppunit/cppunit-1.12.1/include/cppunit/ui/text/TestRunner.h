@@ -7,13 +7,12 @@
 #if defined(CPPUNIT_HAVE_NAMESPACES)
 
 CPPUNIT_NS_BEGIN
-namespace TextUi
-{
+namespace TextUi {
 
-  /*! Text TestRunner (DEPRECATED).
-   * \deprecated Use TextTestRunner instead.
-   */
-  typedef TextTestRunner TestRunner;
+/*! Text TestRunner (DEPRECATED).
+ * \deprecated Use TextTestRunner instead.
+ */
+typedef TextTestRunner TestRunner;
 
 }
 CPPUNIT_NS_END

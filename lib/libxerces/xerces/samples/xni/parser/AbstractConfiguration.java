@@ -1,12 +1,12 @@
 /*
  * Copyright 2001, 2002,2004 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@ import org.apache.xerces.xni.parser.XMLInputSource;
 import org.apache.xerces.xni.parser.XMLParserConfiguration;
 
 /**
- * This abstract parser configuration simply helps manage components, 
+ * This abstract parser configuration simply helps manage components,
  * features and properties, and other tasks common to all parser
  * configurations. In order to subclass this configuration and use
  * it effectively, the subclass is required to do the following:
@@ -54,7 +54,7 @@ import org.apache.xerces.xni.parser.XMLParserConfiguration;
  *
  * @version $Id: AbstractConfiguration.java 319809 2004-02-24 23:52:54Z mrglavas $
  */
-public abstract class AbstractConfiguration 
+public abstract class AbstractConfiguration
     implements XMLParserConfiguration {
 
     //
@@ -91,7 +91,7 @@ public abstract class AbstractConfiguration
 
     /** The registered DTD content model handler. */
     protected XMLDTDContentModelHandler fDTDContentModelHandler;
-    
+
     /** Locale for error messages. */
     protected Locale fLocale;
 
@@ -108,74 +108,74 @@ public abstract class AbstractConfiguration
      * Allows a parser to add parser specific features to be recognized
      * and managed by the parser configuration.
      *
-     * @param featureIds An array of the additional feature identifiers 
+     * @param featureIds An array of the additional feature identifiers
      *                   to be recognized.
      */
-    public void addRecognizedFeatures(String[] featureIds) {
+    public void addRecognizedFeatures ( String[] featureIds ) {
         int length = featureIds != null ? featureIds.length : 0;
-        for (int i = 0; i < length; i++) {
+        for ( int i = 0; i < length; i++ ) {
             String featureId = featureIds[i];
-            if (!fRecognizedFeatures.contains(featureId)) {
-                fRecognizedFeatures.addElement(featureId);
+            if ( !fRecognizedFeatures.contains ( featureId ) ) {
+                fRecognizedFeatures.addElement ( featureId );
             }
         }
     } // addRecognizedFeatures(String[])
-    
+
     /**
      * Sets the state of a feature. This method is called by the parser
      * and gets propagated to components in this parser configuration.
-     * 
+     *
      * @param featureId The feature identifier.
      * @param state     The state of the feature.
      *
      * @throws XMLConfigurationException Thrown if there is a configuration
      *                                   error.
      */
-    public void setFeature(String featureId, boolean state)
-        throws XMLConfigurationException {
-        if (!fRecognizedFeatures.contains(featureId)) {
+    public void setFeature ( String featureId, boolean state )
+    throws XMLConfigurationException {
+        if ( !fRecognizedFeatures.contains ( featureId ) ) {
             short type = XMLConfigurationException.NOT_RECOGNIZED;
-            throw new XMLConfigurationException(type, featureId);
+            throw new XMLConfigurationException ( type, featureId );
         }
-        fFeatures.put(featureId, state ? Boolean.TRUE : Boolean.FALSE);
+        fFeatures.put ( featureId, state ? Boolean.TRUE : Boolean.FALSE );
         int length = fComponents.size();
-        for (int i = 0; i < length; i++) {
-            XMLComponent component = (XMLComponent)fComponents.elementAt(i);
-            component.setFeature(featureId, state);
+        for ( int i = 0; i < length; i++ ) {
+            XMLComponent component = ( XMLComponent ) fComponents.elementAt ( i );
+            component.setFeature ( featureId, state );
         }
     } // setFeature(String,boolean)
 
     /**
      * Returns the state of a feature.
-     * 
+     *
      * @param featureId The feature identifier.
-     * 
+     *
      * @throws XMLConfigurationException Thrown if there is a configuration
      *                                   error.
      */
-    public boolean getFeature(String featureId) 
-        throws XMLConfigurationException {
-        if (!fRecognizedFeatures.contains(featureId)) {
+    public boolean getFeature ( String featureId )
+    throws XMLConfigurationException {
+        if ( !fRecognizedFeatures.contains ( featureId ) ) {
             short type = XMLConfigurationException.NOT_RECOGNIZED;
-            throw new XMLConfigurationException(type, featureId);
+            throw new XMLConfigurationException ( type, featureId );
         }
-        Boolean state = (Boolean)fFeatures.get(featureId);
+        Boolean state = ( Boolean ) fFeatures.get ( featureId );
         return state != null ? state.booleanValue() : false;
     } // getFeature(String):boolean
-    
+
     /**
      * Allows a parser to add parser specific properties to be recognized
      * and managed by the parser configuration.
      *
-     * @param propertyIds An array of the additional property identifiers 
+     * @param propertyIds An array of the additional property identifiers
      *                    to be recognized.
      */
-    public void addRecognizedProperties(String[] propertyIds) {
+    public void addRecognizedProperties ( String[] propertyIds ) {
         int length = propertyIds != null ? propertyIds.length : 0;
-        for (int i = 0; i < length; i++) {
+        for ( int i = 0; i < length; i++ ) {
             String propertyId = propertyIds[i];
-            if (!fRecognizedProperties.contains(propertyId)) {
-                fRecognizedProperties.addElement(propertyId);
+            if ( !fRecognizedProperties.contains ( propertyId ) ) {
+                fRecognizedProperties.addElement ( propertyId );
             }
         }
     } // addRecognizedProperties(String[])
@@ -183,47 +183,46 @@ public abstract class AbstractConfiguration
     /**
      * Sets the value of a property. This method is called by the parser
      * and gets propagated to components in this parser configuration.
-     * 
+     *
      * @param propertyId The property identifier.
      * @param value      The value of the property.
      *
      * @throws XMLConfigurationException Thrown if there is a configuration
      *                                   error.
      */
-    public void setProperty(String propertyId, Object value) 
-        throws XMLConfigurationException {
-        if (!fRecognizedProperties.contains(propertyId)) {
+    public void setProperty ( String propertyId, Object value )
+    throws XMLConfigurationException {
+        if ( !fRecognizedProperties.contains ( propertyId ) ) {
             short type = XMLConfigurationException.NOT_RECOGNIZED;
-            throw new XMLConfigurationException(type, propertyId);
+            throw new XMLConfigurationException ( type, propertyId );
         }
-        if (value != null) {
-            fProperties.put(propertyId, value);
-        }
-        else {
-            fProperties.remove(propertyId);
+        if ( value != null ) {
+            fProperties.put ( propertyId, value );
+        } else {
+            fProperties.remove ( propertyId );
         }
         int length = fComponents.size();
-        for (int i = 0; i < length; i++) {
-            XMLComponent component = (XMLComponent)fComponents.elementAt(i);
-            component.setProperty(propertyId, value);
+        for ( int i = 0; i < length; i++ ) {
+            XMLComponent component = ( XMLComponent ) fComponents.elementAt ( i );
+            component.setProperty ( propertyId, value );
         }
     } // setProperty(String,Object)
 
     /**
      * Returns the value of a property.
-     * 
+     *
      * @param propertyId The property identifier.
-     * 
+     *
      * @throws XMLConfigurationException Thrown if there is a configuration
      *                                   error.
      */
-    public Object getProperty(String propertyId) 
-        throws XMLConfigurationException {
-        if (!fRecognizedProperties.contains(propertyId)) {
+    public Object getProperty ( String propertyId )
+    throws XMLConfigurationException {
+        if ( !fRecognizedProperties.contains ( propertyId ) ) {
             short type = XMLConfigurationException.NOT_RECOGNIZED;
-            throw new XMLConfigurationException(type, propertyId);
+            throw new XMLConfigurationException ( type, propertyId );
         }
-        Object value = fProperties.get(propertyId);
+        Object value = fProperties.get ( propertyId );
         return value;
     } // getProperty(String):Object
 
@@ -232,7 +231,7 @@ public abstract class AbstractConfiguration
      *
      * @param resolver The new entity resolver.
      */
-    public void setEntityResolver(XMLEntityResolver resolver) {
+    public void setEntityResolver ( XMLEntityResolver resolver ) {
         fEntityResolver = resolver;
     } // setEntityResolver(XMLEntityResolver)
 
@@ -246,7 +245,7 @@ public abstract class AbstractConfiguration
      *
      * @param handler The error resolver.
      */
-    public void setErrorHandler(XMLErrorHandler handler) {
+    public void setErrorHandler ( XMLErrorHandler handler ) {
         fErrorHandler = handler;
     } // setErrorHandler(XMLErrorHandler)
 
@@ -257,10 +256,10 @@ public abstract class AbstractConfiguration
 
     /**
      * Sets the document handler to receive information about the document.
-     * 
+     *
      * @param handler The document handler.
      */
-    public void setDocumentHandler(XMLDocumentHandler handler) {
+    public void setDocumentHandler ( XMLDocumentHandler handler ) {
         fDocumentHandler = handler;
     } // setDocumentHandler(XMLDocumentHandler)
 
@@ -271,10 +270,10 @@ public abstract class AbstractConfiguration
 
     /**
      * Sets the DTD handler.
-     * 
+     *
      * @param handler The DTD handler.
      */
-    public void setDTDHandler(XMLDTDHandler handler) {
+    public void setDTDHandler ( XMLDTDHandler handler ) {
         fDTDHandler = handler;
     } // setDTDHandler(XMLDTDHandler)
 
@@ -285,17 +284,17 @@ public abstract class AbstractConfiguration
 
     /**
      * Sets the DTD content model handler.
-     * 
+     *
      * @param handler The DTD content model handler.
      */
-    public void setDTDContentModelHandler(XMLDTDContentModelHandler handler) {
+    public void setDTDContentModelHandler ( XMLDTDContentModelHandler handler ) {
         fDTDContentModelHandler = handler;
     } // setDTDContentModelHandler(XMLDTDContentModelHandler)
 
     /** Returns the registered DTD content model handler. */
     public XMLDTDContentModelHandler getDTDContentModelHandler() {
         return fDTDContentModelHandler;
-    } // getDTDContentModelHandler():XMLDTDContentModelHandler 
+    } // getDTDContentModelHandler():XMLDTDContentModelHandler
 
     /**
      * Parse an XML document.
@@ -309,7 +308,7 @@ public abstract class AbstractConfiguration
      * document.
      * <p>
      * This method is synchronous: it will not return until parsing
-     * has ended.  If a client application wants to terminate 
+     * has ended.  If a client application wants to terminate
      * parsing early, it should throw an exception.
      * <p>
      * <strong>Note:</strong> This method needs to be implemented
@@ -318,15 +317,15 @@ public abstract class AbstractConfiguration
      * @param source The input source for the top-level of the
      *               XML document.
      *
-     * @exception XNIException Any XNI exception, possibly wrapping 
+     * @exception XNIException Any XNI exception, possibly wrapping
      *                         another exception.
      * @exception IOException  An IO exception from the parser, possibly
      *                         from a byte stream or character stream
      *                         supplied by the parser.
      */
-    public abstract void parse(XMLInputSource inputSource) 
-        throws IOException, XNIException;
-    
+    public abstract void parse ( XMLInputSource inputSource )
+    throws IOException, XNIException;
+
     /**
      * Set the locale to use for messages.
      *
@@ -335,7 +334,7 @@ public abstract class AbstractConfiguration
      * @exception XNIException Thrown if the parser does not support the
      *                         specified locale.
      */
-    public void setLocale(Locale locale) {
+    public void setLocale ( Locale locale ) {
         fLocale = locale;
     } // setLocale(Locale)
 
@@ -349,10 +348,10 @@ public abstract class AbstractConfiguration
     // Protected methods
     //
 
-    /** 
+    /**
      * Adds a component to list of configurable components. If the
      * same component is added multiple times, the component is
-     * added only the first time. 
+     * added only the first time.
      * <p>
      * This method helps manage the components in the configuration.
      * Therefore, all subclasses should call this method to add the
@@ -362,11 +361,11 @@ public abstract class AbstractConfiguration
      *
      * @see #resetComponents
      */
-    protected void addComponent(XMLComponent component) {
-        if (!fComponents.contains(component)) {
-            fComponents.addElement(component);
-            addRecognizedFeatures(component.getRecognizedFeatures());
-            addRecognizedProperties(component.getRecognizedProperties());
+    protected void addComponent ( XMLComponent component ) {
+        if ( !fComponents.contains ( component ) ) {
+            fComponents.addElement ( component );
+            addRecognizedFeatures ( component.getRecognizedFeatures() );
+            addRecognizedProperties ( component.getRecognizedProperties() );
         }
     } // addComponent(XMLComponent)
 
@@ -377,12 +376,12 @@ public abstract class AbstractConfiguration
      *
      * @see #addComponent
      */
-    protected void resetComponents() 
-        throws XMLConfigurationException {
+    protected void resetComponents()
+    throws XMLConfigurationException {
         int length = fComponents.size();
-        for (int i = 0; i < length; i++) {
-            XMLComponent component = (XMLComponent)fComponents.elementAt(i);
-            component.reset(this);
+        for ( int i = 0; i < length; i++ ) {
+            XMLComponent component = ( XMLComponent ) fComponents.elementAt ( i );
+            component.reset ( this );
         }
     } // resetComponents()
 
@@ -396,22 +395,21 @@ public abstract class AbstractConfiguration
      *
      * @param source The input source to open.
      */
-    protected void openInputSourceStream(XMLInputSource source)
-        throws IOException {
-        if (source.getCharacterStream() != null) {
+    protected void openInputSourceStream ( XMLInputSource source )
+    throws IOException {
+        if ( source.getCharacterStream() != null ) {
             return;
         }
         InputStream stream = source.getByteStream();
-        if (stream == null) {
+        if ( stream == null ) {
             String systemId = source.getSystemId();
             try {
-                URL url = new URL(systemId);
+                URL url = new URL ( systemId );
                 stream = url.openStream();
+            } catch ( MalformedURLException e ) {
+                stream = new FileInputStream ( systemId );
             }
-            catch (MalformedURLException e) {
-                stream = new FileInputStream(systemId);
-            }
-            source.setByteStream(stream);
+            source.setByteStream ( stream );
         }
     } // openInputSourceStream(XMLInputSource)
 

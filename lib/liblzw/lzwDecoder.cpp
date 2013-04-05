@@ -46,18 +46,18 @@
 #define M_EOD    257          // end-of-data marker 
 #define BUFFER_SIZE 256*256*4 // Default tile Size
 
-lzwDecoder::lzwDecoder(uint8_t maxBit) : maxBit(maxBit) {
+lzwDecoder::lzwDecoder ( uint8_t maxBit ) : maxBit ( maxBit ) {
     bitSize=9;
     maxCode=512;
 
-    dict.reserve(maxCode);
-    for ( int i = 0; i < 255; ++i) {
+    dict.reserve ( maxCode );
+    for ( int i = 0; i < 255; ++i ) {
         lzwWord word;
-        word.push_back(i);
-        dict.push_back(word);;
+        word.push_back ( i );
+        dict.push_back ( word );;
     }
-    dict.push_back(lzwWord());
-    dict.push_back(lzwWord());
+    dict.push_back ( lzwWord() );
+    dict.push_back ( lzwWord() );
 
 
     firstPass=true;
@@ -69,14 +69,14 @@ lzwDecoder::lzwDecoder(uint8_t maxBit) : maxBit(maxBit) {
 
 void lzwDecoder::clearDict() {
     dict.clear();
-    dict.reserve(maxCode);
-    for ( int i = 0; i < 256; ++i) {
+    dict.reserve ( maxCode );
+    for ( int i = 0; i < 256; ++i ) {
         lzwWord word;
-        word.push_back(i);
-        dict.push_back(word);;
+        word.push_back ( i );
+        dict.push_back ( word );;
     }
-    dict.push_back(lzwWord());
-    dict.push_back(lzwWord());
+    dict.push_back ( lzwWord() );
+    dict.push_back ( lzwWord() );
 
     bitSize=9;
     maxCode=512;
@@ -87,18 +87,18 @@ void lzwDecoder::clearDict() {
 
 
 uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos ) {
-    
-    size_t outSize= (outPos?outPos:BUFFER_SIZE);
+
+    size_t outSize= ( outPos?outPos:BUFFER_SIZE );
     uint8_t* out = new uint8_t[outSize];
     outPos=0;
     lzwWord outString = lzwWord();
     //Initialization
 
-    while (inSize) {
-        while (firstPass) {
-            while ( nReadbits < bitSize) {
-                if ( inSize > 0) {
-                    buffer = (buffer << 8) | *(in++);
+    while ( inSize ) {
+        while ( firstPass ) {
+            while ( nReadbits < bitSize ) {
+                if ( inSize > 0 ) {
+                    buffer = ( buffer << 8 ) | * ( in++ );
                     nReadbits += 8;
                 } else { // Not enough data in the current buffer. Return current state
                     return out;
@@ -109,9 +109,9 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
             // Extract BitSize bits from buffer
             code = buffer >> nReadbits;
             // Remove extracted code from buffer
-            buffer = buffer & (1 << nReadbits) - 1;
+            buffer = buffer & ( 1 << nReadbits ) - 1;
             //Test Code
-            if (code == M_EOD ) { //End of Data
+            if ( code == M_EOD ) { //End of Data
                 return out;
             }
             if ( code == M_CLR ) { // Reset Dictionary
@@ -125,9 +125,9 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
         }
 
         //Read enough data from input stream
-        while ( nReadbits < bitSize) {
-            if ( inSize > 0) {
-                buffer = (buffer << 8) | *(in++);
+        while ( nReadbits < bitSize ) {
+            if ( inSize > 0 ) {
+                buffer = ( buffer << 8 ) | * ( in++ );
                 nReadbits += 8;
                 inSize--;
             } else { // Not enough data in the current buffer. Return current state
@@ -139,34 +139,34 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
         // Extract BitSize bits from buffer
         code = buffer >> nReadbits;
         // Remove extracted code from buffer
-        buffer = buffer & (1 << nReadbits) - 1;
+        buffer = buffer & ( 1 << nReadbits ) - 1;
         //Test Code
-        if (code == M_EOD ) { //End of Data
+        if ( code == M_EOD ) { //End of Data
             return out;
         }
         if ( code == M_CLR ) { // Reset Dictionary
             this->clearDict();
         } else {
-            if (code > dict.size() - 1) {// Code Not found
+            if ( code > dict.size() - 1 ) { // Code Not found
                 //itCode = dict.find(lastCode);
-                lzwWord oldstring = dict.at(lastCode);
-                outString.assign(oldstring.begin(),oldstring.end());
-                outString.push_back(lastChar);
+                lzwWord oldstring = dict.at ( lastCode );
+                outString.assign ( oldstring.begin(),oldstring.end() );
+                outString.push_back ( lastChar );
             } else { // Code found get Value
-                outString.assign(dict.at(code).begin(),dict.at(code).end());
+                outString.assign ( dict.at ( code ).begin(),dict.at ( code ).end() );
             }
-            lastChar = *(outString.begin());
+            lastChar = * ( outString.begin() );
 
 
 
 
 
-            for (lzwWord::iterator it = outString.begin(); it != outString.end(); it++) {
-                if (outPos >= outSize) {
-                    uint8_t* tmpBuffer = new uint8_t[(outSize*2)];
-                    if (tmpBuffer) { // Enlarge your Buffer
-                        memset(tmpBuffer+outSize ,0,outSize);
-                        memcpy(tmpBuffer, out, outSize);
+            for ( lzwWord::iterator it = outString.begin(); it != outString.end(); it++ ) {
+                if ( outPos >= outSize ) {
+                    uint8_t* tmpBuffer = new uint8_t[ ( outSize*2 )];
+                    if ( tmpBuffer ) { // Enlarge your Buffer
+                        memset ( tmpBuffer+outSize ,0,outSize );
+                        memcpy ( tmpBuffer, out, outSize );
                         delete[] out;
                         out = tmpBuffer;
                         outSize *=2;
@@ -177,17 +177,17 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
                 }
                 out[outPos++]= *it;
             }
-            lzwWord newEntry = dict.at(lastCode);
-            newEntry.push_back(lastChar);
-            dict.push_back(newEntry);
+            lzwWord newEntry = dict.at ( lastCode );
+            newEntry.push_back ( lastChar );
+            dict.push_back ( newEntry );
             lastCode = code;
             //Dictionary need to be extended or reseted
-            if (dict.size() == maxCode -1) {
+            if ( dict.size() == maxCode -1 ) {
                 //Extend
-                if (bitSize < maxBit) {
+                if ( bitSize < maxBit ) {
                     bitSize++;
                     maxCode*=2;
-                    dict.reserve(maxCode);
+                    dict.reserve ( maxCode );
                 }
                 // else : the next code must be M_CLR is written in maxBit bit
             }
@@ -198,8 +198,7 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
     return out;
 }
 
-lzwDecoder::~lzwDecoder()
-{
+lzwDecoder::~lzwDecoder() {
     dict.clear();
 }
 

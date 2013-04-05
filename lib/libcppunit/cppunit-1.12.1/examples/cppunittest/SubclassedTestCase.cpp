@@ -2,36 +2,30 @@
 #include "SubclassedTestCase.h"
 
 
-SubclassedTestCase::SubclassedTestCase()
-{
+SubclassedTestCase::SubclassedTestCase() {
 }
 
 
-SubclassedTestCase::~SubclassedTestCase()
-{
+SubclassedTestCase::~SubclassedTestCase() {
 }
 
 
-void 
-SubclassedTestCase::setUp()
-{
+void
+SubclassedTestCase::setUp() {
 }
 
 
-void 
-SubclassedTestCase::tearDown()
-{
+void
+SubclassedTestCase::tearDown() {
 }
 
 
-void 
-SubclassedTestCase::checkIt()
-{
-  CPPUNIT_ASSERT( false );
+void
+SubclassedTestCase::checkIt() {
+    CPPUNIT_ASSERT ( false );
 }
 
 
-void 
-SubclassedTestCase::testSubclassing()
-{
+void
+SubclassedTestCase::testSubclassing() {
 }

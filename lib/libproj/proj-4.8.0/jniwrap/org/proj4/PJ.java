@@ -60,7 +60,7 @@ public class PJ {
      * Loads the Proj4 library.
      */
     static {
-        System.loadLibrary("proj");
+        System.loadLibrary ( "proj" );
     }
 
     /**
@@ -76,10 +76,10 @@ public class PJ {
      * @param  definition The Proj.4 definition string.
      * @throws IllegalArgumentException If the PJ structure can not be created from the given string.
      */
-    public PJ(final String definition) throws IllegalArgumentException {
-        ptr = allocatePJ(definition);
-        if (ptr == 0) {
-            throw new IllegalArgumentException(definition);
+    public PJ ( final String definition ) throws IllegalArgumentException {
+        ptr = allocatePJ ( definition );
+        if ( ptr == 0 ) {
+            throw new IllegalArgumentException ( definition );
         }
     }
 
@@ -93,17 +93,17 @@ public class PJ {
      * @param  type The type of the new CRS. Currently, only {@link Type#GEOGRAPHIC} is supported.
      * @throws IllegalArgumentException If the PJ structure can not be created.
      */
-    public PJ(final PJ crs, final Type type) throws IllegalArgumentException {
-        if (crs == null) {
+    public PJ ( final PJ crs, final Type type ) throws IllegalArgumentException {
+        if ( crs == null ) {
             // TODO: Use Objects with JDK 7.
-            throw new NullPointerException("The CRS must be non-null.");
+            throw new NullPointerException ( "The CRS must be non-null." );
         }
-        if (type != Type.GEOGRAPHIC) {
-            throw new IllegalArgumentException("Can not derive the " + type + " type.");
+        if ( type != Type.GEOGRAPHIC ) {
+            throw new IllegalArgumentException ( "Can not derive the " + type + " type." );
         }
-        ptr = allocateGeoPJ(crs);
-        if (ptr == 0) {
-            throw new IllegalArgumentException(crs.getLastError());
+        ptr = allocateGeoPJ ( crs );
+        if ( ptr == 0 ) {
+            throw new IllegalArgumentException ( crs.getLastError() );
         }
     }
 
@@ -116,7 +116,7 @@ public class PJ {
      * @param  definition The Proj4 definition string.
      * @return A pointer to the PJ native data structure, or 0 if the operation failed.
      */
-    private static native long allocatePJ(String definition);
+    private static native long allocatePJ ( String definition );
 
     /**
      * Allocates a PJ native data structure for the base geographic CRS of the given CRS, and
@@ -127,7 +127,7 @@ public class PJ {
      * @param  projected The CRS from which to derive the base geographic CRS.
      * @return A pointer to the PJ native data structure, or 0 if the operation failed.
      */
-    private static native long allocateGeoPJ(PJ projected);
+    private static native long allocateGeoPJ ( PJ projected );
 
     /**
      * Returns the version number of the Proj4 library.
@@ -239,7 +239,7 @@ public class PJ {
      *         or {@code true} for the conversion factor of the vertical axis.
      * @return The conversion factor to metres for the given axis.
      */
-    public native double getLinearUnitToMetre(boolean vertical);
+    public native double getLinearUnitToMetre ( boolean vertical );
 
     /**
      * Transforms in-place the coordinates in the given array. The coordinates array shall contain
@@ -266,8 +266,8 @@ public class PJ {
      *
      * @see org.opengis.referencing.operation.MathTransform#transform(double[], int, double[], int, int)
      */
-    public native void transform(PJ target, int dimension, double[] coordinates, int offset, int numPts)
-            throws PJException;
+    public native void transform ( PJ target, int dimension, double[] coordinates, int offset, int numPts )
+    throws PJException;
 
     /**
      * Returns a description of the last error that occurred, or {@code null} if none.

@@ -7,33 +7,32 @@
 CPPUNIT_NS_BEGIN
 
 
-/*! 
+/*!
  * \brief TestListener that show the status of each TestCase test result.
  * \ingroup TrackingTestExecution
  */
-class CPPUNIT_API TextTestProgressListener : public TestListener
-{
+class CPPUNIT_API TextTestProgressListener : public TestListener {
 public:
-  /*! Constructs a TextTestProgressListener object.
-   */
-  TextTestProgressListener();
+    /*! Constructs a TextTestProgressListener object.
+     */
+    TextTestProgressListener();
 
-  /// Destructor.
-  virtual ~TextTestProgressListener();
+    /// Destructor.
+    virtual ~TextTestProgressListener();
 
-  void startTest( Test *test );
+    void startTest ( Test *test );
 
-  void addFailure( const TestFailure &failure );
+    void addFailure ( const TestFailure &failure );
 
-  void endTestRun( Test *test, 
-                   TestResult *eventManager );
+    void endTestRun ( Test *test,
+                      TestResult *eventManager );
 
 private:
-  /// Prevents the use of the copy constructor.
-  TextTestProgressListener( const TextTestProgressListener &copy );
+    /// Prevents the use of the copy constructor.
+    TextTestProgressListener ( const TextTestProgressListener &copy );
 
-  /// Prevents the use of the copy operator.
-  void operator =( const TextTestProgressListener &copy );
+    /// Prevents the use of the copy operator.
+    void operator = ( const TextTestProgressListener &copy );
 
 private:
 };

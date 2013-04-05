@@ -7,13 +7,11 @@
 #include "TestRunnerThreadEvent.h"
 
 
-TestRunnerThreadEvent::TestRunnerThreadEvent() : 
-    QCustomEvent( User )
-{
+TestRunnerThreadEvent::TestRunnerThreadEvent() :
+    QCustomEvent ( User ) {
 }
 
 
-TestRunnerThreadEvent::~TestRunnerThreadEvent()
-{
+TestRunnerThreadEvent::~TestRunnerThreadEvent() {
 }
 

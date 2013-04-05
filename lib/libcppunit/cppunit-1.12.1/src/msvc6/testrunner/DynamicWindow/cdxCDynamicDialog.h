@@ -22,31 +22,32 @@
  *   the Dynamic child control system DcCS by codex design
  */
 
-class cdxCDynamicDialog : public CDialog, public cdxCDynamicWndEx
-{
-	DECLARE_DYNAMIC(cdxCDynamicDialog);
+class cdxCDynamicDialog : public CDialog, public cdxCDynamicWndEx {
+    DECLARE_DYNAMIC ( cdxCDynamicDialog );
 
 public:
-	enum { flDefault = flAntiFlicker|flSizeIcon };
+    enum { flDefault = flAntiFlicker|flSizeIcon };
 
 public:
-	cdxCDynamicDialog(UINT idd = 0, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault);
-	cdxCDynamicDialog(LPCTSTR lpszTemplateName, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault);
-	virtual ~cdxCDynamicDialog() { DoOnDestroy(); }
+    cdxCDynamicDialog ( UINT idd = 0, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault );
+    cdxCDynamicDialog ( LPCTSTR lpszTemplateName, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault );
+    virtual ~cdxCDynamicDialog() {
+        DoOnDestroy();
+    }
 
 public:
-	virtual BOOL DestroyWindow();
+    virtual BOOL DestroyWindow();
 
 protected:
-	virtual BOOL OnInitDialog();
-	afx_msg void OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
-	afx_msg void OnDestroy();
-	afx_msg void OnParentNotify(UINT message, LPARAM lParam);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
-	afx_msg void OnTimer(UINT nIDEvent);
+    virtual BOOL OnInitDialog();
+    afx_msg void OnGetMinMaxInfo ( MINMAXINFO FAR* lpMMI );
+    afx_msg void OnDestroy();
+    afx_msg void OnParentNotify ( UINT message, LPARAM lParam );
+    afx_msg void OnSize ( UINT nType, int cx, int cy );
+    afx_msg void OnSizing ( UINT fwSide, LPRECT pRect );
+    afx_msg void OnTimer ( UINT nIDEvent );
 
-	DECLARE_MESSAGE_MAP();
+    DECLARE_MESSAGE_MAP();
 };
 
 /*
@@ -64,55 +65,52 @@ protected:
  *   the Dynamic child control system DcCS by codex design
  */
 
-class cdxCDynamicChildDlg : public cdxCDynamicDialog
-{
-	DECLARE_DYNAMIC(cdxCDynamicChildDlg);
+class cdxCDynamicChildDlg : public cdxCDynamicDialog {
+    DECLARE_DYNAMIC ( cdxCDynamicChildDlg );
 
 public:
-	enum { flDefault = flAntiFlicker };
+    enum { flDefault = flAntiFlicker };
 
 public:
-	cdxCDynamicChildDlg(UINT idd = 0, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault);
-	cdxCDynamicChildDlg(LPCTSTR lpszTemplateName, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault);
-	virtual ~cdxCDynamicChildDlg() { DoOnDestroy(); }
+    cdxCDynamicChildDlg ( UINT idd = 0, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault );
+    cdxCDynamicChildDlg ( LPCTSTR lpszTemplateName, CWnd* pParent = NULL, Freedom fd = fdAll, UINT nFlags = flDefault );
+    virtual ~cdxCDynamicChildDlg() {
+        DoOnDestroy();
+    }
 };
 
 /////////////////////////////////////////////////////////////////////////////
 // cdxCDynamicDialog Inlines
 /////////////////////////////////////////////////////////////////////////////
 
-inline cdxCDynamicDialog::cdxCDynamicDialog(UINT idd, CWnd* pParent, Freedom fd, UINT nFlags)
-:	CDialog(idd,pParent),
-	cdxCDynamicWndEx(fd,nFlags)
-{
-	if(idd)
-		ActivateAutoPos(idd);
+inline cdxCDynamicDialog::cdxCDynamicDialog ( UINT idd, CWnd* pParent, Freedom fd, UINT nFlags )
+    :	CDialog ( idd,pParent ),
+        cdxCDynamicWndEx ( fd,nFlags ) {
+    if ( idd )
+        ActivateAutoPos ( idd );
 }
 
-inline cdxCDynamicDialog::cdxCDynamicDialog(LPCTSTR lpszTemplateName, CWnd* pParent, Freedom fd, UINT nFlags)
-:	CDialog(lpszTemplateName,pParent),
-	cdxCDynamicWndEx(fd,nFlags)
-{
-	if(lpszTemplateName && *lpszTemplateName)
-		ActivateAutoPos(lpszTemplateName);
+inline cdxCDynamicDialog::cdxCDynamicDialog ( LPCTSTR lpszTemplateName, CWnd* pParent, Freedom fd, UINT nFlags )
+    :	CDialog ( lpszTemplateName,pParent ),
+        cdxCDynamicWndEx ( fd,nFlags ) {
+    if ( lpszTemplateName && *lpszTemplateName )
+        ActivateAutoPos ( lpszTemplateName );
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // cdxCDynamicChildDlg Inlines
 /////////////////////////////////////////////////////////////////////////////
 
-inline cdxCDynamicChildDlg::cdxCDynamicChildDlg(UINT idd, CWnd* pParent, Freedom fd, UINT nFlags)
-:	cdxCDynamicDialog(idd,pParent,fd,nFlags)
-{
-	m_bUseScrollPos	=	true;		// if you create scollbars I will use them ;)
-	NoAutoPos();						// not in this case....
+inline cdxCDynamicChildDlg::cdxCDynamicChildDlg ( UINT idd, CWnd* pParent, Freedom fd, UINT nFlags )
+    :	cdxCDynamicDialog ( idd,pParent,fd,nFlags ) {
+    m_bUseScrollPos	=	true;		// if you create scollbars I will use them ;)
+    NoAutoPos();						// not in this case....
 }
 
-inline cdxCDynamicChildDlg::cdxCDynamicChildDlg(LPCTSTR lpszTemplateName, CWnd* pParent, Freedom fd, UINT nFlags)
-:	cdxCDynamicDialog(lpszTemplateName,pParent,fd,nFlags)
-{
-	m_bUseScrollPos	=	true;		// if you create scollbars I will use them ;)
-	NoAutoPos();						// not in this case....
+inline cdxCDynamicChildDlg::cdxCDynamicChildDlg ( LPCTSTR lpszTemplateName, CWnd* pParent, Freedom fd, UINT nFlags )
+    :	cdxCDynamicDialog ( lpszTemplateName,pParent,fd,nFlags ) {
+    m_bUseScrollPos	=	true;		// if you create scollbars I will use them ;)
+    NoAutoPos();						// not in this case....
 }
 
 //{{AFX_INSERT_LOCATION}}

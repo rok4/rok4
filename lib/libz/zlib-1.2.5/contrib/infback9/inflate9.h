@@ -10,10 +10,10 @@
 
 /* Possible inflate modes between inflate() calls */
 typedef enum {
-        TYPE,       /* i: waiting for type bits, including last-flag bit */
-        STORED,     /* i: waiting for stored size (length and complement) */
-        TABLE,      /* i: waiting for dynamic block table lengths */
-            LEN,        /* i: waiting for length/lit code */
+    TYPE,       /* i: waiting for type bits, including last-flag bit */
+    STORED,     /* i: waiting for stored size (length and complement) */
+    TABLE,      /* i: waiting for dynamic block table lengths */
+    LEN,        /* i: waiting for length/lit code */
     DONE,       /* finished check, done -- remain here until reset */
     BAD         /* got a data error -- remain here until reset */
 } inflate_mode;
@@ -33,9 +33,9 @@ typedef enum {
 
 /* state maintained between inflate() calls.  Approximately 7K bytes. */
 struct inflate_state {
-        /* sliding window */
+    /* sliding window */
     unsigned char FAR *window;  /* allocated sliding window, if needed */
-        /* dynamic table building */
+    /* dynamic table building */
     unsigned ncode;             /* number of code length code lengths */
     unsigned nlen;              /* number of length code lengths */
     unsigned ndist;             /* number of distance code lengths */

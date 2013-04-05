@@ -19,14 +19,14 @@
  * reports about this code to IJG developers.  Instead, contact the author for
  * advice: Scott B. Marovich <marovich@hpl.hp.com>, Hewlett-Packard Labs, 6/01.
  */
-GLOBAL(void)
-jpeg_reset_huff_decode (register j_decompress_ptr cinfo,register float *refbw)
-{ register huff_entropy_ptr entropy = (huff_entropy_ptr)cinfo->entropy;
-  register int ci = 0;
+GLOBAL ( void )
+jpeg_reset_huff_decode ( register j_decompress_ptr cinfo,register float *refbw ) {
+    register huff_entropy_ptr entropy = ( huff_entropy_ptr ) cinfo->entropy;
+    register int ci = 0;
 
-  /* Re-initialize DC predictions */
-  do entropy->saved.last_dc_val[ci] = -refbw[ci << 1];
-  while (++ci < cinfo->comps_in_scan);
-  /* Discard encoded input bits, up to the next Byte boundary */
-  entropy->bitstate.bits_left &= ~7;
+    /* Re-initialize DC predictions */
+    do entropy->saved.last_dc_val[ci] = -refbw[ci << 1];
+    while ( ++ci < cinfo->comps_in_scan );
+    /* Discard encoded input bits, up to the next Byte boundary */
+    entropy->bitstate.bits_left &= ~7;
 }

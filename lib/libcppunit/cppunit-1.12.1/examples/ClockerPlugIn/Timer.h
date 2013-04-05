@@ -9,17 +9,16 @@
 #include <time.h>
 
 /// A Timer.
-class Timer
-{
+class Timer {
 public:
-  void start();
-  void finish();
+    void start();
+    void finish();
 
-  double elapsedTime() const;
+    double elapsedTime() const;
 
 private:
-  clock_t m_beginTime;
-  double m_elapsedTime;
+    clock_t m_beginTime;
+    double m_elapsedTime;
 };
 
 

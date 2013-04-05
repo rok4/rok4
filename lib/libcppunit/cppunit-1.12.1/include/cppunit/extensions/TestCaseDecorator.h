@@ -14,23 +14,22 @@ CPPUNIT_NS_BEGIN
  * subclass the decorater and use it to wrap the test class.
  *
  * Does not assume ownership of the test it decorates
- */ 
-class CPPUNIT_API TestCaseDecorator : public TestCase
-{
+ */
+class CPPUNIT_API TestCaseDecorator : public TestCase {
 public:
-  TestCaseDecorator( TestCase *test );
-  ~TestCaseDecorator();
+    TestCaseDecorator ( TestCase *test );
+    ~TestCaseDecorator();
 
-  std::string getName() const;
+    std::string getName() const;
 
-  void setUp();
+    void setUp();
 
-  void tearDown();
+    void tearDown();
 
-  void runTest();
+    void runTest();
 
 protected:
-  TestCase *m_test;
+    TestCase *m_test;
 };
 
 

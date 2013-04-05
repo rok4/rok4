@@ -13,41 +13,39 @@
 /*! \class TestPlugInException
  * \brief This class represents a failure of using the test plug-in.
  */
-class TestPlugInException : public std::runtime_error
-{
+class TestPlugInException : public std::runtime_error {
 public:
-  enum Cause
-  {
-    failedToLoadDll =0,
-    failedToCopyDll,
-    failedToGetInterfaceFunction,
-    failedToMakeTest
-  };
+    enum Cause {
+        failedToLoadDll =0,
+        failedToCopyDll,
+        failedToGetInterfaceFunction,
+        failedToMakeTest
+    };
 
-  /*! Constructs a TestPlugInException object.
-   */
-  TestPlugInException( std::string message, 
-                       Cause cause );
+    /*! Constructs a TestPlugInException object.
+     */
+    TestPlugInException ( std::string message,
+                          Cause cause );
 
-  /*! Copy constructor.
-   * @param copy Object to copy.
-   */
-  TestPlugInException( const TestPlugInException &copy );
+    /*! Copy constructor.
+     * @param copy Object to copy.
+     */
+    TestPlugInException ( const TestPlugInException &copy );
 
-  /*! Destructor.
-   */
-  virtual ~TestPlugInException();
+    /*! Destructor.
+     */
+    virtual ~TestPlugInException();
 
-  /*! Copy operator.
-   * @param copy Object to copy.
-   * @return Reference on this object.
-   */
-  TestPlugInException &operator =( const TestPlugInException &copy );
+    /*! Copy operator.
+     * @param copy Object to copy.
+     * @return Reference on this object.
+     */
+    TestPlugInException &operator = ( const TestPlugInException &copy );
 
-  Cause getCause() const;
+    Cause getCause() const;
 
 private:
-  Cause m_cause;
+    Cause m_cause;
 };
 
 

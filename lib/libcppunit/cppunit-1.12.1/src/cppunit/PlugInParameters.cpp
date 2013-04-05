@@ -5,21 +5,18 @@
 CPPUNIT_NS_BEGIN
 
 
-PlugInParameters::PlugInParameters( const std::string &commandLine )
-    : m_commandLine( commandLine )
-{
+PlugInParameters::PlugInParameters ( const std::string &commandLine )
+    : m_commandLine ( commandLine ) {
 }
 
 
-PlugInParameters::~PlugInParameters()
-{
+PlugInParameters::~PlugInParameters() {
 }
 
 
-std::string 
-PlugInParameters::getCommandLine() const
-{
-  return m_commandLine;
+std::string
+PlugInParameters::getCommandLine() const {
+    return m_commandLine;
 }
 
 

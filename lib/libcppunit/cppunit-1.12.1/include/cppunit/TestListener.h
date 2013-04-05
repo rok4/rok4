@@ -42,7 +42,7 @@ class TestResult;
  *   {
  *     _chronometer.start();
  *   }
- *  
+ *
  *   void endTest( CppUnit::Test *test )
  *   {
  *     _chronometer.end();
@@ -55,7 +55,7 @@ class TestResult;
  *   Clock _chronometer;
  * };
  * \endcode
- *   
+ *
  * And another example that track failure/success at test suite level and captures
  * the TestPath of each suite:
  * \code
@@ -66,12 +66,12 @@ class TestResult;
  *   {
  *     m_currentPath.add( suite );
  *   }
- *   
+ *
  *   void addFailure( const TestFailure &failure )
  *   {
  *     m_suiteFailure.top() = false;
  *   }
- * 
+ *
  *   void endSuite( CppUnit::Test *suite )
  *   {
  *     m_suiteStatus.insert( std::make_pair( suite, m_suiteFailure.top() ) );
@@ -91,53 +91,52 @@ class TestResult;
  *
  * \see TestResult
  */
-class CPPUNIT_API TestListener
-{
+class CPPUNIT_API TestListener {
 public:
-  virtual ~TestListener() {}
-  
-  /// Called when just before a TestCase is run.
-  virtual void startTest( Test * /*test*/ ) {}
+    virtual ~TestListener() {}
 
-  /*! \brief Called when a failure occurs while running a test.
-   * \see TestFailure.
-   * \warning \a failure is a temporary object that is destroyed after the 
-   *          method call. Use TestFailure::clone() to create a duplicate.
-   */
-  virtual void addFailure( const TestFailure & /*failure*/ ) {}
+    /// Called when just before a TestCase is run.
+    virtual void startTest ( Test * /*test*/ ) {}
 
-  /// Called just after a TestCase was run (even if a failure occured).
-  virtual void endTest( Test * /*test*/ ) {}
+    /*! \brief Called when a failure occurs while running a test.
+     * \see TestFailure.
+     * \warning \a failure is a temporary object that is destroyed after the
+     *          method call. Use TestFailure::clone() to create a duplicate.
+     */
+    virtual void addFailure ( const TestFailure & /*failure*/ ) {}
 
-  /*! \brief Called by a TestComposite just before running its child tests.
-   */
-  virtual void startSuite( Test * /*suite*/ ) {}
+    /// Called just after a TestCase was run (even if a failure occured).
+    virtual void endTest ( Test * /*test*/ ) {}
 
-  /*! \brief Called by a TestComposite after running its child tests.
-   */
-  virtual void endSuite( Test * /*suite*/ ) {}
+    /*! \brief Called by a TestComposite just before running its child tests.
+     */
+    virtual void startSuite ( Test * /*suite*/ ) {}
 
-  /*! \brief Called by a TestRunner before running the test.
-   * 
-   * You can use this to do some global initialisation. A listener
-   * could also use to output a 'prolog' to the test run.
-   *
-   * \param test Test that is going to be run.
-   * \param eventManager Event manager used for the test run.
-   */
-  virtual void startTestRun( Test * /*test*/, 
-                             TestResult * /*eventManager*/ ) {}
+    /*! \brief Called by a TestComposite after running its child tests.
+     */
+    virtual void endSuite ( Test * /*suite*/ ) {}
 
-  /*! \brief Called by a TestRunner after running the test.
-   *
-   * TextTestProgressListener use this to emit a line break. You can also use this
-   * to do some global uninitialisation.
-   *
-   * \param test Test that was run.
-   * \param eventManager Event manager used for the test run.
-   */
-  virtual void endTestRun( Test * /*test*/, 
-                           TestResult * /*eventManager*/ ) {}
+    /*! \brief Called by a TestRunner before running the test.
+     *
+     * You can use this to do some global initialisation. A listener
+     * could also use to output a 'prolog' to the test run.
+     *
+     * \param test Test that is going to be run.
+     * \param eventManager Event manager used for the test run.
+     */
+    virtual void startTestRun ( Test * /*test*/,
+                                TestResult * /*eventManager*/ ) {}
+
+    /*! \brief Called by a TestRunner after running the test.
+     *
+     * TextTestProgressListener use this to emit a line break. You can also use this
+     * to do some global uninitialisation.
+     *
+     * \param test Test that was run.
+     * \param eventManager Event manager used for the test run.
+     */
+    virtual void endTestRun ( Test * /*test*/,
+                              TestResult * /*eventManager*/ ) {}
 };
 
 

@@ -4,9 +4,8 @@
 #include <cppunit/Portability.h>
 #include <string>
 
-inline std::string outputSuiteName()
-{
-  return "Output";
+inline std::string outputSuiteName() {
+    return "Output";
 }
 
 

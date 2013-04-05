@@ -61,7 +61,7 @@ uint8_t* pkbEncoder::encode ( const uint8_t* in, size_t inSize, size_t& outSize 
         count = 1;
 
         //find identical bytes
-        while (inputpos < inSize -1 && currentChar == * ( in+inputpos )) {
+        while ( inputpos < inSize -1 && currentChar == * ( in+inputpos ) ) {
             inputpos++; // input buffer position
             count++; // number of identical bytes
         }

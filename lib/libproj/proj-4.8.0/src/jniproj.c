@@ -58,7 +58,7 @@
 /* The PJ_MAX_DIMENSION value appears also in quoted strings.
    Please perform a search-and-replace if this value is changed. */
 
-PJ_CVSID("$Id: jniproj.c 2095 2011-09-02 08:44:02Z desruisseaux $");
+PJ_CVSID ( "$Id: jniproj.c 2095 2011-09-02 08:44:02Z desruisseaux $" );
 
 
 /*!
@@ -72,10 +72,9 @@ PJ_CVSID("$Id: jniproj.c 2095 2011-09-02 08:44:02Z desruisseaux $");
  * \return The address of the PJ structure, or NULL if the operation fails (for example
  *         because the "ptr" field was not found).
  */
-PJ *getPJ(JNIEnv *env, jobject object)
-{
-    jfieldID id = (*env)->GetFieldID(env, (*env)->GetObjectClass(env, object), PJ_FIELD_NAME, PJ_FIELD_TYPE);
-    return (id) ? (PJ*) (*env)->GetLongField(env, object, id) : NULL;
+PJ *getPJ ( JNIEnv *env, jobject object ) {
+    jfieldID id = ( *env )->GetFieldID ( env, ( *env )->GetObjectClass ( env, object ), PJ_FIELD_NAME, PJ_FIELD_TYPE );
+    return ( id ) ? ( PJ* ) ( *env )->GetLongField ( env, object, id ) : NULL;
 }
 
 /*!
@@ -87,10 +86,9 @@ PJ *getPJ(JNIEnv *env, jobject object)
  * \return The Proj4 release number, or NULL.
  */
 JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getVersion
-  (JNIEnv *env, jclass class)
-{
+( JNIEnv *env, jclass class ) {
     const char *desc = pj_get_release();
-    return (desc) ? (*env)->NewStringUTF(env, desc) : NULL;
+    return ( desc ) ? ( *env )->NewStringUTF ( env, desc ) : NULL;
 }
 
 /*!
@@ -103,13 +101,12 @@ JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getVersion
  * \return The address of the new PJ structure, or 0 in case of failure.
  */
 JNIEXPORT jlong JNICALL Java_org_proj4_PJ_allocatePJ
-  (JNIEnv *env, jclass class, jstring definition)
-{
-    const char *def_utf = (*env)->GetStringUTFChars(env, definition, NULL);
-    if (!def_utf) return 0; /* OutOfMemoryError already thrown. */
-    PJ *pj = pj_init_plus(def_utf);
-    (*env)->ReleaseStringUTFChars(env, definition, def_utf);
-    return (jlong) pj;
+( JNIEnv *env, jclass class, jstring definition ) {
+    const char *def_utf = ( *env )->GetStringUTFChars ( env, definition, NULL );
+    if ( !def_utf ) return 0; /* OutOfMemoryError already thrown. */
+    PJ *pj = pj_init_plus ( def_utf );
+    ( *env )->ReleaseStringUTFChars ( env, definition, def_utf );
+    return ( jlong ) pj;
 }
 
 /*!
@@ -122,10 +119,9 @@ JNIEXPORT jlong JNICALL Java_org_proj4_PJ_allocatePJ
  * \return The address of the new PJ structure, or 0 in case of failure.
  */
 JNIEXPORT jlong JNICALL Java_org_proj4_PJ_allocateGeoPJ
-  (JNIEnv *env, jclass class, jobject projected)
-{
-    PJ *pj = getPJ(env, projected);
-    return (pj) ? (jlong) pj_latlong_from_proj(pj) : 0;
+( JNIEnv *env, jclass class, jobject projected ) {
+    PJ *pj = getPJ ( env, projected );
+    return ( pj ) ? ( jlong ) pj_latlong_from_proj ( pj ) : 0;
 }
 
 /*!
@@ -137,14 +133,13 @@ JNIEXPORT jlong JNICALL Java_org_proj4_PJ_allocateGeoPJ
  * \return The definition string.
  */
 JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getDefinition
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
-        char *desc = pj_get_def(pj, 0);
-        if (desc) {
-            jstring str = (*env)->NewStringUTF(env, desc);
-            pj_dalloc(desc);
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
+        char *desc = pj_get_def ( pj, 0 );
+        if ( desc ) {
+            jstring str = ( *env )->NewStringUTF ( env, desc );
+            pj_dalloc ( desc );
             return str;
         }
     }
@@ -160,13 +155,12 @@ JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getDefinition
  * \return The description associated to the PJ structure.
  */
 JNIEXPORT jstring JNICALL Java_org_proj4_PJ_toString
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
         const char *desc = pj->descr;
-        if (desc) {
-            return (*env)->NewStringUTF(env, desc);
+        if ( desc ) {
+            return ( *env )->NewStringUTF ( env, desc );
         }
     }
     return NULL;
@@ -183,23 +177,22 @@ JNIEXPORT jstring JNICALL Java_org_proj4_PJ_toString
  * \return The CRS type as one of the PJ.Type enum.
  */
 JNIEXPORT jobject JNICALL Java_org_proj4_PJ_getType
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
         const char *type;
-        if (pj_is_latlong(pj)) {
+        if ( pj_is_latlong ( pj ) ) {
             type = "GEOGRAPHIC";
-        } else if (pj_is_geocent(pj)) {
+        } else if ( pj_is_geocent ( pj ) ) {
             type = "GEOCENTRIC";
         } else {
             type = "PROJECTED";
         }
-        jclass c = (*env)->FindClass(env, "org/proj4/PJ$Type");
-        if (c) {
-            jfieldID id = (*env)->GetStaticFieldID(env, c, type, "Lorg/proj4/PJ$Type;");
-            if (id) {
-                return (*env)->GetStaticObjectField(env, c, id);
+        jclass c = ( *env )->FindClass ( env, "org/proj4/PJ$Type" );
+        if ( c ) {
+            jfieldID id = ( *env )->GetStaticFieldID ( env, c, type, "Lorg/proj4/PJ$Type;" );
+            if ( id ) {
+                return ( *env )->GetStaticObjectField ( env, c, id );
             }
         }
     }
@@ -215,9 +208,8 @@ JNIEXPORT jobject JNICALL Java_org_proj4_PJ_getType
  * \return The semi-major axis length.
  */
 JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getSemiMajorAxis
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
     return pj ? pj->a_orig : NAN;
 }
 
@@ -231,12 +223,11 @@ JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getSemiMajorAxis
  * \return The semi-minor axis length.
  */
 JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getSemiMinorAxis
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (!pj) return NAN;
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( !pj ) return NAN;
     double a = pj->a_orig;
-    return sqrt(a*a * (1.0 - pj->es_orig));
+    return sqrt ( a*a * ( 1.0 - pj->es_orig ) );
 }
 
 /*!
@@ -248,9 +239,8 @@ JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getSemiMinorAxis
  * \return The eccentricity.
  */
 JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getEccentricitySquared
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
     return pj ? pj->es_orig : NAN;
 }
 
@@ -263,21 +253,20 @@ JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getEccentricitySquared
  * \return The axis directions.
  */
 JNIEXPORT jcharArray JNICALL Java_org_proj4_PJ_getAxisDirections
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
-        int length = strlen(pj->axis);
-        jcharArray array = (*env)->NewCharArray(env, length);
-        if (array) {
-            jchar* axis = (*env)->GetCharArrayElements(env, array, NULL);
-            if (axis) {
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
+        int length = strlen ( pj->axis );
+        jcharArray array = ( *env )->NewCharArray ( env, length );
+        if ( array ) {
+            jchar* axis = ( *env )->GetCharArrayElements ( env, array, NULL );
+            if ( axis ) {
                 /* Don't use memcp because the type may not be the same. */
                 int i;
-                for (i=0; i<length; i++) {
+                for ( i=0; i<length; i++ ) {
                     axis[i] = pj->axis[i];
                 }
-                (*env)->ReleaseCharArrayElements(env, array, axis, 0);
+                ( *env )->ReleaseCharArrayElements ( env, array, axis, 0 );
             }
             return array;
         }
@@ -294,10 +283,9 @@ JNIEXPORT jcharArray JNICALL Java_org_proj4_PJ_getAxisDirections
  * \return The prime meridian longitude, in degrees.
  */
 JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getGreenwichLongitude
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    return (pj) ? (pj->from_greenwich)*(180/M_PI) : NAN;
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    return ( pj ) ? ( pj->from_greenwich ) * ( 180/M_PI ) : NAN;
 }
 
 /*!
@@ -310,11 +298,10 @@ JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getGreenwichLongitude
  * \return The conversion factor to metres.
  */
 JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getLinearUnitToMetre
-  (JNIEnv *env, jobject object, jboolean vertical)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
-        return (vertical) ? pj->vto_meter : pj->to_meter;
+( JNIEnv *env, jobject object, jboolean vertical ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
+        return ( vertical ) ? pj->vto_meter : pj->to_meter;
     }
     return NAN;
 }
@@ -330,12 +317,12 @@ JNIEXPORT jdouble JNICALL Java_org_proj4_PJ_getLinearUnitToMetre
  * \param dimension - Dimension of points in the coordinate array.
  * \param factor    - The scale factor to apply: M_PI/180 for inputs or 180/M_PI for outputs.
  */
-void convertAngularOrdinates(PJ *pj, double* data, jint numPts, int dimension, double factor) {
+void convertAngularOrdinates ( PJ *pj, double* data, jint numPts, int dimension, double factor ) {
     int dimToSkip;
-    if (pj_is_latlong(pj)) {
+    if ( pj_is_latlong ( pj ) ) {
         /* Convert only the 2 first ordinates and skip all the other dimensions. */
         dimToSkip = dimension - 2;
-    } else if (pj_is_geocent(pj)) {
+    } else if ( pj_is_geocent ( pj ) ) {
         /* Convert only the 3 first ordinates and skip all the other dimensions. */
         dimToSkip = dimension - 3;
     } else {
@@ -343,15 +330,15 @@ void convertAngularOrdinates(PJ *pj, double* data, jint numPts, int dimension, d
         return;
     }
     double *stop = data + dimension*numPts;
-    if (dimToSkip > 0) {
-        while (data != stop) {
-            (*data++) *= factor;
-            (*data++) *= factor;
+    if ( dimToSkip > 0 ) {
+        while ( data != stop ) {
+            ( *data++ ) *= factor;
+            ( *data++ ) *= factor;
             data += dimToSkip;
         }
     } else {
-        while (data != stop) {
-            (*data++) *= factor;
+        while ( data != stop ) {
+            ( *data++ ) *= factor;
         }
     }
 }
@@ -369,43 +356,42 @@ void convertAngularOrdinates(PJ *pj, double* data, jint numPts, int dimension, d
  * \param numPts      - Number of points to transform.
  */
 JNIEXPORT void JNICALL Java_org_proj4_PJ_transform
-  (JNIEnv *env, jobject object, jobject target, jint dimension, jdoubleArray coordinates, jint offset, jint numPts)
-{
-    if (!target || !coordinates) {
-        jclass c = (*env)->FindClass(env, "java/lang/NullPointerException");
-        if (c) (*env)->ThrowNew(env, c, "The target CRS and the coordinates array can not be null.");
+( JNIEnv *env, jobject object, jobject target, jint dimension, jdoubleArray coordinates, jint offset, jint numPts ) {
+    if ( !target || !coordinates ) {
+        jclass c = ( *env )->FindClass ( env, "java/lang/NullPointerException" );
+        if ( c ) ( *env )->ThrowNew ( env, c, "The target CRS and the coordinates array can not be null." );
         return;
     }
-    if (dimension < 2 || dimension > PJ_MAX_DIMENSION) { /* Arbitrary upper value for catching potential misuse. */
-        jclass c = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
-        if (c) (*env)->ThrowNew(env, c, "Illegal dimension. Must be in the [2-100] range.");
+    if ( dimension < 2 || dimension > PJ_MAX_DIMENSION ) { /* Arbitrary upper value for catching potential misuse. */
+        jclass c = ( *env )->FindClass ( env, "java/lang/IllegalArgumentException" );
+        if ( c ) ( *env )->ThrowNew ( env, c, "Illegal dimension. Must be in the [2-100] range." );
         return;
     }
-    if ((offset < 0) || (numPts < 0) || (offset + dimension*numPts) > (*env)->GetArrayLength(env, coordinates)) {
-        jclass c = (*env)->FindClass(env, "java/lang/ArrayIndexOutOfBoundsException");
-        if (c) (*env)->ThrowNew(env, c, "Illegal offset or illegal number of points.");
+    if ( ( offset < 0 ) || ( numPts < 0 ) || ( offset + dimension*numPts ) > ( *env )->GetArrayLength ( env, coordinates ) ) {
+        jclass c = ( *env )->FindClass ( env, "java/lang/ArrayIndexOutOfBoundsException" );
+        if ( c ) ( *env )->ThrowNew ( env, c, "Illegal offset or illegal number of points." );
         return;
     }
-    PJ *src_pj = getPJ(env, object);
-    PJ *dst_pj = getPJ(env, target);
-    if (src_pj && dst_pj) {
+    PJ *src_pj = getPJ ( env, object );
+    PJ *dst_pj = getPJ ( env, target );
+    if ( src_pj && dst_pj ) {
         /* Using GetPrimitiveArrayCritical/ReleasePrimitiveArrayCritical rather than
            GetDoubleArrayElements/ReleaseDoubleArrayElements increase the chances that
            the JVM returns direct reference to its internal array without copying data.
            However we must promise to run the "critical" code fast, to not make any
            system call that may wait for the JVM and to not invoke any other JNI method. */
-        double *data = (*env)->GetPrimitiveArrayCritical(env, coordinates, NULL);
-        if (data) {
+        double *data = ( *env )->GetPrimitiveArrayCritical ( env, coordinates, NULL );
+        if ( data ) {
             double *x = data + offset;
             double *y = x + 1;
-            double *z = (dimension >= 3) ? y+1 : NULL;
-            convertAngularOrdinates(src_pj, x, numPts, dimension, M_PI/180);
-            int err = pj_transform(src_pj, dst_pj, numPts, dimension, x, y, z);
-            convertAngularOrdinates(dst_pj, x, numPts, dimension, 180/M_PI);
-            (*env)->ReleasePrimitiveArrayCritical(env, coordinates, data, 0);
-            if (err) {
-                jclass c = (*env)->FindClass(env, "org/proj4/PJException");
-                if (c) (*env)->ThrowNew(env, c, pj_strerrno(err));
+            double *z = ( dimension >= 3 ) ? y+1 : NULL;
+            convertAngularOrdinates ( src_pj, x, numPts, dimension, M_PI/180 );
+            int err = pj_transform ( src_pj, dst_pj, numPts, dimension, x, y, z );
+            convertAngularOrdinates ( dst_pj, x, numPts, dimension, 180/M_PI );
+            ( *env )->ReleasePrimitiveArrayCritical ( env, coordinates, data, 0 );
+            if ( err ) {
+                jclass c = ( *env )->FindClass ( env, "org/proj4/PJException" );
+                if ( c ) ( *env )->ThrowNew ( env, c, pj_strerrno ( err ) );
             }
         }
     }
@@ -420,13 +406,12 @@ JNIEXPORT void JNICALL Java_org_proj4_PJ_transform
  * \return The last error, or NULL.
  */
 JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getLastError
-  (JNIEnv *env, jobject object)
-{
-    PJ *pj = getPJ(env, object);
-    if (pj) {
-        int err = pj_ctx_get_errno(pj->ctx);
-        if (err) {
-            return (*env)->NewStringUTF(env, pj_strerrno(err));
+( JNIEnv *env, jobject object ) {
+    PJ *pj = getPJ ( env, object );
+    if ( pj ) {
+        int err = pj_ctx_get_errno ( pj->ctx );
+        if ( err ) {
+            return ( *env )->NewStringUTF ( env, pj_strerrno ( err ) );
         }
     }
     return NULL;
@@ -445,14 +430,13 @@ JNIEXPORT jstring JNICALL Java_org_proj4_PJ_getLastError
  * \param object - The Java object wrapping the PJ structure (not allowed to be NULL).
  */
 JNIEXPORT void JNICALL Java_org_proj4_PJ_finalize
-  (JNIEnv *env, jobject object)
-{
-    jfieldID id = (*env)->GetFieldID(env, (*env)->GetObjectClass(env, object), PJ_FIELD_NAME, PJ_FIELD_TYPE);
-    if (id) {
-        PJ *pj = (PJ*) (*env)->GetLongField(env, object, id);
-        if (pj) {
-            (*env)->SetLongField(env, object, id, (jlong) 0);
-            pj_free(pj);
+( JNIEnv *env, jobject object ) {
+    jfieldID id = ( *env )->GetFieldID ( env, ( *env )->GetObjectClass ( env, object ), PJ_FIELD_NAME, PJ_FIELD_TYPE );
+    if ( id ) {
+        PJ *pj = ( PJ* ) ( *env )->GetLongField ( env, object, id );
+        if ( pj ) {
+            ( *env )->SetLongField ( env, object, id, ( jlong ) 0 );
+            pj_free ( pj );
         }
     }
 }
@@ -506,30 +490,29 @@ JNIEXPORT void JNICALL Java_org_proj4_PJ_finalize
  * \param poffset
 */
 JNIEXPORT void JNICALL Java_org_proj4_Projections_transform
-  (JNIEnv * env, jobject parent, jdoubleArray firstcoord, jdoubleArray secondcoord, jdoubleArray values, jstring src, jstring dest, jlong pcount, jint poffset)
-{
-	int i;
-	projPJ src_pj, dst_pj;
-	char * srcproj_def = (char *) (*env)->GetStringUTFChars (env, src, 0);
-	char * destproj_def = (char *) (*env)->GetStringUTFChars (env, dest, 0);
+( JNIEnv * env, jobject parent, jdoubleArray firstcoord, jdoubleArray secondcoord, jdoubleArray values, jstring src, jstring dest, jlong pcount, jint poffset ) {
+    int i;
+    projPJ src_pj, dst_pj;
+    char * srcproj_def = ( char * ) ( *env )->GetStringUTFChars ( env, src, 0 );
+    char * destproj_def = ( char * ) ( *env )->GetStringUTFChars ( env, dest, 0 );
 
-	if (!(src_pj = pj_init_plus(srcproj_def)))
-		exit(1);
-	if (!(dst_pj = pj_init_plus(destproj_def)))
-		exit(1);
+    if ( ! ( src_pj = pj_init_plus ( srcproj_def ) ) )
+        exit ( 1 );
+    if ( ! ( dst_pj = pj_init_plus ( destproj_def ) ) )
+        exit ( 1 );
 
-	double *xcoord = (* env)-> GetDoubleArrayElements(env, firstcoord, NULL);
-	double *ycoord = (* env) -> GetDoubleArrayElements(env, secondcoord, NULL);
-	double *zcoord = (* env) -> GetDoubleArrayElements(env, values, NULL);
+    double *xcoord = ( * env )-> GetDoubleArrayElements ( env, firstcoord, NULL );
+    double *ycoord = ( * env ) -> GetDoubleArrayElements ( env, secondcoord, NULL );
+    double *zcoord = ( * env ) -> GetDoubleArrayElements ( env, values, NULL );
 
-        pj_transform( src_pj, dst_pj, pcount,poffset, xcoord, ycoord, zcoord);
+    pj_transform ( src_pj, dst_pj, pcount,poffset, xcoord, ycoord, zcoord );
 
-	(* env)->ReleaseDoubleArrayElements(env,firstcoord,(jdouble *) xcoord, 0);
-	(* env)->ReleaseDoubleArrayElements(env,secondcoord,(jdouble *) ycoord, 0);
-	(* env)->ReleaseDoubleArrayElements(env,values,(jdouble *) zcoord, 0);
+    ( * env )->ReleaseDoubleArrayElements ( env,firstcoord, ( jdouble * ) xcoord, 0 );
+    ( * env )->ReleaseDoubleArrayElements ( env,secondcoord, ( jdouble * ) ycoord, 0 );
+    ( * env )->ReleaseDoubleArrayElements ( env,values, ( jdouble * ) zcoord, 0 );
 
-	pj_free( src_pj );
-	pj_free( dst_pj );
+    pj_free ( src_pj );
+    pj_free ( dst_pj );
 }
 
 /*!
@@ -547,23 +530,22 @@ JNIEXPORT void JNICALL Java_org_proj4_Projections_transform
  * \param projdefinition - definition of the projection
 */
 JNIEXPORT jstring JNICALL Java_org_proj4_Projections_getProjInfo
-  (JNIEnv * env, jobject parent, jstring projdefinition)
-{
-	PJ *pj;
-	char * pjdesc;
-	char info[arraysize];
+( JNIEnv * env, jobject parent, jstring projdefinition ) {
+    PJ *pj;
+    char * pjdesc;
+    char info[arraysize];
 
-	char * proj_def = (char *) (*env)->GetStringUTFChars (env, projdefinition, 0);
+    char * proj_def = ( char * ) ( *env )->GetStringUTFChars ( env, projdefinition, 0 );
 
-	if (!(pj = pj_init_plus(proj_def)))
-		exit(1);
+    if ( ! ( pj = pj_init_plus ( proj_def ) ) )
+        exit ( 1 );
 
-	/* put together all the info of the projection and free the pointer to pjdesc */
-	pjdesc = pj_get_def(pj, 0);
-	strcpy(info,pjdesc);
-	pj_dalloc(pjdesc);
+    /* put together all the info of the projection and free the pointer to pjdesc */
+    pjdesc = pj_get_def ( pj, 0 );
+    strcpy ( info,pjdesc );
+    pj_dalloc ( pjdesc );
 
-	return (*env)->NewStringUTF(env,info);
+    return ( *env )->NewStringUTF ( env,info );
 }
 
 
@@ -582,50 +564,49 @@ JNIEXPORT jstring JNICALL Java_org_proj4_Projections_getProjInfo
  * \param projdefinition - definition of the projection
 */
 JNIEXPORT jstring JNICALL Java_org_proj4_Projections_getEllipsInfo
-  (JNIEnv * env, jobject parent, jstring projdefinition)
-{
-	PJ *pj;
-	char * pjdesc;
-	char ellipseinfo[arraysize];
-	char temp[50];
+( JNIEnv * env, jobject parent, jstring projdefinition ) {
+    PJ *pj;
+    char * pjdesc;
+    char ellipseinfo[arraysize];
+    char temp[50];
 
-	char * proj_def = (char *) (*env)->GetStringUTFChars (env, projdefinition, 0);
+    char * proj_def = ( char * ) ( *env )->GetStringUTFChars ( env, projdefinition, 0 );
 
-	if (!(pj = pj_init_plus(proj_def)))
-		exit(1);
+    if ( ! ( pj = pj_init_plus ( proj_def ) ) )
+        exit ( 1 );
 
-	/* put together all the info of the ellipsoid  */
-/* 	sprintf(temp,"name: %s;", pj->descr); */
-	sprintf(temp,"name: not available;");
-	strcpy(ellipseinfo,temp);
-	sprintf(temp,"a: %lf;", pj->a);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"e: %lf;", pj->e);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"es: %lf;", pj->es);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"ra: %lf;", pj->ra);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"one_es: %lf;", pj->one_es);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"rone_es: %lf;", pj->rone_es);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"lam0: %lf;", pj->lam0);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"phi0: %lf;", pj->phi0);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"x0: %lf;", pj->x0);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"y0: %lf;", pj->y0);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"k0: %lf;", pj->k0);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"to_meter: %lf;", pj->to_meter);
-	strcat(ellipseinfo,temp);
-	sprintf(temp,"fr_meter: %lf;", pj->fr_meter);
-	strcat(ellipseinfo,temp);
+    /* put together all the info of the ellipsoid  */
+    /* 	sprintf(temp,"name: %s;", pj->descr); */
+    sprintf ( temp,"name: not available;" );
+    strcpy ( ellipseinfo,temp );
+    sprintf ( temp,"a: %lf;", pj->a );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"e: %lf;", pj->e );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"es: %lf;", pj->es );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"ra: %lf;", pj->ra );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"one_es: %lf;", pj->one_es );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"rone_es: %lf;", pj->rone_es );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"lam0: %lf;", pj->lam0 );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"phi0: %lf;", pj->phi0 );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"x0: %lf;", pj->x0 );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"y0: %lf;", pj->y0 );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"k0: %lf;", pj->k0 );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"to_meter: %lf;", pj->to_meter );
+    strcat ( ellipseinfo,temp );
+    sprintf ( temp,"fr_meter: %lf;", pj->fr_meter );
+    strcat ( ellipseinfo,temp );
 
-	return (*env)->NewStringUTF(env,ellipseinfo);
+    return ( *env )->NewStringUTF ( env,ellipseinfo );
 }
 
 #endif

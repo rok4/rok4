@@ -23,81 +23,79 @@ class XmlOutputter;
 
 /*! \brief Manges TestPlugIn.
  */
-class CPPUNIT_API PlugInManager
-{
+class CPPUNIT_API PlugInManager {
 public:
-  /*! Constructs a PlugInManager object.
-   */
-  PlugInManager();
+    /*! Constructs a PlugInManager object.
+     */
+    PlugInManager();
 
-  /// Destructor.
-  virtual ~PlugInManager();
+    /// Destructor.
+    virtual ~PlugInManager();
 
-  /*! \brief Loads the specified plug-in.
-   *
-   * After being loaded, the CppUnitTestPlugIn::initialize() is called.
-   *
-   * \param libraryFileName Name of the file that contains the TestPlugIn.
-   * \param parameters List of string passed to the plug-in.
-   * \return Pointer on the DynamicLibraryManager associated to the library.
-   *         Valid until the library is unloaded. Never \c NULL.
-   * \exception DynamicLibraryManagerException is thrown if an error occurs during loading.
-   */
-  void load( const std::string &libraryFileName,
-             const PlugInParameters &parameters = PlugInParameters() );
+    /*! \brief Loads the specified plug-in.
+     *
+     * After being loaded, the CppUnitTestPlugIn::initialize() is called.
+     *
+     * \param libraryFileName Name of the file that contains the TestPlugIn.
+     * \param parameters List of string passed to the plug-in.
+     * \return Pointer on the DynamicLibraryManager associated to the library.
+     *         Valid until the library is unloaded. Never \c NULL.
+     * \exception DynamicLibraryManagerException is thrown if an error occurs during loading.
+     */
+    void load ( const std::string &libraryFileName,
+                const PlugInParameters &parameters = PlugInParameters() );
 
-  /*! \brief Unloads the specified plug-in.
-   * \param libraryFileName Name of the file that contains the TestPlugIn passed
-   *                        to a previous call to load().
-   */
-  void unload( const std::string &libraryFileName );
+    /*! \brief Unloads the specified plug-in.
+     * \param libraryFileName Name of the file that contains the TestPlugIn passed
+     *                        to a previous call to load().
+     */
+    void unload ( const std::string &libraryFileName );
 
-  /*! \brief Gives a chance to each loaded plug-in to register TestListener.
-   *
-   * For each plug-in, call CppUnitTestPlugIn::addListener().
-   */
-  void addListener( TestResult *eventManager );
+    /*! \brief Gives a chance to each loaded plug-in to register TestListener.
+     *
+     * For each plug-in, call CppUnitTestPlugIn::addListener().
+     */
+    void addListener ( TestResult *eventManager );
 
-  /*! \brief Gives a chance to each loaded plug-in to unregister TestListener.
-   * For each plug-in, call CppUnitTestPlugIn::removeListener().
-   */
-  void removeListener( TestResult *eventManager );
+    /*! \brief Gives a chance to each loaded plug-in to unregister TestListener.
+     * For each plug-in, call CppUnitTestPlugIn::removeListener().
+     */
+    void removeListener ( TestResult *eventManager );
 
-  /*! \brief Provides a way for the plug-in to register some XmlOutputterHook.
-   */
-  void addXmlOutputterHooks( XmlOutputter *outputter );
+    /*! \brief Provides a way for the plug-in to register some XmlOutputterHook.
+     */
+    void addXmlOutputterHooks ( XmlOutputter *outputter );
 
-  /*! \brief Called when the XmlOutputter is destroyed.
-   * 
-   * Can be used to free some resources allocated by addXmlOutputterHooks().
-   */
-  void removeXmlOutputterHooks();
+    /*! \brief Called when the XmlOutputter is destroyed.
+     *
+     * Can be used to free some resources allocated by addXmlOutputterHooks().
+     */
+    void removeXmlOutputterHooks();
 
 protected:
-  /*! \brief (INTERNAL) Information about a specific plug-in.
-   */
-  struct PlugInInfo
-  {
-    std::string m_fileName;
-    DynamicLibraryManager *m_manager;
-    CppUnitTestPlugIn *m_interface;
-  };
+    /*! \brief (INTERNAL) Information about a specific plug-in.
+     */
+    struct PlugInInfo {
+        std::string m_fileName;
+        DynamicLibraryManager *m_manager;
+        CppUnitTestPlugIn *m_interface;
+    };
 
-  /*! Unloads the specified plug-in.
-   * \param plugIn Information about the plug-in.
-   */
-  void unload( PlugInInfo &plugIn );
-
-private:
-  /// Prevents the use of the copy constructor.
-  PlugInManager( const PlugInManager &copy );
-
-  /// Prevents the use of the copy operator.
-  void operator =( const PlugInManager &copy );
+    /*! Unloads the specified plug-in.
+     * \param plugIn Information about the plug-in.
+     */
+    void unload ( PlugInInfo &plugIn );
 
 private:
-  typedef CppUnitDeque<PlugInInfo> PlugIns;
-  PlugIns m_plugIns;
+    /// Prevents the use of the copy constructor.
+    PlugInManager ( const PlugInManager &copy );
+
+    /// Prevents the use of the copy operator.
+    void operator = ( const PlugInManager &copy );
+
+private:
+    typedef CppUnitDeque<PlugInInfo> PlugIns;
+    PlugIns m_plugIns;
 };
 
 

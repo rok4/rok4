@@ -4,7 +4,7 @@
 #include "BoardGame.h"
 
 class Chess: public BoardGame {
-  public:
+public:
     virtual int getNumberOfPieces() const;
 };
 

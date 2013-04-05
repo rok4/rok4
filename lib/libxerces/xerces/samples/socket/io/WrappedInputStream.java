@@ -1,12 +1,12 @@
 /*
  * Copyright 2000,2004 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,7 @@ public class WrappedInputStream
     /** Bytes left on input stream for current packet. */
     protected int fPacketCount;
 
-    /** 
+    /**
      * Data input stream. This stream is used to input the block sizes
      * from the data stream that are written by the WrappedOutputStream.
      * <p>
@@ -63,9 +63,9 @@ public class WrappedInputStream
     //
 
     /** Constructs a wrapper for the given an input stream. */
-    public WrappedInputStream(InputStream stream) {
-        super(stream);
-        fDataInputStream = new DataInputStream(stream);
+    public WrappedInputStream ( InputStream stream ) {
+        super ( stream );
+        fDataInputStream = new DataInputStream ( stream );
     } // <init>(InputStream)
 
     //
@@ -76,14 +76,14 @@ public class WrappedInputStream
     public int read() throws IOException {
 
         // ignore, if already closed
-        if (fClosed) {
+        if ( fClosed ) {
             return -1;
         }
 
         // read packet header
-        if (fPacketCount == 0) {
+        if ( fPacketCount == 0 ) {
             fPacketCount = fDataInputStream.readInt() & 0x7FFFFFFF;
-            if (fPacketCount == 0) {
+            if ( fPacketCount == 0 ) {
                 fClosed = true;
                 return -1;
             }
@@ -95,33 +95,33 @@ public class WrappedInputStream
 
     } // read():int
 
-    /** 
-     * Reads a block of bytes and returns the total number of bytes read. 
+    /**
+     * Reads a block of bytes and returns the total number of bytes read.
      */
-    public int read(byte[] b, int offset, int length) throws IOException {
+    public int read ( byte[] b, int offset, int length ) throws IOException {
 
         // ignore, if already closed
-        if (fClosed) {
+        if ( fClosed ) {
             return -1;
         }
 
         // read packet header
-        if (fPacketCount == 0) {
+        if ( fPacketCount == 0 ) {
             fPacketCount = fDataInputStream.readInt() & 0x7FFFFFFF;
-            if (fPacketCount == 0) {
+            if ( fPacketCount == 0 ) {
                 fClosed = true;
                 return -1;
             }
         }
 
         // read bytes from packet
-        if (length > fPacketCount) {
+        if ( length > fPacketCount ) {
             length = fPacketCount;
         }
-        int count = super.in.read(b, offset, length);
-        if (count == -1) {
-            // NOTE: This condition should not happen. The end of 
-            //       the stream should always be designated by a 
+        int count = super.in.read ( b, offset, length );
+        if ( count == -1 ) {
+            // NOTE: This condition should not happen. The end of
+            //       the stream should always be designated by a
             //       byte count header of 0. -Ac
             fClosed = true;
             return -1;
@@ -134,12 +134,12 @@ public class WrappedInputStream
     } // read(byte[],int,int):int
 
     /** Skips the specified number of bytes from the input stream. */
-    public long skip(long n) throws IOException {
-        if (!fClosed) {
+    public long skip ( long n ) throws IOException {
+        if ( !fClosed ) {
             // NOTE: This should be rewritten to be more efficient. -Ac
-            for (long i = 0; i < n; i++) {
+            for ( long i = 0; i < n; i++ ) {
                 int b = read();
-                if (b == -1) {
+                if ( b == -1 ) {
                     return i + 1;
                 }
             }
@@ -148,7 +148,7 @@ public class WrappedInputStream
         return 0;
     } // skip(long):long
 
-    /** 
+    /**
      * Closes the input stream. This method will search for the end of
      * the wrapped input, positioning the stream at after the end packet.
      * <p>
@@ -156,12 +156,12 @@ public class WrappedInputStream
      * input stream.
      */
     public void close() throws IOException {
-        if (!fClosed) {
+        if ( !fClosed ) {
             fClosed = true;
             do {
-                super.in.skip(fPacketCount);
+                super.in.skip ( fPacketCount );
                 fPacketCount = fDataInputStream.readInt() & 0x7FFFFFFF;
-            } while (fPacketCount > 0);
+            } while ( fPacketCount > 0 );
         }
     } // close()
 

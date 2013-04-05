@@ -74,12 +74,12 @@ class cdxCDynamicWnd;
  *    (Uwe Keim)
  * B) Design issue: AddSzControl() with bRepos == true didn't used
  *    DoMoveCtrl() as it would supposed to be.
- *    (Hans Bühler, concerning an issue of Roberto del Noce.
+ *    (Hans Bï¿½hler, concerning an issue of Roberto del Noce.
  * C) Layout-Algorithm little changed:
  *    If you now want to provide extra information by deriving
  *    a class from cdxCDynamicLayoutInfo, you no longer overwrite Layout()
  *    but DoCreateLayoutInfo().
- *    (Hans Bühler)
+ *    (Hans Bï¿½hler)
  * ---------------------------
  * cdxCDynamicWnd beta 1 fix 4
  * ---------------------------
@@ -103,7 +103,7 @@ class cdxCDynamicWnd;
  *    to avoid conflicts with Window's BYTE data type.
  *    (Joshua Jensen)
  * B) Dialogs will be centered and sized to 110% by default.
- *    (Hans Bühler)
+ *    (Hans Bï¿½hler)
  * C) Bug when avoiding flAntiFlicker
  * ---------------------------
  * cdxCDynamicWnd beta 1 fix 1
@@ -123,35 +123,33 @@ class cdxCDynamicWnd;
  * to your own DoMoveCtrl() function (if you have one).
  */
 
-class cdxCDynamicLayoutInfo : public CObject
-{
-	DECLARE_DYNAMIC(cdxCDynamicLayoutInfo);
+class cdxCDynamicLayoutInfo : public CObject {
+    DECLARE_DYNAMIC ( cdxCDynamicLayoutInfo );
 
 public:
-	CSize		m_szCurrent,			// current client size
-				m_szInitial,			// initial client size
-				m_szDelta;				// current - initial
-	UINT		m_nCtrlCnt;				// number of controls (>=0)
-	CPoint	m_pntScrollPos;		// current scrolling position
-	bool		m_bUseScrollPos;		// use scroll pos if m_szDelta < 0
+    CSize		m_szCurrent,			// current client size
+                m_szInitial,			// initial client size
+                m_szDelta;				// current - initial
+    UINT		m_nCtrlCnt;				// number of controls (>=0)
+    CPoint	m_pntScrollPos;		// current scrolling position
+    bool		m_bUseScrollPos;		// use scroll pos if m_szDelta < 0
 
 public:
-	cdxCDynamicLayoutInfo() : m_bUseScrollPos(false) 
-        {
-        }
+    cdxCDynamicLayoutInfo() : m_bUseScrollPos ( false ) {
+    }
 
-	cdxCDynamicLayoutInfo(cdxCDynamicWnd *pWnd) : m_bUseScrollPos(false) 
-        { 
-          operator=(pWnd); 
-        }
+    cdxCDynamicLayoutInfo ( cdxCDynamicWnd *pWnd ) : m_bUseScrollPos ( false ) {
+        operator= ( pWnd );
+    }
 
-	virtual ~cdxCDynamicLayoutInfo() 
-        {
-        }
+    virtual ~cdxCDynamicLayoutInfo() {
+    }
 
-	bool operator=(cdxCDynamicWnd *pWnd);
+    bool operator= ( cdxCDynamicWnd *pWnd );
 
-	bool IsInitial() const { return !m_szDelta.cx && !m_szDelta.cy && (!m_bUseScrollPos || (!m_pntScrollPos.x && !m_pntScrollPos.y)); }
+    bool IsInitial() const {
+        return !m_szDelta.cx && !m_szDelta.cy && ( !m_bUseScrollPos || ( !m_pntScrollPos.x && !m_pntScrollPos.y ) );
+    }
 };
 
 /*
@@ -160,266 +158,329 @@ public:
  * The dynamic window manager.
  */
 
-class cdxCDynamicWnd
-{
+class cdxCDynamicWnd {
 public:
-	// add sz control mode types
+    // add sz control mode types
 
-	enum Mode		// flags for AddSzControl()
-	{
-		mdNone			=	0,					// does nothing
-		mdResize			=	1,					// resize in that dimension
-		mdRepos			=	2,					// reposition
-		mdRelative		=	3,					// center (size by delta/2 and repos by delta/2)
-	};
+    enum Mode {	// flags for AddSzControl()
+        mdNone			=	0,					// does nothing
+        mdResize			=	1,					// resize in that dimension
+        mdRepos			=	2,					// reposition
+        mdRelative		=	3,					// center (size by delta/2 and repos by delta/2)
+    };
 
-	// freedom
+    // freedom
 
-	enum Freedom
-	{
-		fdNone			=	0,					// might be used but I don't imagine what you want from this ??
-		fdHoriz			=	0x01,				// horizantally sizable only
-		fdVert			=	0x02,				// vertically sizable only
-		fdAll				=	fdHoriz|fdVert,// sizable in all directions
+    enum Freedom {
+        fdNone			=	0,					// might be used but I don't imagine what you want from this ??
+        fdHoriz			=	0x01,				// horizantally sizable only
+        fdVert			=	0x02,				// vertically sizable only
+        fdAll				=	fdHoriz|fdVert,// sizable in all directions
 
-		fdHorz			=	fdHoriz,			// synonyms
-		fdX				=	fdHoriz,
-		fdY				=	fdVert
-	};
+        fdHorz			=	fdHoriz,			// synonyms
+        fdX				=	fdHoriz,
+        fdY				=	fdVert
+    };
 
-	// some flags
+    // some flags
 
-	enum Flags
-	{
-		flSizeIcon		=	0x01,				// create size icon
-		flAntiFlicker	=	0x02,				// some utility func
-		flSWPCopyBits	=	0x04,				// make SetWindowPos() don't use SWP_NOCOPYBITS. This may lead
-													// into improper results for SOME child controls but speeds up redrawing (less flickering)
+    enum Flags {
+        flSizeIcon		=	0x01,				// create size icon
+        flAntiFlicker	=	0x02,				// some utility func
+        flSWPCopyBits	=	0x04,				// make SetWindowPos() don't use SWP_NOCOPYBITS. This may lead
+        // into improper results for SOME child controls but speeds up redrawing (less flickering)
 
-		_fl_reserved_	=	0x0000ffff,		// reserved
-		_fl_freeuse_	=	0xffff0000		// free 4 u
-	};
+        _fl_reserved_	=	0x0000ffff,		// reserved
+        _fl_freeuse_	=	0xffff0000		// free 4 u
+    };
 
-	// some constants
+    // some constants
 
-	enum
-	{
-		DEFAULT_TIMER_ID	=	0x7164
-	};
+    enum {
+        DEFAULT_TIMER_ID	=	0x7164
+    };
 
-	// byte percentage
+    // byte percentage
 
-	enum { X1=0, Y1=1, X2=2, Y2=3 };
+    enum { X1=0, Y1=1, X2=2, Y2=3 };
 
-	typedef signed char	SBYTE;
-	typedef SBYTE			SBYTES[4];
+    typedef signed char	SBYTE;
+    typedef SBYTE			SBYTES[4];
 
-	// some internal data; might be of any interest for you
+    // some internal data; might be of any interest for you
 
-	class Position : public CRect
-	{
-	public:
+    class Position : public CRect {
+    public:
 
-	public:
-		SBYTES		m_Bytes;
-		CSize			m_szMin;
+    public:
+        SBYTES		m_Bytes;
+        CSize			m_szMin;
 
-	public:
-		Position() : CRect(0,0,0,0) {}
-		Position(const CRect & rect, const SBYTES & bytes, const CSize & szMin = M_szNull) : CRect(rect), m_szMin(szMin) { operator=(bytes); }
-		~Position() {}
+    public:
+        Position() : CRect ( 0,0,0,0 ) {}
+        Position ( const CRect & rect, const SBYTES & bytes, const CSize & szMin = M_szNull ) : CRect ( rect ), m_szMin ( szMin ) {
+            operator= ( bytes );
+        }
+        ~Position() {}
 
-		void operator=(const CRect & rectInitial) { *this = rectInitial; }
-		void operator=(const SBYTES & bytes) { for(int i=0; i<4; ++i) m_Bytes[i] = bytes[i]; }
-		void operator=(const CSize & szMin) { m_szMin = szMin; }
+        void operator= ( const CRect & rectInitial ) {
+            *this = rectInitial;
+        }
+        void operator= ( const SBYTES & bytes ) {
+            for ( int i=0; i<4; ++i ) m_Bytes[i] = bytes[i];
+        }
+        void operator= ( const CSize & szMin ) {
+            m_szMin = szMin;
+        }
 
-		void Apply(HWND hwnd, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li) const;
-	};
+        void Apply ( HWND hwnd, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li ) const;
+    };
 
 private:
-	CWnd						*m_pWnd;				// the parent window
-	cdxCSizeIconCtrl		*m_pSizeIcon;		// size icon (if wanted)
-	bool						m_bIsAntiFlickering;
+    CWnd						*m_pWnd;				// the parent window
+    cdxCSizeIconCtrl		*m_pSizeIcon;		// size icon (if wanted)
+    bool						m_bIsAntiFlickering;
 
 protected:
-	int						m_iDisabled;		// disabled counter
-	DWORD						m_dwClassStyle;	// stored for AntiFlickering feature
-	CMap<HWND,HWND,Position,const Position &>
-								m_Map;				// controllers
+    int						m_iDisabled;		// disabled counter
+    DWORD						m_dwClassStyle;	// stored for AntiFlickering feature
+    CMap<HWND,HWND,Position,const Position &>
+    m_Map;				// controllers
 
 public:
-	Freedom					m_Freedom;			// in which direction may we modify the window's size ?
-	UINT						m_nFlags;
-	CSize						m_szInitial;		// initial client size
-	CSize						m_szMin,				// min/max CLIENT size (set to zero to disable)
-								m_szMax;
-	UINT						m_idSizeIcon;		// id of size icon (default to AFX_IDW_SIZE_BOX)
-	UINT						m_nMyTimerID;		// id of the timer used by me
-	bool						m_bUseScrollPos;	// use scroll position when moving controls
+    Freedom					m_Freedom;			// in which direction may we modify the window's size ?
+    UINT						m_nFlags;
+    CSize						m_szInitial;		// initial client size
+    CSize						m_szMin,				// min/max CLIENT size (set to zero to disable)
+                                m_szMax;
+    UINT						m_idSizeIcon;		// id of size icon (default to AFX_IDW_SIZE_BOX)
+    UINT						m_nMyTimerID;		// id of the timer used by me
+    bool						m_bUseScrollPos;	// use scroll position when moving controls
 
 public:
-	cdxCDynamicWnd(Freedom fd, UINT nFlags);
-	virtual ~cdxCDynamicWnd() { DoOnDestroy(); }
+    cdxCDynamicWnd ( Freedom fd, UINT nFlags );
+    virtual ~cdxCDynamicWnd() {
+        DoOnDestroy();
+    }
 
-	//
-	// status
-	//
+    //
+    // status
+    //
 
-	bool IsValid() const { return m_pWnd != NULL; }
-	bool IsWindow() const { return IsValid() && ::IsWindow(m_pWnd->m_hWnd); }
-	bool IsUp() const { return IsWindow() && !m_pWnd->IsIconic(); }
-	bool IsDisabled() const { return m_iDisabled > 0; }
-	CWnd *Window() const { return m_pWnd; }
+    bool IsValid() const {
+        return m_pWnd != NULL;
+    }
+    bool IsWindow() const {
+        return IsValid() && ::IsWindow ( m_pWnd->m_hWnd );
+    }
+    bool IsUp() const {
+        return IsWindow() && !m_pWnd->IsIconic();
+    }
+    bool IsDisabled() const {
+        return m_iDisabled > 0;
+    }
+    CWnd *Window() const {
+        return m_pWnd;
+    }
 
-	virtual UINT GetCtrlCount() const { return m_Map.GetCount(); }
+    virtual UINT GetCtrlCount() const {
+        return m_Map.GetCount();
+    }
 
-	//
-	// basics
-	//
+    //
+    // basics
+    //
 
-	bool Enable() { return --m_iDisabled <= 0; }
-	void Disable() { ++m_iDisabled; }
-	UINT ModifyFlags(UINT nAdd, UINT nRem = 0) { UINT n = m_nFlags; m_nFlags &= ~nRem; m_nFlags |= nAdd; return n; }
-	UINT GetFlags() const { return m_nFlags; }
+    bool Enable() {
+        return --m_iDisabled <= 0;
+    }
+    void Disable() {
+        ++m_iDisabled;
+    }
+    UINT ModifyFlags ( UINT nAdd, UINT nRem = 0 ) {
+        UINT n = m_nFlags;
+        m_nFlags &= ~nRem;
+        m_nFlags |= nAdd;
+        return n;
+    }
+    UINT GetFlags() const {
+        return m_nFlags;
+    }
 
-	//
-	// client size stuff
-	//
+    //
+    // client size stuff
+    //
 
-	virtual CSize GetCurrentClientSize() const;
-	CSize GetBorderSize() const;
+    virtual CSize GetCurrentClientSize() const;
+    CSize GetBorderSize() const;
 
-	//
-	// AddSzControl for HWNDs
-	//
+    //
+    // AddSzControl for HWNDs
+    //
 
-	bool AddSzXControl(HWND hwnd, SBYTE x1, SBYTE x2, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(hwnd,x1,0,x2,0,szMin,bReposNow); }
-	bool AddSzXControl(HWND hwnd, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(hwnd,md,mdNone,szMin,bReposNow); }
-	bool AddSzYControl(HWND hwnd, SBYTE y1, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(hwnd,0,y1,0,y2,szMin,bReposNow); }
-	bool AddSzYControl(HWND hwnd, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(hwnd,mdNone,md,szMin,bReposNow); }
+    bool AddSzXControl ( HWND hwnd, SBYTE x1, SBYTE x2, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( hwnd,x1,0,x2,0,szMin,bReposNow );
+    }
+    bool AddSzXControl ( HWND hwnd, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( hwnd,md,mdNone,szMin,bReposNow );
+    }
+    bool AddSzYControl ( HWND hwnd, SBYTE y1, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( hwnd,0,y1,0,y2,szMin,bReposNow );
+    }
+    bool AddSzYControl ( HWND hwnd, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( hwnd,mdNone,md,szMin,bReposNow );
+    }
 
-	bool AddSzControl(HWND hwnd, Mode mdX, Mode mdY, const CSize & szMin = M_szNull, bool bReposNow = true);
-	bool AddSzControl(HWND hwnd, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true);
+    bool AddSzControl ( HWND hwnd, Mode mdX, Mode mdY, const CSize & szMin = M_szNull, bool bReposNow = true );
+    bool AddSzControl ( HWND hwnd, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true );
 
-	bool AddSzControl(HWND hwnd, HWND hLikeThis, bool bReposNow = true);
-	bool AddSzControl(HWND hwnd, const SBYTES & bytes, const CSize & szMin = M_szNull, bool bReposNow = true);
+    bool AddSzControl ( HWND hwnd, HWND hLikeThis, bool bReposNow = true );
+    bool AddSzControl ( HWND hwnd, const SBYTES & bytes, const CSize & szMin = M_szNull, bool bReposNow = true );
 
-	virtual bool AddSzControl(HWND hwnd, const Position & pos, bool bReposNow = true);					// virtual entry point
+    virtual bool AddSzControl ( HWND hwnd, const Position & pos, bool bReposNow = true );					// virtual entry point
 
-	//
-	// AddSzControl for IDss
-	//
+    //
+    // AddSzControl for IDss
+    //
 
-	bool AddSzXControl(UINT id, SBYTE x1, SBYTE x2, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzXControl(GetSafeChildHWND(id),x1,x2,szMin,bReposNow); }
-	bool AddSzXControl(UINT id, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzXControl(GetSafeChildHWND(id),md,szMin,bReposNow); }
-	bool AddSzYControl(UINT id, SBYTE y1, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzYControl(GetSafeChildHWND(id),y1,y2,szMin,bReposNow); }
-	bool AddSzYControl(UINT id, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzYControl(GetSafeChildHWND(id),md,szMin,bReposNow); }
+    bool AddSzXControl ( UINT id, SBYTE x1, SBYTE x2, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzXControl ( GetSafeChildHWND ( id ),x1,x2,szMin,bReposNow );
+    }
+    bool AddSzXControl ( UINT id, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzXControl ( GetSafeChildHWND ( id ),md,szMin,bReposNow );
+    }
+    bool AddSzYControl ( UINT id, SBYTE y1, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzYControl ( GetSafeChildHWND ( id ),y1,y2,szMin,bReposNow );
+    }
+    bool AddSzYControl ( UINT id, Mode md, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzYControl ( GetSafeChildHWND ( id ),md,szMin,bReposNow );
+    }
 
-	bool AddSzControl(UINT id, Mode mdX, Mode mdY, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(GetSafeChildHWND(id),mdX,mdY,szMin,bReposNow); }
-	bool AddSzControl(UINT id, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(GetSafeChildHWND(id),x1,y1,x2,y2,szMin,bReposNow); }
+    bool AddSzControl ( UINT id, Mode mdX, Mode mdY, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( GetSafeChildHWND ( id ),mdX,mdY,szMin,bReposNow );
+    }
+    bool AddSzControl ( UINT id, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( GetSafeChildHWND ( id ),x1,y1,x2,y2,szMin,bReposNow );
+    }
 
-	bool AddSzControl(UINT id, HWND hLikeThis, bool bReposNow = true) { return AddSzControl(GetSafeChildHWND(id),hLikeThis,bReposNow); }
-	bool AddSzControl(UINT id, const SBYTES & bytes, const CSize & szMin = M_szNull, bool bReposNow = true) { return AddSzControl(GetSafeChildHWND(id),bytes,szMin,bReposNow); }
+    bool AddSzControl ( UINT id, HWND hLikeThis, bool bReposNow = true ) {
+        return AddSzControl ( GetSafeChildHWND ( id ),hLikeThis,bReposNow );
+    }
+    bool AddSzControl ( UINT id, const SBYTES & bytes, const CSize & szMin = M_szNull, bool bReposNow = true ) {
+        return AddSzControl ( GetSafeChildHWND ( id ),bytes,szMin,bReposNow );
+    }
 
-	bool AddSzControl(UINT id, const Position & pos, bool bReposNow = true) { return AddSzControl(GetSafeChildHWND(id),pos,bReposNow); }
+    bool AddSzControl ( UINT id, const Position & pos, bool bReposNow = true ) {
+        return AddSzControl ( GetSafeChildHWND ( id ),pos,bReposNow );
+    }
 
-	//
-	// all controls
-	//
+    //
+    // all controls
+    //
 
-	void AllControls(Mode mdX, Mode mdY, bool bOverwrite = false, bool bReposNow = true);
-	void AllControls(SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, bool bOverwrite = false, bool bReposNow = true);
-	void AllControls(const SBYTES & bytes, bool bOverwrite = false, bool bReposNow = true);
-	
-	// etc
+    void AllControls ( Mode mdX, Mode mdY, bool bOverwrite = false, bool bReposNow = true );
+    void AllControls ( SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, bool bOverwrite = false, bool bReposNow = true );
+    void AllControls ( const SBYTES & bytes, bool bOverwrite = false, bool bReposNow = true );
 
-	bool GetControlPosition(HWND hwnd, Position & pos) { return m_Map.Lookup(hwnd,pos) != FALSE; }
-	bool RemSzControl(HWND hwnd, bool bMoveToInitialPos = false);
-	bool UpdateControlPosition(HWND hwnd);
+    // etc
 
-	//
-	// operational
-	//
+    bool GetControlPosition ( HWND hwnd, Position & pos ) {
+        return m_Map.Lookup ( hwnd,pos ) != FALSE;
+    }
+    bool RemSzControl ( HWND hwnd, bool bMoveToInitialPos = false );
+    bool UpdateControlPosition ( HWND hwnd );
 
-	virtual void Layout();
+    //
+    // operational
+    //
 
-	//
-	// you have to delegate work to these 
-	//
+    virtual void Layout();
+
+    //
+    // you have to delegate work to these
+    //
 
 protected:
-	void DoInitWindow(CWnd & rWnd, const CSize & szInitial);
-	void DoInitWindow(CWnd & rWnd);		// short-cut
-	void DoOnDestroy();
+    void DoInitWindow ( CWnd & rWnd, const CSize & szInitial );
+    void DoInitWindow ( CWnd & rWnd );		// short-cut
+    void DoOnDestroy();
 
-	void DoOnParentNotify(UINT message, LPARAM lParam);
-	void DoOnTimer(UINT nIDEvent);
-	void DoOnSize(UINT nType, int cx, int cy);
-	void DoOnSizing(UINT fwSide, LPRECT pRect);
-	void DoOnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
+    void DoOnParentNotify ( UINT message, LPARAM lParam );
+    void DoOnTimer ( UINT nIDEvent );
+    void DoOnSize ( UINT nType, int cx, int cy );
+    void DoOnSizing ( UINT fwSide, LPRECT pRect );
+    void DoOnGetMinMaxInfo ( MINMAXINFO FAR* lpMMI );
 
-	//
-	// some advanced virtuals
-	//
+    //
+    // some advanced virtuals
+    //
 
 protected:
-	virtual bool DoMoveCtrl(HWND hwnd, UINT id, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li);
-	virtual void DoDestroyCtrl(HWND hwnd);
+    virtual bool DoMoveCtrl ( HWND hwnd, UINT id, CRect & rectNewPos, const cdxCDynamicLayoutInfo & li );
+    virtual void DoDestroyCtrl ( HWND hwnd );
 
-	virtual void OnInitialized() {}
-	virtual void OnDestroying() {}
+    virtual void OnInitialized() {}
+    virtual void OnDestroying() {}
 
-	virtual cdxCDynamicLayoutInfo *DoCreateLayoutInfo() { return new cdxCDynamicLayoutInfo(this); }
+    virtual cdxCDynamicLayoutInfo *DoCreateLayoutInfo() {
+        return new cdxCDynamicLayoutInfo ( this );
+    }
 
-	//
-	// misc utility functions
-	//
+    //
+    // misc utility functions
+    //
 
 public:
-	virtual void StartAntiFlickering(bool bIsBotRight);
-	HWND GetSafeChildHWND(UINT nID);
+    virtual void StartAntiFlickering ( bool bIsBotRight );
+    HWND GetSafeChildHWND ( UINT nID );
 
-	//
-	// some operators
-	//
+    //
+    // some operators
+    //
 public:
-	operator CWnd * () const { return m_pWnd; }
+    operator CWnd * () const {
+        return m_pWnd;
+    }
 
-	//
-	// private members (hidden from classview)
-	//
+    //
+    // private members (hidden from classview)
+    //
 private:
-	// DON'T USE
-	DECLARE_CDX_HIDDENFUNC( cdxCDynamicWnd(const cdxCDynamicWnd & w) ) { ASSERT(false); }
-	void DECLARE_CDX_HIDDENFUNC( operator=(const cdxCDynamicWnd & w) ) { ASSERT(false); }
-	// helpers
-	void DECLARE_CDX_HIDDENFUNC( _translate(Mode md, SBYTE & b1, SBYTE & b2) );
+    // DON'T USE
+    DECLARE_CDX_HIDDENFUNC ( cdxCDynamicWnd ( const cdxCDynamicWnd & w ) ) {
+        ASSERT ( false );
+    }
+    void DECLARE_CDX_HIDDENFUNC ( operator= ( const cdxCDynamicWnd & w ) ) {
+        ASSERT ( false );
+    }
+    // helpers
+    void DECLARE_CDX_HIDDENFUNC ( _translate ( Mode md, SBYTE & b1, SBYTE & b2 ) );
 
-	//
-	// DYNAMIC_MAPping
-	//
+    //
+    // DYNAMIC_MAPping
+    //
 public:
-	DECLARE_CDX_HIDDENENUM( __dynEntryType )
-	{
-		__end,
-		__bytes,
-		__modes
-	};
-	DECLARE_CDX_HIDDENSTRUCT( __dynEntry )
-	{
-		__dynEntryType	type;
-		UINT				id;
-		SBYTE				b1,b2,b3,b4;
-	};
+    DECLARE_CDX_HIDDENENUM ( __dynEntryType ) {
+        __end,
+        __bytes,
+        __modes
+    };
+    DECLARE_CDX_HIDDENSTRUCT ( __dynEntry ) {
+        __dynEntryType	type;
+        UINT				id;
+        SBYTE				b1,b2,b3,b4;
+    };
 protected:
-	virtual const __dynEntry * DECLARE_CDX_HIDDENFUNC( __getDynMap(const __dynEntry *pLast) ) const { return NULL; }
+    virtual const __dynEntry * DECLARE_CDX_HIDDENFUNC ( __getDynMap ( const __dynEntry *pLast ) ) const {
+        return NULL;
+    }
 
 public:
-	static const CSize		M_szNull;			// for the "Config" class
-	static const SBYTES		TopLeft,
-									TopRight,
-									BotLeft,
-									BotRight;
+    static const CSize		M_szNull;			// for the "Config" class
+    static const SBYTES		TopLeft,
+              TopRight,
+              BotLeft,
+              BotRight;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -492,23 +553,21 @@ private:												\
  * auto-fill in struct
  */
 
-inline bool cdxCDynamicLayoutInfo::operator=(cdxCDynamicWnd *pWnd)
-{
-	if(!pWnd || !pWnd->IsUp())
-		return false;
+inline bool cdxCDynamicLayoutInfo::operator= ( cdxCDynamicWnd *pWnd ) {
+    if ( !pWnd || !pWnd->IsUp() )
+        return false;
 
-	m_szCurrent			=	pWnd->GetCurrentClientSize();
-	m_szInitial			=	pWnd->m_szInitial;
-	m_szDelta			=	m_szCurrent - m_szInitial;
-	m_nCtrlCnt			=	pWnd->GetCtrlCount();
+    m_szCurrent			=	pWnd->GetCurrentClientSize();
+    m_szInitial			=	pWnd->m_szInitial;
+    m_szDelta			=	m_szCurrent - m_szInitial;
+    m_nCtrlCnt			=	pWnd->GetCtrlCount();
 
-	if(m_bUseScrollPos == pWnd->m_bUseScrollPos)
-	{
-		m_pntScrollPos.x	=	pWnd->Window()->GetScrollPos(SB_HORZ);
-		m_pntScrollPos.y	=	pWnd->Window()->GetScrollPos(SB_VERT);
-	}
+    if ( m_bUseScrollPos == pWnd->m_bUseScrollPos ) {
+        m_pntScrollPos.x	=	pWnd->Window()->GetScrollPos ( SB_HORZ );
+        m_pntScrollPos.y	=	pWnd->Window()->GetScrollPos ( SB_VERT );
+    }
 
-	return true;
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -519,69 +578,62 @@ inline bool cdxCDynamicLayoutInfo::operator=(cdxCDynamicWnd *pWnd)
  * Add a control
  */
 
-inline bool cdxCDynamicWnd::AddSzControl(HWND hwnd, const SBYTES & bytes, const CSize & szMin, bool bReposNow)
-{
-	if(!::IsWindow(hwnd))
-	{
-		// Note that this might happen if you call 
-		TRACE(_T("*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,const SBYTES &,const CSize &,bool)]: Handle 0x%lx is not a valid window.\n"),(DWORD)hwnd);
-		return false;
-	}
+inline bool cdxCDynamicWnd::AddSzControl ( HWND hwnd, const SBYTES & bytes, const CSize & szMin, bool bReposNow ) {
+    if ( !::IsWindow ( hwnd ) ) {
+        // Note that this might happen if you call
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,const SBYTES &,const CSize &,bool)]: Handle 0x%lx is not a valid window.\n" ), ( DWORD ) hwnd );
+        return false;
+    }
 
-	WINDOWPLACEMENT	wpl;
-	wpl.length	=	sizeof(WINDOWPLACEMENT);
-	VERIFY( ::GetWindowPlacement(hwnd,&wpl) );
+    WINDOWPLACEMENT	wpl;
+    wpl.length	=	sizeof ( WINDOWPLACEMENT );
+    VERIFY ( ::GetWindowPlacement ( hwnd,&wpl ) );
 
-	return AddSzControl(hwnd,Position(wpl.rcNormalPosition,bytes,szMin),bReposNow);
+    return AddSzControl ( hwnd,Position ( wpl.rcNormalPosition,bytes,szMin ),bReposNow );
 }
 
 /*
  * Add control that behaves like another
  */
 
-inline bool cdxCDynamicWnd::AddSzControl(HWND hwnd, HWND hLikeThis, bool bReposNow)
-{
-	if(!::IsWindow(hwnd))
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,HWND,bool)]: Handle 0x%lx is not a valid window.\n"),(DWORD)hwnd);
-		return false;
-	}
+inline bool cdxCDynamicWnd::AddSzControl ( HWND hwnd, HWND hLikeThis, bool bReposNow ) {
+    if ( !::IsWindow ( hwnd ) ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,HWND,bool)]: Handle 0x%lx is not a valid window.\n" ), ( DWORD ) hwnd );
+        return false;
+    }
 
-	Position	pos;
+    Position	pos;
 
-	if(!m_Map.Lookup(hLikeThis,pos))
-	{
-		TRACE(_T("*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,HWND,bool)]: For the 'hLikeThis' handle 0x%lx there hasn't been made an entry for yet.\n"),(DWORD)hLikeThis);
-		return false;
-	}
+    if ( !m_Map.Lookup ( hLikeThis,pos ) ) {
+        TRACE ( _T ( "*** NOTE[cdxCDynamicWnd::AddSzControl(HWND,HWND,bool)]: For the 'hLikeThis' handle 0x%lx there hasn't been made an entry for yet.\n" ), ( DWORD ) hLikeThis );
+        return false;
+    }
 
-	return AddSzControl(hwnd,pos);
+    return AddSzControl ( hwnd,pos );
 }
 
 /*
  * old
  */
 
-inline bool cdxCDynamicWnd::AddSzControl(HWND hwnd, Mode mdX, Mode mdY, const CSize & szMin, bool bReposNow)
-{
-	SBYTES	b;
-	_translate(mdX,b[X1],b[X2]);
-	_translate(mdY,b[Y1],b[Y2]);
-	return AddSzControl(hwnd,b,szMin,bReposNow);
+inline bool cdxCDynamicWnd::AddSzControl ( HWND hwnd, Mode mdX, Mode mdY, const CSize & szMin, bool bReposNow ) {
+    SBYTES	b;
+    _translate ( mdX,b[X1],b[X2] );
+    _translate ( mdY,b[Y1],b[Y2] );
+    return AddSzControl ( hwnd,b,szMin,bReposNow );
 }
 
 /*
  * old
  */
 
-inline bool cdxCDynamicWnd::AddSzControl(HWND hwnd, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin, bool bReposNow)
-{
-	SBYTES b;
-	b[X1]	=	x1,
-	b[X2]	=	x2,
-	b[Y1]	=	y1,
-	b[Y2]	=	y2;
-	return AddSzControl(hwnd,b,szMin,bReposNow);
+inline bool cdxCDynamicWnd::AddSzControl ( HWND hwnd, SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, const CSize & szMin, bool bReposNow ) {
+    SBYTES b;
+    b[X1]	=	x1,
+                b[X2]	=	x2,
+                            b[Y1]	=	y1,
+                                        b[Y2]	=	y2;
+    return AddSzControl ( hwnd,b,szMin,bReposNow );
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -590,12 +642,11 @@ inline bool cdxCDynamicWnd::AddSzControl(HWND hwnd, SBYTE x1, SBYTE y1, SBYTE x2
  * short-cut
  */
 
-inline void cdxCDynamicWnd::AllControls(Mode mdX, Mode mdY, bool bOverwrite, bool bReposNow)
-{
-	SBYTES	b;
-	_translate(mdX,b[X1],b[X2]);
-	_translate(mdY,b[Y1],b[Y2]);
-	AllControls(b,bOverwrite,bReposNow);
+inline void cdxCDynamicWnd::AllControls ( Mode mdX, Mode mdY, bool bOverwrite, bool bReposNow ) {
+    SBYTES	b;
+    _translate ( mdX,b[X1],b[X2] );
+    _translate ( mdY,b[Y1],b[Y2] );
+    AllControls ( b,bOverwrite,bReposNow );
 }
 
 
@@ -603,14 +654,13 @@ inline void cdxCDynamicWnd::AllControls(Mode mdX, Mode mdY, bool bOverwrite, boo
  * short-cut
  */
 
-inline void cdxCDynamicWnd::AllControls(SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, bool bOverwrite, bool bReposNow)
-{
-	SBYTES b;
-	b[X1]	=	x1,
-	b[X2]	=	x2,
-	b[Y1]	=	y1,
-	b[Y2]	=	y2;
-	AllControls(b,bOverwrite,bReposNow);
+inline void cdxCDynamicWnd::AllControls ( SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, bool bOverwrite, bool bReposNow ) {
+    SBYTES b;
+    b[X1]	=	x1,
+                b[X2]	=	x2,
+                            b[Y1]	=	y1,
+                                        b[Y2]	=	y2;
+    AllControls ( b,bOverwrite,bReposNow );
 }
 
 
@@ -620,37 +670,33 @@ inline void cdxCDynamicWnd::AllControls(SBYTE x1, SBYTE y1, SBYTE x2, SBYTE y2, 
  * get size of current client area
  */
 
-inline CSize cdxCDynamicWnd::GetCurrentClientSize() const
-{
-	if(!IsWindow())
-	{
-		ASSERT(false);
-		return M_szNull;
-	}
+inline CSize cdxCDynamicWnd::GetCurrentClientSize() const {
+    if ( !IsWindow() ) {
+        ASSERT ( false );
+        return M_szNull;
+    }
 
-	CRect	rect;
-	m_pWnd->GetClientRect(rect);
+    CRect	rect;
+    m_pWnd->GetClientRect ( rect );
 
-	return rect.Size();
+    return rect.Size();
 }
 
 /*
  * get difference between window and client size
  */
 
-inline CSize cdxCDynamicWnd::GetBorderSize() const
-{
-	if(!IsUp())
-	{
-		ASSERT(false);
-		return M_szNull;
-	}
+inline CSize cdxCDynamicWnd::GetBorderSize() const {
+    if ( !IsUp() ) {
+        ASSERT ( false );
+        return M_szNull;
+    }
 
-	CRect	r1,r2;
-	m_pWnd->GetWindowRect(r1);
-	m_pWnd->GetClientRect(r2);
+    CRect	r1,r2;
+    m_pWnd->GetWindowRect ( r1 );
+    m_pWnd->GetClientRect ( r2 );
 
-	return r1.Size() - r2.Size();
+    return r1.Size() - r2.Size();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -659,35 +705,44 @@ inline CSize cdxCDynamicWnd::GetBorderSize() const
  * translates a "mode" into percentage
  */
 
-inline void cdxCDynamicWnd::_translate(Mode md, SBYTE & b1, SBYTE & b2)
-{
-	switch(md)
-	{
-		default				:	ASSERT(false);
-		case	mdNone		:	b1	=	0;		b2	=	0;		break;
-		case	mdResize		:	b1	=	0;		b2	=	100;	break;
-		case	mdRepos		:	b1	=	100;	b2	=	100;	break;
-		case	mdRelative	:	b1	=	50;	b2	=	50;	break;
-	}
+inline void cdxCDynamicWnd::_translate ( Mode md, SBYTE & b1, SBYTE & b2 ) {
+    switch ( md ) {
+    default				:
+        ASSERT ( false );
+    case	mdNone		:
+        b1	=	0;
+        b2	=	0;
+        break;
+    case	mdResize		:
+        b1	=	0;
+        b2	=	100;
+        break;
+    case	mdRepos		:
+        b1	=	100;
+        b2	=	100;
+        break;
+    case	mdRelative	:
+        b1	=	50;
+        b2	=	50;
+        break;
+    }
 }
 
 /*
  * gets HWND of a child given by ID
  */
 
-inline HWND cdxCDynamicWnd::GetSafeChildHWND(UINT nID)
-{
-	if(!IsWindow())
-	{
-		ASSERT(false);
-		return 0;
-	}
+inline HWND cdxCDynamicWnd::GetSafeChildHWND ( UINT nID ) {
+    if ( !IsWindow() ) {
+        ASSERT ( false );
+        return 0;
+    }
 
-	HWND	h	=	::GetDlgItem(m_pWnd->m_hWnd,nID);
-	ASSERT(h!=0);
-	return h;
+    HWND	h	=	::GetDlgItem ( m_pWnd->m_hWnd,nID );
+    ASSERT ( h!=0 );
+    return h;
 }
-	
+
 #pragma warning(default: 4100)
 #pragma warning(default: 4706)
 

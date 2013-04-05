@@ -32,10 +32,10 @@
 
 /* XXX - Define Private directory tag structure here */
 struct XTIFFDirectory {
-	uint16	 xd_num_multi; /* dir-count for the multi tag */
-	double*  xd_example_multi;
-	uint32   xd_example_single; 
-	char*    xd_example_ascii;
+    uint16	 xd_num_multi; /* dir-count for the multi tag */
+    double*  xd_example_multi;
+    uint32   xd_example_single;
+    char*    xd_example_ascii;
 };
 typedef struct XTIFFDirectory XTIFFDirectory;
 
@@ -44,22 +44,22 @@ typedef struct XTIFFDirectory XTIFFDirectory;
  **********************************************************************/
 
 struct xtiff {
-	TIFF 		*xtif_tif;	/* parent TIFF pointer */
-	uint32		xtif_flags;
+    TIFF 		*xtif_tif;	/* parent TIFF pointer */
+    uint32		xtif_flags;
 #define       XTIFFP_PRINT   0x00000001
-	XTIFFDirectory	xtif_dir;	/* internal rep of current directory */
-	TIFFVSetMethod	xtif_vsetfield;	/* inherited tag set routine */
-	TIFFVGetMethod	xtif_vgetfield;	/* inherited tag get routine */
-	TIFFPrintMethod	xtif_printdir;  /* inherited dir print method */
+    XTIFFDirectory	xtif_dir;	/* internal rep of current directory */
+    TIFFVSetMethod	xtif_vsetfield;	/* inherited tag set routine */
+    TIFFVGetMethod	xtif_vgetfield;	/* inherited tag get routine */
+    TIFFPrintMethod	xtif_printdir;  /* inherited dir print method */
 };
 typedef struct xtiff xtiff;
 
 
-#define PARENT(xt,pmember) ((xt)->xtif_ ## pmember) 
-#define TIFFMEMBER(tf,pmember) ((tf)->tif_ ## pmember) 
+#define PARENT(xt,pmember) ((xt)->xtif_ ## pmember)
+#define TIFFMEMBER(tf,pmember) ((tf)->tif_ ## pmember)
 #define XTIFFDIR(tif) ((xtiff *)TIFFMEMBER(tif,clientdir))
-	
+
 /* Extended TIFF flags */
 #define XTIFF_INITIALIZED 0x80000000
-	
+
 #endif /* __xtiffiop_h */

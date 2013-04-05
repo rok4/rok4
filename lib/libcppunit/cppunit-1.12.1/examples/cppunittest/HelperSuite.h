@@ -4,9 +4,8 @@
 #include <cppunit/Portability.h>
 #include <string>
 
-inline std::string helperSuiteName()
-{
-  return "Helpers";
+inline std::string helperSuiteName() {
+    return "Helpers";
 }
 
 

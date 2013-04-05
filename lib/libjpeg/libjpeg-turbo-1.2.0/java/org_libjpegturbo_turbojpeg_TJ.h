@@ -55,29 +55,29 @@ extern "C" {
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_FORCESSE3 128L
 #undef org_libjpegturbo_turbojpeg_TJ_FLAG_FASTUPSAMPLE
 #define org_libjpegturbo_turbojpeg_TJ_FLAG_FASTUPSAMPLE 256L
-/*
- * Class:     org_libjpegturbo_turbojpeg_TJ
- * Method:    bufSize
- * Signature: (III)I
- */
-JNIEXPORT jint JNICALL Java_org_libjpegturbo_turbojpeg_TJ_bufSize
-  (JNIEnv *, jclass, jint, jint, jint);
+    /*
+     * Class:     org_libjpegturbo_turbojpeg_TJ
+     * Method:    bufSize
+     * Signature: (III)I
+     */
+    JNIEXPORT jint JNICALL Java_org_libjpegturbo_turbojpeg_TJ_bufSize
+    ( JNIEnv *, jclass, jint, jint, jint );
 
-/*
- * Class:     org_libjpegturbo_turbojpeg_TJ
- * Method:    bufSizeYUV
- * Signature: (III)I
- */
-JNIEXPORT jint JNICALL Java_org_libjpegturbo_turbojpeg_TJ_bufSizeYUV
-  (JNIEnv *, jclass, jint, jint, jint);
+    /*
+     * Class:     org_libjpegturbo_turbojpeg_TJ
+     * Method:    bufSizeYUV
+     * Signature: (III)I
+     */
+    JNIEXPORT jint JNICALL Java_org_libjpegturbo_turbojpeg_TJ_bufSizeYUV
+    ( JNIEnv *, jclass, jint, jint, jint );
 
-/*
- * Class:     org_libjpegturbo_turbojpeg_TJ
- * Method:    getScalingFactors
- * Signature: ()[Lorg/libjpegturbo/turbojpeg/TJScalingFactor;
- */
-JNIEXPORT jobjectArray JNICALL Java_org_libjpegturbo_turbojpeg_TJ_getScalingFactors
-  (JNIEnv *, jclass);
+    /*
+     * Class:     org_libjpegturbo_turbojpeg_TJ
+     * Method:    getScalingFactors
+     * Signature: ()[Lorg/libjpegturbo/turbojpeg/TJScalingFactor;
+     */
+    JNIEXPORT jobjectArray JNICALL Java_org_libjpegturbo_turbojpeg_TJ_getScalingFactors
+    ( JNIEnv *, jclass );
 
 #ifdef __cplusplus
 }

@@ -12,45 +12,44 @@
  * \warning Attribute values must be double-quoted (att="value").
  * No support for embedded DTD declaration
  */
-class XmlUniformiser
-{
+class XmlUniformiser {
 public:
-  XmlUniformiser( const std::string &xml );
-  std::string stripped();
+    XmlUniformiser ( const std::string &xml );
+    std::string stripped();
 
 private:
-  void skipSpaces();
-  bool isValidIndex();
-  void skipNext( int count =1 );
-  void copyNext( int count =1 );
-  void skipProcessed();
-  void skipComment();
-  void copyElement();
-  void copyElementContent();
-  bool isSpace( char c );
-  bool isSpace();
-  bool startsWith( std::string expected );
-  void copyElementName();
-  void copyElementAttributes();
-  void copyAttributeName();
-  bool isEndOfAttributeName();
-  void copyAttributeValue();
-  void copyUntilDoubleQuote();
-  void removeTrailingSpaces();
+    void skipSpaces();
+    bool isValidIndex();
+    void skipNext ( int count =1 );
+    void copyNext ( int count =1 );
+    void skipProcessed();
+    void skipComment();
+    void copyElement();
+    void copyElementContent();
+    bool isSpace ( char c );
+    bool isSpace();
+    bool startsWith ( std::string expected );
+    void copyElementName();
+    void copyElementAttributes();
+    void copyAttributeName();
+    bool isEndOfAttributeName();
+    void copyAttributeValue();
+    void copyUntilDoubleQuote();
+    void removeTrailingSpaces();
 
 private:
-  unsigned int m_index;
-  std::string m_xml;
-  std::string m_stripped;
+    unsigned int m_index;
+    std::string m_xml;
+    std::string m_stripped;
 };
 
 
 
 
-void 
-checkXmlEqual( std::string expectedXml,
-               std::string actualXml,
-               CPPUNIT_NS::SourceLine sourceLine );
+void
+checkXmlEqual ( std::string expectedXml,
+                std::string actualXml,
+                CPPUNIT_NS::SourceLine sourceLine );
 
 
 /// Asserts that two XML strings are equivalent.

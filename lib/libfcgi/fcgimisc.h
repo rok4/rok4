@@ -1,4 +1,4 @@
-/* 
+/*
  * fcgimisc.h --
  *
  *      Miscellaneous definitions

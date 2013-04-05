@@ -14,8 +14,8 @@
 
 #include "tiffio.h"
 
-/* 
- *  XXX Define your private Tag names and values here 
+/*
+ *  XXX Define your private Tag names and values here
  */
 
 /* These tags are not valid, but are provided for example */
@@ -23,7 +23,7 @@
 #define TIFFTAG_EXAMPLE_SINGLE     61235
 #define TIFFTAG_EXAMPLE_ASCII      61236
 
-/* 
+/*
  *  XXX Define Printing method flags. These
  *  flags may be passed in to TIFFPrintDirectory() to
  *  indicate that those particular field values should
@@ -40,9 +40,9 @@
 extern "C" {
 #endif
 
-extern TIFF* XTIFFOpen(const char* name, const char* mode);
-extern TIFF* XTIFFFdOpen(int fd, const char* name, const char* mode);
-extern void  XTIFFClose(TIFF *tif);
+    extern TIFF* XTIFFOpen ( const char* name, const char* mode );
+    extern TIFF* XTIFFFdOpen ( int fd, const char* name, const char* mode );
+    extern void  XTIFFClose ( TIFF *tif );
 
 #if defined(__cplusplus)
 }

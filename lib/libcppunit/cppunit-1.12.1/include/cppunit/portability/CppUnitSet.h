@@ -2,7 +2,7 @@
 #define CPPUNIT_PORTABILITY_CPPUNITSET_H
 
 // The technic used is similar to the wrapper of STLPort.
- 
+
 #include <cppunit/Portability.h>
 #include <functional>
 #include <set>
@@ -12,9 +12,8 @@
 
 template<class T>
 class CppUnitSet : public std::set<T
-                                  ,std::less<T>
-                                  ,CPPUNIT_STD_ALLOCATOR>
-{
+    ,std::less<T>
+        ,CPPUNIT_STD_ALLOCATOR> {
 public:
 };
 

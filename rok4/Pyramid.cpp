@@ -211,9 +211,9 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 images.push_back ( levels[l]->getNoDataTile ( bbox ) );
             }
             int ndvalue[this->channels];
-            memset(ndvalue,0,this->channels*sizeof(int));
-            levels[l]->getNoDataValue(ndvalue);
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue, levels[l]->getSampleType(),0);
+            memset ( ndvalue,0,this->channels*sizeof ( int ) );
+            levels[l]->getNoDataValue ( ndvalue );
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue, levels[l]->getSampleType(),0 );
         }
 
     }

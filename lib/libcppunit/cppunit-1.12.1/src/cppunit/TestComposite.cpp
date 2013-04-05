@@ -5,71 +5,62 @@
 CPPUNIT_NS_BEGIN
 
 
-TestComposite::TestComposite( const std::string &name )
-    : m_name( name )
-{
+TestComposite::TestComposite ( const std::string &name )
+    : m_name ( name ) {
 }
 
 
-TestComposite::~TestComposite()
-{
+TestComposite::~TestComposite() {
 }
 
 
-void 
-TestComposite::run( TestResult *result )
-{
-  doStartSuite( result );
-  doRunChildTests( result );
-  doEndSuite( result );
+void
+TestComposite::run ( TestResult *result ) {
+    doStartSuite ( result );
+    doRunChildTests ( result );
+    doEndSuite ( result );
 }
 
 
-int 
-TestComposite::countTestCases() const
-{
-  int count = 0;
-  
-  int childCount = getChildTestCount();
-  for ( int index =0; index < childCount; ++index )
-    count += getChildTestAt( index )->countTestCases();
-  
-  return count;
+int
+TestComposite::countTestCases() const {
+    int count = 0;
+
+    int childCount = getChildTestCount();
+    for ( int index =0; index < childCount; ++index )
+        count += getChildTestAt ( index )->countTestCases();
+
+    return count;
 }
 
 
-std::string 
-TestComposite::getName() const
-{
-  return m_name;
+std::string
+TestComposite::getName() const {
+    return m_name;
 }
 
 
-void 
-TestComposite::doStartSuite( TestResult *controller )
-{
-  controller->startSuite( this );
+void
+TestComposite::doStartSuite ( TestResult *controller ) {
+    controller->startSuite ( this );
 }
 
 
-void 
-TestComposite::doRunChildTests( TestResult *controller )
-{
-  int childCount = getChildTestCount();
-  for ( int index =0; index < childCount; ++index )
-  {
-    if ( controller->shouldStop() )
-      break;
+void
+TestComposite::doRunChildTests ( TestResult *controller ) {
+    int childCount = getChildTestCount();
+    for ( int index =0; index < childCount; ++index ) {
+        if ( controller->shouldStop() )
+            break;
 
-    getChildTestAt( index )->run( controller );
-  }
+        getChildTestAt ( index )->run ( controller );
+    }
 }
 
 
-void 
-TestComposite::doEndSuite( TestResult *controller )
-{
-  controller->endSuite( this );
+void
+TestComposite::doEndSuite ( TestResult *controller ) {
+    controller->endSuite ( this );
 }
 
 

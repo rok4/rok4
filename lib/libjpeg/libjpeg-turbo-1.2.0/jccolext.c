@@ -26,49 +26,48 @@
  */
 
 INLINE
-LOCAL(void)
-rgb_ycc_convert_internal (j_compress_ptr cinfo,
-                          JSAMPARRAY input_buf, JSAMPIMAGE output_buf,
-                          JDIMENSION output_row, int num_rows)
-{
-  my_cconvert_ptr cconvert = (my_cconvert_ptr) cinfo->cconvert;
-  register int r, g, b;
-  register INT32 * ctab = cconvert->rgb_ycc_tab;
-  register JSAMPROW inptr;
-  register JSAMPROW outptr0, outptr1, outptr2;
-  register JDIMENSION col;
-  JDIMENSION num_cols = cinfo->image_width;
+LOCAL ( void )
+rgb_ycc_convert_internal ( j_compress_ptr cinfo,
+                           JSAMPARRAY input_buf, JSAMPIMAGE output_buf,
+                           JDIMENSION output_row, int num_rows ) {
+    my_cconvert_ptr cconvert = ( my_cconvert_ptr ) cinfo->cconvert;
+    register int r, g, b;
+    register INT32 * ctab = cconvert->rgb_ycc_tab;
+    register JSAMPROW inptr;
+    register JSAMPROW outptr0, outptr1, outptr2;
+    register JDIMENSION col;
+    JDIMENSION num_cols = cinfo->image_width;
 
-  while (--num_rows >= 0) {
-    inptr = *input_buf++;
-    outptr0 = output_buf[0][output_row];
-    outptr1 = output_buf[1][output_row];
-    outptr2 = output_buf[2][output_row];
-    output_row++;
-    for (col = 0; col < num_cols; col++) {
-      r = GETJSAMPLE(inptr[RGB_RED]);
-      g = GETJSAMPLE(inptr[RGB_GREEN]);
-      b = GETJSAMPLE(inptr[RGB_BLUE]);
-      inptr += RGB_PIXELSIZE;
-      /* If the inputs are 0..MAXJSAMPLE, the outputs of these equations
-       * must be too; we do not need an explicit range-limiting operation.
-       * Hence the value being shifted is never negative, and we don't
-       * need the general RIGHT_SHIFT macro.
-       */
-      /* Y */
-      outptr0[col] = (JSAMPLE)
-		((ctab[r+R_Y_OFF] + ctab[g+G_Y_OFF] + ctab[b+B_Y_OFF])
-		 >> SCALEBITS);
-      /* Cb */
-      outptr1[col] = (JSAMPLE)
-		((ctab[r+R_CB_OFF] + ctab[g+G_CB_OFF] + ctab[b+B_CB_OFF])
-		 >> SCALEBITS);
-      /* Cr */
-      outptr2[col] = (JSAMPLE)
-		((ctab[r+R_CR_OFF] + ctab[g+G_CR_OFF] + ctab[b+B_CR_OFF])
-		 >> SCALEBITS);
+    while ( --num_rows >= 0 ) {
+        inptr = *input_buf++;
+        outptr0 = output_buf[0][output_row];
+        outptr1 = output_buf[1][output_row];
+        outptr2 = output_buf[2][output_row];
+        output_row++;
+        for ( col = 0; col < num_cols; col++ ) {
+            r = GETJSAMPLE ( inptr[RGB_RED] );
+            g = GETJSAMPLE ( inptr[RGB_GREEN] );
+            b = GETJSAMPLE ( inptr[RGB_BLUE] );
+            inptr += RGB_PIXELSIZE;
+            /* If the inputs are 0..MAXJSAMPLE, the outputs of these equations
+             * must be too; we do not need an explicit range-limiting operation.
+             * Hence the value being shifted is never negative, and we don't
+             * need the general RIGHT_SHIFT macro.
+             */
+            /* Y */
+            outptr0[col] = ( JSAMPLE )
+                           ( ( ctab[r+R_Y_OFF] + ctab[g+G_Y_OFF] + ctab[b+B_Y_OFF] )
+                             >> SCALEBITS );
+            /* Cb */
+            outptr1[col] = ( JSAMPLE )
+                           ( ( ctab[r+R_CB_OFF] + ctab[g+G_CB_OFF] + ctab[b+B_CB_OFF] )
+                             >> SCALEBITS );
+            /* Cr */
+            outptr2[col] = ( JSAMPLE )
+                           ( ( ctab[r+R_CR_OFF] + ctab[g+G_CR_OFF] + ctab[b+B_CR_OFF] )
+                             >> SCALEBITS );
+        }
     }
-  }
 }
 
 
@@ -83,32 +82,31 @@ rgb_ycc_convert_internal (j_compress_ptr cinfo,
  */
 
 INLINE
-LOCAL(void)
-rgb_gray_convert_internal (j_compress_ptr cinfo,
-                           JSAMPARRAY input_buf, JSAMPIMAGE output_buf,
-                           JDIMENSION output_row, int num_rows)
-{
-  my_cconvert_ptr cconvert = (my_cconvert_ptr) cinfo->cconvert;
-  register int r, g, b;
-  register INT32 * ctab = cconvert->rgb_ycc_tab;
-  register JSAMPROW inptr;
-  register JSAMPROW outptr;
-  register JDIMENSION col;
-  JDIMENSION num_cols = cinfo->image_width;
+LOCAL ( void )
+rgb_gray_convert_internal ( j_compress_ptr cinfo,
+                            JSAMPARRAY input_buf, JSAMPIMAGE output_buf,
+                            JDIMENSION output_row, int num_rows ) {
+    my_cconvert_ptr cconvert = ( my_cconvert_ptr ) cinfo->cconvert;
+    register int r, g, b;
+    register INT32 * ctab = cconvert->rgb_ycc_tab;
+    register JSAMPROW inptr;
+    register JSAMPROW outptr;
+    register JDIMENSION col;
+    JDIMENSION num_cols = cinfo->image_width;
 
-  while (--num_rows >= 0) {
-    inptr = *input_buf++;
-    outptr = output_buf[0][output_row];
-    output_row++;
-    for (col = 0; col < num_cols; col++) {
-      r = GETJSAMPLE(inptr[RGB_RED]);
-      g = GETJSAMPLE(inptr[RGB_GREEN]);
-      b = GETJSAMPLE(inptr[RGB_BLUE]);
-      inptr += RGB_PIXELSIZE;
-      /* Y */
-      outptr[col] = (JSAMPLE)
-		((ctab[r+R_Y_OFF] + ctab[g+G_Y_OFF] + ctab[b+B_Y_OFF])
-		 >> SCALEBITS);
+    while ( --num_rows >= 0 ) {
+        inptr = *input_buf++;
+        outptr = output_buf[0][output_row];
+        output_row++;
+        for ( col = 0; col < num_cols; col++ ) {
+            r = GETJSAMPLE ( inptr[RGB_RED] );
+            g = GETJSAMPLE ( inptr[RGB_GREEN] );
+            b = GETJSAMPLE ( inptr[RGB_BLUE] );
+            inptr += RGB_PIXELSIZE;
+            /* Y */
+            outptr[col] = ( JSAMPLE )
+                          ( ( ctab[r+R_Y_OFF] + ctab[g+G_Y_OFF] + ctab[b+B_Y_OFF] )
+                            >> SCALEBITS );
+        }
     }
-  }
 }

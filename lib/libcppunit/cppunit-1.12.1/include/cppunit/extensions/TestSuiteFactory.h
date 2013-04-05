@@ -6,20 +6,18 @@
 CPPUNIT_NS_BEGIN
 
 
-  class Test;
+class Test;
 
-  /*! \brief TestFactory for TestFixture that implements a static suite() method.
-   * \see AutoRegisterSuite.
-   */
-  template<class TestCaseType>
-  class TestSuiteFactory : public TestFactory
-  {
-  public:
-    virtual Test *makeTest()
-    {
-      return TestCaseType::suite();
+/*! \brief TestFactory for TestFixture that implements a static suite() method.
+ * \see AutoRegisterSuite.
+ */
+template<class TestCaseType>
+class TestSuiteFactory : public TestFactory {
+public:
+    virtual Test *makeTest() {
+        return TestCaseType::suite();
     }
-  };
+};
 
 
 CPPUNIT_NS_END

@@ -112,7 +112,7 @@ printf("#define dsNiceMatch     (%3u)(%%rdi)\n",(int)(((char*)&(s->nice_match))-
 #define dsGoodMatch	(188)(%rdi)
 #define dsNiceMatch	(192)(%rdi)
 
-#else 
+#else
 
 #ifndef STRUCT_OFFSET
 #	define STRUCT_OFFSET	(0)
@@ -148,12 +148,12 @@ longest_match:
  * throughout the entire function (passed via rsi on amd64).
  * rdi will hold the pointer to the deflate_state (first arg on amd64)
  */
-		mov     %rsi, save_rsi
-		mov     %rbx, save_rbx
-		mov	%r12, save_r12
-		mov     %r13, save_r13
-		mov     %r14, save_r14
-		mov     %r15, save_r15
+mov     %rsi, save_rsi
+mov     %rbx, save_rbx
+mov	%r12, save_r12
+mov     %r13, save_r13
+mov     %r14, save_r14
+mov     %r15, save_r15
 
 /* uInt wmask = s->w_mask;						*/
 /* unsigned chain_length = s->max_chain_length;				*/
@@ -161,13 +161,13 @@ longest_match:
 /*     chain_length >>= 2;						*/
 /* }									*/
 
-		movl	dsPrevLen, %eax
-		movl	dsGoodMatch, %ebx
-		cmpl	%ebx, %eax
-		movl	dsWMask, %eax
-		movl	dsMaxChainLen, %chainlenwmask
-		jl	LastMatchGood
-		shrl	$2, %chainlenwmask
+movl	dsPrevLen, %eax
+movl	dsGoodMatch, %ebx
+cmpl	%ebx, %eax
+movl	dsWMask, %eax
+movl	dsMaxChainLen, %chainlenwmask
+jl	LastMatchGood
+shrl	$2, %chainlenwmask
 LastMatchGood:
 
 /* chainlen is decremented once beforehand so that the function can	*/
@@ -175,62 +175,63 @@ LastMatchGood:
 /* It is then shifted into the high word, to make room for the wmask	*/
 /* value, which it will always accompany.				*/
 
-		decl	%chainlenwmask
-		shll	$16, %chainlenwmask
-		orl	%eax, %chainlenwmask
+decl	%chainlenwmask
+shll	$16, %chainlenwmask
+orl	%eax, %chainlenwmask
 
 /* if ((uInt)nice_match > s->lookahead) nice_match = s->lookahead;	*/
 
-		movl	dsNiceMatch, %eax
-		movl	dsLookahead, %ebx
-		cmpl	%eax, %ebx
-		jl	LookaheadLess
-		movl	%eax, %ebx
-LookaheadLess:	movl	%ebx, %nicematch
+movl	dsNiceMatch, %eax
+movl	dsLookahead, %ebx
+cmpl	%eax, %ebx
+jl	LookaheadLess
+movl	%eax, %ebx
+LookaheadLess:
+movl	%ebx, %nicematch
 
 /* register Bytef *scan = s->window + s->strstart;			*/
 
-		mov	dsWindow, %window
-		movl	dsStrStart, %limitd
-		lea	(%limit, %window), %scan
+mov	dsWindow, %window
+movl	dsStrStart, %limitd
+lea	( %limit, %window ), %scan
 
 /* Determine how many bytes the scan ptr is off from being		*/
 /* dword-aligned.							*/
 
-		mov	%scan, %scanalign
-		negl	%scanalignd
-		andl	$3, %scanalignd
+mov	%scan, %scanalign
+negl	%scanalignd
+andl	$3, %scanalignd
 
 /* IPos limit = s->strstart > (IPos)MAX_DIST(s) ?			*/
 /*     s->strstart - (IPos)MAX_DIST(s) : NIL;				*/
 
-		movl	dsWSize, %eax
-		subl	$MIN_LOOKAHEAD, %eax
-		xorl	%ecx, %ecx
-		subl	%eax, %limitd
-		cmovng	%ecx, %limitd
+movl	dsWSize, %eax
+subl	$MIN_LOOKAHEAD, %eax
+xorl	%ecx, %ecx
+subl	%eax, %limitd
+cmovng	%ecx, %limitd
 
 /* int best_len = s->prev_length;					*/
 
-		movl	dsPrevLen, %bestlend
+movl	dsPrevLen, %bestlend
 
 /* Store the sum of s->window + best_len in %windowbestlen locally, and in memory.	*/
 
-		lea	(%window, %bestlen), %windowbestlen
-		mov	%windowbestlen, _windowbestlen
+lea	( %window, %bestlen ), %windowbestlen
+mov	%windowbestlen, _windowbestlen
 
 /* register ush scan_start = *(ushf*)scan;				*/
 /* register ush scan_end   = *(ushf*)(scan+best_len-1);			*/
 /* Posf *prev = s->prev;						*/
 
-		movzwl	(%scan), %scanstart
-		movzwl	-1(%scan, %bestlen), %scanend
-		mov	dsPrev, %prev
+movzwl	( %scan ), %scanstart
+movzwl	-1 ( %scan, %bestlen ), %scanend
+mov	dsPrev, %prev
 
 /* Jump into the main loop.						*/
 
-		movl	%chainlenwmask, _chainlenwmask
-		jmp	LoopEntry
+movl	%chainlenwmask, _chainlenwmask
+jmp	LoopEntry
 
 .balign 16
 
@@ -247,33 +248,34 @@ LookaheadLess:	movl	%ebx, %nicematch
  * be spent in the first ten instructions.
  */
 LookupLoop:
-		andl	%chainlenwmask, %curmatchd
-		movzwl	(%prev, %curmatch, 2), %curmatchd
-		cmpl	%limitd, %curmatchd
-		jbe	LeaveNow
-		subl	$0x00010000, %chainlenwmask
-		js	LeaveNow
-LoopEntry:	cmpw	-1(%windowbestlen, %curmatch), %scanendw
-		jne	LookupLoop
-		cmpw	%scanstartw, (%window, %curmatch)
-		jne	LookupLoop
+andl	%chainlenwmask, %curmatchd
+movzwl	( %prev, %curmatch, 2 ), %curmatchd
+cmpl	%limitd, %curmatchd
+jbe	LeaveNow
+subl	$0x00010000, %chainlenwmask
+js	LeaveNow
+LoopEntry:
+cmpw	-1 ( %windowbestlen, %curmatch ), %scanendw
+jne	LookupLoop
+cmpw	%scanstartw, ( %window, %curmatch )
+jne	LookupLoop
 
 /* Store the current value of chainlen.					*/
-		movl	%chainlenwmask, _chainlenwmask
+movl	%chainlenwmask, _chainlenwmask
 
 /* %scan is the string under scrutiny, and %prev to the string we	*/
 /* are hoping to match it up with. In actuality, %esi and %edi are	*/
 /* both pointed (MAX_MATCH_8 - scanalign) bytes ahead, and %edx is	*/
 /* initialized to -(MAX_MATCH_8 - scanalign).				*/
 
-		mov	$(-MAX_MATCH_8), %rdx
-		lea	(%curmatch, %window), %windowbestlen
-		lea	MAX_MATCH_8(%windowbestlen, %scanalign), %windowbestlen
-		lea	MAX_MATCH_8(%scan, %scanalign), %prev
+mov	$ ( -MAX_MATCH_8 ), %rdx
+lea	( %curmatch, %window ), %windowbestlen
+lea	MAX_MATCH_8 ( %windowbestlen, %scanalign ), %windowbestlen
+lea	MAX_MATCH_8 ( %scan, %scanalign ), %prev
 
 /* the prefetching below makes very little difference... */
-		prefetcht1	(%windowbestlen, %rdx)
-		prefetcht1	(%prev, %rdx)
+prefetcht1	( %windowbestlen, %rdx )
+prefetcht1	( %prev, %rdx )
 
 /*
  * Test the strings for equality, 8 bytes at a time. At the end,
@@ -289,120 +291,125 @@ LoopEntry:	cmpw	-1(%windowbestlen, %curmatch), %scanendw
 
 LoopCmps:
 #ifdef USE_SSE
-		/* Preload the SSE registers */
-		movdqu	  (%windowbestlen, %rdx), %xmm1
-		movdqu	  (%prev, %rdx), %xmm2
-		pcmpeqb	%xmm2, %xmm1
-		movdqu	16(%windowbestlen, %rdx), %xmm3
-		movdqu	16(%prev, %rdx), %xmm4
-		pcmpeqb	%xmm4, %xmm3
-		movdqu	32(%windowbestlen, %rdx), %xmm5
-		movdqu	32(%prev, %rdx), %xmm6
-		pcmpeqb	%xmm6, %xmm5
-		movdqu	48(%windowbestlen, %rdx), %xmm7
-		movdqu	48(%prev, %rdx), %xmm8
-		pcmpeqb	%xmm8, %xmm7
+/* Preload the SSE registers */
+movdqu ( %windowbestlen, %rdx ), %xmm1
+movdqu ( %prev, %rdx ), %xmm2
+pcmpeqb	%xmm2, %xmm1
+movdqu	16 ( %windowbestlen, %rdx ), %xmm3
+movdqu	16 ( %prev, %rdx ), %xmm4
+pcmpeqb	%xmm4, %xmm3
+movdqu	32 ( %windowbestlen, %rdx ), %xmm5
+movdqu	32 ( %prev, %rdx ), %xmm6
+pcmpeqb	%xmm6, %xmm5
+movdqu	48 ( %windowbestlen, %rdx ), %xmm7
+movdqu	48 ( %prev, %rdx ), %xmm8
+pcmpeqb	%xmm8, %xmm7
 
-		/* Check the comparisions' results */
-		pmovmskb %xmm1, %rax
-		notw	%ax
-		bsfw	%ax, %ax
-		jnz	LeaveLoopCmps
-		
-		/* this is the only iteration of the loop with a possibility of having
-		   incremented rdx by 0x108 (each loop iteration add 16*4 = 0x40 
-		   and (0x40*4)+8=0x108 */
-		add	$8, %rdx
-		jz LenMaximum
-		add	$8, %rdx
+/* Check the comparisions' results */
+pmovmskb %xmm1, %rax
+notw	%ax
+bsfw	%ax, %ax
+jnz	LeaveLoopCmps
 
-		
-		pmovmskb %xmm3, %rax
-		notw	%ax
-		bsfw	%ax, %ax
-		jnz	LeaveLoopCmps
-		
-		
-		add	$16, %rdx
+/* this is the only iteration of the loop with a possibility of having
+   incremented rdx by 0x108 (each loop iteration add 16*4 = 0x40
+   and (0x40*4)+8=0x108 */
+add	$8, %rdx
+jz LenMaximum
+add	$8, %rdx
 
 
-		pmovmskb %xmm5, %rax
-		notw	%ax
-		bsfw	%ax, %ax
-		jnz	LeaveLoopCmps
-		
-		add	$16, %rdx
+pmovmskb %xmm3, %rax
+notw	%ax
+bsfw	%ax, %ax
+jnz	LeaveLoopCmps
 
 
-		pmovmskb %xmm7, %rax
-		notw	%ax
-		bsfw	%ax, %ax
-		jnz	LeaveLoopCmps
-		
-		add	$16, %rdx
-		
-		jmp	LoopCmps
-LeaveLoopCmps:	add	%rax, %rdx
+add	$16, %rdx
+
+
+pmovmskb %xmm5, %rax
+notw	%ax
+bsfw	%ax, %ax
+jnz	LeaveLoopCmps
+
+add	$16, %rdx
+
+
+pmovmskb %xmm7, %rax
+notw	%ax
+bsfw	%ax, %ax
+jnz	LeaveLoopCmps
+
+add	$16, %rdx
+
+jmp	LoopCmps
+LeaveLoopCmps:
+add	%rax, %rdx
 #else
-		mov	(%windowbestlen, %rdx), %rax
-		xor	(%prev, %rdx), %rax
-		jnz	LeaveLoopCmps
-		
-		mov	8(%windowbestlen, %rdx), %rax
-		xor	8(%prev, %rdx), %rax
-		jnz	LeaveLoopCmps8
+mov	( %windowbestlen, %rdx ), %rax
+xor	( %prev, %rdx ), %rax
+jnz	LeaveLoopCmps
 
-		mov	16(%windowbestlen, %rdx), %rax
-		xor	16(%prev, %rdx), %rax
-		jnz	LeaveLoopCmps16
-				
-		add	$24, %rdx
-		jnz	LoopCmps
-		jmp	LenMaximum
+mov	8 ( %windowbestlen, %rdx ), %rax
+xor	8 ( %prev, %rdx ), %rax
+jnz	LeaveLoopCmps8
+
+mov	16 ( %windowbestlen, %rdx ), %rax
+xor	16 ( %prev, %rdx ), %rax
+jnz	LeaveLoopCmps16
+
+add	$24, %rdx
+jnz	LoopCmps
+jmp	LenMaximum
 #	if 0
 /*
  * This three-liner is tantalizingly simple, but bsf is a slow instruction,
  * and the complicated alternative down below is quite a bit faster. Sad...
  */
 
-LeaveLoopCmps:	bsf	%rax, %rax /* find the first non-zero bit */
-		shrl	$3, %eax /* divide by 8 to get the byte */
-		add	%rax, %rdx
+LeaveLoopCmps:
+bsf	%rax, %rax /* find the first non-zero bit */
+shrl	$3, %eax /* divide by 8 to get the byte */
+add	%rax, %rdx
 #	else
 LeaveLoopCmps16:
-		add	$8, %rdx
+add	$8, %rdx
 LeaveLoopCmps8:
-		add	$8, %rdx
-LeaveLoopCmps:	testl   $0xFFFFFFFF, %eax /* Check the first 4 bytes */
-		jnz     Check16
-		add     $4, %rdx
-		shr     $32, %rax
-Check16:        testw   $0xFFFF, %ax
-		jnz     LenLower
-		add	$2, %rdx
-		shrl	$16, %eax
-LenLower:	subb	$1, %al
-		adc	$0, %rdx
+add	$8, %rdx
+LeaveLoopCmps:
+testl   $0xFFFFFFFF, %eax /* Check the first 4 bytes */
+jnz     Check16
+add     $4, %rdx
+shr     $32, %rax
+Check16:
+testw   $0xFFFF, %ax
+jnz     LenLower
+add	$2, %rdx
+shrl	$16, %eax
+LenLower:
+subb	$1, %al
+adc	$0, %rdx
 #	endif
 #endif
 
 /* Calculate the length of the match. If it is longer than MAX_MATCH,	*/
 /* then automatically accept it as the best possible match and leave.	*/
 
-		lea	(%prev, %rdx), %rax
-		sub	%scan, %rax
-		cmpl	$MAX_MATCH, %eax
-		jge	LenMaximum
+lea	( %prev, %rdx ), %rax
+sub	%scan, %rax
+cmpl	$MAX_MATCH, %eax
+jge	LenMaximum
 
 /* If the length of the match is not longer than the best match we	*/
 /* have so far, then forget it and return to the lookup loop.		*/
 
-		cmpl	%bestlend, %eax
-		jg	LongerMatch
-		mov	_windowbestlen, %windowbestlen
-		mov	dsPrev, %prev
-		movl	_chainlenwmask, %edx
-		jmp	LookupLoop
+cmpl	%bestlend, %eax
+jg	LongerMatch
+mov	_windowbestlen, %windowbestlen
+mov	dsPrev, %prev
+movl	_chainlenwmask, %edx
+jmp	LookupLoop
 
 /*         s->match_start = cur_match;					*/
 /*         best_len = len;						*/
@@ -410,43 +417,44 @@ LenLower:	subb	$1, %al
 /*         scan_end = *(ushf*)(scan+best_len-1);			*/
 
 LongerMatch:
-		movl	%eax, %bestlend
-		movl	%curmatchd, dsMatchStart
-		cmpl	%nicematch, %eax
-		jge	LeaveNow
+movl	%eax, %bestlend
+movl	%curmatchd, dsMatchStart
+cmpl	%nicematch, %eax
+jge	LeaveNow
 
-		lea	(%window, %bestlen), %windowbestlen
-		mov	%windowbestlen, _windowbestlen
+lea	( %window, %bestlen ), %windowbestlen
+mov	%windowbestlen, _windowbestlen
 
-		movzwl	-1(%scan, %rax), %scanend
-		mov	dsPrev, %prev
-		movl	_chainlenwmask, %chainlenwmask
-		jmp	LookupLoop
+movzwl	-1 ( %scan, %rax ), %scanend
+mov	dsPrev, %prev
+movl	_chainlenwmask, %chainlenwmask
+jmp	LookupLoop
 
 /* Accept the current string, with the maximum possible length.		*/
 
 LenMaximum:
-		movl	$MAX_MATCH, %bestlend
-		movl	%curmatchd, dsMatchStart
+movl	$MAX_MATCH, %bestlend
+movl	%curmatchd, dsMatchStart
 
 /* if ((uInt)best_len <= s->lookahead) return (uInt)best_len;		*/
 /* return s->lookahead;							*/
 
 LeaveNow:
-		movl	dsLookahead, %eax
-		cmpl	%eax, %bestlend
-		cmovngl	%bestlend, %eax
+movl	dsLookahead, %eax
+cmpl	%eax, %bestlend
+cmovngl	%bestlend, %eax
 LookaheadRet:
 
 /* Restore the registers and return from whence we came.			*/
 
-	mov	save_rsi, %rsi
-	mov	save_rbx, %rbx
-	mov	save_r12, %r12
-	mov	save_r13, %r13
-	mov	save_r14, %r14
-	mov	save_r15, %r15
+mov	save_rsi, %rsi
+mov	save_rbx, %rbx
+mov	save_r12, %r12
+mov	save_r13, %r13
+mov	save_r14, %r14
+mov	save_r15, %r15
 
-	ret
+ret
 
-match_init:	ret
+match_init:
+ret
