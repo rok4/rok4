@@ -146,17 +146,17 @@ INIT {
     );
 
     %CODES = (
-        TIFF_RAW_INT8 => ("raw", "uint", 8),
-        TIFF_JPG_INT8 => ("jpg", "uint", 8),
-        TIFF_PNG_INT8 => ("png", "uint", 8),
-        TIFF_LZW_INT8 => ("lzw", "uint", 8),
-        TIFF_ZIP_INT8 => ("zip", "uint", 8),
-        TIFF_PKB_INT8 => ("pkb", "uint", 8),
+        TIFF_RAW_INT8 => ["raw", "uint", 8],
+        TIFF_JPG_INT8 => ["jpg", "uint", 8],
+        TIFF_PNG_INT8 => ["png", "uint", 8],
+        TIFF_LZW_INT8 => ["lzw", "uint", 8],
+        TIFF_ZIP_INT8 => ["zip", "uint", 8],
+        TIFF_PKB_INT8 => ["pkb", "uint", 8],
 
-        TIFF_RAW_FLOAT32 => ("raw", "float", 32),
-        TIFF_LZW_FLOAT32 => ("lzw", "float", 32),
-        TIFF_ZIP_FLOAT32 => ("zip", "float", 32),
-        TIFF_PKB_FLOAT32 => ("pkb", "float", 32)
+        TIFF_RAW_FLOAT32 => ["raw", "float", 32],
+        TIFF_LZW_FLOAT32 => ["lzw", "float", 32],
+        TIFF_ZIP_FLOAT32 => ["zip", "float", 32],
+        TIFF_PKB_FLOAT32 => ["pkb", "float", 32]
     );
 }
 END {}
@@ -246,7 +246,8 @@ sub _init {
     return FALSE if (! defined $params);
 
     if (exists $params->{formatCode} && defined $params->{formatCode}) {
-        ($params->{compression}, $params->{sampleformat}, $params->{bitspersample}) = $self->decodeFormat($params->{formatCode});
+        ($params->{compression}, $params->{sampleformat}, $params->{bitspersample}) =
+            $self->decodeFormat($params->{formatCode});
         if (! defined $params->{compression}) {
             ERROR (sprintf "Can not decode formatCode '%s' !",$params->{formatCode});
             return FALSE;
@@ -331,11 +332,13 @@ sub _init {
 
     ### Format code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
     $self->{formatCode} = sprintf "TIFF_%s_%s%s",
-        uc $self->{compression}, $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}}, $self->{pixel}->{bitspersample};
+        uc $self->{compression},
+        $SAMPLEFORMAT2CODE{$self->{pixel}->getSampleFormat()},
+        $self->{pixel}->getBitsPerSample();
 
     if (! exists $CODES{$self->{formatCode}}) {
         ERROR(sprintf "Format code is not handled '%s' !", $self->{formatCode});
-        return undef;
+        return FALSE;
     }
 
     return TRUE;
@@ -460,10 +463,8 @@ sub decodeFormat {
 
     $self->{formatCode} = $formatCode;
 
-    my ($comp, $sf, $bps) = $CODES{$formatCode};
+    return ($CODES{$formatCode}[0], $CODES{$formatCode}[1], $CODES{$formatCode}[2]);
 
-    return ($comp, $sf, $bps);
-    
 }
 
 ####################################################################################################

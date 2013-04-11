@@ -53,13 +53,13 @@ use BE4::Pyramid;
 
 my $pyramid = BE4::Pyramid->new({
 
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
     tms_name => "LAMB93_10cm.tms",
 
     dir_depth => 2,
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
     dir_image => "IMAGE",
@@ -80,15 +80,15 @@ my $pyramid = BE4::Pyramid->new({
     color => "255,255,255"
 });
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources_Forest.txt" });
+my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
 my $forest = BE4::Forest->new($pyramid,$DSL,{
     job_number => 16,
-    path_temp => $Bin."/../temp/",
-    path_temp_common => $Bin."/../temp/",
-    path_shell => $Bin."/../temp",
+    path_temp => $Bin."/../../temp/",
+    path_temp_common => $Bin."/../../temp/",
+    path_shell => $Bin."/../../temp",
 });
 
 ok (defined $forest, "Forest Object containing QTree created");
@@ -97,16 +97,16 @@ is (scalar @{$forest->getGraphs}, 2, "QTree Forest contains 2 graphs");
 
 # Forest Object Creation (with Graph)
 
-$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources_Forest.txt" });
+$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 $pyramid = BE4::Pyramid->new({
 
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
     tms_name => "LAMB93_1M_MNT.tms",
 
     dir_depth => 2,
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
     dir_image => "IMAGE",
@@ -131,9 +131,9 @@ ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyra
 
 $forest = BE4::Forest->new($pyramid,$DSL,{
     job_number => 16,
-    path_temp => $Bin."/../temp/",
-    path_temp_common => $Bin."/../temp/",
-    path_shell => $Bin."/../temp",
+    path_temp => $Bin."/../../temp/",
+    path_temp_common => $Bin."/../../temp/",
+    path_shell => $Bin."/../../temp",
 });
 
 ok (defined $forest, "Forest Object containing Graph created");

@@ -51,15 +51,15 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance TileMatrix représente une matrice de tuiles. 
+ * Une instance TileMatrix représente une matrice de tuiles.
  * Cette matrice décrit un niveau d'une pyramide définit dans un TileMatrixSet
- * 
+ *
  * Définition d'un TileMatrix en XML :
  * \brief Gestion d'une matrice de tuile
  * \~english
- * A TileMatrix represent a matrix of tiles. 
+ * A TileMatrix represent a matrix of tiles.
  * This matrix is part of a pyramid define in a TileMatrixSet
- * 
+ *
  * XML definition of a TileMatrix :
  * \brief Handle a matrix of tiles
  * \details \~ \code{.xml}
@@ -104,7 +104,7 @@ private:
     int tileW;
     /**
      * \~french \brief Longueur d'une tuile
-     * \~english \brief Tile height 
+     * \~english \brief Tile height
      */
     int tileH;
     /**
@@ -141,17 +141,17 @@ public:
      * \param[in] matrixH tile number in the matrix height
      */
     TileMatrix ( std::string id,double res,double x0,double y0,int tileW, int tileH,long int matrixW, long int matrixH ) :
-            id ( id ), res ( res ), x0 ( x0 ), y0 ( y0 ), tileW ( tileW ), tileH ( tileH ), matrixW ( matrixW ), matrixH ( matrixH ) {};
-     /**
-     * \~french
-     * Crée un TileMatrix à partir d'un autre 
-     * \brief Constructeur de copie
-     * \param[in] t TileMatrix à copier
-     * \~english
-     * Create a TileMatrix from another
-     * \brief Copy Constructor
-     * \param[in] t TileMatrix to copy
-     */
+        id ( id ), res ( res ), x0 ( x0 ), y0 ( y0 ), tileW ( tileW ), tileH ( tileH ), matrixW ( matrixW ), matrixH ( matrixH ) {};
+    /**
+    * \~french
+    * Crée un TileMatrix à partir d'un autre
+    * \brief Constructeur de copie
+    * \param[in] t TileMatrix à copier
+    * \~english
+    * Create a TileMatrix from another
+    * \brief Copy Constructor
+    * \param[in] t TileMatrix to copy
+    */
     TileMatrix ( const TileMatrix& t );
 
     /**
@@ -160,7 +160,7 @@ public:
      * \~english
      * \brief Assignement
      */
-    TileMatrix& operator= (TileMatrix const& other);
+    TileMatrix& operator= ( TileMatrix const& other );
     /**
      * \~french
      * \brief Test d'egalite de 2 TileMatrix
@@ -200,7 +200,7 @@ public:
     /**
      * \~french
      * \brief Retourne l'abscisse du point en haut à gauche dans le système de coordonnées associé.
-     * \return abscisse 
+     * \return abscisse
      * \~english
      * \brief Return the x-coordinate of the top right corner in the linked coordinate system.
      * \return x-coordinate

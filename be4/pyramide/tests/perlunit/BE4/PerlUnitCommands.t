@@ -36,58 +36,61 @@
 use strict;
 use warnings;
 
-use FindBin qw($Bin);
-
 use Test::More;
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
-use BE4::TileMatrixSet;
+use BE4::Commands;
+
+#Other BE4 Used Class
+use BE4::Pyramid;
 
 ######################################################
 
-# Quad tree TileMatrixSet
+# Commands Object Creation
 
-my $tmsQuadTree = BE4::TileMatrixSet->new($Bin."/../tms/LAMB93_10cm.tms");
-ok (defined $tmsQuadTree, "Quad tree TileMatrixSet created");
-ok ($tmsQuadTree->isQTree(), "TileMatrixSet recognized as a QTree one");
-is ($tmsQuadTree->getName(), "LAMB93_10cm", "TMS' name extraction");
+my $pyramid = BE4::Pyramid->new({
 
-######################################################
+    tms_path => $Bin."/../../tms",
+    tms_name => "LAMB93_10cm.tms",
 
-# TileMatrixSet for DTM
+    dir_depth => 2,
 
-my $tmsDTM = BE4::TileMatrixSet->new($Bin."/../tms/LAMB93_1M_MNT.tms");
-ok (defined $tmsDTM, "TileMatrixSet for DTM created");
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
+    pyr_name_new => "newPyramid",
 
-ok (! $tmsDTM->isQTree(),"TileMatrixSet recognized as a DTM one");
+    dir_image => "IMAGE",
+    dir_nodata => "NODATA",
+    dir_metadata => "METADATA",
 
-######################################################
+    pyr_level_bottom => "19",
 
-# Bad TileMatrixSet
+    compression => "raw",
+    image_width => 16,
+    image_height => 16,
+    bitspersample => 8,
+    sampleformat => "uint",
+    photometric => "rgb",
+    samplesperpixel => 3,
+    interpolation => "bicubic",
 
-my $badTMS = BE4::TileMatrixSet->new($Bin."/../tms/BadTMS.tms");
-ok (! defined $badTMS, "Unvalid TMS detected");
+    color => "FFFFFF"
+});
 
-my $badSRS = BE4::TileMatrixSet->new($Bin."/../tms/BadSRS.tms");
-ok (! defined $badSRS, "Unvalid SRS detected");
+my $commands = BE4::Commands->new($pyramid);
 
-######################################################
-
-# Test on ID/order functions
-
-is ($tmsQuadTree->getIDfromOrder(2), "level_19", "Conversion order -> ID");
-is ($tmsQuadTree->getOrderfromID("level_4"), 17, "Conversion ID -> order");
-is ($tmsQuadTree->getBelowLevelID("level_16"), "level_17", "Find the below level ID");
-
-######################################################
-
-# Test on inversion SRS and TMS with just one TM
-
-my $inversionSRS = BE4::TileMatrixSet->new($Bin."/../tms/InversionSRS.tms");
-ok (defined $inversionSRS, "TileMatrixSet with just one tile matrix created");
-ok ($inversionSRS->getInversion(),"SRS which need reversed coordinates detected");
+ok (defined $commands, "Commands Object created");
 
 ######################################################
+
+# Testing Split Header Creation
+my $header = $commands->configureFunctions();
+ok (defined $header && $header ne "", "Header created with configureFunctions method.");
+ok ($header =~ m/Wms2work/, "Header contains Wms2work function.");
+ok ($header =~ m/Cache2work/, "Header contains Cache2work function.");
+ok ($header =~ m/MergeNtiff/, "Header contains MergeNtiff function.");
+ok ($header =~ m/Merge4tiff/, "Header contains Merge4tiff function.");
+ok ($header =~ m/Work2cache/, "Header contains Work2cache function.");
 
 done_testing();
-

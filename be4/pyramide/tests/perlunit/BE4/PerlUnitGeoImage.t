@@ -41,57 +41,51 @@ use FindBin qw($Bin);
 use Test::More;
 
 # My tested class
-use BE4::DataSource;
+use BE4::GeoImage;
 
 ######################################################
 
-# DataSource creation
+# GeoImage creation
 
-my $objDSimage = BE4::DataSource->new(
-    "19",
-    {
-        srs => "IGNF:LAMB93",
-        path_image => $Bin."/../images/BDORTHO/"
-    }
-);
-ok (defined $objDSimage, "DataSource (just image) created");
+my $BDP = BE4::GeoImage->new($Bin."/../../images/BDPARCELLAIRE/BDPARCELLAIRE.tif");
+ok (defined $BDP, "BDPARCELLAIRE GeoImage created");
 
-my $objDSharvest = BE4::DataSource->new(
-    "19",
-    {
-        srs => "IGNF:WGS84G",
-        extent =>  $Bin."/../shape/Polygon.txt",
-        wms_layer   => "layer",
-        wms_url => "http://url/wms/",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/tiff",
-    }
-);
-ok (defined $objDSharvest, "DataSource (just harvesting) created");
+my $BDA = BE4::GeoImage->new($Bin."/../../images/BDALTI/BDALTI.tif");
+ok (defined $BDA, "BDALTI GeoImage created");
+
+my $BDO = BE4::GeoImage->new($Bin."/../../images/BDORTHO/BDORTHO.tif");
+ok (defined $BDO, "BDO GeoImage created (with associated mask)");
+
+my $error = BE4::GeoImage->new($Bin."/../../fake/path.tif");
+ok (! defined $error, "Wrong path detected");
 
 ######################################################
 
-# Bad parameters
+# Test on computeInfo
 
-my $error = BE4::DataSource->new(
-    "19",
-    {
-        srs => "IGNF:LAMB93",
-        path_image => $Bin."/../images/"
-    }
-);
-ok (! defined $error, "Wrong data source detected");
-undef $error;
+my ($bps,$ph,$sf,$spp) = $BDP->computeInfo();
+is_deeply ([$bps,$ph,$sf,$spp], [8,"gray","uint",1],"Extract information from BDPARCELLAIRE GeoImage");
 
-$error = BE4::DataSource->new(
-    "19",
-    {
-        srs => "IGNF:LAMB93",
-    }
-);
-ok (! defined $error, "No data source detected");
-undef $error;
+($bps,$ph,$sf,$spp) = $BDA->computeInfo();
+is_deeply ([$bps,$ph,$sf,$spp], [32,"gray","float",1],"Extract information from BDALTI GeoImage");
+
+($bps,$ph,$sf,$spp) = $BDO->computeInfo();
+is_deeply ([$bps,$ph,$sf,$spp], [8,"rgb","uint",3],"Extract information from BDORTHO GeoImage");
+
+######################################################
+
+# Test on exportForMntConf
+
+my $expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n",
+    "IMG $Bin/../../images/BDPARCELLAIRE/BDPARCELLAIRE.tif", 653000, 6858000, 654000, 6857000, 0.1,0.1;
+    
+is ($BDP->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration");
+
+$expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n%s\n",
+    "IMG $Bin/../../images/BDORTHO/BDORTHO.tif", 642000, 6862000, 643000, 6861000, 0.5, 0.5,
+    "MSK $Bin/../../images/BDORTHO/BDORTHO.msk";
+    
+is ($BDO->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration (image + mask)");
 
 ######################################################
 

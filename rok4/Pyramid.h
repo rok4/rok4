@@ -66,15 +66,15 @@ private:
     Level* highestLevel;
     Level* lowestLevel;
 public:
-    
+
     Level* getFirstLevel();
-    Level* getHighestLevel(){
+    Level* getHighestLevel() {
         return highestLevel;
     }
-    Level* getLowestLevel(){
+    Level* getLowestLevel() {
         return lowestLevel;
     }
-    
+
     TileMatrixSet getTms();
     std::map<std::string, Level*>& getLevels() {
         return levels;
@@ -87,7 +87,7 @@ public:
     }
 
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels );
     ~Pyramid();

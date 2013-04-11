@@ -275,10 +275,10 @@ sub new {
     TRACE;
 
     # init. parameters
-    return undef if (! $self->_init($params));
+    if (! $self->_init($params)) {return undef;}
 
     # a new pyramid or from existing pyramid !
-    return undef if (! $self->_load($params,$path_temp));
+    if (! $self->_load($params,$path_temp)) {return undef;};
     
     return $self;   
 }
@@ -422,22 +422,22 @@ sub _load {
 
     TRACE;
 
-    if (! $self->isNewPyramid) {
-        # A pyramid with ancestor
-        # init. process hasn't checked all parameters,
-        # so, we must read file pyramid to initialyze them...
-        return FALSE if (! $self->fillFromAncestor($params,$path_temp));
-    } else {
+    if ($self->isNewPyramid) {
         ##### create TileMatrixSet !
         my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
         if (! defined $objTMS) {
-          ERROR ("Can not load TMS !");
-          return FALSE;
+            ERROR ("Can not load TMS !");
+            return FALSE;
         }
 
         $self->{tms} = $objTMS;
         DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
+    } else {
+        # A pyramid with ancestor
+        # init. process hasn't checked all parameters,
+        # so, we must read file pyramid to initialyze them...
+        return FALSE if (! $self->fillFromAncestor($params,$path_temp));
     }
 
     ##### create PyrImageSpec !

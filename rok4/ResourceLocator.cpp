@@ -55,7 +55,7 @@ ResourceLocator::ResourceLocator ( const ResourceLocator& origRL ) {
 }
 
 ResourceLocator& ResourceLocator::operator= ( const ResourceLocator& other ) {
-    if (this != &other) {
+    if ( this != &other ) {
         this->format = other.format;
         this->href = other.href;
     }

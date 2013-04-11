@@ -36,59 +36,62 @@
 use strict;
 use warnings;
 
+use FindBin qw($Bin);
+
 use Test::More;
 
 # My tested class
-use BE4::Level;
+use BE4::DataSource;
 
 ######################################################
 
-# Level object creation
+# DataSource creation
 
-my $level = BE4::Level->new({
-    id                => "level_12",
-    order             => 9,
-    dir_image         => "relative/path/to/imageDir",
-    dir_nodata        => "relative/path/to/nodataDir",
-    size              => [16,8],
-    dir_depth         => 2,
-});
+my $objDSimage = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../../images/BDORTHO/"
+    }
+);
+ok (defined $objDSimage, "DataSource (just image) created");
 
-ok (defined $level, "Level created");
+my $objDSharvest = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:WGS84G",
+        extent =>  $Bin."/../../shape/Polygon.txt",
+        wms_layer   => "layer",
+        wms_url => "http://url/wms/",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff",
+    }
+);
+ok (defined $objDSharvest, "DataSource (just harvesting) created");
 
 ######################################################
 
-# Test on functions
+# Bad parameters
 
-$level->updateExtremTiles(14,21,4,12); # rowMin,rowMax,colMin,colMax #
-my ($rowMin,$rowMax,$colMin,$colMax) = $level->getLimits();
-is_deeply([$rowMin,$rowMax,$colMin,$colMax],[14,21,4,12],"Update extrem tiles for the first time");
+my $error = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+        path_image => $Bin."/../../images/"
+    }
+);
+ok (! defined $error, "Wrong data source detected");
+undef $error;
 
-$level->updateExtremTiles(20,22,2,4); # rowMin,rowMax,colMin,colMax #
-($rowMin,$rowMax,$colMin,$colMax) = $level->getLimits();
-is_deeply([$rowMin,$rowMax,$colMin,$colMax],[14,22,2,12],"Update extrem tiles for the second time");
-
-my $xmlLevel = <<"XMLLEVEL";
-    <level>
-        <tileMatrix>level_12</tileMatrix>
-        <baseDir>relative/path/to/imageDir</baseDir>
-        <tilesPerWidth>16</tilesPerWidth>
-        <tilesPerHeight>8</tilesPerHeight>
-        <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>relative/path/to/nodataDir/nd.tif</filePath>
-        </nodata>
-        <TMSLimits>
-            <minTileRow>14</minTileRow>
-            <maxTileRow>22</maxTileRow>
-            <minTileCol>2</minTileCol>
-            <maxTileCol>12</maxTileCol>
-        </TMSLimits>
-    </level>
-<!-- __LEVELS__ -->
-XMLLEVEL
-
-is ($level->exportToXML(), $xmlLevel, "Export level to XML (for pyramid's descriptor)");
+$error = BE4::DataSource->new(
+    "19",
+    {
+        srs => "IGNF:LAMB93",
+    }
+);
+ok (! defined $error, "No data source detected");
+undef $error;
 
 ######################################################
 

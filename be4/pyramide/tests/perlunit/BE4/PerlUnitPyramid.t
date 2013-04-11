@@ -48,13 +48,13 @@ use BE4::Pyramid;
 # Pyramid creation
 
 my $newPyr = BE4::Pyramid->new({
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
     tms_name => "LAMB93_10cm.tms",
 
     dir_depth => 2,
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
     dir_image => "IMAGE",
@@ -78,15 +78,15 @@ ok (defined $newPyr, "New Pyramid created");
 is ($newPyr->getNodataValue(),"255,255,255","Nodata conversion hex -> dec");
 
 my $updatePyr = BE4::Pyramid->new({
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "updatePyramid",
     pyr_level_bottom => 19,
 
-    pyr_data_path_old => $Bin."/../pyramid",
-    pyr_desc_path_old => $Bin."/../pyramid",
+    pyr_data_path_old => $Bin."/../../pyramid",
+    pyr_desc_path_old => $Bin."/../../pyramid",
     pyr_name_old => "oldPyramid",
 
     # Parameters switched by old pyramid's ones
@@ -114,15 +114,15 @@ my $updatePyr = BE4::Pyramid->new({
 ok (defined $updatePyr, "Update Pyramid created");
 
 my $badUpdatePyr = BE4::Pyramid->new({
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "updatePyramid",
     pyr_level_bottom => 19,
 
-    pyr_data_path_old => $Bin."/../pyramid",
-    pyr_desc_path_old => $Bin."/../pyramid",
+    pyr_data_path_old => $Bin."/../../pyramid",
+    pyr_desc_path_old => $Bin."/../../pyramid",
     pyr_name_old => "badOldPyramid",
 });
 ok (! defined $badUpdatePyr, "Wrong level ID in hte old pyramid's descriptor detected");
@@ -170,7 +170,7 @@ is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyr
 ######################################################
 
 is ($updatePyr->getRootPerType("data", 1, "level12"),
-    $Bin."/../pyramid/updatePyramid/IMG/level12",
+    $Bin."/../../pyramid/updatePyramid/IMG/level12",
     "Compose path of image");
 
 ######################################################

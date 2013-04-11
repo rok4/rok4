@@ -36,47 +36,27 @@
 use strict;
 use warnings;
 
-use FindBin qw($Bin);
-
 use Test::More;
 
+use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
+
 # My tested class
-use BE4::ImageSource;
+use BE4::Script;
 
 ######################################################
 
-# ImageSource creation
+# Script Object Creation
 
-my $IS = BE4::ImageSource->new({
-    path_image => $Bin."/../images/BDORTHO/"
+my $script = BE4::Script->new({
+    id => "test",
+    scriptDir => "$Bin/../../temp",
+    tempDir => "$Bin/../../temp",
+    commonTempDir => "$Bin/../../temp"
 });
-ok (defined $IS, "ImageSource created");
 
-my $error = BE4::ImageSource->new({
-    path_image => $Bin."/../wrong/path/"
-});
-ok (! defined $error, "Wrong path detected");
-
-undef $error;
-
-$error = BE4::ImageSource->new({
-    path_image => $Bin."/../images/"
-});
-ok (! defined $error, "Non consistent images detected (with different components)");
-
-undef $error;
-
-######################################################
-
-# Test on computeBBox
-
-my ($xmin,$ymin,$xmax,$ymax) = $IS->computeBBox();
-
-is_deeply ([$xmin,$ymin,$xmax,$ymax],
-           ["642000.000000000000","643000.000000000000","6861000.000000000000","6862000.000000000000"],
-           "ImageSource bounding box computed");
+ok (defined $script, "Script Object created");
+ok (! $script->isExecutedAlone(), "By default, a script is not executed alone");
 
 ######################################################
 
 done_testing();
-

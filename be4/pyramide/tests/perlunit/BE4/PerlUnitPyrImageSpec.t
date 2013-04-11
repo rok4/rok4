@@ -81,10 +81,10 @@ is ($pis2->getPixel->getBitsPerSample(), "8", "Bits per sample extracted from fo
 
 # Test on format decoder
 
-my ($fmt,$comp,$sf,$bps) = $pis2->decodeFormat("TIFF_INT8");
-is_deeply ([$fmt,$comp,$sf,$bps],["TIFF","raw","uint",8], "Deprecated format code 'TIFF_INT8' decoded");
-($fmt,$comp,$sf,$bps) = $pis2->decodeFormat("TIFF_FLOAT32");
-is_deeply ([$fmt,$comp,$sf,$bps],["TIFF","raw","float",32], "Deprecated format code 'TIFF_FLOAT32' decoded");
+my ($comp,$sf,$bps) = $pis2->decodeFormat("TIFF_INT8");
+is_deeply ([$comp,$sf,$bps],["raw","uint",8], "Deprecated format code 'TIFF_INT8' decoded");
+($comp,$sf,$bps) = $pis2->decodeFormat("TIFF_FLOAT32");
+is_deeply ([$comp,$sf,$bps],["raw","float",32], "Deprecated format code 'TIFF_FLOAT32' decoded");
 
 ######################################################
 
@@ -163,8 +163,8 @@ undef $pis;
 
 $pis = BE4::PyrImageSpec->new({
     samplesperpixel => 1,
-    bitspersample => 32,
-    sampleformat => "float",
+    bitspersample => 8,
+    sampleformat => "uint",
     photometric => "gray",
     compression => "jpg",
     compressionoption => "crop",
@@ -177,8 +177,8 @@ undef $pis;
 
 $pis = BE4::PyrImageSpec->new({
     samplesperpixel => 1,
-    bitspersample => 32,
-    sampleformat => "float",
+    bitspersample => 8,
+    sampleformat => "uint",
     photometric => "gray",
     compression => "raw",
     compressionoption => "crop",

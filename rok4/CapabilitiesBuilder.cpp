@@ -865,14 +865,14 @@ void Rok4Server::buildWMTSCapabilities() {
 
         TiXmlElement * tmsEl=new TiXmlElement ( "TileMatrixSet" );
         tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms.getId() ) );
-        if (!(tms.getTitle().empty())){
+        if ( ! ( tms.getTitle().empty() ) ) {
             tmsEl->LinkEndChild ( buildTextNode ( "ows:Title", tms.getTitle().c_str() ) );
         }
-        
-        if (!(tms.getAbstract().empty())){
+
+        if ( ! ( tms.getAbstract().empty() ) ) {
             tmsEl->LinkEndChild ( buildTextNode ( "ows:Abstract", tms.getAbstract().c_str() ) );
         }
-       
+
         if ( tms.getKeyWords()->size() != 0 ) {
             TiXmlElement * kwlEl = new TiXmlElement ( "ows:Keywords" );
             TiXmlElement * kwEl;
@@ -889,8 +889,8 @@ void Rok4Server::buildWMTSCapabilities() {
             //kwlEl->LinkEndChild ( buildTextNode ( "ows:Keyword", ROK4_INFO ) );
             tmsEl->LinkEndChild ( kwlEl );
         }
-        
-        
+
+
         tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms.getCrs().getRequestCode() ) );
         std::map<std::string, TileMatrix>* tmList = tms.getTmList();
 

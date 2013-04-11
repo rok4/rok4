@@ -55,13 +55,13 @@ use BE4::Commands;
 
 my $pyramid = BE4::Pyramid->new({
 
-    tms_path => $Bin."/../tms",
+    tms_path => $Bin."/../../tms",
     tms_name => "LAMB93_10cm.tms",
 
     dir_depth => 2,
 
-    pyr_data_path => $Bin."/../pyramid",
-    pyr_desc_path => $Bin."/../pyramid",
+    pyr_data_path => $Bin."/../../pyramid",
+    pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
     dir_image => "IMAGE",
@@ -83,7 +83,7 @@ my $pyramid = BE4::Pyramid->new({
 });
 ok (defined $pyramid,"pyramid ok.");
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../sources/sources.txt" });
+my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
 ok (defined $DSL,"DSL ok.");
 
 my $commands = BE4::Commands->new($pyramid);
@@ -95,9 +95,9 @@ ok (defined $datasource,"datasource ok.");
 
 my $forest = BE4::Forest->new($pyramid,$DSL,{
 	job_number => 16,
-	path_temp => $Bin."/../temp/",
-        path_temp_common => $Bin."/../temp/",
-	path_shell => $Bin."/../temp",
+	path_temp => $Bin."/../../temp/",
+        path_temp_common => $Bin."/../../temp/",
+	path_shell => $Bin."/../../temp",
 });
 ok (defined $forest,"forest ok.");
 

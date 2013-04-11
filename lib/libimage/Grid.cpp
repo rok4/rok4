@@ -58,12 +58,12 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
     double stepx = stepInt * ratio_x;
     double stepy = stepInt * ratio_y;
 
-    stepRight = width - ((nbxInt-1)*stepInt + 1);
-    stepBottom = height - ((nbyInt-1)*stepInt + 1);
+    stepRight = width - ( ( nbxInt-1 ) *stepInt + 1 );
+    stepBottom = height - ( ( nbyInt-1 ) *stepInt + 1 );
 
     double stepxright = stepRight * ratio_x;
     double stepybottom = stepBottom * ratio_y;
-    
+
     gridX = new double[ nbx * nby];
     gridY = new double[ nbx * nby];
 
@@ -71,12 +71,12 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
         for ( int x = 0 ; x < nbx; x++ ) {
             if ( y == nbyInt ) {
                 //Cut the last pixel
-                gridY[nbx*y + x] = top  - ( (y-1)*stepy + stepybottom );
+                gridY[nbx*y + x] = top  - ( ( y-1 ) *stepy + stepybottom );
             } else {
                 gridY[nbx*y + x] = top  - y*stepy;
             }
             if ( x == nbxInt ) {
-                gridX[nbx*y + x] = left + ( (x-1)*stepx + stepxright );
+                gridX[nbx*y + x] = left + ( ( x-1 ) *stepx + stepxright );
             } else {
                 gridX[nbx*y + x] = left + x*stepx;
             }
@@ -192,35 +192,35 @@ void Grid::update_bbox() {
     bbox.ymin = gridY[0];
     bbox.ymax = gridY[0];
     // Top pixel
-    for(int i = 0; i < nbx - 1; i++) update(bbox, gridX[i], gridY[i]);
+    for ( int i = 0; i < nbx - 1; i++ ) update ( bbox, gridX[i], gridY[i] );
     // Left pixel
-    for(int i = 0; i < nby - 1; i++) update(bbox, gridX[i*nbx], gridY[i*nbx]);
+    for ( int i = 0; i < nby - 1; i++ ) update ( bbox, gridX[i*nbx], gridY[i*nbx] );
     //Right Pixel
-    double wx = (stepInt - ((width - 1)%stepInt))/double(stepInt);
-    for(int i = 0; i < nby; i++) update(bbox, wx * gridX[i*nbx + nbx - 2] + (1.-wx) * gridX[i*nbx + nbx - 1],
-                                            wx * gridY[i*nbx + nbx - 2] + (1.-wx) * gridY[i*nbx + nbx - 1]);
+    double wx = ( stepInt - ( ( width - 1 ) %stepInt ) ) /double ( stepInt );
+    for ( int i = 0; i < nby; i++ ) update ( bbox, wx * gridX[i*nbx + nbx - 2] + ( 1.-wx ) * gridX[i*nbx + nbx - 1],
+                wx * gridY[i*nbx + nbx - 2] + ( 1.-wx ) * gridY[i*nbx + nbx - 1] );
     //Bottom Pixel
-    double wy = (stepInt - ((height - 1)%stepInt))/double(stepInt);
-    for(int i = 0; i < nbx; i++) update(bbox, wy * gridX[(nby-2)*nbx + i] + (1.-wy) * gridX[(nby-1)*nbx + i],
-                                              wy * gridY[(nby-2)*nbx + i] + (1.-wy) * gridY[(nby-1)*nbx + i]);
+    double wy = ( stepInt - ( ( height - 1 ) %stepInt ) ) /double ( stepInt );
+    for ( int i = 0; i < nbx; i++ ) update ( bbox, wy * gridX[ ( nby-2 ) *nbx + i] + ( 1.-wy ) * gridX[ ( nby-1 ) *nbx + i],
+                wy * gridY[ ( nby-2 ) *nbx + i] + ( 1.-wy ) * gridY[ ( nby-1 ) *nbx + i] );
 }
 
-int Grid::interpolate_line(int line, float* X, float* Y, int nb) {
-  int ky = line / stepInt;
-  double w = (stepInt - (line%stepInt))/double(stepInt);   
-  double LX[nbx], LY[nbx];
-  for(int i = 0; i < nbx; i++) {
-    LX[i] = w*gridX[ky*nbx + i] + (1-w)*gridX[ky * nbx + nbx + i];
-    LY[i] = w*gridY[ky*nbx + i] + (1-w)*gridY[ky * nbx + nbx + i];
-  }
+int Grid::interpolate_line ( int line, float* X, float* Y, int nb ) {
+    int ky = line / stepInt;
+    double w = ( stepInt - ( line%stepInt ) ) /double ( stepInt );
+    double LX[nbx], LY[nbx];
+    for ( int i = 0; i < nbx; i++ ) {
+        LX[i] = w*gridX[ky*nbx + i] + ( 1-w ) *gridX[ky * nbx + nbx + i];
+        LY[i] = w*gridY[ky*nbx + i] + ( 1-w ) *gridY[ky * nbx + nbx + i];
+    }
 
-  for(int i = 0; i < nb; i++) {
-    int kx = i / stepInt;
-    double w = (stepInt - (i%stepInt))/double(stepInt);   
-    X[i] = w*LX[kx] + (1-w)*LX[kx+1];
-    Y[i] = w*LY[kx] + (1-w)*LY[kx+1];
-  }
-  return nb;
+    for ( int i = 0; i < nb; i++ ) {
+        int kx = i / stepInt;
+        double w = ( stepInt - ( i%stepInt ) ) /double ( stepInt );
+        X[i] = w*LX[kx] + ( 1-w ) *LX[kx+1];
+        Y[i] = w*LY[kx] + ( 1-w ) *LY[kx+1];
+    }
+    return nb;
 }
 
 

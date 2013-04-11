@@ -53,8 +53,8 @@ private:
     int getOrigLine ( uint8_t* buffer, int line );
     int getOrigLine ( float* buffer, int line );
     void generate();
-    void generateLine(int line, float* line1, float* line2 , float* line3);
-    
+    void generateLine ( int line, float* line1, float* line2 , float* line3 );
+
 public:
     virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );

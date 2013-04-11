@@ -98,7 +98,7 @@ public:
     CRS ( std::string crs_code );
     /**
      * \~french
-     * Crée un CRS à partir d'un autre 
+     * Crée un CRS à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] crs CRS à copier
      * \~english

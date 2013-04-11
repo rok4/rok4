@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-03-27 11:22+0100\n"
+"POT-Creation-Date: 2013-04-11 10:32+0200\n"
 "PO-Revision-Date: 2012-08-27 11:15+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -920,35 +920,35 @@ msgstr "Erreur sur le CRS "
 msgid " : absence de separateur"
 msgstr " : absence de séparateur"
 
-#: Level.cpp:149 Level.cpp:186 Level.cpp:231
+#: Level.cpp:146 Level.cpp:183 Level.cpp:228
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:256
+#: Level.cpp:253
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:264
+#: Level.cpp:261
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:303
+#: Level.cpp:300
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:366 Level.cpp:384
+#: Level.cpp:363 Level.cpp:381
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:389
+#: Level.cpp:386
 msgid "Tile : "
 msgstr "Tuile : "
 
-#: Level.cpp:399
+#: Level.cpp:396
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:409 Level.cpp:422
+#: Level.cpp:406 Level.cpp:419
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -956,19 +956,19 @@ msgstr "GetTile Image"
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Usage : rok4 [-f server_config_file]"
 
-#: main.cpp:209
+#: main.cpp:208
 msgid "Erreur sur l'option -f"
 msgstr "Erreur sur l'option -f"
 
-#: main.cpp:225
+#: main.cpp:224
 msgid "Lancement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:246
+#: main.cpp:245
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:249 Rok4Api.cpp:134 Rok4Api.cpp:142 Rok4Api.cpp:150
+#: main.cpp:248 Rok4Api.cpp:134 Rok4Api.cpp:142 Rok4Api.cpp:150
 #: Rok4Api.cpp:159 Rok4Api.cpp:529
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
@@ -1213,7 +1213,7 @@ msgstr "Paramètre STYLE absent."
 msgid "Le style "
 msgstr "Le style "
 
-#: Request.cpp:849 Request.cpp:1068
+#: Request.cpp:849 Request.cpp:1067
 msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
 
@@ -1327,15 +1327,15 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
+#: Request.cpp:1058 Request.cpp:1073 Rok4Server.cpp:519
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1059 Request.cpp:1075 Rok4Server.cpp:519
+#: Request.cpp:1058 Request.cpp:1073 Rok4Server.cpp:519
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
-#: Request.cpp:1083
+#: Request.cpp:1081
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr "Valeur du paramètre VERSION invalide (1.0.0 disponible seulement)"
 

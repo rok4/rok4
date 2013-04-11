@@ -120,7 +120,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         log.precision ( 8 );
         log.setf ( std::ios::fixed,std::ios::floatfield );
 
-        std::cout<< _( "Envoi des messages dans la sortie du logger" ) << std::endl;
+        std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
         LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
         loggerInitialised=true;
     } else {
@@ -168,11 +168,11 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
 /**
 * \brief \~french Initialisation d'une requete \~english Initialize a request \~
-* \param[in] queryString 
+* \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName
 * \return Requete (memebres alloues ici, doivent etre desalloues ensuite)
-* 
+*
 * Requete HTTP, basee sur la terminologie des variables d'environnement Apache et completee par le type d'operation (au sens WMS/WMTS) de la requete
 * Exemple :
 * http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
@@ -570,15 +570,15 @@ void rok4KillLogger() {
  * \brief Fermeture des descripteurs de fichiers
  */
 void rok4ReloadLogger() {
-        Accumulator* acc = NULL;
+    Accumulator* acc = NULL;
     for ( int i=0; i<= nbLogLevel ; i++ )
         if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
             acc = Logger::getAccumulator ( ( LogLevel ) i );
             break;
         }
-        if(acc) {
-            acc->close();
-        }
+    if ( acc ) {
+        acc->close();
+    }
 }
 
 

@@ -242,6 +242,12 @@ sub getID {
     return $self->{id};
 }
 
+# Function: isExecutedAlone
+sub isExecutedAlone {
+    my $self = shift;
+    return $self->{executedAlone};
+}
+
 # Function: getTempDir
 # Returns the script's temporary directories
 sub getTempDir {

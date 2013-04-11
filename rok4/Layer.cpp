@@ -51,9 +51,9 @@ DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDa
     return dataPyramid->getTile ( x, y, tmId, errorDataSource );
 }
 
-Image* Layer::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
+Image* Layer::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
     error=0;
-    return dataPyramid->getbbox (servicesConf, bbox, width, height, dst_crs, resampling, error );
+    return dataPyramid->getbbox ( servicesConf, bbox, width, height, dst_crs, resampling, error );
 }
 
 std::string Layer::getId() {
@@ -61,12 +61,12 @@ std::string Layer::getId() {
 }
 
 Layer::~Layer() {
-    
+
     /*for (int i = 0 ; i < WMSCRSList.size() ; i++) {
         CRS* tmp = WMSCRSList.at(i);
         delete tmp;
     }
     WMSCRSList.clear();*/
-    
+
     delete dataPyramid;
 }

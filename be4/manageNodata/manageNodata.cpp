@@ -45,7 +45,7 @@
  * On définit deux fichiers :
  * \li l'image en entrée, à modifier
  * \li l'image en sortie
- * 
+ *
  * On va également définir 3 couleurs en paramètre :
  * \li la couleur cible : les pixels de cette couleur sont ceux potentiellement modifiés
  * \li la nouvelle couleur de nodata
@@ -95,22 +95,22 @@ using namespace std;
  * \endcode
  */
 void usage() {
-    
+
     std::cerr << "\nmanageNodata version " << BE4_VERSION << "\n\n" <<
 
-        "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
+              "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
 
-        "Usage: manageNodata -target <VAL> -nodata <VAL> [-data <VAL>] <INPUT FILE> <OUTPUT FILE>\n\n" <<
+              "Usage: manageNodata -target <VAL> -nodata <VAL> [-data <VAL>] <INPUT FILE> <OUTPUT FILE>\n\n" <<
 
-        "Colors are provided in decimal format, one integer value per sample\n" <<
-        "Parameters:\n" <<
-        "     -target color to modify in input image\n" <<
-        "     -data new color for data pixel which contained target color\n" <<
-        "     -nodata new color for nodata pixel, which contained target color and linked to borders\n" <<
-        "     -channels samples per pixel : 1, 3 or 4\n\n" <<
+              "Colors are provided in decimal format, one integer value per sample\n" <<
+              "Parameters:\n" <<
+              "     -target color to modify in input image\n" <<
+              "     -data new color for data pixel which contained target color\n" <<
+              "     -nodata new color for nodata pixel, which contained target color and linked to borders\n" <<
+              "     -channels samples per pixel : 1, 3 or 4\n\n" <<
 
-        "Example, to keep pure white for nodata : \n" <<
-        "     manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif\n" << std::endl;
+              "Example, to keep pure white for nodata : \n" <<
+              "     manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif\n" << std::endl;
 }
 
 /**
@@ -119,11 +119,11 @@ void usage() {
  * \param[in] message message d'erreur
  * \param[in] errorCode code de retour, -1 par défaut
  */
-void error(std::string message, int errorCode = -1) {
-    LOGGER_ERROR(message);
+void error ( std::string message, int errorCode = -1 ) {
+    LOGGER_ERROR ( message );
     usage();
-    sleep(1);
-    exit(errorCode);
+    sleep ( 1 );
+    exit ( errorCode );
 }
 
 /**
@@ -140,7 +140,7 @@ void error(std::string message, int errorCode = -1) {
  * \param[in] argv parameters array
  * \return return code, 0 if success, -1 otherwise
  */
-int main(int argc, char* argv[]) {
+int main ( int argc, char* argv[] ) {
     char* input = 0;
     char* output = 0;
 
@@ -151,134 +151,128 @@ int main(int argc, char* argv[]) {
     int channels = 0;
 
     /* Initialisation des Loggers */
-    Logger::setOutput(STANDARD_OUTPUT_STREAM_FOR_ERRORS);
+    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
     //Logger::setAccumulator(DEBUG, acc);
-    Logger::setAccumulator(INFO , acc);
-    Logger::setAccumulator(WARN , acc);
-    Logger::setAccumulator(ERROR, acc);
-    Logger::setAccumulator(FATAL, acc);
+    Logger::setAccumulator ( INFO , acc );
+    Logger::setAccumulator ( WARN , acc );
+    Logger::setAccumulator ( ERROR, acc );
+    Logger::setAccumulator ( FATAL, acc );
 
-    std::ostream &logd = LOGGER(DEBUG);
-    logd.precision(16);
-    logd.setf(std::ios::fixed,std::ios::floatfield);
+    std::ostream &logd = LOGGER ( DEBUG );
+    logd.precision ( 16 );
+    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
-    std::ostream &logw = LOGGER(WARN);
-    logw.precision(16);
-    logw.setf(std::ios::fixed,std::ios::floatfield);
+    std::ostream &logw = LOGGER ( WARN );
+    logw.precision ( 16 );
+    logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    for(int i = 1; i < argc; i++) {
-        if(!strcmp(argv[i],"-h")) {
+    for ( int i = 1; i < argc; i++ ) {
+        if ( !strcmp ( argv[i],"-h" ) ) {
             usage();
-            exit(0);
+            exit ( 0 );
         }
-        if(!strcmp(argv[i],"-target")) {
-            if(i++ >= argc) error("Error with option -target",-1);
+        if ( !strcmp ( argv[i],"-target" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -target",-1 );
             strTargetValue = argv[i];
             continue;
-        }
-        else if(!strcmp(argv[i],"-nodata")) {
-            if(i++ >= argc) error("Error with option -nodata",-1);
+        } else if ( !strcmp ( argv[i],"-nodata" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -nodata",-1 );
             strNewNodata = argv[i];
             continue;
-        }
-        else if(!strcmp(argv[i],"-data")) {
-            if(i++ >= argc) error("Error with option -data",-1);
+        } else if ( !strcmp ( argv[i],"-data" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -data",-1 );
             strNewData = argv[i];
             continue;
-        }
-        else if(!strcmp(argv[i],"-channels")) {
-            if(i++ >= argc) error("Error with option -channels",-1);
-            channels = atoi(argv[i]);
+        } else if ( !strcmp ( argv[i],"-channels" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -channels",-1 );
+            channels = atoi ( argv[i] );
             continue;
-        }
-        else if(!input) {
+        } else if ( !input ) {
             input = argv[i];
-        }
-        else if(!output) {
+        } else if ( !output ) {
             output = argv[i];
-        }
-        else {
-            error("Error : unknown option : " + string(argv[i]),-1);
+        } else {
+            error ( "Error : unknown option : " + string ( argv[i] ),-1 );
         }
     }
 
-    if (! input) error("Missing input file",-1);
-    if (! output) error("Missing output file",-1);
-    if (! channels) error("Missing number of samples per pixel",-1);
-    if (! strTargetValue) error("Missing target color",-1);
-    if (! strNewNodata && ! strNewData) error("What have we to do with the target color ? Precise a new nodata or data color",-1);
+    if ( ! input ) error ( "Missing input file",-1 );
+    if ( ! output ) error ( "Missing output file",-1 );
+    if ( ! channels ) error ( "Missing number of samples per pixel",-1 );
+    if ( ! strTargetValue ) error ( "Missing target color",-1 );
+    if ( ! strNewNodata && ! strNewData ) error ( "What have we to do with the target color ? Precise a new nodata or data color",-1 );
 
     uint8_t* targetValue = new uint8_t[channels];
     uint8_t* newNodata = new uint8_t[channels];
     uint8_t* newData = new uint8_t[channels];
-    
+
     // Target value interpretation
-    char* charValue = strtok(strTargetValue,",");
-    if(charValue == NULL) {
-        error("Error with option -target : integer values (between 0 and 255) seperated by comma",-1);
+    char* charValue = strtok ( strTargetValue,"," );
+    if ( charValue == NULL ) {
+        error ( "Error with option -target : integer values (between 0 and 255) seperated by comma",-1 );
     }
-    int value = atoi(charValue);
-    if(value < 0 || value > 255) {
-        error("Error with option -target : integer values (between 0 and 255) seperated by comma",-1);
+    int value = atoi ( charValue );
+    if ( value < 0 || value > 255 ) {
+        error ( "Error with option -target : integer values (between 0 and 255) seperated by comma",-1 );
     }
     targetValue[0] = value;
-    for(int i = 1; i < channels; i++) {
-        charValue = strtok (NULL, ",");
-        if(charValue == NULL) {
-            error("Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1);
+    for ( int i = 1; i < channels; i++ ) {
+        charValue = strtok ( NULL, "," );
+        if ( charValue == NULL ) {
+            error ( "Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1 );
         }
-        value = atoi(charValue);
-        if(value < 0 || value > 255) {
-            error("Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1);
+        value = atoi ( charValue );
+        if ( value < 0 || value > 255 ) {
+            error ( "Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1 );
         }
         targetValue[i] = value;
     }
 
     // New nodata interpretation
-    if (strNewNodata) {
-        charValue = strtok(strNewNodata,",");
-        if(charValue == NULL) {
-            error("Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1);
+    if ( strNewNodata ) {
+        charValue = strtok ( strNewNodata,"," );
+        if ( charValue == NULL ) {
+            error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
         }
-        value = atoi(charValue);
-        if(value < 0 || value > 255) {
-            error("Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1);
+        value = atoi ( charValue );
+        if ( value < 0 || value > 255 ) {
+            error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
         }
         newNodata[0] = value;
-        for(int i = 1; i < channels; i++) {
-            charValue = strtok (NULL, ",");
-            if(charValue == NULL) {
-                error("Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1);
+        for ( int i = 1; i < channels; i++ ) {
+            charValue = strtok ( NULL, "," );
+            if ( charValue == NULL ) {
+                error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
             }
-            value = atoi(charValue);
-            if(value < 0 || value > 255) {
-                error("Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1);
+            value = atoi ( charValue );
+            if ( value < 0 || value > 255 ) {
+                error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
             }
             newNodata[i] = value;
         }
     }
 
     // New data interpretation
-    if (strNewData) {
-        charValue = strtok(strNewData,",");
-        if(charValue == NULL) {
-            error("Error with option -data : integer values (between 0 and 255) seperated by comma",-1);
+    if ( strNewData ) {
+        charValue = strtok ( strNewData,"," );
+        if ( charValue == NULL ) {
+            error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
         }
-        value = atoi(charValue);
-        if(value < 0 || value > 255) {
-            error("Error with option -data : integer values (between 0 and 255) seperated by comma",-1);
+        value = atoi ( charValue );
+        if ( value < 0 || value > 255 ) {
+            error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
         }
         newData[0] = value;
-        for(int i = 1; i < channels; i++) {
-            charValue = strtok (NULL, ",");
-            if(charValue == NULL) {
-                error("Error with option -data : integer values (between 0 and 255) seperated by comma",-1);
+        for ( int i = 1; i < channels; i++ ) {
+            charValue = strtok ( NULL, "," );
+            if ( charValue == NULL ) {
+                error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
             }
-            value = atoi(charValue);
-            if(value < 0 || value > 255) {
-                error("Error with option -data : integer values (between 0 and 255) seperated by comma",-1);
+            value = atoi ( charValue );
+            if ( value < 0 || value > 255 ) {
+                error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
             }
             newData[i] = value;
         }
@@ -287,15 +281,15 @@ int main(int argc, char* argv[]) {
         newData = targetValue;
     }
 
-    if (! strNewNodata) {
+    if ( ! strNewNodata ) {
         // On ne précise pas de nouvelle couleur de non-donnée, elle est la même que la couleur cible.
         newNodata = targetValue;
     }
 
-    TiffNodataManager TNM(channels,targetValue,newData,newNodata);
-    
-    if (! TNM.treatNodata(input,output)) {
-        error("Error : unable to treat nodata for this file : " + string(input),-1);
+    TiffNodataManager TNM ( channels,targetValue,newData,newNodata );
+
+    if ( ! TNM.treatNodata ( input,output ) ) {
+        error ( "Error : unable to treat nodata for this file : " + string ( input ),-1 );
     }
 
     delete[] targetValue;

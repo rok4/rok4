@@ -63,102 +63,102 @@
  */
 class Kernel {
 
-    private:
-        /**
-         * \~french \brief Rayon de base du noyau d'interpolation
-         * \details Chaque noyau a un rayon de base, qui va définir les pixels source de part et d'autre du pixel de destination qui vont compter dans le calcul (avoir un poids non nul). On peut imaginer un cercle autour du pixel final et considérer les pixels sources dans ce cercle.
-         *
-         * Le rayon est donc une distance exprimée en pixel source
-         *
-         * Ce rayon de base peut être modulé par le rapport des résolutions, c'est-à-dire le ratio :
-         *
-         * \b resolution destination / \b resolution source
-         *
-         * Et cela pour rendre possible les sur et sous échantillonnage.
-         *
-         * \~ \image html rayon_interpolation.png
-         */
-        const double kernel_size;
+private:
+    /**
+     * \~french \brief Rayon de base du noyau d'interpolation
+     * \details Chaque noyau a un rayon de base, qui va définir les pixels source de part et d'autre du pixel de destination qui vont compter dans le calcul (avoir un poids non nul). On peut imaginer un cercle autour du pixel final et considérer les pixels sources dans ce cercle.
+     *
+     * Le rayon est donc une distance exprimée en pixel source
+     *
+     * Ce rayon de base peut être modulé par le rapport des résolutions, c'est-à-dire le ratio :
+     *
+     * \b resolution destination / \b resolution source
+     *
+     * Et cela pour rendre possible les sur et sous échantillonnage.
+     *
+     * \~ \image html rayon_interpolation.png
+     */
+    const double kernel_size;
 
-        /**
-         * \~french \brief Tableau des poids
-         * \details On ne veut pas calculer à la volée chaque poids à chaque utilisation du noyau (cela serait trop gourmand en calcul pour les noyaux dont la fonction de définition est trop complexe : sinus...). On va donc calculer 1025 poids, équitablement répartis pour des distances de 0 à kernel_size.
-         */
-        float coeff[1025];
+    /**
+     * \~french \brief Tableau des poids
+     * \details On ne veut pas calculer à la volée chaque poids à chaque utilisation du noyau (cela serait trop gourmand en calcul pour les noyaux dont la fonction de définition est trop complexe : sinus...). On va donc calculer 1025 poids, équitablement répartis pour des distances de 0 à kernel_size.
+     */
+    float coeff[1025];
 
-        /**
-         * \~french \brief Influence du rapport des résolutions sur la taille du noyau
-         * \details
-         * \li Si const_ratio est \b vrai, la taille du noyau kernel_size reste constante
-         * \li Si const_ratio est \b false la taille du noyeau est dépendante du ratio est vaut
-         *          - kernel_size pour un ratio inférieur 1
-         *          - kernel_size * ratio pour un ratio supérieur à 1
-         */
-        const bool const_ratio;
+    /**
+     * \~french \brief Influence du rapport des résolutions sur la taille du noyau
+     * \details
+     * \li Si const_ratio est \b vrai, la taille du noyau kernel_size reste constante
+     * \li Si const_ratio est \b false la taille du noyeau est dépendante du ratio est vaut
+     *          - kernel_size pour un ratio inférieur 1
+     *          - kernel_size * ratio pour un ratio supérieur à 1
+     */
+    const bool const_ratio;
 
-        /**
-         * \~french \brief Fonction caractéristique du noyau d'interpolation
-         * \details C'est une fonction qui détermine le poids d'un pixel source en fonction de sa distance au pixel à calculer.
-         * \param[in] d distance entre le pixel source et le pixel à calculer
-         * \return poids affecté au pixel source
-         */
-        virtual double kernel_function(double d) = 0;
+    /**
+     * \~french \brief Fonction caractéristique du noyau d'interpolation
+     * \details C'est une fonction qui détermine le poids d'un pixel source en fonction de sa distance au pixel à calculer.
+     * \param[in] d distance entre le pixel source et le pixel à calculer
+     * \return poids affecté au pixel source
+     */
+    virtual double kernel_function ( double d ) = 0;
 
-    protected:
+protected:
 
-        /**
-         * \~french \brief Initialise le tableau des poids
-         * \details On divise kernel_size en 1024 section et on calcule le poids pour chacun de ces points équitablement répartis.
-         *
-         * Cette fonction doit typiquement être apellée à la fin du constructeur des classes filles
-         * (pour des raisons d'ordre d'initialisation des instances mère/fille).
-         */
-        void init() {
-            for (int i = 0; i <= 1024; i++) {
-                coeff[i] = kernel_function(i * kernel_size / 1024.);
-            }
+    /**
+     * \~french \brief Initialise le tableau des poids
+     * \details On divise kernel_size en 1024 section et on calcule le poids pour chacun de ces points équitablement répartis.
+     *
+     * Cette fonction doit typiquement être apellée à la fin du constructeur des classes filles
+     * (pour des raisons d'ordre d'initialisation des instances mère/fille).
+     */
+    void init() {
+        for ( int i = 0; i <= 1024; i++ ) {
+            coeff[i] = kernel_function ( i * kernel_size / 1024. );
         }
+    }
 
-        /**
-         * \~french \brief Crée un Kernel à partir de tous ses éléments constitutifs
-         * \details Ne peux être appelé que par les constructeurs des classes filles.
-         * \param[in] kernel_size rayon de base du noyau d'interpolation
-         * \param[in] const_ratio influence du rapport des résolutions sur le rayon du noyau
-         */
-         Kernel(double kernel_size, bool const_ratio = false) : kernel_size(kernel_size), const_ratio(const_ratio) {}
+    /**
+     * \~french \brief Crée un Kernel à partir de tous ses éléments constitutifs
+     * \details Ne peux être appelé que par les constructeurs des classes filles.
+     * \param[in] kernel_size rayon de base du noyau d'interpolation
+     * \param[in] const_ratio influence du rapport des résolutions sur le rayon du noyau
+     */
+    Kernel ( double kernel_size, bool const_ratio = false ) : kernel_size ( kernel_size ), const_ratio ( const_ratio ) {}
 
-    public:
+public:
 
-        /**
-         * \~french \brief Usine d'instanciation d'un type de noyau
-         * \param[in] T type de noyau d'interpolation
-         * \return noyau d'interpolation
-         */
-        static const Kernel& getInstance(Interpolation::KernelType T = Interpolation::LANCZOS_3);
+    /**
+     * \~french \brief Usine d'instanciation d'un type de noyau
+     * \param[in] T type de noyau d'interpolation
+     * \return noyau d'interpolation
+     */
+    static const Kernel& getInstance ( Interpolation::KernelType T = Interpolation::LANCZOS_3 );
 
-        /**
-         * \~french \brief Calcule la taille effective du noyau en nombre de pixels sources
-         * \details On tient compte du ratio et de const_ratio
-         * \param[in] ratio rapport resolution destination / resolution source.
-         * \li si supérieur à 1 : sous-échantillonnage
-         * \li si inférieur à 1 : sur échantillonage
-         * \return rayon effectif du noyau d'interpolation
-         */
-        inline double size(double ratio = 1.) const {
-            if (const_ratio || ratio <= 1) return kernel_size;
-            else return kernel_size * ratio;
-        }
+    /**
+     * \~french \brief Calcule la taille effective du noyau en nombre de pixels sources
+     * \details On tient compte du ratio et de const_ratio
+     * \param[in] ratio rapport resolution destination / resolution source.
+     * \li si supérieur à 1 : sous-échantillonnage
+     * \li si inférieur à 1 : sur échantillonage
+     * \return rayon effectif du noyau d'interpolation
+     */
+    inline double size ( double ratio = 1. ) const {
+        if ( const_ratio || ratio <= 1 ) return kernel_size;
+        else return kernel_size * ratio;
+    }
 
-        /**
-         * \~french \brief Calcule les poids pour chaque pixel source
-         * \details On tient compte du ratio et de const_ratio
-         * \param[out] W tableau des poids à affecter aux pixels sources
-         * \param[in] length nombre de poids à calculer
-         * \param[in] x coordonnée en pixel source du pixel à calculer (distance entre le centre du pixel source origine et le centre du pixel à calculer)
-         * \param[in] max
-         * \return indice du premier pixel source comptant dans le calcul (poids non nul)
-         */
-        virtual int weight( float* W, int length, double x, int max ) const;
+    /**
+     * \~french \brief Calcule les poids pour chaque pixel source
+     * \details On tient compte du ratio et de const_ratio
+     * \param[out] W tableau des poids à affecter aux pixels sources
+     * \param[in] length nombre de poids à calculer
+     * \param[in] x coordonnée en pixel source du pixel à calculer (distance entre le centre du pixel source origine et le centre du pixel à calculer)
+     * \param[in] max
+     * \return indice du premier pixel source comptant dans le calcul (poids non nul)
+     */
+    virtual int weight ( float* W, int length, double x, int max ) const;
 
 };
 

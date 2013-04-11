@@ -36,56 +36,64 @@
 use strict;
 use warnings;
 
-use FindBin qw($Bin);
-
 use Test::More;
 
 # My tested class
-use BE4::GeoImage;
+use BE4::Level;
 
 ######################################################
 
-# GeoImage creation
+# Level object creation
 
-my $BDP = BE4::GeoImage->new($Bin."/../images/BDPARCELLAIRE/BDPARCELLAIRE.tif");
-ok (defined $BDP, "BDPARCELLAIRE GeoImage created");
+my $level = BE4::Level->new({
+    id                => "level_12",
+    order             => 9,
+    dir_image         => "/abolute/path/to/imageDir",
+    dir_nodata        => "/abolute/path/to/nodataDir",
+    dir_mask        => "/abolute/path/to/maskDir",
+    size              => [16,8],
+    dir_depth         => 2,
+});
 
-my $BDA = BE4::GeoImage->new($Bin."/../images/BDALTI/BDALTI.tif");
-ok (defined $BDA, "BDALTI GeoImage created");
-
-my $BDO = BE4::GeoImage->new($Bin."/../images/BDORTHO/BDORTHO.tif");
-ok (defined $BDO, "BDO GeoImage created (with associated mask)");
-
-my $error = BE4::GeoImage->new($Bin."/../fake/path.tif");
-ok (! defined $error, "Wrong path detected");
-
-######################################################
-
-# Test on computeInfo
-
-my ($bps,$ph,$sf,$spp) = $BDP->computeInfo();
-is_deeply ([$bps,$ph,$sf,$spp], [8,"gray","uint",1],"Extract information from BDPARCELLAIRE GeoImage");
-
-($bps,$ph,$sf,$spp) = $BDA->computeInfo();
-is_deeply ([$bps,$ph,$sf,$spp], [32,"gray","float",1],"Extract information from BDALTI GeoImage");
-
-($bps,$ph,$sf,$spp) = $BDO->computeInfo();
-is_deeply ([$bps,$ph,$sf,$spp], [8,"rgb","uint",3],"Extract information from BDORTHO GeoImage");
+ok (defined $level, "Level created");
 
 ######################################################
 
-# Test on exportForMntConf
+# Test on functions
 
-my $expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n",
-    "IMG $Bin/../images/BDPARCELLAIRE/BDPARCELLAIRE.tif", 653000, 6858000, 654000, 6857000, 0.1,0.1;
-    
-is ($BDP->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration");
+$level->updateExtremTiles(14,21,4,12); # rowMin,rowMax,colMin,colMax #
+my ($rowMin,$rowMax,$colMin,$colMax) = $level->getLimits();
+is_deeply([$rowMin,$rowMax,$colMin,$colMax],[14,21,4,12],"Update extrem tiles for the first time");
 
-$expectedResult = sprintf "%s\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\t%.12f\n%s\n",
-    "IMG $Bin/../images/BDORTHO/BDORTHO.tif", 642000, 6862000, 643000, 6861000, 0.5, 0.5,
-    "MSK $Bin/../images/BDORTHO/BDORTHO.msk";
-    
-is ($BDO->exportForMntConf(), $expectedResult,"Export for mergeNtiff configuration (image + mask)");
+$level->updateExtremTiles(20,22,2,4); # rowMin,rowMax,colMin,colMax #
+($rowMin,$rowMax,$colMin,$colMax) = $level->getLimits();
+is_deeply([$rowMin,$rowMax,$colMin,$colMax],[14,22,2,12],"Update extrem tiles for the second time");
+
+my $xmlLevel = <<"XMLLEVEL";
+    <level>
+        <tileMatrix>level_12</tileMatrix>
+        <baseDir>../../../abolute/path/to/imageDir</baseDir>
+        <mask>
+            <baseDir>../../../abolute/path/to/maskDir</baseDir>
+            <format>TIFF_ZIP_INT8</format>
+        </mask>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>8</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <nodata>
+            <filePath>../../../abolute/path/to/nodataDir/nd.tif</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>14</minTileRow>
+            <maxTileRow>22</maxTileRow>
+            <minTileCol>2</minTileCol>
+            <maxTileCol>12</maxTileCol>
+        </TMSLimits>
+    </level>
+<!-- __LEVELS__ -->
+XMLLEVEL
+
+is ($level->exportToXML("/absolute/path/to"), $xmlLevel, "Export level to XML (for pyramid's descriptor)");
 
 ######################################################
 

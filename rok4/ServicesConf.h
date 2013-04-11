@@ -85,7 +85,7 @@ private:
     bool inspire;
     MetadataURL metadataWMS;
     MetadataURL metadataWMTS;
-  
+
 public:
 
     ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<Keyword> keyWords,
@@ -95,13 +95,13 @@ public:
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
                    std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS, bool postMode=0,bool fullStyling=0, bool inspire=0 ) :
-            name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
-            serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ), layerLimit(layerLimit),
-            maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX(maxTileX), maxTileY(maxTileY) , formatList ( formatList ), globalCRSList(globalCRSList), serviceType ( serviceType ),
-            serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
-            individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
-            deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
-            country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS(metadataWMS), metadataWMTS(metadataWMTS) , postMode(postMode), fullStyling(fullStyling), inspire ( inspire ) {};
+        name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
+        serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ), layerLimit ( layerLimit ),
+        maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX ( maxTileX ), maxTileY ( maxTileY ) , formatList ( formatList ), globalCRSList ( globalCRSList ), serviceType ( serviceType ),
+        serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
+        individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
+        deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
+        country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS ( metadataWMS ), metadataWMTS ( metadataWMTS ) , postMode ( postMode ), fullStyling ( fullStyling ), inspire ( inspire ) {};
     //  WMS & WMTS
     std::string inline getAbstract() const      {
         return abstract;
@@ -171,7 +171,7 @@ public:
     unsigned int inline getMaxWidth() const {
         return maxWidth;
     }
-       unsigned int inline getMaxTileX() const {
+    unsigned int inline getMaxTileX() const {
         return maxTileX;
     }
     unsigned int inline getMaxTileY() const {

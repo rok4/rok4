@@ -173,16 +173,16 @@ Function: intersectBboxIndices
 Intersects provided indices bbox with the extrem tiles of this source level. Provided list is directly modified.
 
 Parameters (list):
-    list - list reference - Bounding box to intersect with the level's limits : (colMin,rowMin,colMax,rowMax).
+    bbox - list reference - Bounding box to intersect with the level's limits : (colMin,rowMin,colMax,rowMax).
 =cut
 sub intersectBboxIndices {
     my $self = shift;
-    my $list = shift;
+    my $bbox = shift;
 
-    $list->[0] = max($list->[0], $self->{limits}[0]);
-    $list->[1] = max($list->[1], $self->{limits}[1]);
-    $list->[2] = min($list->[2], $self->{limits}[2]);
-    $list->[3] = min($list->[3], $self->{limits}[3]);
+    $bbox->[0] = max($bbox->[0], $self->{limits}[0]);
+    $bbox->[1] = max($bbox->[1], $self->{limits}[1]);
+    $bbox->[2] = min($bbox->[2], $self->{limits}[2]);
+    $bbox->[3] = min($bbox->[3], $self->{limits}[3]);
 }
 
 ####################################################################################################

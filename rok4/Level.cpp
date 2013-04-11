@@ -61,54 +61,51 @@
 
 
 
-Level::Level(TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
-             int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
-             uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-             Format::eformat_data format, std::string noDataFile) : 
-             tm ( tm ), channels ( channels ), baseDir ( baseDir ),
-             tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
-             maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
-             minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource(NULL)
-{
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ));
+Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
+               int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
+               uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
+               Format::eformat_data format, std::string noDataFile ) :
+    tm ( tm ), channels ( channels ), baseDir ( baseDir ),
+    tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
+    maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
+    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
-Level::~Level()
-{
+Level::~Level() {
 
     delete noDataSourceProxy;
-    if (noDataSource) 
+    if ( noDataSource )
         delete noDataSource;
 
 }
 
-void Level::setNoData(const std::string& file)
-{
+void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ));
-    if (noDataTileSource) {
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    if ( noDataTileSource ) {
         delete noDataTileSource;
     }
 
-    if (noDataSource) {
+    if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataSourceProxy = new DataSourceProxy(tmpDataSource, *noDataSource);
-    }else {
+        noDataSourceProxy = new DataSourceProxy ( tmpDataSource, *noDataSource );
+    } else {
         noDataSourceProxy = tmpDataSource;
     }
-    
+
     noDataTileSource= tmpDataSource;
 }
 
 
 void Level::setNoDataSource ( DataSource* source ) {
-    if (noDataSource) {
+    if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ));
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
     }
     noDataSource=source;
-    noDataSourceProxy = new DataSourceProxy(noDataTileSource, *noDataSource);
+    noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
 }
 
 
@@ -121,53 +118,53 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
     bbox.ymin = ( tm.getY0() - bbox.ymax ) /tm.getRes();
     bbox.ymax = ( tm.getY0() - tmp ) /tm.getRes();
 
-    
+
     //A VERIFIER !!!!
     BoundingBox<int64_t> bbox_int ( floor ( bbox.xmin + EPS ),
                                     floor ( bbox.ymin + EPS ),
                                     ceil ( bbox.xmax - EPS ),
                                     ceil ( bbox.ymax - EPS ) );
 
-        // Rappel : les coordonnees de la bbox sont ici en pixels
+    // Rappel : les coordonnees de la bbox sont ici en pixels
     double res_x = ( bbox.xmax - bbox.xmin ) / width;
     double res_y = ( bbox.ymax - bbox.ymin ) / height;
-    
-    double ratio_x = width  / (double) (tm.getTileH()) ;
-    double ratio_y = height / (double) (tm.getTileW()) ;
-    
+
+    double ratio_x = width  / ( double ) ( tm.getTileH() ) ;
+    double ratio_y = height / ( double ) ( tm.getTileW() ) ;
+
     //Most efficient
     interpolation = Interpolation::LINEAR;
-    const Kernel& kk = Kernel::getInstance ( interpolation ); 
+    const Kernel& kk = Kernel::getInstance ( interpolation );
 
     bbox_int.xmin = floor ( bbox.xmin - kk.size ( res_x ) );
     bbox_int.xmax = ceil ( bbox.xmax + kk.size ( res_x ) );
     bbox_int.ymin = floor ( bbox.ymin - kk.size ( res_y ) );
     bbox_int.ymax = ceil ( bbox.ymax + kk.size ( res_y ) );
 
-    Image* imageout = getNoDataTile (bbox);
-    if (!imageout) {
-        LOGGER_DEBUG(_("Image invalid !"));
+    Image* imageout = getNoDataTile ( bbox );
+    if ( !imageout ) {
+        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    return new ResampledImage(imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, false, interpolation, bbox );
+    return new ResampledImage ( imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, false, interpolation, bbox );
 }
 
 
 /*
  * A REFAIRE
  */
-Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
-    if (!(grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ))) {
+    if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
         error = 1; // BBox invalid
         return 0;
     }
 
     // Calcul de la taille du noyau
     //Maintain previous Lanczos behaviour : Lanczos_2 for resampling and reprojecting
-    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_2;
-    
+    if ( interpolation >= Interpolation::LANCZOS_2 ) interpolation= Interpolation::LANCZOS_2;
+
     const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_2
     double ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / ( tm.getRes() *double ( width ) );
     double ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / ( tm.getRes() *double ( height ) );
@@ -181,9 +178,9 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
                                     ceil ( ( grid->bbox.xmax - tm.getX0() ) /tm.getRes() + bufx ),
                                     ceil ( ( tm.getY0() - grid->bbox.ymin ) /tm.getRes() + bufy ) );
 
-    Image* image = getwindow (servicesConf, bbox_int, error );
-    if (!image) {
-        LOGGER_DEBUG(_("Image invalid !"));
+    Image* image = getwindow ( servicesConf, bbox_int, error );
+    if ( !image ) {
+        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
     image->setBbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
@@ -193,7 +190,7 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
 
 
 
-Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
+Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -210,15 +207,15 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
             bbox.xmin - bbox_int.xmin < EPS && bbox.ymin - bbox_int.ymin < EPS &&
             bbox_int.xmax - bbox.xmax < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
-        return getwindow (servicesConf, bbox_int, error );
+        return getwindow ( servicesConf, bbox_int, error );
     }
 
     // Rappel : les coordonnees de la bbox sont ici en pixels
     double ratio_x = ( bbox.xmax - bbox.xmin ) / width;
     double ratio_y = ( bbox.ymax - bbox.ymin ) / height;
-    
+
     //Maintain previous Lanczos behaviour : Lanczos_3 for resampling only
-    if (interpolation >= Interpolation::LANCZOS_2) interpolation= Interpolation::LANCZOS_3;
+    if ( interpolation >= Interpolation::LANCZOS_2 ) interpolation= Interpolation::LANCZOS_3;
     const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_3
 
     bbox_int.xmin = floor ( bbox.xmin - kk.size ( ratio_x ) );
@@ -226,9 +223,9 @@ Image* Level::getbbox (ServicesConf& servicesConf, BoundingBox< double > bbox, i
     bbox_int.ymin = floor ( bbox.ymin - kk.size ( ratio_y ) );
     bbox_int.ymax = ceil ( bbox.ymax + kk.size ( ratio_y ) );
 
-    Image* imageout = getwindow (servicesConf, bbox_int, error );
-    if (!imageout) {
-        LOGGER_DEBUG(_("Image invalid !"));
+    Image* imageout = getwindow ( servicesConf, bbox_int, error );
+    if ( !imageout ) {
+        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
     return new ResampledImage ( imageout, width, height,ratio_x,ratio_y, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
@@ -248,24 +245,24 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
     return r;
 }
 
-Image* Level::getwindow (ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
+Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
     int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
-    if (nbx >= servicesConf.getMaxTileX()) {
-        LOGGER_INFO(_("Too Much Tile on X axis"));
+    if ( nbx >= servicesConf.getMaxTileX() ) {
+        LOGGER_INFO ( _ ( "Too Much Tile on X axis" ) );
         error=2;
         return 0;
     }
     int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
-    if (nby >= servicesConf.getMaxTileY()) {
-        LOGGER_INFO(_("Too Much Tile on Y axis"));
+    if ( nby >= servicesConf.getMaxTileY() ) {
+        LOGGER_INFO ( _ ( "Too Much Tile on Y axis" ) );
         error=2;
         return 0;
     }
-    
+
     int left[nbx];
     memset ( left,   0, nbx*sizeof ( int ) );
     left[0]=euclideanDivisionRemainder ( bbox.xmin,tm.getTileW() );
@@ -300,7 +297,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 std::string Level::getFilePath ( int tilex, int tiley ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( _("Indice de tuile negatif") );
+        LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
         return "";
     }
 
@@ -363,12 +360,12 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<DeflateDecoder> ( encData );
     else if ( format==Format::TIFF_PKB_INT8 || format == Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _("Type d'encodage inconnu : ")<<format );
+    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
     return 0;
 }
 
 DataSource* Level::getDecodedNoDataTile() {
-DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
+    DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
     if ( format==Format::TIFF_RAW_INT8 || format==Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Format::TIFF_JPG_INT8 )
@@ -381,24 +378,24 @@ DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*ge
         return new DataSourceDecoder<DeflateDecoder> ( encData );
     else if ( format==Format::TIFF_PKB_INT8 || format == Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _("Type d'encodage inconnu : ")<<format );
+    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
     return 0;
 }
 
 DataSource* Level::getEncodedNoDataTile() {
-    LOGGER_DEBUG ( _("Tile : ") << noDataFile );
+    LOGGER_DEBUG ( _ ( "Tile : " ) << noDataFile );
     return noDataSourceProxy;
 }
 
 DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* source=getEncodedTile ( x, y );
-    DataSource* ndSource = (errorDataSource?errorDataSource:noDataSourceProxy);
+    DataSource* ndSource = ( errorDataSource?errorDataSource:noDataSourceProxy );
     size_t size;
 
-	if ((format==Format::TIFF_RAW_INT8 || format == Format::TIFF_LZW_INT8 || format==Format::TIFF_LZW_FLOAT32 || format==Format::TIFF_ZIP_INT8 || format == Format::TIFF_ZIP_FLOAT32 || format==Format::TIFF_PKB_FLOAT32 || format==Format::TIFF_PKB_INT8 )&& source!=0 && source->getData(size)!=0){
-        LOGGER_DEBUG ( _("GetTile Tiff") );
-                TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource(source,format,channels,tm.getTileW(), tm.getTileH());
-                return new DataSourceProxy(fullTiffDS,*ndSource);
+    if ( ( format==Format::TIFF_RAW_INT8 || format == Format::TIFF_LZW_INT8 || format==Format::TIFF_LZW_FLOAT32 || format==Format::TIFF_ZIP_INT8 || format == Format::TIFF_ZIP_FLOAT32 || format==Format::TIFF_PKB_FLOAT32 || format==Format::TIFF_PKB_INT8 ) && source!=0 && source->getData ( size ) !=0 ) {
+        LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
+        TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm.getTileW(), tm.getTileH() );
+        return new DataSourceProxy ( fullTiffDS,*ndSource );
     }
 
     return new DataSourceProxy ( source, *ndSource );
@@ -406,40 +403,40 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
-    LOGGER_DEBUG ( _("GetTile Image") );
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32)
+    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
+    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
-                                                    tm.getY0() + y * tm.getTileH() * tm.getRes(),
-                                                    tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes(),
-                                                    tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
+                                      tm.getY0() + y * tm.getTileH() * tm.getRes(),
+                                      tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes(),
+                                      tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
 }
 
 Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
     int pixel_size=1;
-    LOGGER_DEBUG ( _("GetTile Image") );
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32)
+    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
+    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
     return new ImageDecoder ( getDecodedNoDataTile() , tm.getTileW(), tm.getTileH(), channels,
                               bbox, 0, 0, 0, 0, pixel_size );
 }
 
-int* Level::getNoDataValue(int* nodatavalue) {
+int* Level::getNoDataValue ( int* nodatavalue ) {
     DataSource *nd =  getDecodedNoDataTile();
-    
+
     size_t size;
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32) {
-        const uint8_t * buffer = nd->getData(size);
-        const float* fbuf =  (const float*) buffer;
-        for (int pixel = 0; pixel < this->channels; pixel++) {
-            *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 ) {
+        const uint8_t * buffer = nd->getData ( size );
+        const float* fbuf = ( const float* ) buffer;
+        for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+            * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );
         }
     } else {
-        const uint8_t * buffer = nd->getData(size);
-        for (int pixel = 0; pixel < this->channels; pixel++) {
-            *(nodatavalue + pixel)  = *(buffer + pixel);
+        const uint8_t * buffer = nd->getData ( size );
+        for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+            * ( nodatavalue + pixel )  = * ( buffer + pixel );
         }
     }
     delete nd;
@@ -447,7 +444,7 @@ int* Level::getNoDataValue(int* nodatavalue) {
 }
 
 SampleType Level::getSampleType() {
-    return Format::toSampleType(format);
+    return Format::toSampleType ( format );
 }
 
 

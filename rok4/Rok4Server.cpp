@@ -149,13 +149,13 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
                          std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS(supportWMTS), supportWMS(supportWMS) {
+    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
 
-    if (supportWMS) {
+    if ( supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
         buildWMSCapabilities();
     }
-    if (supportWMTS) {
+    if ( supportWMTS ) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
@@ -219,8 +219,8 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
 }
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
-    if (!supportWMS) {
-        // Return Error 
+    if ( !supportWMS ) {
+        // Return Error
     }
     std::string version;
     DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
@@ -242,7 +242,7 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 }
 
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
-    if (!supportWMTS) {
+    if ( !supportWMTS ) {
         // Return Error
     }
     std::string version;
@@ -311,7 +311,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
                 switch ( pyrType ) {
                     //Only use int8 output whith estompage
-                    case Format::TIFF_RAW_FLOAT32 :
+                case Format::TIFF_RAW_FLOAT32 :
                     pyrType = Format::TIFF_RAW_INT8;
                     break;
                 case Format::TIFF_ZIP_FLOAT32 :
@@ -332,13 +332,13 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 if ( format == "image/png" && layerList.size() == 1 ) {
                     switch ( pyrType ) {
 
-                        case Format::TIFF_RAW_FLOAT32 :
-                        case Format::TIFF_ZIP_FLOAT32 :
-                        case Format::TIFF_LZW_FLOAT32 :
-                        case Format::TIFF_PKB_FLOAT32 :
-                            curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
-                        default:
-                            break;
+                    case Format::TIFF_RAW_FLOAT32 :
+                    case Format::TIFF_ZIP_FLOAT32 :
+                    case Format::TIFF_LZW_FLOAT32 :
+                    case Format::TIFF_PKB_FLOAT32 :
+                        curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                    default:
+                        break;
                     }
                 } else {
                     curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
@@ -352,45 +352,45 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
     //Use background image format.
     Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
-    image = images.at(0);
+    image = images.at ( 0 );
     if ( images.size() > 1 ) {
-        
+
         switch ( pyrType ) {
             //Only use int8 output with estompage
-            case Format::TIFF_RAW_FLOAT32 :
-                pyrType = Format::TIFF_RAW_INT8;
-                break;
-            case Format::TIFF_ZIP_FLOAT32 :
-                pyrType = Format::TIFF_ZIP_INT8;
-                break;
-            case Format::TIFF_LZW_FLOAT32 :
-                pyrType = Format::TIFF_LZW_INT8;
-                break;
-            case Format::TIFF_PKB_FLOAT32 :
-                pyrType = Format::TIFF_PKB_INT8;
-                break;
-            default:
-                break;
+        case Format::TIFF_RAW_FLOAT32 :
+            pyrType = Format::TIFF_RAW_INT8;
+            break;
+        case Format::TIFF_ZIP_FLOAT32 :
+            pyrType = Format::TIFF_ZIP_INT8;
+            break;
+        case Format::TIFF_LZW_FLOAT32 :
+            pyrType = Format::TIFF_LZW_INT8;
+            break;
+        case Format::TIFF_PKB_FLOAT32 :
+            pyrType = Format::TIFF_PKB_INT8;
+            break;
+        default:
+            break;
         }
 
         MergeImageFactory MIF;
 
         int white[4] = {255,255,255,255};
-        image = MIF.createMergeImage(images, Format::toSampleType(pyrType), images.at(0)->channels, white, NULL, Merge::MASK);
+        image = MIF.createMergeImage ( images, Format::toSampleType ( pyrType ), images.at ( 0 )->channels, white, NULL, Merge::MASK );
 
-        if (image == NULL) {
+        if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des différentes couches" );
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
-        }        
+        }
     }
 
     if ( format=="image/png" ) {
         if ( layerList.size() == 1 ) {
-            return new PNGEncoder ( image,styles.at(0)->getPalette() );
+            return new PNGEncoder ( image,styles.at ( 0 )->getPalette() );
         } else {
-            return new PNGEncoder ( image,NULL);
+            return new PNGEncoder ( image,NULL );
         }
-        
+
     } else if ( format == "image/tiff" ) { // Handle compression option
         switch ( pyrType ) {
 
@@ -445,9 +445,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     } else if ( format == "image/x-bil;bits=32" ) {
         return new BilEncoder ( image );
     }
-    
+
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
-    
+
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
 }
 
@@ -510,10 +510,10 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if (supportWMTS && request->service == "wmts" ) {
+    if ( supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
-    } else if (supportWMS && (request->service=="wms" || request->request == "getmap") ) {
+    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" ) ) {
         processWMS ( request, fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );

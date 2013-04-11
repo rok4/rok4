@@ -118,17 +118,17 @@ bool isCrsLongLat ( std::string crs ) {
     return isLongLat;
 }
 
-CRS::CRS() : definitionArea(-90.0,-180.0,90.0,180.0) {
+CRS::CRS() : definitionArea ( -90.0,-180.0,90.0,180.0 ) {
     proj4Code = NO_PROJ4_CODE;
 }
 
-CRS::CRS ( std::string crs_code ) : definitionArea(-90.0,-180.0,90.0,180.0) {
+CRS::CRS ( std::string crs_code ) : definitionArea ( -90.0,-180.0,90.0,180.0 ) {
     requestCode=crs_code;
     buildProj4Code();
     fetchDefinitionArea();
 }
 
-CRS::CRS ( const CRS& crs ) : definitionArea(crs.definitionArea) {
+CRS::CRS ( const CRS& crs ) : definitionArea ( crs.definitionArea ) {
     requestCode=crs.requestCode;
     proj4Code=crs.proj4Code;
     fetchDefinitionArea();
@@ -136,7 +136,7 @@ CRS::CRS ( const CRS& crs ) : definitionArea(crs.definitionArea) {
 
 
 CRS& CRS::operator= ( const CRS& other ) {
-    if (this != &other) {
+    if ( this != &other ) {
         this->proj4Code = other.proj4Code;
         this->requestCode = other.requestCode;
         this->definitionArea = other.definitionArea;
@@ -155,8 +155,8 @@ void CRS::fetchDefinitionArea() {
         pj_ctx_free ( ctx );
         return;
     }
-    pj_get_def_area(pj, &(definitionArea.xmin), &(definitionArea.ymin), &(definitionArea.xmax), &(definitionArea.ymax));
-    //LOGGER_DEBUG(proj4Code); 
+    pj_get_def_area ( pj, & ( definitionArea.xmin ), & ( definitionArea.ymin ), & ( definitionArea.xmax ), & ( definitionArea.ymax ) );
+    //LOGGER_DEBUG(proj4Code);
     //definitionArea.print();
     pj_free ( pj );
     pj_ctx_free ( ctx );
@@ -214,7 +214,7 @@ bool CRS::cmpRequestCode ( std::string crs ) {
 std::string CRS::getAuthority() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( _("Erreur sur le CRS ")<<requestCode<< _(" : absence de separateur") );
+        LOGGER_ERROR ( _ ( "Erreur sur le CRS " ) <<requestCode<< _ ( " : absence de separateur" ) );
         pos=requestCode.length();
     }
     return ( requestCode.substr ( 0,pos ) );
@@ -224,7 +224,7 @@ std::string CRS::getAuthority() {
 std::string CRS::getIdentifier() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( _("Erreur sur le CRS ")<<requestCode<< _(" : absence de separateur") );
+        LOGGER_ERROR ( _ ( "Erreur sur le CRS " ) <<requestCode<< _ ( " : absence de separateur" ) );
         pos=-1;
     }
     return ( requestCode.substr ( pos+1 ) );
@@ -274,53 +274,53 @@ BoundingBox<double> CRS::boundingBoxToGeographic ( double minx, double miny, dou
 
 
 bool CRS::validateBBox ( BoundingBox< double > BBox ) {
-    return validateBBoxGeographic(boundingBoxToGeographic( BBox));
+    return validateBBoxGeographic ( boundingBoxToGeographic ( BBox ) );
 }
 
 
 bool CRS::validateBBox ( double minx, double miny, double maxx, double maxy ) {
-    return validateBBoxGeographic( boundingBoxToGeographic ( minx,miny,maxx,maxy ) );
+    return validateBBoxGeographic ( boundingBoxToGeographic ( minx,miny,maxx,maxy ) );
 }
 
 
 bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
     bool valid = true;
-    if (BBox.xmin > definitionArea.xmax || BBox.xmin < definitionArea.xmin ||
-        BBox.xmax > definitionArea.xmax || BBox.xmax < definitionArea.xmin ||
-        BBox.ymin > definitionArea.ymax || BBox.ymin < definitionArea.ymin ||
-        BBox.ymax > definitionArea.ymax || BBox.ymax < definitionArea.ymin ){
-            valid = false;
-        }
-    
-    
+    if ( BBox.xmin > definitionArea.xmax || BBox.xmin < definitionArea.xmin ||
+            BBox.xmax > definitionArea.xmax || BBox.xmax < definitionArea.xmin ||
+            BBox.ymin > definitionArea.ymax || BBox.ymin < definitionArea.ymin ||
+            BBox.ymax > definitionArea.ymax || BBox.ymax < definitionArea.ymin ) {
+        valid = false;
+    }
+
+
     return valid;
 }
 
 
 bool CRS::validateBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
-    return validateBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+    return validateBBoxGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
 
 BoundingBox< double > CRS::cropBBox ( BoundingBox< double > BBox ) {
-    BoundingBox<double> defArea = boundingBoxFromGeographic(definitionArea);
+    BoundingBox<double> defArea = boundingBoxFromGeographic ( definitionArea );
     double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
-    if (BBox.xmin < defArea.xmin) {
+    if ( BBox.xmin < defArea.xmin ) {
         minx = defArea.xmin;
-    } 
-    if (BBox.xmax > defArea.xmax) {
+    }
+    if ( BBox.xmax > defArea.xmax ) {
         maxx = defArea.xmax;
     }
-    if (BBox.xmin > defArea.xmax || BBox.xmax < defArea.xmin) {
+    if ( BBox.xmin > defArea.xmax || BBox.xmax < defArea.xmin ) {
         minx = maxx = 0;
     }
-    if (BBox.ymin < defArea.ymin) {
+    if ( BBox.ymin < defArea.ymin ) {
         miny = defArea.ymin;
     }
-    if (BBox.ymax > defArea.ymax) {
+    if ( BBox.ymax > defArea.ymax ) {
         maxy = defArea.ymax;
     }
-    if (BBox.ymin > defArea.ymax || BBox.ymax < defArea.ymin) {
+    if ( BBox.ymin > defArea.ymax || BBox.ymax < defArea.ymin ) {
         miny = maxy = 0;
     }
     return BoundingBox<double> ( minx,miny,maxx,maxy );
@@ -328,7 +328,7 @@ BoundingBox< double > CRS::cropBBox ( BoundingBox< double > BBox ) {
 
 
 BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, double maxy ) {
-    return cropBBox( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+    return cropBBox ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
 

@@ -41,53 +41,40 @@ use FindBin qw($Bin);
 use Test::More;
 
 # My tested class
-use BE4::DataSourceLoader;
-
-# Other used class
-use BE4::TileMatrixSet;
+use BE4::ImageSource;
 
 ######################################################
 
-# GeoImage creation
+# ImageSource creation
 
-my $newDSL = BE4::DataSourceLoader->new({
-    filepath_conf => $Bin."/../sources/sources.txt"
+my $IS = BE4::ImageSource->new({
+    path_image => $Bin."/../../images/BDORTHO/"
 });
-ok (defined $newDSL, "DataSourceLoader created");
-is ($newDSL->getNumberDataSources(), 4, "All expected data sources are created");
+ok (defined $IS, "ImageSource created");
 
-my $oldDSL = BE4::DataSourceLoader->new({
-        path_image => $Bin."/../images/BDORTHO",
-        srs => "IGNF:LAMB93",
-    },{
-        wms_layer   => "LAYER",
-        wms_url     => "http://url/server/wms",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/tiff"
-    }, "18"
-);
-ok (defined $oldDSL, "DataSourceLoader created with old configuration");
+my $error = BE4::ImageSource->new({
+    path_image => $Bin."/../../wrong/path/"
+});
+ok (! defined $error, "Wrong path detected");
+
+undef $error;
+
+$error = BE4::ImageSource->new({
+    path_image => $Bin."/../../images/"
+});
+ok (! defined $error, "Non consistent images detected (with different components)");
+
+undef $error;
 
 ######################################################
 
-my $TMS = BE4::TileMatrixSet->new($Bin."/../tms/LAMB93_10cm.tms");
+# Test on computeBBox
 
-my ($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS);
-is_deeply([$bottomOrder,$topOrder],[10,21],
-          "Update bottom/top ID/orders for each data source : no global top level specified");
+my ($xmin,$ymin,$xmax,$ymax) = $IS->computeBBox();
 
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"level_3");
-is_deeply([$bottomOrder,$topOrder],[10,18],
-          "Update bottom/top ID/orders for each data source : global top level specified");
-
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"level_6");
-is_deeply([$bottomOrder,$topOrder],[-1,-1],
-          "Update bottom/top ID/orders for each data source : unconsistent level ID detected");
-
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"fake_level");
-is_deeply([$bottomOrder,$topOrder],[-1,-1],
-          "Update bottom/top ID/orders for each data source : unknown level ID detected");
+is_deeply ([$xmin,$ymin,$xmax,$ymax],
+           ["642000.000000000000","643000.000000000000","6861000.000000000000","6862000.000000000000"],
+           "ImageSource bounding box computed");
 
 ######################################################
 

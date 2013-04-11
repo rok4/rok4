@@ -78,7 +78,7 @@ std::string genStatusHeader ( int statusCode ) {
  * \return nom du fichier
  * \~english
  * \brief Common function to generate file name using the mime type
- * \param[in] mime mime type 
+ * \param[in] mime mime type
  * \return filename
  */
 std::string genFileName ( std::string mime ) {
@@ -107,17 +107,17 @@ std::string genFileName ( std::string mime ) {
  */
 void displayFCGIError ( int error ) {
     if ( error>0 )
-        LOGGER_ERROR ( _("Code erreur : ")<<error ); // Erreur errno(2) (Cf. manpage )
+        LOGGER_ERROR ( _ ( "Code erreur : " ) <<error ); // Erreur errno(2) (Cf. manpage )
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Version FCGI non supportee") );
+        LOGGER_ERROR ( _ ( "Version FCGI non supportee" ) );
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Erreur de protocole") );
+        LOGGER_ERROR ( _ ( "Erreur de protocole" ) );
     else if ( error==FCGX_CALL_SEQ_ERROR )
-        LOGGER_ERROR ( _("Erreur de parametre") );
+        LOGGER_ERROR ( _ ( "Erreur de parametre" ) );
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Preconditions non remplies") );
+        LOGGER_ERROR ( _ ( "Preconditions non remplies" ) );
     else
-        LOGGER_ERROR ( _("Erreur inconnue") );
+        LOGGER_ERROR ( _ ( "Erreur inconnue" ) );
 }
 
 int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
@@ -142,7 +142,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         // Taille ecrite dans le flux de sortie
         int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), buffer_size,request->out );
         if ( w < 0 ) {
-            LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
+            LOGGER_ERROR ( _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId );
             displayFCGIError ( FCGX_GetError ( request->out ) );
             delete source;
             //delete[] buffer;
@@ -151,7 +151,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         wr += w;
     }
     delete source;
-    LOGGER_DEBUG ( _("End of Response") );
+    LOGGER_DEBUG ( _ ( "End of Response" ) );
     return 0;
 }
 
@@ -185,7 +185,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             // Taille ecrite dans le flux de sortie
             int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), read_size,request->out );
             if ( w < 0 ) {
-                LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
+                LOGGER_ERROR ( _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId );
                 displayFCGIError ( FCGX_GetError ( request->out ) );
                 delete stream;
                 delete[] buffer;
@@ -194,7 +194,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             wr += w;
         }
         if ( wr != read_size ) {
-            LOGGER_DEBUG ( _("Nombre incorrect d'octets ecrits dans le flux de sortie") );
+            LOGGER_DEBUG ( _ ( "Nombre incorrect d'octets ecrits dans le flux de sortie" ) );
             delete stream;
             stream = 0;
             delete[] buffer;
@@ -203,12 +203,12 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
         }
         pos += read_size;
     }
-    if (stream) {
+    if ( stream ) {
         delete stream;
     }
-    if (buffer) {
+    if ( buffer ) {
         delete[] buffer;
     }
-    LOGGER_DEBUG ( _("End of Response") );
+    LOGGER_DEBUG ( _ ( "End of Response" ) );
     return 0;
 }

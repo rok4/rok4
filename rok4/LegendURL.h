@@ -50,7 +50,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance LegendURL représente un élément LegendURL dans les différents documents de capacités. 
+ * Une instance LegendURL représente un élément LegendURL dans les différents documents de capacités.
  * \brief Gestion des éléments de légendes des documents de capacités
  * \~english
  * A LegendURL represent a LegendURL element in the differents capabilities documents.
@@ -100,7 +100,7 @@ public:
     LegendURL ( std::string format, std::string href,int width, int height, double minScaleDenominator, double maxScaleDenominator );
     /**
      * \~french
-     * Crée un LegendURL à partir d'un autre 
+     * Crée un LegendURL à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] origLUrl LegendURL à copier
      * \~english
@@ -115,7 +115,7 @@ public:
      * \~english
      * \brief Assignement
      */
-    LegendURL& operator= ( LegendURL const & other);
+    LegendURL& operator= ( LegendURL const & other );
     /**
      * \~french
      * \brief Test d'egalite de 2 LegendURLs
@@ -134,7 +134,7 @@ public:
      * \return true if one of their attributes is different
      */
     bool operator!= ( const LegendURL& other ) const;
-    
+
     /**
      * \~french
      * \brief Retourne la largeur de l'image
@@ -146,7 +146,7 @@ public:
     inline int getWidth() {
         return width;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la hauteur de l'image
@@ -158,7 +158,7 @@ public:
     inline int getHeight() {
         return height;
     }
-    
+
     /**
      * \~french
      * \brief Retourne l'échelle minimum
@@ -170,7 +170,7 @@ public:
     inline double getMinScaleDenominator() {
         return minScaleDenominator;
     }
-    
+
     /**
      * \~french
      * \brief Retourne l'échelle maximum

@@ -38,7 +38,7 @@
 /**
  * \file intl.h
  * \~french \brief Fonctions d'internationalisation
- * \todo internationalisation des messages clients 
+ * \todo internationalisation des messages clients
  * \~english \brief Internationalization functions
  * \todo handle internationalized messages
  */
@@ -56,7 +56,7 @@
 #define _(string) dgettext(DOMAINNAME,string)
 
 
-static std::string getMessage(std::string& message, std::string& locale) {
+static std::string getMessage ( std::string& message, std::string& locale ) {
     return message;
 }
 

@@ -57,14 +57,14 @@
  * Une instance Style représente la façon d'afficher une couche et la métadonnées associée.
  * Il est possible de définir une table de correspondance valeur/couleur ou un estompage.
  * Un style peut contenir uniquement des métadonnées ou définir plusieurs traitements.
- * 
+ *
  * Exemple de fichier de style complet :
  * \brief Gestion des styles (affichages et métadonnées)
  * \~english
  * A Style represent the way to display a layer and its associated metadata.
  * Two types of data treatment are available, Lookup table to define a value/colour equivalence and relief shading
- * 
- * Style file sample : 
+ *
+ * Style file sample :
  * \brief Style handler (display and metadata)
  * \details \~ \code{.xml}
  * <style>
@@ -149,34 +149,34 @@ private :
      */
     uint8_t center;
 public:
-   /**
-     * \~french
-     * \brief Crée un Style à partir des ses éléments constitutifs
-     * \param[in] id identifiant WMS/WMTS du style
-     * \param[in] titles liste des titres
-     * \param[in] abstracts liste des résumés
-     * \param[in] keywords liste des mots-clés
-     * \param[in] legendURLs liste des légendes
-     * \param[in] palette table de correspondance (valeur -> couleur)
-     * \param[in] angle azimuth du soleil en degré compris entre [0 et 360[
-     * \param[in] exaggeration facteur d'éxagération de la pente
-     * \param[in] center valeur d'un pixel de pente nulle
-     * \~english
-     * \brief Create a ResourceLocator
-     * \param[in] id WMS/WMTS style identifier
-     * \param[in] titles list of titles
-     * \param[in] abstracts list of abstracts
-     * \param[in] keywords list of keywords
-     * \param[in] legendURLs list of legends
-     * \param[in] palette lookup table (value -> colour)
-     * \param[in] angle sun's azimuth in degree between [0 and 360[
-     * \param[in] exaggeration slope exaggeration factor
-     * \param[in] center value of a pixel without slope
-     */
+    /**
+      * \~french
+      * \brief Crée un Style à partir des ses éléments constitutifs
+      * \param[in] id identifiant WMS/WMTS du style
+      * \param[in] titles liste des titres
+      * \param[in] abstracts liste des résumés
+      * \param[in] keywords liste des mots-clés
+      * \param[in] legendURLs liste des légendes
+      * \param[in] palette table de correspondance (valeur -> couleur)
+      * \param[in] angle azimuth du soleil en degré compris entre [0 et 360[
+      * \param[in] exaggeration facteur d'éxagération de la pente
+      * \param[in] center valeur d'un pixel de pente nulle
+      * \~english
+      * \brief Create a ResourceLocator
+      * \param[in] id WMS/WMTS style identifier
+      * \param[in] titles list of titles
+      * \param[in] abstracts list of abstracts
+      * \param[in] keywords list of keywords
+      * \param[in] legendURLs list of legends
+      * \param[in] palette lookup table (value -> colour)
+      * \param[in] angle sun's azimuth in degree between [0 and 360[
+      * \param[in] exaggeration slope exaggeration factor
+      * \param[in] center value of a pixel without slope
+      */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0);
-    
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0 );
+
     /**
      * \~french
      * \brief Retourne l'identifiant du style
@@ -188,7 +188,7 @@ public:
     inline std::string getId() {
         return id;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la liste des titres
@@ -200,7 +200,7 @@ public:
     inline std::vector<std::string> getTitles() {
         return titles;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la liste des résumés
@@ -212,7 +212,7 @@ public:
     inline std::vector<std::string> getAbstracts() {
         return abstracts;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la liste des mots-clés
@@ -224,7 +224,7 @@ public:
     inline std::vector<Keyword>* getKeywords() {
         return &keywords;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la liste des légendes
@@ -236,7 +236,7 @@ public:
     inline std::vector<LegendURL> getLegendURLs() {
         return legendURLs;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la table de correspondance
@@ -248,7 +248,7 @@ public:
     inline Palette* getPalette() {
         return &palette;
     }
-    
+
     /**
      * \~french
      * \brief Détermine si le style décrit un estompage
@@ -260,7 +260,7 @@ public:
     inline bool isEstompage() {
         return estompage;
     }
-    
+
     /**
      * \~french
      * \brief Retourne l'azimuth du soleil
@@ -272,7 +272,7 @@ public:
     inline int getAngle() {
         return angle;
     }
-    
+
     /**
      * \~french
      * \brief Retourne l'éxagération de la pente
@@ -284,7 +284,7 @@ public:
     inline float getExaggeration() {
         return exaggeration;
     }
-    
+
     /**
      * \~french
      * \brief Retourne la valeur d'un pixel de pente nulle

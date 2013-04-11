@@ -57,12 +57,12 @@
  * \author Institut national de l'information géographique et forestière
  * \~french
  * Une instance TileMatrixSet représente une pyramide de TileMatrix définie dans un même système de coordonnée.
- * 
+ *
  * Définition d'un TileMatrixSet en XML :
  * \brief Gestion d'une pyramid de matrices de tuiles
  * \~english
  * A TileMatrixSet represent a pyramid of TileMatrix in the same coordinate system.
- * 
+ *
  * XML definition of a TileMatrix :
  * \brief Handle pyramid of matrix of tiles
  * \details \~ \code{.xml}
@@ -137,7 +137,7 @@ public:
     /**
      * \~french
      * \brief Crée un TileMatrixSet à partir des ses éléments constitutifs
-     * \param[in] id identifiant 
+     * \param[in] id identifiant
      * \param[in] title titre
      * \param[in] abstract résumé
      * \param[in] keyWords liste des mots-clés
@@ -153,10 +153,10 @@ public:
      * \param[in] tmList list of TileMatrix
      */
     TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
-            id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
+        id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
     /**
      * \~french
-     * Crée un TileMatrixSet à partir d'un autre 
+     * Crée un TileMatrixSet à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] t TileMatrixSet à copier
      * \~english
@@ -164,7 +164,7 @@ public:
      * \brief Copy Constructor
      * \param[in] t TileMatrixSet to copy
      */
-    TileMatrixSet ( const TileMatrixSet& t ) : id(t.id),title(t.title),abstract(t.abstract),keyWords(t.keyWords),crs(t.crs),tmList(t.tmList){}
+    TileMatrixSet ( const TileMatrixSet& t ) : id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),crs ( t.crs ),tmList ( t.tmList ) {}
     /**
      * \~french
      * La comparaison ignore les mots-clés et les TileMatrix
@@ -174,7 +174,7 @@ public:
      * Rapid comparison of two TileMatrixSet, Keywords and TileMatrix are not verified
      * \brief Test whether 2 TileMatrixSet are equals
      * \return true if attributes are equal and lists have the same size
-     */ 
+     */
     bool operator== ( const TileMatrixSet& other ) const;
     /**
      * \~french
@@ -249,7 +249,7 @@ public:
     CRS getCrs() const {
         return crs;
     }
-    
+
     ///\TODO
     int best_scale ( double resolution_x, double resolution_y );
 
