@@ -331,6 +331,19 @@ sub _load {
                 push @{$self->{scripts}},$script;
             }
         }
+
+        # Le SUPER finisher
+        my $script = BE4::Script->new({
+            id => "SCRIPT_FINISHER",
+            tempDir => $tempDir,
+            commonTempDir => $commonTempDir,
+            scriptDir => $scriptDir
+        });
+
+        my $listFile = $self->{pyramid}->getNewListFile;
+        $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+
+        push @{$self->{scripts}},$script;
     }
     
     ######## PROCESS (suite) #########

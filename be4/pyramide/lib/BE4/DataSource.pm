@@ -322,10 +322,10 @@ sub computeGlobalInfo {
         my ($xmin,$ymin,$xmax,$ymax);
 
         my @BBOX = $self->{imageSource}->computeBBox();
-        $xmin = $BBOX[0] if (! defined $xmin || $xmin < $BBOX[0]);
-        $ymin = $BBOX[1] if (! defined $ymin || $xmin < $BBOX[1]);
-        $xmax = $BBOX[2] if (! defined $xmax || $xmin > $BBOX[2]);
-        $ymax = $BBOX[3] if (! defined $ymax || $xmin > $BBOX[3]);
+        $xmin = $BBOX[0] if (! defined $xmin || $xmin > $BBOX[0]);
+        $ymin = $BBOX[1] if (! defined $ymin || $ymin > $BBOX[1]);
+        $xmax = $BBOX[2] if (! defined $xmax || $xmax < $BBOX[2]);
+        $ymax = $BBOX[3] if (! defined $ymax || $ymax < $BBOX[3]);
         
         $self->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
     }    

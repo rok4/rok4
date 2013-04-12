@@ -153,12 +153,12 @@ public:
      * \~french \brief Calcule les poids pour chaque pixel source
      * \details On tient compte du ratio et de const_ratio
      * \param[out] W tableau des poids à affecter aux pixels sources
-     * \param[in] length nombre de poids à calculer
+     * \param[in,out] length nombre de poids à calculer a priori, mais peut être réduit sur les bords
      * \param[in] x coordonnée en pixel source du pixel à calculer (distance entre le centre du pixel source origine et le centre du pixel à calculer)
-     * \param[in] max
+     * \param[in] max coordonnée maximale à ne pas dépasser (largeur ou hauteur de l'image source)
      * \return indice du premier pixel source comptant dans le calcul (poids non nul)
      */
-    virtual int weight ( float* W, int length, double x, int max ) const;
+    virtual int weight ( float* W, int& length, double x, int max ) const;
 
 };
 

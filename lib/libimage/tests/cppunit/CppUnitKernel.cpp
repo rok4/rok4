@@ -64,30 +64,31 @@ protected:
             Interpolation::KernelType kT= Interpolation::KernelType ( ( i%6 ) +1 );
             const Kernel &K = Kernel::getInstance ( kT ); // Il y a 6 Noyaux défini dans KernelType
 
-
-            int l = 2 + rand() % 99;
-            int l2 = l;
-            double x = 100 * double ( rand() ) / double ( RAND_MAX );
             double ratio = 10 * double ( rand() ) / double ( RAND_MAX );
-            double xmin = K.weight ( W, l, x, ratio );
+            int l = ceil ( 2 * K.size ( ratio )-1E-7 );
+            //int l = 2 + rand() % 99;
+            int l2 = l;
+
+            //On part sur une image source de largeur 100
+            double x = -0.5 + 100 * double ( rand() ) / double ( RAND_MAX );
+            
+            int xmin = K.weight ( W, l, x, 100 );
 
             double sum = 0;
             for ( int i = 0; i < l; i++ ) sum += W[i];
-            double nb_min;
-            if ( kT == Interpolation::NEAREST_NEIGHBOUR ) {
-                nb_min = x - xmin;
-            } else {
-                nb_min = ceil ( x - xmin );
-            }
-            double nb_max = l - nb_min;
+
+            int xmax = xmin + l - 1;
+            double nb_min = abs(x - xmin);
+            double nb_max = abs(x - xmax);
 
 
-            cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << " | " ;
+            cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << endl ;
             for ( int i = 0; i < l; i++ ) cerr << W[i] << " ";
-            cerr << abs ( nb_min - nb_max ) << endl;
+            cerr << endl;
+            cerr << abs ( nb_min - nb_max ) << endl << endl;
 
-
-            CPPUNIT_ASSERT ( l <= l2 );                // On vérifie qu'il y a moins de coeff que place dans le tableau W
+            CPPUNIT_ASSERT ( xmin >= 0 );
+            CPPUNIT_ASSERT ( l <= l2 ); // On vérifie qu'il y a moins de coeff que place dans le tableau W
             CPPUNIT_ASSERT ( xmin < x+1 );
             CPPUNIT_ASSERT ( abs ( nb_min - nb_max ) <= 1 ); // On vérifie qu'il y a autant de coeff avant et apres x (à 1 près)
             CPPUNIT_ASSERT_DOUBLES_EQUAL ( 1., sum, 1e-6 );

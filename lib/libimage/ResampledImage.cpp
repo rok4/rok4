@@ -172,9 +172,10 @@ ResampledImage::ResampledImage ( Image* image, int width, int height, double res
     memset ( Wx, 0, xWeightSize * sizeof ( float ) );
     float* W = Wx;
     for ( int x = 0; x < width; x++ ) {
-        xmin[x] = K.weight ( W, Kx, left + x * ratio_x, image->width );
+        int lg = Kx;
+        xmin[x] = K.weight ( W, lg, left + x * ratio_x, image->width );
         // On copie chaque poids en 4 exemplaires.
-        for ( int i = Kx-1; i >= 0; i-- ) for ( int j = 0; j < 4; j++ ) W[4*i + j] = W[i];
+        for ( int i = lg-1; i >= 0; i-- ) for ( int j = 0; j < 4; j++ ) W[4*i + j] = W[i];
         W += 4*Kx;
     }
 }

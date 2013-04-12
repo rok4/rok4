@@ -365,11 +365,9 @@ sub prepare {
     $code   .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code   .= "\n";
     
-    # Fonctions
     $code   .= "# Fonctions\n";
     $code   .= "$functions\n";
 
-    # creation du répertoire de travail:
     $code .= "# Création du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
 
@@ -411,7 +409,7 @@ sub close {
     printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
 
     if ($self->{executedAlone}) {
-        printf $stream "\necho \"Temporary files lists (list_<?>.txt in the common directory) are added to the global files list, then removed\"\n";
+        printf $stream "\necho \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
         printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
     }

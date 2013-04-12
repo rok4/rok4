@@ -276,40 +276,31 @@ inline void mult ( float* outImg,float* weightSum, const float* inImg, const flo
 #ifdef __SSE2__
 
 // Sans masque
-inline void add_mult ( float* to, const float* from, const float w, int length ) {
-    while ( ( intptr_t ) to & 0x0f && length ) {
-        --length;    // On aligne to sur 128bits
-        *to++ += w * *from++;
-    }
-    while ( length & 0x03 ) {
-        --length;    // On s'arrange pour avoir un multiple de 4 d'éléments à traiter.
-        to[length] += w * from[length];
-    }
+inline void add_mult(float* to, const float* from, const float w, int length) {
+    while( (intptr_t)to & 0x0f && length) {--length; *to++ += w * *from++;}    // On aligne to sur 128bits
+    while(length & 0x03) {--length; to[length] += w * from[length];} // On s'arrange pour avoir un multiple de 4 d'éléments à traiter.
 
-    const __m128 W = _mm_set1_ps ( w );
+    const __m128 W = _mm_set1_ps(w);
     length /= 4;
 
-    if ( ( intptr_t ) from & 0x0f ) // cas from non aligné
-        for ( int i = 0; i < length; ++i ) {
-            _mm_store_ps ( to + 4*i, _mm_add_ps ( _mm_load_ps ( to + 4*i ), _mm_mul_ps ( W, _mm_loadu_ps ( from + 4*i ) ) ) );
-            to[i] += from[i] * w;
-        }
+    if((intptr_t)from & 0x0f) // cas from non aligné
+        for(int i = 0; i < length; ++i) {_mm_store_ps(to + 4*i, _mm_add_ps(_mm_load_ps(to + 4*i), _mm_mul_ps(W, _mm_loadu_ps(from + 4*i))));}
     else // cas from aligné
-        for ( int i = 0; i < length; ++i ) _mm_store_ps ( to + 4*i, _mm_add_ps ( _mm_load_ps ( to + 4*i ), _mm_mul_ps ( W, _mm_load_ps ( from + 4*i ) ) ) );
+        for(int i = 0; i < length; ++i) _mm_store_ps(to + 4*i, _mm_add_ps(_mm_load_ps(to + 4*i), _mm_mul_ps(W, _mm_load_ps(from + 4*i))));
 }
 
 // Avec masque
-inline void add_mult ( float* outImg,float* weightSum, const float* inImg, const float* inMask,
+inline void add_mult ( float* to,float* weightSum, const float* from, const float* fromMask,
                        const float weight, int width, int channels ) {
     int length = width*channels;
-    while ( ( intptr_t ) outImg & 0x0f && length-- ) *outImg++ += ( float ) weight * *inImg++;
+    while ( ( intptr_t ) to & 0x0f && length-- ) *to++ += ( float ) weight * *from++;
 
     for ( int w = 0; w < width; w++ ) {
-        if ( ! inMask[w] ) continue;
+        if ( ! fromMask[w] ) continue;
 
         weightSum[w] += weight;
         for ( int c = 0; c < channels; c++ ) {
-            outImg[w*channels + c] += inImg[w*channels + c] * weight;
+            to[w*channels + c] += from[w*channels + c] * weight;
         }
     }
 }
@@ -317,9 +308,10 @@ inline void add_mult ( float* outImg,float* weightSum, const float* inImg, const
 #else // Version non SSE
 
 // Sans masque
-inline void add_mult ( float* to, const float* from, const float w, int length ) {
-    while ( ( intptr_t ) to & 0x0f && length-- ) *to++ += ( float ) w * *from++;
-    for ( int i = 0; i < length; i++ ) to[i] += from[i] * w;
+inline void add_mult(float* to, const float* from, const float w, int length) {
+    while( (intptr_t)to & 0x0f && length--) *to++ += (float) w * *from++;
+
+    for(int i = 0; i < length; i++) to[i] += from[i] * w;
 }
 
 // Avec masque

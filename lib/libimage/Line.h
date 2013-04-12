@@ -300,57 +300,6 @@ void Line<T>::useMask ( Line<T>* above ) {
     }
 }
 
-template<typename T>
-void Line<T>::store ( T* imageIn, uint8_t* maskIn, int srcSpp, T* transparent ) {
-    memcpy ( mask, maskIn, width );
-    switch ( srcSpp ) {
-    case 1:
-        for ( int i = 0; i < width; i++ ) {
-            if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( T ) ) ) {
-                memset ( samples+3*i, 0, 3*sizeof ( T ) );
-                alpha[i] = 0.0;
-            } else {
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
-                alpha[i] = 1.0;
-            }
-        }
-        break;
-    case 2:
-        for ( int i = 0; i < width; i++ ) {
-            if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( T ) ) ) {
-                memset ( samples+3*i, 0, 3*sizeof ( T ) );
-                alpha[i] = 0.0;
-            } else {
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
-                alpha[i] = ( float ) imageIn[2*i+1];
-            }
-        }
-        break;
-    case 3:
-        memcpy ( samples, imageIn, 3*width*sizeof ( T ) );
-        for ( int i = 0; i < width; i++ ) {
-            if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( T ) ) ) {
-                memset ( samples+3*i, 0, 3*sizeof ( T ) );
-                alpha[i] = 0.0;
-            } else {
-                alpha[i] = 1.0;
-            }
-        }
-        break;
-    case 4:
-        for ( int i = 0; i < width; i++ ) {
-            if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( T ) ) ) {
-                memset ( samples+3*i, 0, 3*sizeof ( T ) );
-                alpha[i] = 0.0;
-            } else {
-                memcpy ( samples+i*3,imageIn+i*4,3*sizeof ( T ) );
-                alpha[i] = ( float ) imageIn[i*4+3];
-            }
-        }
-        break;
-    }
-}
-
 /* --------------------------------- SPÉCIALISATION DE TEMPLATE ----------------------------------- */
 
 // -------------- UINT8
@@ -410,7 +359,7 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
 
 template <>
 void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp ) {
-    mask = maskIn;
+    memcpy ( mask, maskIn, width );
     switch ( srcSpp ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
@@ -490,7 +439,7 @@ void Line<uint8_t>::multiply ( Line<uint8_t>* above ) {
 
 template <>
 void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* transparent ) {
-    mask = maskIn;
+    memcpy ( mask, maskIn, width );
     switch ( srcSpp ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
@@ -542,7 +491,7 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
 
 template <>
 void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp ) {
-    mask = maskIn;
+    memcpy ( mask, maskIn, width );
     switch ( srcSpp ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {

@@ -726,7 +726,7 @@ sub computeAboveImage {
 ####################################################################################################
 
 =begin nd
-Function: writeBranchCode
+Function: writeCode
 
 Recursive method, which allow to browse tree (downward) and write commands in associated node's script.
 

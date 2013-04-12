@@ -47,14 +47,28 @@
 #include "Kernel.h"
 #include "Logger.h"
 
-int Kernel::weight ( float* W, int length, double x, int max ) const {
+int Kernel::weight ( float* W, int& length, double x, int max ) const {
 
     double rayon = ( double ) length/2.;
     int xmin = ceil ( x - rayon - 1E-7 );
 
-    // On ne sort pas de l'image à interpoler
-    if ( xmin < 0 ) xmin = 0;
-    if ( xmin + length > max ) xmin = max - length;
+    // On ne sort pas de l'image à interpoler à gauche ...
+    if ( xmin < 0 ) {
+        xmin = 0;
+        rayon = std::abs(x);
+        length = ceil(rayon * 2 - 1E-7);
+    }
+    // ... comme à droite, quitte à diminuer le nombre de poids
+    if ( xmin + length > max ) {
+        rayon = std::abs(double(max - 1) - x);
+        xmin = ceil ( x - rayon - 1E-7 );
+        length = ceil(rayon * 2 - 1E-7);
+    }
+
+    if (length == 1) {
+        W[0] = 1.;
+        return xmin;
+    }
 
     double step = 1024. / rayon;
     double sum = 0;              // somme des poids pour normaliser en fin de calcul.
@@ -72,10 +86,9 @@ int Kernel::weight ( float* W, int length, double x, int max ) const {
         sum += W[i++] = coeff[ind] + ( coeff[ind+1] - coeff[ind] ) * ( indf - ind );
     }
 
-    // On remplit le reste du tableau des poids avec des zéros (on veut toujours avoir "length" éléments)
-    while ( i < length ) W[i++] = 0.;
+    length = i;
 
-    while ( i-- ) {
+    while (i--) {
         W[i] /= sum;   // On normalise pour que la somme des poids fasse 1.
     }
 
