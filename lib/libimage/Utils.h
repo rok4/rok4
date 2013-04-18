@@ -512,6 +512,7 @@ inline void dot_prod ( int K, float* outImg, float* outMask, const float* inImg,
 // Avec masque
 template<int C>
 inline void dot_prod ( int K, float* outImg, float* outMask, const float* inImg, const float* inMask, const float* W ) {
+    
     float T[4*C];
     float weightSum[4] = {0.,0.,0.,0.};
     memset ( T,0,4*C*sizeof ( float ) );

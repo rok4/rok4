@@ -48,37 +48,48 @@ static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
     nbxInt = 1 + ( width-1 ) /stepInt;
     nbyInt = 1 + ( height-1 ) /stepInt;
+
+    nbx = nbxInt;
+    nby = nbyInt;
+
+    /* On veut toujours que le dernier pixel reprojeté soit le dernier de la ligne, ou de la colonne.
+     * On ajoute donc toujours le dernier pixel à ceux de la grille, même si celui ci y était déjà.
+     * On en ajoute donc un, quiaura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
+     * Il faudra donc faire attention à cette différence lors de l'interpolation d'une ligne
+     */
     nbx = nbxInt + 1;
     nby = nbyInt + 1;
 
-    double ratio_x = ( bbox.xmax - bbox.xmin ) /double ( width );
-    double ratio_y = ( bbox.ymax - bbox.ymin ) /double ( height );
-    double left = bbox.xmin + 0.5 * ratio_x;
-    double top  = bbox.ymax - 0.5 * ratio_y;
-    double stepx = stepInt * ratio_x;
-    double stepy = stepInt * ratio_y;
+    endX = width - 1 - (nbxInt-1) * stepInt;
+    endY = height - 1 - (nbyInt-1) * stepInt;
 
-    stepRight = width - ( ( nbxInt-1 ) *stepInt + 1 );
-    stepBottom = height - ( ( nbyInt-1 ) *stepInt + 1 );
+    double resX = ( bbox.xmax - bbox.xmin ) / double ( width );
+    double resY = ( bbox.ymax - bbox.ymin ) / double ( height );
 
-    double stepxright = stepRight * ratio_x;
-    double stepybottom = stepBottom * ratio_y;
+    // Coordonnées du centre du pixel en haut à droite
+    double left = bbox.xmin + 0.5 * resX;
+    double top = bbox.ymax - 0.5 * resY;
 
-    gridX = new double[ nbx * nby];
-    gridY = new double[ nbx * nby];
+    // Calcul du pas en unité terrain (et non pixel)
+    double stepX = stepInt * resX;
+    double stepY = stepInt * resY;
+
+    gridX = new double[ nbx * nby ];
+    gridY = new double[ nbx * nby ];
 
     for ( int y = 0 ; y < nby; y++ ) {
         for ( int x = 0 ; x < nbx; x++ ) {
             if ( y == nbyInt ) {
-                //Cut the last pixel
-                gridY[nbx*y + x] = top  - ( ( y-1 ) *stepy + stepybottom );
+                // Last reprojected pixel = last pixel
+                gridY[nbx*y + x] = top  - ( height-1 ) *resY;
             } else {
-                gridY[nbx*y + x] = top  - y*stepy;
+                gridY[nbx*y + x] = top  - y*stepY;
             }
             if ( x == nbxInt ) {
-                gridX[nbx*y + x] = left + ( ( x-1 ) *stepx + stepxright );
+                // Last reprojected pixel = last pixel
+                gridX[nbx*y + x] = left + ( width-1 ) *resX;
             } else {
-                gridX[nbx*y + x] = left + x*stepx;
+                gridX[nbx*y + x] = left + x*stepX;
             }
         }
     }
@@ -94,7 +105,25 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
         gridX[i] = Ax * gridX[i] + Bx;
         gridY[i] = Ay * gridY[i] + By;
     }
-    update_bbox();
+
+    // Mise à jour de la bbox
+    if (Ax > 0) {
+        bbox.xmin = bbox.xmin*Ax + Bx;
+        bbox.xmax = bbox.xmax*Ax + Bx;
+    } else {
+        double xmintmp = bbox.xmin;
+        bbox.xmin = bbox.xmax*Ax + Bx;
+        bbox.xmax = xmintmp*Ax + Bx;
+    }
+
+    if (Ay > 0) {
+        bbox.ymin = bbox.ymin*Ay + By;
+        bbox.ymax = bbox.ymax*Ay + By;
+    } else {
+        double ymintmp = bbox.ymin;
+        bbox.ymin = bbox.ymax*Ay + By;
+        bbox.ymax = ymintmp*Ay + By;
+    }
 }
 
 /**
@@ -116,111 +145,148 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
 
     projPJ pj_src, pj_dst;
     if ( ! ( pj_src = pj_init_plus_ctx ( ctx, ( "+init=" + from_srs +" +wktext" ).c_str() ) ) ) {
+        // Initialisation du système de projection source
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        LOGGER_DEBUG ( "erreur d initialisation " << from_srs << " " << msg );
+        LOGGER_ERROR ( "erreur d initialisation " << from_srs << " " << msg );
         pj_ctx_free ( ctx );
         pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
     if ( ! ( pj_dst = pj_init_plus_ctx ( ctx, ( "+init=" + to_srs +" +wktext +over" ).c_str() ) ) ) {
+        // Initialisation du système de projection destination
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        LOGGER_DEBUG ( "erreur d initialisation " << to_srs << " " << msg );
+        LOGGER_ERROR ( "erreur d initialisation " << to_srs << " " << msg );
         pj_free ( pj_src );
         pj_ctx_free ( ctx );
         pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
 
-    LOGGER_DEBUG ( "Avant "<<gridX[0]<<" "<<gridY[0] );
-    LOGGER_DEBUG ( "Avant "<<gridX[nbx-1]<<" "<<gridY[nby-1] );
+    LOGGER_DEBUG ( "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] );
+    LOGGER_DEBUG ( "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] );
 
     // Note that geographic locations need to be passed in radians, not decimal degrees,
     // and will be returned similarly
 
-    if ( pj_is_latlong ( pj_src ) ) for ( int i = 0; i < nbx*nby; i++ ) {
+    if ( pj_is_latlong ( pj_src ) )
+        for ( int i = 0; i < nbx*nby; i++ ) {
             gridX[i] *= DEG_TO_RAD;
             gridY[i] *= DEG_TO_RAD;
         }
 
-    int code=pj_transform ( pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0 );
+    // On reprojette toutes les coordonnées
+    int code = pj_transform ( pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0 );
 
-    if ( pj_is_latlong ( pj_dst ) ) for ( int i = 0; i < nbx*nby; i++ ) {
+    if ( code != 0 ) {
+        LOGGER_ERROR ( "Code erreur proj4 : " << code );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return false;
+    }
+
+    // On vérifie que le résultat renvoyé par la reprojection est valide
+    for ( int i = 0; i < nbx*nby; i++ ) {
+        if ( gridX[i] == HUGE_VAL || gridY[i] == HUGE_VAL ) {
+            LOGGER_ERROR ( "Valeurs retournees par pj_transform invalides" );
+            pj_free ( pj_src );
+            pj_free ( pj_dst );
+            pj_ctx_free ( ctx );
+            pthread_mutex_unlock ( & mutex_proj );
+            return false;
+        }
+    }
+
+    if ( pj_is_latlong ( pj_dst ) )
+        for ( int i = 0; i < nbx*nby; i++ ) {
             gridX[i] *= RAD_TO_DEG;
             gridY[i] *= RAD_TO_DEG;
         }
 
-    LOGGER_DEBUG ( "Apres "<<gridX[0]<<" "<<gridY[0] );
-    LOGGER_DEBUG ( "Apres "<<gridX[nbx-1]<<" "<<gridY[nby-1] );
+    LOGGER_DEBUG ( "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] );
+    LOGGER_DEBUG ( "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] );
 
+    /****************** Mise à jour de la bbox *********************
+     * On n'utilise pas les coordonnées présentent dans les tableaux X et Y car celles ci correspondent
+     * aux centres des pixels, et non au bords. On va donc reprojeter la bbox indépendemment.
+     * On divise chaque côté de la bbox en 10.
+     */
+    if ( bbox.reproject(pj_src, pj_dst) ) {
+        LOGGER_ERROR ( "Erreur reprojection bbox" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return false;
+    }
+
+    // Nettoyage
     pj_free ( pj_src );
     pj_free ( pj_dst );
     pj_ctx_free ( ctx );
     pthread_mutex_unlock ( & mutex_proj );
 
-    if ( code!=0 ) {
-        LOGGER_DEBUG ( "Code erreur proj4 :"<<code );
-        return false;
-    }
-    for ( int i=0; i<nbx*nby; i++ ) {
-        if ( gridX[i]==HUGE_VAL || gridY[i]==HUGE_VAL ) {
-            LOGGER_DEBUG ( "Valeurs retournees par pj_transform invalides" );
-
-            return false;
-        }
-    }
-
-    update_bbox();
-
     return true;
 }
 
+int Grid::interpolate_line ( int line, float* X, float* Y ) {
 
-inline void update ( BoundingBox<double> &B, double x, double y ) {
-    B.xmin = std::min ( B.xmin, x );
-    B.xmax = std::max ( B.xmax, x );
-    B.ymin = std::min ( B.ymin, y );
-    B.ymax = std::max ( B.ymax, y );
-}
+    int dy = line / stepInt;
+    double w = 0;
 
+    if ( dy == nbyInt - 1) {
+        if (endY == 0) {w = 0;}
+        else {w = ( (line%stepInt) ) / double ( endY );}
+    } else {
+        w = ( line%stepInt ) / double ( stepInt );
+    }
 
-void Grid::update_bbox() {
-
-    bbox.xmin = gridX[0];
-    bbox.xmax = gridX[0];
-    bbox.ymin = gridY[0];
-    bbox.ymax = gridY[0];
-    // Top pixel
-    for ( int i = 0; i < nbx - 1; i++ ) update ( bbox, gridX[i], gridY[i] );
-    // Left pixel
-    for ( int i = 0; i < nby - 1; i++ ) update ( bbox, gridX[i*nbx], gridY[i*nbx] );
-    //Right Pixel
-    double wx = ( stepInt - ( ( width - 1 ) %stepInt ) ) /double ( stepInt );
-    for ( int i = 0; i < nby; i++ ) update ( bbox, wx * gridX[i*nbx + nbx - 2] + ( 1.-wx ) * gridX[i*nbx + nbx - 1],
-                wx * gridY[i*nbx + nbx - 2] + ( 1.-wx ) * gridY[i*nbx + nbx - 1] );
-    //Bottom Pixel
-    double wy = ( stepInt - ( ( height - 1 ) %stepInt ) ) /double ( stepInt );
-    for ( int i = 0; i < nbx; i++ ) update ( bbox, wy * gridX[ ( nby-2 ) *nbx + i] + ( 1.-wy ) * gridX[ ( nby-1 ) *nbx + i],
-                wy * gridY[ ( nby-2 ) *nbx + i] + ( 1.-wy ) * gridY[ ( nby-1 ) *nbx + i] );
-}
-
-int Grid::interpolate_line ( int line, float* X, float* Y, int nb ) {
-    int ky = line / stepInt;
-    double w = ( stepInt - ( line%stepInt ) ) /double ( stepInt );
     double LX[nbx], LY[nbx];
+
+    // Interpolation dans les sens des Y
     for ( int i = 0; i < nbx; i++ ) {
-        LX[i] = w*gridX[ky*nbx + i] + ( 1-w ) *gridX[ky * nbx + nbx + i];
-        LY[i] = w*gridY[ky*nbx + i] + ( 1-w ) *gridY[ky * nbx + nbx + i];
+        LX[i] = (1-w)*gridX[dy*nbx + i] + w*gridX[(dy+1) * nbx + i];
+        LY[i] = (1-w)*gridY[dy*nbx + i] + w*gridY[(dy+1) * nbx + i];
     }
 
-    for ( int i = 0; i < nb; i++ ) {
-        int kx = i / stepInt;
-        double w = ( stepInt - ( i%stepInt ) ) /double ( stepInt );
-        X[i] = w*LX[kx] + ( 1-w ) *LX[kx+1];
-        Y[i] = w*LY[kx] + ( 1-w ) *LY[kx+1];
+    // Indice dans la grille du dernier pixel reprojetée car respecte le pas de base (dans le sens des x)
+    int lastRegularPixel = (nbxInt-1)*stepInt;
+
+    /* Interpolation dans le sens des X, sur la partie où la répartition des pixels reprojetés
+     * est régulière (tous les stepInt pixels */
+    for ( int i = 0; i <= lastRegularPixel; i++ ) {
+        int dx = i / stepInt;
+        double w = ( i%stepInt ) /double ( stepInt );
+        X[i] = ( 1-w )*LX[dx] + w*LX[dx+1];
+        Y[i] = ( 1-w )*LY[dx] + w*LY[dx+1];
     }
-    return nb;
+
+    /* Interpolation dans le sens des X, sur la partie où la répartition des pixels reprojetés
+     * est irrégulière (tous les stepInt pixels */
+    for ( int i = 1; i <= endX; i++ ) {
+        double w = i /double ( endX );
+        X[lastRegularPixel + i] = ( 1-w )*LX[nbxInt - 1] + w * LX[nbxInt];
+        Y[lastRegularPixel + i] = ( 1-w )*LY[nbxInt - 1] + w * LY[nbxInt];
+    }
+
+    return width;
+
+// int ky = line / stepInt;
+//     double w = ( stepInt - ( line%stepInt ) ) /double ( stepInt );
+//     double LX[nbx], LY[nbx];
+//     for ( int i = 0; i < nbx; i++ ) {
+//         LX[i] = w*gridX[ky*nbx + i] + ( 1-w ) *gridX[ky * nbx + nbx + i];
+//         LY[i] = w*gridY[ky*nbx + i] + ( 1-w ) *gridY[ky * nbx + nbx + i];
+//     }
+// 
+//     for ( int i = 0; i < width; i++ ) {
+//         int kx = i / stepInt;
+//         double w = ( stepInt - ( i%stepInt ) ) /double ( stepInt );
+//         X[i] = w*LX[kx] + ( 1-w ) *LX[kx+1];
+//         Y[i] = w*LY[kx] + ( 1-w ) *LY[kx+1];
+//     }
+//     return width;
 }
-
-

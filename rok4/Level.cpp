@@ -156,10 +156,14 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
 Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     Grid* grid = new Grid ( width, height, bbox );
 
+    grid->bbox.print();
+
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
         error = 1; // BBox invalid
         return 0;
     }
+
+    grid->bbox.print();
 
     // Calcul de la taille du noyau
     //Maintain previous Lanczos behaviour : Lanczos_2 for resampling and reprojecting
@@ -184,6 +188,13 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
         return 0;
     }
     image->setBbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
+
+    grid->bbox.print();
+
+    grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX(),
+                             -1./image->getResY(), image->getBbox().ymax/image->getResY() );
+
+    grid->bbox.print();
 
     return new ReprojectedImage ( image, bbox, grid, interpolation );
 }

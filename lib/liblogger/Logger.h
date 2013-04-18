@@ -114,11 +114,12 @@ extern std::ostream nullstream;
 //#define LOGGER(x) (Logger::getOutput()==ROLLING_FILE?(Logger::getAccumulator(x)?Logger::getLogger(x):nullstream):std::cerr)
 #define LOGGER(x) (Logger::getAccumulator(x)?(Logger::getOutput()==STANDARD_OUTPUT_STREAM_FOR_ERRORS?std::cerr:Logger::getLogger(x)):nullstream)
 
-#define LOGGER_DEBUG(m) LOGGER(DEBUG)<<"pid="<<getpid()<<" "<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<" "<<m<<std::endl
-#define LOGGER_INFO(m) LOGGER(INFO)<<"pid="<<getpid()<<" "<<m<<std::endl
-#define LOGGER_WARN(m) LOGGER(WARN)<<"pid="<<getpid()<<" "<<m<<std::endl
-#define LOGGER_ERROR(m) LOGGER(ERROR)<<"pid="<<getpid()<<" "<<m<<std::endl
-#define LOGGER_FATAL(m) LOGGER(FATAL)<<"pid="<<getpid()<<" "<<m<<std::endl
+#define LOGGER_DEBUG(m) LOGGER(DEBUG)<<"pid="<<getpid()<<" DEBUG : "<<m<<" ("<<__FILE__<<":"<<__LINE__<<" in "<<__FUNCTION__<<")"<<std::endl
+
+#define LOGGER_INFO(m) LOGGER(INFO)<<"pid="<<getpid()<<"  INFO : "<<m<<std::endl
+#define LOGGER_WARN(m) LOGGER(WARN)<<"pid="<<getpid()<<"  WARN : "<<m<<std::endl
+#define LOGGER_ERROR(m) LOGGER(ERROR)<<"pid="<<getpid()<<" ERROR : "<<m<<std::endl
+#define LOGGER_FATAL(m) LOGGER(FATAL)<<"pid="<<getpid()<<" FATAL : "<<m<<std::endl
 
 
 #endif

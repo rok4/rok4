@@ -47,96 +47,160 @@
 #include <cmath>
 
 
-ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid,  Interpolation::KernelType KT ) :
+ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid,
+                                     Interpolation::KernelType KT, bool bMask ) :
+                                     
     Image ( grid->width, grid->height,image->channels, bbox ),
-    image ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ) {
-    double res_x = image->getResX();
-    double res_y = image->getResY();
-
-    grid->bbox.print();
-    grid->affine_transform ( 1./res_x, -image->getBbox().xmin/res_x - 0.5, -1./res_y, image->getBbox().ymax/res_y - 0.5 );
-    grid->bbox.print();
+    sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {
+        
     ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / double ( width );
     ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / double ( height );
-
-    LOGGER_DEBUG ( "ratiox="<<ratio_x<<" ratioy="<<ratio_y<<" width="<<width<<" height="<<height );
 
     // On calcule le nombre de pixels sources à considérer dans l'interpolation, dans le sens des x et des y
     Kx = ceil ( 2 * K.size ( ratio_x ) );
     Ky = ceil ( 2 * K.size ( ratio_y ) );
 
-    int sz1 = 4* ( ( image->width*channels + 3 ) /4 ); // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
-    int sz2 = 4* ( ( width*channels + 3 ) /4 ); // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
-    int sz3 = 4* ( ( width+3 ) /4 );
-    int sz4 = 4* ( ( Kx+3 ) /4 );
-    int sz5 = 4* ( ( Ky+3 ) /4 );
+    if ( ! sourceImage->getMask() ) {useMask = false;}
 
-    int sz = sz1 * image->height * sizeof ( float )          // place pour src_line_buffer
-             + sz2 * 8 * sizeof ( float ) // place pour (Ky+4) lignes de resampled_src_line + dst_line_buffer
-             + sz3 * 8 * sizeof ( float )
-             + sz4 * ( 1028 + 4*channels ) * sizeof ( float )
-             + sz5 * ( 1028 + 4*channels ) * sizeof ( float );
+    /* -------------------- PLACE MEMOIRE ------------------- */
 
+    // nombre d'éléments d'une ligne de l'image source, arrondi au multiple de 4 supérieur.
+    int srcImgSize = 4* ( ( sourceImage->width*channels + 3 ) /4 );
+    int srcMskSize = 4* ( ( sourceImage->width + 3 ) /4 );
 
-    __buffer = ( float* ) _mm_malloc ( sz, 16 ); // Allocation allignée sur 16 octets pour SSE
-    memset ( __buffer, 0, sz );
+    // nombre d'éléments d'une ligne de l'image calculée, arrondi au multiple de 4 supérieur.
+    int outImgSize = 4* ( ( width*channels + 3 ) /4 );
+    int outMskSize = 4* ( ( width + 3 ) /4 );
+
+    // nombre d'éléments d'une ligne de la grille, arrondi au multiple de 4 supérieur.
+    int gridSize = 4* ( ( width*channels + 3 ) /4 );
+
+    // nombre d'élément dans les tableaux de poids, arrondi au multiple de 4 supérieur.
+    int kxSize = 4* ( ( Kx+3 ) /4 );
+    int kySize = 4* ( ( Ky+3 ) /4 );
+
+    int globalSize = srcImgSize * sourceImage->height * sizeof ( float ) // place pour charger toute l'image source
+             + outImgSize * 8 * sizeof ( float ) // 4 lignes reprojetées, en multiplexées et en séparées => 8
+             + gridSize * 8 * sizeof ( float ) // 4 lignes de la grille, X et Y => 8
+
+             /*   1024 possibilités de poids
+              * + poids pour 4 lignes, multiplexés
+              * + extrait des 4 lignes sources, sur lesquelles appliqué les poids
+              */
+             + kxSize * ( 1028 + 4*channels ) * sizeof ( float )
+             + kySize * ( 1028 + 4*channels ) * sizeof ( float );
+
+    if ( useMask ) {
+        globalSize += srcMskSize * sourceImage->height * sizeof ( float ) // place pour charger tout le masque de l'image source
+              + outMskSize * 8 * sizeof ( float ) // 4 lignes reprojetées, en multiplexées et en séparées => 8
+              + kxSize * 4 * sizeof ( float )
+              + kySize * 4 * sizeof ( float );
+    }
+
+    /* Allocation de la mémoire pour tous les buffers en une seule fois :
+     *  - gain de temps (l'allocation est une action qui prend du temps)
+     *  - tous les buffers sont côtes à côtes dans la mémoire, gain de temps lors des lectures/écritures
+     */
+    __buffer = ( float* ) _mm_malloc ( globalSize, 16 ); // Allocation allignée sur 16 octets pour SSE
+    memset ( __buffer, 0, globalSize );
 
     float* B = __buffer;
 
-    src_line_buffer = new float*[image->height];
-    for ( int i = 0; i < image->height; i++ ) {
-        src_line_buffer[i] = B;
-        B += sz1;
+    /* -------------------- PARTIE IMAGE -------------------- */
+
+    src_image_buffer = new float*[sourceImage->height];
+    for ( int i = 0; i < sourceImage->height; i++ ) {
+        src_image_buffer[i] = B;
+        B += srcImgSize;
     }
 
     for ( int i = 0; i < 4; i++ ) {
-        dst_line_buffer[i] = B;
-        B += sz2;
+        dst_image_buffer[i] = B;
+        B += outImgSize;
     }
 
-    mux_dst_line_buffer = B;
-    B += 4*sz2;
+    mux_dst_image_buffer = B;
+    B += 4*outImgSize;
+    
+    tmp1Img = B;
+    B += 4*channels*kxSize;
+    tmp2Img = B;
+    B += 4*channels*kySize;
+
+    /* -------------------- PARTIE MASQUE ------------------- */
+
+    if ( useMask ) {
+        src_mask_buffer = new float*[sourceImage->height];
+        for ( int i = 0; i < sourceImage->height; i++ ) {
+            src_mask_buffer[i] = B;
+            B += srcMskSize;
+        }
+
+        for ( int i = 0; i < 4; i++ ) {
+            dst_mask_buffer[i] = B;
+            B += outMskSize;
+        }
+
+        mux_dst_mask_buffer = B;
+        B += 4*outMskSize;
+
+        tmp1Msk = B;
+        B += 4*kxSize;
+        tmp2Msk = B;
+        B += 4*kySize;
+    }
+
+    /* -------------------- PARTIE POIDS -------------------- */
+    
     for ( int i = 0; i < 4; i++ ) {
         X[i] = B;
-        B += sz3;
+        B += gridSize;
         Y[i] = B;
-        B += sz3;
+        B += gridSize;
     }
-
+    
     dst_line_index = -1;
 
     for ( int i = 0; i < 1024; i++ ) {
         Wx[i] = B;
-        B += sz4;
+        B += kxSize;
         Wy[i] = B;
-        B += sz5;
+        B += kySize;
     }
     WWx = B;
-    B += 4*sz4;
+    B += 4*kxSize;
     WWy = B;
-    B += 4*sz5;
-    TMP1 = B;
-    B += 4*channels*sz4;
-    TMP2 = B;
-    B += 4*channels*sz5;
+    B += 4*kySize;
+    
 
     for ( int i = 0; i < 1024; i++ ) {
-        xmin[i] = K.weight ( Wx[i], Kx, 1./2048. + double ( i ) /1024., image->width );
-        ymin[i] = K.weight ( Wy[i], Ky, 1./2048. + double ( i ) /1024., image->height );
+        xmin[i] = K.weight ( Wx[i], Kx, double ( i ) /1024. + Kx, sourceImage->width ) - Kx;
+        ymin[i] = K.weight ( Wy[i], Ky, double ( i ) /1024. + Ky, sourceImage->height ) - Ky;
     }
 
-    // TODO : ne pas charger toute l'image source au démarrage.
-    for ( int y = 0; y < image->height; y++ ) image->getline ( src_line_buffer[y], y );
+    /* ------- MISE EN MÉMOIRE DE TOUTES LES SOURCES -------- */
+
+    /** \todo : Ne pas charger toute l'image source au démarrage.*/
+    for ( int y = 0; y < sourceImage->height; y++ ) sourceImage->getline ( src_image_buffer[y], y );
+
+    if ( useMask ) {
+        for ( int y = 0; y < sourceImage->height; y++ ) sourceImage->getMask()->getline ( src_mask_buffer[y], y );
+    }
+
+    print();
+    LOGGER_DEBUG("Image source utilisée");
+    sourceImage->print();
 }
 
 
 float* ReprojectedImage::compute_dst_line ( int line ) {
-    if ( line/4 == dst_line_index ) return dst_line_buffer[line%4];
+
+    if ( line/4 == dst_line_index ) return dst_image_buffer[line%4];
     dst_line_index = line/4;
 
     for ( int i = 0; i < 4; i++ ) {
         if ( 4*dst_line_index+i < height ) {
-            grid->interpolate_line ( 4*dst_line_index+i, X[i], Y[i], width );
+            grid->interpolate_line ( 4*dst_line_index+i, X[i], Y[i] );
         } else {
             memcpy ( X[i], X[0], width*sizeof ( float ) );
             memcpy ( Y[i], Y[0], width*sizeof ( float ) );
@@ -158,24 +222,63 @@ float* ReprojectedImage::compute_dst_line ( int line ) {
         int y1 = ( int ) ( Y[1][x] ) + ymin[Iy[1]];
         int y2 = ( int ) ( Y[2][x] ) + ymin[Iy[2]];
         int y3 = ( int ) ( Y[3][x] ) + ymin[Iy[3]];
-        int dx0 = ( ( int ) ( X[0][x] ) + xmin[Ix[0]] ) *channels;
-        int dx1 = ( ( int ) ( X[1][x] ) + xmin[Ix[1]] ) *channels;
-        int dx2 = ( ( int ) ( X[2][x] ) + xmin[Ix[2]] ) *channels;
-        int dx3 = ( ( int ) ( X[3][x] ) + xmin[Ix[3]] ) *channels;
+        int dx0 = ( ( int ) ( X[0][x] ) + xmin[Ix[0]] );
+        int dx1 = ( ( int ) ( X[1][x] ) + xmin[Ix[1]] );
+        int dx2 = ( ( int ) ( X[2][x] ) + xmin[Ix[2]] );
+        int dx3 = ( ( int ) ( X[3][x] ) + xmin[Ix[3]] );
 
         for ( int j = 0; j < Ky; j++ ) {
-            multiplex_unaligned ( TMP1,
-                                  src_line_buffer[y0 + j] + dx0,
-                                  src_line_buffer[y1 + j] + dx1,
-                                  src_line_buffer[y2 + j] + dx2,
-                                  src_line_buffer[y3 + j] + dx3,
+            multiplex_unaligned ( tmp1Img,
+                                  src_image_buffer[y0 + j] + dx0*channels, src_image_buffer[y1 + j] + dx1*channels,
+                                  src_image_buffer[y2 + j] + dx2*channels, src_image_buffer[y3 + j] + dx3*channels,
                                   Kx * channels );
-            dot_prod ( channels, Kx, TMP2 + 4*j*channels, TMP1, WWx );
+
+            if ( useMask ) {
+                multiplex_unaligned ( tmp1Msk,
+                                      src_mask_buffer[y0 + j] + dx0, src_mask_buffer[y1 + j] + dx1,
+                                      src_mask_buffer[y2 + j] + dx2, src_mask_buffer[y3 + j] + dx3,
+                                      Kx );
+            }
+
+            if ( useMask ) {
+                dot_prod ( channels, Kx,
+                           tmp2Img + 4*j*channels,
+                           tmp2Msk + 4*j,
+                           tmp1Img,
+                           tmp1Msk,
+                           WWx );
+            } else {
+                dot_prod ( channels, Kx,
+                           tmp2Img + 4*j*channels,
+                           tmp1Img,
+                           WWx );
+            }
         }
-        dot_prod ( channels, Ky, mux_dst_line_buffer + 4*x*channels, TMP2, WWy );
+        
+        if ( useMask ) {
+            dot_prod ( channels, Ky,
+                       mux_dst_image_buffer + 4*x*channels,
+                       mux_dst_mask_buffer + 4*x,
+                       tmp2Img,
+                       tmp2Msk,
+                       WWy );
+        } else {
+            dot_prod ( channels, Ky,
+                       mux_dst_image_buffer + 4*x*channels,
+                       tmp2Img,
+                       WWy );
+        }
     }
-    demultiplex ( dst_line_buffer[0], dst_line_buffer[1], dst_line_buffer[2], dst_line_buffer[3], mux_dst_line_buffer, width*channels );
-    return dst_line_buffer[line%4];
+
+    demultiplex ( dst_image_buffer[0], dst_image_buffer[1], dst_image_buffer[2], dst_image_buffer[3],
+                  mux_dst_image_buffer, width*channels );
+
+    if ( useMask ) {
+        demultiplex ( dst_mask_buffer[0], dst_mask_buffer[1], dst_mask_buffer[2], dst_mask_buffer[3],
+                      mux_dst_mask_buffer, width );
+    }
+    
+    return dst_image_buffer[line%4];
 }
 
 int ReprojectedImage::getline ( uint8_t* buffer, int line ) {
@@ -189,6 +292,7 @@ int ReprojectedImage::getline ( float* buffer, int line ) {
     convert ( buffer, dst_line, width*channels );
     return width*channels;
 }
+
 
 
 

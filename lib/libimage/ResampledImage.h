@@ -79,7 +79,7 @@ private:
      * \~french \brief Image source, à réechantillonner
      * \~english \brief Source image, to resample
      */
-    Image* source_image;
+    Image* sourceImage;
 
     /**
      * \~french \brief Précise si les masques doivent intervenir dans l'interpolation (lourd)
@@ -110,14 +110,14 @@ private:
      * \~english \brief Ratio between destination resolution and source resolution, widthwise
      * \details X ratio = X destination resolution / X source resolution
      */
-    double ratio_x;
+    double ratioX;
     /**
      * \~french \brief Rapport des résolutions source et finale, dans le sens des Y
      * \details Ratio de rééchantillonage en Y = résolution Y cible / résolution Y source
      * \~english \brief Ratio between destination resolution and source resolution, heighthwise
      * \details Y ratio = Y destination resolution / Y source resolution
      */
-    double ratio_y;
+    double ratioY;
 
     /**
      * \~french \brief Décalage entre le haut de l'image source et le haut de l'image réechantillonnée
@@ -189,7 +189,7 @@ private:
      * Conclusion : on mémorise "Ky arrondi au multiple de 4 supérieur" lignes
      * \~english \brief Number of memorized resampled lines, for image and mask
      */
-    int memorize_line;
+    int memorizedLines;
     /**
      * \~french \brief Indexation des lignes mémorisées
      * \details Elle permet de convertir un indice de la ligne de l'image source réechantillonnée en X en indice dans le tableau des lignes mémorisées (dans #resampled_image et #resampled_mask).
@@ -256,7 +256,7 @@ private:
      ** \~english \brief Min pixels coordinates array
      * \details For each destination pixel, we precise the first source pixel (column indice) which be used by interpolation (return value of function Kernel#weight)
      */
-    int* xmin;
+    int* xMin;
 
     /** \~french
      * \brief Retourne une ligne source réechantillonnée en X, entière
@@ -341,7 +341,7 @@ public:
     ~ResampledImage() {
         _mm_free ( __buffer );
         delete[] resampled_line_index;
-        delete source_image;
+        delete sourceImage;
     }
 
     /** \~french

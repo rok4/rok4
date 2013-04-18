@@ -47,8 +47,6 @@
 #include "Logger.h"
 #include "Grid.h"
 #include <proj_api.h>
-#include "intl.h"
-#include "config.h"
 
 /**
  * \~french \brief Code utilisé en cas de non correspondance avec les référentiel de Proj
@@ -214,7 +212,7 @@ bool CRS::cmpRequestCode ( std::string crs ) {
 std::string CRS::getAuthority() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( _ ( "Erreur sur le CRS " ) <<requestCode<< _ ( " : absence de separateur" ) );
+        LOGGER_ERROR ( "Erreur sur le CRS " << requestCode << " : absence de separateur" );
         pos=requestCode.length();
     }
     return ( requestCode.substr ( 0,pos ) );
@@ -224,7 +222,7 @@ std::string CRS::getAuthority() {
 std::string CRS::getIdentifier() {
     size_t pos=requestCode.find ( ':' );
     if ( pos<1 || pos >=requestCode.length() ) {
-        LOGGER_ERROR ( _ ( "Erreur sur le CRS " ) <<requestCode<< _ ( " : absence de separateur" ) );
+        LOGGER_ERROR ( "Erreur sur le CRS " << requestCode << " : absence de separateur" );
         pos=-1;
     }
     return ( requestCode.substr ( pos+1 ) );

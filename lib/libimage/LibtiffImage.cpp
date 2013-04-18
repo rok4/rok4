@@ -290,7 +290,16 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibtiffImage::getline ( float* buffer, int line ) {
-    return _getline ( buffer,line );
+    if ( ST.getSampleFormat() == SAMPLEFORMAT_UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        getline ( buffer_t,line );
+        convert ( buffer,buffer_t,width*channels );
+        delete [] buffer_t;
+        return width*channels;
+    } else { // float
+        return _getline ( buffer, line );
+    }
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -305,11 +314,14 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( ST.isUInt8() ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
+            
             pIn->getline ( buf_u,line );
+            //LOGGER_DEBUG("get line OK ");
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
                 LOGGER_DEBUG ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
             }
+            //LOGGER_DEBUG("write line OK ");
         }
     } else if ( ST.isFloat() ) {
         buf_f = ( float* ) _TIFFmalloc ( width * channels * getBitsPerSample() /8 );

@@ -129,12 +129,15 @@ protected:
 
             Image* image = new EmptyImage ( 1024, 768, channels, color );
             /*
-                  image->getbbox().xmin = grid->bbox.xmin - 100;
-                  image->getbbox().ymin = grid->bbox.ymin - 100;
-                  image->getbbox().xmax = grid->bbox.xmax + 100;
-                  image->getbbox().ymax = grid->bbox.ymax + 100;
+                image->getbbox().xmin = grid->bbox.xmin - 100;
+                image->getbbox().ymin = grid->bbox.ymin - 100;
+                image->getbbox().xmax = grid->bbox.xmax + 100;
+                image->getbbox().ymax = grid->bbox.ymax + 100;
             */
             image->setBbox ( BoundingBox<double> ( grid->bbox.xmin - 100, grid->bbox.ymin - 100, grid->bbox.xmax + 100, grid->bbox.ymax + 100 ) );
+
+            grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX(),
+                             -1./image->getResY(), image->getBbox().ymax/image->getResY() );
 
             ReprojectedImage* R = new ReprojectedImage ( image,  bbox, grid, Interpolation::KernelType ( kernel_type ) );
             for ( int l = 0; l < 600; l++ ) R->getline ( buffer, l );

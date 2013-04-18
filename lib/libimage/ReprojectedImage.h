@@ -47,29 +47,61 @@
 class ReprojectedImage : public Image {
 private:
     // Image source à rééchantilloner.
-    Image* image;
+    Image* sourceImage;
 
-    // Noyau de la méthode d'interpollation à utiliser.
+    /**
+     * \~french \brief Précise si les masques doivent intervenir dans l'interpolation (lourd)
+     * \~english \brief Precise if mask have to be used by interpolation (heavy)
+     */
+    bool useMask;
+
+    /**
+     * \~french \brief Noyau d'interpolation à utiliser
+     * \~english \brief Interpolation kernel to use
+     */
     const Kernel& K;
 
-    // Nombre maximal de pixels sources pris en compte pour une interpolation en x.
+    /**
+     * \~french \brief Nombre de pixels source intervenant dans l'interpolation, dans le sens des X
+     * \~english \brief Number of source pixels used by interpolation, widthwise
+     */
     int Kx;
 
-    // Nombre maximal de pixels sources pris en compte pour une interpolation en y.
+    /**
+     * \~french \brief Nombre de pixels source intervenant dans l'interpolation, dans le sens des Y
+     * \~english \brief Number of source pixels used by interpolation, heightwise
+     */
     int Ky;
 
-    double ratio_x, ratio_y;
+    /**
+     * \~french \brief Rapport des résolutions source et finale, dans le sens des X
+     * \details Ratio de rééchantillonage en X = résolution X cible / résolution X source
+     * \~english \brief Ratio between destination resolution and source resolution, widthwise
+     * \details X ratio = X destination resolution / X source resolution
+     */
+    double ratio_x;
+    /**
+     * \~french \brief Rapport des résolutions source et finale, dans le sens des Y
+     * \details Ratio de rééchantillonage en Y = résolution Y cible / résolution Y source
+     * \~english \brief Ratio between destination resolution and source resolution, heighthwise
+     * \details Y ratio = Y destination resolution / Y source resolution
+     */
+    double ratio_y;
 
     Grid* grid;
 
     float*  __buffer;
-
-    int*    src_line_index;
-    float** src_line_buffer;
+    
+    float** src_image_buffer;
+    float** src_mask_buffer;
 
     int dst_line_index;
-    float* dst_line_buffer[4];
-    float* mux_dst_line_buffer;
+    
+    float* dst_image_buffer[4];
+    float* mux_dst_image_buffer;
+
+    float* dst_mask_buffer[4];
+    float* mux_dst_mask_buffer;
 
     float* X[4];
     float* Y[4];
@@ -82,27 +114,50 @@ private:
     int xmin[1024];
     int ymin[1024];
 
-    float* TMP1;
-    float* TMP2;
+    float* tmp1Img;
+    float* tmp2Img;
 
+    float* tmp1Msk;
+    float* tmp2Msk;
 
     float* compute_dst_line ( int line );
 
 public:
-    ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid,  Interpolation::KernelType KT = Interpolation::LANCZOS_2 );
+
+    ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false );
 
     int getline ( float* buffer, int line );
 
     int getline ( uint8_t* buffer, int line );
 
     ~ReprojectedImage() {
-        std::cerr << "Delete ReprojectedImage" << std::endl; /*TEST*/
-        delete image;
-        delete grid;
+        delete sourceImage;
         _mm_free ( __buffer );
-        delete[] src_line_buffer;
+        delete[] src_image_buffer;
+        if ( useMask ) {delete[] src_mask_buffer;}
+    }
+
+    /** \~french
+     * \brief Sortie des informations sur l'image reprojetée
+     ** \~english
+     * \brief Reprojected image description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "--------- ReprojectedImage -----------" );
+        Image::print();
+        LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
+        LOGGER_INFO ( "\t- Ratio, x wise = " << ratio_x << ", y wise = " << ratio_y );
+        grid->print();
+        if ( useMask ) {
+            LOGGER_INFO ( "\t- Use mask in interpolation" );
+        } else {
+            LOGGER_INFO ( "\t- Doesn't use mask in interpolation" );
+        }
+        LOGGER_INFO ( "" );
     }
 
 };
 
 #endif
+

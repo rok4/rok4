@@ -45,6 +45,7 @@
 */
 
 #include "Logger.h"
+#include <proj_api.h>
 
 /*
 * @struct BoundingBox
@@ -52,9 +53,74 @@
 
 template<typename T>
 struct BoundingBox {
+    
 public:
     T xmin, ymin, xmax, ymax;
     BoundingBox ( T xmin, T ymin, T xmax, T ymax ) : xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
+
+    int reproject ( projPJ pj_src, projPJ pj_dst ) {
+        int nbSegment = 10;
+        T stepX = ( xmax - xmin ) / T ( nbSegment );
+        T stepY = ( ymax - ymin ) / T ( nbSegment );
+
+        T segX[nbSegment*4];
+        T segY[nbSegment*4];
+
+        for ( int i = 0; i < nbSegment; i++ ) {
+            segX[4*i] = xmin + i*stepX;
+            segY[4*i] = ymin;
+
+            segX[4*i+1] = xmin + i*stepX;
+            segY[4*i+1] = ymax;
+
+            segX[4*i+2] = xmin;
+            segY[4*i+2] = ymin + i*stepY;
+
+            segX[4*i+3] = xmax;
+            segY[4*i+3] = ymin + i*stepY;
+        }
+
+        if ( pj_is_latlong ( pj_src ) )
+            for ( int i = 0; i < nbSegment*4; i++ ) {
+                segX[i] *= DEG_TO_RAD;
+                segY[i] *= DEG_TO_RAD;
+            }
+
+        int code = pj_transform ( pj_src, pj_dst, nbSegment*4, 0, segX, segY, 0 );
+
+        if ( code != 0 ) {
+            LOGGER_ERROR ( "Code erreur proj4 : " << code );
+            return 1;
+        }
+
+        for ( int i = 0; i < nbSegment*4; i++ ) {
+            if ( segX[i] == HUGE_VAL || segY[i] == HUGE_VAL ) {
+                LOGGER_ERROR ( "Valeurs retournees par pj_transform invalides" );
+                return 1;
+            }
+        }
+
+        if ( pj_is_latlong ( pj_dst ) )
+            for ( int i = 0; i < nbSegment*4; i++ ) {
+                segX[i] *= RAD_TO_DEG;
+                segY[i] *= RAD_TO_DEG;
+            }
+
+        xmin = segX[0];
+        xmax = segX[0];
+        ymin = segY[0];
+        ymax = segY[0];
+
+        for ( int i = 1; i < nbSegment*4; i++ ) {
+            xmin = std::min ( xmin, segX[i] );
+            xmax = std::max ( xmax, segX[i] );
+            ymin = std::min ( ymin, segY[i] );
+            ymax = std::max ( ymax, segY[i] );
+        }
+
+        return 0;
+    }
+
     void print() {
         LOGGER_DEBUG ( "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax );
     }

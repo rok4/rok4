@@ -44,16 +44,9 @@
 class Grid {
 private:
 
-
     // Pas d'interpolation : seules coordonnées des pixels dont les coordonnées image (en pixel)
-    // sont des multiples de step seront effectivement reporjetés. Les autres seront interpollés.
+    // sont des multiples de step seront effectivement reprojetés. Les autres seront interpolés.
     static const int stepInt = 16;
-
-    /**
-     * Met à jour la boundingBox de la grille
-     * Est apellé après chaque transformations
-     */
-    void update_bbox();
 
     // Nombre de points reprojetés en X. nbx = 2 + (width-1)/step
     int nbx;
@@ -61,22 +54,20 @@ private:
     // Nombre de points reprojetés en Y. nby = 2 + (height-1)/step
     int nby;
 
-    // Pas d'interpolation : seules coordonnées des pixels dont les coordonnées image (en pixel)
-    // sont des multiples de step seront effectivement reporjetés. Les autres seront interpollés.
-    int stepRight;
-    int stepBottom;
-
     // Nombre de points reprojetés en X à l'intérieur de l'image
     int nbxInt;
 
     // Nombre de points reprojetés en Y à l'intérieur de l'image
     int nbyInt;
 
+    // Nombre de pixels entre l'avant dernier pixel reprojeté de la grille (qui respecte le pas) et le dernier pixel de la grille. Peut être 0.
+    int endX;
+    int endY;
+
     // Grille d'interpolation des pixels
     // Le centre du pixel cible (i*step, j*step) correspond au pixel source (gridX[i + nbx*j], gridY[i + nbx*j])
     // Chaque tableau contient nbx*nby éléments
     double *gridX, *gridY;
-
 
 public:
 
@@ -88,25 +79,39 @@ public:
 
     ~Grid();
 
-
-
-
     /**
-     * Effecture une reprojection sur les coordonnées de la grille
-     *
-     * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
-     * ou proj est une projection de from_srs vers to_srs
-     */
+    * Effecture une reprojection sur les coordonnées de la grille
+    *
+    * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
+    * ou proj est une projection de from_srs vers to_srs
+    */
     bool reproject ( std::string from_srs, std::string to_srs );
 
     /**
-     * Effectue une transformation affine sur tous les éléments de la grille
-     * GridX[i] = Ax * GridX[i] + Bx
-     * GridY[i] = Ay * GridY[i] + By
-     */
+    * Effectue une transformation affine sur tous les éléments de la grille
+    * GridX[i] = Ax * GridX[i] + Bx
+    * GridY[i] = Ay * GridY[i] + By
+    */
     void affine_transform ( double Ax, double Bx, double Ay, double By );
 
-    int interpolate_line ( int line, float* X, float* Y, int nb );
+    int interpolate_line ( int line, float* X, float* Y );
+
+    /** \~french
+     * \brief Sortie des informations sur la grille de reprojection
+     ** \~english
+     * \brief Resampled image description output
+     */
+    void print() {
+        LOGGER_INFO ( "\t--------- Grid -----------" );
+        LOGGER_INFO ( "\t- Size : " << width << ", " << height );
+        LOGGER_INFO ( "\t- BBOX : " << bbox.xmin << "," << bbox.ymin << " " << bbox.xmax << "," << bbox.ymax << ", " );
+        LOGGER_INFO ( "\t- Reprojected points number :" );
+        LOGGER_INFO ( "\t\t- X wise : " << nbx );
+        LOGGER_INFO ( "\t\t- Y wise : " << nby );
+        LOGGER_INFO ( "\t- Last point distance :" );
+        LOGGER_INFO ( "\t\t- X : " << endX );
+        LOGGER_INFO ( "\t\t- Y : " << endY );
+    }
 
 };
 

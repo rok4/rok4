@@ -122,7 +122,7 @@ private:
      * \~english
      * \brief Resolutions calculation, from pixel size and bounding box
      */
-    void computeResxy() {
+    void computeResolutions() {
         resx= ( bbox.xmax - bbox.xmin ) /double ( width );
         resy= ( bbox.ymax - bbox.ymin ) /double ( height );
     }
@@ -140,7 +140,7 @@ public:
      */
     inline void setBbox ( BoundingBox<double> box ) {
         bbox = box;
-        computeResxy();
+        computeResolutions();
     }
 
     /**
@@ -426,7 +426,7 @@ public:
      */
     Image ( int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double> ( 0.,0.,0.,0. ) ) :
         width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {
-        computeResxy();
+        computeResolutions();
     }
 
     /**
