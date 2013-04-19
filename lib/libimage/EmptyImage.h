@@ -48,25 +48,25 @@
  */
 class EmptyImage : public Image {
 
-    uint8_t *color;
+    int *color;
 
 public:
 
     /** Constructeur */
-    EmptyImage ( int width, int height, int channels, uint8_t* _color ) : Image ( width, height, channels ) {
-        color = new uint8_t[channels];
+    EmptyImage ( int width, int height, int channels, int* _color ) : Image ( width, height, channels ) {
+        color = new int[channels];
         for ( int c = 0; c < channels; c++ ) color[c] = _color[c];
     }
 
     virtual int getline ( uint8_t *buffer, int line ) {
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
-                buffer[channels*i + c] = color[c];
+                buffer[channels*i + c] = (uint8_t) color[c];
     };
     virtual int getline ( float *buffer, int line ) {
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
-                buffer[channels*i + c] = color[c];
+                buffer[channels*i + c] = (float) color[c];
     };
 
     virtual ~EmptyImage() {

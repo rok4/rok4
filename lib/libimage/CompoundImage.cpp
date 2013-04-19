@@ -37,16 +37,26 @@
 
 #include "CompoundImage.h"
 
-int CompoundImage::compute_width ( std::vector<std::vector<Image*> > &images ) {
+int CompoundImage::computeWidth ( std::vector<std::vector<Image*> > &images ) {
     int width = 0;
     for ( int x = 0; x < images[0].size(); x++ ) width += images[0][x]->width;
     return width;
 }
 
-int CompoundImage::compute_height ( std::vector<std::vector<Image*> > &images ) {
+int CompoundImage::computeHeight ( std::vector<std::vector<Image*> > &images ) {
     int height = 0;
     for ( int y = 0; y < images.size(); y++ ) height += images[y][0]->height;
     return height;
+}
+
+BoundingBox<double> CompoundImage::computeBbox ( std::vector<std::vector<Image*> > &images ) {
+    double xmin = images[images.size()-1][0]->getBbox().xmin;
+    double ymin = images[images.size()-1][0]->getBbox().ymin;
+
+    double xmax = images[0][images[0].size()-1]->getBbox().xmax;
+    double ymax = images[0][images[0].size()-1]->getBbox().ymax;
+    
+    return BoundingBox<double>(xmin, ymin, xmax, ymax);
 }
 
 template<typename T>
@@ -73,7 +83,7 @@ int CompoundImage::getline ( float* buffer, int line ) {
 
 /** D */
 CompoundImage::CompoundImage ( std::vector< std::vector<Image*> >& images ) :
-    Image ( compute_width ( images ), compute_height ( images ),images[0][0]->getResX(),images[0][0]->getResY(), images[0][0]->channels ),
+    Image ( computeWidth ( images ), computeHeight ( images ), images[0][0]->channels, images[0][0]->getResX(),images[0][0]->getResY(), computeBbox ( images ) ),
     images ( images ),
     top ( 0 ),
     y ( 0 ) {}

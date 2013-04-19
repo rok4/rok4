@@ -136,12 +136,12 @@ int* background;
  *             lzw     Lempel-Ziv & Welch encoding
  *             pkb     PackBits encoding
  *             zip     Deflate encoding
- *     -t value to consider as transparent, 3 integers, seperated with comma. Optionnal
- *     -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
+ *     -t value to consider as transparent, 3 integers, separated with comma. Optionnal
+ *     -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
  *     -m merge method : used to merge input images :
  *             TRANSPARENCY   images are merged by alpha blending
  *             MULTIPLY       samples are multiplied one by one
- *             MASK           associated mask are used to compose the output image
+ *             MASK           associated masks are used to compose the output image
  *     -s samples per pixel : 1, 3 or 4
  *     -p photometric :
  *             gray    min is black
@@ -171,12 +171,12 @@ void usage() {
                   "            lzw     Lempel-Ziv & Welch encoding\n" <<
                   "            pkb     PackBits encoding\n" <<
                   "            zip     Deflate encoding\n" <<
-                  "    -t value to consider as transparent, 3 integers, seperated with comma. Optionnal\n" <<
-                  "    -b value to use as background, one integer per output sample, seperated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
+                  "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n" <<
+                  "    -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
                   "    -m merge method : used to merge input images :\n" <<
                   "            TRANSPARENCY   images are merged by alpha blending\n" <<
                   "            MULTIPLY       samples are multiplied one by one\n" <<
-                  "            MASK           associated mask are used to compose the output image\n" <<
+                  "            MASK           associated masks are used to compose the output image\n" <<
                   "    -s samples per pixel : 1, 2, 3 or 4\n" <<
                   "    -p photometric :\n" <<
                   "            gray    min is black\n" <<
@@ -328,7 +328,7 @@ int parseCommandLine ( int argc, char** argv ) {
         // Transparent interpretation
         char* charValue = strtok ( strTransparent,"," );
         if ( charValue == NULL ) {
-            LOGGER_ERROR ( "Error with option -t : 3 integers values seperated by comma" );
+            LOGGER_ERROR ( "Error with option -t : 3 integers values separated by comma" );
             return -1;
         }
         int value = atoi ( charValue );
@@ -336,7 +336,7 @@ int parseCommandLine ( int argc, char** argv ) {
         for ( int i = 1; i < 3; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                LOGGER_ERROR ( "Error with option -t : 3 integers values seperated by comma" );
+                LOGGER_ERROR ( "Error with option -t : 3 integers values separated by comma" );
                 return -1;
             }
             value = atoi ( charValue );
@@ -350,7 +350,7 @@ int parseCommandLine ( int argc, char** argv ) {
         // Background interpretation
         char* charValue = strtok ( strBg,"," );
         if ( charValue == NULL ) {
-            LOGGER_ERROR ( "Error with option -b : one integer value per final sample seperated by comma" );
+            LOGGER_ERROR ( "Error with option -b : one integer value per final sample separated by comma" );
             return -1;
         }
         int value = atoi ( charValue );
@@ -359,7 +359,7 @@ int parseCommandLine ( int argc, char** argv ) {
         for ( int i = 1; i < samplesperpixel; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                LOGGER_ERROR ( "Error with option -b : one integer value per final sample seperated by comma" );
+                LOGGER_ERROR ( "Error with option -b : one integer value per final sample separated by comma" );
                 return -1;
             }
             value = atoi ( charValue );

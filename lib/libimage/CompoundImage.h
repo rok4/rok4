@@ -44,8 +44,9 @@
 class CompoundImage : public Image {
 private:
 
-    static int compute_width ( std::vector<std::vector<Image*> > &images );
-    static int compute_height ( std::vector<std::vector<Image*> > &images );
+    static int computeWidth ( std::vector<std::vector<Image*> > &images );
+    static int computeHeight ( std::vector<std::vector<Image*> > &images );
+    static BoundingBox<double> computeBbox ( std::vector<std::vector<Image*> > &images );
 
     std::vector<std::vector<Image*> > images;
 
@@ -71,7 +72,6 @@ public:
 
     /** D */
     ~CompoundImage() {
-        std::cerr << "Delete CompoundImage" << std::endl; /*TEST*/
         for ( int y = 0; y < images.size(); y++ )
             for ( int x = 0; x < images[y].size(); x++ )
                 delete images[y][x];

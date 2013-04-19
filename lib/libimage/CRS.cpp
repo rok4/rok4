@@ -290,7 +290,6 @@ bool CRS::validateBBoxGeographic ( BoundingBox< double > BBox ) {
         valid = false;
     }
 
-
     return valid;
 }
 

@@ -171,7 +171,6 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
     B += 4*kxSize;
     WWy = B;
     B += 4*kySize;
-    
 
     for ( int i = 0; i < 1024; i++ ) {
         xmin[i] = K.weight ( Wx[i], Kx, double ( i ) /1024. + Kx, sourceImage->width ) - Kx;

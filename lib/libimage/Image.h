@@ -406,13 +406,28 @@ public:
      * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
      */
-    Image ( int width, int height, double resx, double resy, int channels,  BoundingBox<double> bbox = BoundingBox<double> ( 0.,0.,0.,0. ) ) :
-        width ( width ), height ( height ), resx ( resx ), resy ( resy ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {
-    }
+    Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
+        width ( width ), height ( height ), resx ( resx ), resy ( resy ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {}
+
+    /**
+     * \~french
+     * \brief Crée une Image sans préciser de géoréférencement, ni résolutions, ni rectangle englobant
+     * \details La résolution sera de 1 dans les 2 sens et le rectangle englobant sera 0,0 width,height
+     * \param[in] width largeur de l'image en pixel
+     * \param[in] height hauteur de l'image en pixel
+     * \param[in] channel nombre de canaux par pixel
+     * \~english
+     * \brief Create an Image without providing georeferencement, neither resolutions nor bounding box
+     * \param[in] width image width, in pixel
+     * \param[in] height image height, in pixel
+     * \param[in] channel number of samples per pixel
+     */
+    Image ( int width, int height, int channels ) : width ( width ), height ( height ), channels ( channels ), resx ( 1.), resy (1.), bbox (BoundingBox<double>(0., 0., (double) width, (double) height)), mask ( NULL ) {}
 
     /**
      * \~french
      * \brief Crée une Image sans préciser les résolutions
+     * \details Les résolutions sont calculées à partie du rectangle englobant et des dimensions en pixel.
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] channel nombre de canaux par pixel
@@ -424,7 +439,7 @@ public:
      * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
      */
-    Image ( int width, int height, int channels,  BoundingBox<double> bbox = BoundingBox<double> ( 0.,0.,0.,0. ) ) :
+    Image ( int width, int height, int channels,  BoundingBox<double> bbox ) :
         width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {
         computeResolutions();
     }
@@ -441,6 +456,26 @@ public:
 
     /**
      * \~french
+     * \brief Retourne une ligne en entier 8 bits, avec son masque en entier 8 bits.
+     *//*
+    int getline ( uint8_t *image, uint8_t *mask, int line ) {
+        if (mask == NULL) {
+            LOGGER_ERROR("Associated mask line is asked but mask is not defined");
+            return -1;
+        }
+        int r;
+        if (r = getline ( image, line ) < 0) {
+            LOGGER_ERROR("Impossible to get the image line");
+            return -1;
+        }
+        if (getline ( image, line ) < 0) {
+            LOGGER_ERROR("Impossible to get the image line");
+            return -1;
+        }
+    }*/
+
+    /**
+     * \~french
      * \brief Retourne une ligne en flottant 32 bits.
      * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
      * une conversion est effectuée.
@@ -449,6 +484,15 @@ public:
      * \return taille utile du buffer, 0 si erreur
      */
     virtual int getline ( float *buffer, int line ) = 0;
+
+    /**
+     * \~french
+     * \brief Retourne une ligne en flottant 32 bits, avec son masque en flottant 32 bits.
+     */
+    int getline ( float *image, float *mask, int line ) {
+
+
+    }
 
     /**
      * \~french

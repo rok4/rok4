@@ -189,16 +189,11 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
     }
     image->setBbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
 
-    grid->bbox.print();
-
-    grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX(),
-                             -1./image->getResY(), image->getBbox().ymax/image->getResY() );
-
-    grid->bbox.print();
+    grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX() - 0.5,
+                             -1./image->getResY(), image->getBbox().ymax/image->getResY() - 0.5 );
 
     return new ReprojectedImage ( image, bbox, grid, interpolation );
 }
-
 
 
 Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {

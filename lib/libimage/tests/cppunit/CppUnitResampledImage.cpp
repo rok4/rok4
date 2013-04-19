@@ -61,7 +61,7 @@ protected:
 
     void testResampled() {
 
-        uint8_t color[4];
+        int color[4];
         for ( int i = 0; i < 20; i++ ) {
             int width = 200 + rand() %800;
             int height = 200 + rand() %800;
@@ -115,7 +115,7 @@ protected:
     }
 
     void _chrono ( int channels, int kernel_type ) {
-        uint8_t color[4];
+        int color[4];
         float buffer[800*4] __attribute__ ( ( aligned ( 32 ) ) );
         int nb_iteration = 2;
 
