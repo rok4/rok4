@@ -112,9 +112,9 @@ if(BUILD_DOC)
     if(NATURALDOCS_FOUND)
         add_custom_target(doc ALL BE4_SRC="${CMAKE_CURRENT_SOURCE_DIR}" make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
         #add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
+        INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
     endif(NATURALDOCS_FOUND)
 
-    INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 endif(BUILD_DOC)
 
 #Installe la documentation de base
