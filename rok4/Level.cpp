@@ -129,9 +129,6 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
     double res_x = ( bbox.xmax - bbox.xmin ) / width;
     double res_y = ( bbox.ymax - bbox.ymin ) / height;
 
-    double ratio_x = width  / ( double ) ( tm.getTileH() ) ;
-    double ratio_y = height / ( double ) ( tm.getTileW() ) ;
-
     //Most efficient
     interpolation = Interpolation::LINEAR;
     const Kernel& kk = Kernel::getInstance ( interpolation );
@@ -146,7 +143,9 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    return new ResampledImage ( imageout, width, height,res_x,res_y, 0, 0, ratio_x, ratio_y, false, interpolation, bbox );
+
+    LOGGER_DEBUG ( "Top 1" );
+    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, false, interpolation);
 }
 
 
@@ -197,6 +196,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
 
 Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
+    
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -211,8 +211,10 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
                                     ceil ( bbox.ymax - EPS ) );
 
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
-            bbox.xmin - bbox_int.xmin < EPS && bbox.ymin - bbox_int.ymin < EPS &&
-            bbox_int.xmax - bbox.xmax < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
+         bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
+         bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
+        /* L'image demandée est en phase et à les mêmes résolutions que les images du niveau
+         *   => pas besoin de réechantillonnage */
         return getwindow ( servicesConf, bbox_int, error );
     }
 
@@ -224,6 +226,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
     if ( interpolation >= Interpolation::LANCZOS_2 ) interpolation= Interpolation::LANCZOS_3;
     const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_3
 
+    // On en prend un peu plus pour ne pas avoir d'effet de bord lors du réechantillonnage
     bbox_int.xmin = floor ( bbox.xmin - kk.size ( ratio_x ) );
     bbox_int.xmax = ceil ( bbox.xmax + kk.size ( ratio_x ) );
     bbox_int.ymin = floor ( bbox.ymin - kk.size ( ratio_y ) );
@@ -234,9 +237,13 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    return new ResampledImage ( imageout, width, height,ratio_x,ratio_y, bbox.xmin - bbox_int.xmin, bbox.ymin - bbox_int.ymin, ratio_x, ratio_y, interpolation );
+    
+    LOGGER_DEBUG ( "Top 2" );
+    // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
+    imageout->setBbox(BoundingBox<double>(bbox_int));
+    
+    return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, false, interpolation );
 }
-
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {
     int q=i/n;  // Division tronquee
@@ -284,8 +291,9 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
 
     std::vector<std::vector<Image*> > T ( nby, std::vector<Image*> ( nbx ) );
     for ( int y = 0; y < nby; y++ )
-        for ( int x = 0; x < nbx; x++ )
+        for ( int x = 0; x < nbx; x++ ) {
             T[y][x] = getTile ( tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y] );
+        }
 
     if ( nbx == 1 && nby == 1 ) return T[0][0];
     else return new CompoundImage ( T );
@@ -414,9 +422,9 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
-                                      tm.getY0() + y * tm.getTileH() * tm.getRes(),
+                                      tm.getY0() - ( y+1 ) * tm.getTileH() * tm.getRes(),
                                       tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes(),
-                                      tm.getY0() + ( y+1 ) * tm.getTileH() * tm.getRes() ),
+                                      tm.getY0() - y * tm.getTileH() * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
 }
 

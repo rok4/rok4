@@ -63,23 +63,28 @@ protected:
 
         int color[4];
         for ( int i = 0; i < 20; i++ ) {
+
+            // Une image monochrome, bbox (0, 0, width, height) et résolutions = 1;
             int width = 200 + rand() %800;
             int height = 200 + rand() %800;
             int channels = 1 + rand() %4;
             for ( int c = 0; c < channels; c++ ) color[c] = rand() %256;
-
             Image* image = new EmptyImage ( width, height, channels, color );
-            double top    = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
-            double left   = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
-            double right  = width - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
-            double bottom = height - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
+            
+            double xmin   = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
+            double ymin    = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
+            double xmax  = width - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
+            double ymax = height - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
+            
+            int rwidth = int ( ( xmax - xmin ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
+            int rheight = int ( ( ymax - ymin ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
 
-            int rwidth = int ( ( right - left ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
-            int rheight = int ( ( bottom - top ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
+            double resx = (xmax - xmin) / (double) rwidth;
+            double resy = (ymax - xmin) / (double) rheight;
 
-//      cerr << width << " " << height << " " << channels << " " << rwidth << " " << rheight << " " << top << " " << left << " " << right << " " << bottom << endl;
-
-            ResampledImage* R = new ResampledImage ( image, rwidth,1,1, rheight, left, top, ( right - left ) /rwidth, ( bottom - top ) /rheight );
+            ResampledImage* R = new ResampledImage ( image, rwidth, rheight,
+                                                     resx, resy, BoundingBox<double>(xmin, ymin, xmax, ymax),
+                                                     false, Interpolation::CUBIC );
             float buffer[R->width*R->channels];
             for ( int i = 0; i < rheight; i++ ) {
                 R->getline ( buffer, i );
@@ -123,7 +128,8 @@ protected:
         gettimeofday ( &BEGIN, NULL );
         for ( int i = 0; i < nb_iteration; i++ ) {
             Image* image = new EmptyImage ( 1300, 1000, channels, color );
-            ResampledImage* R = new ResampledImage ( image, 800, 600,0.5,0.5, 50, 50, 1.5, 1.5, Interpolation::KernelType ( kernel_type ) );
+            ResampledImage* R = new ResampledImage ( image, 800, 600, 0.5, 0.5, BoundingBox<double>(0., 0., 800., 600.),
+                                                     false, Interpolation::KernelType ( kernel_type ) );
             for ( int l = 0; l < 600; l++ ) R->getline ( buffer, l );
             delete R;
         }

@@ -67,7 +67,7 @@ Attributes:
     pyramid - <BE4::Pyramid> - Allowed to know output format specifications and configure commands.
     mergeMethod - string - Precise way to merge images (in upper case).
     ontConfDir - string - Directory, where to write overlayNtiff configuration files.
-    useMasks - boolean - Precise if masks have to be search and used. They are used if : user precise it (through the *use_masks" parameter OR the merge method is "MASK" OR user want masks in the final pyramid.
+    useMasks - boolean - Precise if masks have to be search and used. They are used if : user precise it (through the *use_masks" parameter OR the merge method is "TOP" OR user want masks in the final pyramid.
 
     list - stream - Stream to the pyramid's content list.
     roots - integer hash - Index all pyramid's roots. Values : root - string => ID - integer
@@ -189,7 +189,7 @@ BEGIN {}
 INIT {
 
     %COMMANDS = (
-        merge_method => ['REPLACE','TRANSPARENCY','MULTIPLY','MASK'],
+        merge_method => ['REPLACE','ALPHATOP','MULTIPLY','TOP'],
     );
     
 }
@@ -258,7 +258,7 @@ sub new {
 
     ######### Use masks ? #########
     my $useMasks = $processParams->{use_masks};
-    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") || $self->{mergeMethod} eq "MASK" ) {
+    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") || $self->{mergeMethod} eq "TOP" ) {
         DEBUG("Masks will be used");
         $self->{useMasks} = TRUE;
     }
@@ -388,7 +388,7 @@ sub treatImage {
                 ERROR(sprintf "Cannot create link %s to %s", $sourceImage->{img}, $finalImage);
                 return FALSE;
             }
-
+            
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it.
@@ -405,7 +405,7 @@ sub treatImage {
         if (exists $sourceImage->{msk} && $self->{pyramid}->ownMasks()) {
             # We can just make a symbolic link, no code in a script
             if (! $self->makeLink($finalMask, $sourceImage->{msk})) {
-                ERROR(sprintf "Cannot create link %s to %s", $sourceImage->{img}, $finalImage);
+                ERROR(sprintf "Cannot create link %s to %s", $sourceImage->{msk}, $finalMask);
                 return FALSE;
             }
         }

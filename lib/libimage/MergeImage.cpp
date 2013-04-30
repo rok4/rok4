@@ -101,13 +101,13 @@ int MergeImage::_getline ( T* buffer, int line ) {
         case Merge::NORMAL:
             workLine.useMask ( &aboveLine );
             break;
-        case Merge::MASK:
+        case Merge::TOP:
             workLine.useMask ( &aboveLine );
             break;
         case Merge::MULTIPLY:
             workLine.multiply ( &aboveLine );
             break;
-        case Merge::TRANSPARENCY:
+        case Merge::ALPHATOP:
             workLine.alphaBlending ( &aboveLine );
             break;
             //case Merge::LIGHTEN:
@@ -138,19 +138,10 @@ int MergeImage::getline ( uint8_t* buffer, int line ) {
 
 /* Implementation de getline pour les float */
 int MergeImage::getline ( float* buffer, int line ) {
-    if ( ST.getSampleFormat() == 1 ) { //SAMPLEFORMAT_UINT
-        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
-        uint8_t* buffer_t = new uint8_t[width*channels];
-        getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels );
-        delete [] buffer_t;
-        return width*channels;
-    } else { //float
-        return _getline ( buffer, line );
-    }
+    return _getline ( buffer, line );
 }
 
-MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, SampleType ST, int channels,
+MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, int channels,
         int* bgValue, int* transparentValue, Merge::MergeType composition ) {
     if ( images.size() == 0 ) {
         LOGGER_ERROR ( "No source images to defined merged image" );
@@ -174,7 +165,7 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
         return NULL;
     }
 
-    return new MergeImage ( images, channels, ST, bgValue, transparentValue, composition );
+    return new MergeImage ( images, channels, bgValue, transparentValue, composition );
 }
 
 
@@ -228,8 +219,8 @@ const char *mergeType_name[] = {
     "LIGHTEN",
     "DARKEN",
     "MULTIPLY",
-    "TRANSPARENCY",
-    "MASK"
+    "ALPHATOP",
+    "TOP"
 };
 
 MergeType fromString ( std::string strMergeMethod ) {

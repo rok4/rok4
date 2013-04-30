@@ -376,7 +376,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         MergeImageFactory MIF;
 
         int white[4] = {255,255,255,255};
-        image = MIF.createMergeImage ( images, Format::toSampleType ( pyrType ), images.at ( 0 )->channels, white, NULL, Merge::MASK );
+        image = MIF.createMergeImage ( images, images.at ( 0 )->channels, white, NULL, Merge::TOP );
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des différentes couches" );

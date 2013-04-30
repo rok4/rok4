@@ -82,10 +82,10 @@ protected:
             double nb_max = abs(x - xmax);
 
 
-            cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << endl ;
-            for ( int i = 0; i < l; i++ ) cerr << W[i] << " ";
-            cerr << endl;
-            cerr << abs ( nb_min - nb_max ) << endl << endl;
+//             cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << endl ;
+//             for ( int i = 0; i < l; i++ ) cerr << W[i] << " ";
+//             cerr << endl;
+//             cerr << abs ( nb_min - nb_max ) << endl << endl;
 
             CPPUNIT_ASSERT ( xmin >= 0 );
             CPPUNIT_ASSERT ( l <= l2 ); // On vérifie qu'il y a moins de coeff que place dans le tableau W

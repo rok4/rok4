@@ -69,8 +69,6 @@
  * \li entier non signé sur 8 bits
  *
  * Le géoréférencement est assuré par le renseignement des résolutions et du rectangle englobant. Cependant, on peut également gérer des images simples. Dans ce cas, on mettra par convention une bbox à 0,0,0,0 et des résolutions à -1. Aucun test ne sera fait par les fonctions qui utilisent ces attributs. On doit donc bien faire attention à rester cohérent.
- *
- * \todo Vérifier le renseignement des attributs de géoréférencement avant de faire des calculs avec.
  */
 class Image {
 public:
@@ -393,21 +391,21 @@ public:
      * \brief Crée un objet Image à partir de tous ses éléments constitutifs
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
+     * \param[in] channel nombre de canaux par pixel
      * \param[in] resx résolution dans le sens des X
      * \param[in] resy résolution dans le sens des Y
-     * \param[in] channel nombre de canaux par pixel
      * \param[in] bbox emprise rectangulaire de l'image
      * \~english
      * \brief Create an Image object, from all attributes
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
+     * \param[in] channel number of samples per pixel
      * \param[in] resx X wise resolution
      * \param[in] resy Y wise resolution
-     * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), resx ( resx ), resy ( resy ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {}
+        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ) {}
 
     /**
      * \~french
@@ -443,6 +441,27 @@ public:
         width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {
         computeResolutions();
     }
+
+    /**
+     * \~french
+     * \brief Crée un objet Image sans préciser le rectangle englobant
+     * \param[in] width largeur de l'image en pixel
+     * \param[in] height hauteur de l'image en pixel
+     * \param[in] channel nombre de canaux par pixel
+     * \param[in] resx résolution dans le sens des X
+     * \param[in] resy résolution dans le sens des Y
+     * \~english
+     * \brief Create an Image object without providing bbox
+     * \param[in] width image width, in pixel
+     * \param[in] height image height, in pixel
+     * \param[in] channel number of samples per pixel
+     * \param[in] resx X wise resolution
+     * \param[in] resy Y wise resolution
+     */
+    Image ( int width, int height, int channels, double resx, double resy) :
+        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ),
+        bbox (BoundingBox<double>(0., 0., resx * (double) width, resy * (double) height)),
+        mask ( NULL ) {}
 
     /**
      * \~french

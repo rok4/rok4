@@ -179,7 +179,7 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
 
     /* ------- MISE EN MÉMOIRE DE TOUTES LES SOURCES -------- */
 
-    /** \todo : Ne pas charger toute l'image source au démarrage.*/
+    /** \todo Ne pas charger toute l'image source au démarrage.*/
     for ( int y = 0; y < sourceImage->height; y++ ) sourceImage->getline ( src_image_buffer[y], y );
 
     if ( useMask ) {

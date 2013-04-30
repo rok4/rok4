@@ -299,15 +299,9 @@ public:
      * \param[in] height hauteur de l'image en pixel
      * \param[in] resx résolution dans le sens des X
      * \param[in] resy résolution dans le sens des Y
-     * \param[in] top décalage entre le haut de l'image source et le haut de l'image réechantillonnée
-     * \details La distance est exprimée en pixel source, et se mesure entre les bords des pixels.
-     * \param[in] left décalage entre la gauche de l'image source et la gauche de l'image réechantillonnée
-     * \details La distance est exprimée en pixel source, et se mesure entre les bords des pixels.
-     * \param[in] ratio_x rapport des résolutions, dans le sens des X : résolution X cible / résolution X source
-     * \param[in] ratio_y rapport des résolutions, dans le sens des Y : résolution Y cible / résolution Y source
+     * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] bUseMask précise si le réechantillonnage doit tenir compte des masques
      * \param[in] KT noyau d'interpolation à utiliser pour le réechantillonnage
-     * \param[in] bbox emprise rectangulaire de l'image
      ** \~english
      * \brief Create a ResampledImage object, from all attributes
      * \param[in] image source image
@@ -315,20 +309,12 @@ public:
      * \param[in] height image height, in pixel
      * \param[in] resx X wise resolution
      * \param[in] resy Y wise resolution
-     * \param[in] top offset between source image's top and resmapled image's top
-     * \details Distance is expressed as source pixel and between pixels' borders.
-     * \param[in] left offset between source image's left and resmapled image's left
-     * \details Distance is expressed as source pixel and between pixels' borders.
-     * \param[in] ratio_x resolutions ratio, widthwise : X destination resolution / X source resolution
-     * \param[in] ratio_y resolutions ratio, heighthwise : Y destination resolution / Y source resolution
+     * \param[in] bbox bounding box
      * \param[in] bUseMask precise if resampling use masks
      * \param[in] KT interpolation kernel to use for resampling
-     * \param[in] bbox bounding box
      */
-    ResampledImage ( Image *image, int width, int height, double resx, double resy, double left, double top,
-                     double ratio_x, double ratio_y, bool bUseMask = false,
-                     Interpolation::KernelType KT = Interpolation::LANCZOS_3,
-                     BoundingBox<double> bbox = BoundingBox<double> ( 0.,0.,0.,0. ) );
+    ResampledImage ( Image *image, int width, int height, double resx, double resy, BoundingBox<double> bbox,
+                     bool bUseMask = false, Interpolation::KernelType KT = Interpolation::LANCZOS_3 );
 
     /**
      * \~french

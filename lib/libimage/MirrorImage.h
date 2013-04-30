@@ -120,13 +120,6 @@ private:
      */
     uint mirrorSize;
 
-    /**
-     * \~french \brief Type du canal
-     * \~english \brief Sample type
-     */
-    SampleType ST;
-
-
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
      * \details Lorsque l'on veut récupérer une ligne d'une image miroir, on va se reporter sur l'image source,
@@ -146,7 +139,6 @@ protected:
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] channel nombre de canaux par pixel
-     * \param[in] sampleType type des canaux
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] image image source
      * \param[in] position position du miroir par rapport à l'image source
@@ -156,13 +148,12 @@ protected:
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
-     * \param[in] sampleType samples' type
      * \param[in] bbox bounding box
      * \param[in] image source image
      * \param[in] position mirror position to image source
      * \param[in] mirrorSize mirror's size, in pixel
      */
-    MirrorImage ( int width, int height, int channels, SampleType sampleType, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize ) : Image ( width,height,image->getResX(),image->getResY(),channels,bbox ), image ( image ), position ( position ), mirrorSize ( mirrorSize ), ST ( sampleType ) {}
+    MirrorImage ( int width, int height, int channels, BoundingBox<double> bbox, Image* image, int position,uint mirrorSize ) : Image ( width,height,channels,image->getResX(),image->getResY(),bbox ), image ( image ), position ( position ), mirrorSize ( mirrorSize ) {}
 
 public:
 
@@ -188,7 +179,6 @@ public:
         Image::print();
         LOGGER_INFO ( "\t- Mirror's position = " << position );
         LOGGER_INFO ( "\t- Mirror's size = " << mirrorSize );
-        LOGGER_INFO ( "\t- Sampleformat " << ST.getSampleFormat() );
         LOGGER_INFO ( "" );
     }
 };
@@ -204,7 +194,6 @@ public:
      * \brief Teste et calcule les caractéristiques d'une image miroir et crée un objet MirrorImage
      * \details Largeur, hauteur, nombre de canaux et bbox sont déduits des composantes de l'image source et des paramètres.
      * \param[in] pImageSrc image source
-     * \param[in] sampleType type des canaux
      * \param[in] position position du miroir par rapport à l'image source
      * \param[in] mirrorSize taille du miroir en pixel
      * \return un pointeur d'objet MirrorImage, NULL en cas d'erreur
@@ -212,12 +201,11 @@ public:
      * \brief Check and calculate mirror image components and create a MirrorImage object
      * \details Height, width, samples' number and bbox are deduced from source image's components and parameters.
      * \param[in] pImageSrc source image
-     * \param[in] sampleType samples' type
      * \param[in] position mirror position to image source
      * \param[in] mirrorSize mirror's size, in pixel
      * \return a MirrorImage object pointer, NULL if error
      */
-    MirrorImage* createMirrorImage ( Image* pImageSrc, SampleType sampleType, int position,uint mirrorSize );
+    MirrorImage* createMirrorImage ( Image* pImageSrc, int position,uint mirrorSize );
 };
 
 #endif

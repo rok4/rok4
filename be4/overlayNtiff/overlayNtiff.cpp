@@ -138,10 +138,10 @@ int* background;
  *             zip     Deflate encoding
  *     -t value to consider as transparent, 3 integers, separated with comma. Optionnal
  *     -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
- *     -m merge method : used to merge input images :
- *             TRANSPARENCY   images are merged by alpha blending
+ *     -m merge method : used to merge input images, associated masks are always used if provided :
+ *             ALPHATOP       images are merged by alpha blending
  *             MULTIPLY       samples are multiplied one by one
- *             MASK           associated masks are used to compose the output image
+ *             TOP            only the top data pixel is kept
  *     -s samples per pixel : 1, 3 or 4
  *     -p photometric :
  *             gray    min is black
@@ -149,9 +149,9 @@ int* background;
  *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
- *     overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0
- *     - for DTM, with masks
- *     overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999
+ *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255,255 -b 0
+ *     - for DTM, considering masks only
+ *     overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999
  * \endcode
  */
 void usage() {
@@ -173,10 +173,10 @@ void usage() {
                   "            zip     Deflate encoding\n" <<
                   "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n" <<
                   "    -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
-                  "    -m merge method : used to merge input images :\n" <<
-                  "            TRANSPARENCY   images are merged by alpha blending\n" <<
+                  "    -m merge method : used to merge input images, associated masks are always used if provided :\n" <<
+                  "            ALPHATOP       images are merged by alpha blending\n" <<
                   "            MULTIPLY       samples are multiplied one by one\n" <<
-                  "            MASK           associated masks are used to compose the output image\n" <<
+                  "            TOP            only the top data pixel is kept\n" <<
                   "    -s samples per pixel : 1, 2, 3 or 4\n" <<
                   "    -p photometric :\n" <<
                   "            gray    min is black\n" <<
@@ -184,9 +184,9 @@ void usage() {
 
                   "Examples\n" <<
                   "    - for gray orthophotography, with transparency (white is transparent)\n" <<
-                  "    overlayNtiff -f conf.txt -m TRANSPARENCY -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
-                  "    - for DTM, with masks\n" <<
-                  "    overlayNtiff -f conf.txt -m MASK -s 1 -c zip -p gray -b -99999\n\n" );
+                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
+                  "    - for DTM, considering masks only\n" <<
+                  "    overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999\n\n" );
 }
 
 /**
@@ -510,7 +510,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
 
     // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
 
-    *ppMergeIn = MIF.createMergeImage ( ImageIn, sampleType, samplesperpixel, background, transparent, mergeMethod );
+    *ppMergeIn = MIF.createMergeImage ( ImageIn, samplesperpixel, background, transparent, mergeMethod );
 
     // Le masque fusionné est ajouté
     MergeMask* pMM = new MergeMask ( *ppMergeIn );

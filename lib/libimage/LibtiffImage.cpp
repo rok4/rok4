@@ -250,7 +250,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite ( char* filename, B
 LibtiffImage::LibtiffImage ( int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
                              TIFF* tif,char* name, SampleType sampleType, int photometric, int compression,
                              int rowsperstrip ) :
-    Image ( width,height,resx,resy,channels,bbox ), tif ( tif ), ST ( sampleType ), photometric ( photometric ), compression ( compression ), rowsperstrip ( rowsperstrip ) {
+    Image ( width,height,channels,resx,resy,bbox ), tif ( tif ), ST ( sampleType ), photometric ( photometric ), compression ( compression ), rowsperstrip ( rowsperstrip ) {
     filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
 

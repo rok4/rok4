@@ -139,13 +139,6 @@ protected:
             add_mult ( to + i2, from + i1, w, length );
             for ( int i = 0; i < i2; i++ ) CPPUNIT_ASSERT_EQUAL ( float ( i ), to[i] );
             for ( int i = 0; i < length; i++ ) {
-                std::cerr << "length = " << length << std::endl;
-                std::cerr << "i = " << i << std::endl;
-                std::cerr << "i1 = " << i1 << std::endl;
-                std::cerr << "i2 = " << i2 << std::endl;
-                std::cerr << "w = " << w << std::endl;
-                std::cerr << "res normal = " << float ( i2+i ) + float ( i1+i ) *w << std::endl;
-                std::cerr << "res calc = " << to[i2+i] << std::endl;
                 CPPUNIT_ASSERT_DOUBLES_EQUAL ( float ( i2+i ) + float ( i1+i ) *w, to[i2+i], 1e-4 );
             }
             for ( int i = length+i2; i < 2000; i++ ) CPPUNIT_ASSERT_EQUAL ( float ( i ), to[i] );

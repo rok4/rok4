@@ -13,13 +13,13 @@ BE4_SHARE=$(BE4_ENV)/share
 
 all: pyramid
 
-pyramid: buildlib.pyr buildbin.pyr 
+pyramid: buildlib.pyr buildbin.pyr
 
 %.pyr: %
 	@ echo "> Ok, Pyramid $* !" ;
 
 buildlib:
-	@( cd . && perl Makefile.PL PREFIX=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile ) ;
+	@(cd . && perl Makefile.PL PREFIX=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile) ;
 
 buildbin: \
 ./bin/be4.pl \
@@ -28,9 +28,12 @@ buildbin: \
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \
                         perl -c -W -Iblib/lib/  $$p ;\
+                        if [ $$? ] ; then \
+	                        exit $$? ;\
+                        fi \
                 fi \
         done)
-
+	
 
 install: builddir.inst buildconf.inst buildinstall.inst
 

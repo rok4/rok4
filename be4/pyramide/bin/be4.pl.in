@@ -479,7 +479,7 @@ sub doIt {
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new($params->{pyramid},$params->{process}->{path_temp});
+    $objPyramid = BE4::Pyramid->new( $params->{pyramid}, $params->{process}->{path_temp} );
     if (! defined $objPyramid) {
         ERROR("Can not load Pyramid !");
         return FALSE;
@@ -696,13 +696,15 @@ For more informations about properties, see <BE4::Pyramid>.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
 
-    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK. If dir_mask is not precised, masks will not be written in the final pyramid.
+    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
 
     tms_name - TMS file name, with extension *.tms*. Mandatory.
 
     tms_path - Directory, where to find the TMS file. Mandatory.
 
     pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
+
+    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
 
 Examples:
     (start code)
@@ -722,6 +724,7 @@ Examples:
     dir_image = IMAGE
     dir_nodata = NODATA
     dir_mask = MASK
+    export_masks = TRUE
     
     compression         = png
     bitspersample       = 8

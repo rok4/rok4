@@ -76,8 +76,8 @@ enum MergeType {
     LIGHTEN = 2,
     DARKEN = 3,
     MULTIPLY = 4,
-    TRANSPARENCY = 5,
-    MASK = 6
+    ALPHATOP = 5,
+    TOP = 6
 };
 
 /**
@@ -142,12 +142,6 @@ private:
     Merge::MergeType composition;
 
     /**
-     * \~french \brief Type du canal
-     * \~english \brief Sample type
-     */
-    SampleType ST;
-
-    /**
      * \~french \brief Valeur de fond
      * \details On a une valeur entière par canal. Tous les pixels de l'image fusionnée seront initialisés avec cette valeur.
      * \~english \brief Background value
@@ -177,7 +171,6 @@ protected:
      * \details Ce constructeur est protégé afin de n'être appelé que par l'usine MergeImageFactory, qui fera différents tests et calculs.
      * \param[in] images images sources
      * \param[in] channel nombre de canaux par pixel en sortie
-     * \param[in] sampleType type des canaux
      * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
      * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
      * \param[in] composition méthode de fusion à utiliser
@@ -185,16 +178,14 @@ protected:
      * \brief Create an MergeImage object, from all attributes
      * \param[in] images source images
      * \param[in] channel number of samples per output pixel
-     * \param[in] sampleType samples' type
      * \param[in] bgValue pixel's value to use as background, one integer per output sample
      * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
      * \param[in] composition merge method to use
      */
-    MergeImage ( std::vector< Image* >& images, int channels, SampleType ST,
+    MergeImage ( std::vector< Image* >& images, int channels,
                  int* bg, int* transparent, Merge::MergeType composition = Merge::NORMAL ) :
-        Image ( images.at ( 0 )->width,images.at ( 0 )->height,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),
-                channels,images.at ( 0 )->getBbox() ),
-        images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ), ST ( ST ) {
+        Image ( images.at ( 0 )->width,images.at ( 0 )->height, channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
+        images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ) {
 
         if ( transparentValue != NULL ) {
             transparentValue = new int[3];
@@ -277,7 +268,6 @@ public:
      * \brief Teste et calcule les caractéristiques d'une image fusionnée et crée un objet MergeImage
      * \details Toutes les images sources doivent avoir les même dimensions pixel.
      * \param[in] images images sources
-     * \param[in] sampleType type des canaux
      * \param[in] channel nombre de canaux par pixel en sortie
      * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
      * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
@@ -286,13 +276,12 @@ public:
      * \brief Check and calculate compounded image components and create an MergeImage object
      * \details All source images have to own same dimesions.
      * \param[in] images source images
-     * \param[in] sampleType samples' type
      * \param[in] channel number of samples per output pixel
      * \param[in] bgValue pixel's value to use as background, one integer per output sample
      * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
      * \param[in] composition merge method to use
      */
-    MergeImage* createMergeImage ( std::vector< Image* >& images, SampleType ST, int channels,
+    MergeImage* createMergeImage ( std::vector< Image* >& images, int channels,
                                    int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL );
 };
 
@@ -330,7 +319,7 @@ public:
      * \param[in] MI Compounded image
      */
     MergeMask ( MergeImage*& MI ) :
-        Image ( MI->width, MI->height, MI->getResX(), MI->getResY(), 1,MI->getBbox() ),
+        Image ( MI->width, MI->height, 1,MI->getResX(), MI->getResY(),MI->getBbox() ),
         MI ( MI ) {}
 
     int getline ( uint8_t* buffer, int line );

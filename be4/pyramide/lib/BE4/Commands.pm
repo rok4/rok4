@@ -53,7 +53,7 @@ Using:
     # Commands object creation
     my $objCommands = BE4::Commands->new(
         $objPyramid, # BE4::Pyramid object
-        TRUE # useMasks
+        TRUE, # useMasks
     );
     (end code)
 
@@ -374,7 +374,7 @@ sub new {
     }
     $self->{pyramid} = $pyr;
 
-    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") ) {
+    if ( $self->{pyramid}->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") ) {
         $self->{useMasks} = TRUE;
     }
 
@@ -535,7 +535,7 @@ sub work2cache {
     my $cmd = "";
     my $weight = 0;
     
-    #### Copie de l'image
+    #### Export de l'image
     
     my $workName  = $node->getWorkName("I");
     my $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("data",FALSE),$node->getPyramidName);
@@ -543,9 +543,9 @@ sub work2cache {
     $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $workName, $pyrName);
     $weight += TIFF2TILE_W;
     
-    #### Copie du masque, si voulu
+    #### Export du masque, si voulu
     
-    if ($self->{pyramid}->ownMasks()) {
+    if ( $self->{pyramid}->ownMasks() ) {
         $workName  = $node->getWorkName("M");
         $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",FALSE),$node->getPyramidName);
         
@@ -934,6 +934,8 @@ sub exportForDebug {
     $export .= "\nObject BE4::Commands :\n";
     $export .= "\t Use masks\n" if $self->{useMasks};
     $export .= "\t Doesn't use masks\n" if (! $self->{useMasks});
+    $export .= "\t Export masks\n" if $self->{pyramid}->ownMasks();
+    $export .= "\t Doesn't export masks\n" if (! $self->{pyramid}->ownMasks());
 
     return $export;
 }

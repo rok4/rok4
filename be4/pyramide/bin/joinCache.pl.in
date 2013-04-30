@@ -47,10 +47,10 @@ Synopsis:
     (end code)
 
 Tool allowing to merge pyramids, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
-    - replace : just the top pyramid's image is kept
+    - replace : only the top pyramid's image is kept
     - multiply : samples are multiplied
-    - transparency : alpha blending method
-    - masks : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
+    - alphatop : alpha blending method
+    - top : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
 
 (see joinCache_general.png)
 
@@ -927,6 +927,8 @@ For more informations about properties, see <BE4::Pyramid>.
 
     dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
 
+    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
+
     tms_name - TMS file name, with extension *.tms*. Mandatory. Have to be the same in the source pyramids.
 
     tms_path - Directory, where to find the TMS file. Mandatory
@@ -948,6 +950,7 @@ Examples:
     dir_image = IMAGE
     dir_nodata = NODATA
     dir_mask = MASK
+    export_masks = TRUE
 
     compression         = png
     bitspersample       = 8
@@ -969,14 +972,14 @@ Topic: process
 
     path_shell - Directory path, to write scripts in. Scripts are named in like manner for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example). Mandatory.
 
-    merge_method - Way to merge several source pyramid's images. Possible values are : transparency, replace, multiply, mask. See details in <JOINCACHE::Process>.
+    merge_method - Way to merge several source pyramid's images. Possible values are : alphatop, replace, multiply, top. See details in <JOINCACHE::Process>.
 
     use_masks - Precise if we want to use masks. Make heavier genrations. Optionnal, FALSE if not provided.
 
 Example:
     (start code)
     [ process ]
-    merge_method = transparency
+    merge_method = alphatop
     path_temp = /tmp/PRIVATE/
     path_temp_common = /tmp/COMMON/
     path_shell  = /home/IGN/SCRIPT/ORTHO

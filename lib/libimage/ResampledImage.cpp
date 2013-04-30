@@ -50,21 +50,27 @@
 #include <cmath>
 #include <cstring>
 
-ResampledImage::ResampledImage ( Image* image, int width, int height, double resx, double resy, double lefttmp,
-                                 double toptmp, double ratio_x, double ratio_y, bool mask,
-                                 Interpolation::KernelType KT, BoundingBox< double > bbox ) :
+ResampledImage::ResampledImage ( Image* image, int width, int height,
+                                 double resx, double resy, BoundingBox< double > bbox,
+                                 bool mask, Interpolation::KernelType KT ) :
 
-    Image ( width, height,resx,resy, image->channels, bbox ),
-    sourceImage ( image ) , left ( lefttmp ), top ( toptmp ), ratioX ( ratio_x ), ratioY ( ratio_y ),
-    K ( Kernel::getInstance ( KT ) ), useMask ( mask ) {
-        
+    Image ( width, height, image->channels, resx, resy, bbox ), sourceImage ( image ), K ( Kernel::getInstance ( KT ) ), useMask ( mask ) {
+
+    double resX_src = image->getResX();
+    double resY_src = image->getResY();
+
+    ratioX = resx / resX_src;
+    ratioY = resy / resY_src;
+    
     // Pour considérer les valeurs comme celles aux centres des pixels, on ramène les coordonnées au centre
-    left += 0.5*ratio_x - 0.5;
-    top  += 0.5*ratio_y - 0.5;
+
+    
+    left = ( (bbox.xmin + 0.5*resx) - (image->getBbox().xmin + 0.5*resX_src) ) / resX_src;
+    top = ( (image->getBbox().ymax - 0.5*resY_src) - (bbox.ymax - 0.5*resy) ) / resY_src;
 
     // On calcule le nombre de pixels sources à considérer dans l'interpolation, dans le sens des x et des y
-    Kx = ceil ( 2 * K.size ( ratio_x )-1E-7 );
-    Ky = ceil ( 2 * K.size ( ratio_y )-1E-7 );
+    Kx = ceil ( 2 * K.size ( ratioX )-1E-7 );
+    Ky = ceil ( 2 * K.size ( ratioY )-1E-7 );
 
     if ( ! sourceImage->getMask() ) useMask = false;
 
@@ -174,7 +180,7 @@ ResampledImage::ResampledImage ( Image* image, int width, int height, double res
     float* W = Wx;
     for ( int x = 0; x < width; x++ ) {
         int lg = Kx;
-        xMin[x] = K.weight ( W, lg, left + x * ratio_x, sourceImage->width );
+        xMin[x] = K.weight ( W, lg, left + x * ratioX, sourceImage->width );
         // On copie chaque poids en 4 exemplaires.
         for ( int i = lg-1; i >= 0; i-- ) for ( int j = 0; j < 4; j++ ) W[4*i + j] = W[i];
         W += 4*Kx;

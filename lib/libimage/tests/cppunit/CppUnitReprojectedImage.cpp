@@ -58,42 +58,6 @@ public:
     void setUp() {};
 
 protected:
-    /*
-      void testResampled() {
-
-        uint8_t color[4];
-        for(int i = 0; i < 20; i++) {
-          int width = 200 + rand()%800;
-          int height = 200 + rand()%800;
-          int channels = 1 + rand()%4;
-          for(int c = 0; c < channels; c++) color[c] = rand()%256;
-
-          Image* image = new EmptyImage(width, height, channels, color);
-          double top    = 50 + 50 * double(rand())/double(RAND_MAX);
-          double left   = 50 + 50 * double(rand())/double(RAND_MAX);
-          double right  = width - 50 - 50 * double(rand())/double(RAND_MAX);
-          double bottom = height - 50 - 50 * double(rand())/double(RAND_MAX);
-
-          int rwidth = int ((right - left) * (0.5 + double(rand())/double(RAND_MAX)));
-          int rheight = int ((bottom - top) * (0.5 + double(rand())/double(RAND_MAX)));
-
-    //      cerr << width << " " << height << " " << channels << " " << rwidth << " " << rheight << " " << top << " " << left << " " << right << " " << bottom << endl;
-
-          ResampledImage* R = new ResampledImage(image, rwidth, rheight, left, top, (right - left)/rwidth, (bottom - top)/rheight);
-          float buffer[R->width*R->channels];
-          for(int i = 0; i < rheight; i++) {
-            R->getline(buffer, i);
-            for(int j = 0; j < rwidth; j++)
-              for(int c = 0; c < channels; c++) {
-                CPPUNIT_ASSERT_DOUBLES_EQUAL(color[c], buffer[j*channels + c], 1e-4);
-              }
-          }
-
-          delete R;
-        }
-        cerr << "Test ResampledImage OK" << endl;
-      }
-    */
 
     string name ( int kernel_type ) {
         switch ( kernel_type ) {

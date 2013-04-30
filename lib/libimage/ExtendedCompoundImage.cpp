@@ -130,21 +130,12 @@ int ExtendedCompoundImage::getline ( uint8_t* buffer, int line ) {
 
 /* Implementation de getline pour les float */
 int ExtendedCompoundImage::getline ( float* buffer, int line ) {
-    if ( ST.getSampleFormat() == 1 ) { //SAMPLEFORMAT_UINT
-        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
-        uint8_t* buffer_t = new uint8_t[width*channels];
-        getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels );
-        delete [] buffer_t;
-        return width*channels;
-    } else { //float
-        return _getline ( buffer, line );
-    }
+    return _getline ( buffer, line );
 }
 
-ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage ( std::vector<Image*>& images,
-        int* nodata, SampleType sampleType,
-        uint mirrors ) {
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
+    std::vector<Image*>& images, int* nodata, uint mirrors ) {
+    
     if ( images.size() ==0 ) {
         LOGGER_ERROR ( "No source images to defined compounded image" );
         return NULL;
@@ -174,17 +165,13 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     int h= ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
 
     return new ExtendedCompoundImage ( w,h,images.at ( 0 )->channels,BoundingBox<double> ( xmin,ymin,xmax,ymax ),
-                                       images,nodata,sampleType,mirrors );
+                                       images,nodata,mirrors );
 }
 
-ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage ( int width,
-        int height,
-        int channels,
-        BoundingBox<double> bbox,
-        std::vector<Image*>& images,
-        int* nodata,
-        SampleType sampleType,
-        uint mirrors ) {
+ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
+    int width, int height, int channels, BoundingBox<double> bbox,
+    std::vector<Image*>& images, int* nodata, uint mirrors ) {
+    
     if ( images.size() ==0 ) {
         LOGGER_ERROR ( "No source images to defined compounded image" );
         return NULL;
@@ -201,7 +188,7 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
         }
     }
 
-    return new ExtendedCompoundImage ( width,height,channels,bbox,images,nodata,sampleType,mirrors );
+    return new ExtendedCompoundImage ( width,height,channels,bbox,images,nodata,mirrors );
 }
 
 int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {

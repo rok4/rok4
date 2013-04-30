@@ -60,7 +60,7 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
-MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, SampleType sampleType, int position, uint mirrorSize ) {
+MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int position, uint mirrorSize ) {
     int wTopBottom = pImageSrc->width+2*mirrorSize;
     int wLeftRight = mirrorSize;
     int hTopBottom = mirrorSize;
@@ -85,7 +85,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, SampleTyp
         ymin=pImageSrc->getYmax();
         ymax=pImageSrc->getYmax() +pImageSrc->getResY() *mirrorSize;
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,sampleType,bbox,pImageSrc,0,mirrorSize );
+        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,0,mirrorSize );
     } else if ( position == 1 ) {
         // RIGHT
         xmin=pImageSrc->getXmax();
@@ -93,7 +93,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, SampleTyp
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,sampleType,bbox,pImageSrc,1,mirrorSize );
+        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,1,mirrorSize );
     } else if ( position == 2 ) {
         // BOTTOM
         xmin=pImageSrc->getXmin()-pImageSrc->getResX() *mirrorSize;
@@ -101,7 +101,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, SampleTyp
         ymin=pImageSrc->getYmin()-pImageSrc->getResY() *mirrorSize;
         ymax=pImageSrc->getYmin();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,sampleType,bbox,pImageSrc,2,mirrorSize );
+        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,2,mirrorSize );
     } else if ( position == 3 ) {
         // LEFT
         xmin=pImageSrc->getXmin()-pImageSrc->getResX() *mirrorSize;
@@ -109,7 +109,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, SampleTyp
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,sampleType,bbox,pImageSrc,3,mirrorSize );
+        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,3,mirrorSize );
     } else {
         return NULL;
     }
@@ -174,15 +174,5 @@ int MirrorImage::getline ( uint8_t* buffer, int line ) {
 
 /* Implementation de getline pour les float */
 int MirrorImage::getline ( float* buffer, int line ) {
-    if ( ST.getSampleFormat() == 1 ) {
-        // les canaux sont des entiers, nécessite une conversion
-        uint8_t* buffer_t = new uint8_t[width*channels];
-        getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels );
-        delete [] buffer_t;
-        return width*channels;
-    } else {
-        // les canaux sont bien en flottants
-        return _getline ( buffer, line );
-    }
+    return _getline ( buffer, line );
 }

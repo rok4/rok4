@@ -107,12 +107,6 @@ private:
      */
     int* nodata;
 
-    /**
-     * \~french \brief Type du canal
-     * \~english \brief Sample type
-     */
-    SampleType ST;
-
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
      * \details Lorsque l'on veut récupérer une ligne d'une image composée, on va se reporter sur toutes les images source.
@@ -139,7 +133,6 @@ protected:
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] images images sources
      * \param[in] nodata valeur de non-donnée
-     * \param[in] sampleType type des canaux
      * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
      ** \~english
      * \brief Create an ExtendedCompoundImage object, from all attributes
@@ -149,15 +142,13 @@ protected:
      * \param[in] bbox bounding box
      * \param[in] images source images
      * \param[in] nodata nodata value
-     * \param[in] sampleType samples' type
      * \param[in] mirrors mirror images' number in source images (put in front)
      */
     ExtendedCompoundImage ( int width, int height, int channels, BoundingBox<double> bbox,
-                            std::vector<Image*>& images, int* nodata, SampleType sampleType, uint mirrors ) :
-        Image ( width, height,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),channels,bbox ),
+                            std::vector<Image*>& images, int* nodata, uint mirrors ) :
+        Image ( width, height,channels,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),bbox ),
         images ( images ),
         nodata ( nodata ),
-        ST ( sampleType ),
         mirrors ( mirrors ) {}
 
 public:
@@ -229,30 +220,6 @@ public:
 
     /**
      * \~french
-     * \brief Retourne le format des canaux
-     * \return format des canaux
-     * \~english
-     * \brief Return the sample format
-     * \return sample format
-     */
-    uint16_t getSampleFormat() {
-        return ST.getSampleFormat();
-    }
-
-    /**
-     * \~french
-     * \brief Retourne le type des canaux
-     * \return type des canaux
-     * \~english
-     * \brief Return the samples' type
-     * \return samples' type
-     */
-    SampleType getSampleType() {
-        return ST;
-    }
-
-    /**
-     * \~french
      * \brief Retourne la valeur de non-donnée
      * \return Valeur de non-donnée
      * \~english
@@ -290,7 +257,6 @@ public:
         Image::print();
         LOGGER_INFO ( "\t- Number of images = " << images.size() );
         LOGGER_INFO ( "\t- Number of mirrors = " << mirrors );
-        LOGGER_INFO ( "\t- Sampleformat " << ST.getSampleFormat() );
         LOGGER_INFO ( "\t- Nodata value " << nodata << "\n" );
     }
 };
@@ -307,7 +273,6 @@ public:
      * \details Largeur, hauteur, nombre de canaux et bbox sont déduits des composantes de l'image source et des paramètres. On vérifie la superposabilité des images sources.
      * \param[in] images images sources
      * \param[in] nodata valeur de non-donnée
-     * \param[in] sampleType type des canaux
      * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
      * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
      ** \~english
@@ -315,12 +280,10 @@ public:
      * \details Height, width, samples' number and bbox are deduced from source image's components and parameters. We check if source images are superimpose.
      * \param[in] images source images
      * \param[in] nodata nodata value
-     * \param[in] sampleType samples' type
      * \param[in] mirrors mirror images' number in source images (put in front)
      * \return a ExtendedCompoundImage object pointer, NULL if error
      */
-    ExtendedCompoundImage* createExtendedCompoundImage ( std::vector<Image*>& images, int* nodata,
-            SampleType sampleType, uint mirrors );
+    ExtendedCompoundImage* createExtendedCompoundImage ( std::vector<Image*>& images, int* nodata, uint mirrors );
 
     /** \~french
      * \brief Vérifie la superposabilité des images sources et crée un objet ExtendedCompoundImage
@@ -330,7 +293,6 @@ public:
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] images images sources
      * \param[in] nodata valeur de non-donnée
-     * \param[in] sampleType type des canaux
      * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
      * \return un pointeur d'objet ExtendedCompoundImage, NULL en cas d'erreur
      ** \~english
@@ -341,14 +303,12 @@ public:
      * \param[in] bbox bounding box
      * \param[in] images source images
      * \param[in] nodata nodata value
-     * \param[in] sampleType samples' type
      * \param[in] mirrors mirror images' number in source images (put in front)
      * \return a ExtendedCompoundImage object pointer, NULL if error
      */
     ExtendedCompoundImage* createExtendedCompoundImage ( int width, int height, int channels,
             BoundingBox<double> bbox,
-            std::vector<Image*>& images, int* nodata,
-            SampleType sampleType, uint mirrors );
+            std::vector<Image*>& images, int* nodata, uint mirrors );
 };
 
 /**
@@ -385,7 +345,7 @@ public:
      * \param[in] ECI Compounded image
      */
     ExtendedCompoundMask ( ExtendedCompoundImage*& ECI ) :
-        Image ( ECI->width, ECI->height, ECI->getResX(), ECI->getResY(), 1,ECI->getBbox() ),
+        Image ( ECI->width, ECI->height, 1, ECI->getResX(), ECI->getResY(),ECI->getBbox() ),
         ECI ( ECI ) {}
 
     int getline ( uint8_t* buffer, int line );

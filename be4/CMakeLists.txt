@@ -36,7 +36,6 @@ endif(UNITTEST)
 
 include(ROK4Dependencies)
 
-MESSAGE(STATUS "Building Be4 generation toolchain")
 configure_file(be4version.h.in be4version.h ESCAPE_QUOTES @ONLY)
 add_subdirectory(createNodata)
 add_subdirectory(manageNodata)

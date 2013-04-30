@@ -56,7 +56,12 @@ struct BoundingBox {
     
 public:
     T xmin, ymin, xmax, ymax;
-    BoundingBox ( T xmin, T ymin, T xmax, T ymax ) : xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
+    BoundingBox ( T xmin, T ymin, T xmax, T ymax ) :
+        xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
+
+    template<typename T2>        
+    BoundingBox ( const BoundingBox<T2>& bbox ) :
+        xmin ( (T) bbox.xmin ), ymin ( (T) bbox.ymin ), xmax ( (T) bbox.xmax ), ymax ( (T) bbox.ymax ) {}
 
     int reproject ( projPJ pj_src, projPJ pj_dst ) {
         int nbSegment = 10;
