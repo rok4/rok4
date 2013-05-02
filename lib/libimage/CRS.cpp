@@ -80,7 +80,7 @@ std::string toUpperCase ( std::string str ) {
  */
 bool isCrsProj4Compatible ( std::string crs ) {
     projCtx ctx = pj_ctx_alloc();
-    projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + crs +" +wktext" ).c_str() );
+    projPJ pj = pj_init_plus_ctx ( ctx, ( "+init=" + crs +" +wktext" ).c_str() );
     if ( !pj ) {
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
@@ -91,8 +91,10 @@ bool isCrsProj4Compatible ( std::string crs ) {
     bool isCompatible;
     if ( pj ) isCompatible=true;
     else isCompatible=false;
+    
     pj_free ( pj );
     pj_ctx_free ( ctx );
+    
     return isCompatible;
 }
 

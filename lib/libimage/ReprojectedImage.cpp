@@ -47,8 +47,7 @@
 #include <cmath>
 
 
-ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid,
-                                     Interpolation::KernelType KT, bool bMask ) :
+ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT, bool bMask ) :
                                      
     Image ( grid->width, grid->height,image->channels, bbox ),
     sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {
@@ -194,7 +193,11 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
 
 float* ReprojectedImage::compute_dst_line ( int line ) {
 
-    if ( line/4 == dst_line_index ) return dst_image_buffer[line%4];
+    //LOGGER_DEBUG("ligne à calculer : " << line); /*TEST*/
+
+    if ( line/4 == dst_line_index ) {
+        return dst_image_buffer[line%4];
+    }
     dst_line_index = line/4;
 
     for ( int i = 0; i < 4; i++ ) {
@@ -227,6 +230,10 @@ float* ReprojectedImage::compute_dst_line ( int line ) {
         int dx3 = ( ( int ) ( X[3][x] ) + xmin[Ix[3]] );
 
         for ( int j = 0; j < Ky; j++ ) {
+            //LOGGER_DEBUG("        " << y0+j); /*TEST*/
+            //LOGGER_DEBUG("        " << y1+j); /*TEST*/
+            //LOGGER_DEBUG("        " << y2+j); /*TEST*/
+            //LOGGER_DEBUG("        " << y3+j); /*TEST*/
             multiplex_unaligned ( tmp1Img,
                                   src_image_buffer[y0 + j] + dx0*channels, src_image_buffer[y1 + j] + dx1*channels,
                                   src_image_buffer[y2 + j] + dx2*channels, src_image_buffer[y3 + j] + dx3*channels,

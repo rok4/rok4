@@ -84,7 +84,7 @@ protected:
 
             ResampledImage* R = new ResampledImage ( image, rwidth, rheight,
                                                      resx, resy, BoundingBox<double>(xmin, ymin, xmax, ymax),
-                                                     false, Interpolation::CUBIC );
+                                                     Interpolation::CUBIC, false );
             float buffer[R->width*R->channels];
             for ( int i = 0; i < rheight; i++ ) {
                 R->getline ( buffer, i );
@@ -129,7 +129,7 @@ protected:
         for ( int i = 0; i < nb_iteration; i++ ) {
             Image* image = new EmptyImage ( 1300, 1000, channels, color );
             ResampledImage* R = new ResampledImage ( image, 800, 600, 0.5, 0.5, BoundingBox<double>(0., 0., 800., 600.),
-                                                     false, Interpolation::KernelType ( kernel_type ) );
+                                                     Interpolation::KernelType ( kernel_type ), false );
             for ( int l = 0; l < 600; l++ ) R->getline ( buffer, l );
             delete R;
         }

@@ -145,7 +145,7 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
     }
 
     LOGGER_DEBUG ( "Top 1" );
-    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, false, interpolation);
+    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false);
 }
 
 
@@ -242,7 +242,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     imageout->setBbox(BoundingBox<double>(bbox_int));
     
-    return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, false, interpolation );
+    return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, interpolation, false );
 }
 
 int euclideanDivisionQuotient ( int64_t i, int n ) {

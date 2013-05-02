@@ -314,7 +314,7 @@ public:
      * \param[in] KT interpolation kernel to use for resampling
      */
     ResampledImage ( Image *image, int width, int height, double resx, double resy, BoundingBox<double> bbox,
-                     bool bUseMask = false, Interpolation::KernelType KT = Interpolation::LANCZOS_3 );
+                     Interpolation::KernelType KT = Interpolation::LANCZOS_3, bool bMask = false );
 
     /**
      * \~french
