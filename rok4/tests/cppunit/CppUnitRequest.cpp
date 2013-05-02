@@ -55,11 +55,12 @@ class CppUnitRequest : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST ( testurl_decode );
     CPPUNIT_TEST ( testtoLowerCase );
     CPPUNIT_TEST ( testremoveNameSpace );
+    CPPUNIT_TEST ( testhasParam );
+    CPPUNIT_TEST ( testgetParam );
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     unsigned char monhaxedecimal_majuscule;
-    Request* marequete;
 
 public:
     // Cette fonction est toujours appelée lors du démarage des tests de ce fichier
@@ -73,25 +74,15 @@ protected:
     void testurl_decode();
     void testtoLowerCase();
     void testremoveNameSpace();
+    void testhasParam();
+    void testgetParam();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitRequest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION ( CppUnitRequest, "CppUnitRequest" );
 
 void CppUnitRequest::setUp() {
-    std::string strquerystring("www.marequete.com/adresse");
-    char* strquery = new char[strquerystring.size()+1];
-    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
-    std::string hostNamestring("127.0.0.1");
-    char* hostName = new char[hostNamestring.size()+1];
-    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
-    std::string pathNamestring("/chemin/chemin2");
-    char* path = new char[pathNamestring.size()+1];
-    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
-    std::string httpsstring("https://");
-    char* https = new char[httpsstring.size()+1];
-    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
-    marequete = new Request(strquery,hostName,path,https);
+
     
     monhaxedecimal_majuscule = 'E';
  }
@@ -116,20 +107,25 @@ void CppUnitRequest::testurl_decode() {
     std::string mystring("Hello");
     char* myword = new char[mystring.size()+1];
     memcpy(myword,mystring.c_str(),mystring.size()+1);
+    Request* marequete;
     marequete->url_decode(myword);
     CPPUNIT_ASSERT_MESSAGE ( "use url_decode :\n", mystring.compare(myword) == 0 ) ;
     delete myword;
+    delete marequete;
 }
 
 void CppUnitRequest::testtoLowerCase() {
+    // all upper case
     std::string mystring("TEST");
     char* myword = new char[mystring.size()+1];
     memcpy(myword,mystring.c_str(),mystring.size()+1);
     toLowerCase(myword);
+    // mixed upper and lower
     std::string mystring2("TeSt");
     char* myword2 = new char[mystring2.size()+1];
     memcpy(myword2,mystring2.c_str(),mystring2.size()+1);
     toLowerCase(myword2);
+    // lower shouldn't change
     std::string mystring3("test");
     char* myword3 = new char[mystring3.size()+1];
     memcpy(myword3,mystring3.c_str(),mystring3.size()+1);
@@ -138,12 +134,14 @@ void CppUnitRequest::testtoLowerCase() {
     CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword == mystringresult ) ;
     CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword2 == mystringresult ) ;
     CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword3 == mystringresult ) ;
+    // special case for empty string
     std::string mystring4("");
     char* myword4 = new char[mystring4.size()+1];
     memcpy(myword4,mystring4.c_str(),mystring4.size()+1);
     toLowerCase(myword4);
     std::string mystringresult2("");
     CPPUNIT_ASSERT_MESSAGE ( "conversion toLowerCase :\n", myword4 == mystringresult2 ) ;
+    // clean
     delete myword;
     delete myword2;
     delete myword3;
@@ -170,6 +168,89 @@ void CppUnitRequest::testremoveNameSpace() {
     CPPUNIT_ASSERT_MESSAGE ( "remove namespace :\n", result == ":right" ) ;
 }
 
-void CppUnitRequest::tearDown() {
+void CppUnitRequest::testhasParam() {
+    std::string hostNamestring("127.0.0.1");
+    char* hostName = new char[hostNamestring.size()+1];
+    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
+    std::string pathNamestring("/chemin/chemin2");
+    char* path = new char[pathNamestring.size()+1];
+    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
+    std::string httpsstring("https://");
+    char* https = new char[httpsstring.size()+1];
+    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
+
+    // param1 is not here
+    std::string strquerystring("www.marequete.com/adresse");
+    char* strquery = new char[strquerystring.size()+1];
+    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
+    Request* marequete = new Request(strquery,hostName,path,https);
+    CPPUNIT_ASSERT_MESSAGE ( "hasParam :\n", marequete->hasParam("param1") == false ) ;
+
+    // param1 is here
+    marequete->params.insert( std::pair<std::string, std::string> ("param1","value1"));
+    CPPUNIT_ASSERT_MESSAGE ( "hasParam :\n", marequete->hasParam("param1") == true ) ;
+    // but param2 is still not here
+    CPPUNIT_ASSERT_MESSAGE ( "hasParam :\n", marequete->hasParam("param2") == false ) ;
+
+    // It also works when a param is inserted multiple times
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value1"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value2"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value3"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value4"));
+    CPPUNIT_ASSERT_MESSAGE ( "hasParam :\n", marequete->hasParam("param2") == true ) ;
+
+    // If the param is empty
+    CPPUNIT_ASSERT_MESSAGE ( "hasParam :\n", marequete->hasParam("") == false ) ;
+
+    delete hostName;
+    delete path;
+    delete https;
+    delete strquery;
     delete marequete;
+}
+
+void CppUnitRequest::testgetParam() {
+    std::string hostNamestring("127.0.0.1");
+    char* hostName = new char[hostNamestring.size()+1];
+    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
+    std::string pathNamestring("/chemin/chemin2");
+    char* path = new char[pathNamestring.size()+1];
+    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
+    std::string httpsstring("https://");
+    char* https = new char[httpsstring.size()+1];
+    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
+
+    // param1 is not here
+    std::string strquerystring("www.marequete.com/adresse");
+    char* strquery = new char[strquerystring.size()+1];
+    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
+    Request* marequete = new Request(strquery,hostName,path,https);
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("param1")).compare("value1") != 0 ) ;
+
+    // param1 is here
+    marequete->params.insert( std::pair<std::string, std::string> ("param1","value1"));
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("param1")).compare("value1") == 0 ) ;
+    // but param2 is still not here
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("param2")).compare("value1") != 0 ) ;
+
+    // It also works when a param is inserted multiple times
+    // Note: the first value is returned
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value1"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value2"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value3"));
+    marequete->params.insert( std::pair<std::string, std::string> ("param2","value4"));
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("param2")).compare("value1") == 0 ) ;
+
+    // If the param is empty or non existing it returns ""
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("")).compare("") == 0 ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "getParam :\n", (marequete->getParam("param3")).compare("") == 0 ) ;
+
+    delete hostName;
+    delete path;
+    delete https;
+    delete strquery;
+    delete marequete;
+}
+
+void CppUnitRequest::tearDown() {
 }
