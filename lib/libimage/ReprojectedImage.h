@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ReprojectedImage.h
+ ** \~french
+ * \brief Définition de la classe ReprojectedImage, permettant la reprojection d'image
+ ** \~english
+ * \brief Define classe ReprojectedImage, allowing image reprojecting
+ */
+
 #ifndef REPROJECT_H
 #define REPROJECT_H
 
@@ -44,9 +52,17 @@
 #include "Interpolation.h"
 #include <mm_malloc.h>
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'image reprojetée
+ */
 class ReprojectedImage : public Image {
 private:
-    // Image source à rééchantilloner.
+    /**
+     * \~french \brief Image source, à réechantillonner
+     * \~english \brief Source image, to resample
+     */
     Image* sourceImage;
 
     /**
@@ -79,62 +95,230 @@ private:
      * \~english \brief Ratio between destination resolution and source resolution, widthwise
      * \details X ratio = X destination resolution / X source resolution
      */
-    double ratio_x;
+    double ratioX;
     /**
      * \~french \brief Rapport des résolutions source et finale, dans le sens des Y
      * \details Ratio de rééchantillonage en Y = résolution Y cible / résolution Y source
      * \~english \brief Ratio between destination resolution and source resolution, heighthwise
      * \details Y ratio = Y destination resolution / Y source resolution
      */
-    double ratio_y;
+    double ratioY;
+
 
     Grid* grid;
 
+    /**
+     * \~french \brief Buffer général
+     * \details Il regroupe :
+     * \li les buffers de mémorisation des lignes sources (image et masque)
+     * \li les buffers intermédiaires de calcul (image et masque)
+     * \li les buffers des poids de l'interpolation
+     * \li le buffer d'indexation des données
+     * \~english \brief Global buffer
+     * \details Contains:
+     * \li widthwise source lines memorization buffers (image and mask)
+     * \li intermediate calculation buffers (image and mask)
+     * \li weights' buffer
+     * \li index buffer
+     */
     float*  __buffer;
-    
+
+    /**
+     * \~french \brief Nombre de lignes source que l'on va mémoriser, pour l'image et le masque
+     * \details On ne veut pas charger l'intégralité de l'image source en mémoire vive, c'est pourquoi on ne va en stocker qu'un certain nombre :
+     * \li ni trop faible car on ne doit pas être amené à demander une même ligne source plusieurs fois, pour des raisons de performances.
+     * \li ni trop élevé, pour ne pas surcharger le mémoire.
+     *
+     * On fait donc le choix de mémoriser 2*#Ky lignes sources.
+     * \~english \brief Number of memorized source lines, for image and mask
+     */
+    int memorizedLines;
+
+    /**
+     * \~french \brief Indexation des lignes sources mémorisées
+     * \details Elle permet de convertir un indice de la ligne de l'image source en indice dans le tableau des lignes mémorisées (dans #src_image_buffer et #src_mask_buffer).
+     * \~english \brief Memorized source lines indexing
+     * \details To convert source image line (widthwise resampled) indice to memorized line indice (in #resampled_image and #resampled_mask).
+     */
+    int* src_line_index;
+
+    /**
+     * \~french \brief Buffer de stockage des lignes de l'image source
+     * \details On stocke #memorizedLines lignes
+     * \~english \brief Image source lines storage buffer
+     * \details We store #memorizedLines lines
+     */
     float** src_image_buffer;
+    /**
+     * \~french \brief Buffer de stockage des lignes du masque source
+     * \details On stocke #memorizedLines lignes
+     * \~english \brief Mask source lines storage buffer
+     * \details We store #memorizedLines lines
+     */
     float** src_mask_buffer;
 
+    /**
+     * \~french \brief Index des lignes reprojetées
+     * \details Les lignes de l'image reprojetée sont calculées 4 par 4. On veut donc mémoriser les lignes qui sont déjà calculées et présentes dans le buffer #dst_image_buffer (et le masque dans #dst_mask_buffer) pour pouvoir les retourner directement.
+     *
+     * #dst_line_index contient le résultat de la division entière de l'indice de la ligne reprojetée par 4, et la place de la ligne dans le buffer sera l'indice de ligne modulo 4.
+     * \~english \brief Reprojected lines indexing
+     */
     int dst_line_index;
-    
+
+    /**
+     * \~french \brief 4 lignes d'image entièrement reprojetées
+     * \~english \brief 4 completly reprojected image lines
+     */
     float* dst_image_buffer[4];
+
+    /**
+     * \~french \brief 4 lignes d'image entièrement reprojetées, multiplexées
+     * \~english \brief 4 completly reprojected image lines, multiplexed
+     */
     float* mux_dst_image_buffer;
 
+    /**
+     * \~french \brief 4 lignes de masque entièrement reprojetées
+     * \~english \brief 4 completly reprojected mask lines
+     */
     float* dst_mask_buffer[4];
+
+    /**
+     * \~french \brief 4 lignes de masque entièrement reprojetées, multiplexées
+     * \~english \brief 4 completly reprojected mask lines, multiplexed
+     */
     float* mux_dst_mask_buffer;
 
+    /**
+     * \~french \brief Coordonnées X en pixel source des pixels de la ligne à reprojeter
+     * \~english \brief X coordinate, in source pixel, of the line to reproject
+     */
     float* X[4];
+
+    /**
+     * \~french \brief Coordonnées Y en pixel source des pixels de la ligne à reprojeter
+     * \~english \brief Y coordinate, in source pixel, of the line to reproject
+     */
     float* Y[4];
+
+    /**
+     * \~french \brief Poids pré-calculé, dans le sens des X
+     * \details Du fait de la reprojection, tous les pixels à reprojeter sont décalés en X par rapport aux pixels sources d'une manière différente. Pour des raisons de performance, on ne peut pas calculer pour chaque pixel le tableau des poids correspondant. On va donc préalablement calculer 1024 possibilités de poids, qui seront utilisés pour l'ensemble de l'image reprojetée.
+     * \~english \brief Pre-calculated weights, X wise
+     */
     float* Wx[1024];
+
+    /**
+     * \~french \brief Poids pré-calculé, dans le sens des Y
+     * \details Du fait de la reprojection, tous les pixels à reprojeter sont décalés en Y par rapport aux pixels sources d'une manière différente. Pour des raisons de performance, on ne peut pas calculer pour chaque pixel le tableau des poids correspondant. On va donc préalablement calculer 1024 possibilités de poids, qui seront utilisés pour l'ensemble de l'image reprojetée.
+     * \~english \brief Pre-calculated weights, Y wise
+     */
     float* Wy[1024];
 
-
+    /**
+     * \~french \brief Poids dans le sens des X utilisés pour le calcul des 4 pixels en cours, multiplexés
+     * \~english \brief X wise weights use to calculate the 4 pixels in progress, multiplexed
+     */
     float* WWx;
+    /**
+     * \~french \brief Poids dans le sens des Y utilisés pour le calcul des 4 pixels en cours, multiplexés
+     * \~english \brief Y wise weights use to calculate the 4 pixels in progress, multiplexed
+     */
     float* WWy;
+
+    /**
+     * \~french \brief Premiers pixels sources à utiliser, dans le sens des X, pré-calculé
+     * \details Du fait de la reprojection, tous les pixels à reprojeter sont décalés en X par rapport aux pixels sources d'une manière différente. Pour des raisons de performance, on ne peut pas calculer pour chaque pixel le premier pixel source à utiliser. On va donc préalablement calculer 1024 possibilités de premier pixel, qui seront utilisés pour l'ensemble de l'image reprojetée.
+     * \~english \brief First usefull source pixels, X wise, pre-calculated
+     */
     int xmin[1024];
+    /**
+     * \~french \brief Premiers pixels sources à utiliser, dans le sens des Y, pré-calculé
+     * \details Du fait de la reprojection, tous les pixels à reprojeter sont décalés en Y par rapport aux pixels sources d'une manière différente. Pour des raisons de performance, on ne peut pas calculer pour chaque pixel le premier pixel source à utiliser. On va donc préalablement calculer 1024 possibilités de premier pixel, qui seront utilisés pour l'ensemble de l'image reprojetée.
+     * \~english \brief First usefull source pixels, Y wise, pre-calculated
+     */
     int ymin[1024];
 
+    /**
+     * \~french \brief Pixels sources à utiliser pour les 4 pixels en cours, multiplexés
+     * \~english \brief Source pixels to use to calculate the 4 pixels in progress, multiplexed
+     */
     float* tmp1Img;
+
+    /**
+     * \~french \brief 4 pixels interpolés dans le sens des X , multiplexés
+     * \~english \brief 4 pixels, X wise interpolated, multiplexed
+     */
     float* tmp2Img;
 
+    /**
+     * \~french \brief Pixels du masque source à utiliser pour les 4 pixels en cours, multiplexés
+     * \~english \brief Source mask's pixels to use to calculate the 4 pixels in progress, multiplexed
+     */
     float* tmp1Msk;
+
+    /**
+     * \~french \brief 4 pixels du masque, interpolé dans le sens des X , multiplexés
+     * \~english \brief 4 mask pixels, X wise interpolated, multiplexed
+     */
     float* tmp2Msk;
 
-    float* compute_dst_line ( int line );
+    /** \~french
+     * \brief Retourne une ligne entièrement reprojetée, flottante
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return Tableau contenant la ligne reprojetée
+     */
+    float* computeDestLine ( int line );
+
+    /** \~french
+     * \brief Retourne l'index dans le buffer #src_image_buffer (et #src_mask_buffer) de la ligne source voulue
+     * \details On ne mémorise que #memorizedLines lignes sources. Lorsque l'on a besoin d'une ligne source, on en demande l'index. Si cette ligne est déjà chargée dans le buffer, on retourne directement l'index. Sinon, on récupère la ligne de #sourceImage, on la stocke, on met à jour la table des index #src_line_index, et on retourne l'index de la ligne voulue.
+     * \param[in] line Indice de la ligne source dont on veut l'indice
+     * \return Indice de la ligne voulue dans le buffer des sources
+     */
+    int getSourceLineIndex ( int line );
 
 public:
 
+    /** \~french
+     * \brief Crée un objet ReprojectedImage à partir de tous ses éléments constitutifs
+     * \param[in] image image source
+     * \param[in] bbox emprise rectangulaire de l'image reprojetée
+     * \param[in] grid grille de reprojection à utiliser
+     * \param[in] KT noyau d'interpolation à utiliser pour la reprojection
+     * \param[in] bUseMask précise si la reprojection doit tenir compte des masques
+     ** \~english
+     * \brief Create a ReprojectedImage object, from all attributes
+     * \param[in] image source image
+     * \param[in] bbox reprojected image bounding box
+     * \param[in] grid reprojecting grid to use
+     * \param[in] KT interpolation kernel to use for reprojecting
+     * \param[in] bUseMask precise if reprojecting use masks
+     */
     ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false );
 
     int getline ( float* buffer, int line );
 
     int getline ( uint8_t* buffer, int line );
 
+    /**
+     * \~french
+     * \brief Destructeur par défaut
+     * \details Désallocation de la mémoire du buffer général #__buffer, du buffer d'index #src_line_index, des buffers #src_image_buffer et #src_mask_buffer et suppression de #sourceImage.
+     * \~english
+     * \brief Default destructor
+     * \details Desallocate global #buffer __buffer, index buffer #src_line_index, buffers #src_image_buffer and #src_mask_buffer and remove #sourceImage
+     */
     ~ReprojectedImage() {
         delete sourceImage;
         _mm_free ( __buffer );
+
         delete[] src_image_buffer;
+        delete[] src_line_index;
+        
         if ( useMask ) {delete[] src_mask_buffer;}
+
     }
 
     /** \~french
@@ -147,7 +331,7 @@ public:
         LOGGER_INFO ( "--------- ReprojectedImage -----------" );
         Image::print();
         LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
-        LOGGER_INFO ( "\t- Ratio, x wise = " << ratio_x << ", y wise = " << ratio_y );
+        LOGGER_INFO ( "\t- Ratio, x wise = " << ratioX << ", y wise = " << ratioY );
         grid->print();
         if ( useMask ) {
             LOGGER_INFO ( "\t- Use mask in interpolation" );

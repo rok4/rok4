@@ -68,8 +68,9 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
 
     for ( i=0; i<width*channels; i++ ) {
         buffer[i]= ( T ) nodata[i%channels];
+        
     }
-
+    
     double y = l2y ( line );
 
     for ( i=0; i < ( int ) images.size(); i++ ) {
@@ -93,7 +94,7 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         int c2=- ( __min ( 0,x2c ( images[i]->getXmin() ) ) );
 
         T* buffer_t = new T[images[i]->width*images[i]->channels];
-        LOGGER_DEBUG ( i<<" "<<line<<" "<<images[i]->y2l ( y ) );
+        //LOGGER_DEBUG ( i<<" "<<line<<" "<<images[i]->y2l ( y ) );
         images[i]->getline ( buffer_t,images[i]->y2l ( y ) );
 
         if ( getMask ( i ) == NULL ) {

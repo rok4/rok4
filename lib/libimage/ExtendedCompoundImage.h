@@ -132,7 +132,7 @@ protected:
      * \param[in] channel nombre de canaux par pixel
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] images images sources
-     * \param[in] nodata valeur de non-donnée
+     * \param[in] nd valeur de non-donnée
      * \param[in] mirrors nombre d'images miroirs dans le tableau des images sources (placées au début)
      ** \~english
      * \brief Create an ExtendedCompoundImage object, from all attributes
@@ -141,15 +141,18 @@ protected:
      * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
      * \param[in] images source images
-     * \param[in] nodata nodata value
+     * \param[in] nd nodata value
      * \param[in] mirrors mirror images' number in source images (put in front)
      */
     ExtendedCompoundImage ( int width, int height, int channels, BoundingBox<double> bbox,
-                            std::vector<Image*>& images, int* nodata, uint mirrors ) :
+                            std::vector<Image*>& images, int* nd, uint mirrors ) :
         Image ( width, height,channels,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),bbox ),
         images ( images ),
-        nodata ( nodata ),
-        mirrors ( mirrors ) {}
+        mirrors ( mirrors ) {
+            
+            nodata = new int[channels];
+            memcpy(nodata,nd,channels*sizeof(int));
+        }
 
 public:
     /**
@@ -241,6 +244,7 @@ public:
      * \brief Default destructor
      */
     virtual ~ExtendedCompoundImage() {
+        delete[] nodata;
         for ( uint i=0; i < images.size(); i++ ) {
             delete images[i];
         }

@@ -97,7 +97,7 @@ int main ( int argc, char **argv ) {
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
 
-    bool useMask = false;
+    bool useMask = true;
     bool writeMask = false;
     if (writeMask) useMask = true;
 
@@ -109,9 +109,9 @@ int main ( int argc, char **argv ) {
     double resY_src = 100.;
 
     //CRS SRS_dst ( "EPSG:3857" );
-    CRS SRS_dst ( "EPSG:2154" );
-    BoundingBox<double> BBOX_dst ( 700000, 6280000, 900000, 6480000 );
-    //BoundingBox<double> BBOX_dst ( 700000., 5350000, 900000., 5550000. );
+    CRS SRS_dst ( "EPSG:3857" );
+    //BoundingBox<double> BBOX_dst ( 700000, 6280000, 900000, 6480000 );
+    BoundingBox<double> BBOX_dst ( 700000., 5350000, 900000., 5550000. );
     //BoundingBox<double> BBOX_dst (500000., 5500000, 700000., 5700000.);
     int width_dst = 2000;
     int height_dst = 2000;

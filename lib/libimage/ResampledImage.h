@@ -214,12 +214,12 @@ private:
 
     /**
      * \~french \brief Ligne d'image, réechantillonnée en X, multiplexée
-     * \~english \brief Image's line, widthwise resmapled, multiplexed
+     * \~english \brief Image's line, widthwise resampled, multiplexed
      */
     float* mux_resampled_image;
     /**
      * \~french \brief Ligne de masque, réechantillonnée en X, multiplexée
-     * \~english \brief Mask's line, widthwise resmapled, multiplexed
+     * \~english \brief Mask's line, widthwise resampled, multiplexed
      */
     float* mux_resampled_mask;
 
@@ -277,7 +277,7 @@ public:
      * \li on réechantillonne les lignes de l'image source dans le sens des X, avec la fonction #resampleSourceLine
      * \li on moyenne (avec pondération) les #Ky lignes sources réechantillonnées en X, autrement dit on réechantillonne dans le sens des Y
      *
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in,out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
@@ -286,7 +286,7 @@ public:
     /** \~french
      * \brief Retourne une ligne entièrement réechantillonnée, entière
      * \details Elle ne fait que convertir le résultat du #getline flottant en entier. On ne travaille en effet que sur des flottants, même si les canaux des images sont des entiers, et cela car les poids de l'interpolation sont toujours flottants.
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in,out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
@@ -319,14 +319,16 @@ public:
     /**
      * \~french
      * \brief Destructeur par défaut
-     * \details Désallocation de la mémoire du buffer général #__buffer, du buffer d'index #resampled_line_index et suppression de #source_image.
+     * \details Désallocation de la mémoire du buffer général #__buffer, du buffer d'index #resampled_line_index, des buffers #resampled_image et #resampled_mask et suppression de #sourceImage.
      * \~english
      * \brief Default destructor
-     * \details Desallocate global #buffer __buffer, index buffer #resampled_line_index and remove #source_image
+     * \details Desallocate global buffer #__buffer, index buffer #resampled_line_index, buffers #resampled_image and #resampled_mask and remove #source_image
      */
     ~ResampledImage() {
         _mm_free ( __buffer );
         delete[] resampled_line_index;
+        delete[] resampled_image;
+        if (useMask) delete[] resampled_mask;
         delete sourceImage;
     }
 

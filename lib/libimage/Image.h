@@ -467,7 +467,7 @@ public:
      * \~french
      * \brief Retourne une ligne en entier 8 bits.
      * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 8 bits, il n'y a pas de conversion.
-     * \param[out] buffer Tableau contenant au moins width*channels uint8
+     * \param[in,out] buffer Tableau contenant au moins width*channels uint8
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
@@ -475,43 +475,14 @@ public:
 
     /**
      * \~french
-     * \brief Retourne une ligne en entier 8 bits, avec son masque en entier 8 bits.
-     *//*
-    int getline ( uint8_t *image, uint8_t *mask, int line ) {
-        if (mask == NULL) {
-            LOGGER_ERROR("Associated mask line is asked but mask is not defined");
-            return -1;
-        }
-        int r;
-        if (r = getline ( image, line ) < 0) {
-            LOGGER_ERROR("Impossible to get the image line");
-            return -1;
-        }
-        if (getline ( image, line ) < 0) {
-            LOGGER_ERROR("Impossible to get the image line");
-            return -1;
-        }
-    }*/
-
-    /**
-     * \~french
      * \brief Retourne une ligne en flottant 32 bits.
      * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
      * une conversion est effectuée.
-     * \param[out] buffer Tableau contenant au moins width*channels float32
+     * \param[in,out] buffer Tableau contenant au moins width*channels float32
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
     virtual int getline ( float *buffer, int line ) = 0;
-
-    /**
-     * \~french
-     * \brief Retourne une ligne en flottant 32 bits, avec son masque en flottant 32 bits.
-     */
-    int getline ( float *image, float *mask, int line ) {
-
-
-    }
 
     /**
      * \~french
