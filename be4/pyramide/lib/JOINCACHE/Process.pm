@@ -585,8 +585,9 @@ sub mergeImages {
     #### Entrées ####
     my $inTemplate = $node->getWorkName("*_*");
     
-    for (my $i = 0; $i < $node->getSourcesNumber; $i++) {
-
+    for (my $i = $node->getSourcesNumber() - 1; $i >= 0; $i--) {
+        # Les images sont dans l'ordre suivant : du dessus vers le dessous
+        # Dans le fichier de configuration de overlayNtiff, elles doivent êtredans l'autre sens, d'où la lecture depuis la fin.
         my $sourceImage = $node->getSource($i);
 
         my $inImgName = $node->getWorkName($i."_I");

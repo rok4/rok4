@@ -165,8 +165,6 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
             resampled_mask[i] = B;
             B += outMskSize;
         }
-
-        own_mask_buffer = new uint8_t[outMskSize];
     }
 
     /* -------------------- PARTIE POIDS -------------------- */
@@ -292,12 +290,6 @@ int ResampledImage::getline ( float* buffer, int line ) {
     }
 
     if ( useMask ) {
-        if ( getMask() ) {
-            getMask()->getline ( own_mask_buffer,line );
-            for ( int y = 0; y < width; y++ ) {
-                if ( ! own_mask_buffer[y] ) weight_buffer[y] = 0.;
-            }
-        }
         normalize ( buffer, weight_buffer, width, channels );
     }
 

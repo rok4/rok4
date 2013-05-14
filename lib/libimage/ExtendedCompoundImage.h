@@ -89,7 +89,9 @@ private:
 
     /**
      * \~french \brief Images sources, toutes superposables, utilisée pour assembler l'image composée
+     * \details La première image est celle du dessous
      * \~english \brief Source images, consistent , to make the compounded image
+     * \details First image is the bottom one
      */
     std::vector<Image*> images;
 
@@ -209,6 +211,11 @@ public:
         return images.at ( i );
     }
 
+    bool insertMirrors(std::vector< Image*> mirrorImages) {
+        images.insert ( images.begin(),mirrorImages.begin(),mirrorImages.end() );
+        mirrors = mirrorImages.size();
+    }
+
     /**
      * \~french
      * \brief Retourne le nombre de miroirs parmi les images sources
@@ -245,8 +252,10 @@ public:
      */
     virtual ~ExtendedCompoundImage() {
         delete[] nodata;
-        for ( uint i=0; i < images.size(); i++ ) {
-            delete images[i];
+        if (! isMask) {
+            for ( uint i=0; i < images.size(); i++ ) {
+                delete images[i];
+            }
         }
     }
 

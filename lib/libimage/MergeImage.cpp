@@ -80,7 +80,7 @@ int MergeImage::_getline ( T* buffer, int line ) {
         }
     }
 
-    for ( int i = images.size()-1; i >= 0; i-- ) {
+    for ( int i = 0; i < images.size(); i++ ) {
 
         int srcSpp = images[i]->channels;
         images[i]->getline ( imageLine,line );
@@ -173,16 +173,18 @@ int MergeMask::_getline ( uint8_t* buffer, int line ) {
 
     memset ( buffer,0,width );
 
+    uint8_t* buffer_m = new uint8_t[width];
+
     for ( uint i = 0; i < MI->getImages()->size(); i++ ) {
 
         if ( MI->getMask ( i ) == NULL ) {
             /* L'image n'a pas de masque, on la considère comme pleine. Ca ne sert à rien d'aller voir plus loin,
              * cette ligne du masque est déjà pleine */
             memset ( buffer, 255, width );
+            delete [] buffer_m;
             return width;
         } else {
             // Récupération du masque de l'image courante de l'MI.
-            uint8_t* buffer_m = new uint8_t[width];
             MI->getMask ( i )->getline ( buffer_m,line );
             // On ajoute au masque actuel (on écrase si la valeur est différente de 0)
             for ( int j = 0; j < width; j++ ) {
@@ -190,10 +192,10 @@ int MergeMask::_getline ( uint8_t* buffer, int line ) {
                     memcpy ( &buffer[j],&buffer_m[j],1 );
                 }
             }
-            delete [] buffer_m;
         }
     }
 
+    delete [] buffer_m;
     return width;
 }
 

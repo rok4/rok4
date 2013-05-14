@@ -48,6 +48,9 @@ private:
     // sont des multiples de step seront effectivement reprojetés. Les autres seront interpolés.
     static const int stepInt = 16;
 
+    // Ecart max dans l'unité de la grille entre les points de la première ligne
+    double deltaY;
+
     // Nombre de points reprojetés en X. nbx = 2 + (width-1)/step
     int nbx;
 
@@ -69,6 +72,8 @@ private:
     // Chaque tableau contient nbx*nby éléments
     double *gridX, *gridY;
 
+    inline void calculateDeltaY();
+
 public:
 
     int width, height;
@@ -78,6 +83,10 @@ public:
     Grid ( int width, int height, BoundingBox<double> bbox );
 
     ~Grid();
+
+    double getDeltaY() {
+        return deltaY;
+    }
 
     /**
     * Effecture une reprojection sur les coordonnées de la grille
@@ -111,6 +120,7 @@ public:
         LOGGER_INFO ( "\t- Last point distance :" );
         LOGGER_INFO ( "\t\t- X : " << endX );
         LOGGER_INFO ( "\t\t- Y : " << endY );
+        LOGGER_INFO ( "\t- First line Y-delta :" << deltaY );
     }
 
 };

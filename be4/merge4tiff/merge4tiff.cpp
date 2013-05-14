@@ -804,17 +804,6 @@ int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* 
         }
     }
 
-    if ( BGI ) TIFFClose ( BGI );
-    if ( BGM ) TIFFClose ( BGM );
-
-    for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) {
-            if ( INPUTI[i][j] ) TIFFClose ( INPUTI[i][j] );
-            if ( INPUTM[i][j] ) TIFFClose ( INPUTM[i][j] );
-        }
-
-    TIFFClose ( OUTPUTI );
-    if ( OUTPUTM ) TIFFClose ( OUTPUTM );
-
     return 0;
 }
 
@@ -893,6 +882,7 @@ int main ( int argc, char* argv[] ) {
         for ( int i = 0; i < samplesperpixel; i++ ) nodataFloat32[i] = ( float ) nodataInt[i];
 
         if ( merge<float> ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM ) < 0 ) error ( "Unable to merge float images",-1 );
+        delete [] nodataFloat32;
     }
     // Cas images
     else if ( sampleType.isUInt8() ) {
@@ -901,6 +891,21 @@ int main ( int argc, char* argv[] ) {
         for ( int i = 0; i < samplesperpixel; i++ ) nodataUInt8[i] = ( uint8_t ) nodataInt[i];
 
         if ( merge<uint8_t> ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM ) < 0 ) error ( "Unable to merge integer images",-1 );
+        delete [] nodataUInt8;
     }
+
+
+    LOGGER_DEBUG ( "Clean" );
+    if ( BGI ) TIFFClose ( BGI );
+    if ( BGM ) TIFFClose ( BGM );
+
+    for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) {
+        if ( INPUTI[i][j] ) TIFFClose ( INPUTI[i][j] );
+        if ( INPUTM[i][j] ) TIFFClose ( INPUTM[i][j] );
+    }
+
+    TIFFClose ( OUTPUTI );
+    if ( OUTPUTM ) TIFFClose ( OUTPUTM );
+    delete acc;
 }
 

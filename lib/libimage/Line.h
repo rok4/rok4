@@ -138,7 +138,7 @@ public:
         samples = new T[3*width];
         alpha = new float[width];
         mask = new uint8_t[width];
-        store ( imageIn, mask, srcSpp, transparent );
+        store ( imageIn, maskIn, srcSpp, transparent );
     }
 
     /** \~french
@@ -158,7 +158,7 @@ public:
         samples = new T[3*width];
         alpha = new float[width];
         mask = new uint8_t[width];
-        store ( imageIn, mask, srcSpp );
+        store ( imageIn, maskIn, srcSpp );
     }
 
     /** \~french
@@ -273,7 +273,6 @@ public:
 
 template<typename T>
 void Line<T>::alphaBlending ( Line<T>* above ) {
-    float finalAlpha;
     for ( int i = 0; i < width; i++ ) {
         if ( above->alpha[i] == 0. || ! above->mask[i] ) {
             // Le pixel de la ligne du dessus est transparent, ou n'est pas de la donnée, il ne change donc pas le pixel du dessous.

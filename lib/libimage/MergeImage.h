@@ -131,7 +131,9 @@ private:
 
     /**
      * \~french \brief Images sources, toutes semblables, utilisée pour assembler l'image fusionnée
+     * \details L'image en première position est celle du dessous
      * \~english \brief Source images, similar, to make the merged image
+     * \details First image is the bottom one
      */
     std::vector<Image*> images;
 
@@ -236,9 +238,13 @@ public:
      * \brief Default destructor
      */
     virtual ~MergeImage() {
-        for ( int i = 0; i < images.size(); i++ ) {
-            delete images[i];
+        if (! isMask) {
+            for ( int i = 0; i < images.size(); i++ ) {
+                delete images[i];
+            }
         }
+        delete [] bgValue;
+        if (transparentValue != NULL) delete [] transparentValue;
     }
 
     /** \~french

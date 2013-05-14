@@ -71,7 +71,7 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
 
     /* On choisit de mémoriser 2*Ky lignes sources, cela permet de ne pas charger deux fois la même ligne source
      * Ky n'est pas assez, peut-être peut-on passer à 1.5*Ky */
-    memorizedLines = 2*Ky;
+    memorizedLines = 2*Ky + ceil(grid->getDeltaY());
 
     /* -------------------- PLACE MEMOIRE ------------------- */
 
@@ -194,9 +194,10 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
     }
 
     /* ------------------------------------------------------ */
-    
+
+    LOGGER_DEBUG("Image reprojetée :");
     print();
-    LOGGER_DEBUG("Image source utilisée");
+    LOGGER_DEBUG("Utilisant l'image source :");
     sourceImage->print();
 }
 
@@ -221,8 +222,6 @@ int ReprojectedImage::getSourceLineIndex ( int line ) {
 }
 
 float* ReprojectedImage::computeDestLine ( int line ) {
-
-    //LOGGER_DEBUG("ligne à calculer : " << line); /*TEST*/
 
     if ( line/4 == dst_line_index ) {
         return dst_image_buffer[line%4];

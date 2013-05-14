@@ -104,7 +104,12 @@ private:
      */
     double ratioY;
 
-
+    /**
+     * \~french \brief Grille de reprojection
+     * \details La grille est utilisée pour connaître le pixel source correspondant à celui de l'image reprojetée.
+     * \~english \brief Reprojection grid
+     * \details The grid is used to know corresponding pixel in the source image.
+     */
     Grid* grid;
 
     /**
@@ -311,7 +316,6 @@ public:
      * \details Desallocate global #buffer __buffer, index buffer #src_line_index, buffers #src_image_buffer and #src_mask_buffer and remove #sourceImage
      */
     ~ReprojectedImage() {
-        delete sourceImage;
         _mm_free ( __buffer );
 
         delete[] src_image_buffer;
@@ -319,6 +323,9 @@ public:
         
         if ( useMask ) {delete[] src_mask_buffer;}
 
+        if (! isMask) {
+            delete sourceImage;
+        }
     }
 
     /** \~french
@@ -332,6 +339,7 @@ public:
         Image::print();
         LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
         LOGGER_INFO ( "\t- Ratio, x wise = " << ratioX << ", y wise = " << ratioY );
+        LOGGER_INFO ( "\t- Source lines buffer size = " << memorizedLines );
         grid->print();
         if ( useMask ) {
             LOGGER_INFO ( "\t- Use mask in interpolation" );

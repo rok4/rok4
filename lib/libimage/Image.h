@@ -90,7 +90,14 @@ public:
      */
     const int channels;
 
-private:
+protected:
+    /**
+     * \~french \brief L'image est-ell un masque ?
+     * \~english \brief Is this image a mask ?
+     */
+    bool isMask;
+
+private:    
     /**
      * \~french \brief Masque de donnée associé à l'image, facultatif
      * \~english \brief Mask associated to the image, optionnal
@@ -127,6 +134,16 @@ private:
 
 
 public:
+
+    /**
+     * \~french
+     * \brief Définit l'image comme un masque
+     * \~english
+     * \brief Define the image as a mask
+     */
+    inline void makeMask () {
+        isMask = true;
+    }
 
     /**
      * \~french
@@ -229,7 +246,7 @@ public:
      * \brief Return the associated mask
      * \return mask
      */
-    Image* getMask() {
+    inline Image* getMask() {
         return mask;
     }
 
@@ -241,7 +258,7 @@ public:
      * \brief Defined data mask and check consistency
      * \param[in] newMask Masque de donnée
      */
-    bool setMask ( Image* newMask ) {
+    inline bool setMask ( Image* newMask ) {
         if ( newMask->width != width || newMask->height != height || newMask->channels != 1 ) {
             LOGGER_ERROR ( "Unvalid mask" );
             LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->channels );
@@ -249,7 +266,10 @@ public:
             LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->height );
             return false;
         }
+        
         mask = newMask;
+        mask->makeMask();
+        
         return true;
     }
 
@@ -405,7 +425,7 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ) {}
+        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false) {}
 
     /**
      * \~french
@@ -420,7 +440,7 @@ public:
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
      */
-    Image ( int width, int height, int channels ) : width ( width ), height ( height ), channels ( channels ), resx ( 1.), resy (1.), bbox (BoundingBox<double>(0., 0., (double) width, (double) height)), mask ( NULL ) {}
+    Image ( int width, int height, int channels ) : width ( width ), height ( height ), channels ( channels ), resx ( 1.), resy (1.), bbox (BoundingBox<double>(0., 0., (double) width, (double) height)), mask ( NULL ), isMask(false) {}
 
     /**
      * \~french
@@ -438,7 +458,7 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ) {
+        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ), isMask(false) {
         computeResolutions();
     }
 
@@ -461,7 +481,7 @@ public:
     Image ( int width, int height, int channels, double resx, double resy) :
         width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ),
         bbox (BoundingBox<double>(0., 0., resx * (double) width, resy * (double) height)),
-        mask ( NULL ) {}
+        mask ( NULL ), isMask(false) {}
 
     /**
      * \~french
@@ -491,7 +511,7 @@ public:
      * \brief Default destructor
      */
     virtual ~Image() {
-        //if (mask != NULL) delete mask;
+        if (mask != NULL) delete mask;
     }
 
     /**
@@ -505,6 +525,11 @@ public:
         LOGGER_INFO ( "\t- samples per pixel = " << channels );
         LOGGER_INFO ( "\t- bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax );
         LOGGER_INFO ( "\t- x resolution = " << resx << ", y resolution = " << resy );
+        if ( isMask ) {
+            LOGGER_INFO ( "\t- Is a mask\n" );
+        } else {
+            LOGGER_INFO ( "\t- Is not a mask\n" );
+        }
         if ( mask ) {
             LOGGER_INFO ( "\t- Own a mask\n" );
         } else {

@@ -461,8 +461,8 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
     char tmpPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     int rootLength = strlen ( outImagesRoot );
 
-    memset ( imageFileName, 0, strlen ( imageFileName ) );
-    memset ( maskFileName, 0, strlen ( maskFileName ) );
+    memset ( imageFileName, 0, LIBTIFFIMAGE_MAX_FILENAME_LENGTH );
+    memset ( maskFileName, 0, LIBTIFFIMAGE_MAX_FILENAME_LENGTH );
 
     while ( str.empty() ) {
         if ( file.eof() ) {
@@ -840,44 +840,39 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
  *
  * \param[in] pECI paquet d'images compatibles, auquel on veut ajouter les miroirs
  * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
- * \return paquet d'images contenant les miroirs
+ * \return VRAI dans le cas d'un succès, FAUX sinon.
  */
-ExtendedCompoundImage* addMirrors ( ExtendedCompoundImage* pECI,int mirrorSize ) {
+bool addMirrors ( ExtendedCompoundImage* pECI,int mirrorSize ) {
     MirrorImageFactory MIF;
-    ExtendedCompoundImageFactory ECIF ;
     std::vector< Image*>  mirrorImages;
 
-    uint i = 0;
-    while ( i<pECI->getImages()->size() ) {
-        for ( int j=0; j<4; j++ ) {
+    for (uint i = 0; i<pECI->getImages()->size(); i++ ) {
+        for ( int j = 0; j < 4; j++ ) {
             MirrorImage* mirrorImage = MIF.createMirrorImage ( pECI->getImage ( i ), j, mirrorSize );
             if ( mirrorImage == NULL ) {
                 LOGGER_ERROR ( "Unable to calculate image's mirror" );
-                return NULL;
+                return false;
             }
 
             if ( pECI->getMask ( i ) ) {
                 MirrorImage* mirrorMask = MIF.createMirrorImage ( pECI->getMask ( i ), j, mirrorSize );
                 if ( mirrorMask == NULL ) {
                     LOGGER_ERROR ( "Unable to calculate mask's mirror" );
-                    return NULL;
+                    return false;
                 }
                 if ( ! mirrorImage->setMask ( mirrorMask ) ) {
                     LOGGER_ERROR ( "Unable to add mask to mirror" );
-                    return NULL;
+                    return false;
                 }
             }
 
             mirrorImages.push_back ( mirrorImage );
         }
-        i++;
     }
 
-    mirrorImages.insert ( mirrorImages.end(),pECI->getImages()->begin(),pECI->getImages()->end() );
+    pECI->insertMirrors(mirrorImages);
 
-    ExtendedCompoundImage* pECI_mirrors = ECIF.createExtendedCompoundImage ( mirrorImages,pECI->getNodata(), i*4 );
-
-    return pECI_mirrors;
+    return true;
 }
 
 /**
@@ -905,12 +900,14 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
                      std::vector<std::vector<Image*> >& TabImageIn, // Entrée
                      ExtendedCompoundImage** ppECIout, // Résultat du merge
                      int* nodata ) {
+    
     ExtendedCompoundImageFactory ECIF ;
     std::vector<Image*> pOverlayedImages;
 
     // Valeurs utilisées pour déterminer la taille des miroirs en pixel (taille optimale en fonction du noyau utilisé)
     const Kernel& K = Kernel::getInstance ( interpolation );
     double resx_dst = pImageOut->getResX();
+    double resy_dst = pImageOut->getResY();
 
     for ( unsigned int i=0; i<TabImageIn.size(); i++ ) {
         // Mise en superposition du paquet d'images en 2 etapes
@@ -939,21 +936,21 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
 
             // Ajout des miroirs
             int mirrorSizeX = ceil ( K.size ( resx_dst/pECI->getResX() ) ) + 1;
-            ExtendedCompoundImage* pECI_M = addMirrors ( pECI,mirrorSizeX );
-            if ( pECI_M == NULL ) {
+            int mirrorSizeY = ceil ( K.size ( resy_dst/pECI->getResX() ) ) + 1;
+
+            int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
+
+            // On mémorise la bbox d'origine, sans les miroirs
+            BoundingBox<double> bboxOrig = pECI->getBbox();
+            
+            if ( ! addMirrors ( pECI, mirrorSize ) ) {
                 LOGGER_ERROR ( "Unable to add mirrors" );
                 return -1;
             }
 
-            ExtendedCompoundMask* pECMI_M = new ExtendedCompoundMask ( pECI_M );
-            if ( ! pECI_M->setMask ( pECMI_M ) ) {
-                LOGGER_ERROR ( "Cannot add mask to the Image's pack with mirrors !" );
-                return -1;
-            }
-
-            ResampledImage* pResampledImage = resampleImages ( pImageOut, pECI_M, pECI->getBbox() );
+            ResampledImage* pResampledImage = resampleImages ( pImageOut, pECI, bboxOrig );
             if ( pResampledImage == NULL ) {
-                LOGGER_ERROR ( "Cannot resample Image's pack" );
+                LOGGER_ERROR ( "Cannot resample images' pack" );
                 return -1;
             }
 

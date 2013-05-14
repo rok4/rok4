@@ -58,8 +58,9 @@
 
 /* ----- Pour la lecture ----- */
 LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
+    
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sampleformat=0, photometric=0, compression=0, rowsperstrip=0;
-    TIFF* tif=TIFFOpen ( filename, "r" );
+    TIFF* tif = TIFFOpen ( filename, "r" );
 
     if ( tif == NULL ) {
         LOGGER_ERROR ( "Unable to open (to read) " << filename );
@@ -125,9 +126,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
                 LOGGER_ERROR ( "Alpha sample is unassociated for the file " << filename );
                 return NULL;
             }
-            delete [] extrasamples;
         }
-
     }
 
     if ( tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG ) {
@@ -314,14 +313,11 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( ST.isUInt8() ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
-            
             pIn->getline ( buf_u,line );
-            //LOGGER_DEBUG("get line OK ");
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
                 LOGGER_DEBUG ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
             }
-            //LOGGER_DEBUG("write line OK ");
         }
     } else if ( ST.isFloat() ) {
         buf_f = ( float* ) _TIFFmalloc ( width * channels * getBitsPerSample() /8 );

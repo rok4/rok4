@@ -98,7 +98,7 @@ int main ( int argc, char **argv ) {
 
 
     bool useMask = true;
-    bool writeMask = false;
+    bool writeMask = true;
     if (writeMask) useMask = true;
 
     LOGGER_INFO ( "IMPORTANT : fonction de test de la classe ReprojectedImage avec masque de donnée" );
@@ -108,8 +108,8 @@ int main ( int argc, char **argv ) {
     double resX_src = 100.;
     double resY_src = 100.;
 
-    //CRS SRS_dst ( "EPSG:3857" );
     CRS SRS_dst ( "EPSG:3857" );
+    //CRS SRS_dst ( "EPSG:2154" );
     //BoundingBox<double> BBOX_dst ( 700000, 6280000, 900000, 6480000 );
     BoundingBox<double> BBOX_dst ( 700000., 5350000, 900000., 5550000. );
     //BoundingBox<double> BBOX_dst (500000., 5500000, 700000., 5700000.);
@@ -141,7 +141,6 @@ int main ( int argc, char **argv ) {
             LOGGER_ERROR ( "Cannot add mask to the Resampled Image" );
             return 1;
         }
-        LOGGER_DEBUG("pouet");
     }
 
     /*********************************************************************/
@@ -169,6 +168,7 @@ int main ( int argc, char **argv ) {
     if (writeMask) {
         LOGGER_DEBUG("On crée le masque reprojeté");
         reprojMask = new ReprojectedImage ( mask_src, BBOX_dst, grid, Interpolation::NEAREST_NEIGHBOUR );
+        reprojImage->setMask(reprojMask);
     }
 
     /*********************************************************************/
@@ -204,7 +204,7 @@ int main ( int argc, char **argv ) {
     delete grid;
 
     if (useMask) {
-        delete reprojMask;
+        //delete reprojMask;
         if (writeMask) delete mask_out;
     }
 

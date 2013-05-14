@@ -93,11 +93,24 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
             }
         }
     }
+
+    calculateDeltaY();
 }
 
 Grid::~Grid() {
     delete[] gridX;
     delete[] gridY;
+}
+
+inline void Grid::calculateDeltaY() {
+    double min = gridY[0];
+    double max = gridY[0];
+    for ( int x = 1 ; x < nbx; x++ ) {
+        min = std::min(min, gridY[x]);
+        max = std::max(max, gridY[x]);
+    }
+
+    deltaY = max - min;
 }
 
 void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
@@ -124,6 +137,9 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
         bbox.ymin = bbox.ymax*Ay + By;
         bbox.ymax = ymintmp*Ay + By;
     }
+
+    deltaY = deltaY * fabs(Ay);
+    LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
 }
 
 /**
@@ -132,8 +148,6 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
  * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
  * ou proj est une projection de from_srs vers to_srs
  */
-
-// TODO : la projection est faite 2 fois. essayer de ne la faire faire qu'une fois.
 
 bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     LOGGER_DEBUG ( from_srs<<" -> " <<to_srs );
@@ -223,6 +237,10 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
         return false;
     }
 
+    /****************** Mise à jour du deltaY **********************/
+    calculateDeltaY();
+    LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
+
     // Nettoyage
     pj_free ( pj_src );
     pj_free ( pj_dst );
@@ -274,19 +292,4 @@ int Grid::interpolate_line ( int line, float* X, float* Y ) {
 
     return width;
 
-// int ky = line / stepInt;
-//     double w = ( stepInt - ( line%stepInt ) ) /double ( stepInt );
-//     double LX[nbx], LY[nbx];
-//     for ( int i = 0; i < nbx; i++ ) {
-//         LX[i] = w*gridX[ky*nbx + i] + ( 1-w ) *gridX[ky * nbx + nbx + i];
-//         LY[i] = w*gridY[ky*nbx + i] + ( 1-w ) *gridY[ky * nbx + nbx + i];
-//     }
-// 
-//     for ( int i = 0; i < width; i++ ) {
-//         int kx = i / stepInt;
-//         double w = ( stepInt - ( i%stepInt ) ) /double ( stepInt );
-//         X[i] = w*LX[kx] + ( 1-w ) *LX[kx+1];
-//         Y[i] = w*LY[kx] + ( 1-w ) *LY[kx+1];
-//     }
-//     return width;
 }

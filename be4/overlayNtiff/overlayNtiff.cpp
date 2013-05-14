@@ -55,7 +55,7 @@
  * \li flottant sur 32 bits
  *
  * On doit préciser en paramètre de la commande :
- * \li Un fichier texte contenant l'image finale, puis les images sources. On peut trouver également les masques associés aux images. L'ordre a de l'importance, les premières images sources seront considérées comme allant sur le dessus, quelque soit la méthode utilisée pour la fusion.
+ * \li Un fichier texte contenant l'image finale, puis les images sources. On peut trouver également les masques associés aux images. L'ordre a de l'importance, les premières images sources seront considérées comme allant en dessous, quelque soit la méthode utilisée pour la fusion.
  * Format d'une ligne du fichier : \code<CHEMIN DE L'IMAGE> [<CHEMIN DU MASQUE ASSOCIÉ>]\endcode
  * Exemple de configuration :
  * \~ \code{.txt}
@@ -604,6 +604,7 @@ int main ( int argc, char **argv ) {
     }
 
     delete acc;
+    delete pMergeIn;
     delete pImageOut;
     delete pMaskOut;
 
