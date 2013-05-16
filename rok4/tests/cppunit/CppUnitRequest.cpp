@@ -44,7 +44,8 @@
 #include <vector>
 #include "Request.h"
 #include "Request.cpp"
-
+#include "ConfLoader.h"
+#include "ConfLoader.cpp"
 
 
 class CppUnitRequest : public CPPUNIT_NS::TestFixture {
@@ -57,13 +58,56 @@ class CppUnitRequest : public CPPUNIT_NS::TestFixture {
     CPPUNIT_TEST ( testremoveNameSpace );
     CPPUNIT_TEST ( testhasParam );
     CPPUNIT_TEST ( testgetParam );
+    CPPUNIT_TEST ( testgetCapWMSParam );
+    CPPUNIT_TEST ( testgetCapWMTSParam );
     CPPUNIT_TEST_SUITE_END();
 
 protected:
     unsigned char monhaxedecimal_majuscule;
+    // For services conf
+    std::string name;
+    std::string title;
+    std::string abstract;
+    std::vector<Keyword> keyWords;
+    std::string serviceProvider;
+    std::string fee;
+    std::string accessConstraint;
+    unsigned int layerLimit;
+    unsigned int maxWidth;
+    unsigned int maxHeight;
+    unsigned int maxTileX;
+    unsigned int maxTileY;
+    bool postMode;
+    //Contact Info
+    std::string providerSite;
+    std::string individualName;
+    std::string individualPosition;
+    std::string voice;
+    std::string facsimile;
+    std::string addressType;
+    std::string deliveryPoint;
+    std::string city;
+    std::string administrativeArea;
+    std::string postCode;
+    std::string country;
+    std::string electronicMailAddress;
+    //WMS
+    std::vector<std::string> formatList;
+    std::vector<CRS> globalCRSList;
+    bool fullStyling;
+    //WMTS
+    std::string serviceType;
+    std::string serviceTypeVersion;
+    //INSPIRE
+    bool inspire;
+    std::vector<std::string> applicationProfileList;
+    std::string metadataUrlWMS;
+    std::string metadataMediaTypeWMS;
+    std::string metadataUrlWMTS;
+    std::string metadataMediaTypeWMTS;
+    ServicesConf * services_conf;
 
 public:
-    // Cette fonction est toujours appelée lors du démarage des tests de ce fichier
     void setUp();
 
     void tearDown();
@@ -76,15 +120,47 @@ protected:
     void testremoveNameSpace();
     void testhasParam();
     void testgetParam();
+    void testgetCapWMSParam();
+    void testgetCapWMTSParam();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitRequest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION ( CppUnitRequest, "CppUnitRequest" );
 
 void CppUnitRequest::setUp() {
-
-    
     monhaxedecimal_majuscule = 'E';
+    
+    // Load service conf
+    name = "";
+    title = "";
+    abstract = "";
+    serviceProvider = "";
+    fee = "";
+    accessConstraint = "";
+    providerSite="";
+    individualName="";
+    individualPosition="";
+    voice="";
+    facsimile="";
+    addressType="";
+    deliveryPoint="";
+    city="";
+    administrativeArea="";
+    postCode="";
+    country="";
+    electronicMailAddress="";
+    postMode = false;
+    fullStyling = false;
+    inspire = false;
+    serviceType="";
+    serviceTypeVersion="3.3.3";
+    MetadataURL mtdMWS = MetadataURL ( "simple", metadataUrlWMS,metadataMediaTypeWMS );
+    MetadataURL mtdWMTS = MetadataURL ( "simple", metadataUrlWMTS,metadataMediaTypeWMTS );
+    services_conf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      providerSite, individualName, individualPosition, voice, facsimile,
+                                      addressType, deliveryPoint, city, administrativeArea, postCode, country,
+                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
  }
 
 void CppUnitRequest::testhex2int() {
@@ -252,5 +328,104 @@ void CppUnitRequest::testgetParam() {
     delete marequete;
 }
 
+void CppUnitRequest::testgetCapWMSParam() {
+    // Create request
+    std::string strquerystring("www.marequete.com/adresse");
+    char* strquery = new char[strquerystring.size()+1];
+    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
+    std::string hostNamestring("127.0.0.1");
+    char* hostName = new char[hostNamestring.size()+1];
+    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
+    std::string pathNamestring("/chemin/chemin2");
+    char* path = new char[pathNamestring.size()+1];
+    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
+    std::string httpsstring("https://");
+    char* https = new char[httpsstring.size()+1];
+    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
+    Request* marequete = new Request(strquery,hostName,path,https);
+    // Create version, useless arg? for now
+    //   This is used as a return value
+    std::string versionstring("useless");
+
+    // If the request is not for a WMS service there is an error
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete->getCapWMSParam(*services_conf, versionstring)) != NULL ) ;
+
+    // Add the service WMS
+    marequete->service = "wms";
+
+    // If there is no version in the param, the version is put to 1.3.0
+    //   and no error is returned (NULL is returned)
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
+    
+    // Add an invalid version param
+    //   This time there is a value (the error) returned
+    marequete->params.insert( std::pair<std::string, std::string> ("version","1.2.3"));
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete->getCapWMSParam(*services_conf, versionstring)) != NULL ) ;
+
+    // We now add a valid version param value
+    //   and no error is returned (NULL is returned)
+    Request* marequete2 = new Request(strquery,hostName,path,https);
+    marequete2->params.insert( std::pair<std::string, std::string> ("version","1.3.0"));
+    marequete2->service = "wms";
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete2->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
+
+    delete hostName;
+    delete path;
+    delete https;
+    delete strquery;
+    delete marequete;
+    delete marequete2;
+}
+
+void CppUnitRequest::testgetCapWMTSParam() {
+    // Create request
+    std::string strquerystring("www.marequete.com/adresse");
+    char* strquery = new char[strquerystring.size()+1];
+    memcpy(strquery,strquerystring.c_str(),strquerystring.size()+1);
+    std::string hostNamestring("127.0.0.1");
+    char* hostName = new char[hostNamestring.size()+1];
+    memcpy(hostName,hostNamestring.c_str(),hostNamestring.size()+1);
+    std::string pathNamestring("/chemin/chemin2");
+    char* path = new char[pathNamestring.size()+1];
+    memcpy(path,pathNamestring.c_str(),pathNamestring.size()+1);
+    std::string httpsstring("https://");
+    char* https = new char[httpsstring.size()+1];
+    memcpy(https,httpsstring.c_str(),httpsstring.size()+1);
+    Request* marequete = new Request(strquery,hostName,path,https);
+    // This is used as a return value
+    std::string versionstring("usefull");
+
+    // If the request is not for a WMS service there is an error
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMTSParam :\n", (marequete->getCapWMTSParam(*services_conf, versionstring)) != NULL ) ;
+
+    // Add the service WMS
+    marequete->service = "wmts";
+
+    // If there is no version in the param, the version is put to 1.3.0
+    //   and no error is returned (NULL is returned)
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMTSParam :\n", (marequete->getCapWMTSParam(*services_conf, versionstring)) == NULL ) ;
+    
+    // Add an invalid version param
+    //   This time there is a value (the error) returned
+    marequete->params.insert( std::pair<std::string, std::string> ("version","1.2.3"));
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMTSParam :\n", (marequete->getCapWMTSParam(*services_conf, versionstring)) != NULL ) ;
+
+    // We now add a valid version param value
+    //   and no error is returned (NULL is returned)
+    //   The valid param is defined at the begining of this test file (serviceTypeVersion)
+    Request* marequete2 = new Request(strquery,hostName,path,https);
+    marequete2->params.insert( std::pair<std::string, std::string> ("version","3.3.3"));
+    marequete2->service = "wmts";
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMTSParam :\n", (marequete2->getCapWMTSParam(*services_conf, versionstring)) == NULL ) ;
+
+    delete hostName;
+    delete path;
+    delete https;
+    delete strquery;
+    delete marequete;
+    delete marequete2;
+}
+
 void CppUnitRequest::tearDown() {
+    delete services_conf;
 }

@@ -57,7 +57,6 @@ protected:
 
 
 public:
-    // Cette fonction est toujours appelée lors du démarage des tests de ce fichier
     void setUp();
 
     void tearDown();
@@ -81,13 +80,13 @@ void CppUnitCapabilitiesBuilder::testnumToStr() {
 }
 
 void CppUnitCapabilitiesBuilder::testdoubleToStr() {
+    // Results of approximations depend on the processor (32-bit, 64-bit...)
     // std::cout << doubleToStr(100.001);
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(1) == "1.0000000000000000" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(101e-02) == "1.0100000000000000" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(1.001) == "1.0009999999999999" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(100.001) == "100.0010000000000048" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(101e-02).erase(5, std::string::npos) == "1.010" || doubleToStr(101e-02).erase(5, std::string::npos) == "1.009" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(1.001).erase(6, std::string::npos) == "1.0010" || doubleToStr(1.001).erase(6, std::string::npos) == "1.0009") ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(100.001).erase(8, std::string::npos) == "100.0010" || doubleToStr(100.001).erase(7, std::string::npos) == "100.0009") ;
 }
 
 void CppUnitCapabilitiesBuilder::tearDown() {
-
+    
 }
