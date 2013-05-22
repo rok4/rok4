@@ -62,6 +62,8 @@
 #define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
 #endif
 
+/********************************************** ExtendedCompoundImage ************************************************/
+
 template <typename T>
 int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
     int i;
@@ -73,45 +75,40 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
     
     double y = l2y ( line );
 
-    for ( i=0; i < ( int ) images.size(); i++ ) {
+    for ( i=0; i < ( int ) sourceImages.size(); i++ ) {
         // On ecarte les images qui ne se trouvent pas sur la ligne
         // On evite de comparer des coordonnees terrain (comparaison de flottants)
         // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
 
-        if ( y2l ( images[i]->getYmin() ) <= line || y2l ( images[i]->getYmax() ) > line ) {
+        if ( y2l ( sourceImages[i]->getYmin() ) <= line || y2l ( sourceImages[i]->getYmax() ) > line ) {
             continue;
         }
-        if ( images[i]->getXmin() >= getXmax() || images[i]->getXmax() <= getXmin() ) {
+        if ( sourceImages[i]->getXmin() >= getXmax() || sourceImages[i]->getXmax() <= getXmin() ) {
             continue;
         }
 
         // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max ( 0,x2c ( images[i]->getXmin() ) );
+        int c0=__max ( 0,x2c ( sourceImages[i]->getXmin() ) );
         // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min ( width,x2c ( images[i]->getXmax() ) );
+        int c1=__min ( width,x2c ( sourceImages[i]->getXmax() ) );
 
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=- ( __min ( 0,x2c ( images[i]->getXmin() ) ) );
+        int c2=- ( __min ( 0,x2c ( sourceImages[i]->getXmin() ) ) );
 
-        T* buffer_t = new T[images[i]->width*images[i]->channels];
+        T* buffer_t = new T[sourceImages[i]->getWidth()*sourceImages[i]->channels];
         //LOGGER_DEBUG ( i<<" "<<line<<" "<<images[i]->y2l ( y ) );
-        images[i]->getline ( buffer_t,images[i]->y2l ( y ) );
+
+        sourceImages[i]->getline ( buffer_t,sourceImages[i]->y2l ( y ) );
 
         if ( getMask ( i ) == NULL ) {
             memcpy ( &buffer[c0*channels], &buffer_t[c2*channels], ( c1-c0 ) *channels*sizeof ( T ) );
         } else {
 
-            uint8_t* buffer_m = new uint8_t[getMask ( i )->width];
+            uint8_t* buffer_m = new uint8_t[getMask ( i )->getWidth()];
             getMask ( i )->getline ( buffer_m,getMask ( i )->y2l ( y ) );
 
             for ( int j=0; j < c1-c0; j++ ) {
                 if ( buffer_m[c2+j] ) {
-                    if ( c2+j >= images[i]->width ) {
-                        // On dépasse la largeur de l'image courante (arrondis). On passe.
-                        // Une sortie pour vérifier si ce cas se représente malgré les corrections
-                        LOGGER_ERROR ( "Dépassement : demande la colonne "<<c2+j+1<<" sur "<<images[i]->width );
-                        continue;
-                    }
                     memcpy ( &buffer[ ( c0+j ) *channels],&buffer_t[ ( c2+j ) *channels],sizeof ( T ) *channels );
                 }
             }
@@ -133,6 +130,136 @@ int ExtendedCompoundImage::getline ( uint8_t* buffer, int line ) {
 int ExtendedCompoundImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
 }
+
+bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
+    MirrorImageFactory MIF;
+    std::vector< Image*>  mirrorImages;
+
+    for (uint i = 0; i < sourceImages.size(); i++ ) {
+        for ( int j = 0; j < 4; j++ ) {
+            MirrorImage* mirrorImage = MIF.createMirrorImage ( sourceImages.at( i ), j, mirrorSize );
+            if ( mirrorImage == NULL ) {
+                LOGGER_ERROR ( "Unable to calculate image's mirror" );
+                return false;
+            }
+
+            if ( sourceImages.at( i )->getMask() ) {
+                MirrorImage* mirrorMask = MIF.createMirrorImage ( sourceImages.at( i )->getMask(), j, mirrorSize );
+                if ( mirrorMask == NULL ) {
+                    LOGGER_ERROR ( "Unable to calculate mask's mirror" );
+                    return false;
+                }
+                mirrorMask->print();
+                if ( ! mirrorImage->setMask ( mirrorMask ) ) {
+                    LOGGER_ERROR ( "Unable to add mask to mirror" );
+                    return false;
+                }
+            }
+
+            mirrorImages.push_back ( mirrorImage );
+        }
+    }
+
+    sourceImages.insert ( sourceImages.begin(),mirrorImages.begin(),mirrorImages.end() );
+    mirrorsNumber = mirrorImages.size();
+
+    // Mise à jour des dimensions en tenant compte des miroirs : BBOX et tailles pixel
+    for ( unsigned int j = 0; j < mirrorsNumber; j++ ) {
+        if ( sourceImages.at ( j )->getXmin() < bbox.xmin )  bbox.xmin = sourceImages.at ( j )->getXmin();
+        if ( sourceImages.at ( j )->getYmin() < bbox.ymin )  bbox.ymin = sourceImages.at ( j )->getYmin();
+        if ( sourceImages.at ( j )->getXmax() > bbox.xmax )  bbox.xmax = sourceImages.at ( j )->getXmax();
+        if ( sourceImages.at ( j )->getYmax() > bbox.ymax )  bbox.ymax = sourceImages.at ( j )->getYmax();
+    }
+
+    width = int ( ( bbox.xmax-bbox.xmin ) / getResX() + 0.5 );
+    height = int ( ( bbox.ymax-bbox.ymin ) / getResY() + 0.5 );
+
+    // Mise à jour du masque associé à l'image composée
+    delete mask;
+    ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
+
+    if ( ! setMask(newMask) ) {
+        LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
+        return false;
+    }
+
+    return true;
+}
+
+bool ExtendedCompoundImage::changeExtent ( BoundingBox< double > newBbox ) {
+
+    /*** Vérification de la compatibilité des phases de la nouvelle bbox avec l'ancienne ***/
+    
+    double intpart;
+    double phi = 0;
+
+    double resX = getResX();
+    double resY = getResY();
+    
+    double phaseX = getPhaseX();
+    double phaseY = getPhaseY();
+
+    //XMIN
+    phi = modf ( newBbox.xmin/resX, &intpart );
+    if ( phi < 0. ) {
+        phi += 1.0;
+    }
+    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
+        return false;
+    }
+
+    // XMAX
+    phi = modf ( newBbox.xmax/resX, &intpart );
+    if ( phi < 0. ) {
+        phi += 1.0;
+    }
+    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
+        return false;
+    }
+
+    // YMIN
+    phi = modf ( newBbox.ymin/resY, &intpart );
+    if ( phi < 0. ) {
+        phi += 1.0;
+    }
+    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
+        return false;
+    }
+
+    // YMAX
+    phi = modf ( newBbox.ymax/resY, &intpart );
+    if ( phi < 0. ) {
+        phi += 1.0;
+    }
+    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
+        return false;
+    }
+
+    /******************** Mise à jour des dimensions **********************/
+
+    bbox = newBbox;
+
+    width = int ( ( bbox.xmax - bbox.xmin ) / getResX() + 0.5 );
+    height = int ( ( bbox.ymax - bbox.ymin ) / getResY() + 0.5 );
+
+    // Mise à jour du masque associé à l'image composée
+    delete mask;
+    ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
+
+    if ( ! setMask(newMask) ) {
+        LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
+        return false;
+    }
+
+    return true;
+
+}
+
+/****************************************** ExtendedCompoundImageFactory *********************************************/
 
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
@@ -192,6 +319,8 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     return new ExtendedCompoundImage ( width,height,channels,bbox,images,nodata,mirrors );
 }
 
+/********************************************** ExtendedCompoundMask *************************************************/
+
 int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {
 
     memset ( buffer,0,width );
@@ -220,7 +349,7 @@ int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {
             memset ( &buffer[c0], 255, c1-c0 );
         } else {
             // Récupération du masque de l'image courante de l'ECI.
-            uint8_t* buffer_m = new uint8_t[ECI->getMask ( i )->width];
+            uint8_t* buffer_m = new uint8_t[ECI->getMask ( i )->getWidth()];
             ECI->getMask ( i )->getline ( buffer_m,ECI->getMask ( i )->y2l ( l2y ( line ) ) );
             // On ajoute au masque actuel (on écrase si la valeur est différente de 0)
             for ( int j = 0; j < c1-c0; j++ ) {

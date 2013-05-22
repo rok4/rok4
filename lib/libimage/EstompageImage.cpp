@@ -60,7 +60,7 @@ int EstompageImage::getline ( uint8_t* buffer, int line ) {
 }
 
 EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, uint8_t center ) :
-    Image ( image->width, image->height, 1, image->getBbox() ),
+    Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
     origImage ( image ), estompage ( NULL ), exaggeration ( exaggeration ), center ( center ) {
 
     //   Sun direction
@@ -143,12 +143,12 @@ int EstompageImage::getOrigLine ( float* buffer, int line ) {
 
 
 void EstompageImage::generate() {
-    estompage = new uint8_t[origImage->width * origImage->height];
-    buffer = new float[origImage->width * 3];
+    estompage = new uint8_t[origImage->getWidth() * origImage->getHeight()];
+    buffer = new float[origImage->getWidth() * 3];
     float* lineBuffer[3];
     lineBuffer[0]= buffer;
-    lineBuffer[1]= lineBuffer[0]+origImage->width;
-    lineBuffer[2]= lineBuffer[1]+origImage->width;
+    lineBuffer[1]= lineBuffer[0]+origImage->getWidth();
+    lineBuffer[2]= lineBuffer[1]+origImage->getWidth();
 
     int line = 0;
     int nextBuffer = 0;
@@ -157,7 +157,7 @@ void EstompageImage::generate() {
     getOrigLine ( lineBuffer[2], line+2 );
     generateLine ( line++, lineBuffer[0],lineBuffer[0],lineBuffer[1] );
     generateLine ( line++, lineBuffer[0],lineBuffer[1],lineBuffer[2] );
-    while ( line < origImage->height -1 ) {
+    while ( line < origImage->getHeight() -1 ) {
         getOrigLine ( lineBuffer[nextBuffer], line+1 );
         generateLine ( line++, lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+2 ) %3],lineBuffer[nextBuffer] );
         nextBuffer = ( nextBuffer+1 ) %3;

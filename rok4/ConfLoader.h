@@ -172,6 +172,7 @@ public:
      * \return pointer to the newly created ServicesConf, NULL if something went wrong
      */
     static ServicesConf * buildServicesConf ( std::string servicesConfigFile );
+    void pElem();
 
 private:
     /**

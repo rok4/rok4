@@ -132,8 +132,8 @@ size_t PNGEncoder::write_IHDR ( uint8_t *buffer, size_t size, uint8_t colortype 
         LOGGER_ERROR ( "Type de couleur non gere : " << colortype );
         return 0;
     }
-    * ( ( uint32_t* ) ( buffer+16 ) ) = bswap_32 ( image->width ); // ajoute le champs width
-    * ( ( uint32_t* ) ( buffer+20 ) ) = bswap_32 ( image->height ); // ajoute le champs height
+    * ( ( uint32_t* ) ( buffer+16 ) ) = bswap_32 ( image->getWidth() ); // ajoute le champs width
+    * ( ( uint32_t* ) ( buffer+20 ) ) = bswap_32 ( image->getHeight() ); // ajoute le champs height
     buffer[25] = colortype;                               // ajoute le champs colortype
     addCRC ( buffer+8, 13 );                              // signe le chunck avca un CRC32
     line++;
@@ -165,16 +165,16 @@ size_t PNGEncoder::write_IDAT ( uint8_t *buffer, size_t size ) {
     zstream.next_out  = buffer + 8; // laisser 8 octets au debut pour le header du chunck
     zstream.avail_out = size - 12;  // et 4 octets à la fin pour crc32
 
-    while ( line >= 0 && line < image->height && zstream.avail_out > 0 ) { // compresser les données dans des chunck idat
+    while ( line >= 0 && line < image->getHeight() && zstream.avail_out > 0 ) { // compresser les données dans des chunck idat
         if ( zstream.avail_in == 0 ) {                                    // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
             image->getline ( linebuffer+1, line++ );
             zstream.next_in  = ( ( uint8_t* ) ( linebuffer+1 ) ) - 1;
-            zstream.avail_in = image->width * image->channels + 1;
+            zstream.avail_in = image->getWidth() * image->channels + 1;
         }
         if ( deflate ( &zstream, Z_NO_FLUSH ) != Z_OK ) return 0;         // return 0 en cas d'erreur.
     }
 
-    if ( line == image->height && zstream.avail_out > 6 ) { // plus d'entrée : il faut finaliser la compression
+    if ( line == image->getHeight() && zstream.avail_out > 6 ) { // plus d'entrée : il faut finaliser la compression
         int r = deflate ( &zstream, Z_FINISH );
         if ( r == Z_STREAM_END ) line++;                   // on indique que l'on a compressé fini en passant line ) height+1
         else if ( r != Z_OK ) return 0;                    // une erreur
@@ -198,13 +198,13 @@ size_t PNGEncoder::read ( uint8_t *buffer, size_t size ) {
     else if ( image->channels==4 )
         colortype=6;
     if ( line == -1 ) pos += write_IHDR ( buffer, size, colortype );
-    if ( line >= 0 && line <= image->height ) pos += write_IDAT ( buffer + pos, size - pos );
-    if ( line == image->height+1 ) pos += write_IEND ( buffer + pos, size - pos );
+    if ( line >= 0 && line <= image->getHeight() ) pos += write_IDAT ( buffer + pos, size - pos );
+    if ( line == image->getHeight()+1 ) pos += write_IEND ( buffer + pos, size - pos );
     return pos;
 }
 
 bool PNGEncoder::eof() {
-    return ( line > image->height+1 );
+    return ( line > image->getHeight()+1 );
 }
 
 PNGEncoder::PNGEncoder ( Image* image,Palette* palette ) : image ( image ), line ( -1 ), palette ( palette ) , stubpalette ( NULL ) {
@@ -214,7 +214,7 @@ PNGEncoder::PNGEncoder ( Image* image,Palette* palette ) : image ( image ), line
     zstream.data_type = Z_BINARY;
     deflateInit ( &zstream, 5 ); // taux de compression zlib
     zstream.avail_in = 0;
-    linebuffer = new uint8_t[image->width * image->channels + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
+    linebuffer = new uint8_t[image->getWidth() * image->channels + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
     linebuffer[0] = 0;
     if ( ! palette ) {
         stubpalette = new Palette();

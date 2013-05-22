@@ -49,12 +49,6 @@
 #include <proj_api.h>
 
 /**
- * \~french \brief Code utilisé en cas de non correspondance avec les référentiel de Proj
- * \~english \brief Used code when no corresponding Proj code is found
- */
-#define NO_PROJ4_CODE "noProj4Code"
-
-/**
  * \~french \brief Transforme la chaîne fournie en minuscule
  * \~english \brief Transform the string to lowercase
  */

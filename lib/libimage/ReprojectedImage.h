@@ -287,9 +287,28 @@ private:
 public:
 
     /** \~french
+     * \brief Crée un objet ReprojectedImage à partir de tous ses éléments constitutifs, sauf les résolutions (calculées)
+     * \param[in] image image source
+     * \param[in] bbox emprise rectangulaire de l'image reprojetée
+     * \param[in] grid grille de reprojection à utiliser
+     * \param[in] KT noyau d'interpolation à utiliser pour la reprojection
+     * \param[in] bUseMask précise si la reprojection doit tenir compte des masques
+     ** \~english
+     * \brief Create a ReprojectedImage object, from all attributes, except resolutions (calculated)
+     * \param[in] image source image
+     * \param[in] bbox reprojected image bounding box
+     * \param[in] grid reprojecting grid to use
+     * \param[in] KT interpolation kernel to use for reprojecting
+     * \param[in] bUseMask precise if reprojecting use masks
+     */
+    ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {initialize();}
+
+    /** \~french
      * \brief Crée un objet ReprojectedImage à partir de tous ses éléments constitutifs
      * \param[in] image image source
      * \param[in] bbox emprise rectangulaire de l'image reprojetée
+     * \param[in] resx résolution dans le sens des X
+     * \param[in] resy résolution dans le sens des Y
      * \param[in] grid grille de reprojection à utiliser
      * \param[in] KT noyau d'interpolation à utiliser pour la reprojection
      * \param[in] bUseMask précise si la reprojection doit tenir compte des masques
@@ -297,11 +316,20 @@ public:
      * \brief Create a ReprojectedImage object, from all attributes
      * \param[in] image source image
      * \param[in] bbox reprojected image bounding box
+     * \param[in] resx X wise resolution
+     * \param[in] resy Y wise resolution
      * \param[in] grid reprojecting grid to use
      * \param[in] KT interpolation kernel to use for reprojecting
      * \param[in] bUseMask precise if reprojecting use masks
      */
-    ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false );
+    ReprojectedImage ( Image *image, BoundingBox<double> bbox, double resx, double resy, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, resx, resy, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {initialize();}
+
+    /** \~french
+     * \brief Initialise les buffers de calcul
+     ** \~english
+     * \brief Initialize calculation's buffers
+     */
+    void initialize();
 
     int getline ( float* buffer, int line );
 
@@ -324,6 +352,8 @@ public:
         if ( useMask ) {delete[] src_mask_buffer;}
 
         if (! isMask) {
+            // Le masque utilise la même grille, c'est pourquoi seule l'image de données supprime la grille.
+            delete grid;
             delete sourceImage;
         }
     }
@@ -340,12 +370,12 @@ public:
         LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
         LOGGER_INFO ( "\t- Ratio, x wise = " << ratioX << ", y wise = " << ratioY );
         LOGGER_INFO ( "\t- Source lines buffer size = " << memorizedLines );
-        grid->print();
         if ( useMask ) {
             LOGGER_INFO ( "\t- Use mask in interpolation" );
         } else {
             LOGGER_INFO ( "\t- Doesn't use mask in interpolation" );
         }
+        grid->print();
         LOGGER_INFO ( "" );
     }
 

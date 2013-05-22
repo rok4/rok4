@@ -93,14 +93,14 @@ private:
      * \~english \brief Source images, consistent , to make the compounded image
      * \details First image is the bottom one
      */
-    std::vector<Image*> images;
+    std::vector<Image*> sourceImages;
 
     /**
      * \~french \brief Nombre de miroirs dans les images sources
      * \details Certaines images sources peuvent etre des miroirs (MirrorImage). Lors de la composition de l'image, on ne veut pas que les données des vraies images soient écrasées par des données "miroirs". C'est pourquoi on veut connaître le nombre d'images miroirs dans le tableau et on sait qu'elles sont placées au début.
      * \~english \brief Mirror images' number among source images
      */
-    uint mirrors;
+    uint mirrorsNumber;
 
     /**
      * \~french \brief Valeur de non-donnée
@@ -149,8 +149,8 @@ protected:
     ExtendedCompoundImage ( int width, int height, int channels, BoundingBox<double> bbox,
                             std::vector<Image*>& images, int* nd, uint mirrors ) :
         Image ( width, height,channels,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),bbox ),
-        images ( images ),
-        mirrors ( mirrors ) {
+        sourceImages ( images ),
+        mirrorsNumber ( mirrors ) {
             
             nodata = new int[channels];
             memcpy(nodata,nd,channels*sizeof(int));
@@ -166,7 +166,7 @@ public:
      * \return source images
      */
     std::vector<Image*>* getImages() {
-        return &images;
+        return &sourceImages;
     }
 
     /**
@@ -178,7 +178,7 @@ public:
      * \return mask presence
      */
     bool useMasks() {
-        for ( uint i=0; i < images.size(); i++ ) {
+        for ( uint i=0; i < sourceImages.size(); i++ ) {
             if ( getMask ( i ) ) return true;
         }
         return false;
@@ -195,7 +195,7 @@ public:
      * \return mask
      */
     Image* getMask ( int i ) {
-        return images.at ( i )->getMask();
+        return sourceImages.at ( i )->getMask();
     }
     /**
      * \~french
@@ -208,13 +208,25 @@ public:
      * \return image
      */
     Image* getImage ( int i ) {
-        return images.at ( i );
+        return sourceImages.at ( i );
     }
 
-    bool insertMirrors(std::vector< Image*> mirrorImages) {
-        images.insert ( images.begin(),mirrorImages.begin(),mirrorImages.end() );
-        mirrors = mirrorImages.size();
-    }
+    /**
+     * \~french \brief Ajoute des miroirs à chacune des images sources
+     * \~english \brief Add mirrors to source images
+     * \~ \image html miroirs.png \~french
+     * \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord.
+     *
+     * On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord).On sait distinguer les vraies images de celles virtuelles.
+     *
+     * On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
+     *
+     * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
+     * \return VRAI dans le cas d'un succès, FAUX sinon.
+     */
+    bool addMirrors ( int mirrorSize );
+
+    bool changeExtent ( BoundingBox<double> );
 
     /**
      * \~french
@@ -225,7 +237,7 @@ public:
      * \return mirror images' number
      */
     uint getMirrorsNumber() {
-        return mirrors;
+        return mirrorsNumber;
     }
 
     /**
@@ -253,8 +265,8 @@ public:
     virtual ~ExtendedCompoundImage() {
         delete[] nodata;
         if (! isMask) {
-            for ( uint i=0; i < images.size(); i++ ) {
-                delete images[i];
+            for ( uint i=0; i < sourceImages.size(); i++ ) {
+                delete sourceImages[i];
             }
         }
     }
@@ -268,11 +280,14 @@ public:
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "------ ExtendedCompoundImage -------" );
         Image::print();
-        LOGGER_INFO ( "\t- Number of images = " << images.size() );
-        LOGGER_INFO ( "\t- Number of mirrors = " << mirrors );
+        LOGGER_INFO ( "\t- Number of images = " << sourceImages.size() << ", whose " << mirrorsNumber << " mirrors" );
         LOGGER_INFO ( "\t- Nodata value " << nodata << "\n" );
     }
 };
+
+
+
+
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
@@ -324,6 +339,10 @@ public:
             std::vector<Image*>& images, int* nodata, uint mirrors );
 };
 
+
+
+
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -357,8 +376,8 @@ public:
      * \details Mask's components are extracted from the compounded image.
      * \param[in] ECI Compounded image
      */
-    ExtendedCompoundMask ( ExtendedCompoundImage*& ECI ) :
-        Image ( ECI->width, ECI->height, 1, ECI->getResX(), ECI->getResY(),ECI->getBbox() ),
+    ExtendedCompoundMask ( ExtendedCompoundImage* ECI ) :
+        Image ( ECI->getWidth(), ECI->getHeight(), 1, ECI->getResX(), ECI->getResY(),ECI->getBbox() ),
         ECI ( ECI ) {}
 
     int getline ( uint8_t* buffer, int line );

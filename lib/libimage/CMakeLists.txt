@@ -56,7 +56,6 @@ set(
     Format.cpp TiffHeaderDataSource.cpp
 )
 
-
 add_library(image STATIC ${libimage_SRCS})
 
 ########################################

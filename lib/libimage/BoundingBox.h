@@ -35,31 +35,30 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _BOUNDINGBOX_
-#define _BOUNDINGBOX_
+#ifndef BOUNDINGBOX_H
+#define BOUNDINGBOX_H
 
 /**
 * @file BoundingBox.h
-* @brief Implementation d'un rectangle englobant
+* @brief Définition d'un rectangle englobant
 * @author IGN France - Geoportail
 */
 
 #include "Logger.h"
 #include <proj_api.h>
-
-/*
-* @struct BoundingBox
-*/
+#include <sstream>
 
 template<typename T>
-struct BoundingBox {
+class BoundingBox {
     
 public:
     T xmin, ymin, xmax, ymax;
+
+    
     BoundingBox ( T xmin, T ymin, T xmax, T ymax ) :
         xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
 
-    template<typename T2>        
+    template<typename T2>
     BoundingBox ( const BoundingBox<T2>& bbox ) :
         xmin ( (T) bbox.xmin ), ymin ( (T) bbox.ymin ), xmax ( (T) bbox.xmax ), ymax ( (T) bbox.ymax ) {}
 
@@ -129,6 +128,13 @@ public:
     void print() {
         LOGGER_DEBUG ( "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax );
     }
+
+    std::string toStream() {
+        std::ostringstream oss;
+        oss << xmin << ", " << ymin << ", " << xmax << ", " << ymax;
+        return oss.str() ;
+    }
+    
 };
 #endif
 

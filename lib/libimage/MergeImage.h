@@ -186,7 +186,7 @@ protected:
      */
     MergeImage ( std::vector< Image* >& images, int channels,
                  int* bg, int* transparent, Merge::MergeType composition = Merge::NORMAL ) :
-        Image ( images.at ( 0 )->width,images.at ( 0 )->height, channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
+        Image ( images.at ( 0 )->getWidth(),images.at ( 0 )->getHeight(), channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
         images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ) {
 
         if ( transparentValue != NULL ) {
@@ -325,7 +325,7 @@ public:
      * \param[in] MI Compounded image
      */
     MergeMask ( MergeImage*& MI ) :
-        Image ( MI->width, MI->height, 1,MI->getResX(), MI->getResY(),MI->getBbox() ),
+        Image ( MI->getWidth(), MI->getHeight(), 1,MI->getResX(), MI->getResY(),MI->getBbox() ),
         MI ( MI ) {}
 
     int getline ( uint8_t* buffer, int line );

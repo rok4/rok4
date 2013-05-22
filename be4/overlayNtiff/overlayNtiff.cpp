@@ -461,12 +461,12 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
             // C'est notre première image en entrée, on mémorise lse caractéristiques)
             bitspersample = pImage->getBitsPerSample();
             sampleformat = pImage->getSampleFormat();
-            width = pImage->width;
-            height = pImage->height;
+            width = pImage->getWidth();
+            height = pImage->getHeight();
         } else {
             // Toutes les images en entrée doivent avoir certaines caractéristiques en commun
             if ( bitspersample != pImage->getBitsPerSample() || sampleformat != pImage->getSampleFormat() ||
-                    width != pImage->width || height != pImage->height ) {
+                    width != pImage->getWidth() || height != pImage->getHeight() ) {
 
                 LOGGER_ERROR ( "All input images must have same dimension and sample format" );
                 return -1;

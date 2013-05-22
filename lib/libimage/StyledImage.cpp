@@ -52,7 +52,7 @@ int StyledImage::getline ( uint8_t* buffer, int line ) {
     return origImage->getline ( buffer, line );
 }
 
-StyledImage::StyledImage ( Image* image, int expectedChannels, Palette* palette ) : Image ( image->width, image->height, expectedChannels, image->getBbox() ), origImage ( image ), palette ( palette ) {
+StyledImage::StyledImage ( Image* image, int expectedChannels, Palette* palette ) : Image ( image->getWidth(), image->getHeight(), expectedChannels, image->getBbox() ), origImage ( image ), palette ( palette ) {
     if ( !this->palette->getColoursMap()->empty() ) {
         channels = expectedChannels;
     } else {
@@ -66,13 +66,13 @@ StyledImage::~StyledImage() {
 
 
 int StyledImage::_getline ( uint8_t* buffer, int line ) {
-    float* source = new float[origImage->width*origImage->channels];
+    float* source = new float[origImage->getWidth()*origImage->channels];
     origImage->getline ( source, line );
     //TODO Optimize It
     int i = 0;
     switch ( channels ) {
     case 4:
-        for ( ; i < origImage->width ; i++ ) {
+        for ( ; i < origImage->getWidth() ; i++ ) {
             Colour iColour = palette->getColour ( * ( source+i ) );
             * ( buffer+i*4 ) = iColour.r;
             * ( buffer+i*4+1 ) = iColour.g;
@@ -80,7 +80,7 @@ int StyledImage::_getline ( uint8_t* buffer, int line ) {
             * ( buffer+i*4+3 ) = iColour.a;
         }
     case 3:
-        for ( ; i < origImage->width ; i++ ) {
+        for ( ; i < origImage->getWidth() ; i++ ) {
             Colour iColour = palette->getColour ( * ( source+i ) );
             * ( buffer+i*3 ) = iColour.r;
             * ( buffer+i*3+1 ) = iColour.g;

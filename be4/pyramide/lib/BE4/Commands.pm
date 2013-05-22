@@ -619,7 +619,7 @@ sub mergeNtiff {
     }
     
     my $mNtConfFilename = $node->getWorkBaseName.".txt";
-    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir},$mNtConfFilename);
+    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir}, $mNtConfFilename);
     
     if (! open CFGF, ">", $mNtConfFile ) {
         ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");

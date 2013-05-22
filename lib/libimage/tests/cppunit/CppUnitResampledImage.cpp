@@ -85,7 +85,7 @@ protected:
             ResampledImage* R = new ResampledImage ( image, rwidth, rheight,
                                                      resx, resy, BoundingBox<double>(xmin, ymin, xmax, ymax),
                                                      Interpolation::CUBIC, false );
-            float buffer[R->width*R->channels];
+            float buffer[R->getWidth()*R->channels];
             for ( int i = 0; i < rheight; i++ ) {
                 R->getline ( buffer, i );
                 for ( int j = 0; j < rwidth; j++ )

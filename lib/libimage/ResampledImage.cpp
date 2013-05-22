@@ -85,8 +85,8 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
     /* -------------------- PLACE MEMOIRE ------------------- */
 
     // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
-    int srcImgSize = 4* ( ( sourceImage->width*channels + 3 ) /4 );
-    int srcMskSize = 4* ( ( sourceImage->width + 3 ) /4 );
+    int srcImgSize = 4* ( ( sourceImage->getWidth()*channels + 3 ) /4 );
+    int srcMskSize = 4* ( ( sourceImage->getWidth() + 3 ) /4 );
 
     // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
     int outImgSize = 4* ( ( width*channels + 3 ) /4 );
@@ -178,7 +178,7 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
     float* W = Wx;
     for ( int x = 0; x < width; x++ ) {
         int lg = Kx;
-        xMin[x] = K.weight ( W, lg, left + x * ratioX, sourceImage->width );
+        xMin[x] = K.weight ( W, lg, left + x * ratioX, sourceImage->getWidth() );
         // On copie chaque poids en 4 exemplaires.
         for ( int i = lg-1; i >= 0; i-- ) for ( int j = 0; j < 4; j++ ) W[4*i + j] = W[i];
         W += 4*Kx;
@@ -197,7 +197,7 @@ int ResampledImage::resampleSourceLine ( int line ) {
      * On vérifie bien que les 4 lignes existent bel et bien (qu'on dépasse pas la hauteur de l'image source)
      */
     for ( int i = 0; i < 4; i++ ) {
-        if ( 4* ( line/4 ) + i < sourceImage->height ) {
+        if ( 4* ( line/4 ) + i < sourceImage->getHeight() ) {
             sourceImage->getline ( src_image_buffer[i], 4* ( line/4 ) + i );
             if ( useMask ) {
                 sourceImage->getMask()->getline ( src_mask_buffer[i], 4* ( line/4 ) + i );
@@ -219,13 +219,13 @@ int ResampledImage::resampleSourceLine ( int line ) {
      */
     multiplex ( mux_src_image_buffer,
                 src_image_buffer[0], src_image_buffer[1], src_image_buffer[2], src_image_buffer[3],
-                sourceImage->width*sourceImage->channels );
+                sourceImage->getWidth()*sourceImage->channels );
 
 
     if ( useMask ) {
         multiplex ( mux_src_mask_buffer,
                     src_mask_buffer[0], src_mask_buffer[1], src_mask_buffer[2], src_mask_buffer[3],
-                    sourceImage->width );
+                    sourceImage->getWidth() );
     }
 
     for ( int x = 0; x < width; x++ ) {
@@ -268,10 +268,11 @@ int ResampledImage::resampleSourceLine ( int line ) {
 }
 
 int ResampledImage::getline ( float* buffer, int line ) {
+    
     float weights[Ky];
 
     // On calcule les coefficient d'interpolation
-    int ymin = K.weight ( weights, Ky, top + line * ratioY, sourceImage->height );
+    int ymin = K.weight ( weights, Ky, top + line * ratioY, sourceImage->getHeight() );
 
     int index = resampleSourceLine ( ymin );
     if ( useMask ) {

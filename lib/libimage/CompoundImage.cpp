@@ -39,13 +39,13 @@
 
 int CompoundImage::computeWidth ( std::vector<std::vector<Image*> > &images ) {
     int width = 0;
-    for ( int x = 0; x < images[0].size(); x++ ) width += images[0][x]->width;
+    for ( int x = 0; x < images[0].size(); x++ ) width += images[0][x]->getWidth();
     return width;
 }
 
 int CompoundImage::computeHeight ( std::vector<std::vector<Image*> > &images ) {
     int height = 0;
-    for ( int y = 0; y < images.size(); y++ ) height += images[y][0]->height;
+    for ( int y = 0; y < images.size(); y++ ) height += images[y][0]->getHeight();
     return height;
 }
 
@@ -62,8 +62,8 @@ BoundingBox<double> CompoundImage::computeBbox ( std::vector<std::vector<Image*>
 template<typename T>
 inline int CompoundImage::_getline ( T* buffer, int line ) {
     // doit-on changer de tuile ?
-    while ( top + images[y][0]->height <= line ) top += images[y++][0]->height;
-    while ( top > line ) top -= images[--y][0]->height;
+    while ( top + images[y][0]->getHeight() <= line ) top += images[y++][0]->getHeight();
+    while ( top > line ) top -= images[--y][0]->getHeight();
     // on calcule l'indice de la ligne dans la sous tuile
     line -= top;
     for ( int x = 0; x < images[y].size(); x++ )

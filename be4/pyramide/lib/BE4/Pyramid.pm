@@ -1544,8 +1544,14 @@ sub getOldDataDir {
 
 # Function: getTmsName
 sub getTmsName {
-    my $self   = shift;
+    my $self = shift;
     return $self->{tms}->getName();
+}
+
+# Function: getSRS
+sub getSRS {
+    my $self = shift;
+    return $self->{tms}->getSRS();
 }
 
 # Function: getTileMatrixSet

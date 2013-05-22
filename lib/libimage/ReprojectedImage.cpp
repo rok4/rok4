@@ -54,11 +54,7 @@
 #include "Utils.h"
 #include <cmath>
 
-
-ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT, bool bMask ) :
-                                     
-    Image ( grid->width, grid->height,image->channels, bbox ),
-    sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {
+void ReprojectedImage::initialize () {
         
     ratioX = ( grid->bbox.xmax - grid->bbox.xmin ) / double ( width );
     ratioY = ( grid->bbox.ymax - grid->bbox.ymin ) / double ( height );
@@ -76,8 +72,8 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
     /* -------------------- PLACE MEMOIRE ------------------- */
 
     // nombre d'éléments d'une ligne de l'image source, arrondi au multiple de 4 supérieur.
-    int srcImgSize = 4* ( ( sourceImage->width*channels + 3 ) /4 );
-    int srcMskSize = 4* ( ( sourceImage->width + 3 ) /4 );
+    int srcImgSize = 4* ( ( sourceImage->getWidth()*channels + 3 ) /4 );
+    int srcMskSize = 4* ( ( sourceImage->getWidth() + 3 ) /4 );
 
     // nombre d'éléments d'une ligne de l'image calculée, arrondi au multiple de 4 supérieur.
     int outImgSize = 4* ( ( width*channels + 3 ) /4 );
@@ -189,16 +185,9 @@ ReprojectedImage::ReprojectedImage ( Image *image,  BoundingBox<double> bbox, Gr
     for ( int i = 0; i < 1024; i++ ) {
         int lgX = Kx;
         int lgY = Ky;
-        xmin[i] = K.weight ( Wx[i], lgX, double ( i ) /1024. + Kx, sourceImage->width ) - Kx;
-        ymin[i] = K.weight ( Wy[i], lgY, double ( i ) /1024. + Ky, sourceImage->height ) - Ky;
+        xmin[i] = K.weight ( Wx[i], lgX, double ( i ) /1024. + Kx, sourceImage->getWidth() ) - Kx;
+        ymin[i] = K.weight ( Wy[i], lgY, double ( i ) /1024. + Ky, sourceImage->getHeight() ) - Ky;
     }
-
-    /* ------------------------------------------------------ */
-
-    LOGGER_DEBUG("Image reprojetée :");
-    print();
-    LOGGER_DEBUG("Utilisant l'image source :");
-    sourceImage->print();
 }
 
 int ReprojectedImage::getSourceLineIndex ( int line ) {

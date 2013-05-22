@@ -137,7 +137,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     SampleType ST = SampleType ( bitspersample,sampleformat );
 
     if ( ! ST.isSupported() ) {
-        LOGGER_ERROR ( "Supported sample format are 8-bit unsigned integer and 32-bit float" );
+        LOGGER_ERROR ( "Supported sample format are :\n" + ST.getHandledFormat() );
         return NULL;
     }
 

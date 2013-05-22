@@ -148,11 +148,11 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
         return NULL;
     }
 
-    int width = images.at ( 0 )->width;
-    int height = images.at ( 0 )->height;
+    int width = images.at ( 0 )->getWidth();
+    int height = images.at ( 0 )->getHeight();
 
     for ( int i = 1; i < images.size(); i++ ) {
-        if ( images.at ( i )->width != width || images.at ( i )->height != height ) {
+        if ( images.at ( i )->getWidth() != width || images.at ( i )->getHeight() != height ) {
             LOGGER_ERROR ( "All images must have same dimensions" );
             images.at ( 0 )->print();
             images.at ( i )->print();

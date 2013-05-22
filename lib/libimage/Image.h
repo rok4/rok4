@@ -54,6 +54,7 @@
 #include <string.h>
 #include <typeinfo>
 #include "BoundingBox.h"
+#include "CRS.h"
 #include "math.h"
 
 /**
@@ -72,17 +73,6 @@
  */
 class Image {
 public:
-    /**
-     * \~french \brief Largeur de l'image en pixel
-     * \~english \brief Image's width, in pixel
-     */
-    const int width;
-
-    /**
-     * \~french \brief Hauteur de l'image en pixel
-     * \~english \brief Image's height, in pixel
-     */
-    const int height;
 
     /**
      * \~french \brief Nombre de canaux de l'image
@@ -92,23 +82,40 @@ public:
 
 protected:
     /**
+     * \~french \brief Largeur de l'image en pixel
+     * \~english \brief Image's width, in pixel
+     */
+    int width;
+
+    /**
+     * \~french \brief Hauteur de l'image en pixel
+     * \~english \brief Image's height, in pixel
+     */
+    int height;
+    
+    /**
      * \~french \brief L'image est-ell un masque ?
      * \~english \brief Is this image a mask ?
      */
     bool isMask;
-
-private:    
-    /**
-     * \~french \brief Masque de donnée associé à l'image, facultatif
-     * \~english \brief Mask associated to the image, optionnal
-     */
-    Image* mask;
 
     /**
      * \~french \brief Emprise rectangulaire au sol de l'image
      * \~english \brief Image's bounding box
      */
     BoundingBox<double> bbox;
+    
+    /**
+     * \~french \brief CRS du rectangle englobant de l'image
+     * \~english \brief Bounding box's CRS
+     */
+    CRS crs;
+
+    /**
+     * \~french \brief Masque de donnée associé à l'image, facultatif
+     * \~english \brief Mask associated to the image, optionnal
+     */
+    Image* mask;
 
     /**
      * \~french \brief Resolution de l'image, dans le sens des X
@@ -132,7 +139,6 @@ private:
         resy= ( bbox.ymax - bbox.ymin ) /double ( height );
     }
 
-
 public:
 
     /**
@@ -143,6 +149,14 @@ public:
      */
     inline void makeMask () {
         isMask = true;
+    }
+
+    int inline getWidth() {
+        return width;
+    }
+
+    int inline getHeight() {
+        return height;
     }
 
     /**
@@ -168,6 +182,30 @@ public:
      */
     BoundingBox<double> inline getBbox() const {
         return bbox;
+    }
+
+    /**
+     * \~french
+     * \brief Définit le SRS de l'emprise rectangulaire
+     * \param[in] box Emprise rectangulaire de l'image
+     * \~english
+     * \brief Define the CRS of the image's bounding box
+     * \param[in] box Image's bounding box
+     */
+    inline void setCRS ( CRS srs ) {
+        crs = srs;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le SRS de l'emprise rectangulaire de l'image
+     * \return CRS
+     * \~english
+     * \brief Return the image's bounding box's CRS
+     * \return CRS
+     */
+    CRS inline getCRS() const {
+        return crs;
     }
 
     /**
@@ -259,11 +297,11 @@ public:
      * \param[in] newMask Masque de donnée
      */
     inline bool setMask ( Image* newMask ) {
-        if ( newMask->width != width || newMask->height != height || newMask->channels != 1 ) {
+        if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->channels != 1 ) {
             LOGGER_ERROR ( "Unvalid mask" );
             LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->channels );
-            LOGGER_ERROR ( "\t - width have to be " << width << ", it is " << newMask->width );
-            LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->height );
+            LOGGER_ERROR ( "\t - width have to be " << width << ", it is " << newMask->getWidth() );
+            LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->getHeight() );
             return false;
         }
         
@@ -369,6 +407,7 @@ public:
      * \~french
      * \brief Détermine la compatibilité avec une autre image, en comparant phases et résolutions
      * \details On parle d'images compatibles lorsqu'elles ont :
+     * \li le même SRS
      * \li la même résolution en X
      * \li la même résolution en Y
      * \li la même phase en X
@@ -381,25 +420,32 @@ public:
      * \param[in] pImage image à comparer
      * \return compatibilité
      * \~english
-     * \brief Determine compatibility with another image, comparing phasis and resolutions
+     * \brief Determine compatibility with another image, comparing CRS, phasis and resolutions
      * \param[in] pImage image to compare
      * \return compatibility
      */
     bool isCompatibleWith ( Image* pImage ) {
+
+        if (crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS()) return false;
+        
         double epsilon_x=__min ( getResX(), pImage->getResX() ) /1000.;
         double epsilon_y=__min ( getResY(), pImage->getResY() ) /1000.;
 
         if ( fabs ( getResX()-pImage->getResX() ) > epsilon_x ) {
+            LOGGER_DEBUG("Different X resolutions");
             return false;
         }
         if ( fabs ( getResY()-pImage->getResY() ) > epsilon_y ) {
+            LOGGER_DEBUG("Different Y resolutions");
             return false;
         }
 
         if ( fabs ( getPhaseX()-pImage->getPhaseX() ) > 0.01 && fabs ( getPhaseX()-pImage->getPhaseX() ) < 0.99 ) {
+            LOGGER_DEBUG("Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX());
             return false;
         }
         if ( fabs ( getPhaseY()-pImage->getPhaseY() ) > 0.01 && fabs ( getPhaseY()-pImage->getPhaseY() ) < 0.99 ) {
+            LOGGER_DEBUG("Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY());
             return false;
         }
 
@@ -523,12 +569,13 @@ public:
     virtual void print() {
         LOGGER_INFO ( "\t- width = " << width << ", height = " << height );
         LOGGER_INFO ( "\t- samples per pixel = " << channels );
+        LOGGER_INFO ( "\t- CRS = " << crs.getProj4Code() );
         LOGGER_INFO ( "\t- bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax );
         LOGGER_INFO ( "\t- x resolution = " << resx << ", y resolution = " << resy );
         if ( isMask ) {
-            LOGGER_INFO ( "\t- Is a mask\n" );
+            LOGGER_INFO ( "\t- Is a mask" );
         } else {
-            LOGGER_INFO ( "\t- Is not a mask\n" );
+            LOGGER_INFO ( "\t- Is not a mask" );
         }
         if ( mask ) {
             LOGGER_INFO ( "\t- Own a mask\n" );

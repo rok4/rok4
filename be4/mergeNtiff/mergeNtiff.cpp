@@ -57,16 +57,16 @@
  *
  * On doit préciser en paramètre de la commande :
  * \li Un fichier texte contenant l'image finale, puis les images sources, avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
- * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
+ * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <CRS> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
  * Le chemin peut contenir un point d'interrogation comme premier caractère, cela voudra dire qu'on veut utiliser la racine placée en paramètre (option -r). Si celle-ci n'est pas précisée, le point d'interrogation est juste supprimé.
  * Exemple de configuration :
  * \~ \code{.txt}
- * IMG ?IMAGE.tif      -499       1501    1501    -499       2       2
+ * IMG ?IMAGE.tif               EPSG:2154       -499    1501    1501    -499    2       2
  * MSK ?MASK.tif
- * IMG sources/imagefond.tif      -499       1501    1501    -499       4       4
+ * IMG sources/imagefond.tif    EPSG:2154       -499    1501    1501    -499    4       4
  * MSK sources/maskfond.tif
- * IMG sources/image1.tif      0       1000    1000    0       1       1
- * IMG sources/image2.tif      500       1500    1500    500       1       1
+ * IMG sources/image1.tif       IGNF:LAMB93     0       1000    1000    0       1       1
+ * IMG sources/image2.tif       IGNF:LAMB93     500     1500    1500    500     1       1
  * MSK sources/mask2.tif
  * \endcode
  * \~french
@@ -100,6 +100,8 @@
  * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
  */
 
+#include <proj_api.h>
+#include <pthread.h>
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -111,10 +113,13 @@
 #include <fstream>
 #include "tiffio.h"
 #include "Logger.h"
+
 #include "LibtiffImage.h"
 #include "ResampledImage.h"
+#include "ReprojectedImage.h"
 #include "ExtendedCompoundImage.h"
-#include "MirrorImage.h"
+
+#include "CRS.h"
 #include "Interpolation.h"
 #include "Format.h"
 #include "math.h"
@@ -144,8 +149,10 @@ uint16_t photometric;
 uint16_t compression;
 /** \~french Type de donnée traitée : image (1) ou meta-donnée (0, non implémenté) */
 int type=-1;
-/** \~french Interpolation utilisée pour le réechantillonnage */
+/** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
 Interpolation::KernelType interpolation;
+
+static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * \~french
@@ -403,8 +410,8 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
     }
 
     // Ecriture de l'en-tete
-    TIFFSetField ( output, TIFFTAG_IMAGEWIDTH, pImage->width );
-    TIFFSetField ( output, TIFFTAG_IMAGELENGTH, pImage->height );
+    TIFFSetField ( output, TIFFTAG_IMAGEWIDTH, pImage->getWidth() );
+    TIFFSetField ( output, TIFFTAG_IMAGELENGTH, pImage->getHeight() );
     TIFFSetField ( output, TIFFTAG_SAMPLESPERPIXEL, pImage->channels );
     TIFFSetField ( output, TIFFTAG_BITSPERSAMPLE, bps );
     TIFFSetField ( output, TIFFTAG_SAMPLEFORMAT, sf );
@@ -420,14 +427,14 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
 
     // Ecriture de l'image
     if ( sf==SAMPLEFORMAT_UINT ) {
-        buf_u = ( unsigned char* ) _TIFFmalloc ( pImage->width * pImage->channels * bps / 8 );
-        for ( int line = 0; line < pImage->height; line++ ) {
+        buf_u = ( unsigned char* ) _TIFFmalloc ( pImage->getWidth() * pImage->channels * bps / 8 );
+        for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_u,line );
             TIFFWriteScanline ( output, buf_u, line, 0 );
         }
     } else if ( sf==SAMPLEFORMAT_IEEEFP ) {
-        buf_f = ( float* ) _TIFFmalloc ( pImage->width*pImage->channels*bps/8 );
-        for ( int line = 0; line < pImage->height; line++ ) {
+        buf_f = ( float* ) _TIFFmalloc ( pImage->getWidth()*pImage->channels*bps/8 );
+        for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_f,line );
             TIFFWriteScanline ( output, buf_f, line, 0 );
         }
@@ -451,12 +458,13 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
  * \param[out] imageFileName chemin de l'image lu dans le fichier de configuration
  * \param[out] hasMask précise si l'image possède un masque
  * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
+ * \param[out] crs SRS du rectangle englobant
  * \param[out] bbox rectangle englobant de l'image lue (et de son masque)
  * \param[out] resx résolution en X de l'image lue (et de son masque)
  * \param[out] resy résolution en Y de l'image lue (et de son masque)
  * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
  */
-int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, BoundingBox<double>* bbox, double* resx, double* resy ) {
+int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, std::string* crs, BoundingBox<double>* bbox, double* resx, double* resy ) {
     std::string str;
     char tmpPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
     int rootLength = strlen ( outImagesRoot );
@@ -476,9 +484,10 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
     int nb;
 
     char type[3];
+    char tmpCRS[20];
 
-    if ( ( nb = std::sscanf ( str.c_str(),"%s %s %lf %lf %lf %lf %lf %lf",
-                              type, tmpPath, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy ) ) == 8 ) {
+    if ( ( nb = std::sscanf ( str.c_str(),"%s %s %s %lf %lf %lf %lf %lf %lf",
+                              type, tmpPath, tmpCRS, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy ) ) == 9 ) {
         if ( memcmp ( type,"IMG",3 ) ) {
             LOGGER_ERROR ( "We have to read an image information at first." );
             return 1;
@@ -486,9 +495,12 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
 
         pos = file.tellg();
     } else {
-        LOGGER_ERROR ( "We have to read 8 values, we have " << nb );
+        LOGGER_ERROR ( "We have to read 9 values, we have " << nb );
+        LOGGER_ERROR ( "\t line : " << str );
         return 1;
     }
+
+    crs->assign(tmpCRS);
 
     if ( ! strncmp ( tmpPath,"?",1 ) ) {
         strcpy ( imageFileName,outImagesRoot );
@@ -546,6 +558,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
     BoundingBox<double> bbox ( 0.,0.,0.,0. );
     int width, height;
     bool hasMask;
+    std::string stringCRS;
     double resx, resy;
     LibtiffImageFactory factory;
 
@@ -560,10 +573,12 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
     }
 
     // Lecture et creation de l image de sortie
-    if ( readFileLine ( file,imageFileName,&hasMask,maskFileName,&bbox,&resx,&resy ) ) {
-        LOGGER_ERROR ( "Erreur lecture des premières lignes du fichier de parametres: " << imageListFilename );
+    if ( readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS, &bbox,&resx,&resy ) ) {
+        LOGGER_ERROR ( "Erreur lecture des premieres lignes du fichier de parametres: " << imageListFilename );
         return -1;
     }
+
+    CRS crs(stringCRS);
 
     // Arrondi a la valeur entiere la plus proche
     width = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
@@ -571,6 +586,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
 
     *ppImageOut = factory.createLibtiffImageToWrite ( imageFileName, bbox,resx, resy, width, height, samplesperpixel,
                   sampleType, photometric,COMPRESSION_NONE,16 );
+
+    (*ppImageOut)->setCRS(crs);
 
     if ( *ppImageOut == NULL ) {
         LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
@@ -583,6 +600,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
                      SampleType ( 8,SAMPLEFORMAT_UINT ),
                      PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16 );
 
+        (*ppMaskOut)->setCRS(crs);
+
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << maskFileName );
             return -1;
@@ -591,13 +610,16 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
 
     // Lecture et creation des images sources
     int out=0;
-    while ( ( out = readFileLine ( file,imageFileName,&hasMask,maskFileName,&bbox,&resx,&resy ) ) == 0 ) {
+    while ( ( out = readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS,&bbox,&resx,&resy ) ) == 0 ) {
+
+        crs.setRequestCode(stringCRS);
 
         LibtiffImage* pImage=factory.createLibtiffImageToRead ( imageFileName, bbox, resx, resy );
         if ( pImage == NULL ) {
             LOGGER_ERROR ( "Impossible de creer une image a partir de " << imageFileName );
             return -1;
         }
+        pImage->setCRS(crs);
 
         if ( hasMask ) {
             LibtiffImage* pMask=factory.createLibtiffImageToRead ( maskFileName, bbox, resx, resy );
@@ -605,6 +627,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
                 LOGGER_ERROR ( "Impossible de creer un masque a partir de " << maskFileName );
                 return -1;
             }
+            pMask->setCRS(crs);
 
             if ( ! pImage->setMask ( pMask ) ) {
                 LOGGER_ERROR ( "Cannot add mask to the input LibtiffImage" );
@@ -658,11 +681,6 @@ int checkImages ( LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn )
         pImageOut->print();
         return -1;
     }
-    if ( pImageOut->getBitsPerSample() != 8 && pImageOut->getBitsPerSample() != 32 ) {
-        LOGGER_ERROR ( "Unvalid samples per pixels for the output image " << pImageOut->getFilename() );
-        pImageOut->print();
-        return -1;
-    }
 
     return 0;
 }
@@ -694,7 +712,6 @@ int sortImages ( std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Ima
 
         if ( ! ( *itImg )->isCompatibleWith ( * ( itImg+1 ) ) ) {
             // two following images are not compatible, we split images' vector
-            // images
             vTmpImg.assign ( itiniImg,itImg+1 );
             itiniImg = itImg+1;
             pTabImageIn->push_back ( vTmpImg );
@@ -709,35 +726,9 @@ int sortImages ( std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Ima
     return 0;
 }
 
-/**
- * \~french
- * \brief Réechantillonne un paquet d'images compatibles
- * \details On crée l'objet ResampledImage correspondant au réechantillonnage du paquet d'images, afin de le rendre compatible avec l'image de sortie. On veut que l'emprise de l'image réechantillonnée ne dépasse ni de l'image de sortie, ni des images en entrée (sans prendre en compte les miroirs, données virtuelles).
- * \param[in] pImageOut image résultante de l'outil
- * \param[in] pECI paquet d'images compatibles, à réechantillonner
- * \param[in] realBbox réel rectangle englobant du paquet d'images, sans prendre en compte les miroirs ajoutés.
- * \return image réechantillonnée
- */
-ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, BoundingBox<double> realBbox ) {
-
-    double resx_dst=pImageOut->getResX(), resy_dst=pImageOut->getResY();
-
-    /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
-     * (sans compter les miroirs)
-     */
-    double xmin_dst=__max ( realBbox.xmin,pImageOut->getXmin() );
-    double xmax_dst=__min ( realBbox.xmax,pImageOut->getXmax() );
-    double ymin_dst=__max ( realBbox.ymin,pImageOut->getYmin() );
-    double ymax_dst=__min ( realBbox.ymax,pImageOut->getYmax() );
-
-    LOGGER_DEBUG ( "Image rééchantillonnée : bbox avant rephasage : "
-                   <<xmin_dst << "," << ymin_dst << "," << xmax_dst << "," << ymax_dst );
-
-    /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
-     * avec l'image de sortie (c'est la seule raison d'être du réechantillonnage). Il faut donc modifier la bounding box
-     * afin qu'elle remplisse les conditions de compatibilité (phases égales en x et en y).
-     */
-
+void makePhase ( Image* pImageOut, BoundingBox<double> *bbox ) {
+    double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
+    
     double intpart;
     double phi = 0;
     double phaseDiff = 0;
@@ -746,82 +737,131 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
     double phaseY = pImageOut->getPhaseY();
 
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
-    phi = modf ( xmin_dst/resx_dst, &intpart );
+    phi = modf ( bbox->xmin/resx_dst, &intpart );
     if ( phi < 0. ) {
         phi += 1.0;
     }
 
     if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+        LOGGER_DEBUG("Mise en phase de xmin");
         phaseDiff = phaseX - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
         }
-        xmin_dst += phaseDiff*resx_dst;
+        bbox->xmin += phaseDiff*resx_dst;
     }
 
     // Mise en phase de xmax (sans que celui ci puisse être plus grand)
-    phi = modf ( xmax_dst/resx_dst, &intpart );
+    phi = modf ( bbox->xmax/resx_dst, &intpart );
     if ( phi < 0. ) {
         phi += 1.0;
     }
 
     if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+        LOGGER_DEBUG("Mise en phase de xmax");
         phaseDiff = phaseX - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
         }
-        xmax_dst += phaseDiff*resx_dst;
+        bbox->xmax += phaseDiff*resx_dst;
     }
 
     // Mise en phase de ymin (sans que celui ci puisse être plus petit)
-    phi = modf ( ymin_dst/resy_dst, &intpart );
+    phi = modf ( bbox->ymin/resy_dst, &intpart );
     if ( phi < 0. ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+        LOGGER_DEBUG("Mise en phase de ymin");
         phaseDiff = phaseY - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
         }
-        ymin_dst += phaseDiff*resy_dst;
+        bbox->ymin += phaseDiff*resy_dst;
     }
 
     // Mise en phase de ymax (sans que celui ci puisse être plus grand)
-    phi = modf ( ymax_dst/resy_dst, &intpart );
+    phi = modf ( bbox->ymax/resy_dst, &intpart );
     if ( phi < 0. ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+        LOGGER_DEBUG("Mise en phase de ymax");
         phaseDiff = phaseY - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
         }
-        ymax_dst += phaseDiff*resy_dst;
+        bbox->ymax += phaseDiff*resy_dst;
+    }
+}
+
+/**
+ * \~french
+ * \brief Réechantillonne un paquet d'images compatibles
+ * \details On crée l'objet ResampledImage correspondant au réechantillonnage du paquet d'images, afin de le rendre compatible avec l'image de sortie. On veut que l'emprise de l'image réechantillonnée ne dépasse ni de l'image de sortie, ni des images en entrée (sans prendre en compte les miroirs, données virtuelles).
+ * \param[in] pImageOut image résultante de l'outil
+ * \param[in] pECI paquet d'images compatibles, à réechantillonner
+ * \return image réechantillonnée
+ */
+ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI ) {
+
+    double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
+    
+    const Kernel& K = Kernel::getInstance ( interpolation );
+
+    // Ajout des miroirs
+    // Valeurs utilisées pour déterminer la taille des miroirs en pixel (taille optimale en fonction du noyau utilisé)
+    int mirrorSizeX = ceil ( K.size ( resx_dst / pECI->getResX() ) ) + 1;
+    int mirrorSizeY = ceil ( K.size ( resy_dst / pECI->getResY() ) ) + 1;
+
+    int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
+
+    LOGGER_DEBUG("Mirror's size : " << mirrorSize);
+
+    // On mémorise la bbox d'origine, sans les miroirs
+    BoundingBox<double> realBbox = pECI->getBbox();
+
+    if ( ! pECI->addMirrors ( mirrorSize ) ) {
+        LOGGER_ERROR ( "Unable to add mirrors" );
+        return NULL;
     }
 
-    LOGGER_DEBUG ( "Image rééchantillonnée : bbox après rephasage : "
-                   << xmin_dst << "," << ymin_dst << "," << xmax_dst << "," << ymax_dst );
-
-    // Dimension de l'image reechantillonnee
-    int width_dst = int ( ( xmax_dst-xmin_dst ) /resx_dst+0.5 );
-    int height_dst = int ( ( ymax_dst-ymin_dst ) /resy_dst+0.5 );
-
+    /* L'image reechantillonnee est limitee a l'intersection entre l'image de sortie et les images sources
+     * (sans compter les miroirs)
+     */
+    double xmin_dst=__max ( realBbox.xmin,pImageOut->getXmin() );
+    double xmax_dst=__min ( realBbox.xmax,pImageOut->getXmax() );
+    double ymin_dst=__max ( realBbox.ymin,pImageOut->getYmin() );
+    double ymax_dst=__min ( realBbox.ymax,pImageOut->getYmax() );
+    
     BoundingBox<double> bbox_dst ( xmin_dst, ymin_dst, xmax_dst, ymax_dst );
 
-    // On commence par réechantillonner le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
-    ResampledImage* pRMask = new ResampledImage ( pECI->Image::getMask(),
-                                                  width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
+    LOGGER_DEBUG ( "Image réechantillonnée : bbox avant rephasage : " << bbox_dst.toStream() );
+
+    /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
+     * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
+     * (phases égales en x et en y).
+     */
+    makePhase(pImageOut, &bbox_dst );
+
+    LOGGER_DEBUG ( "Image réechantillonnée : bbox après rephasage : " << bbox_dst.toStream() );
+
+    // Dimension de l'image reechantillonnee
+    int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
+    int height_dst = int ( ( ymax_dst-ymin_dst ) / resy_dst + 0.5 );
+
+    // On réechantillonne le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
+    ResampledImage* pRMask = new ResampledImage ( pECI->Image::getMask(), width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
                                                   Interpolation::NEAREST_NEIGHBOUR, false );
 
     // Reechantillonnage
-    ResampledImage* pRImage = new ResampledImage ( pECI,
-                                                   width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
+    ResampledImage* pRImage = new ResampledImage ( pECI, width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
                                                    interpolation, pECI->useMasks() );
 
     if ( ! pRImage->setMask ( pRMask ) ) {
-        LOGGER_ERROR ( "Cannot add mask to the Resampled Image" );
+        LOGGER_ERROR ( "Cannot add mask to the ResampledImage" );
         return NULL;
     }
 
@@ -829,50 +869,178 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
 }
 
 /**
- * \~french \brief Ajoute des miroirs à un paquet d'images compatibles
- * \~english \brief Add mirrors to compatible images pack
- * \~ \image html miroirs.png \~french
- * \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord.
- *
- * On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord).On sait distinguer les vraies images de celles virtuelles.
- *
- * On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
- *
- * \param[in] pECI paquet d'images compatibles, auquel on veut ajouter les miroirs
- * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
- * \return VRAI dans le cas d'un succès, FAUX sinon.
+ * \~french
+ * \brief Reprojette un paquet d'images compatibles
+ * \details On crée l'objet ReprojectedImage correspondant à la reprojection du paquet d'images, afin de le rendre compatible avec l'image de sortie. On veut que l'emprise de l'image réechantillonnée ne dépasse ni de l'image de sortie, ni des images en entrée (sans prendre en compte les miroirs, données virtuelles).
+ * \param[in] pImageOut image résultante de l'outil
+ * \param[in] pECI paquet d'images compatibles, à reprojeter
+ * \return image reprojetée
  */
-bool addMirrors ( ExtendedCompoundImage* pECI,int mirrorSize ) {
-    MirrorImageFactory MIF;
-    std::vector< Image*>  mirrorImages;
+ReprojectedImage* reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI ) {
 
-    for (uint i = 0; i<pECI->getImages()->size(); i++ ) {
-        for ( int j = 0; j < 4; j++ ) {
-            MirrorImage* mirrorImage = MIF.createMirrorImage ( pECI->getImage ( i ), j, mirrorSize );
-            if ( mirrorImage == NULL ) {
-                LOGGER_ERROR ( "Unable to calculate image's mirror" );
-                return false;
-            }
+    double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
+    double resx_src = pECI->getResX(), resy_src = pECI->getResY();
 
-            if ( pECI->getMask ( i ) ) {
-                MirrorImage* mirrorMask = MIF.createMirrorImage ( pECI->getMask ( i ), j, mirrorSize );
-                if ( mirrorMask == NULL ) {
-                    LOGGER_ERROR ( "Unable to calculate mask's mirror" );
-                    return false;
-                }
-                if ( ! mirrorImage->setMask ( mirrorMask ) ) {
-                    LOGGER_ERROR ( "Unable to add mask to mirror" );
-                    return false;
-                }
-            }
+    const Kernel& K = Kernel::getInstance ( interpolation );
 
-            mirrorImages.push_back ( mirrorImage );
-        }
+    BoundingBox<double> BBOX_src = pECI->getBbox();
+
+
+    /************ Initialisation des outils de conversion PROJ4 *********/
+
+    std::string from_srs = pECI->getCRS().getProj4Code();
+    std::string to_srs = pImageOut->getCRS().getProj4Code();
+    
+    pthread_mutex_lock ( & mutex_proj );
+    
+    projCtx ctx = pj_ctx_alloc();
+
+    projPJ pj_src, pj_dst;
+    if ( ! ( pj_src = pj_init_plus_ctx ( ctx, ( "+init=" + from_srs +" +wktext" ).c_str() ) ) ) {
+        // Initialisation du système de projection source
+        int err = pj_ctx_get_errno ( ctx );
+        char *msg = pj_strerrno ( err );
+        LOGGER_ERROR ( "erreur d initialisation " << from_srs << " " << msg );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+    if ( ! ( pj_dst = pj_init_plus_ctx ( ctx, ( "+init=" + to_srs +" +wktext +over" ).c_str() ) ) ) {
+        // Initialisation du système de projection destination
+        int err = pj_ctx_get_errno ( ctx );
+        char *msg = pj_strerrno ( err );
+        LOGGER_ERROR ( "erreur d initialisation " << to_srs << " " << msg );
+        pj_free ( pj_src );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
     }
 
-    pECI->insertMirrors(mirrorImages);
+    if ( BBOX_src.reproject(pj_src, pj_dst) ) {
+        LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
 
-    return true;
+    /******************** Image reprojetée : dimensions *****************/
+
+    double xmin_dst = __max ( BBOX_src.xmin,pImageOut->getXmin() );
+    double xmax_dst = __min ( BBOX_src.xmax,pImageOut->getXmax() );
+    double ymin_dst = __max ( BBOX_src.ymin,pImageOut->getYmin() );
+    double ymax_dst = __min ( BBOX_src.ymax,pImageOut->getYmax() );
+    
+    BoundingBox<double> BBOX_dst(xmin_dst,ymin_dst,xmax_dst,ymax_dst);
+
+    /* Nous avons maintenant les limites de l'image reprojetée. N'oublions pas que celle ci doit être compatible
+     * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
+     * (phases égales en x et en y).
+     */
+    makePhase(pImageOut, &BBOX_dst );
+
+    // Dimension de l'image reechantillonnee
+    LOGGER_DEBUG("width_dst float : " << ( xmax_dst-xmin_dst ) / resx_dst);
+    LOGGER_DEBUG("height_dst float : " << ( ymax_dst-ymin_dst ) / resy_dst);
+    int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
+    int height_dst = int ( ( ymax_dst-ymin_dst ) / resy_dst + 0.5 );
+
+    /************************ Ajout des miroirs *************************/
+
+    double ratioX = double ( width_dst ) / double ( pECI->getWidth() );
+    double ratioY = double ( height_dst ) / double ( pECI->getHeight() );
+
+    // Ajout des miroirs
+    int mirrorSizeX = ceil ( K.size ( ratioX ) ) + 1;
+    int mirrorSizeY = ceil ( K.size ( ratioY ) ) + 1;
+
+    int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
+
+    LOGGER_DEBUG("Mirror's size : " << mirrorSize);
+
+    if ( ! pECI->addMirrors ( mirrorSize ) ) {
+        LOGGER_ERROR ( "Unable to add mirrors" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+
+    /********************** Image source agrandie ***********************/
+
+    BBOX_src = pECI->getBbox();
+
+    if ( BBOX_src.reproject(pj_src, pj_dst) ) {
+        LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+
+    if ( BBOX_src.reproject(pj_dst, pj_src) ) {
+        LOGGER_ERROR ( "Erreur reprojection bbox dst -> src" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+
+    makePhase(pECI, &BBOX_src );
+
+    if ( ! pECI->changeExtent(BBOX_src) ) {
+        LOGGER_ERROR ( "Unable to change the source image extent for the reprojection" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+
+    /********************** Grille de reprojection **********************/
+    
+    Grid* grid = new Grid ( width_dst, height_dst, BBOX_dst );
+    
+    if ( ! ( grid->reproject ( to_srs, from_srs ) ) ) {
+        LOGGER_ERROR ( "Bbox image invalide" );
+        pj_free ( pj_src );
+        pj_free ( pj_dst );
+        pj_ctx_free ( ctx );
+        pthread_mutex_unlock ( & mutex_proj );
+        return NULL;
+    }
+    
+    grid->affine_transform ( 1./resx_src, -BBOX_src.xmin/resx_src - 0.5,
+                             -1./resy_src, BBOX_src.ymax/resy_src - 0.5 );
+
+    pj_free ( pj_src );
+    pj_free ( pj_dst );
+    pj_ctx_free ( ctx );
+    pthread_mutex_unlock ( & mutex_proj );
+
+    /*************************** Image reprojetée ***********************/
+
+    // On  reprojete le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
+    ReprojectedImage* pRMask = new ReprojectedImage ( pECI->Image::getMask(), BBOX_dst, resx_dst, resy_dst, grid,
+                                                      Interpolation::NEAREST_NEIGHBOUR, false);
+
+    //saveImage(pRMask, "/home/theo/TEST/reprojection/reprojMask.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_ADOBE_DEFLATE);
+
+    // Reprojection de l'image
+    ReprojectedImage* pRImage = new ReprojectedImage ( pECI, BBOX_dst, resx_dst, resy_dst, grid, interpolation, pECI->useMasks() );
+
+    //saveImage(pRImage, "/home/theo/TEST/reprojection/reprojImage.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+
+    if ( ! pRImage->setMask ( pRMask ) ) {
+        LOGGER_ERROR ( "Cannot add mask to the ReprojectedImage" );
+        return NULL;
+    }
+
+    return pRImage;
 }
 
 /**
@@ -881,7 +1049,8 @@ bool addMirrors ( ExtendedCompoundImage* pECI,int mirrorSize ) {
  * \~french \details On a préalablement trié les images par compatibilité. Pour chaque paquet, on va créer un objet de la classe ExtendedCompoundImage. Ce dernier est à considérer comme une image simple.
  * Cette image peut être :
  * \li superposable avec l'image de sortie. Elle est directement ajoutée à une liste d'image.
- * \li non superposable avec l'image de sortie. On va alors la réechantillonner, en utilisant la classe ResampledImage. C'est l'image réechantillonnée que l'on ajoute à la liste d'image.
+ * \li non superposable avec l'image de sortie mais dans le même système de coordonnées. On va alors la réechantillonner, en utilisant la classe ResampledImage. C'est l'image réechantillonnée que l'on ajoute à la liste d'image.
+ * \li non superposable avec l'image de sortie et dans un système de coordonnées différent. On va alors la reprojeter, en utilisant la classe ReprojectedImage. C'est l'image reprojetée que l'on ajoute à la liste d'image.
  *
  * \~ \image html mergeNtiff_composition.png \~french
  *
@@ -904,12 +1073,8 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
     ExtendedCompoundImageFactory ECIF ;
     std::vector<Image*> pOverlayedImages;
 
-    // Valeurs utilisées pour déterminer la taille des miroirs en pixel (taille optimale en fonction du noyau utilisé)
-    const Kernel& K = Kernel::getInstance ( interpolation );
-    double resx_dst = pImageOut->getResX();
-    double resy_dst = pImageOut->getResY();
-
     for ( unsigned int i=0; i<TabImageIn.size(); i++ ) {
+        LOGGER_DEBUG ( "Pack " << i << " : " << TabImageIn.at ( i ).size() << " image(s)" );
         // Mise en superposition du paquet d'images en 2 etapes
 
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
@@ -919,6 +1084,7 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
             LOGGER_ERROR ( "Impossible d'assembler les images" );
             return -1;
         }
+        pECI->setCRS(TabImageIn.at(i).at(0)->getCRS());
 
         ExtendedCompoundMask* pECMI = new ExtendedCompoundMask ( pECI );
         if ( ! pECI->setMask ( pECMI ) ) {
@@ -926,43 +1092,44 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
             return -1;
         }
 
+        pECMI->setCRS(TabImageIn.at(i).at(0)->getCRS());
+
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
+            LOGGER_DEBUG ( "\t is compatible" );
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back ( pECI );
 
+        } else if (pECI->getCRS() == pImageOut->getCRS()) {
+
+                LOGGER_DEBUG ( "\t need a resampling" );
+                
+                ResampledImage* pResampledImage = resampleImages ( pImageOut, pECI );
+                if ( pResampledImage == NULL ) {
+                    LOGGER_ERROR ( "Cannot resample images' pack" );
+                    return -1;
+                }
+
+                pOverlayedImages.push_back ( pResampledImage );
+                
         } else {
-            // Etape 2 : Reechantillonnage de l'image composite necessaire
-
-            // Ajout des miroirs
-            int mirrorSizeX = ceil ( K.size ( resx_dst/pECI->getResX() ) ) + 1;
-            int mirrorSizeY = ceil ( K.size ( resy_dst/pECI->getResX() ) ) + 1;
-
-            int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
-
-            // On mémorise la bbox d'origine, sans les miroirs
-            BoundingBox<double> bboxOrig = pECI->getBbox();
             
-            if ( ! addMirrors ( pECI, mirrorSize ) ) {
-                LOGGER_ERROR ( "Unable to add mirrors" );
+            LOGGER_DEBUG ( "\t need a reprojection" );
+
+            ReprojectedImage* pReprojectedImage = reprojectImages ( pImageOut, pECI );
+            if ( pReprojectedImage == NULL ) {
+                LOGGER_ERROR ( "Cannot reproject images' pack" );
                 return -1;
             }
 
-            ResampledImage* pResampledImage = resampleImages ( pImageOut, pECI, bboxOrig );
-            if ( pResampledImage == NULL ) {
-                LOGGER_ERROR ( "Cannot resample images' pack" );
-                return -1;
-            }
-
-            pOverlayedImages.push_back ( pResampledImage );
-
+            pOverlayedImages.push_back ( pReprojectedImage );
         }
 
     }
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     *ppECIout = ECIF.createExtendedCompoundImage (
-                    pImageOut->width, pImageOut->height, pImageOut->channels, pImageOut->getBbox(),
+                    pImageOut->getWidth(), pImageOut->getHeight(), pImageOut->channels, pImageOut->getBbox(),
                     pOverlayedImages, nodata,0 );
 
     if ( *ppECIout == NULL ) {
@@ -1080,6 +1247,7 @@ int main ( int argc, char **argv ) {
 
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
+    pj_clear_initcache();
     delete acc;
     delete pECI;
     delete pImageOut;

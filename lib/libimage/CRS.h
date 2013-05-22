@@ -50,6 +50,12 @@
 #include "BoundingBox.h"
 
 /**
+ * \~french \brief Code utilisé en cas de non correspondance avec les référentiel de Proj
+ * \~english \brief Used code when no corresponding Proj code is found
+ */
+#define NO_PROJ4_CODE "noProj4Code"
+
+/**
  * \author Institut national de l'information géographique et forestière
  * \~french
  * Un CRS permet de faire le lien entre un identifiant de CRS issue d'une requête WMS et l'identifiant utilisé dans la bibliothèque Proj.
@@ -60,6 +66,7 @@
  * Functions are availlable to work with bounding boxes (reprojection, cropping on the definition area)
  * \brief Reference systems handler
  */
+
 class CRS {
 private:
     /**
@@ -216,7 +223,17 @@ public:
      */
     std::string getIdentifier();// Renvoie l'identifiant du code passe dans la requete WMS (Ex: 4326,LAMB93,etc.)
 
-
+    /**
+     * \~french
+     * \brief Retourne le code du CRS dans la base proj4
+     * \return code du CRS
+     * \~english
+     * \brief Return the CRS identifier from Proj registry
+     * \return CRS identifier
+     */
+    bool inline isDefine() {
+        return ( proj4Code.compare(NO_PROJ4_CODE) == 0);
+    }
 
     /**
      * \~french
@@ -241,6 +258,7 @@ public:
     std::string inline getProj4Code() {
         return proj4Code;
     }
+    
     /**
      * \~french
      * \brief Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
