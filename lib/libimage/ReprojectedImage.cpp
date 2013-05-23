@@ -219,7 +219,7 @@ float* ReprojectedImage::computeDestLine ( int line ) {
 
     for ( int i = 0; i < 4; i++ ) {
         if ( 4*dst_line_index+i < height ) {
-            grid->interpolate_line ( 4*dst_line_index+i, X[i], Y[i] );
+            grid->getline ( 4*dst_line_index+i, X[i], Y[i] );
         } else {
             memcpy ( X[i], X[0], width*sizeof ( float ) );
             memcpy ( Y[i], Y[0], width*sizeof ( float ) );

@@ -151,10 +151,26 @@ public:
         isMask = true;
     }
 
+    /**
+     * \~french
+     * \brief Retourne la largeur en pixel de l'image
+     * \return largeur
+     * \~english
+     * \brief Return the image's width
+     * \return width
+     */
     int inline getWidth() {
         return width;
     }
 
+    /**
+     * \~french
+     * \brief Retourne la hauteur en pixel de l'image
+     * \return hauteur
+     * \~english
+     * \brief Return the image's height
+     * \return height
+     */
     int inline getHeight() {
         return height;
     }
@@ -570,7 +586,7 @@ public:
         LOGGER_INFO ( "\t- width = " << width << ", height = " << height );
         LOGGER_INFO ( "\t- samples per pixel = " << channels );
         LOGGER_INFO ( "\t- CRS = " << crs.getProj4Code() );
-        LOGGER_INFO ( "\t- bbox = " << bbox.xmin << " " << bbox.ymin << " " << bbox.xmax << " " << bbox.ymax );
+        LOGGER_INFO ( "\t- bbox = " << bbox.toString() );
         LOGGER_INFO ( "\t- x resolution = " << resx << ", y resolution = " << resy );
         if ( isMask ) {
             LOGGER_INFO ( "\t- Is a mask" );

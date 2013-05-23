@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Grid.cpp
+ ** \~french
+ * \brief Implémentation de la classe Grid
+ ** \~english
+ * \brief Implement class Grid
+ */
+
 #include <proj_api.h>
 #include <pthread.h>
 
@@ -46,22 +54,22 @@
 static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
-    nbxInt = 1 + ( width-1 ) /stepInt;
-    nbyInt = 1 + ( height-1 ) /stepInt;
+    nbxReg = 1 + ( width-1 ) /stepInt;
+    nbyReg = 1 + ( height-1 ) /stepInt;
 
-    nbx = nbxInt;
-    nby = nbyInt;
+    nbx = nbxReg;
+    nby = nbyReg;
 
     /* On veut toujours que le dernier pixel reprojeté soit le dernier de la ligne, ou de la colonne.
      * On ajoute donc toujours le dernier pixel à ceux de la grille, même si celui ci y était déjà.
      * On en ajoute donc un, quiaura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
      * Il faudra donc faire attention à cette différence lors de l'interpolation d'une ligne
      */
-    nbx = nbxInt + 1;
-    nby = nbyInt + 1;
+    nbx = nbxReg + 1;
+    nby = nbyReg + 1;
 
-    endX = width - 1 - (nbxInt-1) * stepInt;
-    endY = height - 1 - (nbyInt-1) * stepInt;
+    endX = width - 1 - (nbxReg-1) * stepInt;
+    endY = height - 1 - (nbyReg-1) * stepInt;
 
     double resX = ( bbox.xmax - bbox.xmin ) / double ( width );
     double resY = ( bbox.ymax - bbox.ymin ) / double ( height );
@@ -79,13 +87,13 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
 
     for ( int y = 0 ; y < nby; y++ ) {
         for ( int x = 0 ; x < nbx; x++ ) {
-            if ( y == nbyInt ) {
+            if ( y == nbyReg ) {
                 // Last reprojected pixel = last pixel
                 gridY[nbx*y + x] = top  - ( height-1 ) *resY;
             } else {
                 gridY[nbx*y + x] = top  - y*stepY;
             }
-            if ( x == nbxInt ) {
+            if ( x == nbxReg ) {
                 // Last reprojected pixel = last pixel
                 gridX[nbx*y + x] = left + ( width-1 ) *resX;
             } else {
@@ -95,11 +103,6 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
     }
 
     calculateDeltaY();
-}
-
-Grid::~Grid() {
-    delete[] gridX;
-    delete[] gridY;
 }
 
 inline void Grid::calculateDeltaY() {
@@ -141,13 +144,6 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
     deltaY = deltaY * fabs(Ay);
     LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
 }
-
-/**
- * Effectue une reprojection sur les coordonnées de la grille
- *
- * (GridX[i], GridY[i]) = proj(GridX[i], GridY[i])
- * ou proj est une projection de from_srs vers to_srs
- */
 
 bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     LOGGER_DEBUG ( from_srs<<" -> " <<to_srs );
@@ -250,12 +246,12 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     return true;
 }
 
-int Grid::interpolate_line ( int line, float* X, float* Y ) {
+int Grid::getline ( int line, float* X, float* Y ) {
 
     int dy = line / stepInt;
     double w = 0;
 
-    if ( dy == nbyInt - 1) {
+    if ( dy == nbyReg - 1) {
         if (endY == 0) {w = 0;}
         else {w = ( (line%stepInt) ) / double ( endY );}
     } else {
@@ -271,7 +267,7 @@ int Grid::interpolate_line ( int line, float* X, float* Y ) {
     }
 
     // Indice dans la grille du dernier pixel reprojetée car respecte le pas de base (dans le sens des x)
-    int lastRegularPixel = (nbxInt-1)*stepInt;
+    int lastRegularPixel = (nbxReg-1)*stepInt;
 
     /* Interpolation dans le sens des X, sur la partie où la répartition des pixels reprojetés
      * est régulière (tous les stepInt pixels */
@@ -282,12 +278,11 @@ int Grid::interpolate_line ( int line, float* X, float* Y ) {
         Y[i] = ( 1-w )*LY[dx] + w*LY[dx+1];
     }
 
-    /* Interpolation dans le sens des X, sur la partie où la répartition des pixels reprojetés
-     * est irrégulière (tous les stepInt pixels */
+    /* Interpolation dans le sens des X, sur la partie où ladistance entre les deux pixels de la grille est différente */
     for ( int i = 1; i <= endX; i++ ) {
         double w = i /double ( endX );
-        X[lastRegularPixel + i] = ( 1-w )*LX[nbxInt - 1] + w * LX[nbxInt];
-        Y[lastRegularPixel + i] = ( 1-w )*LY[nbxInt - 1] + w * LY[nbxInt];
+        X[lastRegularPixel + i] = ( 1-w )*LX[nbxReg - 1] + w * LX[nbxReg];
+        Y[lastRegularPixel + i] = ( 1-w )*LY[nbxReg - 1] + w * LY[nbxReg];
     }
 
     return width;

@@ -45,9 +45,9 @@
  * \li être de différentes résolutions
  * \li ne pas couvrir entièrement l'emprise de l'image de sortie
  * \li être recouvrantes entre elles
+ * \li être dans des systèmes spatiaux différents
  *
  * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
- * \li le même système spatial de référence
  * \li le même nombre de canaux
  * \li le même format de canal
  *
@@ -56,7 +56,7 @@
  * \li flottant sur 32 bits
  *
  * On doit préciser en paramètre de la commande :
- * \li Un fichier texte contenant l'image finale, puis les images sources, avec leur georeferencement (resolution, emprise). On peut trouver également les masques associés aux images.
+ * \li Un fichier texte contenant l'image finale, puis les images sources, avec leur georeferencement (resolution, emprise, SRS). On peut trouver également les masques associés aux images.
  * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <CRS> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
  * Le chemin peut contenir un point d'interrogation comme premier caractère, cela voudra dire qu'on veut utiliser la racine placée en paramètre (option -r). Si celle-ci n'est pas précisée, le point d'interrogation est juste supprimé.
  * Exemple de configuration :
@@ -83,8 +83,9 @@
  * \~ \image html mergeNtiff_legende.png \~french
  *
  * Pour réaliser la fusion des images en entrée, on traite différemment :
- * \li les images qui sont superposables à l'image de sortie (mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
- * \li les images non compatibles : un passage par le réechantillonnage (plus lourd en calcul) est indispensable.
+ * \li les images qui sont superposables à l'image de sortie (même SRS, mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
+ * \li les images non compatibles mais de même SRS : un passage par le réechantillonnage (plus lourd en calcul) est indispensable.
+ * \li les images non compatibles et de SRS différents : un passage par la reprojection (encore plus lourd en calcul) est indispensable.
  *
  * Exemple d'appel à la commande :
  * \li pour des ortho-images \~english \li for orthoimage
@@ -152,6 +153,7 @@ int type=-1;
 /** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
 Interpolation::KernelType interpolation;
 
+/** \~french Thread utilisé par PROJ4 pour les outils de reprojection */
 static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 
 /**
@@ -726,15 +728,23 @@ int sortImages ( std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Ima
     return 0;
 }
 
-void makePhase ( Image* pImageOut, BoundingBox<double> *bbox ) {
-    double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
+/**
+ * \~french
+ * \brief Modifie le rectangle englobant pour le rendre en phase avec l'image
+ * \details Les 4 valeurs du rectangle englobant seront modifiée (au minimum) afin d'avoir les mêmes phases que celles de l'image fournie. Cependant, l'étendue finale ser incluse dans celle initiale (pas d'agrandissement de la bounding box).
+ *
+ * \param[in] pImage image avec laquelle la bounding box doit être mise en phase
+ * \param[in,out] bbox rectangle englobant à mettre en phase
+ */
+void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
+    double resx_dst = pImage->getResX(), resy_dst = pImage->getResY();
     
     double intpart;
     double phi = 0;
     double phaseDiff = 0;
 
-    double phaseX = pImageOut->getPhaseX();
-    double phaseY = pImageOut->getPhaseY();
+    double phaseX = pImage->getPhaseX();
+    double phaseY = pImage->getPhaseY();
 
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf ( bbox->xmin/resx_dst, &intpart );
@@ -838,7 +848,7 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
     
     BoundingBox<double> bbox_dst ( xmin_dst, ymin_dst, xmax_dst, ymax_dst );
 
-    LOGGER_DEBUG ( "Image réechantillonnée : bbox avant rephasage : " << bbox_dst.toStream() );
+    LOGGER_DEBUG ( "Image réechantillonnée : bbox avant rephasage : " << bbox_dst.toString() );
 
     /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
@@ -846,7 +856,7 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
      */
     makePhase(pImageOut, &bbox_dst );
 
-    LOGGER_DEBUG ( "Image réechantillonnée : bbox après rephasage : " << bbox_dst.toStream() );
+    LOGGER_DEBUG ( "Image réechantillonnée : bbox après rephasage : " << bbox_dst.toString() );
 
     // Dimension de l'image reechantillonnee
     int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
@@ -872,6 +882,9 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
  * \~french
  * \brief Reprojette un paquet d'images compatibles
  * \details On crée l'objet ReprojectedImage correspondant à la reprojection du paquet d'images, afin de le rendre compatible avec l'image de sortie. On veut que l'emprise de l'image réechantillonnée ne dépasse ni de l'image de sortie, ni des images en entrée (sans prendre en compte les miroirs, données virtuelles).
+ *
+ * L'image reprojetée doit être strictement incluse dans l'image source utilisée, c'est pourquoi on va artificiellement agrandir l'image source (avec du nodata) pour être sur de l'inclusion stricte.
+ * 
  * \param[in] pImageOut image résultante de l'outil
  * \param[in] pECI paquet d'images compatibles, à reprojeter
  * \return image reprojetée

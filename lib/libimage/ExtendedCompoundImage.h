@@ -70,6 +70,7 @@
  * \~french
  * \brief Manipulation d'un paquet d'images compatibles
  * \details On va manipuler un paquet d'images superposables comme si elles n'en étaient qu'une seule. On parle d'images superposables lorsqu'elles ont :
+ * \li le même système spatial
  * \li la même résolution en X
  * \li la même résolution en Y
  * \li la même phase en X
@@ -226,7 +227,15 @@ public:
      */
     bool addMirrors ( int mirrorSize );
 
-    bool changeExtent ( BoundingBox<double> );
+    /**
+     * \~french \brief Modifie des dimensions de l'image
+     * \~english \brief Modify image's dimensions
+     * \details On veut changer l'étendue de l'image. Cela implique donc de changer les dimensions pixel #width et #height (pas de modification des résolutions). On vérifie bien que la nouvelle bounding box est en phase avec l'ancienne. Ce changement d'étendue peut être aussi bien un agrandissement qu'une restriction de l'image. Dans le cas d'un agrandissement, étant donné qu'on n'ajoute pas de nouvelle image source, on augmente donc la quantité de nodata dans l'image.
+     *
+     * \param[in] newBbox nouveau rectangle englobant à affecter à l'image
+     * \return VRAI dans le cas d'un succès, FAUX sinon.
+     */
+    bool changeExtent ( BoundingBox<double> newBbox );
 
     /**
      * \~french

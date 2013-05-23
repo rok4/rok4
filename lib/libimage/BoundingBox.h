@@ -35,33 +35,61 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file BoundingBox.h
+ ** \~french
+ * \brief Définition de la classe template BoundingBox
+ ** \~english
+ * \brief Define template class BoundingBox
+ */
+
 #ifndef BOUNDINGBOX_H
 #define BOUNDINGBOX_H
-
-/**
-* @file BoundingBox.h
-* @brief Définition d'un rectangle englobant
-* @author IGN France - Geoportail
-*/
 
 #include "Logger.h"
 #include <proj_api.h>
 #include <sstream>
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion d'un rectangle englobant
+ * \details Cette classe template gère des coordonnées de plusieurs types, avec des constructeurs avec conversion. Elle met également à disposition une fonction de reprojection.
+ * \~english \brief Manage a bounding box
+ */
 template<typename T>
 class BoundingBox {
     
 public:
+    /**
+     * \~french \brief Extrema du rectangle englobant
+     * \~english \brief Bounding box limits
+     */
     T xmin, ymin, xmax, ymax;
 
-    
+    /** \~french
+     * \brief Crée un objet BoundingBox à partir de tous ses éléments constitutifs
+     ** \~english
+     * \brief Create a BoundingBox object, from all attributes
+     */
     BoundingBox ( T xmin, T ymin, T xmax, T ymax ) :
         xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
 
+    /** \~french \brief Crée un objet BoundingBox par copie et conversion
+     * \param[in] bbox rectangle englobant à copier et éventuellement convertir
+     ** \~english \brief Create a BoundingBox object, copying and converting
+     * \param[in] bbox bounding box to copy and possibly convert
+     */
     template<typename T2>
     BoundingBox ( const BoundingBox<T2>& bbox ) :
         xmin ( (T) bbox.xmin ), ymin ( (T) bbox.ymin ), xmax ( (T) bbox.xmax ), ymax ( (T) bbox.ymax ) {}
 
+    /** \~french
+     * \brief Reprojette le rectangle englobant
+     * \details Pour reprojeter la bounding box, on va découper chaque côté du rectangle en 10, et identifier les extrema parmi ces 4*10 points reprojetés.
+     * \param[in] pj_src système spatial source, celui du rectangle englobant initialement
+     * \param[in] pj_dst système spatial de destination, celui dans lequel on veut le rectangle englobant
+     * \return code de retour, 0 si succès, 1 sinon.
+     */
     int reproject ( projPJ pj_src, projPJ pj_dst ) {
         int nbSegment = 10;
         T stepX = ( xmax - xmin ) / T ( nbSegment );
@@ -125,11 +153,19 @@ public:
         return 0;
     }
 
+    /** \~french \brief Sortie des informations sur le rectangle englobant
+     * \return chaîne de carcactère décrivant le rectangle englobant
+     ** \~english \brief Bounding box description output
+     * \return string describing the bounding box
+     */
     void print() {
         LOGGER_DEBUG ( "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax );
     }
 
-    std::string toStream() {
+    /** \~french \brief Conversion des informations sur le rectangle englobant en string
+     ** \~english \brief Convert bounding box description to string
+     */
+    std::string toString() {
         std::ostringstream oss;
         oss << xmin << ", " << ymin << ", " << xmax << ", " << ymax;
         return oss.str() ;

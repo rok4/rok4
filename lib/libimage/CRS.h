@@ -175,11 +175,11 @@ public:
      * \~french
      * \brief Le nombre de mètre par unité du CRS
      * \return rapport entre le mètre et l'unité du CRS
-     * \todo supporter les CRS autres qu'en degré et en mètre
+     * \todo Supporter les CRS autres qu'en degré et en mètre
      * \~english
      * \brief Amount of meter in one CRS's unit
      * \return quotient between meter and CRS's unit
-     * \todo support all CRS types not only projected in meter and geographic in degree
+     * \todo Support all CRS types not only projected in meter and geographic in degree
      */
     long double getMetersPerUnit();
     /**

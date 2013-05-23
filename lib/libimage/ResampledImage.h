@@ -40,7 +40,7 @@
  ** \~french
  * \brief Définition de la classe ResampledImage, permettant le réechantillonnage d'image
  ** \~english
- * \brief Define classe ResampledImage, allowing image resampling
+ * \brief Define class ResampledImage, allowing image resampling
  */
 
 #ifndef RESAMPLED_IMAGE_H
@@ -71,7 +71,7 @@
  *
  * On peut également tenir compte du masque associé à l'image source, pour limiter l'interpolation aux valeurs réelles. Cela ajoute non seulement de la complexité aux calculs, mais prend également plus de place. On va donc limiter cette utilisation aux cas vraiment nécessaires : si l'image source possède un masque (image pas pleine) et si l'utilisateur spécifie qu'il veut l'utiliser dans le réechantillonnage.
  *
- * Enfin, si l'image réechantillonnée possède un masque, on en tiendra compte pour éviter de stocker une valeur dans un pixel qui est déclaré comme de la non-donnée par le masque. Ce masque, déjà associé à l'image réechantillonnée, a été préalablement calculé à partir du masque de l'image source, en interpolation plus proche voisin.
+ * Enfin, lors du réechantillonnage, on ne tient pas compte du propre masque. C'est à dire qu'on remplit un pixel réechantillonné avec de la donnée à partir du moment où un pixel de donnée source appartenait au noyau d'interpolation. Si on veut utiliser cette image sans avoir un "gonflement" artificiel des données, on devra la lire en parallèle de son masque (interpolé en plus proche voisin) pour la restreindre à l'étendue réelle des données (cela peut se faire avec ExtendedCompoundImage).
  */
 class ResampledImage : public Image {
 private:
@@ -311,12 +311,21 @@ public:
                      Interpolation::KernelType KT = Interpolation::LANCZOS_3, bool bMask = false );
 
     /**
-     * \~french
-     * \brief Destructeur par défaut
-     * \details Désallocation de la mémoire du buffer général #__buffer, du buffer d'index #resampled_line_index, des buffers #resampled_image et #resampled_mask et suppression de #sourceImage.
-     * \~english
-     * \brief Default destructor
-     * \details Desallocate global buffer #__buffer, index buffer #resampled_line_index, buffers #resampled_image and #resampled_mask and remove #source_image
+     * \~french \brief Destructeur par défaut
+     * \details Désallocation de la mémoire :
+     * \li du buffer général #__buffer
+     * \li du buffer d'index #resampled_line_index
+     * \li des buffers #resampled_image et #resampled_mask
+     *
+     * Et suppression de #sourceImage.
+     * 
+     * \~english \brief Default destructor
+     * \details Desallocate :
+     * \li global buffer #__buffer
+     * \li index buffer #resampled_line_index
+     * \li buffers #resampled_image and #resampled_mask
+     *
+     * And remove #source_image
      */
     ~ResampledImage() {
         _mm_free ( __buffer );

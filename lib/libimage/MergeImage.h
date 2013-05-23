@@ -117,8 +117,8 @@ std::string toString ( MergeType mergeMethod );
  *
  * On va disposer de plusieurs manières de fusionner les images :
  * \li MULTIPLY
- * \li TRANSPARENCY
- * \li MASK
+ * \li ALPHATOP
+ * \li TOP
  * \li NORMAL
  *
  * \todo Travailler sur un nombre de canaux variable (pour l'instant, systématiquement 4).
@@ -152,7 +152,7 @@ private:
 
     /**
      * \~french \brief Valeur de transparence
-     * \details On a 4 valeurs entières. Tous les pixels de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
+     * \details On a 3 valeurs entières. Tous les pixels de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
      * \~english \brief Transparent value
      */
     int* transparentValue;

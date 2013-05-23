@@ -40,7 +40,7 @@
  ** \~french
  * \brief Définition de la classe ReprojectedImage, permettant la reprojection d'image
  ** \~english
- * \brief Define classe ReprojectedImage, allowing image reprojecting
+ * \brief Define class ReprojectedImage, allowing image reprojecting
  */
 
 #ifndef REPROJECT_H
@@ -56,6 +56,22 @@
  * \author Institut national de l'information géographique et forestière
  * \~french
  * \brief Manipulation d'image reprojetée
+ * \details Cette classe permet de reprojeter une image lorsque celle ci n'est pas dans le bon système spatial. Pour calculer la valeur d'un pixel de l'image reprojetée, on peut utiliser plusieurs interpolations, implémentées dans les différentes classes héritant de Kernel. La reprojection s'appuie principalement sur l'utilisation d'une grille de reprojection (objet de la classe Grid), qui permet de connaître le pixel source correspondant à chacun des pixels reprojetés.
+ *
+ * Les calculs étant lourds, on va optimiser le calcul :
+ * \li en allouant en une seule fois tout l'espace nécessaire au calcul
+ * \li en utilisant au maximum les instructions SSE pour les calculs vectoriels
+ *
+ * Du fait de la reprojection (aucun alignement), les calculs réalisés pour un pixel ne peuvent être réutilisés pour un autre pixel. Cette différence avec le simple réechnatillonnnage rend les calculs beaucoup plus lourds
+ *
+ * Pour augmenter les performances de la reprojection avec les instructions SSE, on est amené :
+ * \li à calculer les lignes 4 par 4
+ * \li à travailler sur des buffers dont la taille est un multiple de 4, aligné sur 128 bits
+ * \li à travailler avec des données multiplexée : on regroupe les même canaux des différentes lignes
+ *
+ * On peut également tenir compte du masque associé à l'image source, pour limiter l'interpolation aux valeurs réelles. Cela ajoute non seulement de la complexité aux calculs, mais prend également plus de place. On va donc limiter cette utilisation aux cas vraiment nécessaires : si l'image source possède un masque (image pas pleine) et si l'utilisateur spécifie qu'il veut l'utiliser dans la reprojection.
+ *
+ * Enfin, lors de la reprojection, on ne tient pas compte du propre masque. C'est à dire qu'on remplit un pixel reprojeté avec de la donnée à partir du moment où un pixel de donnée source appartenait au noyau d'interpolation. Si on veut utiliser cette image sans avoir un "gonflement" artificiel des données, on devra la lire en parallèle de son masque (interpolé en plus proche voisin) pour la restreindre à l'étendue réelle des données (cela peut se faire avec ExtendedCompoundImage).
  */
 class ReprojectedImage : public Image {
 private:
@@ -106,7 +122,7 @@ private:
 
     /**
      * \~french \brief Grille de reprojection
-     * \details La grille est utilisée pour connaître le pixel source correspondant à celui de l'image reprojetée.
+     * \details La grille est utilisée pour connaître le pixel source correspondant à celui de l'image reprojetée. Celle-ci doit déjà avoir subi toutes les transformations nécessaires (reprojection et transformation affine. La grille ne sera pas modifiée lors des calculs de reprojection de l'image, c'est pourquoi elle peut être utilisée par plusieurs images, si elles ont les mêmes dimensions (largeur, hauteur et bbox). Typiquement, une image reprojetée et son masque associé peuvent utiliser la même grille.
      * \~english \brief Reprojection grid
      * \details The grid is used to know corresponding pixel in the source image.
      */
@@ -134,7 +150,7 @@ private:
      * \li ni trop faible car on ne doit pas être amené à demander une même ligne source plusieurs fois, pour des raisons de performances.
      * \li ni trop élevé, pour ne pas surcharger le mémoire.
      *
-     * On fait donc le choix de mémoriser 2*#Ky lignes sources.
+     * Du fait de la reprojection, 2 pixels sur la même ligne reprojetée vont correspondre à deux lignes potentiellement différentes dans l'image source. On va donc quantifier cet écart (Grid#deltaY) et l'utiliser pour définir le nombre de lignes sources mémorisée dans #src_image_buffer (et #src_mask_buffer) : #memorizedLines = Grid#deltaY + 2 x #Ky
      * \~english \brief Number of memorized source lines, for image and mask
      */
     int memorizedLines;
@@ -336,12 +352,21 @@ public:
     int getline ( uint8_t* buffer, int line );
 
     /**
-     * \~french
-     * \brief Destructeur par défaut
-     * \details Désallocation de la mémoire du buffer général #__buffer, du buffer d'index #src_line_index, des buffers #src_image_buffer et #src_mask_buffer et suppression de #sourceImage.
-     * \~english
-     * \brief Default destructor
-     * \details Desallocate global #buffer __buffer, index buffer #src_line_index, buffers #src_image_buffer and #src_mask_buffer and remove #sourceImage
+     * \~french \brief Destructeur par défaut
+     * \details Désallocation de la mémoire :
+     * \li du buffer général #__buffer
+     * \li du buffer d'index #src_line_index
+     * \li des buffers #src_image_buffer et #src_mask_buffer
+     *
+     * Et suppression de #sourceImage.
+     * 
+     * \~english \brief Default destructor
+     * \details Desallocate global :
+     * \li buffer #__buffer
+     * \li index buffer #src_line_index
+     * \li buffers #src_image_buffer and #src_mask_buffer
+     *
+     * And remove #sourceImage
      */
     ~ReprojectedImage() {
         _mm_free ( __buffer );
