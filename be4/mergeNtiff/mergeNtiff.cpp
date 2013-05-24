@@ -746,6 +746,8 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     double phaseX = pImage->getPhaseX();
     double phaseY = pImage->getPhaseY();
 
+    LOGGER_DEBUG ( "Bbox avant rephasage : " << bbox->toString() );
+
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf ( bbox->xmin/resx_dst, &intpart );
     if ( phi < 0. ) {
@@ -805,6 +807,8 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         }
         bbox->ymax += phaseDiff*resy_dst;
     }
+
+    LOGGER_DEBUG ( "Bbox après rephasage : " << bbox->toString() );
 }
 
 /**
@@ -848,15 +852,11 @@ ResampledImage* resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage*
     
     BoundingBox<double> bbox_dst ( xmin_dst, ymin_dst, xmax_dst, ymax_dst );
 
-    LOGGER_DEBUG ( "Image réechantillonnée : bbox avant rephasage : " << bbox_dst.toString() );
-
     /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
      * (phases égales en x et en y).
      */
     makePhase(pImageOut, &bbox_dst );
-
-    LOGGER_DEBUG ( "Image réechantillonnée : bbox après rephasage : " << bbox_dst.toString() );
 
     // Dimension de l'image reechantillonnee
     int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
@@ -1185,7 +1185,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );

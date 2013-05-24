@@ -88,7 +88,7 @@ using namespace std;
  *      -target color to modify in input image
  *      -data new color for data pixel which contained target color
  *      -nodata new color for nodata pixel, which contained target color and linked to borders
- *      -channels samples per pixel : 1, 3 or 4
+ *      -channels samples per pixel
  *
  * Example, to keep pure white for nodata :
  *      manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif
@@ -96,7 +96,7 @@ using namespace std;
  */
 void usage() {
 
-    std::cerr << "\nmanageNodata version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO( "\nmanageNodata version " << BE4_VERSION << "\n\n" <<
 
               "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
 
@@ -107,10 +107,10 @@ void usage() {
               "     -target color to modify in input image\n" <<
               "     -data new color for data pixel which contained target color\n" <<
               "     -nodata new color for nodata pixel, which contained target color and linked to borders\n" <<
-              "     -channels samples per pixel : 1, 3 or 4\n\n" <<
+              "     -channels samples per pixel\n\n" <<
 
               "Example, to keep pure white for nodata : \n" <<
-              "     manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif\n" << std::endl;
+              "     manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif\n");
 }
 
 /**
@@ -135,20 +135,24 @@ void error ( std::string message, int errorCode = -1 ) {
  * \return code de retour, 0 en cas de succès, -1 sinon
  ** \~english
  * \brief Main function for tool manageNodata
- * \details All instrcutions are in this function.
+ * \details All instructions are in this function.
  * \param[in] argc parameters number
  * \param[in] argv parameters array
  * \return return code, 0 if success, -1 otherwise
  */
 int main ( int argc, char* argv[] ) {
-    char* input = 0;
-    char* output = 0;
+    char* inputImage = 0;
+    char* outputImage = 0;
+
+    char* outputMask = 0;
 
     char* strTargetValue = 0;
     char* strNewNodata = 0;
     char* strNewData = 0;
 
     int channels = 0;
+
+    bool touchEdges = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -169,46 +173,70 @@ int main ( int argc, char* argv[] ) {
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
     for ( int i = 1; i < argc; i++ ) {
+        
         if ( !strcmp ( argv[i],"-h" ) ) {
             usage();
             exit ( 0 );
         }
-        if ( !strcmp ( argv[i],"-target" ) ) {
+        
+        if ( !strcmp ( argv[i],"-touch-edges" ) ) {
+            touchEdges = true;
+            continue;
+            
+        } else if ( !strcmp ( argv[i],"-target" ) ) {
             if ( i++ >= argc ) error ( "Error with option -target",-1 );
             strTargetValue = argv[i];
             continue;
+            
         } else if ( !strcmp ( argv[i],"-nodata" ) ) {
             if ( i++ >= argc ) error ( "Error with option -nodata",-1 );
             strNewNodata = argv[i];
             continue;
+            
         } else if ( !strcmp ( argv[i],"-data" ) ) {
             if ( i++ >= argc ) error ( "Error with option -data",-1 );
             strNewData = argv[i];
             continue;
+            
         } else if ( !strcmp ( argv[i],"-channels" ) ) {
             if ( i++ >= argc ) error ( "Error with option -channels",-1 );
             channels = atoi ( argv[i] );
             continue;
-        } else if ( !input ) {
-            input = argv[i];
-        } else if ( !output ) {
-            output = argv[i];
+            
+        } else if ( !strcmp ( argv[i],"-mask-out" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -mask-out",-1 );
+            outputMask = argv[i];
+            continue;
+            
+        } else if ( !inputImage ) {
+            inputImage = argv[i];
+            
+        } else if ( !outputImage ) {
+            outputImage = argv[i];
         } else {
             error ( "Error : unknown option : " + string ( argv[i] ),-1 );
         }
     }
 
-    if ( ! input ) error ( "Missing input file",-1 );
-    if ( ! output ) error ( "Missing output file",-1 );
+    /***************** VERIFICATION DES PARAMETRES FOURNIS *********************/
+    
+    if ( ! inputImage ) error ( "Missing input file",-1 );
+    if ( ! outputImage ) error ( "Missing output file",-1 );
     if ( ! channels ) error ( "Missing number of samples per pixel",-1 );
-    if ( ! strTargetValue ) error ( "Missing target color",-1 );
-    if ( ! strNewNodata && ! strNewData ) error ( "What have we to do with the target color ? Precise a new nodata or data color",-1 );
+    
+    if ( ! strTargetValue )
+        error ( "How to identify the nodata in the input image ? Provide a target color (-target)",-1 );
+    
+    if ( ! strNewNodata && ! strNewData && ! outputMask )
+        error ( "What have we to do with the target color ? Precise a new nodata or data color, or a mask to write",-1 );
 
     uint8_t* targetValue = new uint8_t[channels];
     uint8_t* newNodata = new uint8_t[channels];
     uint8_t* newData = new uint8_t[channels];
 
-    // Target value interpretation
+    /***************** INTERPRETATION DES COUELEURS FOURNIES *******************/
+
+    // Target value
     char* charValue = strtok ( strTargetValue,"," );
     if ( charValue == NULL ) {
         error ( "Error with option -target : integer values (between 0 and 255) seperated by comma",-1 );
@@ -230,7 +258,7 @@ int main ( int argc, char* argv[] ) {
         targetValue[i] = value;
     }
 
-    // New nodata interpretation
+    // New nodata
     if ( strNewNodata ) {
         charValue = strtok ( strNewNodata,"," );
         if ( charValue == NULL ) {
@@ -252,9 +280,12 @@ int main ( int argc, char* argv[] ) {
             }
             newNodata[i] = value;
         }
+    } else {
+        // On ne précise pas de nouvelle couleur de non-donnée, elle est la même que la couleur cible.
+        newNodata = targetValue;
     }
 
-    // New data interpretation
+    // New data
     if ( strNewData ) {
         charValue = strtok ( strNewData,"," );
         if ( charValue == NULL ) {
@@ -281,15 +312,12 @@ int main ( int argc, char* argv[] ) {
         newData = targetValue;
     }
 
-    if ( ! strNewNodata ) {
-        // On ne précise pas de nouvelle couleur de non-donnée, elle est la même que la couleur cible.
-        newNodata = targetValue;
-    }
+    /******************* APPEL A LA CLASSE TIFFNODATAMANAGER *******************/
 
     TiffNodataManager TNM ( channels,targetValue,newData,newNodata );
 
-    if ( ! TNM.treatNodata ( input,output ) ) {
-        error ( "Error : unable to treat nodata for this file : " + string ( input ),-1 );
+    if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
+        error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
     }
 
     delete[] targetValue;

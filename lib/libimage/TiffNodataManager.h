@@ -74,6 +74,26 @@
  */
 class TiffNodataManager {
 private:
+
+    /**
+     * \~french \brief Largeur de l'image en cours de traitement
+     * \~english \brief Width of the treated image
+     */
+    uint32 width;
+
+    /**
+     * \~french \brief Hauteur de l'image en cours de traitement
+     * \~english \brief Height of the treated image
+     */
+    uint32 height;
+
+    /**
+     * \~french \brief Nombre de canaux de l'image en cours de traitement
+     * \~english \brief Number of samples of the treated image
+     */
+    uint16 samplesperpixel;
+
+    
     /**
      * \~french \brief Nombre de canaux des couleurs du manager
      * \~english \brief Number of samples in manager colors
@@ -85,6 +105,15 @@ private:
      * \~english \brief Color impacted by modifications
      */
     uint8_t *targetValue;
+
+    /**
+     * \~french \brief Méthode de détection des pixels de nodata
+     * \details Part-on des bords pour identifier les pixels de nodata ?
+     * \~english \brief Nodata pixels detection method
+     * \details Do we spread from image's edges to identify nodata pixels ?
+     */
+    bool touchEdges;
+    
     /**
      * \~french \brief Nouvelle couleur pour les pixels de donnée
      * \details Elle peut être la même que la couleur cible #targetValue. Dans ce cas, on ne touche pas aux pixels de donnée.
@@ -114,22 +143,54 @@ private:
     bool newNodataValue;
 
     /**
-     * \~french \brief Identifie et change la couleur des pixels qui touchent le bord
-     * \details On identifie les pixels du bord dont la couleur est #dataValue, et on les ajoute dans une pile (onstocke la position en 1 dimension dans l'image). On gère en parallèle le masque de donnée, temporaire, pour mémoriser les pixels déjà identifié comme nodata.
+     * \~french \brief Identifie les pixels de nodata
+     * \details Les pixels de nodata potentiels sont ceux qui ont la valeur #targetValue. Deux méthodes sont disponibles :
+     * \li Tous les pixels qui ont cette valeur sont du nodata
+     * \li Seuls les pixels qui ont cette valeur et qui "touchent le bord" sont du nodata
+     *
+     * Pour cette deuxième méthode, plus lourde, nous allons procéder comme suit. On identifie les pixels du bord dont la couleur est #targetValue, et on les ajoute dans une pile (on stocke la position en 1 dimension dans l'image). On remplit en parallèle le masque de donnée, pour mémoriser les pixels identifié comme nodata.
      *
      * Itérativement, tant que la pile n'est pas vide, on en prend la tête et on considère les 4 pixels autour. Si ils sont de la couleur #dataValue et qu'ils n'ont pas déjà été traités (on le sait grâce au masque), on les ajoute à la pile. Ainsi de suite jusqu'à vider la pile.
      *
-     * \param[in,out] IM image à modifier
-     * \param[in] width largeur de l'image
-     * \param[in] height hauteur de l'image
-     * \param[in] samplesperpixel nombre de canaux de l'image
-     * \~english \brief Identify et switch color of pixels which touch sides
-     * \param[in,out] IM image to modify
-     * \param[in] width image's width
-     * \param[in] height image's height
-     * \param[in] samplesperpixel image's number of samples per pixel
+     * Dans les deux acs, on remplit un buffer qui servira de masque afin de, au choix :
+     * \li changer la valeur de nodata
+     * \li changer la valeur des mixels de données qui ont la valeur #targetValue (réserver une couleur aux pixels de nodata)
+     * \li écrire le masque dans un fichier
+     *
+     * \param[in] IM image à analyser
+     * \param[out] MSK masque à remplir
+     *
+     * \~english \brief Identify nodata pixels
+     * \param[in] IM image to analyze
+     * \param[out] MSK mask to fill
      */
-    void changeNodataValue ( uint8_t* IM, uint32 width , uint32 height,uint16 samplesperpixel );
+    void identifyNodataPixels ( uint8_t* IM, uint8_t* MSK );
+
+    /**
+     * \~french \brief Change la couleur des pixels de nodata
+     * \details Les pixels de nodata ont déjà été identifiés. Reste à en changer la valeur par #nodataValue.
+     *
+     * \param[in,out] IM image à modifier
+     * \param[in] MSK masque à utiliser
+     * 
+     * \~english \brief Switch color of nodata pixels
+     * \param[in,out] IM image to modify
+     * \param[in] MSK mask to use
+     */
+    void changeNodataValue ( uint8_t* IM, uint8_t* MSK );
+
+    /**
+     * \~french \brief Change la couleur des pixels de donnée
+     * \details Les pixels de nodata ont déjà été identifiés. Il se peut que des pixels de données soit de la couleur #targetValue et qu'on veuille la changer (réserver une couleur aux pixels de nodata). On parcourt l'image et on change la valeur de ces derniers par #dataValue.
+     *
+     * \param[in,out] IM image à modifier
+     * \param[in] MSK masque à utiliser
+     *
+     * \~english \brief Switch color of data pixels
+     * \param[in,out] IM image to modify
+     * \param[in] MSK mask to use
+     */
+    void changeDataValue ( uint8_t* IM, uint8_t* MSK );
 
 public:
 
@@ -138,6 +199,7 @@ public:
      * \details Les booléens #removeTargetValue et #newNodataValue sont déduits des couleurs, si elles sont identiques ou non.
      * \param[in] channels nombre de canaux dans les couleurs
      * \param[in] targetValue couleur cible
+     * \param[in] touchEdges méthode de détection des pixels de nodata
      * \param[in] dataValue nouvelle couleur pour les données
      * \param[in] nodataValue nouvelle couleur pour les non-données
      ** \~english
@@ -145,10 +207,11 @@ public:
      * \details Booleans #removeTargetValue and #newNodataValue are deduced from colors.
      * \param[in] channels colors' number of samples
      * \param[in] targetValue color to treat
+     * \param[in] touchEdges Nodata pixels detection method
      * \param[in] dataValue new color for data
      * \param[in] nodataValue new color for nodata
      */
-    TiffNodataManager ( uint16 channels, uint8_t* targetValue, uint8_t* dataValue, uint8_t* nodataValue );
+    TiffNodataManager ( uint16 channels, uint8_t* targetValue, bool touchEdges, uint8_t* dataValue, uint8_t* nodataValue );
 
     /** \~french
      * \brief Fonction de traitement du manager, effectuant les modification de l'image
@@ -163,7 +226,7 @@ public:
      * \param[in] output Output image path
      * \return True if success, false otherwise
      */
-    bool treatNodata ( char* input, char* output );
+    bool treatNodata ( char* inputImage, char* outputImage, char* outputMask );
 };
 
 #endif // _TIFFNODATAMANAGER_
