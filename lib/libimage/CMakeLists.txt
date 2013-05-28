@@ -48,7 +48,7 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 
 set(
-    libimage_SRCS Palette.cpp Data.cpp TiffReader.cpp TiffNodataManager.cpp TiledTiffWriter.cpp Decoder.cpp
+    libimage_SRCS Palette.cpp Data.cpp TiffReader.cpp TiledTiffWriter.cpp Decoder.cpp
     ExtendedCompoundImage.cpp LibtiffImage.cpp CompoundImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     Kernel.cpp Interpolation.cpp

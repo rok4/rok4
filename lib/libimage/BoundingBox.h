@@ -154,16 +154,16 @@ public:
     }
 
     /** \~french \brief Sortie des informations sur le rectangle englobant
-     * \return chaîne de carcactère décrivant le rectangle englobant
      ** \~english \brief Bounding box description output
-     * \return string describing the bounding box
      */
     void print() {
         LOGGER_DEBUG ( "BBOX = " << xmin << " " << ymin << " " << xmax << " " << ymax );
     }
 
     /** \~french \brief Conversion des informations sur le rectangle englobant en string
+     * \return chaîne de carcactère décrivant le rectangle englobant
      ** \~english \brief Convert bounding box description to string
+     * \return string describing the bounding box
      */
     std::string toString() {
         std::ostringstream oss;

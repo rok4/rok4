@@ -40,20 +40,25 @@
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Gère la couleur des pixels de nodata
  * \~english \brief Manage nodata pixel color
- * \~french \details Cet outil est destiné à identifier et modifier les pixels qui contiennent une certaine valeur dans une image TIFF à canaux entiers non signés sur 8 bits. Ceci est utile lorsque l'on souhaite modifier la couleur de nodata ou la supprimer des données.
+ * \~french \details Cet outil est destiné à :
+ * \li identifier les pixels de nodata à partir d'une valeur et d'une tolérance
+ * \li modifier les pixels qui contiennent cette valeur
+ * \li écrire le masque de données associé à l'image
  *
- * On définit deux fichiers :
- * \li l'image en entrée, à modifier
- * \li l'image en sortie
+ * L'outil gère les image TIFF à canaux entiers non signés sur 8 bits ou flottant sur 32 bits.
  *
- * On va également définir 3 couleurs en paramètre :
- * \li la couleur cible : les pixels de cette couleur sont ceux potentiellement modifiés
- * \li la nouvelle couleur de nodata
- * \li la nouvelle couleur de donnée
+ * Les paramètres sont les suivants : 
  *
- * Ainsi, les pixels contenant la couleur cible sont passés :
- * \li en nouvelle couleur de nodata si ils touchent le bord
- * \li en nouvelle couleur de donnée sinon
+ * \li l'image en entrée (obligatoire)
+ * \li l'image en sortie. Si on ne la précise pas, les éventuelles modifications de l'image écraseront l'image source.
+ * \li le masque de sortie (pas écrit si non précisé).
+ *
+ * Dans le cas où seul le masque associé nous intéresse, on ne réecrira jamais de nouvelle image, même si un chemin de sortie différent de l'entrée était précisé.
+ *
+ * On peut également définir 3 couleurs :
+ * \li la couleur cible (obligatoire) : les pixels de cette couleur sont ceux potentiellement considérés comme du nodata et modifiés. On peut également préciser une tolérance en complément de la valeur. L'option "touche les bords" précise la façon dont on identifie les pixels de nodata.
+ * \li la nouvelle couleur de nodata : si elle n'est pas précisée, cela veut dire qu'on ne veut pas la modifier
+ * \li la nouvelle couleur de donnée : si elle n'est pas précisée, cela veut dire qu'on ne veut pas la modifier
  *
  * \~ \image html manageNodata.png \~french
  *
@@ -65,6 +70,7 @@
 using namespace std;
 
 #include "TiffNodataManager.h"
+#include "Format.h"
 #include "Logger.h"
 #include <cstdlib>
 #include <iostream>
@@ -81,36 +87,54 @@ using namespace std;
  *
  * Manage nodata pixel color in a TIFF file
  *
- * Usage: manageNodata -target <VAL> -nodata <VAL> [-data <VAL>] <INPUT FILE> <OUTPUT FILE>
+ * Usage: manageNodata -target <VAL> [-tolerance <VAL>] [-touch-edges] -format <VAL> [-nodata <VAL>] [-data <VAL>] <INPUT FILE> [<OUTPUT FILE>] [-mask-out <VAL>]
  *
  * Colors are provided in decimal format, one integer value per sample
  * Parameters:
- *      -target color to modify in input image
- *      -data new color for data pixel which contained target color
- *      -nodata new color for nodata pixel, which contained target color and linked to borders
- *      -channels samples per pixel
+ *      -target         color to consider as nodata / modify
+ *      -tolerance      a positive integer, to define a delta for target value's comparison
+ *      -touche-edges   method to identify nodata pixels (all "target value" pixels or just those at the edges
+ *      -data           new color for data pixel which contained target color
+ *      -nodata         new color for nodata pixel
+ *      -mask-out       path to the mask to write
+ *      -format         image's samples' format : uint8 or float32
+ *      -channels       samples per pixel,number of samples in provided colors
  *
- * Example, to keep pure white for nodata :
- *      manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif
+ * Examples :
+ *      - to keep pure white for nodata, and write a new image :
+ *              manageNodata -target 255,255,255 -touch-edges -data 254,254,254 input_image.tif output_image.tif -channels 3 -format uint8
+ *      - to write the associated mask (all '-99999' pixels are nodata, with a tolerance):
+ *              manageNodata -target -99999 -tolerance 10 input_image.tif -mask-out mask.tif -channels 1 -format float32
  * \endcode
  */
 void usage() {
 
-    LOGGER_INFO( "\nmanageNodata version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO(
 
-              "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
+"\nmanageNodata version " << BE4_VERSION << "\n\n" <<
 
-              "Usage: manageNodata -target <VAL> -nodata <VAL> [-data <VAL>] <INPUT FILE> <OUTPUT FILE>\n\n" <<
+"Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
 
-              "Colors are provided in decimal format, one integer value per sample\n" <<
-              "Parameters:\n" <<
-              "     -target color to modify in input image\n" <<
-              "     -data new color for data pixel which contained target color\n" <<
-              "     -nodata new color for nodata pixel, which contained target color and linked to borders\n" <<
-              "     -channels samples per pixel\n\n" <<
+"Usage: manageNodata -target <VAL> [-tolerance <VAL>] [-touch-edges] -format <VAL> [-nodata <VAL>] [-data <VAL>] <INPUT FILE> [<OUTPUT FILE>] [-mask-out <VAL>]\n\n" <<
 
-              "Example, to keep pure white for nodata : \n" <<
-              "     manageNodata -target 255,255,255 -nodata 255,255,255 -data 254,254,254 old_image.tif new_image.tif\n");
+"Colors are provided in decimal format, one integer value per sample\n" <<
+"Parameters:\n" <<
+"      -target         color to consider as nodata / modify\n" <<
+"      -tolerance      a positive integer, to define a delta for target value's comparison\n" <<
+"      -touche-edges   method to identify nodata pixels (all 'target value' pixels or just those at the edges\n" <<
+"      -data           new color for data pixel which contained target color\n" <<
+"      -nodata         new color for nodata pixel\n" <<
+"      -mask-out       path to the mask to write\n" <<
+"      -format         image's samples' format : uint8 or float32\n" <<
+"      -channels       samples per pixel,number of samples in provided colors\n\n" <<
+
+"Examples :\n" <<
+"      - to keep pure white for nodata, and write a new image :\n" <<
+"              manageNodata -target 255,255,255 -touch-edges -data 254,254,254 input_image.tif output_image.tif -channels 3 -format uint8\n" <<
+"      - to write the associated mask (all '-99999' pixels are nodata, with a tolerance):\n" <<
+"              manageNodata -target -99999 -tolerance 10 input_image.tif -mask-out mask.tif -channels 1 -format float32\n\n"
+
+    );
 }
 
 /**
@@ -151,14 +175,16 @@ int main ( int argc, char* argv[] ) {
     char* strNewData = 0;
 
     int channels = 0;
+    SampleType ST;
 
     bool touchEdges = false;
+    int tolerance = 0;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -183,6 +209,12 @@ int main ( int argc, char* argv[] ) {
             touchEdges = true;
             continue;
             
+        } else if ( !strcmp ( argv[i],"-tolerance" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -tolerance",-1 );
+            tolerance = atoi ( argv[i] );
+            if ( tolerance < 0 ) error ( "Error with option -tolerance : have to be a positive integer",-1 );
+            continue;
+
         } else if ( !strcmp ( argv[i],"-target" ) ) {
             if ( i++ >= argc ) error ( "Error with option -target",-1 );
             strTargetValue = argv[i];
@@ -198,11 +230,18 @@ int main ( int argc, char* argv[] ) {
             strNewData = argv[i];
             continue;
             
+        } else if ( !strcmp ( argv[i],"-format" ) ) {
+            if ( i++ >= argc ) error ( "Error with option -format",-1 );
+            if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) ST = SampleType(8, SAMPLEFORMAT_UINT);
+            else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) ST = SampleType(32, SAMPLEFORMAT_IEEEFP);
+            else error ( "Unknown value for option -format : " + string (argv[i]), -1 );
+            continue;
+            
         } else if ( !strcmp ( argv[i],"-channels" ) ) {
             if ( i++ >= argc ) error ( "Error with option -channels",-1 );
             channels = atoi ( argv[i] );
             continue;
-            
+
         } else if ( !strcmp ( argv[i],"-mask-out" ) ) {
             if ( i++ >= argc ) error ( "Error with option -mask-out",-1 );
             outputMask = argv[i];
@@ -213,6 +252,7 @@ int main ( int argc, char* argv[] ) {
             
         } else if ( !outputImage ) {
             outputImage = argv[i];
+            
         } else {
             error ( "Error : unknown option : " + string ( argv[i] ),-1 );
         }
@@ -221,8 +261,15 @@ int main ( int argc, char* argv[] ) {
     /***************** VERIFICATION DES PARAMETRES FOURNIS *********************/
     
     if ( ! inputImage ) error ( "Missing input file",-1 );
-    if ( ! outputImage ) error ( "Missing output file",-1 );
+    
+    if ( ! outputImage ) {
+        LOGGER_INFO("If the input image have to be modify, it will be overwrite");
+        outputImage = new char[sizeof(inputImage)+1];
+        memcpy(outputImage, inputImage, sizeof(inputImage));
+    }
+    
     if ( ! channels ) error ( "Missing number of samples per pixel",-1 );
+    if ( ! ST.getBitsPerSample() ) error ( "Missing sample format",-1 );
     
     if ( ! strTargetValue )
         error ( "How to identify the nodata in the input image ? Provide a target color (-target)",-1 );
@@ -230,96 +277,83 @@ int main ( int argc, char* argv[] ) {
     if ( ! strNewNodata && ! strNewData && ! outputMask )
         error ( "What have we to do with the target color ? Precise a new nodata or data color, or a mask to write",-1 );
 
-    uint8_t* targetValue = new uint8_t[channels];
-    uint8_t* newNodata = new uint8_t[channels];
-    uint8_t* newData = new uint8_t[channels];
+    int* targetValue = new int[channels];
+    int* newNodata = new int[channels];
+    int* newData = new int[channels];
 
-    /***************** INTERPRETATION DES COUELEURS FOURNIES *******************/
-
+    /***************** INTERPRETATION DES COULEURS FOURNIES ********************/
+    LOGGER_DEBUG("Color interpretation");
+    
     // Target value
     char* charValue = strtok ( strTargetValue,"," );
     if ( charValue == NULL ) {
-        error ( "Error with option -target : integer values (between 0 and 255) seperated by comma",-1 );
+        error ( "Error with option -target : integer values seperated by comma",-1 );
     }
-    int value = atoi ( charValue );
-    if ( value < 0 || value > 255 ) {
-        error ( "Error with option -target : integer values (between 0 and 255) seperated by comma",-1 );
-    }
-    targetValue[0] = value;
+    targetValue[0] = atoi ( charValue );
     for ( int i = 1; i < channels; i++ ) {
         charValue = strtok ( NULL, "," );
         if ( charValue == NULL ) {
-            error ( "Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1 );
+            error ( "Error with option -oldValue : integer values seperated by comma",-1 );
         }
-        value = atoi ( charValue );
-        if ( value < 0 || value > 255 ) {
-            error ( "Error with option -oldValue : integer values (between 0 and 255) seperated by comma",-1 );
-        }
-        targetValue[i] = value;
+        targetValue[i] = atoi ( charValue );
     }
 
     // New nodata
     if ( strNewNodata ) {
         charValue = strtok ( strNewNodata,"," );
         if ( charValue == NULL ) {
-            error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
+            error ( "Error with option -nodata : integer values seperated by comma",-1 );
         }
-        value = atoi ( charValue );
-        if ( value < 0 || value > 255 ) {
-            error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
-        }
-        newNodata[0] = value;
+        newNodata[0] = atoi ( charValue );
         for ( int i = 1; i < channels; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
+                error ( "Error with option -nodata : integer values seperated by comma",-1 );
             }
-            value = atoi ( charValue );
-            if ( value < 0 || value > 255 ) {
-                error ( "Error with option -nodata : integer values (between 0 and 255) seperated by comma",-1 );
-            }
-            newNodata[i] = value;
+            newNodata[i] = atoi ( charValue );
         }
     } else {
         // On ne précise pas de nouvelle couleur de non-donnée, elle est la même que la couleur cible.
-        newNodata = targetValue;
+        memcpy(newNodata, targetValue, channels*sizeof(int));
     }
 
     // New data
     if ( strNewData ) {
         charValue = strtok ( strNewData,"," );
         if ( charValue == NULL ) {
-            error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
+            error ( "Error with option -data : integer values seperated by comma",-1 );
         }
-        value = atoi ( charValue );
-        if ( value < 0 || value > 255 ) {
-            error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
-        }
-        newData[0] = value;
+        newData[0] = atoi ( charValue );
         for ( int i = 1; i < channels; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
+                error ( "Error with option -data : integer values seperated by comma",-1 );
             }
-            value = atoi ( charValue );
-            if ( value < 0 || value > 255 ) {
-                error ( "Error with option -data : integer values (between 0 and 255) seperated by comma",-1 );
-            }
-            newData[i] = value;
+            newData[i] = atoi ( charValue );
         }
     } else {
         // Pas de nouvelle couleur pour la donnée : elle a la valeur de la couleur cible
-        newData = targetValue;
+        memcpy(newData, targetValue, channels*sizeof(int));
     }
 
     /******************* APPEL A LA CLASSE TIFFNODATAMANAGER *******************/
 
-    TiffNodataManager TNM ( channels,targetValue,newData,newNodata );
-
-    if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
-        error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
+    if (ST.isUInt8()) {
+        LOGGER_DEBUG("Target color treatment (uint8)");
+        TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
+        if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
+            error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
+        }
+    } else if (ST.isFloat()) {
+        LOGGER_DEBUG("Target color treatment (float)");
+        TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
+        if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
+            error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
+        }
     }
 
+    LOGGER_DEBUG("Clean");
+    delete acc;
     delete[] targetValue;
     delete[] newData;
     delete[] newNodata;

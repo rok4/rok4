@@ -39,13 +39,15 @@
 #include <iostream>
 #include <string.h>
 #include "tiffio.h"
+#include "Format.h"
+#include "Logger.h"
 #include "TiffReader.h"
 #include "TiledTiffWriter.h"
 #include "TiffNodataManager.h"
 #include "../be4version.h"
 
-uint8_t fastWhite[4] = {254,254,254,255};
-uint8_t white[4] = {255,255,255,255};
+int fastWhite[4] = {254,254,254,255};
+int white[4] = {255,255,255,255};
 
 void usage() {
     std::cerr << "tiff2tile version "<< BE4_VERSION << std::endl;
@@ -168,15 +170,30 @@ int main ( int argc, char **argv ) {
         exit ( 2 );
     }
 
+    SampleType ST = SampleType ( bitspersample,sampleformat );
+
+    if ( ! ST.isSupported() ) {
+        std::cerr << "Supported sample format are :\n" << ST.getHandledFormat() << std::endl ;
+        exit ( 2 );
+    }
+
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if ( crop ) {
 
-        TiffNodataManager TNM ( samplesperpixel,white,fastWhite,white );
-
-        if ( ! TNM.treatNodata ( input,input ) ) {
-            std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
-            exit ( 2 );
+        if (ST.isUInt8()) {
+            TiffNodataManager<uint8_t> TNM ( samplesperpixel,white, true, fastWhite,white );
+            if ( ! TNM.treatNodata ( input,input ) ) {
+                std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
+                exit ( 2 );
+            }
+        } else if (ST.isFloat()) {
+            TiffNodataManager<float> TNM ( samplesperpixel,white, true, fastWhite,white );
+            if ( ! TNM.treatNodata ( input,input ) ) {
+                std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
+                exit ( 2 );
+            }
         }
+
     }
 
     TiffReader R ( input );

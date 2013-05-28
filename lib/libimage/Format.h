@@ -95,6 +95,13 @@ public:
      */
     SampleType ( uint16_t bitspersample, uint16_t sampleformat ) : bitspersample ( bitspersample ), sampleformat ( sampleformat ) {}
 
+    /** \~french
+     * \brief Constructeur vide
+     ** \~english
+     * \brief Empty constructor
+     */
+    SampleType () {}
+
     /**
      * \~french
      * \brief Retourne le nombre de bits par canal
