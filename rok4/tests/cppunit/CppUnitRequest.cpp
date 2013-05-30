@@ -357,10 +357,20 @@ void CppUnitRequest::testgetCapWMSParam() {
     //   and no error is returned (NULL is returned)
     CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
     
-    // Add an invalid version param
-    //   This time there is a value (the error) returned
+    // Add an invalid version param inferior to the lowest version number
+    //   and no error is returned (NULL is returned)
+    marequete->params.insert( std::pair<std::string, std::string> ("version","0.0.0"));
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam with unvalid low version number:\n", (marequete->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
+    
+    // Add an invalid version param inferior to the lowest version number
+    //   and no error is returned (NULL is returned)
     marequete->params.insert( std::pair<std::string, std::string> ("version","1.2.3"));
-    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam :\n", (marequete->getCapWMSParam(*services_conf, versionstring)) != NULL ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam with unvalid low version number:\n", (marequete->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
+
+    // Add an invalid version param superior to the highest version number
+    //   and no error is returned (NULL is returned)
+    marequete->params.insert( std::pair<std::string, std::string> ("version","9.9.9"));
+    CPPUNIT_ASSERT_MESSAGE ( "getCapWMSParam with unvalid high version number:\n", (marequete->getCapWMSParam(*services_conf, versionstring)) == NULL ) ;
 
     // We now add a valid version param value
     //   and no error is returned (NULL is returned)

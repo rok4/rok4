@@ -1067,6 +1067,32 @@ DataStream* Request::getCapWMSParam(ServicesConf& servicesConf, std::string& ver
         version = "1.3.0";
         return NULL;
     }
+    // Version number negotiation for WMS
+    // - Version higher than supported version: send the highest supported version
+    // - Version lower than supported version: send the lowest supported version
+    // We compare the different values of the version number (l=left, m=middle, r=right)
+    // Versions supported:
+    std::string high_version = "1.3.0";
+    int high_version_l = high_version[0]-48; //-48 is because of ASCII table, numbers start at position 48
+    int high_version_m = high_version[2]-48;
+    int high_version_r = high_version[4]-48;
+    std::string low_version = "1.3.0";
+    int low_version_l = low_version[0]-48;
+    int low_version_m = low_version[2]-48;
+    int low_version_r = low_version[4]-48;
+    // Getting the request values to compare
+    int request_l = version[0]-48;
+    int request_m = version[2]-48;
+    int request_r = version[4]-48;
+    if (request_l > high_version_l || (request_l == high_version_l && request_m > high_version_m) || (request_l == high_version_l && request_m == high_version_m && request_r > high_version_r)) {
+        version = high_version;
+        return NULL;
+    }
+    if (request_l < low_version_l || (request_l == low_version_l && request_m < low_version_m) || (request_l == low_version_l && request_m == low_version_m && request_r < low_version_r)) {
+        version = low_version;
+        return NULL;
+    }
+
     if ( version!="1.3.0" )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"),"wms" ));
     return NULL;
