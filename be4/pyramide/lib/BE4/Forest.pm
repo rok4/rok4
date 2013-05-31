@@ -356,21 +356,13 @@ sub _load {
         
         if ($datasource->hasImages) {
             
-            if (($datasource->getSRS ne $TMS->getSRS) ||
-                (! $self->{pyramid}->isNewPyramid && ($pyr->getCompression eq 'jpg'))) {
+            if (! $self->{pyramid}->isNewPyramid && $pyr->getCompression eq 'jpg' ) {
                 
                 if (! $datasource->hasHarvesting) {
-                    ERROR (sprintf "We need a WMS service for a reprojection (from %s to %s) or because of a lossy compression cache update (%s) for the base level %s",
-                        $datasource->getSRS, $TMS->getSRS,
-                        $pyr->getCompression, $datasource->getBottomID);
+                    ERROR(sprintf "We need a WMS service because of a lossy compression cache update (%s) for the base level %s", $pyr->getCompression, $datasource->getBottomID);
                     return FALSE;
                 }
                 
-            } else {
-                if ($datasource->hasHarvesting()) {
-                    WARN(sprintf "We don't need WMS service for the datasource with base level '%s'. We remove it.",$datasource->getBottomID);
-                    $datasource->removeHarvesting();
-                }
             }
         }
         

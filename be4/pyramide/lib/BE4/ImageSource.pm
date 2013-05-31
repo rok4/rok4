@@ -57,6 +57,7 @@ Attributes:
     PATHIMG - string - Path to images directory.
     PATHMTD - string - Path to metadata directory. NOT IMPLEMENTED.
     images - <GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
+    srs - string - SRS of the georeferenced images
     bestResX - double - Best X resolution among all images.
     bestResY - double - Best Y resolution among all images.
     pixel - <Pixel> - Pixel components of all images, have to be same for each one.
@@ -109,6 +110,7 @@ ImageSource constructor. Bless an instance.
 
 Parameters (hash):
     path_image - string - Path to images' directory, to analyze.
+    srs - string - SRS of the georeferenced images
 
 See also:
     <_init>, <computeImageSource>
@@ -150,6 +152,7 @@ Checks and stores informations.
 
 Parameters (hash):
     path_image - string - Path to images' directory, to analyze.
+    srs - string - SRS of the georeferenced images
 =cut
 sub _init {
 
@@ -159,10 +162,15 @@ sub _init {
     TRACE;
     
     return FALSE if (! defined $params);
+    if (! exists($params->{srs}) || ! defined ($params->{srs})) {
+        ERROR ("We have to provide a SRS to create an ImageSource object");
+        return FALSE;
+    }
     
     # init. params    
     $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
     $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
+    $self->{srs} = $params->{srs};
     
     if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
         ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
@@ -276,6 +284,7 @@ sub computeImageSource {
         $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
 
         push @$lstGeoImages, $objGeoImage;
+        $objGeoImage->setImageSource($self);
     }
 
     $self->{pixel} = $pixel;
@@ -371,6 +380,12 @@ sub computeBBox {
 sub getResolution {
     my $self = shift;
     return $self->{resolution};  
+}
+
+# Function: getSRS
+sub getSRS {
+    my $self = shift;
+    return $self->{srs};
 }
 
 # Function: getImages

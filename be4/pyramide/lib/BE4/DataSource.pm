@@ -259,6 +259,7 @@ sub _load {
     my $imagesource = undef;
     if (exists $params->{path_image}) {
         $imagesource = BE4::ImageSource->new({
+            srs => $self->{srs},
             path_image => $params->{path_image},
             path_metadata => $params->{path_metadata},
         });

@@ -528,8 +528,8 @@ sub computeYourself {
     
     my @topLevelNodes = $self->getNodesOfTopLevel;
     
-    # --------------------------- WEIGHT --------------------------------
-    # Pondération de l'arbre en fonction des opérations à réaliser.
+    # ----------------------- WEIGHT AND CODE ---------------------------
+    # Pondération de l'arbre en fonction des opérations à réaliser et écriture des commandes dans les noeuds
     foreach my $topNode (@topLevelNodes) {
         if (! $self->computeBranch($topNode)) {
             ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName);
@@ -624,7 +624,7 @@ Function: computeBottomImage
 Treats a bottom node : determine code or weight.
 
 2 cases:
-    - native projection, lossless compression and images as data -> <Commands::mergeNtiff>
+    - lossless compression and images as data -> <Commands::mergeNtiff>
     - reprojection or lossy compression or just a WMS service as data -> <Commands::wms2work>
 
 Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.

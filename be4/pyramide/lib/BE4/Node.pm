@@ -528,8 +528,9 @@ sub exportForMntConf {
 
     my @Bbox = $self->getBBox;
 
-    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $imagePath,
+        $self->{tm}->getSRS(),
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
         $self->getTM()->getResolution(), $self->getTM()->getResolution();
 

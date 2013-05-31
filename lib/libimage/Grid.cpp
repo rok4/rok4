@@ -54,6 +54,8 @@
 static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
+
+    
     nbxReg = 1 + ( width-1 ) /stepInt;
     nbyReg = 1 + ( height-1 ) /stepInt;
 

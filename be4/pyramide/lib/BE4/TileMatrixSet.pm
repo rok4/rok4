@@ -254,6 +254,7 @@ sub _load {
         }
         
         $self->{tileMatrix}->{$id} = $objTM;
+        $objTM->setTMS($self);
         undef $objTM;
     }
     

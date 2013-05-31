@@ -91,6 +91,7 @@ public:
      * \return code de retour, 0 si succès, 1 sinon.
      */
     int reproject ( projPJ pj_src, projPJ pj_dst ) {
+        
         int nbSegment = 10;
         T stepX = ( xmax - xmin ) / T ( nbSegment );
         T stepY = ( ymax - ymin ) / T ( nbSegment );
@@ -117,6 +118,7 @@ public:
                 segX[i] *= DEG_TO_RAD;
                 segY[i] *= DEG_TO_RAD;
             }
+
 
         int code = pj_transform ( pj_src, pj_dst, nbSegment*4, 0, segX, segY, 0 );
 

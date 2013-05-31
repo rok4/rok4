@@ -284,10 +284,10 @@ Merge4tiff () {
     local inM4T=''
     
     if [ $imgBg ] ; then
-        forRM="$imgBg"
+        forRM="${TMP_DIR}/$imgBg"
         inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
         if [ $mskBg ] ; then
-            forRM="$mskBg"
+            forRM="${TMP_DIR}/$mskBg"
             inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
         fi
     fi
@@ -297,12 +297,12 @@ Merge4tiff () {
     do
         if [ ${imgIn[$i]} != '0' ] ; then
             if [[ ! ${RM_IMGS[${imgIn[$i]}]} ]] ; then
-                forRM="$forRM ${imgIn[$i]}"
+                forRM="$forRM ${tempDir}/${imgIn[$i]}"
                 inM4T=`printf "$inM4T -i%.1d ${tempDir}/${imgIn[$i]}" $i`
                 
                 if [ ${mskIn[$i]} != '0' ] ; then
                     inM4T=`printf "$inM4T -m%.1d ${tempDir}/${mskIn[$i]}" $i`
-                    forRM="$forRM ${mskIn[$i]}"
+                    forRM="$forRM ${tempDir}/${mskIn[$i]}"
                 fi
                 
                 let nbImgs=$nbImgs+1
@@ -328,7 +328,7 @@ Merge4tiff () {
     fi
     
     # Suppressions
-    rm -f $forRM
+    rm $forRM
 }
 
 FUNCTIONS

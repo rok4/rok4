@@ -54,6 +54,7 @@
 #include "ExtendedCompoundImage.h"
 #include "Logger.h"
 #include "Utils.h"
+#include "EmptyImage.h"
 
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
@@ -68,9 +69,9 @@ template <typename T>
 int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
     int i;
 
+    // Initialisation de tous les pixels de la ligne avec la valeur de nodata
     for ( i=0; i<width*channels; i++ ) {
         buffer[i]= ( T ) nodata[i%channels];
-        
     }
     
     double y = l2y ( line );
@@ -134,6 +135,16 @@ int ExtendedCompoundImage::getline ( float* buffer, int line ) {
 bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
     MirrorImageFactory MIF;
     std::vector< Image*>  mirrorImages;
+
+    if ( mirrorSize <= 0 ) {
+        LOGGER_ERROR ( "Unable to add mirror : mirror's size negative or null : " << mirrorSize );
+        return false;
+    }
+
+    if ( sourceImages.size() == 0 ) {
+        LOGGER_ERROR ( "Unable to add mirror : no source image" );
+        return false;
+    }
 
     for (uint i = 0; i < sourceImages.size(); i++ ) {
         for ( int j = 0; j < 4; j++ ) {
@@ -264,8 +275,8 @@ bool ExtendedCompoundImage::changeExtent ( BoundingBox< double > newBbox ) {
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
     
-    if ( images.size() ==0 ) {
-        LOGGER_ERROR ( "No source images to defined compounded image" );
+    if ( images.size() == 0 ) {
+        LOGGER_ERROR ( "No source images to define compounded image" );
         return NULL;
     }
 
@@ -289,8 +300,8 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
         if ( images.at ( j )->getYmax() >ymax )  ymax=images.at ( j )->getYmax();
     }
 
-    int w= ( int ) ( ( xmax-xmin ) / ( *images.begin() )->getResX() +0.5 );
-    int h= ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
+    int w = ( int ) ( ( xmax-xmin ) / ( *images.begin() )->getResX() +0.5 );
+    int h = ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
 
     return new ExtendedCompoundImage ( w,h,images.at ( 0 )->channels,BoundingBox<double> ( xmin,ymin,xmax,ymax ),
                                        images,nodata,mirrors );
@@ -300,9 +311,9 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     int width, int height, int channels, BoundingBox<double> bbox,
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
     
-    if ( images.size() ==0 ) {
-        LOGGER_ERROR ( "No source images to defined compounded image" );
-        return NULL;
+    if ( images.size() == 0 ) {
+        LOGGER_WARN ( "No source images to define compounded image" );
+        images.push_back(new EmptyImage(width, height, channels, nodata));
     }
 
     for ( int i=0; i<images.size()-1; i++ ) {

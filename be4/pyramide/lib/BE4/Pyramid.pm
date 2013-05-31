@@ -1280,16 +1280,11 @@ sub writeListPyramid {
             
             if ($directories[1] ne $self->{dir_nodata}) {
                 $level = $directories[2];
-                
-                my $b36pathtest = File::Spec->catdir(@directories[3..-1]);
-                INFO("b36 path test : $b36pathtest");
 
                 my $b36path = "";
                 for (my $i = 3; $i < scalar @directories; $i++) {
                     $b36path .= $directories[$i]."/";
                 }
-
-                INFO("b36 path correct : $b36path");
 
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
@@ -1410,7 +1405,7 @@ sub writeCachePyramid {
             }
         }
         ### MASK
-        if (defined $self->getDirMask) {
+        if ( $self->ownMasks() ) {
             my $maskDir = $objLevel->getDirMask;
             if (! -d $maskDir) {
                 eval { mkpath([$maskDir]); };

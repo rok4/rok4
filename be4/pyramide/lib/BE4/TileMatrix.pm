@@ -62,6 +62,7 @@ Using:
 
 Attributes:
     id - string - TM identifiant.
+    tms - <TileMatrixSet> - TMS to whom it belong
     resolution - double - Ground size of a pixel, using unity of the SRS.
     topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.
     topLeftCornerY - double - Y coordinate of the upper left corner for the level, the grid's origin.
@@ -135,6 +136,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         id             => undef,
+        tms             => undef,
         resolution     => undef,
         topLeftCornerX => undef,
         topLeftCornerY => undef,
@@ -181,7 +183,7 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    # parameters mandatory !
+    # parameters mandatory !       
     return FALSE if (! exists($params->{id}) || ! defined ($params->{id}));
     return FALSE if (! exists($params->{resolution}) || ! defined ($params->{resolution}));
     return FALSE if (! exists($params->{topLeftCornerX}) || ! defined ($params->{topLeftCornerX}));
@@ -418,6 +420,18 @@ sub getID {
     return $self->{id}; 
 }
 
+# Function: setTMS
+sub setTMS {
+    my $self = shift;
+    my $tms = shift;
+    
+    if ( ! defined ($tms) || ref ($tms) ne "BE4::TileMatrixSet" ) {
+        ERROR("We expect to a BE4::TileMatrixSet object.");
+    } else {
+        $self->{tms} = $tms;
+    }
+}    
+
 # Function: getResolution
 sub getResolution {
     my $self = shift;
@@ -464,6 +478,12 @@ sub getTopLeftCornerY {
 sub getTargetsTm {
     my $self = shift;
     return $self->{targetsTm}
+}
+
+# Function: getSRS
+sub getSRS {
+    my $self = shift;
+    return $self->{tms}->getSRS();
 }
 
 =begin nd

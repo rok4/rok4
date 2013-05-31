@@ -229,6 +229,7 @@ float* ReprojectedImage::computeDestLine ( int line ) {
     int Ix[4], Iy[4];
 
     for ( int x = 0; x < width; x++ ) {
+        
         for ( int i = 0; i < 4; i++ ) {
             Ix[i] = ( X[i][x] - floor ( X[i][x] ) ) * 1024;
             Iy[i] = ( Y[i][x] - floor ( Y[i][x] ) ) * 1024;

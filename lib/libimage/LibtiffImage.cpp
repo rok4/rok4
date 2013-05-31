@@ -305,6 +305,13 @@ int LibtiffImage::getline ( float* buffer, int line ) {
 /* ------------------------------------------- ECRITURE ------------------------------------------- */
 
 int LibtiffImage::writeImage ( Image* pIn ) {
+
+    // Contrôle de la cohérence des 2 images : dimensions
+    if (width != pIn->getWidth() || height != pIn->getHeight()) {
+        LOGGER_ERROR("Image we want to write has not consistent dimensions with the output image");
+        return -1;
+    }
+    
     // Initialisation du buffer
     unsigned char* buf_u=0;
     float* buf_f=0;
@@ -313,9 +320,10 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( ST.isUInt8() ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
+            LOGGER_INFO("line " << line);
             pIn->getline ( buf_u,line );
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
-                LOGGER_DEBUG ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
             }
         }
@@ -324,12 +332,12 @@ int LibtiffImage::writeImage ( Image* pIn ) {
         for ( int line = 0; line < height; line++ ) {
             pIn->getline ( buf_f,line );
             if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
-                LOGGER_DEBUG ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
+                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
             }
         }
     } else {
-        LOGGER_DEBUG ( "Not handled sample format to write. Are handled: " << ST.getSampleFormat() );
+        LOGGER_ERROR ( "Not handled sample format to write. Are handled: " << ST.getHandledFormat() );
         return -1;
     }
 

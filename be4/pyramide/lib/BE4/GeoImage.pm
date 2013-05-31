@@ -55,6 +55,7 @@ Attributes:
     filename - string - Just the image name, with file extension (XXXXX_YYYYY.tif).
     filepath - string - The directory which contain the image (/home/ign/DATA)
     maskCompletePath - string - Complete path of associated mask, if exists (undef otherwise).
+    imgSrc - ImageSource - Image source to whom the image belong
     xmin - double - Bottom left corner X coordinate.
     ymin - double - Bottom left corner Y coordinate.
     xmax - double - Top right corner X coordinate.
@@ -125,6 +126,7 @@ sub new {
         filename => undef,
         filepath => undef,
         maskCompletePath => undef,
+        imgSrc => undef,
         xmin => undef,
         ymax => undef,
         xmax => undef,
@@ -349,7 +351,7 @@ sub convertBBox {
   
   my @BBox = [0,0,0,0];
 
-  if (!defined($ct)){
+  if (! defined($ct)){
     $BBox[0] = Math::BigFloat->new($self->getXmin());
     $BBox[1] = Math::BigFloat->new($self->getYmin());
     $BBox[2] = Math::BigFloat->new($self->getXmax());
@@ -492,6 +494,18 @@ sub getBBox {
   return @bbox;
 }
 
+# Function: setImageSource
+sub setImageSource {
+    my $self = shift;
+    my $imgSrc = shift;
+
+    if (! defined ($imgSrc) || ref ($imgSrc) ne "BE4::ImageSource") {
+        ERROR("We expect to a BE4::ImageSource object.");
+    } else {
+        $self->{imgSrc} = $imgSrc;
+    }
+}
+
 # Function: getXmin
 sub getXmin {
   my $self = shift;
@@ -557,8 +571,9 @@ sub exportForMntConf {
 
     TRACE;
 
-    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $self->{completePath},
+        $self->{imgSrc}->getSRS(),
         $self->{xmin}, $self->{ymax}, $self->{xmax}, $self->{ymin},
         $self->{xres}, $self->{yres};
         
@@ -595,7 +610,7 @@ sub exportForDebug {
     $export .= sprintf "\t\t- x : %s\n",$self->{xres};
     $export .= sprintf "\t\t- y : %s\n",$self->{yres};
     
-    $export .= "\t Bbox (in SRS unity) :\n";
+    $export .= sprintf "\t Bbox (in SRS '%s' unity) :\n",$self->{imgSrc}->getSRS();
     $export .= sprintf "\t\t- xmin : %s\n",$self->{bbox}[0];
     $export .= sprintf "\t\t- ymin : %s\n",$self->{bbox}[1];
     $export .= sprintf "\t\t- xmax : %s\n",$self->{bbox}[2];
