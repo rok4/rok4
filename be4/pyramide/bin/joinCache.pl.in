@@ -1027,4 +1027,11 @@ Group: Paths in brief
     - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
     - Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
 
+Group: Externals tools
+
+Scripts' execution needs following tools:
+
+    - montage (imagemagick)
+    - tiffcp (libtiff)
+
 =cut

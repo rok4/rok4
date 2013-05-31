@@ -895,5 +895,13 @@ Examples:
     ; red as nodata color
     color               = 255,0,0
     (end code)
+
+Group: Externals tools
+
+Scripts' execution needs following tools:
+
+    - montage (imagemagick)
+    - pngcheck
+    - tiffcp (libtiff)
     
 =cut

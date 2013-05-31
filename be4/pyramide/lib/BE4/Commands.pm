@@ -143,7 +143,7 @@ Wms2work () {
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
             if [ "$fmt" == "png" ] ; then
-                if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+                if pngcheck -q $nameImg 1>/dev/null ; then break ; fi
             else
                 if tiffck $nameImg 1>/dev/null ; then break ; fi
             fi
