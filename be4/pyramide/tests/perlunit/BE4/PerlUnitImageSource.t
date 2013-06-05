@@ -48,19 +48,29 @@ use BE4::ImageSource;
 # ImageSource creation
 
 my $IS = BE4::ImageSource->new({
-    path_image => $Bin."/../../images/BDORTHO/"
+    path_image => $Bin."/../../images/BDORTHO/",
+    srs => "SRS"
 });
 ok (defined $IS, "ImageSource created");
 
 my $error = BE4::ImageSource->new({
-    path_image => $Bin."/../../wrong/path/"
+    path_image => $Bin."/../../wrong/path/",
+    srs => "SRS"
 });
 ok (! defined $error, "Wrong path detected");
 
 undef $error;
 
+my $error = BE4::ImageSource->new({
+    path_image => $Bin."/../../wrong/path/"
+});
+ok (! defined $error, "Missing SRS detected");
+
+undef $error;
+
 $error = BE4::ImageSource->new({
-    path_image => $Bin."/../../images/"
+    path_image => $Bin."/../../images/",
+    srs => "SRS"
 });
 ok (! defined $error, "Non consistent images detected (with different components)");
 

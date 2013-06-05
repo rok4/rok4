@@ -65,8 +65,6 @@ void ReprojectedImage::initialize () {
 
     if ( ! sourceImage->getMask() ) {useMask = false;}
 
-    /* On choisit de mémoriser 2*Ky lignes sources, cela permet de ne pas charger deux fois la même ligne source
-     * Ky n'est pas assez, peut-être peut-on passer à 1.5*Ky */
     memorizedLines = 2*Ky + ceil(grid->getDeltaY());
 
     /* -------------------- PLACE MEMOIRE ------------------- */

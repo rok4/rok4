@@ -67,6 +67,7 @@
 
 template <typename T>
 int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
+    //LOGGER_INFO("ECI line " << line);
     int i;
 
     // Initialisation de tous les pixels de la ligne avec la valeur de nodata
@@ -75,6 +76,8 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
     }
     
     double y = l2y ( line );
+
+    //LOGGER_INFO("ECI y " << y);
 
     for ( i=0; i < ( int ) sourceImages.size(); i++ ) {
         // On ecarte les images qui ne se trouvent pas sur la ligne
@@ -97,9 +100,10 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         int c2=- ( __min ( 0,x2c ( sourceImages[i]->getXmin() ) ) );
 
         T* buffer_t = new T[sourceImages[i]->getWidth()*sourceImages[i]->channels];
-        //LOGGER_DEBUG ( i<<" "<<line<<" "<<images[i]->y2l ( y ) );
 
+        //LOGGER_INFO("       ECI source " << i << " getline " << sourceImages[i]->y2l ( y ));
         sourceImages[i]->getline ( buffer_t,sourceImages[i]->y2l ( y ) );
+        //LOGGER_INFO("       je l'ai !!");
 
         if ( getMask ( i ) == NULL ) {
             memcpy ( &buffer[c0*channels], &buffer_t[c2*channels], ( c1-c0 ) *channels*sizeof ( T ) );
@@ -160,7 +164,6 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
                     LOGGER_ERROR ( "Unable to calculate mask's mirror" );
                     return false;
                 }
-                mirrorMask->print();
                 if ( ! mirrorImage->setMask ( mirrorMask ) ) {
                     LOGGER_ERROR ( "Unable to add mask to mirror" );
                     return false;
@@ -197,77 +200,73 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
     return true;
 }
 
-bool ExtendedCompoundImage::changeExtent ( BoundingBox< double > newBbox ) {
+bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int morePix = 0 ) {
 
-    /*** Vérification de la compatibilité des phases de la nouvelle bbox avec l'ancienne ***/
-    
-    double intpart;
-    double phi = 0;
-
-    double resX = getResX();
-    double resY = getResY();
-    
-    double phaseX = getPhaseX();
-    double phaseY = getPhaseY();
-
-    //XMIN
-    phi = modf ( newBbox.xmin/resX, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
-        return false;
-    }
-
-    // XMAX
-    phi = modf ( newBbox.xmax/resX, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
-        return false;
-    }
-
-    // YMIN
-    phi = modf ( newBbox.ymin/resY, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
-        return false;
-    }
-
-    // YMAX
-    phi = modf ( newBbox.ymax/resY, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        LOGGER_ERROR("Phasis of the new bbox (to change the ExtendedCompoundImage's extent) is not consistent with the old one");
-        return false;
-    }
+    BoundingBox<double> newBbox(bbox);
+    double nbPix;
 
     /******************** Mise à jour des dimensions **********************/
 
+    //XMIN
+    if ( otherbbox.xmin < bbox.xmin) {
+        nbPix = (double) ceil( (bbox.xmin - otherbbox.xmin) / resx);
+        LOGGER_DEBUG("Ajout de " << nbPix << " à gauche");
+        width += nbPix;
+        newBbox.xmin -= nbPix * resx;
+    }
+
+    // XMAX
+    if ( otherbbox.xmax > bbox.xmax) {
+        nbPix = (double) ceil( (otherbbox.xmax - bbox.xmax) / resx);
+        LOGGER_DEBUG("Ajout de " << nbPix << " à droite");
+        width += nbPix;
+        newBbox.xmax += nbPix * resx;
+    }
+
+    //YMIN
+    if ( otherbbox.ymin < bbox.ymin) {
+        nbPix = (double) ceil( (bbox.ymin - otherbbox.ymin) / resy);
+        LOGGER_DEBUG("Ajout de " << nbPix << " en bas");
+        height += nbPix;
+        newBbox.ymin -= nbPix * resy;
+    }
+
+    // YMAX
+    if ( otherbbox.ymax > bbox.ymax) {
+        nbPix = (double) ceil( (otherbbox.ymax - bbox.ymax) / resy);
+        LOGGER_DEBUG("Ajout de " << nbPix << " en haut");
+        width += nbPix;
+        newBbox.ymax += nbPix * resy;
+    }
+
+    /******************** ajout de pixels supplémentaires *****************/
+
+    if ( morePix > 0 ) {
+        width += 2*morePix;
+        height += 2*morePix;
+        
+        newBbox.xmin -= morePix * resx;
+        newBbox.ymin -= morePix * resy;
+        newBbox.xmax += morePix * resx;
+        newBbox.ymax += morePix * resy;
+    }
+
+    /*********************** mise à jour des attributs ********************/
+
     bbox = newBbox;
 
-    width = int ( ( bbox.xmax - bbox.xmin ) / getResX() + 0.5 );
-    height = int ( ( bbox.ymax - bbox.ymin ) / getResY() + 0.5 );
-
     // Mise à jour du masque associé à l'image composée
-    delete mask;
-    ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
+    if (mask) {
+        delete mask;
+        ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
 
-    if ( ! setMask(newMask) ) {
-        LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
-        return false;
+        if ( ! setMask(newMask) ) {
+            LOGGER_ERROR ( "Unable to add mask to enlarged ExtendedCompoundImage" );
+            return false;
+        }
     }
 
     return true;
-
 }
 
 /****************************************** ExtendedCompoundImageFactory *********************************************/

@@ -153,9 +153,6 @@ int type=-1;
 /** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
 Interpolation::KernelType interpolation;
 
-/** \~french Thread utilisé par PROJ4 pour les outils de reprojection */
-static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
-
 /**
  * \~french
  * \brief Affiche l'utilisation et les différentes options de la commande mergeNtiff
@@ -581,6 +578,11 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
     }
 
     CRS crs(stringCRS);
+/*
+    if (! crs.validateBBox(bbox)) {
+        LOGGER_ERROR("The output image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
+        return -1;
+    }*/
 
     // Arrondi a la valeur entiere la plus proche
     width = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
@@ -615,6 +617,11 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
     while ( ( out = readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS,&bbox,&resx,&resy ) ) == 0 ) {
 
         crs.setRequestCode(stringCRS);
+
+        if (! crs.validateBBox(bbox)) {
+            LOGGER_ERROR("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
+            return -1;
+        }
 
         LibtiffImage* pImage=factory.createLibtiffImageToRead ( imageFileName, bbox, resx, resy );
         if ( pImage == NULL ) {
@@ -746,7 +753,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     double phaseX = pImage->getPhaseX();
     double phaseY = pImage->getPhaseY();
 
-    LOGGER_DEBUG ( "Bbox avant rephasage : " << bbox->toString() );
+    LOGGER_DEBUG ( "        Bbox avant rephasage : " << bbox->toString() );
 
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf ( bbox->xmin/resx_dst, &intpart );
@@ -755,7 +762,6 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     }
 
     if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        LOGGER_DEBUG("Mise en phase de xmin");
         phaseDiff = phaseX - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
@@ -770,7 +776,6 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     }
 
     if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        LOGGER_DEBUG("Mise en phase de xmax");
         phaseDiff = phaseX - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
@@ -785,7 +790,6 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     }
 
     if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        LOGGER_DEBUG("Mise en phase de ymin");
         phaseDiff = phaseY - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
@@ -800,7 +804,6 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     }
 
     if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        LOGGER_DEBUG("Mise en phase de ymax");
         phaseDiff = phaseY - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
@@ -808,7 +811,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         bbox->ymax += phaseDiff*resy_dst;
     }
 
-    LOGGER_DEBUG ( "Bbox après rephasage : " << bbox->toString() );
+    LOGGER_DEBUG ( "        Bbox après rephasage : " << bbox->toString() );
 }
 
 /**
@@ -833,7 +836,7 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
 
     int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
 
-    LOGGER_DEBUG("Mirror's size : " << mirrorSize);
+    LOGGER_DEBUG("        Mirror's size : " << mirrorSize);
 
     // On mémorise la bbox d'origine, sans les miroirs
     BoundingBox<double> realBbox = pECI->getBbox();
@@ -863,7 +866,7 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
     int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
     int height_dst = int ( ( ymax_dst-ymin_dst ) / resy_dst + 0.5 );
 
-    if (width_dst == 0 || height_dst == 0) {
+    if (width_dst <= 0 || height_dst <= 0) {
         LOGGER_WARN("A ResampledImage's dimension would have been null");
         return true;
     }
@@ -905,62 +908,40 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
 
     const Kernel& K = Kernel::getInstance ( interpolation );
 
-    BoundingBox<double> BBOX_src = pECI->getBbox();
+    BoundingBox<double> tmpBbox = pECI->getBbox();
 
     /************ Initialisation des outils de conversion PROJ4 *********/
 
     std::string from_srs = pECI->getCRS().getProj4Code();
     std::string to_srs = pImageOut->getCRS().getProj4Code();
-    
-    projCtx ctx = pj_ctx_alloc();
-    
-    projPJ pj_src, pj_dst;
-    if ( ! ( pj_src = pj_init_plus_ctx ( ctx, ( "+init=" + from_srs +" +wktext" ).c_str() ) ) ) {
-        // Initialisation du système de projection source
-        int err = pj_ctx_get_errno ( ctx );
-        char *msg = pj_strerrno ( err );
-        LOGGER_ERROR ( "erreur d initialisation " << from_srs << " " << msg );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
-        return false;
-    }
-    
-    if ( ! ( pj_dst = pj_init_plus_ctx ( ctx, ( "+init=" + to_srs +" +wktext +over" ).c_str() ) ) ) {
-        // Initialisation du système de projection destination
-        int err = pj_ctx_get_errno ( ctx );
-        char *msg = pj_strerrno ( err );
-        LOGGER_ERROR ( "erreur d initialisation " << to_srs << " " << msg );
-        pj_free ( pj_src );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
-        return false;
-    }
 
-    if ( BBOX_src.reproject(pj_src, pj_dst) ) {
+    /******** Conversion de la bbox source dans le srs de sortie ********/
+
+    if ( tmpBbox.reproject(from_srs, to_srs) ) {
         LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
-
-    LOGGER_DEBUG("BBOX source reprojetée (en " << to_srs << " ) : " << BBOX_src.toString());
-    LOGGER_DEBUG("      BBOX destination (en " << to_srs << " ) : " << pImageOut->getBbox().toString());
 
     /* On valcule les résolutions de l'image source "équivalente" dans le SRS de destination, pour pouvoir calculer le ratio
      * des réolutions pour la taille des miroirs */
-    double resx_calc = (BBOX_src.xmax - BBOX_src.xmin) / double(pECI->getWidth());
-    double resy_calc = (BBOX_src.ymax - BBOX_src.ymin) / double(pECI->getHeight());
+    double resx_calc = (tmpBbox.xmax - tmpBbox.xmin) / double(pECI->getWidth());
+    double resy_calc = (tmpBbox.ymax - tmpBbox.ymin) / double(pECI->getHeight());
 
     /******************** Image reprojetée : dimensions *****************/
 
-    double xmin_dst = __max ( BBOX_src.xmin,pImageOut->getXmin() );
-    double xmax_dst = __min ( BBOX_src.xmax,pImageOut->getXmax() );
-    double ymin_dst = __max ( BBOX_src.ymin,pImageOut->getYmin() );
-    double ymax_dst = __min ( BBOX_src.ymax,pImageOut->getYmax() );
+    /* On fait particulièrement attention à ne considérer que la partie valide de la bbox finale
+     * c'est à dire la partie incluse dans l'espace de définition du SRS
+     * On va donc la "croper" */
+    BoundingBox<double> cropBbox = pImageOut->getCRS().cropBBox(pImageOut->getBbox());
+
+    double xmin_dst = __max ( tmpBbox.xmin,cropBbox.xmin );
+    double xmax_dst = __min ( tmpBbox.xmax,cropBbox.xmax );
+    double ymin_dst = __max ( tmpBbox.ymin,cropBbox.ymin );
+    double ymax_dst = __min ( tmpBbox.ymax,cropBbox.ymax );
     
     BoundingBox<double> BBOX_dst(xmin_dst,ymin_dst,xmax_dst,ymax_dst);
+
+    LOGGER_DEBUG("        BBOX dst (srs destination) : " << BBOX_dst.toString());
 
     /* Nous avons maintenant les limites de l'image reprojetée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
@@ -969,15 +950,25 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     makePhase(pImageOut, &BBOX_dst );
 
     // Dimension de l'image reechantillonnee
-    LOGGER_DEBUG("Calculated destination width (float) : " << ( xmax_dst-xmin_dst ) / resx_dst);
-    LOGGER_DEBUG("Calculated destination height (float) : " << ( ymax_dst-ymin_dst ) / resy_dst);
-    int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
-    int height_dst = int ( ( ymax_dst-ymin_dst ) / resy_dst + 0.5 );
+    LOGGER_DEBUG("        Calculated destination width (float) : " << ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst);
+    LOGGER_DEBUG("        Calculated destination height (float) : " << ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst);
+    int width_dst = int ( ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst + 0.5 );
+    int height_dst = int ( ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst + 0.5 );
 
-    if (width_dst == 0 || height_dst == 0) {
+    if (width_dst <= 0 || height_dst <= 0) {
         LOGGER_WARN("A ReprojectedImage's dimension would have been null");
         return true;
     }
+
+    tmpBbox = BBOX_dst;
+
+    if ( tmpBbox.reproject(to_srs, from_srs) ) {
+        LOGGER_ERROR ( "Erreur reprojection bbox dst en srs src" );
+        return false;
+    }
+
+    LOGGER_DEBUG("        BBOX dst (srs source) : " << tmpBbox.toString());
+    LOGGER_DEBUG("        BBOX source : " << pECI->getBbox().toString());
 
     /************************ Ajout des miroirs *************************/
 
@@ -988,50 +979,28 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     int mirrorSizeX = ceil ( K.size ( ratioX ) ) + 1;
     int mirrorSizeY = ceil ( K.size ( ratioY ) ) + 1;
 
-    int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
+    int mirrorSize = 2 * std::max(mirrorSizeX, mirrorSizeY);
 
-    LOGGER_DEBUG("Mirror's size : " << mirrorSize);
+    LOGGER_DEBUG("        Mirror's size : " << mirrorSize);
 
     if ( ! pECI->addMirrors ( mirrorSize ) ) {
         LOGGER_ERROR ( "Unable to add mirrors" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
+
+    LOGGER_DEBUG("        BBOX source avec miroir : " << pECI->getBbox().toString());
 
     /********************** Image source agrandie ***********************/
 
-    BBOX_src = pECI->getBbox();
-
-    if ( BBOX_src.reproject(pj_src, pj_dst) ) {
-        LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
-        return false;
-    }
-
-    if ( BBOX_src.reproject(pj_dst, pj_src) ) {
-        LOGGER_ERROR ( "Erreur reprojection bbox dst -> src" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
-        return false;
-    }
-
-    makePhase(pECI, &BBOX_src );
-
-    if ( ! pECI->changeExtent(BBOX_src) ) {
-        LOGGER_ERROR ( "Unable to change the source image extent for the reprojection" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
-        return false;
+    if (! pECI->getBbox().contains(tmpBbox)) {
+        /* L'image à reprojeter n'est pas intégralement contenue dans l'image source. Cela va poser des problèmes lors de l'interpolation :
+         * ReprojectedImage va vouloir accéder à des coordonnées pixel négatives -> segmentation fault.
+         * Pour éviter cela, on va agrandir artificiellemnt l'étendue de l'image source (avec du nodata) */
+        if ( ! pECI->extendBbox(tmpBbox, mirrorSize) ) {
+            LOGGER_ERROR ( "Unable to extend the source image extent for the reprojection" );
+            return false;
+        }
+        LOGGER_DEBUG("        BBOX source agrandie : " << pECI->getBbox().toString());
     }
 
     /********************** Grille de reprojection **********************/
@@ -1040,20 +1009,11 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     
     if ( ! ( grid->reproject ( to_srs, from_srs ) ) ) {
         LOGGER_ERROR ( "Bbox image invalide" );
-        pj_free ( pj_src );
-        pj_free ( pj_dst );
-        pj_ctx_free ( ctx );
-        pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
     
-    grid->affine_transform ( 1./resx_src, -BBOX_src.xmin/resx_src - 0.5,
-                             -1./resy_src, BBOX_src.ymax/resy_src - 0.5 );
-
-    pj_free ( pj_src );
-    pj_free ( pj_dst );
-    pj_ctx_free ( ctx );
-    pthread_mutex_unlock ( & mutex_proj );
+    grid->affine_transform ( 1./resx_src, -pECI->getBbox().xmin/resx_src - 0.5,
+                             -1./resy_src, pECI->getBbox().ymax/resy_src - 0.5 );
 
     /*************************** Image reprojetée ***********************/
 
@@ -1105,8 +1065,6 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
     
     ExtendedCompoundImageFactory ECIF ;
     std::vector<Image*> pOverlayedImages;
-
-    pthread_mutex_lock ( & mutex_proj );
 
     for ( unsigned int i=0; i<TabImageIn.size(); i++ ) {
         LOGGER_DEBUG ( "Pack " << i << " : " << TabImageIn.at ( i ).size() << " image(s)" );
@@ -1217,7 +1175,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );

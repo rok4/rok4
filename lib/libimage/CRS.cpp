@@ -45,7 +45,6 @@
 
 #include "CRS.h"
 #include "Logger.h"
-#include "Grid.h"
 #include <proj_api.h>
 
 /**
@@ -238,11 +237,8 @@ bool CRS::operator!= ( const CRS& crs ) const {
 
 
 BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geographicBBox ) {
-    Grid* grid = new Grid ( 256,256,geographicBBox );
-    grid->reproject ( "epsg:4326",proj4Code );
-    BoundingBox<double> bbox = grid->bbox;
-    delete grid;
-    grid=0;
+    BoundingBox<double> bbox(geographicBBox);
+    bbox.reproject("epsg:4326", proj4Code, 256);
     return bbox;
 }
 
@@ -253,11 +249,8 @@ BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny,
 
 
 BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > projectedBBox ) {
-    Grid* grid = new Grid ( 256,256,projectedBBox );
-    grid->reproject ( proj4Code,"epsg:4326" );
-    BoundingBox<double> bbox = grid->bbox;
-    delete grid;
-    grid=0;
+    BoundingBox<double> bbox(projectedBBox);
+    bbox.reproject(proj4Code, "epsg:4326", 256);
     return bbox;
 }
 

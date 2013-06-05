@@ -214,28 +214,34 @@ public:
 
     /**
      * \~french \brief Ajoute des miroirs à chacune des images sources
-     * \~english \brief Add mirrors to source images
-     * \~ \image html miroirs.png \~french
-     * \details On va vouloir réechantillonner ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord.
+     * \details On va vouloir réechantillonner (ou reprojeter) ce paquet d'images, donc utiliser une interpolation. Une interpolation se fait sur un nombre plus ou moins grand de pixels sources, selon le type. On veut que l'interpolation soit possible même sur les pixels du bord, et ce sans effet de bord.
      *
-     * On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord).On sait distinguer les vraies images de celles virtuelles.
+     * On ajoute donc des pixels virtuels, qui ne sont que le reflet des pixels de l'image. On crée ainsi 4 images miroirs (objets de la classe MirrorImage) par image du paquet (une à chaque bord). On sait distinguer les vraies images de celles virtuelles.
      *
-     * On va également optimiser la taille des miroirs, et leur donner la taille juste suffisante pour l'interpolation.
+     * On aura préalablement optimisé la taille des miroirs, pour qu'elle soit juste suffisante pour l'interpolation.
      *
      * \param[in] mirrorSize taille en pixel des miroirs, dépendant du mode d'interpolation et du ratio des résolutions
      * \return VRAI dans le cas d'un succès, FAUX sinon.
+     * \~english \brief Add mirrors to source images
+     * \~ \image html miroirs.png \~french
      */
     bool addMirrors ( int mirrorSize );
 
     /**
-     * \~french \brief Modifie des dimensions de l'image
-     * \~english \brief Modify image's dimensions
-     * \details On veut changer l'étendue de l'image. Cela implique donc de changer les dimensions pixel #width et #height (pas de modification des résolutions). On vérifie bien que la nouvelle bounding box est en phase avec l'ancienne. Ce changement d'étendue peut être aussi bien un agrandissement qu'une restriction de l'image. Dans le cas d'un agrandissement, étant donné qu'on n'ajoute pas de nouvelle image source, on augmente donc la quantité de nodata dans l'image.
+     * \~french \brief Modifie les dimensions de l'image
+     * \details On veut potentiellement augmenter l'étendue de l'image. Cela implique donc de changer les dimensions pixel #width et #height (pas de modification des résolutions). On vérifie bien que la nouvelle bounding box garde la même phase que l'ancienne. Étant donné qu'on n'ajoute pas de nouvelle image source, on augmente donc la quantité de nodata dans l'image.
      *
-     * \param[in] newBbox nouveau rectangle englobant à affecter à l'image
+     * L'extension se déroule en 3 étapes :
+     * \li augmentation afin d'inclure la bbox fournie : on ajoute des nombres entiers de pixel à gauche,à droite, en haut et en bas
+     * \li on ajoute optionnellement un nombre fixe de pixels des 4 côtés
+     * \li on met à jour les attributs de l'ExtendedCompoundImage : les dimensions pixel, la bounding box et éventuellement le masque associé
+     *
+     * \param[in] otherbbox rectangle englobant à inclure dans celui de l'image
+     * \param[in] morePix taille en pixel à ajouter de chaque côté, en plus de vouloir inclure "otherbbox"
      * \return VRAI dans le cas d'un succès, FAUX sinon.
+     * \~english \brief Modify image's dimensions
      */
-    bool changeExtent ( BoundingBox<double> newBbox );
+    bool extendBbox ( BoundingBox<double> otherbbox, int morePix );
 
     /**
      * \~french

@@ -571,9 +571,13 @@ sub exportForMntConf {
 
     TRACE;
 
-    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $self->{completePath},
-        $self->{imgSrc}->getSRS(),
+    my $output = sprintf "IMG %s", $self->{completePath};
+
+    if (defined $self->{imgSrc}) {
+        $output .= sprintf "\t%s", $self->{imgSrc}->getSRS();
+    }
+
+    $output .= sprintf "\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $self->{xmin}, $self->{ymax}, $self->{xmax}, $self->{ymin},
         $self->{xres}, $self->{yres};
         

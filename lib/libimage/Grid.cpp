@@ -51,11 +51,11 @@
 
 #include <algorithm>
 
-static pthread_mutex_t mutex_proj= PTHREAD_MUTEX_INITIALIZER;
+// Définit dans BoundingBox
+//static pthread_mutex_t mutex_proj = PTHREAD_MUTEX_INITIALIZER;
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
 
-    
     nbxReg = 1 + ( width-1 ) /stepInt;
     nbyReg = 1 + ( height-1 ) /stepInt;
 
@@ -176,8 +176,8 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
         return false;
     }
 
-    LOGGER_DEBUG ( "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] );
-    LOGGER_DEBUG ( "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] );
+//     LOGGER_DEBUG ( "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] );
+//     LOGGER_DEBUG ( "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] );
 
     // Note that geographic locations need to be passed in radians, not decimal degrees,
     // and will be returned similarly
@@ -218,13 +218,13 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
             gridY[i] *= RAD_TO_DEG;
         }
 
-    LOGGER_DEBUG ( "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] );
-    LOGGER_DEBUG ( "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] );
+//     LOGGER_DEBUG ( "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] );
+//     LOGGER_DEBUG ( "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] );
 
     /****************** Mise à jour de la bbox *********************
      * On n'utilise pas les coordonnées présentent dans les tableaux X et Y car celles ci correspondent
      * aux centres des pixels, et non au bords. On va donc reprojeter la bbox indépendemment.
-     * On divise chaque côté de la bbox en 10.
+     * On divise chaque côté de la bbox en la dimensions la plus grande.
      */
     if ( bbox.reproject(pj_src, pj_dst) ) {
         LOGGER_ERROR ( "Erreur reprojection bbox" );

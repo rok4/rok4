@@ -320,7 +320,7 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( ST.isUInt8() ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
-            LOGGER_INFO("line " << line);
+            //LOGGER_INFO("line " << line);
             pIn->getline ( buf_u,line );
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
                 LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
