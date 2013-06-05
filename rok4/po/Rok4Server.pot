@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-05-16 10:18+0200\n"
+"POT-Creation-Date: 2013-06-03 14:30+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1212,7 +1212,7 @@ msgstr ""
 msgid "Le style "
 msgstr ""
 
-#: Request.cpp:852 Request.cpp:1071
+#: Request.cpp:852 Request.cpp:1097
 msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr ""
 
@@ -1320,15 +1320,15 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1062 Request.cpp:1078 Rok4Server.cpp:508
+#: Request.cpp:1062 Request.cpp:1104 Rok4Server.cpp:508
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1062 Request.cpp:1078 Rok4Server.cpp:508
+#: Request.cpp:1062 Request.cpp:1104 Rok4Server.cpp:508
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
-#: Request.cpp:1086
+#: Request.cpp:1112
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr ""
 
