@@ -61,6 +61,13 @@ protected:
     z_stream zstream;
     bool encode() {
         int rawLine = 0;
+        int error = 0;
+        zstream.zalloc = Z_NULL;
+        zstream.zfree = Z_NULL;
+        zstream.opaque = Z_NULL;
+        zstream.data_type = Z_BINARY;
+        deflateInit ( &zstream, 6 ); // taux de compression zlib
+        zstream.avail_in = 0;
         zstream.next_out  = deflateBuffer;
         zstream.avail_out = deflateBufferSize;
 
@@ -70,17 +77,38 @@ protected:
                 zstream.next_in  = ( uint8_t* ) ( linebuffer );
                 zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
             }
-            if ( deflate ( &zstream, Z_NO_FLUSH ) != Z_OK ) {
-                deflateReset ( &zstream );
-                return false;              // return 0 en cas d'erreur.
+            error = deflate ( &zstream, Z_NO_FLUSH );
+            switch (error){
+                case Z_OK : 
+                    break;
+                case Z_MEM_ERROR :
+                    LOGGER_DEBUG("MEM_ERROR");
+                    deflateEnd ( &zstream );
+                    return false;              // return 0 en cas d'erreur.
+                case Z_STREAM_ERROR :
+                    LOGGER_DEBUG("STREAM_ERROR");
+                    deflateEnd ( &zstream );
+                    return false;              // return 0 en cas d'erreur.
+                case Z_VERSION_ERROR :
+                    LOGGER_DEBUG("VERSION_ERROR");
+                    deflateEnd ( &zstream );
+                    return false;              // return 0 en cas d'erreur.
+                default :
+                    LOGGER_DEBUG("OTHER_ERROR");
+                    deflateEnd ( &zstream );
+                    return false;              // return 0 en cas d'erreur.
             }
+//             if ( error != Z_OK ) {
+//                 deflateReset ( &zstream );
+//                 return false;              // return 0 en cas d'erreur.
+//             }
         }
 
         if ( rawLine == image->getHeight() && zstream.avail_out > 6 ) { // plus d'entrée : il faut finaliser la compression
             int r = deflate ( &zstream, Z_FINISH );
             if ( r == Z_STREAM_END ) rawLine++;                   // on indique que l'on a compressé fini en passant rawLine ) height+1
             else if ( r != Z_OK ) {
-                deflateReset ( &zstream );
+                deflateEnd ( &zstream );
                 return false;                      // une erreur
             }
         }
@@ -94,28 +122,28 @@ protected:
 
 public:
     TiffDeflateEncoder ( Image *image ) : image ( image ), line ( -1 ), deflateBufferSize ( 0 ),deflateBufferPos ( 0 ) , deflateBuffer ( NULL ) {
-        zstream.zalloc = Z_NULL;
-        zstream.zfree = Z_NULL;
-        zstream.opaque = Z_NULL;
-        zstream.data_type = Z_BINARY;
-        deflateInit ( &zstream, 6 ); // taux de compression zlib
-        zstream.avail_in = 0;
+//         zstream.zalloc = Z_NULL;
+//         zstream.zfree = Z_NULL;
+//         zstream.opaque = Z_NULL;
+//         zstream.data_type = Z_BINARY;
+//         deflateInit ( &zstream, 6 ); // taux de compression zlib
+//         zstream.avail_in = 0;
         linebuffer = new T[image->getWidth() * image->channels];
     }
     ~TiffDeflateEncoder() {
         if ( linebuffer ) delete[] linebuffer;
         if ( deflateBuffer ) delete[] deflateBuffer;
-        deflateEnd ( &zstream );
+//         deflateEnd ( &zstream );
 
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
         size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
         if ( !deflateBuffer ) {
-            deflateBufferSize = linesize * image->getHeight() ;
+            deflateBufferSize = linesize * image->getHeight() * 2 ;
             deflateBuffer = new uint8_t[deflateBufferSize];
             while ( !encode() ) {
-                deflateBufferSize *=2;
+                deflateBufferSize *= 2;
                 delete[] deflateBuffer;
                 deflateBuffer = new uint8_t[deflateBufferSize];
             }

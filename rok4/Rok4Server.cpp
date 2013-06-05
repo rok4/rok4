@@ -329,7 +329,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             }
 
             if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
-                if ( format == "image/png" && layerList.size() == 1 ) {
+                if ( format == "image/png" && layers.size() == 1 ) {
                     switch ( pyrType ) {
 
                     case Format::TIFF_RAW_FLOAT32 :
@@ -385,7 +385,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     }
 
     if ( format=="image/png" ) {
-        if ( layerList.size() == 1 ) {
+        if ( layers.size() == 1 ) {
             return new PNGEncoder ( image,styles.at ( 0 )->getPalette() );
         } else {
             return new PNGEncoder ( image,NULL );
