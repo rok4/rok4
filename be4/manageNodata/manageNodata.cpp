@@ -55,6 +55,8 @@
  *
  * Dans le cas où seul le masque associé nous intéresse, on ne réecrira jamais de nouvelle image, même si un chemin de sortie différent de l'entrée était précisé.
  *
+ * Si l'image traitée ne contient pas de nodata, le masque n'est pas écrit. En effet, on considère une image sans masque associé comme une image pleine.
+ *
  * On peut également définir 3 couleurs :
  * \li la couleur cible (obligatoire) : les pixels de cette couleur sont ceux potentiellement considérés comme du nodata et modifiés. On peut également préciser une tolérance en complément de la valeur. L'option "touche les bords" précise la façon dont on identifie les pixels de nodata.
  * \li la nouvelle couleur de nodata : si elle n'est pas précisée, cela veut dire qu'on ne veut pas la modifier

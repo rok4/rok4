@@ -72,7 +72,7 @@ using namespace std;
  * Et la classe va permettre les actions suivantes :
  * \li de modifier la couleur des pixels de nodata
  * \li de modifier la couleur des pixels de données
- * \li écrire le masque correspondant à l'image en entrée et sortie
+ * \li écrire le masque correspondant à l'image en entrée et sortie. Si l'image ne contient pas de nodata (on dit alors qu'elle est pleine), le masque n'est pas écrit.
  *
  * Pour identifier les pixels de nodata, on peut utiliser l'option "touche les bords" (#touchEdges) ou non en plus de la valeur cible.
  *
@@ -179,11 +179,14 @@ private:
      * \param[in] IM image à analyser
      * \param[out] MSK masque à remplir
      *
+     * \return VRAI si l'image contient au moins 1 pixel de nodata, FAUX si elle n'en contient pas
+     *
      * \~english \brief Identify nodata pixels
      * \param[in] IM image to analyze
      * \param[out] MSK mask to fill
+     * \return TRUE if the image sontains 1 nodata pixel or more, FALSE otherwise
      */
-    void identifyNodataPixels ( T* IM, uint8_t* MSK );
+    bool identifyNodataPixels ( T* IM, uint8_t* MSK );
 
     /**
      * \~french \brief Détermine si un pixel contient la valeur cible
@@ -373,7 +376,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 
     uint8_t *MSK = new uint8_t[width * height];
 
-    identifyNodataPixels(IM, MSK);
+    bool containNodata = identifyNodataPixels(IM, MSK);
 
     /*************** Modification des pixels *************/
 
@@ -429,7 +432,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
     }
 
     /**************** Ecriture du masque ? ****************/
-    if (outputMask) {
+    if (outputMask && containNodata) {
         TIFF_FILE = TIFFOpen ( outputMask, "w" );
         if ( !TIFF_FILE ) {
             LOGGER_ERROR ( "Unable to open file for writting: " + string ( outputMask ) );
@@ -485,10 +488,12 @@ inline bool TiffNodataManager<T>::isTargetValue(T* pix) {
 }
 
 template<typename T>
-void TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
+bool TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
 
     LOGGER_DEBUG("Identify nodata pixels...");
     memset ( MSK, 255, width * height );
+
+    bool containNodata = false;
 
     if (touchEdges) {
         LOGGER_DEBUG("\t...which touch edges");
@@ -523,8 +528,10 @@ void TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
 
         if ( Q.empty() ) {
             // No nodata pixel identified, nothing to do
-            return ;
+            return false;
         }
+
+        containNodata = true;
 
         // while there are 'targetValue' pixels which can propagate, we do it
         while ( !Q.empty() ) {
@@ -567,11 +574,14 @@ void TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
 
         for ( int i = 0; i < width * height; i++ ) {
             if ( isTargetValue( IM+i*samplesperpixel ) ) {
+                containNodata = true;
                 MSK[i] = 0;
             }
         }
 
     }
+
+    return containNodata;
 }
 
 template<typename T>
