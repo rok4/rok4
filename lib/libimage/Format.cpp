@@ -38,19 +38,95 @@
 /**
  * \file Format.cpp
  ** \~french
- * \brief Implémentation de la classe SampleType du namespace Format
+ * \brief Implémentation de la classe SampleType et des namespaces Format et Compression
  * \details
  * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li Compression : énumère et manipule les différentes compressions
  * \li Format : énumère et manipule les différentes format d'image
  ** \~english
- * \brief Implement class SampleType and the namespace Format
+ * \brief Implement class SampleType and the namespaces Format and Compression
  * \details
  * \li SampleType : managed sample type accepted by Image classes
+ * \li Compression : enumerate and managed different compressions
  * \li Format : enumerate and managed different formats
  */
 
 #include "Format.h"
 #include <string.h>
+
+namespace Compression {
+
+const char *compression_name[] = {
+    "UNKNOWN",
+    "NONE",
+    "DEFLATE",
+    "JPEG",
+    "PNG",
+    "LZW",
+    "PACKBITS"
+};
+
+eCompression fromString ( std::string strComp ) {
+    int i;
+    for ( i = compression_size; i ; --i ) {
+        if ( strComp.compare ( compression_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eCompression> ( i );
+}
+
+std::string toString ( eCompression comp ) {
+    return std::string ( compression_name[comp] );
+}
+
+}
+
+namespace Photometric {
+
+const char *photometric_name[] = {
+    "UNKNOWN",
+    "GRAY",
+    "RGB",
+    "MASK"
+};
+
+ePhotometric fromString ( std::string strPh ) {
+    int i;
+    for ( i = photometric_size; i ; --i ) {
+        if ( strPh.compare ( photometric_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<ePhotometric> ( i );
+}
+
+std::string toString ( ePhotometric ph ) {
+    return std::string ( photometric_name[ph] );
+}
+
+}
+
+namespace SampleFormat {
+
+const char *sampleformat_name[] = {
+    "UNKNOWN",
+    "UINT",
+    "FLOAT"
+};
+
+eSampleFormat fromString ( std::string strSF ) {
+    int i;
+    for ( i = sampleformat_size; i ; --i ) {
+        if ( strSF.compare ( sampleformat_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eSampleFormat> ( i );
+}
+
+std::string toString ( eSampleFormat sf ) {
+    return std::string ( sampleformat_name[sf] );
+}
+
+}
 
 namespace Format {
 
@@ -102,10 +178,10 @@ std::string toMimeType ( eformat_data format ) {
 SampleType toSampleType ( eformat_data format ) {
     if ( format >= Format::eformat_float ) {
         // Canaux flottants
-        return SampleType ( 32,SAMPLEFORMAT_IEEEFP );
+        return SampleType ( 32, SampleFormat::FLOAT );
     } else {
         // Canaux entiers
-        return SampleType ( 8,SAMPLEFORMAT_UINT );
+        return SampleType ( 8, SampleFormat::UINT );
     }
 }
 

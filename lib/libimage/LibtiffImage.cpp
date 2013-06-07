@@ -54,6 +54,70 @@
 #include "Utils.h"
 
 /* ------------------------------------------------------------------------------------------------ */
+/* ------------------------------------------ CONVERSIONS ----------------------------------------- */
+
+
+static SampleFormat::eSampleFormat toROK4SampleFormat (uint16_t sf) {
+    switch (sf) {
+        case SAMPLEFORMAT_UINT : return SampleFormat::UINT;
+        case SAMPLEFORMAT_IEEEFP : return SampleFormat::FLOAT;
+        default : return SampleFormat::UNKNOWN;
+    }
+}
+
+static uint16_t fromROK4SampleFormat (SampleFormat::eSampleFormat sf) {
+    switch (sf) {
+        case SampleFormat::UINT : return SAMPLEFORMAT_UINT;
+        case SampleFormat::FLOAT : return SAMPLEFORMAT_IEEEFP;
+        default : return 0;
+    }
+}
+
+
+static Photometric::ePhotometric toROK4Photometric (uint16_t ph) {
+    switch (ph) {
+        case PHOTOMETRIC_MINISBLACK : return Photometric::GRAY;
+        case PHOTOMETRIC_RGB : return Photometric::RGB;
+        case PHOTOMETRIC_MASK : return Photometric::MASK;
+        default : return Photometric::UNKNOWN;
+    }
+}
+
+static uint16_t fromROK4Photometric (Photometric::ePhotometric ph) {
+    switch (ph) {
+        case Photometric::GRAY : return PHOTOMETRIC_MINISBLACK;
+        case Photometric::RGB : return PHOTOMETRIC_RGB;
+        case Photometric::MASK : return PHOTOMETRIC_MINISBLACK;
+        default : return 0;
+    }
+}
+
+static Compression::eCompression toROK4Compression (uint16_t comp) {
+    switch (comp) {
+        case COMPRESSION_NONE : return Compression::NONE;
+        case COMPRESSION_ADOBE_DEFLATE : return Compression::DEFLATE;
+        case COMPRESSION_JPEG : return Compression::JPEG;
+        case COMPRESSION_DEFLATE : return Compression::PNG;
+        case COMPRESSION_LZW : return Compression::LZW;
+        case COMPRESSION_PACKBITS : return Compression::PACKBITS;
+        default : return Compression::UNKNOWN;
+    }
+}
+
+static uint16_t fromROK4Compression (Compression::eCompression comp) {
+    switch (comp) {
+        case Compression::NONE : return COMPRESSION_NONE;
+        case Compression::DEFLATE : return COMPRESSION_ADOBE_DEFLATE;
+        case Compression::JPEG : return COMPRESSION_JPEG;
+        case Compression::PNG : return COMPRESSION_DEFLATE;
+        case Compression::LZW : return COMPRESSION_LZW;
+        case Compression::PACKBITS : return COMPRESSION_PACKBITS;
+        default : return 0;
+    }
+}
+
+
+/* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
 /* ----- Pour la lecture ----- */
@@ -103,6 +167,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             }
         }
 
+        
+
         if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&photometric ) < 1 ) {
             LOGGER_ERROR ( "Unable to read photometric for file " << filename );
             return NULL;
@@ -134,7 +200,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
-    SampleType ST = SampleType ( bitspersample,sampleformat );
+    SampleType ST = SampleType ( bitspersample, toROK4SampleFormat(sampleformat) );
 
     if ( ! ST.isSupported() ) {
         LOGGER_ERROR ( "Supported sample format are :\n" + ST.getHandledFormat() );
@@ -152,15 +218,24 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
+    } else {
+        bbox = BoundingBox<double>(0, 0, (double) width, (double) height);
+        resx = 1.;
+        resy = 1.;
     }
 
-    return new LibtiffImage ( width, height, resx, resy, channels, bbox, tif, filename, ST, photometric, compression, rowsperstrip );
+    return new LibtiffImage (
+        width, height, resx, resy, channels, bbox,
+        tif, filename,
+        ST, toROK4Photometric(photometric), toROK4Compression(compression), rowsperstrip
+    );
 }
 
 /* ----- Pour l'écriture ----- */
-LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite ( char* filename, BoundingBox<double> bbox, double resx, double resy,
-        int width, int height, int channels, SampleType sampleType,
-        uint16_t photometric, uint16_t compression, uint16_t rowsperstrip ) {
+LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
+    char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+    SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, uint16_t rowsperstrip ) {
+    
     if ( width <= 0 || height <= 0 ) {
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
         return NULL;
@@ -215,17 +290,17 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite ( char* filename, B
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT,sampleType.getSampleFormat() ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat(sampleType.getSampleFormat()) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write sample format for file " << filename );
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC,photometric ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, fromROK4Photometric(photometric) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write photometric for file " << filename );
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION,compression ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION, fromROK4Compression(compression) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write compression for file " << filename );
         return NULL;
     }
@@ -240,18 +315,26 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite ( char* filename, B
         return NULL;
     }
 
+    if ( resx < 0 || resy < 0 ) {
+        bbox = BoundingBox<double>(0, 0, (double) width, (double) height);
+        resx = 1.;
+        resy = 1.;
+    }
+
     return new LibtiffImage ( width,height,resx,resy,channels,bbox,tif,filename,sampleType,photometric,compression,rowsperstrip );
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
-LibtiffImage::LibtiffImage ( int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
-                             TIFF* tif,char* name, SampleType sampleType, int photometric, int compression,
-                             int rowsperstrip ) :
-    Image ( width,height,channels,resx,resy,bbox ), tif ( tif ), ST ( sampleType ), photometric ( photometric ), compression ( compression ), rowsperstrip ( rowsperstrip ) {
-    filename = new char[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
-    strcpy ( filename,name );
+LibtiffImage::LibtiffImage (
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
+    TIFF* tif, char* name,
+    SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, int rowsperstrip ) :
+                             
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleType, photometric, compression ),
+    
+    tif ( tif ), rowsperstrip ( rowsperstrip ) {
 
     current_strip = -1;
     strip_size = width*channels*rowsperstrip;
@@ -266,7 +349,7 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
     // le buffer est déjà alloue
     // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
-    if ( compression == COMPRESSION_NONE || ( compression != COMPRESSION_NONE && rowsperstrip == 1 ) ) {
+    if ( compression == Compression::NONE || ( compression != Compression::NONE && rowsperstrip == 1 ) ) {
         // Cas Non compresse ou (compresse et 1 ligne/bande)
         if ( TIFFReadScanline ( tif,buffer,line,0 ) < 0 ) {
             LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
@@ -289,7 +372,7 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibtiffImage::getline ( float* buffer, int line ) {
-    if ( ST.getSampleFormat() == SAMPLEFORMAT_UINT ) {
+    if ( ST.isUInt8() ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline ( buffer_t,line );
@@ -347,3 +430,4 @@ int LibtiffImage::writeImage ( Image* pIn ) {
 
     return 0;
 }
+

@@ -60,6 +60,8 @@
  * \~ \code
  * createNodata version X.X.X
  *
+ * Create an TIFF image, containing one monochrome tile
+ *
  * Usage: createNodata -n <VAL> [-c <VAL>] -p <VAL> [-t <VAL> <VAL>] -a <VAL> -s <VAL> -b <VAL> <OUTPUT FILE>
  *
  * Parameters:
@@ -92,7 +94,7 @@ void usage() {
 
     LOGGER_INFO ( "\ncreateNodata version " << BE4_VERSION << "\n\n" <<
 
-                  "Create an image, containing one monochrome tile\n\n" <<
+                  "Create an TIFF image, containing one monochrome tile\n\n" <<
 
                   "Usage: createNodata -n <VAL> [-c <VAL>] -p <VAL> [-t <VAL> <VAL>] -a <VAL> -s <VAL> -b <VAL> <OUTPUT FILE>\n\n" <<
 
@@ -157,6 +159,7 @@ int main ( int argc, char* argv[] ) {
     int photometric = -1;
     int bitspersample = -1;
     int sampleformat = -1;
+    SampleFormat::eSampleFormat rok4sf = SampleFormat::UNKNOWN;
     int samplesperpixel = -1;
 
     // Valeurs par défaut
@@ -223,8 +226,8 @@ int main ( int argc, char* argv[] ) {
                 break;
             case 'a': // format des canaux
                 if ( ++i == argc ) error ( "Error in option -a",-1 );
-                if ( strncmp ( argv[i],"uint",4 ) ==0 ) sampleformat = SAMPLEFORMAT_UINT;
-                else if ( strncmp ( argv[i],"float",5 ) ==0 ) sampleformat = SAMPLEFORMAT_IEEEFP;
+                if ( strncmp ( argv[i],"uint",4 ) ==0 ) { sampleformat = SAMPLEFORMAT_UINT; rok4sf = SampleFormat::UINT; }
+                else if ( strncmp ( argv[i],"float",5 ) ==0 ) { sampleformat = SAMPLEFORMAT_IEEEFP; rok4sf = SampleFormat::FLOAT; }
                 else error ( "Unknown value for option -a : " + std::string ( argv[i] ),-1 );
                 break;
             case 'b': // bitspersample
@@ -261,7 +264,7 @@ int main ( int argc, char* argv[] ) {
     if ( photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG ) error ( "Gray jpeg not supported",-1 );
     if ( samplesperpixel == 4 && compression == COMPRESSION_JPEG ) error ( "Jpeg with alpha is unconsistent",-1 );
 
-    SampleType ST = SampleType ( bitspersample, sampleformat );
+    SampleType ST = SampleType ( bitspersample, rok4sf );
 
     if ( ! ST.isSupported() ) {
         error ( "Supported sample format are :\n" + ST.getHandledFormat(),-1 );

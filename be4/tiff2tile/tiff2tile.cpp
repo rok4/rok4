@@ -88,7 +88,7 @@ int main ( int argc, char **argv ) {
                 } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
                     compression = COMPRESSION_LZW;
                 } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
-                    compression = COMPRESSION_DEFLATE;
+                    compression = COMPRESSION_ADOBE_DEFLATE;
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
                     compression = COMPRESSION_PACKBITS;
                 } else {

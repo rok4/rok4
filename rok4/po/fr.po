@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-06-03 14:30+0200\n"
+"POT-Creation-Date: 2013-06-07 15:51+0200\n"
 "PO-Revision-Date: 2013-02-18 17:48+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -916,43 +916,35 @@ msgstr "NOMBRE DE COUCHES CHARGÉES : "
 msgid "Construction de la configuration des services depuis "
 msgstr "Construction de la configuration des services depuis "
 
-#: CRS.cpp:217 CRS.cpp:227
-msgid "Erreur sur le CRS "
-msgstr "Erreur sur le CRS "
-
-#: CRS.cpp:217 CRS.cpp:227
-msgid " : absence de separateur"
-msgstr " : absence de séparateur"
-
-#: Level.cpp:149 Level.cpp:186 Level.cpp:231
+#: Level.cpp:143 Level.cpp:186 Level.cpp:237
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:256
+#: Level.cpp:266
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:264
+#: Level.cpp:274
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:303
+#: Level.cpp:314
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:366 Level.cpp:384
+#: Level.cpp:377 Level.cpp:395
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:389
+#: Level.cpp:400
 msgid "Tile : "
 msgstr "Tuile : "
 
-#: Level.cpp:399
+#: Level.cpp:410
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:409 Level.cpp:422
+#: Level.cpp:420 Level.cpp:433
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -960,56 +952,56 @@ msgstr "GetTile Image"
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Usage : rok4 [-f server_config_file]"
 
-#: main.cpp:209
+#: main.cpp:208
 msgid "Erreur sur l'option -f"
 msgstr "Erreur sur l'option -f"
 
-#: main.cpp:225
+#: main.cpp:224
 msgid "Lancement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:246
+#: main.cpp:245
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:249 Rok4Api.cpp:134 Rok4Api.cpp:142 Rok4Api.cpp:150
+#: main.cpp:248 Rok4Api.cpp:134 Rok4Api.cpp:142 Rok4Api.cpp:150
 #: Rok4Api.cpp:159 Rok4Api.cpp:529
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:164
+#: Pyramid.cpp:165
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:170
+#: Pyramid.cpp:171
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:177
+#: Pyramid.cpp:178
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:177
+#: Pyramid.cpp:178
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:186
+#: Pyramid.cpp:187
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:190
+#: Pyramid.cpp:191
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:197
+#: Pyramid.cpp:198
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:197
+#: Pyramid.cpp:198
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:204
+#: Pyramid.cpp:205
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
@@ -1201,7 +1193,7 @@ msgstr " format pyramide : "
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:797 Rok4Server.cpp:440
+#: Request.cpp:797 Rok4Server.cpp:451
 msgid "Le format "
 msgstr "Le format ["
 
@@ -1217,7 +1209,7 @@ msgstr "Paramètre STYLE absent."
 msgid "Le style "
 msgstr "Le style "
 
-#: Request.cpp:852 Request.cpp:1097
+#: Request.cpp:852 Request.cpp:1096
 msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
 
@@ -1331,15 +1323,15 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1062 Request.cpp:1104 Rok4Server.cpp:508
+#: Request.cpp:1061 Request.cpp:1102 Rok4Server.cpp:519
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1062 Request.cpp:1104 Rok4Server.cpp:508
+#: Request.cpp:1061 Request.cpp:1102 Rok4Server.cpp:519
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
-#: Request.cpp:1112
+#: Request.cpp:1110
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr "Valeur du paramètre VERSION invalide (1.0.0 disponible seulement)"
 
@@ -1415,90 +1407,96 @@ msgstr "Impossible de charger la configuration des Styles"
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:454
+#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:465
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:485
+#: Rok4Api.cpp:457 Rok4Server.cpp:496
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:483 Rok4Server.cpp:485 Rok4Server.cpp:495
-#: Rok4Server.cpp:497
+#: Rok4Api.cpp:457 Rok4Server.cpp:494 Rok4Server.cpp:496 Rok4Server.cpp:506
+#: Rok4Server.cpp:508
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:80
+#: Rok4Server.cpp:81
 msgid "Le listener FCGI ne peut etre initialise"
 msgstr "Le lien FCGI ne peut etre initialisé"
 
-#: Rok4Server.cpp:90
+#: Rok4Server.cpp:91
 msgid "FCGX_InitRequest renvoie le code d'erreur"
 msgstr "FCGX_InitRequest renvoie le code d'erreur"
 
-#: Rok4Server.cpp:114
+#: Rok4Server.cpp:115
 msgid "Request Content :"
 msgstr "Request Content :"
 
-#: Rok4Server.cpp:141
+#: Rok4Server.cpp:142
 msgid "Extinction du thread"
 msgstr "Extinction du processus de traitement"
 
-#: Rok4Server.cpp:154
+#: Rok4Server.cpp:155
 msgid "Build WMS Capabilities"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:158
+#: Rok4Server.cpp:159
 msgid "Build WMTS Capabilities"
 msgstr "Génération du Capabilities WMTS"
 
-#: Rok4Server.cpp:173
+#: Rok4Server.cpp:174
 msgid "Listening on "
 msgstr "Écoute sur "
 
-#: Rok4Server.cpp:227 Rok4Server.cpp:250
+#: Rok4Server.cpp:228 Rok4Server.cpp:251
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr "Problème dans les parametres de la requête getCapabilities"
 
-#: Rok4Server.cpp:279
+#: Rok4Server.cpp:280
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:288
+#: Rok4Server.cpp:289
 msgid "GetMap de Style : "
 msgstr "GetMap de Style : "
 
-#: Rok4Server.cpp:288
+#: Rok4Server.cpp:289
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:294
+#: Rok4Server.cpp:295
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:297
+#: Rok4Server.cpp:298
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:300
+#: Rok4Server.cpp:301 Rok4Server.cpp:383
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
-#: Rok4Server.cpp:309
+#: Rok4Server.cpp:310
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:440
+#: Rok4Server.cpp:451
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:460
+#: Rok4Server.cpp:471
 msgid "No data found"
 msgstr "Aucune donnée"
 
 #: Style.cpp:54
 msgid "Nouveau Style : "
 msgstr "Nouveau Style : "
+
+#~ msgid "Erreur sur le CRS "
+#~ msgstr "Erreur sur le CRS "
+
+#~ msgid " : absence de separateur"
+#~ msgstr " : absence de séparateur"
 
 #~ msgid "CRS BBOX EXTENDEDCOMPOUND IMAGE"
 #~ msgstr "Découpage de l'emprise de la requête"

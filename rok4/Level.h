@@ -150,7 +150,6 @@ public:
     Image* getNoDataTile ( BoundingBox<double> bbox );
 
     int* getNoDataValue ( int* nodatavalue );
-    SampleType getSampleType();
 
     void setNoData ( const std::string& file ) ;
     void setNoDataSource ( DataSource* source );

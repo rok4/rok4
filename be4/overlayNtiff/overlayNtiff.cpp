@@ -109,7 +109,7 @@ uint16_t photometric = PHOTOMETRIC_RGB;
 /** \~french Compression de l'image de sortie */
 uint16_t compression = COMPRESSION_NONE;
 /** \~french Mode de fusion des images */
-Merge::MergeType mergeMethod = Merge::UNKNOWN;
+Merge::eMergeType mergeMethod = Merge::UNKNOWN;
 
 /** \~french Couleur à considérer comme transparent dans le images en entrée. Vrai couleur (sur 3 canaux). Peut ne pas être définie */
 int* transparent;
@@ -531,8 +531,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
 
     if ( hasOutMask ) {
         *ppMaskOut = LIF.createLibtiffImageToWrite ( outputMaskPath, fakeBbox, -1., -1., width, height, 1,
-                     SampleType ( 8,SAMPLEFORMAT_UINT ),
-                     PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16 );
+                     SampleType ( 8,SAMPLEFORMAT_UINT ), PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16 );
 
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << outputMaskPath );

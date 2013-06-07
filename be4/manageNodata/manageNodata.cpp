@@ -234,8 +234,8 @@ int main ( int argc, char* argv[] ) {
             
         } else if ( !strcmp ( argv[i],"-format" ) ) {
             if ( i++ >= argc ) error ( "Error with option -format",-1 );
-            if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) ST = SampleType(8, SAMPLEFORMAT_UINT);
-            else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) ST = SampleType(32, SAMPLEFORMAT_IEEEFP);
+            if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) ST = SampleType(8, SampleFormat::UINT);
+            else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) ST = SampleType(32, SampleFormat::FLOAT);
             else error ( "Unknown value for option -format : " + string (argv[i]), -1 );
             continue;
             

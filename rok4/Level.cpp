@@ -462,8 +462,4 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     return nodatavalue;
 }
 
-SampleType Level::getSampleType() {
-    return Format::toSampleType ( format );
-}
-
 

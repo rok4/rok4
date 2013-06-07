@@ -446,7 +446,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
              ! TIFFSetField ( TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK )         ||
              ! TIFFSetField ( TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip )       ||
              ! TIFFSetField ( TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig )       ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE ) ) {
+             ! TIFFSetField ( TIFF_FILE, TIFFTAG_COMPRESSION, COMPRESSION_ADOBE_DEFLATE ) ) {
             LOGGER_ERROR ( "Error writting file: " +  string ( outputMask ) );
             return false;
         }

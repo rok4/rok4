@@ -107,7 +107,7 @@ uint32_t width;
 /** \~french Hauteur des images */
 uint32_t height;
 /** \~french Bufferisation des images */
-uint32_t rowsperstrip = 1;
+uint32_t rowsperstrip = 16;
 /** \~french Compression de l'image de sortie */
 uint16_t compression;
 /** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
