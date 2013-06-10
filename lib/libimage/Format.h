@@ -100,6 +100,29 @@ eSampleFormat fromString ( std::string strPh );
  */
 std::string toString ( eSampleFormat ph );
 
+/**
+ * \~french
+ * \brief Précise si le type des canaux (nombre de bits et format) est géré
+ * \details Sont gérés :
+ * \li les entiers non-signés sur 8 bits
+ * \li les flottants sur 32 bits
+ * 
+ * \param[in] sf format du canal
+ * \param[in] bps nombre de bits par canal
+ * 
+ * \~english
+ * \brief Precises if sample type (bits per sample and format) is supported
+ * \details Are supported :
+ * \li 8-bit unsigned integer
+ * \li 32-bit float
+ *
+ * \param[in] sf sample foramt
+ * \param[in] bps number of bits per sample
+ */
+static bool isHandledSampleType(eSampleFormat sf, int bps) {
+    return (( bps == 32 && sf == FLOAT) || (bps == 8 && sf == UINT));
+}
+
 }
 
 
@@ -204,132 +227,6 @@ ePhotometric fromString ( std::string strPh );
 std::string toString ( ePhotometric ph );
 
 }
-
-
-
-
-
-
-/**
- * \author Institut national de l'information géographique et forestière
- * \~french
- * \brief Gestion des types des canaux supportés
- * \details Un type correspond à :
- * \li un nombre de bits par canal
- * \li le format du canal : entier, flottant, signé ou non...
- *
- * Sont supportés par la librairie image
- * \li les entiers non-signés sur 8 bits
- * \li les flottants sur 32 bits
- */
-class SampleType {
-private :
-    /**
-     * \~french \brief Nombre de bits occupé par le canal
-     * \~english \brief Number of bits used by the sample
-     */
-    int bitspersample;
-
-    /**
-     * \~french \brief Format du canal : entier, flottant, signé ou non...
-     * \~english \brief Sample format : integer, float, signed or not...
-     */
-    SampleFormat::eSampleFormat sampleformat;
-
-public:
-
-    /** \~french
-     * \brief Crée un objet SampleType à partir de tous ses éléments constitutifs
-     * \param[in] bitspersample nombre de bits par canal
-     * \param[in] sampleformat format des canaux
-     ** \~english
-     * \brief Create an SampleType object, from all attributes
-     * \param[in] bitspersample number of bits per sample
-     * \param[in] sampleformat sample's format
-     */
-    SampleType ( int bitspersample, SampleFormat::eSampleFormat sampleformat ) : bitspersample ( bitspersample ), sampleformat ( sampleformat ) {}
-
-    /** \~french
-     * \brief Constructeur vide
-     ** \~english
-     * \brief Empty constructor
-     */
-    SampleType () {}
-
-    /**
-     * \~french
-     * \brief Retourne le nombre de bits par canal
-     * \return nombre de bits par canal
-     * \~english
-     * \brief Return the number of bits per sample
-     * \return number of bits per sample
-     */
-    int getBitsPerSample() {
-        return bitspersample;
-    }
-
-    /**
-     * \~french
-     * \brief Retourne le format des canaux
-     * \return format des canaux
-     * \~english
-     * \brief Return the samples' format
-     * \return samples' format
-     */
-    SampleFormat::eSampleFormat getSampleFormat() {
-        return sampleformat;
-    }
-
-    /**
-     * \~french
-     * \brief Précise si le type correspondant est uint8_t
-     * \~english
-     * \brief Precise if corresponding type is uint8_t
-     */
-    bool isUInt8() {
-        return ( bitspersample == 8 && sampleformat == SampleFormat::UINT );
-    }
-
-    /**
-     * \~french
-     * \brief Précise si le type correspondant est float
-     * \~english
-     * \brief Precise if corresponding type is float
-     */
-    bool isFloat() {
-        return ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT );
-    }
-
-    /**
-     * \~french
-     * \brief Précise si le type des canaux (nombre de bits et format) est géré
-     * \details Sont gérés :
-     * \li les entiers non-signés sur 8 bits
-     * \li les flottants sur 32 bits
-     * \~english
-     * \brief Precises if sample type (bits per sample and format) is supported
-     * \details Are supported :
-     * \li 8-bit unsigned integer
-     * \li 32-bit float
-     */
-    bool isSupported() {
-        return ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) ||
-               ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) ;
-    }
-
-    /**
-     * \~french
-     * \brief Renvoie la liste des types gérés
-     * \~english
-     * \brief Return the handled type list
-     */
-    static std::string getHandledFormat() {
-        return  "\t - 8-bit unsigned integer\n\t - 32-bit float\n";
-    }
-};
-
-
-
 
 
 /**

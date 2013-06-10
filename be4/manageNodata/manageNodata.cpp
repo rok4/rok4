@@ -177,7 +177,7 @@ int main ( int argc, char* argv[] ) {
     char* strNewData = 0;
 
     int channels = 0;
-    SampleType ST;
+    uint16_t bitspersample = 0, sampleformat = 0;
 
     bool touchEdges = false;
     int tolerance = 0;
@@ -234,8 +234,8 @@ int main ( int argc, char* argv[] ) {
             
         } else if ( !strcmp ( argv[i],"-format" ) ) {
             if ( i++ >= argc ) error ( "Error with option -format",-1 );
-            if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) ST = SampleType(8, SampleFormat::UINT);
-            else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) ST = SampleType(32, SampleFormat::FLOAT);
+            if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) { bitspersample == 8; sampleformat == SAMPLEFORMAT_UINT; }
+            else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) { bitspersample == 32; sampleformat == SAMPLEFORMAT_IEEEFP; }
             else error ( "Unknown value for option -format : " + string (argv[i]), -1 );
             continue;
             
@@ -271,7 +271,7 @@ int main ( int argc, char* argv[] ) {
     }
     
     if ( ! channels ) error ( "Missing number of samples per pixel",-1 );
-    if ( ! ST.getBitsPerSample() ) error ( "Missing sample format",-1 );
+    if ( ! bitspersample ) error ( "Missing sample format",-1 );
     
     if ( ! strTargetValue )
         error ( "How to identify the nodata in the input image ? Provide a target color (-target)",-1 );
@@ -340,13 +340,13 @@ int main ( int argc, char* argv[] ) {
 
     /******************* APPEL A LA CLASSE TIFFNODATAMANAGER *******************/
 
-    if (ST.isUInt8()) {
+    if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
         LOGGER_DEBUG("Target color treatment (uint8)");
         TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
             error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
         }
-    } else if (ST.isFloat()) {
+    } else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
         LOGGER_DEBUG("Target color treatment (float)");
         TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {

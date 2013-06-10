@@ -38,8 +38,8 @@
 /**
  * \file overlayNtiff.cpp
  * \author Institut national de l'information géographique et forestière
- * \~french \brief Fusion de N images aux mêmes dimensions, selon différentes méthodes
- * \~english \brief Merge N images with same dimensions, according to different merge methods
+ * \~french \brief Fusion de N images TIFF aux mêmes dimensions, selon différentes méthodes
+ * \~english \brief Merge N TIFF images with same dimensions, according to different merge methods
  *
  * \details Ce programme est destine à être utilisé dans la chaîne de génération de cache joinCache. Il est appele pour calculer les dalles avec plusieurs sources.
  *
@@ -47,6 +47,7 @@
  * \li avoir des nombres de canaux différents
  *
  * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
+ * \li image TIFF
  * \li hauteur et largeur en pixels
  * \li format des canaux
  *
@@ -102,12 +103,14 @@
 char imageListFilename[256];
 /** \~french Nombre de canaux par pixel de l'image en sortie */
 uint16_t samplesperpixel = 0;
-/** \~french Mode de fusion des images */
-SampleType sampleType ( 0,0 );
+/** \~french Nombre de bits occupé par un canal */
+uint16_t bitspersample;
+/** \~french Format du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
+SampleFormat::eSampleFormat sampleformat;
 /** \~french Photométrie (rgb, gray), pour les images en sortie */
-uint16_t photometric = PHOTOMETRIC_RGB;
+Photometric::ePhotometric photometric = Photometric::RGB;
 /** \~french Compression de l'image de sortie */
-uint16_t compression = COMPRESSION_NONE;
+Compression::eCompression compression = Compression::NONE;
 /** \~french Mode de fusion des images */
 Merge::eMergeType mergeMethod = Merge::UNKNOWN;
 
@@ -123,7 +126,7 @@ int* background;
  * \~ \code
  * overlayNtiff version X.X.X
  *
- * Create one TIFF image, from several images with same dimensions, with different available merge methods.
+ * Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.
  * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one
  *
  * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
@@ -157,7 +160,7 @@ int* background;
 void usage() {
     LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
 
-                  "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
+                  "Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.\n" <<
                   "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
 
                   "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
@@ -260,12 +263,12 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error with compression (option -c)" );
                     return -1;
                 }
-                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = COMPRESSION_ADOBE_DEFLATE;
-                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = COMPRESSION_PACKBITS;
-                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = COMPRESSION_JPEG;
-                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = COMPRESSION_LZW;
+                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
+                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
+                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
+                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
                 else {
                     LOGGER_ERROR ( "Unknown value for compression (option -c) : " << argv[i] );
                     return -1;
@@ -276,8 +279,8 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error with photometric (option -p)" );
                     return -1;
                 }
-                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = PHOTOMETRIC_MINISBLACK;
-                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = PHOTOMETRIC_RGB;
+                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
+                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
                 else {
                     LOGGER_ERROR ( "Unknown value for photometric (option -p) : " << argv[i] );
                     return -1;
@@ -423,7 +426,6 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     std::vector<Image*> ImageIn;
     BoundingBox<double> fakeBbox ( 0.,0.,0.,0. );
 
-    uint16_t bitspersample, sampleformat;
     int width, height;
 
     bool hasMask, hasOutMask;
@@ -458,17 +460,18 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
         }
 
         if ( inputNb == 0 ) {
-            // C'est notre première image en entrée, on mémorise lse caractéristiques)
+            // C'est notre première image en entrée, on mémorise les caractéristiques)
             bitspersample = pImage->getBitsPerSample();
             sampleformat = pImage->getSampleFormat();
             width = pImage->getWidth();
             height = pImage->getHeight();
         } else {
             // Toutes les images en entrée doivent avoir certaines caractéristiques en commun
-            if ( bitspersample != pImage->getBitsPerSample() || sampleformat != pImage->getSampleFormat() ||
-                    width != pImage->getWidth() || height != pImage->getHeight() ) {
+            if ( bitspersample != pImage->getBitsPerSample() ||
+                sampleformat != pImage->getSampleFormat() ||
+                width != pImage->getWidth() || height != pImage->getHeight() ) {
 
-                LOGGER_ERROR ( "All input images must have same dimension and sample format" );
+                LOGGER_ERROR ( "All input images must have same dimension and sample type" );
                 return -1;
             }
         }
@@ -502,10 +505,9 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     // Fermeture du fichier
     file.close();
 
-    sampleType = SampleType ( bitspersample, sampleformat );
-
-    if ( ! sampleType.isSupported() ) {
-        error ( "Supported sample format are :\n" + sampleType.getHandledFormat(),-1 );
+    if ( ! SampleFormat::isHandledSampleType(sampleformat, bitspersample) ) {
+        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
+        return -1;
     }
 
     // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
@@ -522,7 +524,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
 
     // Création des sorties
     *ppImageOut = LIF.createLibtiffImageToWrite ( outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
-                  sampleType, photometric,compression,16 );
+                  sampleformat, bitspersample, photometric,compression,16 );
 
     if ( *ppImageOut == NULL ) {
         LOGGER_ERROR ( "Impossible de creer l'image " << outputImagePath );
@@ -531,7 +533,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
 
     if ( hasOutMask ) {
         *ppMaskOut = LIF.createLibtiffImageToWrite ( outputMaskPath, fakeBbox, -1., -1., width, height, 1,
-                     SampleType ( 8,SAMPLEFORMAT_UINT ), PHOTOMETRIC_MINISBLACK,COMPRESSION_PACKBITS,16 );
+                     SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE,16 );
 
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << outputMaskPath );

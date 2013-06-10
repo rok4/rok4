@@ -165,9 +165,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
                 LOGGER_ERROR ( "Unable to determine sample format for file " << filename );
                 return NULL;
             }
-        }
-
-        
+        }       
 
         if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&photometric ) < 1 ) {
             LOGGER_ERROR ( "Unable to read photometric for file " << filename );
@@ -200,10 +198,10 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
-    SampleType ST = SampleType ( bitspersample, toROK4SampleFormat(sampleformat) );
+    SampleFormat::eSampleFormat sf = toROK4SampleFormat(sampleformat);
 
-    if ( ! ST.isSupported() ) {
-        LOGGER_ERROR ( "Supported sample format are :\n" + ST.getHandledFormat() );
+    if ( ! SampleFormat::isHandledSampleType(sf, bitspersample)) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString(sf) << " and " << bitspersample << " bits per sample");
         return NULL;
     }
 
@@ -225,16 +223,16 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     }
 
     return new LibtiffImage (
-        width, height, resx, resy, channels, bbox,
-        tif, filename,
-        ST, toROK4Photometric(photometric), toROK4Compression(compression), rowsperstrip
+        width, height, resx, resy, channels, bbox, tif, filename,
+        sf, bitspersample, toROK4Photometric(photometric), toROK4Compression(compression), rowsperstrip
     );
 }
 
 /* ----- Pour l'écriture ----- */
 LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
-    SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, uint16_t rowsperstrip ) {
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
+    Compression::eCompression compression, uint16_t rowsperstrip ) {
     
     if ( width <= 0 || height <= 0 ) {
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
@@ -245,8 +243,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( ! sampleType.isSupported() ) {
-        LOGGER_ERROR ( "Supported sample format are :\n" + sampleType.getHandledFormat() );
+    if ( ! SampleFormat::isHandledSampleType(sampleformat, bitspersample) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString(sampleformat) << " and " << bitspersample << " bits per sample");
         return NULL;
     }
 
@@ -285,12 +283,12 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_BITSPERSAMPLE,sampleType.getBitsPerSample() ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_BITSPERSAMPLE, bitspersample ) < 1 ) {
         LOGGER_ERROR ( "Unable to write number of bits per sample for file " << filename );
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat(sampleType.getSampleFormat()) ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat(sampleformat) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write sample format for file " << filename );
         return NULL;
     }
@@ -321,18 +319,21 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         resy = 1.;
     }
 
-    return new LibtiffImage ( width,height,resx,resy,channels,bbox,tif,filename,sampleType,photometric,compression,rowsperstrip );
+    return new LibtiffImage (
+        width, height, resx, resy, channels, bbox, tif, filename,
+        sampleformat, bitspersample, photometric, compression, rowsperstrip
+    );
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
 LibtiffImage::LibtiffImage (
-    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
-    TIFF* tif, char* name,
-    SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, int rowsperstrip ) :
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif, char* name,
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
+    Compression::eCompression compression, int rowsperstrip ) :
                              
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleType, photometric, compression ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
     
     tif ( tif ), rowsperstrip ( rowsperstrip ) {
 
@@ -372,7 +373,7 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibtiffImage::getline ( float* buffer, int line ) {
-    if ( ST.isUInt8() ) {
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
         getline ( buffer_t,line );
@@ -400,7 +401,7 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     float* buf_f=0;
 
     // Ecriture de l'image
-    if ( ST.isUInt8() ) {
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
             //LOGGER_INFO("line " << line);
@@ -410,7 +411,7 @@ int LibtiffImage::writeImage ( Image* pIn ) {
                 return -1;
             }
         }
-    } else if ( ST.isFloat() ) {
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         buf_f = ( float* ) _TIFFmalloc ( width * channels * getBitsPerSample() /8 );
         for ( int line = 0; line < height; line++ ) {
             pIn->getline ( buf_f,line );
@@ -419,9 +420,6 @@ int LibtiffImage::writeImage ( Image* pIn ) {
                 return -1;
             }
         }
-    } else {
-        LOGGER_ERROR ( "Not handled sample format to write. Are handled: " << ST.getHandledFormat() );
-        return -1;
     }
 
     // Liberation

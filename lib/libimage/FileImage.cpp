@@ -65,11 +65,11 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     char extension[3];
     pch = strrchr(name,'.');
 
-    memcpy(extension, pch, 3);
+    memcpy(extension, pch + 1, 3);
 
     // TIFF
     if (strncmp(extension, "tif", 3) == 0) {
-        LOGGER_DEBUG("TIFF image to read");
+        LOGGER_DEBUG("TIFF image to read : " << name);
         
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToRead( name, bbox, resx, resy );
@@ -89,7 +89,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     // Format inconnu en lecture
     else {
-        LOGGER_ERROR("Unknown image's format, to read : " << name);
+        LOGGER_ERROR("Unknown image's extension (" << extension << "), in the file to read : " << name);
         return NULL;
     }
 
@@ -98,26 +98,29 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 /* ----- Pour l'écriture ----- */
 FileImage* FileImageFactory::createImageToWrite (
     char* name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
-    SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression ) {
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression ) {
 
     // Récupération de l'extension du fichier
     char * pch;
     char extension[3];
     pch = strrchr(name,'.');
 
-    memcpy(extension, pch, 3);
+    memcpy(extension, pch + 1, 3);
 
     // TIFF
     if (strncmp(extension, "tif", 3) == 0) {
-        LOGGER_DEBUG("TIFF image to write");
+        LOGGER_DEBUG("TIFF image to write : " << name);
 
         LibtiffImageFactory LTIF;
-        return LTIF.createLibtiffImageToWrite(  name, bbox, resx, resy, width, height, channels, sampleType, photometric, compression, 16 );
+        return LTIF.createLibtiffImageToWrite(
+            name, bbox, resx, resy, width, height, channels,
+            sampleformat, bitspersample, photometric, compression, 16
+        );
     }
 
     // Format inconnu en écriture
     else {
-        LOGGER_ERROR("Unknown image's format, to write : " << name);
+        LOGGER_ERROR("Unknown image's extension (" << extension << "), in the file to write : " << name);
         return NULL;
     }
     
@@ -126,10 +129,12 @@ FileImage* FileImageFactory::createImageToWrite (
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
-FileImage::FileImage ( int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox,
-                       char* name, SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression ) :
+FileImage::FileImage (
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression ) :
                        
-    Image ( width,height,channels,resx,resy,bbox ), ST ( sampleType ), photometric ( photometric ), compression ( compression ) {
+    Image ( width,height,channels,resx,resy,bbox ),
+    sampleformat ( sampleformat ), bitspersample(bitspersample), photometric ( photometric ), compression ( compression ) {
         
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );

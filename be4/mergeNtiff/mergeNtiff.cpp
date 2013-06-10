@@ -142,8 +142,10 @@ char outImagesRoot[256];
 char strnodata[256];
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
-/** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleType sampleType ( 0, SampleFormat::UNKNOWN );
+/** \~french Nombre de bits occupé par un canal */
+uint16_t bitspersample;
+/** \~french Format du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
+SampleFormat::eSampleFormat sampleformat;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
 Photometric::ePhotometric photometric;
 /** \~french Compression de l'image de sortie */
@@ -255,9 +257,6 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine ( int argc, char** argv ) {
-
-    uint16_t bitspersample = 0;
-    SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
 
     if ( argc < 17 && argc != 2 ) {
         LOGGER_ERROR ( "Unvalid parameters number : is " << argc << " and have to be 17 or more (2 to request help)" );
@@ -379,10 +378,8 @@ int parseCommandLine ( int argc, char** argv ) {
 
     LOGGER_DEBUG ( "mergeNtiff -f " << imageListFilename );
 
-    sampleType = SampleType ( bitspersample, sampleformat );
-
-    if ( ! sampleType.isSupported() ) {
-        LOGGER_ERROR ( "Supported sample format are :\n" + sampleType.getHandledFormat() );
+    if ( ! SampleFormat::isHandledSampleType(sampleformat, bitspersample) ) {
+        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample) for the output image" );
         return -1;
     }
 
@@ -426,13 +423,13 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
     float* buf_f=0;
 
     // Ecriture de l'image
-    if ( sf==SAMPLEFORMAT_UINT ) {
+    if ( sf == SAMPLEFORMAT_UINT ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( pImage->getWidth() * pImage->channels * bps / 8 );
         for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_u,line );
             TIFFWriteScanline ( output, buf_u, line, 0 );
         }
-    } else if ( sf==SAMPLEFORMAT_IEEEFP ) {
+    } else if ( sf == SAMPLEFORMAT_IEEEFP ) {
         buf_f = ( float* ) _TIFFmalloc ( pImage->getWidth()*pImage->channels*bps/8 );
         for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_f,line );
@@ -586,29 +583,29 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
 
     *ppImageOut = factory.createImageToWrite (
         imageFileName, bbox,resx, resy, width, height,
-        samplesperpixel, sampleType, photometric, compression
+        samplesperpixel, sampleformat, bitspersample, photometric, compression
     );
-
-    (*ppImageOut)->setCRS(crs);
 
     if ( *ppImageOut == NULL ) {
         LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
         return -1;
     }
 
+    (*ppImageOut)->setCRS(crs);
+
     if ( hasMask ) {
 
         *ppMaskOut = factory.createImageToWrite (
             maskFileName, bbox,resx, resy, width, height,
-            1, SampleType ( 8,SampleFormat::UINT ), Photometric::MASK, Compression::DEFLATE
+            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
         );
-
-        (*ppMaskOut)->setCRS(crs);
 
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << maskFileName );
             return -1;
         }
+
+        (*ppMaskOut)->setCRS(crs);
     }
 
     // Lecture et creation des images sources

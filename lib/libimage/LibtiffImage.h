@@ -125,7 +125,8 @@ protected:
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] name chemin du fichier image
-     * \param[in] sampleType type des canaux
+     * \param[in] sampleformat format des canaux
+     * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
@@ -139,15 +140,16 @@ protected:
      * \param[in] bbox bounding box
      * \param[in] tiff interface between file and object
      * \param[in] name path to image file
-     * \param[in] sampleType samples' type
+     * \param[in] sampleformat samples' format
+     * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      * \param[in] rowsperstrip data buffering size, in line number
      */
     LibtiffImage (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox,
-        TIFF* tif, char* name,
-        SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, int rowsperstrip
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name,
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
+        Compression::eCompression compression, int rowsperstrip
     );
 
 public:
@@ -235,7 +237,8 @@ public:
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] channel nombre de canaux par pixel
-     * \param[in] sampleType type des canaux
+     * \param[in] sampleformat format des canaux
+     * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométie des données
      * \param[in] compression compression des données
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
@@ -252,7 +255,8 @@ public:
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
-     * \param[in] sampleType samples' type
+     * \param[in] sampleformat samples' format
+     * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      * \param[in] rowsperstrip data buffering size, in line number
@@ -260,7 +264,8 @@ public:
      */
     LibtiffImage* createLibtiffImageToWrite (
         char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
-        SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression, uint16_t rowsperstrip = 16
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
+        Compression::eCompression compression, uint16_t rowsperstrip = 16
     );
 };
 

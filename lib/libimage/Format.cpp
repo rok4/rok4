@@ -175,14 +175,4 @@ std::string toMimeType ( eformat_data format ) {
     return std::string ( eformat_mime[format] );
 }
 
-SampleType toSampleType ( eformat_data format ) {
-    if ( format >= Format::eformat_float ) {
-        // Canaux flottants
-        return SampleType ( 32, SampleFormat::FLOAT );
-    } else {
-        // Canaux entiers
-        return SampleType ( 8, SampleFormat::UINT );
-    }
-}
-
 }

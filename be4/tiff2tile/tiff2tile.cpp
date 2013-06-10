@@ -170,23 +170,21 @@ int main ( int argc, char **argv ) {
         exit ( 2 );
     }
 
-    SampleType ST = SampleType ( bitspersample,sampleformat );
-
-    if ( ! ST.isSupported() ) {
-        std::cerr << "Supported sample format are :\n" << ST.getHandledFormat() << std::endl ;
+    if ( ! ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) || ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) ) {
+        std::cerr << "Unknown sample type (sample format + bits per sample)" << std::endl;
         exit ( 2 );
     }
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if ( crop ) {
 
-        if (ST.isUInt8()) {
+        if (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) {
             TiffNodataManager<uint8_t> TNM ( samplesperpixel,white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
                 std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
                 exit ( 2 );
             }
-        } else if (ST.isFloat()) {
+        } else if (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) {
             TiffNodataManager<float> TNM ( samplesperpixel,white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
                 std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;

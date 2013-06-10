@@ -82,10 +82,15 @@ protected:
      */
     Compression::eCompression compression;
     /**
-     * \~french \brief Type du canal
-     * \~english \brief Sample type
+     * \~french \brief Format des canaux
+     * \~english \brief Sample format
      */
-    SampleType ST;
+    SampleFormat::eSampleFormat sampleformat;
+    /**
+     * \~french \brief Nombre de bits par canal
+     * \~english \brief Number of bits per sample
+     */
+    int bitspersample;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
@@ -106,7 +111,8 @@ protected:
      * \param[in] channel nombre de canaux par pixel
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] name chemin du fichier image
-     * \param[in] sampleType type des canaux
+     * \param[in] sampleformat format des canaux
+     * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
      ** \~english
@@ -118,12 +124,15 @@ protected:
      * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
      * \param[in] name path to image file
-     * \param[in] sampleType samples' type
+     * \param[in] sampleformat samples' format
+     * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      */
-    FileImage ( int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox,
-                   char* name, SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression );
+    FileImage (
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
+    );
 
 public:
 
@@ -158,8 +167,8 @@ public:
      * \brief Return number of bits per sample
      * \return number of bits per sample
      */
-    inline uint16_t getBitsPerSample() {
-        return ST.getBitsPerSample();
+    inline int getBitsPerSample() {
+        return bitspersample;
     }
     /**
      * \~french
@@ -193,7 +202,7 @@ public:
      * \return sample format
      */
     inline SampleFormat::eSampleFormat getSampleFormat() {
-        return ST.getSampleFormat();
+        return sampleformat;
     }
 
     /**
@@ -218,8 +227,8 @@ public:
         LOGGER_INFO ( "\t- File name : " << filename );
         LOGGER_INFO ( "\t- Compression : " << Compression::toString(compression) );
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString(photometric) );
-        LOGGER_INFO ( "\t- Bits per sample : " << ST.getBitsPerSample() );
-        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString(ST.getSampleFormat()) );
+        LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
+        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString(sampleformat) );
         LOGGER_INFO ( "" );
     }
 };
@@ -260,7 +269,8 @@ public:
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] channel nombre de canaux par pixel
-     * \param[in] sampleType type des canaux
+     * \param[in] sampleformat format des canaux
+     * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométie des données
      * \param[in] compression compression des données
      * \return un pointeur d'objet d'une classe fille de FileImage, NULL en cas d'erreur
@@ -274,15 +284,17 @@ public:
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
-     * \param[in] sampleType samples' type
+     * \param[in] sampleformat samples' format
+     * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      * \return a FileImage's child class object pointer, NULL if error
      */
     FileImage* createImageToWrite (
         char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height,
-        int channels, SampleType sampleType, Photometric::ePhotometric photometric, Compression::eCompression compression
+        int channels, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
     );
+    
 };
 
 
