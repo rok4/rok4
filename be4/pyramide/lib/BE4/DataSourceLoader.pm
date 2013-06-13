@@ -33,6 +33,51 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: DataSourceLoader.pm
+
+Class: BE4::DataSourceLoader
+
+Loads, validates and manages data sources. Data sources informations are read from a specific configuration file or directly in an hash (old working).
+
+Using:
+    (start code)
+    use BE4::DataSourceLoader
+
+    # DataSourceLoader object creation
+    my $objDataSourceLoader = BE4::DataSourceLoader->new({
+        filepath_conf => "/home/IGN/CONF/source.txt",
+    });
+
+    # DataSourceLoader object creation for old configuration (just one data source)
+    my $objDataSourceLoader = BE4::DataSourceLoader->new(
+        { # datasource section
+            SRS         => "IGNF:LAMB93",
+            path_image  => "/home/IGN/DATA/IMAGES/",
+        },
+        { # harvesting section
+            wms_layer   => ORTHO_RAW_LAMB93_PARIS_OUEST
+            wms_url     => http://localhost/wmts/rok4
+            wms_version => 1.3.0
+            wms_request => getMap
+            wms_format  => image/tiff
+        },
+        $bottomLevel, # bottom level for this one data source
+    );
+    (end code)
+
+Attributes:
+    FILEPATH_DATACONF - string - Path to the specific datasources configuration file. Is undefined if old way is used.
+    dataSources - <DataSource> array - Data sources ensemble. Can contain just one element.
+
+Limitations:
+    Metadata managing not yet implemented.
+=cut
+
+################################################################################
+
 package BE4::DataSourceLoader;
 
 use strict;
@@ -42,7 +87,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Data::Dumper;
 use Geo::GDAL;
 
 # My module
@@ -69,26 +113,35 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * FILEPATH_DATACONF - path of data's configuration file
-    * dataSources : array of BE4::DataSource
+DataSourceLoader constructor. Bless an instance.
+
+Parameters (list):
+    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
+|               filepath_conf - string - Path to the data sources configuration file
+    or keys "srs" and "path_image" if we use the old way :
+|               srs - string - Source images' SRS
+|               path_image - string - Directory contaning images
+    harvesting - hash - If we use the old ways, section *harvesting*, in the general BE4 configuration file
+    bottomId - string - If we use the old ways, parameter *pyr_level_bottom* in the section *pyramid*, in the general BE4 configuration file, to define from which level data source is used.
+
+See also:
+    <_init>, <_load>, <_loadOld>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
+    my $datasource = shift;
+    my $harvesting = shift;
+    my $bottomId = shift;
 
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         FILEPATH_DATACONF => undef,
         dataSources  => []
@@ -99,14 +152,14 @@ sub new {
     TRACE;
 
     # init. class
-    return undef if (! $self->_init(@_));
+    return undef if (! $self->_init($datasource));
 
     # load. class
     if (defined $self->{FILEPATH_DATACONF}) {
         return undef if (! $self->_load());
     } else {
         # Old datasource definition
-        return undef if (! $self->_loadOld(@_));
+        return undef if (! $self->_loadOld($datasource, $harvesting, $bottomId));
     }
     
     INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}});
@@ -114,14 +167,17 @@ sub new {
     return $self;
 }
 
-#
 =begin nd
-method: _init
+Function: _init
 
-Check the DataSource and Harvesting objects.
+Checks the "datasource" section. Must contain keys "path_image" or "filepath_conf" (and path is tested)
 
-Parameters:
-    datasource - BE4 configuration section 'datasource' = path_image + srs or filepath_conf
+Parameters (list):
+    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
+|               filepath_conf - string - Path to the data sources configuration file
+    or keys "srs" and "path_image" if we use the old way :
+|               srs - string - Source images' SRS
+|               path_image - string - Directory contaning images
 =cut
 sub _init {
     my $self   = shift;
@@ -149,13 +205,10 @@ sub _init {
     return TRUE;
 }
 
-#
 =begin nd
-method: _load
+Function: _load
 
-Create BE4::PropertiesLoader and BE4::DataSource objects .
-
-Parameters:
+Reads the specific data sources configuration file and creates corresponding <DataSource> objects.
 =cut
 sub _load {
     my $self   = shift;
@@ -197,16 +250,17 @@ sub _load {
     return TRUE;
 }
 
-#
 =begin nd
-method: _loadOld
+Function: _loadOld
 
-Allow to use old method to define datasource (just one). Use be4 configuration sections 'datasource', 'harvesting' and parameter 'pyr_level_bottom'.
+Allow to use old method to define datasource (just one). Use be4 configuration sections *datasource*, *harvesting* and parameter *pyr_level_bottom*. Creates a <DataSource>.
 
-Parameters:
-    datasource - be4 configuration section 'datasource' = path_image + srs
-    harvesting - be4 configuration section 'harvesting' (can be undefined)
-    bottomId - be4 configuration parameter 'pyr_level_bottom' (section 'pyramid')
+Parameters (list):
+    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the keys "srs" and "path_image" :
+|               srs - string - Source images' SRS
+|               path_image - string - Directory contaning images
+    harvesting - hash - If we use the old ways, section *harvesting*, in the general BE4 configuration file
+    bottomId - string - If we use the old ways, parameter *pyr_level_bottom* in the section *pyramid*, in the general BE4 configuration file, to define from which level data source is used.
 =cut
 sub _loadOld {
     my $self   = shift;
@@ -239,34 +293,30 @@ sub _loadOld {
 }
 
 ####################################################################################################
-#                                       DATASOURCES UPDATE                                         #
+#                                Group: Data sources update                                        #
 ####################################################################################################
 
-# Group: datasources update
-
-#
 =begin nd
-method: updateDataSources
+Function: updateDataSources
 
-From data sources, TMS and parameters, we identify top and bottom.
+From data sources, TMS and parameters, we identify top and bottom :
     - bottom level = the lowest level among data source base levels
     - top level = levelID in parameters if defined, top level of TMS otherwise.
 
 For each datasource, we store the order and the ID of the higher level which use this datasource.
 The base level (from which datasource is used) is already known.
 
-Example (with 2 data sources):
+Example (with 2 data sources) :
     - DataSource1: from level_18 (order 2) to level_16 (order 4)
     - DataSource1: from level_15 (order 5) to level_12 (order 8)
 
 There are no superposition between data sources.
 
 Parameters:
-    TMS - a TileMatrixSet object, to know levels' orders
-    topID - optionnal, from the 'pyramid' section in the configuration file
+    TMS - <TileMatrixSet> - To know levels' orders
+    topID - string - Optionnal, from the *pyramid* section in the configuration file
     
-Return:
-    Global bottom and top order, in a list : (bottomOrder,topOrder)
+Returns the global bottom and top order, in a integer list : (bottomOrder,topOrder), (-1,-1) if failure.
 =cut
 sub updateDataSources {
     my $self = shift;
@@ -293,7 +343,7 @@ sub updateDataSources {
             return (-1, -1);
         }
     } else {
-        $topID = $TMS->getLevelTop();
+        $topID = $TMS->getTopLevel();
         $topOrder = $TMS->getOrderfromID($topID);
     }
 
@@ -354,27 +404,34 @@ sub updateDataSources {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getDataSources
 sub getDataSources {
     my $self = shift;
     return $self->{dataSources}; 
 }
 
+# Function: getNumberDataSources
 sub getNumberDataSources {
     my $self = shift;
     return scalar @{$self->{dataSources}}; 
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all informations about the data sources loader. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -390,60 +447,20 @@ sub exportForDebug {
 1;
 __END__
 
-=head1 NAME
+=begin nd
 
-BE4::DataSourceLoader - Load and validate data sources
+Group: details
 
-=head1 SYNOPSIS
+Configuration file exmaples.
 
-    use BE4::DataSourceLoader
-
-    # DataSourceLoader object creation
-    my $objDataSourceLoader = BE4::DataSourceLoader->new({
-        filepath_conf => "/home/IGN/CONF/source.txt",
-    });
-    
-    # DataSourceLoader object creation for old configuration (just one data source)
-    my $objDataSourceLoader = BE4::DataSourceLoader->new(
-        { # datasource section
-            SRS         => "IGNF:LAMB93",
-            path_image  => "/home/IGN/DATA/IMAGES/",
-        },
-        { # harvesting section
-            wms_layer   => ORTHO_RAW_LAMB93_PARIS_OUEST
-            wms_url     => http://localhost/wmts/rok4
-            wms_version => 1.3.0
-            wms_request => getMap
-            wms_format  => image/tiff
-        },
-        $bottomLevel, # bottom level for this one data source
-    );
-
-=head1 DESCRIPTION
-
-=over 4
-
-=item FILEPATH_DATACONF
-
-Complete file's path, which contain all informations about data sources
-
-=item dataSources
-
-An array of DataSource objects
-
-=back
-
-=head1 FILE CONFIGURATION
-
-=over 4
-
-=item In the be4 configuration, section datasource (multidata.conf)
-
+_In the be4 configuration, section *datasource* (multidata.conf)_
+    (start code)
     [ datasource ]
     filepath_conf       = /home/IGN/CONF/source.txt
+    (end code)
 
-=item In the source configuration (source.txt)
-
+_In the source configuration (source.txt)_
+    (start code)
     [ 19 ]
     
     srs                 = IGNF:LAMB93
@@ -469,42 +486,6 @@ An array of DataSource objects
     wms_format  = image/tiff
     max_width = 4096
     max_height = 4096
-
-
-=back
-
-=head1 LIMITATION & BUGS
-
-Metadata managing not yet implemented.
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
+    (end code)
+    
 =cut

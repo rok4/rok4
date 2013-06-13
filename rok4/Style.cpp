@@ -42,7 +42,7 @@
  * \~english
  * \brief Implement the Style Class handling style definition
  */
- 
+
 #include "Style.h"
 #include "Logger.h"
 #include "intl.h"
@@ -50,15 +50,15 @@
 
 Style::Style ( const std::string& id,const std::vector<std::string>& titles,
                const std::vector<std::string>& abstracts,const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle, float exaggeration, uint8_t center) : estompage(false), angle(angle), exaggeration(exaggeration), center(center) { //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
-    LOGGER_DEBUG ( _("Nouveau Style : ") << id );
+               const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle, float exaggeration, uint8_t center ) : estompage ( false ), angle ( angle ), exaggeration ( exaggeration ), center ( center ) { //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
+    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
     this->id = id.c_str();
     this->titles= titles;
     this->abstracts = abstracts;
     this->keywords = keywords;
     this->legendURLs = legendURLs;
     this->palette = palette;
-    if (angle >= 0 && angle < 360){
+    if ( angle >= 0 && angle < 360 ) {
         estompage = true;
     }
 }

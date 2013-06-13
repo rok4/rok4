@@ -141,7 +141,7 @@ void* processThread ( void* arg ) {
         c++;
         HttpRequest* request=rok4InitRequest ( query,host, script, "" );
 
-        
+
 
         // GetCapabilities
         if ( strcmp ( request->operationType,"getcapabilities" ) ==0 ) {
@@ -155,8 +155,8 @@ void* processThread ( void* arg ) {
             fclose ( C );
             rok4DeleteResponse ( capabilities );
         }
-        
-        
+
+
         // GetTile
         else if ( strcmp ( request->operationType,"gettile" ) ==0 ) {
             // TileReferences
@@ -174,7 +174,7 @@ void* processThread ( void* arg ) {
                     TiffHeader* header=rok4GetTiffHeader ( tileRef.width,tileRef.height,tileRef.channels );
                     fprintf ( stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef.width,tileRef.height,tileRef.channels );
                     int i;
-                    for ( i=0;i<128;i++ )
+                    for ( i=0; i<128; i++ )
                         fprintf ( stdout,"%c",header->data[i] );
                     fprintf ( stdout,"\n" );
                     rok4DeleteTiffHeader ( header );
@@ -183,7 +183,7 @@ void* processThread ( void* arg ) {
                     PngPaletteHeader* header = rok4GetPngPaletteHeader ( tileRef.width,tileRef.height,&tilePalette );
                     fprintf ( stdout,"\tw=%d h=%d ps=%d\n\theader=",tileRef.width,tileRef.height,tilePalette.size );
                     int i;
-                    for ( i=0;i<header->size;i++ )
+                    for ( i=0; i<header->size; i++ )
                         fprintf ( stdout,"%c",header->data[i] );
                     fprintf ( stdout,"\n" );
                     rok4DeletePngPaletteHeader ( header );
@@ -192,7 +192,7 @@ void* processThread ( void* arg ) {
                 rok4FlushTileRef ( &tileRef );
             }
             free ( error );
-            
+
 
             // Tile
             HttpResponse* tile=rok4GetTile ( query, "localhost", "/target/bin/rok4","", server );
@@ -250,6 +250,6 @@ int main ( int argc, char* argv[] ) {
     for ( i = 0; i < nb_threads; i++ )
         pthread_join ( threads[i], NULL );
 
-    free(threads);
+    free ( threads );
     return 0;
 }

@@ -47,8 +47,8 @@
 
 LegendURL::LegendURL ( std::string format, std::string href, int width, int height,
                        double minScaleDenominator, double maxScaleDenominator ) :
-        ResourceLocator ( format, href ) , width ( width ), height ( height ),
-        minScaleDenominator ( minScaleDenominator ), maxScaleDenominator ( maxScaleDenominator ) {
+    ResourceLocator ( format, href ) , width ( width ), height ( height ),
+    minScaleDenominator ( minScaleDenominator ), maxScaleDenominator ( maxScaleDenominator ) {
 
 }
 
@@ -60,8 +60,8 @@ LegendURL::LegendURL ( const LegendURL& origLUrl ) : ResourceLocator ( origLUrl 
 }
 
 LegendURL& LegendURL::operator= ( const LegendURL& other ) {
-    if (this != &other) {
-        ResourceLocator::operator=(other);
+    if ( this != &other ) {
+        ResourceLocator::operator= ( other );
         this->height = other.height;
         this->width = other.width;
         this->maxScaleDenominator = other.maxScaleDenominator;

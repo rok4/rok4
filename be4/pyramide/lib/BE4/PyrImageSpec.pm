@@ -33,17 +33,62 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: PyrImageSpec.pm
+
+Class: BE4::PyrImageSpec
+
+Store all image's components.
+
+Using:
+    (start code)
+    use BE4::PyrImageSpec;
+
+    # PyrImageSpec object creation
+
+    # Basic constructor
+    my $objPIS = BE4::PyrImageSpec->new({
+        compression => "raw",
+        sampleformat => "uint",
+        bitspersample => 8,
+        samplesperpixel => 3,
+        photometric => "rgb",
+        compressionoption => "none",
+        interpolation => "bicubic",
+        gamma  => 1
+    });
+
+    # From a code
+    my $objPIS = BE4::PyrImageSpec->new({
+        formatCode => "TIFF_RAW_INT8",
+        samplesperpixel => 3,
+        photometric => "rgb",
+        compressionoption => "none",
+        interpolation => "bicubic",
+        gamma  => 1
+    });
+    (end code)
+
+Attributes:
+    pixel - <Pixel> - Contains pixel intrinsic components.
+    compression - string - Data compression. Only PNG is a unofficial TIFF compression.
+    compressionoption - string - Precise additionnal actions, to do before compression. Just "crop" is available, with JPEG compression. It's allowed to empty blocs which contain white pixel, to keep pure white, even with JPEG compression.
+    interpolation - string - Image could be resampling. Resampling use a kind of interpolation.
+    gamma - float - Positive, used by merge4tiff to make dark (between 0 and 1) or light (greater than 1) RGB images. 1 is a neutral value.
+    formatCode - string - Used in the pyramid's descriptor. Format is : TIFF_<COMPRESSION>_<SAMPLEFORMAT><BITSPERSAMPLE> (TIFF_RAW_INT8).
+=cut
+
+################################################################################
+
 package BE4::PyrImageSpec;
 
 use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-
 use Data::Dumper;
-
-# version
-my $VERSION = "0.0.1";
 
 # My module
 use BE4::Pixel;
@@ -62,61 +107,93 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-# Global
+# Constant: IMAGESPEC
+# Define allowed values for attributes interpolation, compression and compressionoption.
 my %IMAGESPEC;
-my %CODE2SAMPLEFORMAT;
+
+# Constant: DEFAULT
+# Define default values for attributes interpolation, compression, compressionoption and gamma.
+my %DEFAULT;
+
+# Constant: SAMPLEFORMAT2CODE
+# Convert the sample format parameter to the code element.
 my %SAMPLEFORMAT2CODE;
+
+# Constant: CODES
+# Define all available formats' codes, and parse them.
+my %CODES;
 
 ################################################################################
 
 BEGIN {}
 INIT {
+    %IMAGESPEC = (
+        interpolation => ['nn','bicubic','linear','lanczos'],
+        compression => ['raw','jpg','png','lzw','zip','pkb'],
+        compressionoption => ['none','crop']
+    );
 
-%IMAGESPEC = (
-    interpolation => ['nn','bicubic','linear','lanczos'],
-    compression => ['raw','jpg','png','lzw','zip','pkb'],
-    compressionoption => ['none','crop']
-);
+    %DEFAULT = (
+        interpolation => 'bicubic',
+        compression => 'raw',
+        compressionoption => 'none',
+        gamma => 1
+    );
 
-%CODE2SAMPLEFORMAT = (
-    INT => "uint",
-    FLOAT => "float"
-);
+    %SAMPLEFORMAT2CODE = (
+        uint => "INT",
+        float => "FLOAT"
+    );
 
-%SAMPLEFORMAT2CODE = (
-    uint => "INT",
-    float => "FLOAT"
-);
+    %CODES = (
+        TIFF_RAW_INT8 => ["raw", "uint", 8],
+        TIFF_JPG_INT8 => ["jpg", "uint", 8],
+        TIFF_PNG_INT8 => ["png", "uint", 8],
+        TIFF_LZW_INT8 => ["lzw", "uint", 8],
+        TIFF_ZIP_INT8 => ["zip", "uint", 8],
+        TIFF_PKB_INT8 => ["pkb", "uint", 8],
 
+        TIFF_RAW_FLOAT32 => ["raw", "float", 32],
+        TIFF_LZW_FLOAT32 => ["lzw", "float", 32],
+        TIFF_ZIP_FLOAT32 => ["zip", "float", 32],
+        TIFF_PKB_FLOAT32 => ["pkb", "float", 32]
+    );
 }
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * pixel : BE4::Pixel
-    * compression
-    * compressionoption
-    * interpolation
-    * gamma
-    * formatCode
+PyrImageSpec constructor. Bless an instance.
+
+Parameters (hash):
+    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
+
+        OR
+
+    compression - string - Image's compression
+    sampleformat - string - Image's sample format
+    bitspersample - integer - Image's bits per sample
+
+    samplesperpixel - integer - Image's samples per pixel
+    photometric - string - Image's photometric
+    compressionoption - string - Image's compression option
+    interpolation - string - Image's interpolation
+    gamma - float - Merge gamma
+
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
     my $params = shift;
     
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pixel    => undef,
         compression => undef,
@@ -140,6 +217,26 @@ sub new {
 
 }
 
+=begin nd
+Function: _init
+
+Checks and stores informations.
+
+Parameters (hash):
+    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
+        
+        OR
+        
+    compression - string - Image's compression
+    sampleformat - string - Image's sample format
+    bitspersample - integer - Image's bits per sample
+    
+    samplesperpixel - integer - Image's samples per pixel
+    photometric - string - Image's photometric
+    compressionoption - string - Image's compression option
+    interpolation - string - Image's interpolation
+    gamma - float - Merge gamma
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -148,16 +245,16 @@ sub _init {
     
     return FALSE if (! defined $params);
 
-    if (exists($params->{formatCode})) {
-        (my $formatimg, $params->{compression}, $params->{sampleformat}, $params->{bitspersample})
-            = $self->decodeFormat($params->{formatCode});
-        if (! defined $formatimg) {
+    if (exists $params->{formatCode} && defined $params->{formatCode}) {
+        ($params->{compression}, $params->{sampleformat}, $params->{bitspersample}) =
+            $self->decodeFormat($params->{formatCode});
+        if (! defined $params->{compression}) {
             ERROR (sprintf "Can not decode formatCode '%s' !",$params->{formatCode});
             return FALSE;
         }
     }
 
-    # Pixel object creation
+    ### Pixel object
     my $objPixel = BE4::Pixel->new({
         photometric => $params->{photometric},
         sampleformat => $params->{sampleformat},
@@ -172,81 +269,94 @@ sub _init {
 
     $self->{pixel} = $objPixel;
     
-    # Other attributes
-    # All attributes have to be present in parameters and defined
-
-    # Compression parameters
-    # to remove when compression type 'floatraw' will be remove
-    if (exists($params->{compression}) && $params->{compression} eq 'floatraw') {
+    ### Compression
+    if (! exists $params->{compression} || ! defined $params->{compression}) {
+        $params->{compression} = $DEFAULT{compression};
+        INFO(sprintf "Default value for 'compression' : %s", $params->{compression});
+    } elsif ($params->{compression} eq 'floatraw') {
+        # to remove when compression type 'floatraw' will be remove
         WARN("'floatraw' is a deprecated compression type, use 'raw' instead");
         $params->{compression} = 'raw';
-    }
-    if (! exists $params->{compression} || ! defined $params->{compression}) {
-        ERROR ("'compression' is required !");
-        return FALSE;
-    }
-    if (! $self->is_Compression($params->{compression})) {
-        ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
-        return FALSE;
+    } else {
+        if (! $self->isCompression($params->{compression})) {
+            ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
+            return FALSE;
+        }
     }
     $self->{compression} = $params->{compression};
 
+    ### Compression option
     if (! exists $params->{compressionoption} || ! defined $params->{compressionoption}) {
-        $params->{compressionoption} = "none";
-    }
-    if (! $self->is_CompressionOption($params->{compressionoption})) {
-        ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
-        return FALSE;
+        $params->{compressionoption} = $DEFAULT{compressionoption};
+        INFO(sprintf "Default value for 'compressionoption' : %s", $params->{compressionoption});
+    } else {
+        if (! $self->isCompressionOption($params->{compressionoption})) {
+            ERROR (sprintf "Unknown compression option : %s !",$params->{compressionoption});
+            return FALSE;
+        }
     }
     $self->{compressionoption} = $params->{compressionoption};
 
-    # Interpolation parameter
+    ### Interpolation
     if (! exists $params->{interpolation} || ! defined $params->{interpolation}) {
-        ERROR ("'interpolation' is required !");
-        return FALSE;
-    }
-    # to remove when interpolation 'bicubique' will be remove
-    if ($params->{interpolation} eq 'bicubique') {
+        $params->{interpolation} = $DEFAULT{interpolation};
+        INFO(sprintf "Default value for 'interpolation' : %s", $params->{interpolation});
+    } elsif ($params->{interpolation} eq 'bicubique') {
+        # to remove when interpolation 'bicubique' will be remove
         WARN("'bicubique' is a deprecated interpolation value, use 'bicubic' instead");
         $params->{interpolation} = 'bicubic';
-    }
-    if (! $self->is_Interpolation($params->{interpolation})) {
+    } else {
+        if (! $self->isInterpolation($params->{interpolation})) {
         ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
         return FALSE;
+        }
     }
     $self->{interpolation} = $params->{interpolation};
 
-    # Gamma parameter
+    ### Gamma
     if (! exists $params->{gamma} || ! defined $params->{gamma}) {
-        ERROR ("'gamma' is undefined !");
-        return FALSE;
-    }
-    if ($params->{gamma} !~ /^-?\d+\.?\d*$/) {
-        ERROR ("'gamma' is not a number !");
-        return FALSE;
-    }
-    if ($params->{gamma} < 0) {
-        WARN ("Given value for gamma is negative : 0 is used !");
-        $params->{gamma} = 0;
+        $params->{gamma} = $DEFAULT{gamma};
+        INFO(sprintf "Default value for 'gamma' : %s", $params->{gamma});
+    } else {
+        if ($params->{gamma} !~ /^-?\d+\.?\d*$/) {
+            ERROR ("'gamma' is not a number !");
+            return FALSE;
+        }
+        
+        if ($params->{gamma} < 0) {
+            WARN ("Given value for gamma is negative : 0 is used !");
+            $params->{gamma} = 0;
+        }
     }
     $self->{gamma} = $params->{gamma};
 
-    # formatCode : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
+    ### Format code : TIFF_[COMPRESSION]_[SAMPLEFORMAT][BITSPERSAMPLE]
     $self->{formatCode} = sprintf "TIFF_%s_%s%s",
         uc $self->{compression},
-        $SAMPLEFORMAT2CODE{$self->{pixel}->{sampleformat}},
-        $self->{pixel}->{bitspersample};
+        $SAMPLEFORMAT2CODE{$self->{pixel}->getSampleFormat()},
+        $self->{pixel}->getBitsPerSample();
+
+    if (! exists $CODES{$self->{formatCode}}) {
+        ERROR(sprintf "Format code is not handled '%s' !", $self->{formatCode});
+        return FALSE;
+    }
 
     return TRUE;
 }
 
 ####################################################################################################
-#                                     ATTRIBUTE TESTS                                              #
+#                             Group: Attributes' testers                                           #
 ####################################################################################################
 
-# Group: attribute tests
+=begin nd
+Function: isCompression
 
-sub is_Compression {
+Tests if compression value is allowed.
+
+Parameters (list):
+    compression - string - Compression value to test
+=cut
+sub isCompression {
     my $self = shift;
     my $compression = shift;
 
@@ -260,7 +370,15 @@ sub is_Compression {
     return FALSE;
 }
 
-sub is_CompressionOption {
+=begin nd
+Function: isCompressionOption
+
+Tests if compression option value is allowed, and consistent with the compression.
+
+Parameters (list):
+    compressionoption - string - Compression option value to test
+=cut
+sub isCompressionOption {
     my $self = shift;
     my $compressionoption = shift;
 
@@ -290,7 +408,15 @@ sub is_CompressionOption {
     return TRUE;
 }
 
-sub is_Interpolation {
+=begin nd
+Function: isInterpolation
+
+Tests if interpolation value is allowed.
+
+Parameters (list):
+    interpolation - string - Interpolation value to test
+=cut
+sub isInterpolation {
     my $self = shift;
     my $interpolation = shift;
 
@@ -305,22 +431,16 @@ sub is_Interpolation {
 }
 
 ####################################################################################################
-#                                          CODE METHOD                                             #
+#                                   Group: Code manager                                            #
 ####################################################################################################
 
-# Group: code manager methods
-
-#
 =begin nd
 method: decodeFormat
 
-Extract bits per sample, compression and sample format from a code (present in pyramid's descriptor)
+Extracts bits per sample, compression and sample format from a code (present in pyramid's descriptor). Returns a list : (compression, sample format, bits per sample) : ("png", "uint", 8), *undef* if error.
 
-Parameter:
+Parameters (list):
     formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
-
-Returns:
-    An array : [image format,compression,sample format,bits per sample] ( ["TIFF","png","uint",8] )
 =cut
 sub decodeFormat {
     my $self = shift;
@@ -336,74 +456,83 @@ sub decodeFormat {
         $formatCode = 'TIFF_RAW_FLOAT32';
     }
 
-    $self->{formatCode} = $formatCode;
-    
-    my @value = split(/_/, $formatCode);
-    if (scalar @value != 3) {
+    if (! exists $CODES{$formatCode}) {
         ERROR(sprintf "Format code is not valid '%s' !", $formatCode);
         return undef;
     }
 
-    $value[2] =~ m/([A-Z]+)([0-9]+)/;
+    $self->{formatCode} = $formatCode;
 
-    # Contrôle de la valeur sampleFormat extraite
-    my $sampleformatCode = $1;
+    return ($CODES{$formatCode}[0], $CODES{$formatCode}[1], $CODES{$formatCode}[2]);
 
-    if (! exists $CODE2SAMPLEFORMAT{$sampleformatCode}) {
-        ERROR(sprintf "Extracted sampleFormat is not valid '%s' !", $sampleformatCode);
-        return undef;
-    }
-    my $sampleformat = $CODE2SAMPLEFORMAT{$sampleformatCode};
-
-    # Contrôle de la valeur compression extraite
-    if (! $self->is_Compression(lc $value[1])) {
-        ERROR(sprintf "Extracted compression is not valid '%s' !", $value[1]);
-        return undef;
-    }
-
-    my $bitspersample = $2;
-    
-    return ($value[0], lc $value[1], $sampleformat, $bitspersample);
-    
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getInterpolation
 sub getInterpolation {
     my $self = shift;
     return $self->{interpolation};
 }
+
+# Function: getGamma
 sub getGamma {
     my $self = shift;
     return $self->{gamma};
 }
+
+# Function: getCompression
 sub getCompression {
     my $self = shift;
     return $self->{compression};
 }
+
+# Function: getCompressionOption
 sub getCompressionOption {
     my $self = shift;
     return $self->{compressionoption};
 }
+
+# Function: getFormatCode
 sub getFormatCode {
     my $self = shift;
     return $self->{formatCode};
 }
+
+# Function: getPixel
 sub getPixel {
     my $self = shift;
     return $self->{pixel};
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all image's components. Useful for debug.
+
+Example:
+    (start code)
+    Object BE4::PyrImageSpec :
+         Global information :
+                - Compression : raw
+                - Compression option : none
+                - Interpolation : bicubic
+                - Gamma : 1
+                - Format code : TIFF_RAW_INT8
+         Pixel components :
+    Object BE4::Pixel :
+         Bits per sample : 8
+         Photometric : rgb
+         Sample format : uint
+         Samples per pixel : 1
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -424,99 +553,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::PyrImageSpec - image specifications
-
-=head1 SYNOPSIS
-
-    use BE4::PyrImageSpec;
-  
-    # PyrImageSpec object creation
-    
-    # Basic constructor
-    my $objPIS = BE4::PyrImageSpec->new({
-        compression => "raw",
-        sampleformat => "uint",
-        bitspersample => 8,
-        samplesperpixel => 3,
-        photometric => "rgb",
-        compressionoption => "none",
-        interpolation => "bicubic",
-        gamma  => 1
-    });
-    
-    # From a code
-    my $objPIS = BE4::PyrImageSpec->new({
-        formatCode => "TIFF_RAW_INT8",
-        samplesperpixel => 3,
-        photometric => "rgb",
-        compressionoption => "none",
-        interpolation => "bicubic",
-        gamma  => 1
-    });
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item pixel
-
-A Pixel object
-
-=item compression
-
-Possible values : raw, jpg, png, lzw, zip. 
-
-=item compressionoption
-
-Possible values : none, crop.
-
-=item interpolation
-
-Possible values : nn, bicubic, linear, lanczos
-
-=item gamma
-
-A float between 0 and 1, 1 by default. Use by merge4tiff to make dark gray images.
-
-=item formatCode
-
-Use in the pyramid's descriptor. Format is : TIFF_<COMPRESSION>_<SAMPLEFORMAT><BITSPERSAMPLE> (TIFF_RAW_INT8)
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">BE4 NaturalDocs</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

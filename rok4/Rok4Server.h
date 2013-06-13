@@ -72,7 +72,7 @@
 class Rok4Server {
 private:
     /**
-     * \~french \brief Liste des processus léger 
+     * \~french \brief Liste des processus léger
      * \~english \brief Threads liste
      */
     std::vector<pthread_t> threads;
@@ -92,7 +92,7 @@ private:
      */
     bool supportWMS;
     /**
-     * \~french \brief Défini si le serveur est en cours d'éxécution 
+     * \~french \brief Défini si le serveur est en cours d'éxécution
      * \~english \brief Define whether the server is running
      */
     volatile bool running;
@@ -136,19 +136,19 @@ private:
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
-    std::vector<std::string> wmsCapaFrag; 
+    std::vector<std::string> wmsCapaFrag;
     /**
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
-    std::vector<std::string> wmtsCapaFrag; 
-    
+    std::vector<std::string> wmtsCapaFrag;
+
     /**
      * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
      * \~english \brief Error response in case data tiel is not found (http 404)
      */
     DataSource* notFoundError;
-    
+
     /**
      * \~french
      * \brief Boucle principale exécuté par chaque thread à l'écoute des requêtes des utilisateurs.
@@ -162,16 +162,16 @@ private:
     static void* thread_loop ( void* arg );
     /**
      * \~french
-     * \brief 
+     * \brief
      * \param[in] arg pointeur vers l'instance de Rok4Server
      * \return true si présent
      * \~english
-     * \brief 
+     * \brief
      * \param[in] arg pointer to the Rok4Server instance
      * \return true if present
      */
     int GetDecimalPlaces ( double number );
-    
+
     /**
      * \~french
      * \brief Construit les fragments invariants du getCapabilities WMS
@@ -186,7 +186,7 @@ private:
      * \brief Build the invariant fragments of the WMTS GetCapabilities
      */
     void buildWMTSCapabilities();
-    
+
     /**
      * \~french
      * \brief Test de la présence d'un paramètre dans la requête
@@ -213,7 +213,7 @@ private:
      * \return parameter value or "" if not availlable
      */
     std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
-    
+
     /**
      * \~french
      * \brief Traitement d'une requête GetMap
@@ -236,7 +236,7 @@ private:
      * \return response stream
      */
     DataStream* WMSGetCapabilities ( Request* request );
-    
+
     /**
      * \~french Traite les requêtes de type WMS
      * \~english Process WMS request
@@ -296,7 +296,7 @@ public:
     std::vector<std::string>& getWmtsCapaFrag() {
         return wmtsCapaFrag;
     }
-    
+
     /**
      * \~french
      * \brief Traitement d'une requête GetTile
@@ -350,8 +350,10 @@ public:
      * \brief Get the internal FastCGI socket representation, usefull for configuration reloading.
      * \return the internal FastCGI socket representation
      */
-    int getFCGISocket() {return sock;}
-    
+    int getFCGISocket() {
+        return sock;
+    }
+
     /**
      * \~french
      * utilisé pour le rechargement de la configuration du serveur
@@ -362,8 +364,10 @@ public:
      * \brief Set the internal FastCGI socket representation
      * \param sockFCGI the internal FastCGI socket representation
      */
-    void setFCGISocket(int sockFCGI) {sock = sockFCGI;}
-    
+    void setFCGISocket ( int sockFCGI ) {
+        sock = sockFCGI;
+    }
+
     /**
      * \~french
      * \brief Retourne l'état du serveur
@@ -372,7 +376,9 @@ public:
      * \brief Return the server state
      * \return true if running
      */
-    bool isRunning() { return running ;}
+    bool isRunning() {
+        return running ;
+    }
     /**
      * \~french
      * \brief Demande l'arrêt du serveur
@@ -380,12 +386,12 @@ public:
      * \brief Ask for server shutdown
      */
     void terminate();
-    
+
     /**
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true);
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true );
     /**
      * \~french
      * \brief Destructeur par défaut

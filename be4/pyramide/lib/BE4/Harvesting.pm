@@ -33,6 +33,65 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Harvesting.pm
+
+Class: BE4::Harvesting
+
+Stores parameters and builds WMS request.
+
+Using:
+    (start code)
+    use BE4::Harvesting;
+
+    # Image width and height not defined
+
+    # Harvesting object creation
+    my $objHarvesting = BE4::Harvesting->new({
+        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
+        wms_url     => "http://localhost/wmts/rok4",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/tiff"
+    });
+
+    OR
+
+    # Image width and height defined, style, transparent and background color (for a WMS vector)
+
+    # Harvesting object creation
+    my $objHarvesting = BE4::Harvesting->new({
+        wms_layer   => "BDD_WLD_WM",
+        wms_url     => "http://localhost/wmts/rok4",
+        wms_version => "1.3.0",
+        wms_request => "getMap",
+        wms_format  => "image/png",
+        wms_bgcolor => "0xFFFFFF",
+        wms_transparent  => "FALSE",
+        wms_style  => "line",
+        max_width  => 1024,
+        max_height  => 1024
+    });
+    (end code)
+
+Attributes:
+    URL - string -  Left part of a WMS request, before the *?*.
+    VERSION - string - Parameter *VERSION* of a WMS request : "1.3.0".
+    REQUEST - string - Parameter *REQUEST* of a WMS request : "getMap"
+    FORMAT - string - Parameter *FORMAT* of a WMS request : "image/tiff"
+    LAYERS - string - Layer name to harvest, parameter *LAYERS* of a WMS request.
+    OPTIONS - string - Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
+    min_size - integer - Used to remove too small harvested images (full of nodata), in bytes. Can be zero (no limit).
+    max_width - integer - Max image's pixel width which will be harvested, can be undefined (no limit).
+    max_height - integer - Max image's pixel height which will be harvested, can be undefined (no limit).
+
+If *max_width* and *max_height* are not defined, images will be harvested all-in-one. If defined, requested image size have to be a multiple of this size.
+=cut
+
+################################################################################
+
 package BE4::Harvesting;
 
 use strict;
@@ -55,47 +114,55 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-# Global
+# Constant: WMS
+# Define allowed values for attribute wms_format.
 my %WMS;
+
+# Constant: DEFAULT
+# Define default values for attributes.
+my %DEFAULT;
 
 ################################################################################
 
 BEGIN {}
 INIT {
-    
-%WMS = (
-    wms_format => ['image/png','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
-);
-    
+    %WMS = (
+        wms_format => ['image/png','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
+    );
+
+    %DEFAULT = (
+        min_size => 0,
+    );
 }
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * URL - url of rok4
-    * VERSION - 1.3.0
-    * REQUEST - getMap
-    * FORMAT - ie image/png
-    * LAYERS - ORTHOPHOTO,ROUTE,...
-    * OPTIONS - transparence, background color, style
-    
-    * min_size : int - used to remove too small harvested images (bytes), can be zero (no limit)
-    * max_width : int - max images width which will be harvested, can be undefined
-    * max_height : int - max images width which will be harvested, can be undefined
+Harvesting constructor. Bless an instance.
+
+Parameters (hash):
+    wms_layer - string - Layer to harvest.
+    wms_url - string - WMS server url.
+    wms_version - string - WMS version.
+    wms_request - string - Request's type.
+    wms_format - string - Result's format.
+    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
+    wms_transparent - boolean - Optionnal.
+    wms_style - string - Optionnal.
+    min_size - integer - Optionnal. 0 by default
+    max_width - integer - Optionnal.
+    max_height - integer - Optionnal.
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
+    my $params = shift;
 
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
@@ -106,7 +173,7 @@ sub new {
         FORMAT   => undef,
         LAYERS    => undef,
         OPTIONS    => "STYLES=",
-        min_size => 0,
+        min_size => undef,
         max_width => undef,
         max_height => undef
     };
@@ -116,11 +183,29 @@ sub new {
     TRACE;
 
     # init. class
-    return undef if (! $self->_init(@_));
+    return undef if (! $self->_init($params));
 
     return $self;
 }
 
+=begin nd
+Function: _init
+
+Checks and stores attributes' values.
+
+Parameters (hash):
+    wms_layer - string - Layer to harvest.
+    wms_url - string - WMS server url.
+    wms_version - string - WMS version.
+    wms_request - string - Request's type.
+    wms_format - string - Result's format.
+    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
+    wms_transparent - boolean - Optionnal.
+    wms_style - string - Optionnal.
+    min_size - integer - Optionnal. 0 by default
+    max_width - integer - Optionnal.
+    max_height - integer - Optionnal.
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -167,14 +252,13 @@ sub _init {
             ERROR(sprintf "Parameter 'wms_transparent' have to be 'TRUE' or 'FALSE' (%s).",$params->{wms_transparent});
             return FALSE ;
         }
-        if (uc($params->{wms_transparent}) eq "TRUE" && $hasBGcolor) {
-            ERROR("If 'wms_bgcolor' is given, 'wms_transparent' must be 'FALSE'.");
-            return FALSE ;
-        }
         $self->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_bgcolor});
     }
     
-    if (exists($params->{min_size}) && defined ($params->{min_size})) {
+    if (! exists($params->{min_size}) || ! defined ($params->{min_size})) {
+        $self->{min_size} = $DEFAULT{min_size};
+        INFO(sprintf "Default value for 'min_size' : %s", $self->{min_size});
+    } else {
         if (int($params->{min_size}) <= 0) {
             ERROR("If 'min_size' is given, it must be strictly positive.");
             return FALSE ;
@@ -204,7 +288,7 @@ sub _init {
         ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
-    if (! $self->is_WmsFormat($params->{wms_format})) {
+    if (! $self->isWmsFormat($params->{wms_format})) {
         ERROR("Parameter 'wms_format' is not valid !");
         return FALSE ;
     }
@@ -235,25 +319,36 @@ sub _init {
 }
 
 ####################################################################################################
-#                                      REQUEST METHODS                                             #
+#                               Group: Request methods                                             #
 ####################################################################################################
 
-# Group: request methods
-
-#
 =begin nd
-method: doRequestUrl
+Function: doRequestUrl
 
 From an bbox, determine the request to send to obtain what we want.
 
 Parameters (hash):
-    srs - bbox's SRS
-    inversion - boolean, to know if we have to reverse coordinates in the request.
-    bbox - extent of the harvested image
-    width,height - pixel size of the harvested image
+    srs - string - Bounding box's SRS
+    inversion - boolean - To know if we have to reverse coordinates in the request.
+    bbox - double array - Extent of the harvested image
+    width - integer - Pixel width of the harvested image
+    height - integer - Pixel height of the harvested image
 
-Returns:
-    An url
+Example:
+    (start code)
+    # Do a request
+    my $request = $objHarvesting->doRequestUrl(
+        inversion => TRUE,
+        srs => "EPSG:4326",
+        bbox => [5,47,6,48],
+        width => 4096,
+        height => 4096
+    );
+    
+    # $request =
+    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:4326&BBOX=47,5,48,6&WIDTH=4096&HEIGHT=4096&STYLES=
+    (end code)
 =cut
 sub doRequestUrl {
     my $self = shift;
@@ -294,41 +389,51 @@ sub doRequestUrl {
     return $url;
 }
 
-#
 =begin nd
-method: getCommandWms2work
+Function: getCommandWms2work
 
 Compose the BBoxes' array and the Wms2work call (bash function), used to obtain wanted image.
 
 Parameters:
-    dir - directory, to know the final image location and where to write temporary images
-    srs - bbox's SRS
-    inversion - boolean, to know if we have to reverse coordinates in the BBoxes.
-    bbox - extent of the final harvested image
-    width,height - pixel size of the harvested image
+    dir - string - directory, to know the final image location and where to write temporary images
+    srs - string - Bounding box's SRS
+    inversion - boolean - To know if we have to reverse coordinates in the request.
+    bbox - double array - Extent of the harvested image
+    width - integer - Pixel width of the harvested image
+    height - integer - Pixel height of the harvested image
 
-Returns:
-    A string, which contain the BBoxes array and the "Wms2work" call:
-    
-    BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
-    10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
-    11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
-    11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
-    10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
-    10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
-    11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
-    11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
-    10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
-    10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
-    11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
-    11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
-    10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
-    10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
-    11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864
-    "
+Example:
+    (start code)
+    # Obtain a "Wms2work" command
+    my $cmd = $objHarvesting->getCommandWms2work(
+        dir => "path/image_several_requests",
+        inversion => FALSE,
+        srs => "WGS84",
+        bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
+        width => 4096,
+        height =>4096
+    );
 
-    Wms2work "test" "png" "1024x1024" "4x4" "250000" "http://gpp3-wxs-i-ign-fr.aw.atosorigin.com/r1oldcvxu2ec7lmimd6ng4x7/geoportail/v/wms?LAYERS=NATURALEARTH_BDD_WLD_WM_20120704&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    # $cmd =
+    # BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
+    # 10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
+    # 11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
+    # 11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
+    # 10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
+    # 10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
+    # 11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
+    # 11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
+    # 10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
+    # 10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
+    # 11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
+    # 11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
+    # 10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
+    # 10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
+    # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
+    # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
+    #
+    # Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    (end code)
 =cut
 sub getCommandWms2work {
     my $self = shift;
@@ -420,12 +525,18 @@ sub getCommandWms2work {
 }
 
 ####################################################################################################
-#                                     ATTRIBUTE TESTS                                              #
+#                             Group: Attributes' testers                                           #
 ####################################################################################################
 
-# Group: attribute tests
+=begin nd
+Function: isWmsFormat
 
-sub is_WmsFormat {
+Tests if format value is allowed.
+
+Parameters (list):
+    wmsformat - string - Format value to test
+=cut
+sub isWmsFormat {
     my $self = shift;
     my $wmsformat = shift;
 
@@ -441,62 +552,58 @@ sub is_WmsFormat {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getURL
 sub getURL {
     my $self = shift;
     return $self->{URL};
 }
 
+# Function: getVersion
 sub getVersion {
     my $self = shift;
     return $self->{VERSION};
 }
 
+# Function: getRequest
 sub getRequest {
   my $self = shift;
   return $self->{REQUEST};
 }
 
+# Function: getFormat
 sub getFormat {
     my $self = shift;
     return $self->{FORMAT};
 }
 
+# Function: getLayers
 sub getLayers {
     my $self = shift;
     return $self->{LAYERS};
 }
 
+# Function: getOptions
 sub getOptions {
     my $self = shift;
     return $self->{OPTIONS};
 }
 
-sub getMinSize {
-    my $self = shift;
-    return $self->{min_size};
-}
-
-sub getMaxWidth {
-    my $self = shift;
-    return $self->{max_width};
-}
-
-sub getMaxHeight {
-    my $self = shift;
-    return $self->{max_height};
-}
-
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all harvesting's components. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -518,153 +625,5 @@ sub exportForDebug {
     return $export;
 }
 
-
 1;
 __END__
-
-=head1 NAME
-
-BE4::Harvesting - Declare WMS service
-
-=head1 SYNOPSIS
-
-    use BE4::Harvesting;
-
-    # Image width and height not defined
-
-    # Harvesting object creation
-    my $objHarvesting = BE4::Harvesting->new({
-        wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
-        wms_url     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/tiff"
-    });
-    
-    # Do a request
-    my $request = $objHarvesting->doRequestUrl(
-        inversion => TRUE,
-        srs => "EPSG:4326",
-        bbox => [5,47,6,48],
-        width => 4096,
-        height =>4096
-    );
-    
-    # $request =
-    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
-    # REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:4326&BBOX=47,5,48,6&WIDTH=4096&HEIGHT=4096&STYLES=
-    
-    OR
-    
-    # Image width and height defined, style, transparent and background color (for a WMS vector)
-    
-    # Harvesting object creation
-    my $objHarvesting = BE4::Harvesting->new({
-        wms_layer   => "BDD_WLD_WM",
-        wms_url     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/png",
-        wms_bgcolor => "0xFFFFFF",
-        wms_transparent  => "FALSE",
-        wms_style  => "line",
-        max_width  => 1024,
-        max_height  => 1024
-    });
-
-
-    # Obtain a "Wms2work" command
-    my $cmd = $objHarvesting->getCommandWms2work(
-        dir => "path/image_several_requests",
-        inversion => FALSE,
-        srs => "WGS84",
-        bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
-        width => 4096,
-        height =>4096
-    );
-    
-    # $cmd =
-    # BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
-    # 10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
-    # 11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
-    # 11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
-    # 10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
-    # 10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
-    # 11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
-    # 11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
-    # 10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
-    # 10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
-    # 11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
-    # 11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
-    # 10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
-    # 10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
-    # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
-    # 
-    # Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
-    # The command execution will create the file f<path/image_several_requests.tif>
-    # The 16 temporary images will be f<path/image_several_requests/img01.png>, f<path/image_several_requests/img02.png>, ...
-    # If a minimum size is specified (not "0"), we compare the temporary images' size sum and the minimum. No image will be created if harvested images are too small.
-    # The directory is finally remove.
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item URL
-
-URL of rok4.
-
-=item VERSION
-
-1.3.0 for WMS.
-
-=item REQUEST
-
-"getMap"
-
-=item FORMAT
-
-Possible values : 'image/png', 'image/tiff', 'image/x-bil;bits=32'.
-
-=item LAYERS
-
-Name of the harvested resource
-
-=item OPTIONS
-
-Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
-
-=item min_size
-
-Used in script to remove too short harvested images.
-
-=item max_width, max_height
-
-If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

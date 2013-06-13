@@ -105,7 +105,7 @@ void CppUnitStyle::setUp() {
     id1 = "one";
     titles1.push_back ( "Title1" );
     abstracts1.push_back ( "Abstract1" );
-    keywords1.push_back ( Keyword("Keyword1",std::map<std::string,std::string>()) );
+    keywords1.push_back ( Keyword ( "Keyword1",std::map<std::string,std::string>() ) );
     legendURL1 = new LegendURL ( "image/jpeg","http://ign.fr",400,400,25000,100000 );
     legendURLs1.push_back ( *legendURL1 );
 
@@ -114,8 +114,8 @@ void CppUnitStyle::setUp() {
     titles2.push_back ( "Title3" );
     abstracts2.push_back ( "Abstract2" );
     abstracts2.push_back ( "Abstract3" );
-    keywords2.push_back ( Keyword("Keyword2",std::map<std::string,std::string>()) );
-    keywords2.push_back ( Keyword("Keyword3",std::map<std::string,std::string>()) );
+    keywords2.push_back ( Keyword ( "Keyword2",std::map<std::string,std::string>() ) );
+    keywords2.push_back ( Keyword ( "Keyword3",std::map<std::string,std::string>() ) );
     legendURL2 = new LegendURL ( "image/jpeg","http://ign.fr",400,400,25000,100000 );
     legendURL3 = new LegendURL ( "image/jpeg","http://ign.fr",200,200,50000,200000 );
     legendURLs2.push_back ( *legendURL2 );
@@ -125,7 +125,7 @@ void CppUnitStyle::setUp() {
 
     srand ( time ( NULL ) );
     for ( int i = 0 ; i < 255; ++i ) {
-        colours.insert (std::pair<double,Colour>(i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ));
+        colours.insert ( std::pair<double,Colour> ( i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ) );
     }
     palette1 = new Palette ( colours,false,false );
     palette1->buildPalettePNG();

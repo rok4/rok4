@@ -33,6 +33,35 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: NoData.pm
+
+Class: BE4::NoData
+
+Define Nodata informations and tools.
+
+Using:
+    (start code)
+    use BE4::NoData;
+
+    # NoData object creation
+    my $objNodata = BE4::NoData->new({
+        pixel   => $objPixel,
+        value   => "255,255,255"
+    });
+    (end code)
+
+Attributes:
+    pixel - <Pixel> - Components of a nodata pixel.
+
+    value - string - Contains one integer value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
+=cut
+
+################################################################################
+
 package BE4::NoData;
 
 use strict;
@@ -61,63 +90,59 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 use constant CREATE_NODATA => "createNodata";
 
-################################################################################
-# Global
+# Constant: HEX2DEC
+# Define conversion from hedecimal to decimal number.
 my %HEX2DEC;
 
 ################################################################################
 
 BEGIN {}
+
 INIT {
-
-%HEX2DEC = (
-    0 => 0,
-    1 => 1,
-    2 => 2,
-    3 => 3,
-    4 => 4,
-    5 => 5,
-    6 => 6,
-    7 => 7,
-    8 => 8,
-    9 => 9,
-    A => 10,
-    B => 11,
-    C => 12,
-    D => 13,
-    E => 14,
-    F => 15,
-);
-
+    %HEX2DEC = (
+        0 => 0,
+        1 => 1,
+        2 => 2,
+        3 => 3,
+        4 => 4,
+        5 => 5,
+        6 => 6,
+        7 => 7,
+        8 => 8,
+        9 => 9,
+        A => 10,
+        B => 11,
+        C => 12,
+        D => 13,
+        E => 14,
+        F => 15,
+    );
 }
+
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * pixel : BE4::Pixel
-    * value - 255 (uint) or -99999 (float) per sample
-    * nowhite : boolean - FALSE by default
+NoData constructor. Bless an instance.
+
+Parameters (hash):
+    pixel - <Pixel> - Nodata pixel
+    value - string - Optionnal, value (color) to use when no input data
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
-
 sub new {
     my $this = shift;
+    my $params = shift;
     
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pixel           => undef,
         value           => undef,
-        nowhite         => undef,
     };
     
     bless($self, $class);
@@ -125,11 +150,22 @@ sub new {
     TRACE;
     
     # init. class
-    return undef if (! $self->_init(@_));
+    return undef if (! $self->_init($params));
     
     return $self;
 }
 
+=begin nd
+Function: _init
+
+Check and store nodata attributes values. Define the default value if not supplied.
+    - 255 per unsigned 8-bit integer sample
+    - -99999 per 32-bit float sample
+
+Parameters (hash):
+    pixel - <Pixel> - Nodata pixel
+    value - string - Optionnal, value (color) to use when no input data
+=cut
 sub _init {
     my $self = shift;
     my $params = shift;
@@ -140,37 +176,23 @@ sub _init {
     
     # init. params
     # Mandatory : pixel
-    # Optionnal : nowhite and value
+    # Optionnal : value
 
-    # *** nowhite ***
-    if (! exists $params->{nowhite} || ! defined  $params->{nowhite}) {
-        $params->{nowhite} = 'false';
-    }
-    if (lc $params->{nowhite} eq 'true') {
-        $self->{nowhite} = TRUE;
-    }
-    elsif (lc $params->{nowhite} eq 'false') {
-        $self->{nowhite} = FALSE;
-    } else {
-        ERROR (sprintf "Parameter 'nowhite' is not valid (%s). Possible values are true or false !",$params->{nowhite});
-        return FALSE;
-    }
-
-    # *** pixel ***
+    ### Pixel
     if (! exists  $params->{pixel} || ! defined  $params->{pixel}) {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
     $self->{pixel} = $params->{pixel};
 
-    # *** value ***
+    ### Value
     # For nodata value, it has to be coherent with bitspersample/sampleformat :
     #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
     #       - 8/uint -> a uint in decimal format (255 for example)
     if (! exists $params->{value} || ! defined ($params->{value})) {
         if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
             WARN ("Parameter 'nodata value' has not been set. The default value is -99999 per sample");
-            $params->{value} .= '-99999' . ',-99999'x($self->getPixel->getSamplesPerPixel - 1);
+            $params->{value} .= '-99999' . ',-99999'x($self->{pixel}->getSamplesPerPixel - 1);
         } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
             WARN ("Parameter 'nodata value' has not been set. The default value is 255 per sample");
             $params->{value} = '255' . ',255'x($self->{pixel}->getSamplesPerPixel - 1);
@@ -181,6 +203,7 @@ sub _init {
     } else {
         $params->{value} =~ s/ //g;
 
+        # On garde la possibilité de traiter une valeur fournie en héxadécimal
         if ($self->{pixel}->getBitsPerSample == 8 &&
             $self->{pixel}->getSampleFormat eq 'uint' &&
             ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {
@@ -234,54 +257,41 @@ sub _init {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getValue
 sub getValue {
     my $self = shift;
     return $self->{value};
 }
 
-sub getNoWhite {
-    my $self = shift;
-    return $self->{nowhite};
-}
-
-#
 =begin nd
-method: getNodataFilename
+Function: getNodataFilename
 
-Returns:
-    The name of the nodata tile : nd.tif
+Returns the name of the nodata tile : nd.tif
 =cut
 sub getNodataFilename {
     my $self = shift;
-    
     return "nd.tif";
 }
 
 ####################################################################################################
-#                                           COMMAND                                                #
+#                                    Group: Commands                                               #
 ####################################################################################################
 
-# Group: command
-
-#
 =begin nd
-method: createNodata
+Function: createNodata
 
 Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
 
-Parameters:
-    nodataDirPath - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
-    width - width in pixel of the tile (256)
-    height - height in pixel of the tile (256)
-    compression - compression to apply : raw/none, png, jpg, lzw, zip, pkb.
+Returns TRUE if the nodata tile is succefully written, FALSE otherwise.
 
-Returns:
-    TRUE if the nodata tile is succefully written, FALSE otherwise.
+Parameters (list):
+    nodataDirPath - string - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
+    width - integer - Width in pixel of the tile
+    height - integer - Height in pixel of the tile
+    compression - string - Compression to apply to the nodata tile
 =cut
 sub createNodata {
     my $self = shift;
@@ -320,14 +330,20 @@ sub createNodata {
     return TRUE; 
 }
 
-# Group: public methods
+####################################################################################################
+#                                    Group: Conversion                                             #
+####################################################################################################
 
 =begin nd
-method: hexToDec
+Function: hexToDec
 
 From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are seperated by comma. Input string must have an even length (one sample <=> 2 character).
 
-Example : hexToDec("7BFF0300") = "123,255,3,0"
+Parameters (list):
+    hex - string - Color value to hexadecimal format : white -> FFFFFF
+
+Example:
+    hexToDec("7BFF0300") = "123,255,3,0"
 =cut
 sub hexToDec {
     my $self = shift;
@@ -365,11 +381,18 @@ sub hexToDec {
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all nodata's informations. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -377,84 +400,9 @@ sub exportForDebug {
     
     $export .= "\nObject BE4::NoData :\n";
     $export .= sprintf "\t Value : %s\n", $self->{value};
-    if ($self->{nowhite}) {
-        $export .= "\t'nowhite' option is on\n";
-    } else {
-        $export .= "\t'nowhite' option is off\n";
-    }
     
     return $export;
 }
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::NoData - components of nodata
-
-=head1 SYNOPSIS
-    
-    use BE4::NoData;
-
-    # NoData object creation
-    my $objNodata = BE4::NoData->new({
-            pixel   => $objPixel,
-            value   => "255,255,255",
-            nowhite => TRUE
-    });
-
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item pixel
-
-A Pixel object, the same as the cache one.
-
-=item value
-
-The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
-
-Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
-
-=item nowhite
-
-This boolean will be used in mergeNtiff. If it's TRUE, when images are stacked, white pixel are ignored. As this treatment is longer and often useless , default value is FALSE.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

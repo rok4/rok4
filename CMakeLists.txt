@@ -77,6 +77,7 @@ MESSAGE(STATUS "Building ROK4 Server")
 endif(BUILD_ROK4)
 
 if(BUILD_BE4)
+MESSAGE(STATUS "Building Be4 generation toolchain")
   add_subdirectory(be4)
 endif(BUILD_BE4)
 

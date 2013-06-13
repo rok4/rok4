@@ -57,7 +57,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Classe décodant les requêtes HTTP envoyé au serveur. 
+ * Classe décodant les requêtes HTTP envoyé au serveur.
  * Elle supporte les types de requête suivant :
  *  - HTTP GET de type KVP
  *  - HTTP POST de type XML (OGC SLD)
@@ -127,7 +127,7 @@ public:
      */
     std::string service;
     /**
-     * \~french \brief Nom au sens OGC de la requête effectuée 
+     * \~french \brief Nom au sens OGC de la requête effectuée
      * \~english \brief OGC request name
      */
     std::string request;
@@ -167,7 +167,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getCapWMSParam ( ServicesConf& servicesConf, std::string& version);
+    DataStream* getCapWMSParam ( ServicesConf& servicesConf, std::string& version );
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetTile WMTS
@@ -176,7 +176,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getCapWMTSParam ( ServicesConf& servicesConf, std::string& version);
+    DataStream* getCapWMTSParam ( ServicesConf& servicesConf, std::string& version );
     /**
      * \~french
      * \brief Constructeur d'une requête de type GET

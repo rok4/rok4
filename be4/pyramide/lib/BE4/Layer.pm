@@ -33,6 +33,59 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Layer.pm
+
+Class: BE4::Layer
+
+Describe a layer for a ROK4 server.
+
+Using:
+    (start code)
+    use BE4::Layer;
+
+    # Layer object creation
+    my $objLayer = new BE4::Layer({
+        title            => "Ortho IGN en RAW",
+        abstract         => "Projection native",
+        keywordlist      => ["key","word"],
+        style            => "normal",
+        minRes           => 0.5,
+        maxRes           => 1,
+        opaque           => 1,
+        authority        => "IGNF",
+        srslist          => [ "IGNF:LAMB93","IGNF:RGF93G"],
+        resampling       => "lanczos_4",
+        geo_bbox         => [0,40,10,50],
+        proj             => "IGNF:LAMB93",
+        proj_bbox        => [805888,6545408,806912,6546432],
+        pyramid          => "/pyramids/ORTHO.pyr",
+    });
+
+    my $XMLlayer = $objLayer->exportToXML();
+    (end code)
+
+Attributes:
+    title - string - Layer's name.
+    abstract - string - Abstract, to resume the layer content.
+    keywordlist  - string array - List of keywords.
+    style - string - Layer's style.
+    minres - float - Minimal resolution of the pyramid.
+    maxres - float - Maximal resolution of the pyramid.
+    opaque - boolean - 1 by default.
+    authority - string - SRS's authority : IGNF:LAMB93 -> IGNF.
+    srslist - string array - List of available SRS for the layer.
+    resampling - string - Used interpolation to generate images used by this layer.
+    geo_bbox - double array - [minx,miny,maxx,maxy] in WGS84G.
+    proj - string - Data native projection.
+    proj_bbox - double array - [minx,miny,maxx,maxy] in pyramid's SRS.
+    pyramid - string - Pyramid's descriptor path.
+=cut
+
+################################################################################
+
 package BE4::Layer;
 
 use strict;
@@ -55,9 +108,8 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-# Global
-
+# Constant: STRLYRTMPLT
+# Define the template XML for a layer
 my $STRLYRTMPLT   = <<"TLYR";
 <?xml version='1.0' encoding='UTF-8'?>
 <layer>
@@ -86,56 +138,77 @@ my $STRLYRTMPLT   = <<"TLYR";
 </layer>
 TLYR
 
-my $STRTKTMPLT   = <<"TK";
+# Constant: STRTKTMPLT
+# Define the template XML for the keywords part of a layer.
+my $STRTKTMPLT = <<"TK";
     <keyword>__KEYWORD__</keyword>
     <!-- __KEYWORDS__ -->
 TK
 
-my $STRSRSTMPLT   = <<"TSRS";  
+# Constant: STRSRSTMPLT
+# Define the template XML for the SRS part of a layer.
+my $STRSRSTMPLT = <<"TSRS";
     <WMSCRS>__SRS__</WMSCRS>
     <!-- __SRSS__ -->
 TSRS
 
+# Constant: DEFAULT
+# Define default values for optionnal attributes.
+my %DEFAULT;
+
 ################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+    %DEFAULT = (
+        abstract         => "",
+        keywordlist      => [],
+        style            => "normal",
+        minres           => 0.0,
+        maxres           => 0.0,
+        opaque           => 1,
+        authority        => "IGNF",
+        resampling       => "lanczos_4",
+    );    
+}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * title
-    * abstract
-    * keywordlist : array of string
-    * style - "normal" by default
-    * minres : float - 0.0 by default
-    * maxres : float - 0.0 by default
-    * opaque - 1 by default
-    * authority : string - "IGNF" by default
-    * srslist : array of string
-    * resampling - "lanczos_4"  by default
-    * geo_bbox - [minx,miny,maxx,maxy] in WGS84G
-    * proj - by default first element of srslist
-    * proj_bbox - [minx,miny,maxx,maxy] in cache SRS
-    * pyramid
+Layer constructor. Bless an instance.
+
+Parameters (hash):
+    title - string
+    abstract - string - Optionnal, empty string by default.
+    keywordlist - string array - Optionnal, empty array by default.
+    style - string - Optionnal, "normal" by default.
+    minres - float - Optionnal, 0.0 by default.
+    maxres - float - Optionnal, 0.0 by default.
+    opaque - boolean - Optionnal, 1 by default.
+    authority - string - Optionnal, "IGNF" by default.
+    srslist - string array
+    resampling - string - Optionnal, "lanczos_4" by default.
+    geo_bbox - double array
+    proj - string - Optionnal, first element of srslist by default.
+    proj_bbox - double array
+    pyramid - string
+    
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $params = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-	title            => undef,
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+        title            => undef,
         abstract         => "",
         keywordlist      => [],
         style            => "normal",
@@ -149,21 +222,42 @@ sub new {
         proj             => undef,
         proj_bbox        => [],
         pyramid          => undef,
-  };
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  if (! $self->_init(@_)) {
-    ERROR ("One parameter is missing !");
-    return undef;
-  }
-  
-  return $self;
+    bless($self, $class);
+
+    TRACE;
+
+    # init. class
+    if (! $self->_init($params)) {
+        ERROR ("One parameter is missing !");
+        return undef;
+    }
+
+    return $self;
 }
 
+=begin nd
+Function: _init
+
+Check and store layer's attributes values.
+
+Parameters (hash):
+    title - string
+    abstract - string - Optionnal, empty string by default.
+    keywordlist - string array - Optionnal, empty array by default.
+    style - string - Optionnal, "normal" by default.
+    minres - float - Optionnal, 0.0 by default.
+    maxres - float - Optionnal, 0.0 by default.
+    opaque - boolean - Optionnal, 1 by default.
+    authority - string - Optionnal, "IGNF" by default.
+    srslist - string array
+    resampling - string - Optionnal, "lanczos_4" by default.
+    geo_bbox - double array
+    proj - string - Optionnal, first element of srslist by default.
+    proj_bbox - double array
+    pyramid - string
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -176,94 +270,74 @@ sub _init {
     
     # parameters mandatoy !
     if (! exists($params->{title})) {
-      ERROR ("key/value required to 'title' !");
-      return FALSE;
+        ERROR ("key/value required to 'title' !");
+        return FALSE;
     }
 
     if (! exists($params->{pyramid})) {
-      ERROR ("key/value required to 'pyramid' !");
-      return FALSE;
+        ERROR ("key/value required to 'pyramid' !");
+        return FALSE;
     }
 
-    if (! exists($params->{geo_bbox}) ||
-        ! scalar (@{$params->{geo_bbox}})){
-      ERROR("list empty to 'geo_bbox' !");
-      return FALSE;
+    if (! exists($params->{geo_bbox}) || ! scalar (@{$params->{geo_bbox}})){
+        ERROR("list empty to 'geo_bbox' !");
+        return FALSE;
     }
     
-    if (! exists($params->{proj_bbox}) ||
-        ! scalar (@{$params->{proj_bbox}})){
-      ERROR("list empty to 'proj_bbox' !");
-      return FALSE;
+    if (! exists($params->{proj_bbox}) || ! scalar (@{$params->{proj_bbox}})){
+        ERROR("list empty to 'proj_bbox' !");
+        return FALSE;
     }
     
     if (! scalar (@{$params->{srslist}})){
-      ERROR("list empty to 'srslist' !");
-      return FALSE;
+        ERROR("list empty to 'srslist' !");
+        return FALSE;
     }
     
     # parameters optional or by default !
-    if (! exists($params->{proj}) ||
-        ! defined ($params->{proj})) {
-        $self->{proj} = $params->{srslist}->[0];
-      WARN (sprintf "key/value optional to 'proj' (first value '%s' of listsrs by default)!",
-            $self->{proj});
-      $params->{proj} = $self->{proj};
+    if (! exists($params->{proj}) || ! defined ($params->{proj})) {
+        $params->{proj} = $params->{srslist}->[0];
+        INFO(sprintf "Default value for 'proj' : %s", $params->{proj});
     }
     
-    if (! exists($params->{abstract}) ||
-        ! defined ($params->{abstract})) {
-      WARN (sprintf "key/value optional to 'abstract' ('%s' by default)!",
-            $self->{abstract});
-      $params->{abstract} = $self->{abstract};
+    if (! exists($params->{abstract}) || ! defined ($params->{abstract})) {
+        $params->{abstract} = $DEFAULT{abstract};
+        INFO(sprintf "Default value for 'abstract' : %s", $params->{abstract});
+    }
+
+    if (! exists($params->{style}) || ! defined ($params->{style})) {
+        $params->{style} = $DEFAULT{style};
+        INFO(sprintf "Default value for 'style' : %s", $params->{style});
+    }
+
+    if (! exists($params->{minres}) || ! defined ($params->{minres})) {
+        $params->{minres} = $DEFAULT{minres};
+        INFO(sprintf "Default value for 'minres' : %s", $params->{minres});
+    }
+
+    if (! exists($params->{maxres}) || ! defined ($params->{maxres})) {
+        $params->{maxres} = $DEFAULT{maxres};
+        INFO(sprintf "Default value for 'maxres' : %s", $params->{maxres});
+    }
+
+    if (! exists($params->{resampling}) || ! defined ($params->{resampling})) {
+        $params->{resampling} = $DEFAULT{resampling};
+        INFO(sprintf "Default value for 'resampling' : %s", $params->{resampling});
+    }
+
+    if (! exists($params->{authority}) || ! defined ($params->{authority})) {
+        $params->{authority} = $DEFAULT{authority};
+        INFO(sprintf "Default value for 'authority' : %s", $params->{authority});
+    }
+
+    if (! exists($params->{opaque}) || ! defined ($params->{opaque})) {
+        $params->{opaque} = $DEFAULT{opaque};
+        INFO(sprintf "Default value for 'opaque' : %s", $params->{opaque});
     }
     
-    if (! exists($params->{style}) ||
-        ! defined ($params->{style})) {
-      WARN (sprintf "key/value optional to 'style' ('%s' by default)!",
-            $self->{style});
-      $params->{style} = $self->{style};
-    }
-    
-    if (! exists($params->{minres}) ||
-        ! defined ($params->{minres})) {
-      WARN (sprintf "key/value optional to 'minres' ('%s' by default)!",
-            $self->{minres});
-      $params->{minres} = $self->{minres};
-    }
-    
-    if (! exists($params->{maxres}) ||
-        ! defined ($params->{maxres})) {
-      WARN (sprintf "key/value optional to 'maxres' ('%s' by default)!",
-            $self->{maxres});
-      $params->{maxres} = $self->{maxres};
-    }
-    
-    if (! exists($params->{resampling}) ||
-        ! defined ($params->{resampling})) {
-      WARN (sprintf "key/value optional to '' ('%s' by default)!",
-            $self->{resampling});
-      $params->{resampling} = $self->{resampling};
-    }
-    
-    if (! exists($params->{authority}) ||
-        ! defined ($params->{authority})) {
-      WARN (sprintf "key/value optional to 'authority' ('%s' by default)!",
-            $self->{authority});
-      $params->{authority} = $self->{authority};
-    }
-    
-    if (! exists($params->{opaque}) ||
-        ! defined ($params->{opaque})) {
-      WARN (sprintf "key/value optional to 'opaque' ('%s' by default)!",
-            $self->{opaque});
-        $params->{opaque} = $self->{opaque};
-    }
-    
-    if (! exists($params->{keywordlist}) ||
-        ! scalar (@{$params->{keywordlist}})){
-      WARN("list empty to 'keywordlist' !");
-      @{$params->{keywordlist}} = [];
+    if (! exists($params->{keywordlist}) || ! defined ($params->{keywordlist})) {
+        $params->{keywordlist} = $DEFAULT{keywordlist};
+        INFO(sprintf "Default value for 'opaque' : %s", Dumper($params->{keywordlist}));
     }
     
     # test
@@ -303,17 +377,49 @@ sub _init {
 }
 
 ####################################################################################################
-#                                           EXPORT                                                 #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export
-
-#
 =begin nd
-    method: to_string
-    Export Layer object to XML format.
+Function: exportToXML
+
+Insert layer's attributes in the XML template.
+
+Returns a string to XML format.
+
+Example:
+    (start code)
+    <layer>
+        <title>Ortho IGN en RAW</title>
+        <abstract>Projection native</abstract>
+        <keywordList>
+            <keyword>key</keyword>
+            <keyword>word</keyword>
+        </keywordList>
+        <style>normal</style>
+        <minRes>0.5</minRes>
+        <maxRes>1</maxRes>
+        <EX_GeographicBoundingBox>
+            <westBoundLongitude>0</westBoundLongitude>
+            <eastBoundLongitude>10</eastBoundLongitude>
+            <southBoundLatitude>40</southBoundLatitude>
+            <northBoundLatitude>50</northBoundLatitude>
+        </EX_GeographicBoundingBox>
+        <WMSCRSList>
+            <WMSCRS>IGNF:LAMB93</WMSCRS>
+            <WMSCRS>IGNF:RGF93G</WMSCRS>
+        </WMSCRSList>
+        <boundingBox CRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
+        <opaque>true</opaque>
+        <authority>IGNF</authority>
+        <resampling>lanczos_4</resampling>
+        <pyramidList>
+            <pyramid>/pyramids/ORTHO.pyr</pyramid>
+        </pyramidList>
+    </layer>
+    (end code)
 =cut
-sub to_string {
+sub exportToXML {
   my $self = shift;
   
   TRACE;
@@ -358,6 +464,8 @@ sub to_string {
   my $authority  = $self->{authority};
   $strlyrtmplt   =~ s/__AUTHORITY__/$authority/;
   
+  my $srs = $self->{proj};
+  $strlyrtmplt =~ s/__SRS__/$srs/;
   my ($minx,$miny,$maxx,$maxy) = @{$self->{proj_bbox}};
   $strlyrtmplt =~ s/__MINX__/$minx/;
   $strlyrtmplt =~ s/__MINY__/$miny/;
@@ -365,8 +473,6 @@ sub to_string {
   $strlyrtmplt =~ s/__MAXY__/$maxy/;
   
   my ($w,$s,$e,$n) = @{$self->{geo_bbox}};
-  my $srs = $self->{proj};
-  $strlyrtmplt =~ s/__SRS__/$srs/;
   $strlyrtmplt =~ s/__E__/$e/;
   $strlyrtmplt =~ s/__W__/$w/;
   $strlyrtmplt =~ s/__N__/$n/;
@@ -394,98 +500,3 @@ sub to_string {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Layer - Describe a layer for Rok4 and allow to generate XML configuration file
-
-=head1 SYNOPSIS
-
-    use BE4::Layer;
-
-    # Layer object creation
-    my $objLayer = new BE4::Layer({
-        title            => "Ortho IGN en RAW",
-        abstract         => "Projection native",
-        keywordlist      => ["key","word"],
-        style            => "normal",
-        minRes           => 0.5,
-        maxRes           => 1,
-        opaque           => 1,
-        authority        => "IGNF",
-        srslist          => [ "IGNF:LAMB93","IGNF:RGF93G"],
-        resampling       => "lanczos_4",
-        geo_bbox         => [0,40,10,50],
-        proj             => "IGNF:LAMB93",
-        proj_bbox        => [805888,6545408,806912,6546432],
-        pyramid          => "/pyramids/ORTHO.pyr",
-    });
-    
-    my $XMLlayer = $objLayer->to_string();
-    
-    # $XMLlayer =
-    <layer>
-        <title>Ortho IGN en RAW</title>
-        <abstract>Projection native</abstract>
-        <keywordList>
-            <keyword>key</keyword>
-            <keyword>word</keyword>
-        </keywordList>
-        <style>normal</style>
-        <minRes>0.5</minRes>
-        <maxRes>1</maxRes>
-        <EX_GeographicBoundingBox>
-            <westBoundLongitude>0</westBoundLongitude>
-            <eastBoundLongitude>10</eastBoundLongitude>
-            <southBoundLatitude>40</southBoundLatitude>
-            <northBoundLatitude>50</northBoundLatitude>
-        </EX_GeographicBoundingBox>
-        <WMSCRSList>
-            <WMSCRS>IGNF:LAMB93</WMSCRS>
-            <WMSCRS>IGNF:RGF93G</WMSCRS>
-        </WMSCRSList>
-        <boundingBox CRS="IGNF:LAMB93" minx="805888" miny="6545408" maxx="806912" maxy="6546432"/>
-        <opaque>true</opaque>
-        <authority>IGNF</authority>
-        <resampling>lanczos_4</resampling>
-        <pyramidList>
-            <pyramid>/pyramids/ORTHO.pyr</pyramid>
-        </pyramidList>
-    </layer>
-
-=head1 DESCRIPTION
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-TileMatrixSet.html">BE4::TileMatrixSet</A></li>
-<li><A HREF="./lib-BE4-Level.html">BE4::Level</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Bazonnais Jean Philippe
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut
-

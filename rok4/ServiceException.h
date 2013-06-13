@@ -142,7 +142,7 @@ typedef enum {
      * \~english HTTP 404 implementation
      */
     HTTP_NOT_FOUND = 16
-    
+
 } ExceptionCode;
 
 
@@ -193,7 +193,7 @@ public:
      * \param[in] code la valeur de l'attribut code (selon specs OGC)
      * \param[in] message le texte du message d'erreur
      * \param[in] service le type de service ("wms" ou "wmts")
-     * \~english 
+     * \~english
      * constructeur d'une exception
      * \param[in] locator the "locator" attribute value as define by OGC specifications
      * \param[in] code the "code" attribute value as define by OGC specifications
@@ -247,7 +247,7 @@ public:
      * \return string representation
      */
     std::string toString();
-    
+
     /**
      * \~french
      * \brief Retourne le nom du service
@@ -259,7 +259,7 @@ public:
     std::string getService() {
         return this->service ;
     } ;
-    
+
     /**
      * \~french
      * \brief Retourne le code de l'erreur

@@ -78,7 +78,7 @@ std::string TileMatrix::getId()  {
     return id;
 }
 
-TileMatrix::TileMatrix ( const TileMatrix& t ) : id(t.id), res(t.res),x0(t.x0),y0(t.y0),tileW(t.tileW),tileH(t.tileH),matrixW(t.matrixW),matrixH(t.matrixH){}
+TileMatrix::TileMatrix ( const TileMatrix& t ) : id ( t.id ), res ( t.res ),x0 ( t.x0 ),y0 ( t.y0 ),tileW ( t.tileW ),tileH ( t.tileH ),matrixW ( t.matrixW ),matrixH ( t.matrixH ) {}
 
 TileMatrix& TileMatrix::operator= ( const TileMatrix& other ) {
 

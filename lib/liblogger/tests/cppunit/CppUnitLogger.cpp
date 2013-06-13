@@ -60,9 +60,9 @@ protected:
         Logger::setAccumulator ( DEBUG, 0 );
 
         for ( int i = 0; i < 200; i++ ) {
-            std::string s1, s2, s3;
+            std::string s1, s2;
             int n;
-            out >> s1 >> s2 >> s3 >> n;
+            out >> s1 >> s2 >> n;
             CPPUNIT_ASSERT_EQUAL ( i, n );
         }
         Logger::stopLogger();

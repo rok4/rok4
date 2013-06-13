@@ -46,13 +46,14 @@
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 #include "ExtendedCompoundImage.h"
+#include "Format.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
 #include "intl.h"
 #include "config.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
@@ -61,11 +62,11 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
         DataSource* noDataSource;
         DataStream* nodatastream;
 
-        if ( format==TIFF_JPG_INT8 ) {
+        if ( format==Format::TIFF_JPG_INT8 ) {
             nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==TIFF_PNG_INT8 ) {
+        } else if ( format==Format::TIFF_PNG_INT8 ) {
             nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==TIFF_RAW_FLOAT32 ) {
+        } else if ( format==Format::TIFF_RAW_FLOAT32 ) {
             nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
         } else {
             nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
@@ -75,7 +76,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
             delete nodatastream;
             nodatastream = NULL;
         } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
+            LOGGER_ERROR ( "Format non pris en charge : "<< Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
 
@@ -181,7 +182,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         if ( dst_crs.validateBBox ( bbox ) ) {
             return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
         } else {
-            extendedCompoundImageFactory facto;
+            ExtendedCompoundImageFactory facto;
             std::vector<Image*> images;
             LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
             BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
@@ -210,9 +211,10 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 images.push_back ( levels[l]->getNoDataTile ( bbox ) );
             }
             int ndvalue[this->channels];
-            memset(ndvalue,0,this->channels*sizeof(int));
-            levels[l]->getNoDataValue(ndvalue);
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,levels[l]->getSampleFormat(),0, false );
+            memset ( ndvalue,0,this->channels*sizeof ( int ) );
+            levels[l]->getNoDataValue ( ndvalue );
+
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
         }
 
     }

@@ -52,7 +52,7 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include "config.h"
-#include "format.h"
+#include "Format.h"
 #include "MetadataURL.h"
 #include "LegendURL.h"
 #include <malloc.h>
@@ -528,7 +528,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     TileMatrixSet *tms;
     std::string formatStr="";
-    eformat_data format;
+    Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
 
@@ -582,7 +582,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 return NULL;
     }*/
 
-    format = format::fromString ( formatStr );
+    format = Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;

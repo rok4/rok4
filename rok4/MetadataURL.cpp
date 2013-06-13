@@ -55,15 +55,15 @@ MetadataURL::MetadataURL ( const MetadataURL& origMtdUrl ) : ResourceLocator ( o
 }
 
 MetadataURL& MetadataURL::operator= ( const MetadataURL& other ) {
-    if (this != &other) {
-        ResourceLocator::operator=(other);
+    if ( this != &other ) {
+        ResourceLocator::operator= ( other );
         this->type = other.type;
     }
     return *this;
 }
 
 bool MetadataURL::operator== ( const MetadataURL& other ) const {
-    return ( this->type.compare(other.type) == 0
+    return ( this->type.compare ( other.type ) == 0
              && this->getFormat().compare ( other.getFormat() ) == 0
              && this->getHRef().compare ( other.getHRef() ) == 0 );
 }

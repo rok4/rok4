@@ -50,7 +50,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance MetadataURL représente un lien vers des méta-données dans les différents documents de capacités. 
+ * Une instance MetadataURL représente un lien vers des méta-données dans les différents documents de capacités.
  * \brief Gestion des éléments de méta-données des documents de capacités
  * \~english
  * A MetadataURL represent a metadata link element in the differents capabilities documents.
@@ -80,7 +80,7 @@ public:
     MetadataURL ( std::string format, std::string href, std::string type );
     /**
      * \~french
-     * Crée un MetadataURL à partir d'un autre 
+     * Crée un MetadataURL à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] origMtdUrl MetadataURL à copier
      * \~english
@@ -95,7 +95,7 @@ public:
      * \~english
      * \brief Assignement
      */
-    MetadataURL& operator= (MetadataURL const& other);
+    MetadataURL& operator= ( MetadataURL const& other );
     /**
      * \~french
      * \brief Test d'egalite de 2 MetadataURLs
@@ -114,7 +114,7 @@ public:
      * \return true if one of their attributes is different
      */
     bool operator!= ( const MetadataURL& other ) const;
-    
+
     /**
      * \~french
      * \brief Retourne le type de la méta donnée
@@ -126,7 +126,7 @@ public:
     inline std::string getType() {
         return type;
     }
-    
+
     /**
      * \~french
      * \brief Destructeur par défaut
