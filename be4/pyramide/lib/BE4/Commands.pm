@@ -250,7 +250,7 @@ MergeNtiff () {
     mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ __mNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
-    #rm -f ${MNT_CONF_DIR}/$config
+    rm -f ${MNT_CONF_DIR}/$config
     
     if [ $bgI ] ; then
         rm -f $bgI

@@ -558,7 +558,7 @@ int checkImages ( TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
                 ! TIFFSetField ( OUTPUTM, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK ) ||
                 ! TIFFSetField ( OUTPUTM, TIFFTAG_ROWSPERSTRIP, rowsperstrip ) ||
                 ! TIFFSetField ( OUTPUTM, TIFFTAG_PLANARCONFIG, planarconfig ) ||
-                ! TIFFSetField ( OUTPUTM, TIFFTAG_COMPRESSION, COMPRESSION_PACKBITS ) ||
+                ! TIFFSetField ( OUTPUTM, TIFFTAG_COMPRESSION, COMPRESSION_ADOBE_DEFLATE ) ||
                 ! TIFFSetField ( OUTPUTM, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT ) ) {
             LOGGER_ERROR ( "Error writting output mask: " + std::string ( outputMask ) );
             return -1;
