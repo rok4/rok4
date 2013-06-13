@@ -68,7 +68,7 @@
  * \li À l'aide d'une transformation affine, on convertit les coordonnées dans le système A en coordonnées pixel dans l'image source : on divise par la résolution source et on ramène à l'origine de l'image source (coin supérieur gauche).
  *
  * Cette grille peut enfin être fournie à l'objet ReprojectedImage.
- * 
+ *
  * \~english \brief Reprojection grid management
  */
 class Grid {
@@ -118,7 +118,7 @@ private:
      * \details Can be null
      */
     int endX;
-    
+
     /**
      * \~french \brief Nombre de pixels entre le dernier point régulier et le dernier de la grille, dans le sens des Y
      * \details Peut être 0.
@@ -193,7 +193,9 @@ public:
      * \~english \brief Return the deltaY value
      * \return #deltaY
      */
-    double getDeltaY() { return deltaY; }
+    double getDeltaY() {
+        return deltaY;
+    }
 
     /**
      * \~french \brief Reprojette les points de la grille

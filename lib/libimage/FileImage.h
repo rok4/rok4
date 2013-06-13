@@ -192,7 +192,7 @@ public:
     inline Compression::eCompression getCompression() {
         return compression;
     }
-    
+
     /**
      * \~french
      * \brief Retourne le format des canaux (entier, flottant)
@@ -225,10 +225,10 @@ public:
         LOGGER_INFO ( "------------ FileImage -------------" );
         Image::print();
         LOGGER_INFO ( "\t- File name : " << filename );
-        LOGGER_INFO ( "\t- Compression : " << Compression::toString(compression) );
-        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString(photometric) );
+        LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
+        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
-        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString(sampleformat) );
+        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
         LOGGER_INFO ( "" );
     }
 };
@@ -294,7 +294,7 @@ public:
         char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height,
         int channels, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
     );
-    
+
 };
 
 

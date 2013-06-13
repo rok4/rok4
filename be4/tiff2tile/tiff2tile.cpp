@@ -178,13 +178,13 @@ int main ( int argc, char **argv ) {
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if ( crop ) {
 
-        if (bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT) {
+        if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
             TiffNodataManager<uint8_t> TNM ( samplesperpixel,white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
                 std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
                 exit ( 2 );
             }
-        } else if (bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP) {
+        } else if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
             TiffNodataManager<float> TNM ( samplesperpixel,white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
                 std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
@@ -204,6 +204,7 @@ int main ( int argc, char **argv ) {
         std::cerr << "Image size must be a multiple of tile size" << std::endl;
         exit ( 2 );
     }
+
     int tilex = width / tilewidth;
     int tiley = length / tilelength;
 

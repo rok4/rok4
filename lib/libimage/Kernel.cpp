@@ -55,17 +55,17 @@ int Kernel::weight ( float* W, int& length, double x, int max ) const {
     // On ne sort pas de l'image à interpoler à gauche ...
     if ( xmin < 0 ) {
         xmin = 0;
-        rayon = std::abs(x);
-        length = ceil(rayon * 2 - 1E-7);
+        rayon = std::abs ( x );
+        length = ceil ( rayon * 2 - 1E-7 );
     }
     // ... comme à droite, quitte à diminuer le nombre de poids
     if ( xmin + length > max ) {
-        rayon = std::abs(double(max - 1) - x);
+        rayon = std::abs ( double ( max - 1 ) - x );
         xmin = ceil ( x - rayon - 1E-7 );
-        length = ceil(rayon * 2 - 1E-7);
+        length = ceil ( rayon * 2 - 1E-7 );
     }
 
-    if (length == 1) {
+    if ( length == 1 ) {
         W[0] = 1.;
         return xmin;
     }
@@ -88,7 +88,7 @@ int Kernel::weight ( float* W, int& length, double x, int max ) const {
 
     length = i;
 
-    while (i--) {
+    while ( i-- ) {
         W[i] /= sum;   // On normalise pour que la somme des poids fasse 1.
     }
 

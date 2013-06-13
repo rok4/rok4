@@ -368,6 +368,7 @@ int parseCommandLine ( int argc, char** argv ) {
             value = atoi ( charValue );
             background[i] = value;
         }
+
     } else {
         LOGGER_ERROR ( "We need to know the background value for the output image (option -b)" );
         return -1;
@@ -417,11 +418,11 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage** ppMergeIn ) {
-    char inputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
-    char inputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char inputImagePath[IMAGE_MAX_FILENAME_LENGTH];
+    char inputMaskPath[IMAGE_MAX_FILENAME_LENGTH];
 
-    char outputImagePath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
-    char outputMaskPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char outputImagePath[IMAGE_MAX_FILENAME_LENGTH];
+    char outputMaskPath[IMAGE_MAX_FILENAME_LENGTH];
 
     std::vector<Image*> ImageIn;
     BoundingBox<double> fakeBbox ( 0.,0.,0.,0. );
@@ -468,8 +469,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
         } else {
             // Toutes les images en entrée doivent avoir certaines caractéristiques en commun
             if ( bitspersample != pImage->getBitsPerSample() ||
-                sampleformat != pImage->getSampleFormat() ||
-                width != pImage->getWidth() || height != pImage->getHeight() ) {
+                    sampleformat != pImage->getSampleFormat() ||
+                    width != pImage->getWidth() || height != pImage->getHeight() ) {
 
                 LOGGER_ERROR ( "All input images must have same dimension and sample type" );
                 return -1;
@@ -505,7 +506,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     // Fermeture du fichier
     file.close();
 
-    if ( ! SampleFormat::isHandledSampleType(sampleformat, bitspersample) ) {
+    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
         LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
         return -1;
     }

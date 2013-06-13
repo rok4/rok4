@@ -318,7 +318,7 @@ public:
      * \li des buffers #resampled_image et #resampled_mask
      *
      * Et suppression de #sourceImage.
-     * 
+     *
      * \~english \brief Default destructor
      * \details Desallocate :
      * \li global buffer #__buffer
@@ -331,8 +331,8 @@ public:
         _mm_free ( __buffer );
         delete[] resampled_line_index;
         delete[] resampled_image;
-        if (useMask) delete[] resampled_mask;
-        if (! isMask) {
+        if ( useMask ) delete[] resampled_mask;
+        if ( ! isMask ) {
             delete sourceImage;
         }
     }

@@ -145,7 +145,7 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
     }
 
     LOGGER_DEBUG ( "Top 1" );
-    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false);
+    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false );
 }
 
 
@@ -196,7 +196,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
 
 Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
-    
+
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -211,8 +211,8 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
                                     ceil ( bbox.ymax - EPS ) );
 
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
-         bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
-         bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
+            bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
+            bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
         /* L'image demandée est en phase et à les mêmes résolutions que les images du niveau
          *   => pas besoin de réechantillonnage */
         return getwindow ( servicesConf, bbox_int, error );
@@ -237,11 +237,11 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    
+
     LOGGER_DEBUG ( "Top 2" );
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
-    imageout->setBbox(BoundingBox<double>(bbox_int));
-    
+    imageout->setBbox ( BoundingBox<double> ( bbox_int ) );
+
     return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, interpolation, false );
 }
 
@@ -441,22 +441,22 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     DataSource *nd =  getDecodedNoDataTile();
 
     size_t size;
-    const uint8_t * buffer = nd->getData(size);
-    if ( buffer ) { 
-        if ( format == Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32) {
-            const float* fbuf =  (const float*) buffer;
-            for (int pixel = 0; pixel < this->channels; pixel++) {
-                *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+    const uint8_t * buffer = nd->getData ( size );
+    if ( buffer ) {
+        if ( format == Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 ) {
+            const float* fbuf = ( const float* ) buffer;
+            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+                * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );
             }
         } else {
-            for (int pixel = 0; pixel < this->channels; pixel++) {
-                *(nodatavalue + pixel)  = *(buffer + pixel);
+            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+                * ( nodatavalue + pixel )  = * ( buffer + pixel );
             }
         }
     } else {
-            for (int pixel = 0; pixel < this->channels; pixel++) {
-                *(nodatavalue + pixel)  = 0;
-            }
+        for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+            * ( nodatavalue + pixel )  = 0;
+        }
     }
     delete nd;
     return nodatavalue;

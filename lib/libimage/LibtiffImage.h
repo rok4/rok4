@@ -58,8 +58,6 @@
 #include "Format.h"
 #include "FileImage.h"
 
-#define LIBTIFFIMAGE_MAX_FILENAME_LENGTH 512
-
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -80,7 +78,7 @@ private:
      * \~english \brief TIFF image, used as interface between file and object
      */
     TIFF* tif;
-    
+
     /**
      * \~french \brief Taille de la bufferisation de l'image, en nombre de ligne
      * \~english \brief Image buffering size, in line number
@@ -123,12 +121,12 @@ protected:
      * \param[in] resy résolution dans le sens des Y
      * \param[in] channel nombre de canaux par pixel
      * \param[in] bbox emprise rectangulaire de l'image
-     * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] name chemin du fichier image
      * \param[in] sampleformat format des canaux
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
+     * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
      ** \~english
      * \brief Create a LibtiffImage object, from all attributes
@@ -138,18 +136,18 @@ protected:
      * \param[in] resy Y wise resolution
      * \param[in] channel number of samples per pixel
      * \param[in] bbox bounding box
-     * \param[in] tiff interface between file and object
      * \param[in] name path to image file
      * \param[in] sampleformat samples' format
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
+     * \param[in] tiff interface between file and object
      * \param[in] rowsperstrip data buffering size, in line number
      */
     LibtiffImage (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, TIFF* tif, char* name,
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, int rowsperstrip
+        Compression::eCompression compression, TIFF* tif, int rowsperstrip
     );
 
 public:
@@ -205,7 +203,7 @@ public:
      * \details On considère que les informations d'emprise et de résolutions ne sont pas présentes dans le TIFF, on les précise donc à l'usine. Tout le reste sera lu dans les en-têtes TIFF. On vérifiera aussi la cohérence entre les emprise et résolutions fournies et les dimensions récupérées dans le fichier TIFF.
      *
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement. Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
-     * 
+     *
      * \param[in] filename chemin du fichier image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
@@ -229,7 +227,7 @@ public:
      * \details Toutes les méta-informations sur l'image doivent être précisées pour écrire l'en-tête TIFF.
      *
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement. Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
-     * 
+     *
      * \param[in] filename chemin du fichier image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.

@@ -78,7 +78,7 @@ public:
     }
 
     virtual size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth() *image->channels, dataToCopy=0;
 
         if ( !pkbBuffer ) {
             pkbBuffer = new uint8_t[linesize* image->getHeight() * sizeof ( T ) *2];

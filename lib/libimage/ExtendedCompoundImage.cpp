@@ -74,7 +74,7 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
     for ( i=0; i<width*channels; i++ ) {
         buffer[i]= ( T ) nodata[i%channels];
     }
-    
+
     double y = l2y ( line );
 
     //LOGGER_INFO("ECI y " << y);
@@ -99,7 +99,7 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
         int c2=- ( __min ( 0,x2c ( sourceImages[i]->getXmin() ) ) );
 
-        T* buffer_t = new T[sourceImages[i]->getWidth()*sourceImages[i]->channels];
+        T* buffer_t = new T[sourceImages[i]->getWidth() *sourceImages[i]->channels];
 
         //LOGGER_INFO("       ECI source " << i << " getline " << sourceImages[i]->y2l ( y ));
         sourceImages[i]->getline ( buffer_t,sourceImages[i]->y2l ( y ) );
@@ -150,16 +150,16 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
         return false;
     }
 
-    for (uint i = 0; i < sourceImages.size(); i++ ) {
+    for ( uint i = 0; i < sourceImages.size(); i++ ) {
         for ( int j = 0; j < 4; j++ ) {
-            MirrorImage* mirrorImage = MIF.createMirrorImage ( sourceImages.at( i ), j, mirrorSize );
+            MirrorImage* mirrorImage = MIF.createMirrorImage ( sourceImages.at ( i ), j, mirrorSize );
             if ( mirrorImage == NULL ) {
                 LOGGER_ERROR ( "Unable to calculate image's mirror" );
                 return false;
             }
 
-            if ( sourceImages.at( i )->getMask() ) {
-                MirrorImage* mirrorMask = MIF.createMirrorImage ( sourceImages.at( i )->getMask(), j, mirrorSize );
+            if ( sourceImages.at ( i )->getMask() ) {
+                MirrorImage* mirrorMask = MIF.createMirrorImage ( sourceImages.at ( i )->getMask(), j, mirrorSize );
                 if ( mirrorMask == NULL ) {
                     LOGGER_ERROR ( "Unable to calculate mask's mirror" );
                     return false;
@@ -190,9 +190,9 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
 
     // Mise à jour du masque associé à l'image composée
     delete mask;
-    ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
+    ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
-    if ( ! setMask(newMask) ) {
+    if ( ! setMask ( newMask ) ) {
         LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
         return false;
     }
@@ -202,39 +202,39 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
 
 bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int morePix = 0 ) {
 
-    BoundingBox<double> newBbox(bbox);
+    BoundingBox<double> newBbox ( bbox );
     double nbPix;
 
     /******************** Mise à jour des dimensions **********************/
 
     //XMIN
-    if ( otherbbox.xmin < bbox.xmin) {
-        nbPix = (double) ceil( (bbox.xmin - otherbbox.xmin) / resx);
-        LOGGER_DEBUG("Ajout de " << nbPix << " à gauche");
+    if ( otherbbox.xmin < bbox.xmin ) {
+        nbPix = ( double ) ceil ( ( bbox.xmin - otherbbox.xmin ) / resx );
+        LOGGER_DEBUG ( "Ajout de " << nbPix << " à gauche" );
         width += nbPix;
         newBbox.xmin -= nbPix * resx;
     }
 
     // XMAX
-    if ( otherbbox.xmax > bbox.xmax) {
-        nbPix = (double) ceil( (otherbbox.xmax - bbox.xmax) / resx);
-        LOGGER_DEBUG("Ajout de " << nbPix << " à droite");
+    if ( otherbbox.xmax > bbox.xmax ) {
+        nbPix = ( double ) ceil ( ( otherbbox.xmax - bbox.xmax ) / resx );
+        LOGGER_DEBUG ( "Ajout de " << nbPix << " à droite" );
         width += nbPix;
         newBbox.xmax += nbPix * resx;
     }
 
     //YMIN
-    if ( otherbbox.ymin < bbox.ymin) {
-        nbPix = (double) ceil( (bbox.ymin - otherbbox.ymin) / resy);
-        LOGGER_DEBUG("Ajout de " << nbPix << " en bas");
+    if ( otherbbox.ymin < bbox.ymin ) {
+        nbPix = ( double ) ceil ( ( bbox.ymin - otherbbox.ymin ) / resy );
+        LOGGER_DEBUG ( "Ajout de " << nbPix << " en bas" );
         height += nbPix;
         newBbox.ymin -= nbPix * resy;
     }
 
     // YMAX
-    if ( otherbbox.ymax > bbox.ymax) {
-        nbPix = (double) ceil( (otherbbox.ymax - bbox.ymax) / resy);
-        LOGGER_DEBUG("Ajout de " << nbPix << " en haut");
+    if ( otherbbox.ymax > bbox.ymax ) {
+        nbPix = ( double ) ceil ( ( otherbbox.ymax - bbox.ymax ) / resy );
+        LOGGER_DEBUG ( "Ajout de " << nbPix << " en haut" );
         width += nbPix;
         newBbox.ymax += nbPix * resy;
     }
@@ -244,7 +244,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     if ( morePix > 0 ) {
         width += 2*morePix;
         height += 2*morePix;
-        
+
         newBbox.xmin -= morePix * resx;
         newBbox.ymin -= morePix * resy;
         newBbox.xmax += morePix * resx;
@@ -256,11 +256,11 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     bbox = newBbox;
 
     // Mise à jour du masque associé à l'image composée
-    if (mask) {
+    if ( mask ) {
         delete mask;
-        ExtendedCompoundMask* newMask = new ExtendedCompoundMask(this);
+        ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
-        if ( ! setMask(newMask) ) {
+        if ( ! setMask ( newMask ) ) {
             LOGGER_ERROR ( "Unable to add mask to enlarged ExtendedCompoundImage" );
             return false;
         }
@@ -273,7 +273,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
 
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
-    
+
     if ( images.size() == 0 ) {
         LOGGER_ERROR ( "No source images to define compounded image" );
         return NULL;
@@ -309,10 +309,10 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     int width, int height, int channels, BoundingBox<double> bbox,
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
-    
+
     if ( images.size() == 0 ) {
         LOGGER_WARN ( "No source images to define compounded image" );
-        images.push_back(new EmptyImage(width, height, channels, nodata));
+        images.push_back ( new EmptyImage ( width, height, channels, nodata ) );
     }
 
     for ( int i=0; i<images.size()-1; i++ ) {

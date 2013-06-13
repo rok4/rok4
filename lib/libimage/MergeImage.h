@@ -238,13 +238,13 @@ public:
      * \brief Default destructor
      */
     virtual ~MergeImage() {
-        if (! isMask) {
+        if ( ! isMask ) {
             for ( int i = 0; i < images.size(); i++ ) {
                 delete images[i];
             }
         }
         delete [] bgValue;
-        if (transparentValue != NULL) delete [] transparentValue;
+        if ( transparentValue != NULL ) delete [] transparentValue;
     }
 
     /** \~french

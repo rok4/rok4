@@ -406,7 +406,7 @@ int checkComponents ( TIFF* image, bool isMask ) {
         return 0;
     }
 
-    if ( ! TIFFGetField ( image, TIFFTAG_IMAGEWIDTH, &_width )                         ||
+    if ( ! TIFFGetField ( image, TIFFTAG_IMAGEWIDTH, &_width )                            ||
             ! TIFFGetField ( image, TIFFTAG_IMAGELENGTH, &_height )                       ||
             ! TIFFGetField ( image, TIFFTAG_BITSPERSAMPLE, &_bitspersample )              ||
             ! TIFFGetFieldDefaulted ( image, TIFFTAG_PLANARCONFIG, &_planarconfig )       ||
@@ -419,7 +419,7 @@ int checkComponents ( TIFF* image, bool isMask ) {
 
     if ( isMask ) {
         if ( ! ( _width == width && _height == height && _bitspersample == 8 && _sampleformat == SAMPLEFORMAT_UINT &&
-            _planarconfig == planarconfig && _photometric == PHOTOMETRIC_MINISBLACK && _samplesperpixel == 1 ) ) {
+                 _planarconfig == planarconfig && _photometric == PHOTOMETRIC_MINISBLACK && _samplesperpixel == 1 ) ) {
             LOGGER_ERROR ( std::string ( "Error : all input masks must have the same parameters (width, height, etc...) : " )
                            + TIFFFileName ( image ) );
             return -1;
@@ -902,9 +902,9 @@ int main ( int argc, char* argv[] ) {
     if ( BGM ) TIFFClose ( BGM );
 
     for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) {
-        if ( INPUTI[i][j] ) TIFFClose ( INPUTI[i][j] );
-        if ( INPUTM[i][j] ) TIFFClose ( INPUTM[i][j] );
-    }
+            if ( INPUTI[i][j] ) TIFFClose ( INPUTI[i][j] );
+            if ( INPUTM[i][j] ) TIFFClose ( INPUTM[i][j] );
+        }
 
     TIFFClose ( OUTPUTI );
     if ( OUTPUTM ) TIFFClose ( OUTPUTM );

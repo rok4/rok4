@@ -66,9 +66,9 @@ public:
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth() *image->channels, dataToCopy=0;
         if ( !lzwBuffer ) {
-            rawBuffer = new T[image->getHeight()*image->getWidth()*image->channels];
+            rawBuffer = new T[image->getHeight() *image->getWidth() *image->channels];
             int lRead = 0;
             for ( ; lRead < image->getHeight() ; lRead++ ) {
                 image->getline ( rawBuffer + rawBufferSize, lRead );

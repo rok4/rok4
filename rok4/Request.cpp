@@ -76,7 +76,7 @@ char hex2int ( unsigned char hex ) {
         hex = hex - 'a' + 11;
     }
     if ( hex > 15 ) // En cas d'erreur
-        hex = 0xFF; 
+        hex = 0xFF;
 
     return hex;
 }
@@ -1083,11 +1083,11 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     int request_l = version[0]-48;
     int request_m = version[2]-48;
     int request_r = version[4]-48;
-    if (request_l > high_version_l || (request_l == high_version_l && request_m > high_version_m) || (request_l == high_version_l && request_m == high_version_m && request_r > high_version_r)) {
+    if ( request_l > high_version_l || ( request_l == high_version_l && request_m > high_version_m ) || ( request_l == high_version_l && request_m == high_version_m && request_r > high_version_r ) ) {
         version = high_version;
         return NULL;
     }
-    if (request_l < low_version_l || (request_l == low_version_l && request_m < low_version_m) || (request_l == low_version_l && request_m == low_version_m && request_r < low_version_r)) {
+    if ( request_l < low_version_l || ( request_l == low_version_l && request_m < low_version_m ) || ( request_l == low_version_l && request_m == low_version_m && request_r < low_version_r ) ) {
         version = low_version;
         return NULL;
     }

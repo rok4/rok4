@@ -60,7 +60,7 @@ static pthread_mutex_t mutex_proj = PTHREAD_MUTEX_INITIALIZER;
  */
 template<typename T>
 class BoundingBox {
-    
+
 public:
     /**
      * \~french \brief Extrema du rectangle englobant
@@ -83,7 +83,7 @@ public:
      */
     template<typename T2>
     BoundingBox ( const BoundingBox<T2>& bbox ) :
-        xmin ( (T) bbox.xmin ), ymin ( (T) bbox.ymin ), xmax ( (T) bbox.xmax ), ymax ( (T) bbox.ymax ) {}
+        xmin ( ( T ) bbox.xmin ), ymin ( ( T ) bbox.ymin ), xmax ( ( T ) bbox.xmax ), ymax ( ( T ) bbox.ymax ) {}
 
     /** \~french
      * \brief Reprojette le rectangle englobant (SRS sous forme de chaîne de caractères)
@@ -120,8 +120,8 @@ public:
             return false;
         }
 
-        int err = reproject(pj_src, pj_dst, nbSegment);
-        
+        int err = reproject ( pj_src, pj_dst, nbSegment );
+
         pj_free ( pj_src );
         pj_free ( pj_dst );
         pj_ctx_free ( ctx );
@@ -216,7 +216,7 @@ public:
      */
     std::string toString() {
         std::ostringstream oss;
-        oss.setf(std::ios::fixed,std::ios::floatfield);
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
         oss << xmin << ", " << ymin << ", " << xmax << ", " << ymax;
         return oss.str() ;
     }
@@ -226,8 +226,8 @@ public:
      ** \~english \brief Determine if 2 bounding box intersect each other
      * \param[in] bbox bounding box which whom we have to test intersection
      */
-    bool intersects(BoundingBox<T> bbox) {
-        return ! (xmax < bbox.xmin || bbox.xmax < xmin || ymax < bbox.ymin || bbox.ymax < ymin);            
+    bool intersects ( BoundingBox<T> bbox ) {
+        return ! ( xmax < bbox.xmin || bbox.xmax < xmin || ymax < bbox.ymin || bbox.ymax < ymin );
     }
 
     /** \~french \brief Détermine une bounding box contient l'autre
@@ -235,10 +235,10 @@ public:
      ** \~english \brief Determine if a bounding box contains the other
      * \param[in] bbox bounding box : is it contained by the other ?
      */
-    bool contains(BoundingBox<T> bbox) {
-        return (xmin < bbox.xmin && bbox.xmax < xmax && ymin < bbox.ymin && bbox.ymax < ymax);
+    bool contains ( BoundingBox<T> bbox ) {
+        return ( xmin < bbox.xmin && bbox.xmax < xmax && ymin < bbox.ymin && bbox.ymax < ymax );
     }
-    
+
 };
 #endif
 

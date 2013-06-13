@@ -106,10 +106,10 @@ std::string toString ( eSampleFormat ph );
  * \details Sont gérés :
  * \li les entiers non-signés sur 8 bits
  * \li les flottants sur 32 bits
- * 
+ *
  * \param[in] sf format du canal
  * \param[in] bps nombre de bits par canal
- * 
+ *
  * \~english
  * \brief Precises if sample type (bits per sample and format) is supported
  * \details Are supported :
@@ -119,8 +119,8 @@ std::string toString ( eSampleFormat ph );
  * \param[in] sf sample foramt
  * \param[in] bps number of bits per sample
  */
-static bool isHandledSampleType(eSampleFormat sf, int bps) {
-    return (( bps == 32 && sf == FLOAT) || (bps == 8 && sf == UINT));
+static bool isHandledSampleType ( eSampleFormat sf, int bps ) {
+    return ( ( bps == 32 && sf == FLOAT ) || ( bps == 8 && sf == UINT ) );
 }
 
 }

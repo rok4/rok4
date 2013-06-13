@@ -57,62 +57,90 @@
 /* ------------------------------------------ CONVERSIONS ----------------------------------------- */
 
 
-static SampleFormat::eSampleFormat toROK4SampleFormat (uint16_t sf) {
-    switch (sf) {
-        case SAMPLEFORMAT_UINT : return SampleFormat::UINT;
-        case SAMPLEFORMAT_IEEEFP : return SampleFormat::FLOAT;
-        default : return SampleFormat::UNKNOWN;
+static SampleFormat::eSampleFormat toROK4SampleFormat ( uint16_t sf ) {
+    switch ( sf ) {
+    case SAMPLEFORMAT_UINT :
+        return SampleFormat::UINT;
+    case SAMPLEFORMAT_IEEEFP :
+        return SampleFormat::FLOAT;
+    default :
+        return SampleFormat::UNKNOWN;
     }
 }
 
-static uint16_t fromROK4SampleFormat (SampleFormat::eSampleFormat sf) {
-    switch (sf) {
-        case SampleFormat::UINT : return SAMPLEFORMAT_UINT;
-        case SampleFormat::FLOAT : return SAMPLEFORMAT_IEEEFP;
-        default : return 0;
+static uint16_t fromROK4SampleFormat ( SampleFormat::eSampleFormat sf ) {
+    switch ( sf ) {
+    case SampleFormat::UINT :
+        return SAMPLEFORMAT_UINT;
+    case SampleFormat::FLOAT :
+        return SAMPLEFORMAT_IEEEFP;
+    default :
+        return 0;
     }
 }
 
 
-static Photometric::ePhotometric toROK4Photometric (uint16_t ph) {
-    switch (ph) {
-        case PHOTOMETRIC_MINISBLACK : return Photometric::GRAY;
-        case PHOTOMETRIC_RGB : return Photometric::RGB;
-        case PHOTOMETRIC_MASK : return Photometric::MASK;
-        default : return Photometric::UNKNOWN;
+static Photometric::ePhotometric toROK4Photometric ( uint16_t ph ) {
+    switch ( ph ) {
+    case PHOTOMETRIC_MINISBLACK :
+        return Photometric::GRAY;
+    case PHOTOMETRIC_RGB :
+        return Photometric::RGB;
+    case PHOTOMETRIC_MASK :
+        return Photometric::MASK;
+    default :
+        return Photometric::UNKNOWN;
     }
 }
 
-static uint16_t fromROK4Photometric (Photometric::ePhotometric ph) {
-    switch (ph) {
-        case Photometric::GRAY : return PHOTOMETRIC_MINISBLACK;
-        case Photometric::RGB : return PHOTOMETRIC_RGB;
-        case Photometric::MASK : return PHOTOMETRIC_MINISBLACK;
-        default : return 0;
+static uint16_t fromROK4Photometric ( Photometric::ePhotometric ph ) {
+    switch ( ph ) {
+    case Photometric::GRAY :
+        return PHOTOMETRIC_MINISBLACK;
+    case Photometric::RGB :
+        return PHOTOMETRIC_RGB;
+    case Photometric::MASK :
+        return PHOTOMETRIC_MINISBLACK;
+    default :
+        return 0;
     }
 }
 
-static Compression::eCompression toROK4Compression (uint16_t comp) {
-    switch (comp) {
-        case COMPRESSION_NONE : return Compression::NONE;
-        case COMPRESSION_ADOBE_DEFLATE : return Compression::DEFLATE;
-        case COMPRESSION_JPEG : return Compression::JPEG;
-        case COMPRESSION_DEFLATE : return Compression::PNG;
-        case COMPRESSION_LZW : return Compression::LZW;
-        case COMPRESSION_PACKBITS : return Compression::PACKBITS;
-        default : return Compression::UNKNOWN;
+static Compression::eCompression toROK4Compression ( uint16_t comp ) {
+    switch ( comp ) {
+    case COMPRESSION_NONE :
+        return Compression::NONE;
+    case COMPRESSION_ADOBE_DEFLATE :
+        return Compression::DEFLATE;
+    case COMPRESSION_JPEG :
+        return Compression::JPEG;
+    case COMPRESSION_DEFLATE :
+        return Compression::PNG;
+    case COMPRESSION_LZW :
+        return Compression::LZW;
+    case COMPRESSION_PACKBITS :
+        return Compression::PACKBITS;
+    default :
+        return Compression::UNKNOWN;
     }
 }
 
-static uint16_t fromROK4Compression (Compression::eCompression comp) {
-    switch (comp) {
-        case Compression::NONE : return COMPRESSION_NONE;
-        case Compression::DEFLATE : return COMPRESSION_ADOBE_DEFLATE;
-        case Compression::JPEG : return COMPRESSION_JPEG;
-        case Compression::PNG : return COMPRESSION_DEFLATE;
-        case Compression::LZW : return COMPRESSION_LZW;
-        case Compression::PACKBITS : return COMPRESSION_PACKBITS;
-        default : return 0;
+static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
+    switch ( comp ) {
+    case Compression::NONE :
+        return COMPRESSION_NONE;
+    case Compression::DEFLATE :
+        return COMPRESSION_ADOBE_DEFLATE;
+    case Compression::JPEG :
+        return COMPRESSION_JPEG;
+    case Compression::PNG :
+        return COMPRESSION_DEFLATE;
+    case Compression::LZW :
+        return COMPRESSION_LZW;
+    case Compression::PACKBITS :
+        return COMPRESSION_PACKBITS;
+    default :
+        return 0;
     }
 }
 
@@ -122,12 +150,12 @@ static uint16_t fromROK4Compression (Compression::eCompression comp) {
 
 /* ----- Pour la lecture ----- */
 LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
-    
+
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sampleformat=0, photometric=0, compression=0, rowsperstrip=0;
     TIFF* tif = TIFFOpen ( filename, "r" );
 
     if ( tif == NULL ) {
-        LOGGER_ERROR ( "Unable to open (to read) " << filename );
+        LOGGER_ERROR ( "Unable to open TIFF (to read) " << filename );
         return NULL;
     } else {
         // Lecture de l'en-tête pour récupérer les informations sur l'image
@@ -165,7 +193,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
                 LOGGER_ERROR ( "Unable to determine sample format for file " << filename );
                 return NULL;
             }
-        }       
+        }
 
         if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&photometric ) < 1 ) {
             LOGGER_ERROR ( "Unable to read photometric for file " << filename );
@@ -198,10 +226,10 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
-    SampleFormat::eSampleFormat sf = toROK4SampleFormat(sampleformat);
+    SampleFormat::eSampleFormat sf = toROK4SampleFormat ( sampleformat );
 
-    if ( ! SampleFormat::isHandledSampleType(sf, bitspersample)) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString(sf) << " and " << bitspersample << " bits per sample");
+    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
         return NULL;
     }
 
@@ -217,14 +245,15 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             return NULL;
         }
     } else {
-        bbox = BoundingBox<double>(0, 0, (double) width, (double) height);
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
         resx = 1.;
         resy = 1.;
     }
 
     return new LibtiffImage (
-        width, height, resx, resy, channels, bbox, tif, filename,
-        sf, bitspersample, toROK4Photometric(photometric), toROK4Compression(compression), rowsperstrip
+        width, height, resx, resy, channels, bbox, filename,
+        sf, bitspersample, toROK4Photometric ( photometric ), toROK4Compression ( compression ),
+        tif, rowsperstrip
     );
 }
 
@@ -233,7 +262,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, uint16_t rowsperstrip ) {
-    
+
     if ( width <= 0 || height <= 0 ) {
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
         return NULL;
@@ -243,14 +272,14 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( ! SampleFormat::isHandledSampleType(sampleformat, bitspersample) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString(sampleformat) << " and " << bitspersample << " bits per sample");
+    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
         return NULL;
     }
 
     TIFF* tif = TIFFOpen ( filename, "w" );
     if ( tif == NULL ) {
-        LOGGER_ERROR ( "Unable to open (to write) " << filename );
+        LOGGER_ERROR ( "Unable to open TIFF (to write) " << filename );
         return NULL;
     }
 
@@ -288,17 +317,17 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat(sampleformat) ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_SAMPLEFORMAT, fromROK4SampleFormat ( sampleformat ) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write sample format for file " << filename );
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, fromROK4Photometric(photometric) ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_PHOTOMETRIC, fromROK4Photometric ( photometric ) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write photometric for file " << filename );
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION, fromROK4Compression(compression) ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_COMPRESSION, fromROK4Compression ( compression ) ) < 1 ) {
         LOGGER_ERROR ( "Unable to write compression for file " << filename );
         return NULL;
     }
@@ -314,14 +343,15 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     }
 
     if ( resx < 0 || resy < 0 ) {
-        bbox = BoundingBox<double>(0, 0, (double) width, (double) height);
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
         resx = 1.;
         resy = 1.;
     }
 
     return new LibtiffImage (
-        width, height, resx, resy, channels, bbox, tif, filename,
-        sampleformat, bitspersample, photometric, compression, rowsperstrip
+        width, height, resx, resy, channels, bbox, filename,
+        sampleformat, bitspersample, photometric, compression,
+        tif, rowsperstrip
     );
 }
 
@@ -329,12 +359,12 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
 LibtiffImage::LibtiffImage (
-    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, TIFF* tif, char* name,
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-    Compression::eCompression compression, int rowsperstrip ) :
-                             
+    Compression::eCompression compression, TIFF* tif, int rowsperstrip ) :
+
     FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
-    
+
     tif ( tif ), rowsperstrip ( rowsperstrip ) {
 
     current_strip = -1;
@@ -391,11 +421,11 @@ int LibtiffImage::getline ( float* buffer, int line ) {
 int LibtiffImage::writeImage ( Image* pIn ) {
 
     // Contrôle de la cohérence des 2 images : dimensions
-    if (width != pIn->getWidth() || height != pIn->getHeight()) {
-        LOGGER_ERROR("Image we want to write has not consistent dimensions with the output image");
+    if ( width != pIn->getWidth() || height != pIn->getHeight() ) {
+        LOGGER_ERROR ( "Image we want to write has not consistent dimensions with the output image" );
         return -1;
     }
-    
+
     // Initialisation du buffer
     unsigned char* buf_u=0;
     float* buf_f=0;

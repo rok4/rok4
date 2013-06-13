@@ -53,6 +53,7 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "LibtiffImage.h"
+#include "LibpngImage.h"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -63,33 +64,35 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     // Récupération de l'extension du fichier
     char * pch;
     char extension[3];
-    pch = strrchr(name,'.');
+    pch = strrchr ( name,'.' );
 
-    memcpy(extension, pch + 1, 3);
+    memcpy ( extension, pch + 1, 3 );
 
     // TIFF
-    if (strncmp(extension, "tif", 3) == 0) {
-        LOGGER_DEBUG("TIFF image to read : " << name);
-        
+    if ( strncmp ( extension, "tif", 3 ) == 0 ) {
+        LOGGER_DEBUG ( "TIFF image to read : " << name );
+
         LibtiffImageFactory LTIF;
-        return LTIF.createLibtiffImageToRead( name, bbox, resx, resy );
+        return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
     }
 
     // PNG
-    else if (strncmp(extension, "png", 3) == 0) {
-        LOGGER_ERROR("PNG image to read : NOT YET IMPLEMENTED");
-        return NULL;
+    else if ( strncmp ( extension, "png", 3 ) == 0 ) {
+        LOGGER_DEBUG ( "PNG image to read : " << name );
+
+        LibpngImageFactory LPIF;
+        return LPIF.createLibpngImageToRead ( name, bbox, resx, resy );
     }
 
     // JPEG 2000
-    else if (strncmp(extension, "jp2", 3) == 0) {
-        LOGGER_ERROR("JPEG2000 image to read : NOT YET IMPLEMENTED");
+    else if ( strncmp ( extension, "jp2", 3 ) == 0 ) {
+        LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
         return NULL;
     }
 
     // Format inconnu en lecture
     else {
-        LOGGER_ERROR("Unknown image's extension (" << extension << "), in the file to read : " << name);
+        LOGGER_ERROR ( "Unknown image's extension (" << extension << "), in the file to read : " << name );
         return NULL;
     }
 
@@ -103,27 +106,27 @@ FileImage* FileImageFactory::createImageToWrite (
     // Récupération de l'extension du fichier
     char * pch;
     char extension[3];
-    pch = strrchr(name,'.');
+    pch = strrchr ( name,'.' );
 
-    memcpy(extension, pch + 1, 3);
+    memcpy ( extension, pch + 1, 3 );
 
     // TIFF
-    if (strncmp(extension, "tif", 3) == 0) {
-        LOGGER_DEBUG("TIFF image to write : " << name);
+    if ( strncmp ( extension, "tif", 3 ) == 0 ) {
+        LOGGER_DEBUG ( "TIFF image to write : " << name );
 
         LibtiffImageFactory LTIF;
-        return LTIF.createLibtiffImageToWrite(
-            name, bbox, resx, resy, width, height, channels,
-            sampleformat, bitspersample, photometric, compression, 16
-        );
+        return LTIF.createLibtiffImageToWrite (
+                   name, bbox, resx, resy, width, height, channels,
+                   sampleformat, bitspersample, photometric, compression, 16
+               );
     }
 
     // Format inconnu en écriture
     else {
-        LOGGER_ERROR("Unknown image's extension (" << extension << "), in the file to write : " << name);
+        LOGGER_ERROR ( "Unknown image's extension (" << extension << "), in the file to write : " << name );
         return NULL;
     }
-    
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -132,10 +135,10 @@ FileImage* FileImageFactory::createImageToWrite (
 FileImage::FileImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression ) :
-                       
+
     Image ( width,height,channels,resx,resy,bbox ),
-    sampleformat ( sampleformat ), bitspersample(bitspersample), photometric ( photometric ), compression ( compression ) {
-        
+    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ) {
+
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
 }

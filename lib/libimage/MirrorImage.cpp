@@ -61,7 +61,7 @@
 #endif
 
 MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int position, uint mirrorSize ) {
-    int wTopBottom = pImageSrc->getWidth()+2*mirrorSize;
+    int wTopBottom = pImageSrc->getWidth() +2*mirrorSize;
     int wLeftRight = mirrorSize;
     int hTopBottom = mirrorSize;
     int hLeftRight = pImageSrc->getHeight();
@@ -119,7 +119,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
 template <typename T>
 int MirrorImage::_getline ( T* buffer, int line ) {
     uint32_t line_size=width*channels;
-    T* buf0=new T[sourceImage->getWidth()*channels];
+    T* buf0=new T[sourceImage->getWidth() *channels];
 
 
     if ( position == 0 ) {
@@ -128,7 +128,7 @@ int MirrorImage::_getline ( T* buffer, int line ) {
 
         sourceImage->getline ( buf0,lineSrc );
 
-        memcpy ( &buffer[mirrorSize*channels],buf0,sourceImage->getWidth()*channels*sizeof ( T ) );
+        memcpy ( &buffer[mirrorSize*channels],buf0,sourceImage->getWidth() *channels*sizeof ( T ) );
         for ( int j = 0; j < mirrorSize; j++ ) {
             memcpy ( &buffer[j*channels],&buf0[ ( mirrorSize-j-1 ) *channels],channels*sizeof ( T ) ); // left
             memcpy ( &buffer[ ( width-j-1 ) *channels],&buf0[ ( sourceImage->getWidth() - mirrorSize + j ) *channels],channels*sizeof ( T ) ); // right
@@ -147,7 +147,7 @@ int MirrorImage::_getline ( T* buffer, int line ) {
 
         sourceImage->getline ( buf0,lineSrc );
 
-        memcpy ( &buffer[mirrorSize*channels],buf0,sourceImage->getWidth()*channels*sizeof ( T ) );
+        memcpy ( &buffer[mirrorSize*channels],buf0,sourceImage->getWidth() *channels*sizeof ( T ) );
         for ( int j = 0; j < mirrorSize; j++ ) {
             memcpy ( &buffer[j*channels],&buf0[ ( mirrorSize-j-1 ) *channels],channels*sizeof ( T ) ); // left
             memcpy ( &buffer[ ( width-j-1 ) *channels],&buf0[ ( sourceImage->getWidth() - mirrorSize + j ) *channels],channels*sizeof ( T ) ); // right
