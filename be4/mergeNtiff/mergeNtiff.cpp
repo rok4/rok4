@@ -619,8 +619,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
         crs.setRequestCode(stringCRS);
 
         if (! crs.validateBBox(bbox)) {
-            LOGGER_ERROR("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
-            return -1;
+            LOGGER_WARN("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
         }
 
         LibtiffImage* pImage=factory.createLibtiffImageToRead ( imageFileName, bbox, resx, resy );
@@ -916,28 +915,37 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     std::string to_srs = pImageOut->getCRS().getProj4Code();
 
     /******** Conversion de la bbox source dans le srs de sortie ********/
+    /******************* et calcul des ration des résolutions ***********/
 
-    if ( tmpBbox.reproject(from_srs, to_srs) ) {
+    /* On fait particulièrement attention à ne considérer que la partie valide de la bbox source
+     * c'est à dire la partie incluse dans l'espace de définition du SRS
+     * On va donc la "croper" */
+    BoundingBox<double> cropSourceBbox = pECI->getCRS().cropBBox(tmpBbox);
+
+    int cropWidth = ceil((cropSourceBbox.xmax - cropSourceBbox.xmin) / resx_src);
+    int cropHeight = ceil((cropSourceBbox.ymax - cropSourceBbox.ymin) / resy_src);
+
+    if ( cropSourceBbox.reproject(from_srs, to_srs) ) {
         LOGGER_ERROR ( "Erreur reprojection bbox src -> dst" );
         return false;
     }
 
     /* On valcule les résolutions de l'image source "équivalente" dans le SRS de destination, pour pouvoir calculer le ratio
      * des réolutions pour la taille des miroirs */
-    double resx_calc = (tmpBbox.xmax - tmpBbox.xmin) / double(pECI->getWidth());
-    double resy_calc = (tmpBbox.ymax - tmpBbox.ymin) / double(pECI->getHeight());
+    double resx_calc = (cropSourceBbox.xmax - cropSourceBbox.xmin) / double(cropWidth);
+    double resy_calc = (cropSourceBbox.ymax - cropSourceBbox.ymin) / double(cropHeight);
 
     /******************** Image reprojetée : dimensions *****************/
 
     /* On fait particulièrement attention à ne considérer que la partie valide de la bbox finale
      * c'est à dire la partie incluse dans l'espace de définition du SRS
      * On va donc la "croper" */
-    BoundingBox<double> cropBbox = pImageOut->getCRS().cropBBox(pImageOut->getBbox());
+    BoundingBox<double> cropFinalBbox = pImageOut->getCRS().cropBBox(pImageOut->getBbox());
 
-    double xmin_dst = __max ( tmpBbox.xmin,cropBbox.xmin );
-    double xmax_dst = __min ( tmpBbox.xmax,cropBbox.xmax );
-    double ymin_dst = __max ( tmpBbox.ymin,cropBbox.ymin );
-    double ymax_dst = __min ( tmpBbox.ymax,cropBbox.ymax );
+    double xmin_dst = __max ( cropSourceBbox.xmin,cropFinalBbox.xmin );
+    double xmax_dst = __min ( cropSourceBbox.xmax,cropFinalBbox.xmax );
+    double ymin_dst = __max ( cropSourceBbox.ymin,cropFinalBbox.ymin );
+    double ymax_dst = __min ( cropSourceBbox.ymax,cropFinalBbox.ymax );
     
     BoundingBox<double> BBOX_dst(xmin_dst,ymin_dst,xmax_dst,ymax_dst);
 
@@ -1175,7 +1183,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator(DEBUG, acc);
+    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
