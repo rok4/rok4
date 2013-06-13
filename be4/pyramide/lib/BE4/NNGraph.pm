@@ -566,9 +566,9 @@ sub computeYourself {
            my ($c,$w) ;
            if ($self->getDataSource->hasHarvesting) {
                # Datasource has a WMS service : we have to use it
-               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,FALSE);
+               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,"I");
                if (! defined $c) {
-                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName("I"));
                    return FALSE;
                }
            } else {

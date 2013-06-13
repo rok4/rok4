@@ -337,7 +337,8 @@ sub _load {
             id => "SCRIPT_FINISHER",
             tempDir => $tempDir,
             commonTempDir => $commonTempDir,
-            scriptDir => $scriptDir
+            scriptDir => $scriptDir,
+            executedAlone => TRUE
         });
 
         my $listFile = $self->{pyramid}->getNewListFile;

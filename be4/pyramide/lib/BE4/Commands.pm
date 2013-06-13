@@ -640,8 +640,12 @@ sub mergeNtiff {
     }
     #   - Les noeuds source (Graph)
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        my $filepath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName);
-        printf CFGF "%s", $nodesource->exportForMntConf($filepath);
+        my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
+        my $maskPath = undef;
+        if ($self->{useMasks}) {
+            $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
+        }
+        printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
     }
     
     close CFGF;
