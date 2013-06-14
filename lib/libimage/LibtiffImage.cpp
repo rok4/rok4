@@ -115,7 +115,7 @@ static Compression::eCompression toROK4Compression ( uint16_t comp ) {
     case COMPRESSION_JPEG :
         return Compression::JPEG;
     case COMPRESSION_DEFLATE :
-        return Compression::PNG;
+        return Compression::DEFLATE;
     case COMPRESSION_LZW :
         return Compression::LZW;
     case COMPRESSION_PACKBITS :
@@ -134,7 +134,7 @@ static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
     case Compression::JPEG :
         return COMPRESSION_JPEG;
     case Compression::PNG :
-        return COMPRESSION_DEFLATE;
+        return COMPRESSION_ADOBE_DEFLATE;
     case Compression::LZW :
         return COMPRESSION_LZW;
     case Compression::PACKBITS :

@@ -139,6 +139,33 @@ public:
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
 
+    int getTile ( int offsetx, int offsety, int w, int l, uint8_t* buffer ) {
+
+        int tileLineByteSize = w * getPixelByteSize();
+        int tileLineChannelsSize = w * channels;
+
+        if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+            uint8_t line[width * channels];
+            
+            for ( int y = 0; y < l; y++ ) {
+                getline (line, offsety + y);
+                memcpy ( buffer + y * tileLineChannelsSize, line + offsetx * channels, tileLineByteSize );
+            }
+
+        } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
+
+            float line[width * channels];
+
+            for ( int y = 0; y < l; y++ ) {
+                getline (line, offsety + y);
+                memcpy ( buffer + y * tileLineChannelsSize, line + offsetx * channels, tileLineByteSize );
+            }
+
+        }
+        
+        return 1;
+    }
+
     /**
      * \~french
      * \brief Ecrit une image, à partir d'une image source
@@ -207,6 +234,16 @@ public:
 
     /**
      * \~french
+     * \brief Retourne la taille en octet d'un pixel
+     * \~english
+     * \brief Return the pixel's byte size
+     */
+    inline int getPixelByteSize () {
+        return bitspersample * channels / 8;
+    }
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \~english
      * \brief Default destructor
@@ -257,7 +294,7 @@ public:
      * \param[in] resy Y wise resolution.
      * \return a FileImage's child class object pointer, NULL if error
      */
-    FileImage* createImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
+    FileImage* createImageToRead ( char* filename, BoundingBox<double> bbox = BoundingBox<double>(0,0,0,0), double resx = -1, double resy = -1 );
 
     /** \~french
      * \brief Crée un objet FileImage, pour l'écriture

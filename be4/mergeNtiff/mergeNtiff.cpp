@@ -1179,7 +1179,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( DEBUG, acc );
+    //Logger::setAccumulator ( DEBUG, acc );
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -1239,8 +1239,6 @@ int main ( int argc, char **argv ) {
     if ( mergeTabImages ( pImageOut, TabImageIn, &pECI, nodata ) < 0 ) {
         error ( "Echec fusion des paquets d images",-1 );
     }
-
-    //return 0;
 
     LOGGER_DEBUG ( "Save image" );
     // Enregistrement de l'image fusionnée

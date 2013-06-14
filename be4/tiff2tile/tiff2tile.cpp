@@ -42,6 +42,7 @@
 #include "Format.h"
 #include "Logger.h"
 #include "TiffReader.h"
+#include "FileImage.h"
 #include "TiledTiffWriter.h"
 #include "TiffNodataManager.h"
 #include "../be4version.h"
@@ -88,7 +89,7 @@ int main ( int argc, char **argv ) {
                 } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
                     compression = COMPRESSION_LZW;
                 } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
-                    compression = COMPRESSION_ADOBE_DEFLATE;
+                    compression = COMPRESSION_DEFLATE;
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
                     compression = COMPRESSION_PACKBITS;
                 } else {
@@ -170,7 +171,7 @@ int main ( int argc, char **argv ) {
         exit ( 2 );
     }
 
-    if ( ! ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) || ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) ) {
+    if ( ! ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) && ! ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) ) {
         std::cerr << "Unknown sample type (sample format + bits per sample)" << std::endl;
         exit ( 2 );
     }
@@ -194,36 +195,44 @@ int main ( int argc, char **argv ) {
 
     }
 
-    TiffReader R ( input );
+    //TiffReader R ( input );
 
-    uint32_t width = R.getWidth();
-    uint32_t length = R.getLength();
-    TiledTiffWriter W ( output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat );
+    FileImageFactory FIF;
+    FileImage* sourceImage = FIF.createImageToRead(input);
+
+    int width = sourceImage->getWidth();
+    int length = sourceImage->getHeight();
 
     if ( width % tilewidth || length % tilelength ) {
         std::cerr << "Image size must be a multiple of tile size" << std::endl;
         exit ( 2 );
     }
 
+    TiledTiffWriter W ( output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat );
+
     int tilex = width / tilewidth;
     int tiley = length / tilelength;
 
-    size_t dataSize = tilelength*tilewidth*R.getSampleSize();
+    size_t dataSize = tilelength*tilewidth*sourceImage->getPixelByteSize();
     uint8_t* data = new uint8_t[dataSize];
 
-    for ( int y = 0; y < tiley; y++ ) for ( int x = 0; x < tilex; x++ ) {
-            R.getWindow ( x*tilewidth, y*tilelength, tilewidth, tilelength, data );
+    for ( int y = 0; y < tiley; y++ ) {
+        for ( int x = 0; x < tilex; x++ ) {
+            sourceImage->getTile ( x*tilewidth, y*tilelength, tilewidth, tilelength, data );
             if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
                 std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl;
                 return 2;
             }
         }
+    }
 
-    R.close();
+    //R.close();
     if ( W.close() < 0 ) {
         std::cerr << "Error while writting index" << std::endl;
         return 2;
     }
+
+    delete sourceImage;
 
     return 0;
 }

@@ -348,13 +348,13 @@ int main ( int argc, char* argv[] ) {
         LOGGER_DEBUG ( "Target color treatment (uint8)" );
         TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
-            error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
+            error ( "Error : unable to treat nodata for this 8-bit integer image : " + string ( inputImage ), -1 );
         }
     } else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
         LOGGER_DEBUG ( "Target color treatment (float)" );
         TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
-            error ( "Error : unable to treat nodata for this file : " + string ( inputImage ),-1 );
+            error ( "Error : unable to treat nodata for this 32-bit float image : " + string ( inputImage ), -1 );
         }
     }
 

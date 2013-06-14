@@ -142,3 +142,4 @@ FileImage::FileImage (
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
 }
+

@@ -74,11 +74,12 @@ class LibpngImage : public FileImage {
     friend class LibpngImageFactory;
 
 private:
-    FILE *fp;
 
-    png_structp png_ptr;
-    png_infop info_ptr;
-    int number_of_passes;
+    /**
+     * \~french \brief Stockage de l'image entière, décompressée
+     * \todo Lire au fur et à mesure l'image PNG
+     * \~english \brief Full uncompressed image storage
+     */
     png_bytep * row_pointers;
 
     /** \~french
@@ -105,7 +106,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] file interface utilisée par la librairie PNG entre le fichier et l'objet
+     * \param[in] row_pointers image complète, dans un tableau
      ** \~english
      * \brief Create a LibpngImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -119,13 +120,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] rowsperstrip data buffering size, in line number
-     * \param[in] file interface between file and object
+     * \param[in] row_pointers complete image, in an array
      */
     LibpngImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        FILE* file, png_structp png_ptr, png_infop info_ptr, png_bytep* row_pointers
+        png_bytep* row_pointers
     );
 
 public:
@@ -145,16 +145,15 @@ public:
     /**
      * \~french
      * \brief Destructeur par défaut
-     * \details Suppression des buffer de lecture et de l'interface PNG
+     * \details Suppression du buffer de lecture #row_pointers
      * \~english
      * \brief Default destructor
-     * \details We remove read buffer and PNG interface
+     * \details We remove read buffer #row_pointers
      */
     ~LibpngImage() {
         /* cleanup heap allocation */
         for (int y = 0; y < height; y++)
             free(row_pointers[y]);
-        
         free(row_pointers);
     }
 
@@ -173,7 +172,7 @@ public:
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
  * \brief Usine de création d'une image PNG
- * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe LibpngImage. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de LibpngImage et de sortir en erreur en cas de problème. Dans le cas d'une image PNG pour la lecture, on récupère dans le fichier toutes les méta-informations sur l'image. Pour l'écriture, on doit tout préciser afin de constituer l'en-tête PNG.
+ * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe LibpngImage. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de LibpngImage et de sortir en erreur en cas de problème. Dans le cas d'une image PNG pour la lecture, on récupère dans le fichier toutes les méta-informations sur l'image.
  */
 class LibpngImageFactory {
 public:

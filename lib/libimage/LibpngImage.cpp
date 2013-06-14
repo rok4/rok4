@@ -165,12 +165,16 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     }
 
     row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * height);
-    for (int y = 0; y < height; y++)
-        row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
+    for (int y = 0; y < height; y++) {
+        int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
+        //LOGGER_INFO ( "ligne " << y << ", " << rowbytes << " octets");
+        row_pointers[y] = (png_byte*) malloc(rowbytes);
+    }
 
     png_read_image(png_ptr, row_pointers);
 
     fclose ( file );
+    png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 
     /********************** CONTROLES **************************/
 
@@ -199,7 +203,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     return new LibpngImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, toROK4Photometric ( color_type ), Compression::PNG,
-        file, png_ptr, info_ptr, row_pointers
+        row_pointers
     );
 }
 
@@ -209,11 +213,11 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 LibpngImage::LibpngImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    FILE* file, png_structp png_ptr, png_infop info_ptr, png_bytep* row_pointers ) :
+    png_bytep* row_pointers ) :
 
     FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
-    fp ( file ), png_ptr(png_ptr), info_ptr(info_ptr), row_pointers(row_pointers) {
+    row_pointers(row_pointers) {
         
 }
 
@@ -222,45 +226,10 @@ LibpngImage::LibpngImage (
 
 template<typename T>
 int LibpngImage::_getline ( T* buffer, int line ) {
-    // le buffer est déjà alloue
-    // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
-/*
-    if ( compression == Compression::NONE || ( compression != Compression::NONE && rowsperstrip == 1 ) ) {
-        // Cas Non compresse ou (compresse et 1 ligne/bande)
-        if ( TIFFReadScanline ( tif,buffer,line,0 ) < 0 ) {
-            LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
-        }
-    } else {
-        // Cas compresse et > 1 ligne /bande
-        if ( line / rowsperstrip != current_strip ) {
-            current_strip = line / rowsperstrip;
-            if ( TIFFReadEncodedStrip ( tif,current_strip,strip_buffer,strip_size ) < 0 ) {
-                LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
-            }
-        }
-        memcpy ( buffer,&strip_buffer[ ( line%rowsperstrip ) *width*channels],width*channels*sizeof ( uint8_t ) );
-    }*/
-
-    //png_read_row (png_ptr, row, NULL);
-
-    //png_read_rows(
-
-    //png_byte* row = ;
     
-    for (int x = 0;  x < width; x++) {
-        //LOGGER_DEBUG ("x = " << x);
-        //png_byte* ptr = &(row_pointers[line][x*channels]);
-        //LOGGER_DEBUG ("Pixel values: " << int(ptr[0]) << "," << int(ptr[1]) << "," << int(ptr[2]));
-        
-        for (int c = 0;  c < channels; c++) {
-            //LOGGER_DEBUG ("c = " << c);
-            buffer[x*channels + c] = (uint8_t) row_pointers[line][x*channels + c];
-        }
+    for (int x = 0;  x < width * channels; x++) {
+            buffer[x] = (uint8_t) row_pointers[line][x];
     }
-
-    //delete [] row;
-
-    //buffer = (uint8_t*) row_pointers[line];
     return width*channels;
 }
 
