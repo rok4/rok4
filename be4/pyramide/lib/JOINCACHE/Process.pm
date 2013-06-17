@@ -136,6 +136,9 @@ Cache2work () {
         montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/$imgDst
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -rf ${TMP_DIR}/Untiled_PNG
+    elif [  "$type" == "jpg"  ] ; then
+        convert $imgSrc __conv__ ${TMP_DIR}/$imgDst
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi  
     else
         tiffcp __tcpI__ $imgSrc ${TMP_DIR}/$imgDst
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -514,8 +517,10 @@ sub transformImage {
             ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
             return FALSE;
         }
+    } else if ($format =~ m/JPG/) {
+        $code .= sprintf "Cache2work %s tmp_$outImgName %s jpg\n", $sourceImage->{img};
     } else {
-        $code .= sprintf "Cache2work %s tmp_$outImgName\n", $sourceImage->{img};
+        $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
     }
 
     my $sppFinal = $self->{pyramid}->getSamplesPerPixel();
@@ -690,6 +695,11 @@ sub configureFunctions {
 
     my $conf_tcp = "-s -r $imgHeight -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
+
+    ######## convert ########
+
+    my $conf_convert = "-compress zip";
+    $configuredFunc =~ s/__conv__/$conf_convert/;
 
     ######## configure montage ########
     my $conf_montageIn = "";

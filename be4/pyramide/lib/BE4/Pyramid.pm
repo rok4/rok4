@@ -396,7 +396,7 @@ sub _init {
     $self->{dir_mask} = $params->{dir_mask};
 
     ### We want masks in the final pyramid ?
-    if ( exists $params->{export_mask} && defined $params->{export_mask} && uc($params->{export_mask}) eq "TRUE" ) {
+    if ( exists $params->{export_masks} && defined $params->{export_masks} && uc($params->{export_masks}) eq "TRUE" ) {
         $self->{own_masks} = TRUE;
     }
     

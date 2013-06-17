@@ -355,18 +355,6 @@ sub _load {
 
     foreach my $datasource (@{$dataSources}) {
         
-        if ($datasource->hasImages) {
-            
-            if (! $self->{pyramid}->isNewPyramid && $pyr->getCompression eq 'jpg' ) {
-                
-                if (! $datasource->hasHarvesting) {
-                    ERROR(sprintf "We need a WMS service because of a lossy compression cache update (%s) for the base level %s", $pyr->getCompression, $datasource->getBottomID);
-                    return FALSE;
-                }
-                
-            }
-        }
-        
         # Now, if datasource contains a WMS service, we have to use it
         
         # Creation of QTree or NNGraph object
