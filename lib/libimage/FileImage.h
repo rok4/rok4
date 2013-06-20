@@ -142,23 +142,24 @@ public:
     int getTile ( int offsetx, int offsety, int w, int l, uint8_t* buffer ) {
 
         int tileLineByteSize = w * getPixelByteSize();
-        int tileLineChannelsSize = w * channels;
 
         if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
             uint8_t line[width * channels];
             
             for ( int y = 0; y < l; y++ ) {
                 getline (line, offsety + y);
-                memcpy ( buffer + y * tileLineChannelsSize, line + offsetx * channels, tileLineByteSize );
+                memcpy ( buffer + y * tileLineByteSize, line + offsetx * channels, tileLineByteSize );
             }
 
         } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
+
+            LOGGER_INFO("");
 
             float line[width * channels];
 
             for ( int y = 0; y < l; y++ ) {
                 getline (line, offsety + y);
-                memcpy ( buffer + y * tileLineChannelsSize, line + offsetx * channels, tileLineByteSize );
+                memcpy ( buffer + y * tileLineByteSize, line + offsetx * channels, tileLineByteSize );
             }
 
         }

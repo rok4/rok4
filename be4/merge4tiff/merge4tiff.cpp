@@ -81,10 +81,6 @@
 /* Valeurs de nodata */
 /** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
 char* strnodata;
-/** \~french Valeur de nodata sous forme de tableau de flottants sur 32 bits*/
-float* nodataFloat32;
-/** \~french Valeur de nodata sous forme de tableau d'entier non-signés sur 8 bits*/
-uint8_t* nodataUInt8;
 
 /* Chemins des images en entrée et en sortie */
 /** \~french Chemin de l'image de fond */
@@ -200,7 +196,7 @@ void usage() {
 
                   "Examples\n" <<
                   "     - without mask, with background image\n" <<
-                  "     merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif\n\n" <<
+                  "     merge4tiff -g 1 -n 255,255,255 -c zip -ib backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif\n\n" <<
 
                   "     - with mask, without background image\n" <<
                   "     merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif\n" );
@@ -398,7 +394,7 @@ int checkComponents ( TIFF* image, bool isMask ) {
             return -1;
         }
 
-        if ( ! ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) || ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) ) {
+        if ( ! (( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) || ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT )) ) {
             LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
             return -1;
         }
@@ -568,34 +564,6 @@ int checkImages ( TIFF* INPUTI[2][2],TIFF* INPUTM[2][2],
     return 0;
 }
 
-/**
- * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas entier)
- * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
- * \param[in] image ligne de l'image en sortie
- * \param[in] IMAGE image à lire
- * \param[in] mask ligne du masque en sortie
- * \param[in] MASK masque associé à l'image à lire (peut être nul)
- * \param[in] line indice de la ligne source dans l'image (et son masque)
- * \param[in] width largeur de la ligne à lire (et remplir)
- * \return code de retour, 0 si réussi, -1 sinon
- */
-int fillLine ( uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width ) {
-    if ( TIFFReadScanline ( IMAGE, image,line ) == -1 ) return 1;
-
-    if ( MASK ) {
-        if ( TIFFReadScanline ( MASK, mask,line ) == -1 ) return 1;
-        for ( int w = 0; w < width; w++ ) {
-            if ( mask[w] < 127 ) {
-                memcpy ( image + w*samplesperpixel,nodataUInt8,samplesperpixel );
-            }
-        }
-    } else {
-        memset ( mask,255,width );
-    }
-
-    return 0;
-}
 
 /**
  * \~french
@@ -607,16 +575,18 @@ int fillLine ( uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line,
  * \param[in] MASK masque associé à l'image à lire (peut être nul)
  * \param[in] line indice de la ligne source dans l'image (et son masque)
  * \param[in] width largeur de la ligne à lire (et remplir)
+ * \param[in] nodata valeur de nodata
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int fillLine ( float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width ) {
+template <typename T>
+int fillBgLine ( T* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, int width, T* nodata ) {
     if ( TIFFReadScanline ( IMAGE, image,line ) == -1 ) return 1;
 
     if ( MASK ) {
         if ( TIFFReadScanline ( MASK, mask,line ) == -1 ) return 1;
         for ( int w = 0; w < width; w++ ) {
-            if ( mask[w] < 127 ) {
-                memcpy ( image + w*samplesperpixel,nodataFloat32,samplesperpixel*sizeof ( float ) );
+            if ( mask[w] == 0 ) {
+                memcpy ( image + w*samplesperpixel, nodata,samplesperpixel*sizeof ( T ) );
             }
         }
     } else {
@@ -629,7 +599,7 @@ int fillLine ( float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, i
 /**
  * \~french
  * \brief Fusionne les 4 images en entrée et le masque de fond dans l'image de sortie
- * \details Dans le cas entier ,lors de la moyenne des 4 pixels, on utilise une valeur de gamma qui éclaircit (si supérieure à 1.0) ou fonce (si inférieure à 1.0) le résultat. Si gamma vaut 1, le résultat est une moyenne classique.
+ * \details Dans le cas entier, lors de la moyenne des 4 pixels, on utilise une valeur de gamma qui éclaircit (si supérieure à 1.0) ou fonce (si inférieure à 1.0) le résultat. Si gamma vaut 1, le résultat est une moyenne classique.
  * \param[in] BGI image de fond en entrée
  * \param[in] BGM masque associé à l'image de fond en entrée
  * \param[in] INPUTI images en entrée
@@ -639,7 +609,7 @@ int fillLine ( float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, i
  * \return code de retour, 0 si réussi, -1 sinon
  */
 template <typename T>
-int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM ) {
+int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* OUTPUTI, TIFF* OUTPUTM, T* nodata ) {
     uint8 MERGE[1024];
     for ( int i = 0; i <= 1020; i++ ) MERGE[i] = 255 - ( uint8 ) round ( pow ( double ( 1020 - i ) /1020., gammaM4t ) * 255. );
 
@@ -662,13 +632,8 @@ int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* 
     uint8_t line_outM[width];
 
     // ----------- initialisation du fond -----------
-    if ( sizeof ( T ) == 4 )
-        for ( int i = 0; i < nbsamples ; i++ )
-            line_bgI[i] = nodataFloat32[i%samplesperpixel];
-
-    if ( sizeof ( T ) == 1 )
-        for ( int i = 0; i < nbsamples ; i++ )
-            line_bgI[i] = nodataUInt8[i%samplesperpixel];
+    for ( int i = 0; i < nbsamples ; i++ )
+        line_bgI[i] = nodata[i%samplesperpixel];
 
     memset ( line_bgM,0,width );
 
@@ -684,7 +649,7 @@ int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* 
 
             // ------------------- le fond ------------------
             if ( BGI )
-                if ( fillLine ( line_bgI,BGI,line_bgM,BGM,line,width ) ) {
+                if ( fillBgLine ( line_bgI,BGI,line_bgM,BGM,line,width, nodata ) ) {
                     LOGGER_ERROR ( "Unable to read background line" );
                     return -1;
                 }
@@ -764,22 +729,22 @@ int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* 
                 memset ( pix,0,samplesperpixel*sizeof ( float ) );
                 nbData = 0;
 
-                if ( line_1M[pixIn] >= 127 ) {
+                if ( line_1M[pixIn] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_1I[sampleIn+c];
                 }
 
-                if ( line_1M[pixIn+1] >= 127 ) {
+                if ( line_1M[pixIn+1] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_1I[sampleIn+samplesperpixel+c];
                 }
 
-                if ( line_2M[pixIn] >= 127 ) {
+                if ( line_2M[pixIn] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_2I[sampleIn+c];
                 }
 
-                if ( line_2M[pixIn+1] >= 127 ) {
+                if ( line_2M[pixIn+1] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_2I[sampleIn+samplesperpixel+c];
                 }
@@ -880,20 +845,18 @@ int main ( int argc, char* argv[] ) {
     // Cas MNT
     if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
         LOGGER_DEBUG ( "Merge images (float)" );
-        nodataFloat32 = new float[samplesperpixel];
-        for ( int i = 0; i < samplesperpixel; i++ ) nodataFloat32[i] = ( float ) nodataInt[i];
+        float nodata[samplesperpixel];
+        for ( int i = 0; i < samplesperpixel; i++ ) nodata[i] = ( float ) nodataInt[i];
 
-        if ( merge<float> ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM ) < 0 ) error ( "Unable to merge float images",-1 );
-        delete [] nodataFloat32;
+        if ( merge<float> ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM, nodata ) < 0 ) error ( "Unable to merge float images",-1 );
     }
     // Cas images
     else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
         LOGGER_DEBUG ( "Merge images (uint8_t)" );
-        nodataUInt8 = new uint8_t[samplesperpixel];
-        for ( int i = 0; i < samplesperpixel; i++ ) nodataUInt8[i] = ( uint8_t ) nodataInt[i];
+        uint8_t nodata[samplesperpixel];
+        for ( int i = 0; i < samplesperpixel; i++ ) nodata[i] = ( uint8_t ) nodataInt[i];
 
-        if ( merge<uint8_t> ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM ) < 0 ) error ( "Unable to merge integer images",-1 );
-        delete [] nodataUInt8;
+        if ( merge ( BGI,BGM,INPUTI,INPUTM,OUTPUTI,OUTPUTM, nodata ) < 0 ) error ( "Unable to merge integer images",-1 );
     }
 
 

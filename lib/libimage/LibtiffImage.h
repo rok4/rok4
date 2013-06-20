@@ -67,6 +67,8 @@
  * Cette classe va utiliser la librairie TIFF afin de lire/écrire les données et de récupérer/fournir les informations sur les images.
  *
  * Si les images lues possèdent un canal alpha, celui-ci doit être associé, c'est-à-dire prémultiplié aux autres canaux. De même en écriture, on considère que s'il y a un canal alpha, il a été prémultiplié aux autres canaux lors des traitements.
+ *
+ * \todo Utiliser le code de la classe TiffReader pour permettre à LibtiffImage de lire des images tuilées.
  */
 class LibtiffImage : public FileImage {
 
