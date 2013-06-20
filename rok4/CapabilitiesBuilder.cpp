@@ -102,8 +102,7 @@ void Rok4Server::buildWMSCapabilities() {
     capabilitiesEl->SetAttribute ( "xmlns","http://www.opengis.net/wms" );
     capabilitiesEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
     capabilitiesEl->SetAttribute ( "xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance" );
-    capabilitiesEl->SetAttribute ( "xmlns:sld","http://www.opengis.net/sld" );
-    capabilitiesEl->SetAttribute ( "xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd http://www.opengis.net/sld http://schemas.opengis.net/sld/1.1/sld_All.xsd" );
+    capabilitiesEl->SetAttribute ( "xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.3.0/capabilities_1_3_0.xsd" );
 
     // Pour Inspire. Cf. remarque plus bas.
     if ( servicesConf.isInspire() ) {
@@ -252,17 +251,6 @@ void Rok4Server::buildWMSCapabilities() {
     TiXmlElement * exceptionEl = new TiXmlElement ( "Exception" );
     exceptionEl->LinkEndChild ( buildTextNode ( "Format","XML" ) );
     capabilityEl->LinkEndChild ( exceptionEl );
-
-    //UserDefinedSymbolization
-    TiXmlElement * userDefSymbolEl = new TiXmlElement ( "sld:UserDefinedSymbolization" );
-    userDefSymbolEl->SetAttribute ( "SupportSLD","0" );
-    userDefSymbolEl->SetAttribute ( "UserLayer","0" );
-    userDefSymbolEl->SetAttribute ( "UserStyle","0" );
-    userDefSymbolEl->SetAttribute ( "RemoteWFS","0" );
-    userDefSymbolEl->SetAttribute ( "InlineFeature","0" );
-    userDefSymbolEl->SetAttribute ( "RemoteWCS","0" );
-
-    capabilityEl->LinkEndChild ( userDefSymbolEl );
 
     // Inspire (extended Capability)
     if ( servicesConf.isInspire() ) {
