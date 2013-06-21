@@ -45,13 +45,13 @@
  * \li modifier les pixels qui contiennent cette valeur
  * \li écrire le masque de données associé à l'image
  *
- * L'outil gère les image TIFF à canaux entiers non signés sur 8 bits ou flottant sur 32 bits.
+ * L'outil gère les images à canaux entiers non signés sur 8 bits ou flottant sur 32 bits.
  *
  * Les paramètres sont les suivants :
  *
  * \li l'image en entrée (obligatoire)
- * \li l'image en sortie. Si on ne la précise pas, les éventuelles modifications de l'image écraseront l'image source.
- * \li le masque de sortie (pas écrit si non précisé).
+ * \li l'image en sortie, au format TIFF. Si on ne la précise pas, les éventuelles modifications de l'image écraseront l'image source.
+ * \li le masque de sortie, au format TIFF. (pas écrit si non précisé).
  *
  * Dans le cas où seul le masque associé nous intéresse, on ne réecrira jamais de nouvelle image, même si un chemin de sortie différent de l'entrée était précisé.
  *
@@ -204,7 +204,7 @@ int main ( int argc, char* argv[] ) {
 
         if ( !strcmp ( argv[i],"-h" ) ) {
             usage();
-            exit ( 0 );
+            exit ( 0 ) ;
         }
 
         if ( !strcmp ( argv[i],"-touch-edges" ) ) {
@@ -235,11 +235,11 @@ int main ( int argc, char* argv[] ) {
         } else if ( !strcmp ( argv[i],"-format" ) ) {
             if ( i++ >= argc ) error ( "Error with option -format",-1 );
             if ( strncmp ( argv[i], "uint8", 5 ) == 0 ) {
-                bitspersample == 8;
-                sampleformat == SAMPLEFORMAT_UINT;
+                bitspersample = 8;
+                sampleformat = SampleFormat::UINT;
             } else if ( strncmp ( argv[i], "float32", 7 ) == 0 ) {
-                bitspersample == 32;
-                sampleformat == SAMPLEFORMAT_IEEEFP;
+                bitspersample = 32;
+                sampleformat = SampleFormat::FLOAT;
             } else error ( "Unknown value for option -format : " + string ( argv[i] ), -1 );
             continue;
 
@@ -344,15 +344,15 @@ int main ( int argc, char* argv[] ) {
 
     /******************* APPEL A LA CLASSE TIFFNODATAMANAGER *******************/
 
-    if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
+    if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         LOGGER_DEBUG ( "Target color treatment (uint8)" );
-        TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
+        TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
             error ( "Error : unable to treat nodata for this 8-bit integer image : " + string ( inputImage ), -1 );
         }
-    } else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
+    } else if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         LOGGER_DEBUG ( "Target color treatment (float)" );
-        TiffNodataManager<float> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
+        TiffNodataManager<uint8_t> TNM ( channels, targetValue, touchEdges, newData, newNodata, tolerance );
         if ( ! TNM.treatNodata ( inputImage, outputImage, outputMask ) ) {
             error ( "Error : unable to treat nodata for this 32-bit float image : " + string ( inputImage ), -1 );
         }

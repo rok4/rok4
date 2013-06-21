@@ -168,6 +168,22 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image TIFF, à partir d'un buffer d'entiers
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( uint8_t* buffer );
+
+    /**
+     * \~french
+     * \brief Ecrit une image TIFF, à partir d'un buffer de flottants
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( float* buffer );
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \details Suppression des buffer de lecture et de l'interface TIFF
      * \~english

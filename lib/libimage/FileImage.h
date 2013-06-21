@@ -93,15 +93,6 @@ protected:
     int bitspersample;
 
     /** \~french
-     * \brief Retourne une ligne, flottante ou entière
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
-     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    template<typename T>
-    int _getline ( T* buffer, int line );
-
-    /** \~french
      * \brief Crée un objet FileImage à partir de tous ses éléments constitutifs
      * \details Ce constructeur n'est appelé que par les constructeurs des classes filles
      * \param[in] width largeur de l'image en pixel
@@ -139,6 +130,17 @@ public:
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
 
+    /**
+     * \~french
+     * \brief Retourne une partie de l'image
+     * \details On définit la partie l'image en renseignant les coordonnées du pixel en haut à gauche, ainsi que les dimensions (en pixels) de la partie voulue.
+     * \param[in] offsetx coordonnée en X du pixel en haut à gauche de la partie de l'image voulue
+     * \param[in] offsety coordonnée en Y du pixel en haut à gauche de la partie de l'image voulue
+     * \param[in] w largeur en pixel de la partie de l'image voulue
+     * \param[in] l hauteur en pixel de la partie de l'image voulue
+     * \param[out] buffer buffer dans le quel stocké le résultat. Il doit être suffisemment grand.
+     * \return 0 en cas de succes, -1 sinon
+     */
     int getTile ( int offsetx, int offsety, int w, int l, uint8_t* buffer ) {
 
         int tileLineByteSize = w * getPixelByteSize();
@@ -175,6 +177,22 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     virtual int writeImage ( Image* pIn ) = 0;
+
+    /**
+     * \~french
+     * \brief Ecrit une image, à partir d'un buffer d'entiers
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeImage ( uint8_t* buffer ) = 0;
+
+    /**
+     * \~french
+     * \brief Ecrit une image, à partir d'un buffer de flottants
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeImage ( float* buffer ) = 0;
 
     /**
      * \~french

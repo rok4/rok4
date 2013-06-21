@@ -144,6 +144,24 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image PNG, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourn systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( uint8_t* buffer );
+
+    /**
+     * \~french
+     * \brief Ecrit une image PNG, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourn systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( float* buffer );
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \details Suppression du buffer de lecture #row_pointers
      * \~english
