@@ -313,6 +313,11 @@ public:
      * \param[in] newMask Masque de donnée
      */
     inline bool setMask ( Image* newMask ) {
+        if (mask != NULL) {
+            LOGGER_ERROR ( "Image owns already a mask" );
+            return false;
+        }
+        
         if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->channels != 1 ) {
             LOGGER_ERROR ( "Unvalid mask" );
             LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->channels );

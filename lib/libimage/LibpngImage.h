@@ -136,30 +136,66 @@ public:
     /**
      * \~french
      * \brief Ecrit une image PNG, à partir d'une image source
-     * \warning Pas d'implémentation de l'écriture au format PNG, retourn systématiquement une erreur
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourne systématiquement une erreur
      * \param[in] pIn source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
-    int writeImage ( Image* pIn );
+    int writeImage ( Image* pIn ) {
+        LOGGER_ERROR ( "Cannot write PNG image" );
+        return -1;
+    }
 
     /**
      * \~french
      * \brief Ecrit une image PNG, à partir d'un buffer d'entiers
-     * \warning Pas d'implémentation de l'écriture au format PNG, retourn systématiquement une erreur
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
-    int writeImage ( uint8_t* buffer );
+    int writeImage ( uint8_t* buffer ) {
+        LOGGER_ERROR ( "Cannot write PNG image" );
+        return -1;
+    }
 
     /**
      * \~french
      * \brief Ecrit une image PNG, à partir d'un buffer de flottants
-     * \warning Pas d'implémentation de l'écriture au format PNG, retourn systématiquement une erreur
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
-    int writeImage ( float* buffer );
+    int writeImage ( float* buffer)  {
+        LOGGER_ERROR ( "Cannot write PNG image" );
+        return -1;
+    }
 
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image PNG, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( uint8_t* buffer, int line ) {
+        LOGGER_ERROR ( "Cannot write PNG image" );
+        return -1;
+    }
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image PNG, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture au format PNG, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( float* buffer, int line) {
+        LOGGER_ERROR ( "Cannot write PNG image" );
+        return -1;
+    }
+
+    
     /**
      * \~french
      * \brief Destructeur par défaut

@@ -184,6 +184,24 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une ligne d'image TIFF, à partir d'un buffer d'entiers
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( uint8_t* buffer, int line );
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image TIFF, à partir d'un buffer de flottants
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( float* buffer, int line);
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \details Suppression des buffer de lecture et de l'interface TIFF
      * \~english

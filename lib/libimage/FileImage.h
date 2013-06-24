@@ -196,6 +196,24 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une ligne de l'image, à partir d'un buffer d'entiers
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeLine ( uint8_t* buffer, int line ) = 0;
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne de l'image, à partir d'un buffer de flottants
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeLine ( float* buffer, int line ) = 0;
+
+    /**
+     * \~french
      * \brief Retourne le chemin du fichier image
      * \return chemin image
      * \~english

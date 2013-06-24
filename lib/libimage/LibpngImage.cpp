@@ -248,21 +248,4 @@ int LibpngImage::getline ( float* buffer, int line ) {
     
 }
 
-/* ------------------------------------------------------------------------------------------------ */
-/* ------------------------------------------- ECRITURE ------------------------------------------- */
-
-int LibpngImage::writeImage ( Image* pIn ) {
-    LOGGER_ERROR ( "Cannot write PNG image" );
-    return -1;
-}
-
-int LibpngImage::writeImage ( uint8_t* buffer) {
-    LOGGER_ERROR ( "Cannot write PNG image" );
-    return -1;
-}
-
-int LibpngImage::writeImage ( float* buffer) {
-    LOGGER_ERROR ( "Cannot write PNG image" );
-    return -1;
-}
 
