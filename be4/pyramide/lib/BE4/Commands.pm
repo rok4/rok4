@@ -620,7 +620,7 @@ sub configureFunctions {
     my $pyr = $self->{pyramid};
     my $configuredFunc = $BASHFUNCTIONS;
 
-    # congigure mergeNtiff
+    # configure mergeNtiff
     # work compression : deflate
     my $conf_mNt = "-c zip ";
 
@@ -644,7 +644,7 @@ sub configureFunctions {
 
     $configuredFunc =~ s/__mNt__/$conf_mNt/;
     
-    # congigure merge4tiff
+    # configure merge4tiff
     # work compression : deflate
     my $conf_m4t = "-c zip ";
 
@@ -680,8 +680,7 @@ sub configureFunctions {
     # congigure tiffcp
     my $conf_tcp = "";
 
-    my $imgS = $self->{pyramid}->getCacheImageHeight;
-    $conf_tcp .= "-s -r $imgS -c zip";
+    $conf_tcp .= "-s -c zip";
 
     $configuredFunc =~ s/__tcp__/$conf_tcp/;
 
