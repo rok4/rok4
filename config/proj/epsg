@@ -5822,7 +5822,7 @@
 # Bern 1898 (Bern) / LV03C
 <21780> +proj=somerc +lat_0=46.95240555555556 +lon_0=0 +k_0=1 +x_0=0 +y_0=0 +ellps=bessel +towgs84=674.4,15.1,405.3,0,0,0,0 +pm=bern +units=m +no_defs +area_s=45.83 +area_w=5.97 +area_n=47.81 +area_e=10.49  <>
 # CH1903 / LV03
-<21781> +proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=600000 +y_0=200000 +ellps=bessel +towgs84=674.4,15.1,405.3,0,0,0,0 +units=m +no_defs +area_s=45.83 +area_w=5.97 +area_n=47.81 +area_e=10.49  <>
+<21781> +proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=600000 +y_0=200000 +ellps=bessel +towgs84=674.4,15.1,405.3,0,0,0,0 +units=m +no_defs +area_s=34.5 +area_w=-10.67 +area_n=71.05 +area_e=31.55  <>
 # CH1903 / LV03C-G
 <21782> +proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=0 +y_0=0 +ellps=bessel +towgs84=674.4,15.1,405.3,0,0,0,0 +units=m +no_defs +area_s=47.09 +area_w=9.48 +area_n=47.3 +area_e=9.64  <>
 # Bogota 1975 / UTM zone 17N (deprecated)
