@@ -840,9 +840,8 @@ sub configureFunctions {
     $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
     ######## tiffcp ########
-    my $imgS = $self->{pyramid}->getCacheImageHeight;
     
-    my $conf_tcp = "-s -r $imgS -c zip";
+    my $conf_tcp = "-s -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
 
     ######## convert ########

@@ -47,9 +47,9 @@ When we have several source images, we have to merge them. 3 ways are available:
 (see merge_replace.png)
     - multiply : samples are multiplied.
 (see merge_multiply.png)
-    - transparency : alpha blending method. If images dont' own an alpha sample, white is considered as transparent. White is too the background color if we don't want alpha sample in the final images.
+    - alphatop : alpha blending method. If images dont' own an alpha sample, white is considered as transparent. White is too the background color if we don't want alpha sample in the final images.
 (see merge_transparency.png)
-    - masks : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
+    - top : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
 (see merge_mask.png)
 
 Using:

@@ -915,9 +915,9 @@ For more informations about properties, see <BE4::Pyramid>.
 
     image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory. Have to be the same in the source pyramids.
 
-    bitspersample - Possible values : 8. Have to be the same as source. Mandatory.
+    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
 
-    sampleformat - Possible values : uint. Have to be the same as source. Mandatory.
+    sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory.
 
     samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory.
 
