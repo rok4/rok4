@@ -64,8 +64,6 @@ Source pyramids must have the same :
     - sample format (unsigned 8-bit integer)
     - number of bits per sample
 
-Limitations:
-    Just 8-bit unsigned integer sample images are treated.
 =cut
 
 ################################################################################
@@ -397,12 +395,6 @@ sub validate {
     ALWAYS(">>> Create the BE4::Pyramid object ...");
 
     my $pyramidSection = $this{propertiesLoader}->getPyramidSection();
-
-    # JoinCache constraints : just 8-bit unsigned integer sample are accepted
-    if ($pyramidSection->{sampleformat} ne "uint" || $pyramidSection->{bitspersample} ne "8") {
-        ERROR ("JoinCache just handled 8-bit unsigned integer sample");
-        return FALSE;
-    }
 
     my $objPyramid = BE4::Pyramid->new($pyramidSection);
 

@@ -517,7 +517,7 @@ sub transformImage {
             ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
             return FALSE;
         }
-    } else if ($format =~ m/JPG/) {
+    } elsif ($format =~ m/JPG/) {
         $code .= sprintf "Cache2work %s tmp_$outImgName %s jpg\n", $sourceImage->{img};
     } else {
         $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
@@ -693,7 +693,7 @@ sub configureFunctions {
 
     ######## tiffcp ########
 
-    my $conf_tcp = "-s -r $imgHeight -c zip";
+    my $conf_tcp = "-s -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
 
     ######## convert ########

@@ -184,7 +184,7 @@ void usage() {
 
                   "Examples\n" <<
                   "    - for gray orthophotography, with transparency (white is transparent)\n" <<
-                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
+                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -t 255,255,255 -b 0\n" <<
                   "    - for DTM, considering masks only\n" <<
                   "    overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999\n\n" );
 }
@@ -565,7 +565,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
+    Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -597,10 +597,12 @@ int main ( int argc, char **argv ) {
         error ( "Cannot write the merged image",-1 );
     }
 
-    LOGGER_DEBUG ( "Save mask" );
     // Enregistrement du masque fusionné, si demandé
-    if ( pMaskOut != NULL && pMaskOut->writeImage ( pMergeIn->Image::getMask() ) < 0 ) {
-        error ( "Cannot write the merged mask",-1 );
+    if ( pMaskOut != NULL) {
+        LOGGER_DEBUG ( "Save mask" );
+        if ( pMaskOut->writeImage ( pMergeIn->Image::getMask() ) < 0 ) {
+            error ( "Cannot write the merged mask",-1 );
+        }
     }
 
     delete acc;
