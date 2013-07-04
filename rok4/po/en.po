@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-06-11 12:38+0200\n"
+"POT-Creation-Date: 2013-06-24 11:28+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -18,43 +18,43 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Lokalize 1.4\n"
 
-#: CapabilitiesBuilder.cpp:296
+#: CapabilitiesBuilder.cpp:284
 msgid "Liste de layers vide"
 msgstr "Layer list empty"
 
-#: CapabilitiesBuilder.cpp:450
+#: CapabilitiesBuilder.cpp:438
 msgid "Nombre de styles : "
 msgstr "Number of styles:"
 
-#: CapabilitiesBuilder.cpp:464
+#: CapabilitiesBuilder.cpp:452
 msgid "LegendURL"
 msgstr "LegendURL"
 
-#: CapabilitiesBuilder.cpp:479
+#: CapabilitiesBuilder.cpp:467
 msgid "LegendURL OK"
 msgstr "LegendURL OK"
 
-#: CapabilitiesBuilder.cpp:482
+#: CapabilitiesBuilder.cpp:470
 msgid "Style fini : "
 msgstr "Style completed:"
 
-#: CapabilitiesBuilder.cpp:503
+#: CapabilitiesBuilder.cpp:491
 msgid "Layer Fini"
 msgstr "Layer completed:"
 
-#: CapabilitiesBuilder.cpp:507
+#: CapabilitiesBuilder.cpp:495
 msgid "Layers Fini"
 msgstr "Layers completed"
 
-#: CapabilitiesBuilder.cpp:534
+#: CapabilitiesBuilder.cpp:522
 msgid "WMSfini"
 msgstr "WMS Capabilities complete."
 
-#: CapabilitiesBuilder.cpp:793
+#: CapabilitiesBuilder.cpp:781
 msgid "Title : "
 msgstr "Title: "
 
-#: CapabilitiesBuilder.cpp:797
+#: CapabilitiesBuilder.cpp:785
 msgid "Abstract : "
 msgstr "Abstract: "
 

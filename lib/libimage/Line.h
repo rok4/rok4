@@ -68,6 +68,7 @@
  * \li par transparence : on applique une formule d'alpha-blending -> #alphaBlending
  * \li par masque : seul le masques sont considérés, la donnée du dessus écrase celle du dessous -> #useMask
  *
+ * \todo Travailler sur un nombre de canaux variable (pour l'instant, systématiquement 4, que ce soit en entier ou en flottant).
  * \todo Les modes de fusion DARKEN et LIGHTEN ne sont pas implémentés.
  ** \~french
  * \brief Represent an image line, with integer or float
@@ -310,23 +311,23 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
     switch ( srcSpp ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
                 memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
                 alpha[i] = 1.0;
             }
         }
         break;
     case 2:
         for ( int i = 0; i < width; i++ ) {
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
                 memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = ( float ) imageIn[2*i+1] / 255;
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             }
         }
         break;
@@ -343,11 +344,11 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
         break;
     case 4:
         for ( int i = 0; i < width; i++ ) {
+            memcpy ( samples+i*3,imageIn+i*4,3 );
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
                 memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
-                memcpy ( samples+i*3,imageIn+i*4,3 );
                 alpha[i] = ( float ) imageIn[i*4+3] / 255.;
             }
         }
@@ -442,23 +443,23 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
     switch ( srcSpp ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
-                alpha[i] = 0.0;
                 memset ( samples+3*i, 0, sizeof ( float ) *3 );
+                alpha[i] = 0.0;
             } else {
                 alpha[i] = 1.0;
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
             }
         }
         break;
     case 2:
         for ( int i = 0; i < width; i++ ) {
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
                 alpha[i] = 0.0;
                 memset ( samples+3*i, 0, sizeof ( float ) *3 );
             } else {
                 alpha[i] = imageIn[2*i+1];
-                samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             }
         }
         break;
@@ -480,7 +481,6 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
                 memset ( samples+3*i, 0, sizeof ( float ) *3 );
                 alpha[i] = 0.0;
             } else {
-                memcpy ( samples+i*3, imageIn+i*4, sizeof ( float ) *3 );
                 alpha[i] = imageIn[i*4+3];
             }
         }

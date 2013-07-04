@@ -179,9 +179,9 @@ Wms2work () {
 Cache2work () {
     local imgSrc=$1
     local workName=$2
-    local opt=$3
+    local type=$3
     
-    if [  "$opt" == "png"  ] ; then
+    if [  "$type" == "png"  ] ; then
         cp $imgSrc $workName.tif
         mkdir $workName
         untile $workName.tif $workName/
@@ -189,6 +189,9 @@ Cache2work () {
         montage __montageIn__ $workName/*.png __montageOut__ $workName.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -rf $workName/
+    elif [  "$type" == "jpg"  ] ; then
+        convert $imgSrc __conv__ $workName.tif
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi        
     else
         tiffcp __tcpI__ $imgSrc $workName.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -492,7 +495,7 @@ sub cache2work {
         $weight = CACHE2WORK_PNG_W;
         
     } else {
-        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName ,$workBaseName);
+        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s %s\n", $fileName, $workBaseName, $self->{pyramid}->getCompression);
         $weight = TIFFCP_W;
     }
     
@@ -715,42 +718,22 @@ sub merge4tiff {
 
         if (-f $imgPath) {
             # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
+                
+            my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
 
-            if ($self->{pyramid}->getCompression eq 'jpg') {
-                # On vérifie d'abord qu'on ne veut pas moissonner une zone trop grande
-                if ($tooWide || $tooHigh) {
-                    WARN(sprintf "The image would have been too high or too wide to harvest it (level %s)",
-                         $node->getLevel);
-                } else {
-                    # On peut et doit chercher l'image de fond sur le WMS
-                    $workBgI = $node->getWorkName("BgI");
-                    ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
-                    if (! defined $c) {
-                        ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkName);
-                        return ("",-1);
-                    }
-                    
-                    $code .= $c;
-                    $weight += $w;
-                }
+            if ( $self->{useMasks} && -f $maskPath ) {
+                # On a en plus un masque associé à l'image de fond
+                ($c,$w) = $self->cache2work($node,TRUE);
+                $code .= $c;
+                $weight += $w;
+                $workBgM = $node->getWorkName("BgM");
             } else {
-                
-                my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
-        
-                if ( $self->{useMasks} && -f $maskPath ) {
-                    # On a en plus un masque associé à l'image de fond
-                    ($c,$w) = $self->cache2work($node,TRUE);
-                    $code .= $c;
-                    $weight += $w;                    
-                    $workBgM = $node->getWorkName("BgM");
-                } else {
-                    ($c,$w) = $self->cache2work($node,FALSE);
-                    $code .= $c;
-                    $weight += $w;
-                }
-                
-                $workBgI = $node->getWorkName("BgI");
+                ($c,$w) = $self->cache2work($node,FALSE);
+                $code .= $c;
+                $weight += $w;
             }
+
+            $workBgI = $node->getWorkName("BgI");
         }
     }
     
@@ -859,10 +842,14 @@ sub configureFunctions {
     $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
     ######## tiffcp ########
-    my $imgS = $self->{pyramid}->getCacheImageHeight;
     
-    my $conf_tcp = "-s -r $imgS -c zip";
+    my $conf_tcp = "-s -c zip";
     $configuredFunc =~ s/__tcpI__/$conf_tcp/;
+
+    ######## convert ########
+
+    my $conf_convert = "-compress zip";
+    $configuredFunc =~ s/__conv__/$conf_convert/;
     
     ######## tiff2tile ########
     my $conf_t2t = "";

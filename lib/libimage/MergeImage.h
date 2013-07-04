@@ -120,8 +120,6 @@ std::string toString ( eMergeType mergeMethod );
  * \li ALPHATOP
  * \li TOP
  * \li NORMAL
- *
- * \todo Travailler sur un nombre de canaux variable (pour l'instant, systématiquement 4).
  */
 class MergeImage : public Image {
 
