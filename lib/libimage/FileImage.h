@@ -155,8 +155,6 @@ public:
 
         } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
 
-            LOGGER_INFO("");
-
             float line[width * channels];
 
             for ( int y = 0; y < l; y++ ) {

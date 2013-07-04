@@ -188,13 +188,14 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
     width = int ( ( bbox.xmax-bbox.xmin ) / getResX() + 0.5 );
     height = int ( ( bbox.ymax-bbox.ymin ) / getResY() + 0.5 );
 
-    // Mise à jour du masque associé à l'image composée
-    delete mask;
-    ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
+    if ( mask ) {
+        // Mise à jour du masque associé à l'image composée
+        ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
-    if ( ! setMask ( newMask ) ) {
-        LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
-        return false;
+        if ( ! setMask ( newMask ) ) {
+            LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
+            return false;
+        }
     }
 
     return true;
@@ -257,7 +258,6 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
 
     // Mise à jour du masque associé à l'image composée
     if ( mask ) {
-        delete mask;
         ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
         if ( ! setMask ( newMask ) ) {

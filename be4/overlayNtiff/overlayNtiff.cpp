@@ -152,7 +152,7 @@ int* background;
  *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
- *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255,255 -b 0
+ *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255 -b 0
  *     - for DTM, considering masks only
  *     overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999
  * \endcode
@@ -187,7 +187,7 @@ void usage() {
 
                   "Examples\n" <<
                   "    - for gray orthophotography, with transparency (white is transparent)\n" <<
-                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255,255 -b 0\n" <<
+                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255 -b 0\n" <<
                   "    - for DTM, considering masks only\n" <<
                   "    overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999\n\n" );
 }

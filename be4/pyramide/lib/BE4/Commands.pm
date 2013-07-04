@@ -350,7 +350,7 @@ Commands constructor. Bless an instance.
 
 Parameters (list):
     pyr - <Pyramid> - Image pyramid to generate
-    useMasks - boolean - Do we want use masks to generate images ?
+    useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
     my $this = shift;
@@ -642,7 +642,9 @@ sub mergeNtiff {
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
         my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
         my $maskPath = undef;
+        INFO("là");
         if ($self->{useMasks}) {
+            INFO("node avec masque");
             $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
         }
         printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);

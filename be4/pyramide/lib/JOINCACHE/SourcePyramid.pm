@@ -176,10 +176,18 @@ sub loadAndCheck {
         ERROR(sprintf "Can not find parameter 'format' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
     }
-    # Format have to be 8-bits unsigned integer
-    if ($tagformat !~ m/_INT8/) {
-        ERROR("Source pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
-        return FALSE;
+    # Format have to be the same as the final pyramid
+    if ($tagformat =~ m/_INT8/) {
+        if (! ($pyramid->getBitsPerSample() == 8 && $pyramid->getSampleFormat eq "uint") ) {
+            ERROR("Source pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
+            return FALSE;
+        }
+    }
+    if ($tagformat =~ m/_FLOAT32/) {
+        if (! ($pyramid->getBitsPerSample() == 32 && $pyramid->getSampleFormat eq "float") ) {
+            ERROR("Source pyramids have to be in 32-bits float (format = TIFF_XXX_FLOAT32");
+            return FALSE;
+        }
     }
     $self->{formatCode} = $tagformat;
 

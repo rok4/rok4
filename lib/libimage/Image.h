@@ -314,8 +314,8 @@ public:
      */
     inline bool setMask ( Image* newMask ) {
         if (mask != NULL) {
-            LOGGER_ERROR ( "Image owns already a mask" );
-            return false;
+            // On a déjà un masque associé : on le supprime pour le remplacer par le nouveau
+            delete mask;
         }
         
         if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->channels != 1 ) {

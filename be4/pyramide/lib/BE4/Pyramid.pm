@@ -396,7 +396,7 @@ sub _init {
     $self->{dir_mask} = $params->{dir_mask};
 
     ### We want masks in the final pyramid ?
-    if ( exists $params->{export_mask} && defined $params->{export_mask} && uc($params->{export_mask}) eq "TRUE" ) {
+    if ( exists $params->{export_masks} && defined $params->{export_masks} && uc($params->{export_masks}) eq "TRUE" ) {
         $self->{own_masks} = TRUE;
     }
     
@@ -1274,7 +1274,7 @@ sub writeListPyramid {
             my ($level,$x,$y);
 
             if (! $self->ownMasks() && $directories[1] eq $self->{dir_mask}) {
-                # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceus de l'ancienne pyramide
+                # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
                 next;
             }            
             

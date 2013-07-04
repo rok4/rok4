@@ -38,8 +38,8 @@
 /**
  * \file merge4tiff.cpp
  * \author Institut national de l'information géographique et forestière
- * \~french \brief Sous echantillonage de 4 images TIFF disposées en carré, avec utilisation possible de fond et de masques de données
- * \~english \brief Four TIFF images subsampling, formed a square, might use a background and data masks
+ * \~french \brief Sous echantillonage de 4 images disposées en carré, avec utilisation possible de fond et de masques de données
+ * \~english \brief Four images subsampling, formed a square, might use a background and data masks
  * \~ \image html merge4tiff.png
  * \~french \details les images doivent avoir la disposition suivante , mais les 4 ne sont pas forcément présentes :
  * \code
@@ -48,17 +48,18 @@
  *    image3 | image4
  * \endcode
  * Les caractéristiques suivantes doivent être les mêmes pour les 4 images, le fond et seront celles de l'image de sortie :
- * \li image TIFF
  * \li largeur et hauteur en pixel
  * \li nombre de canaux
  * \li format des canaux
  * \li photomètrie
  *
- * Les masques doivent avoir la même taille mais sont à un canal entier non signé sur 8 bits
+ * Si les images en entrée peuvent être de différents formats (selon les implémentations de la classe FileImage), l'image de sortie est au format TIFF.
+ *
+ * Les masques doivent avoir la même taille que les images mais sont à un canal entier non signé sur 8 bits.
  * Exemple d'appel à la commande :
  * \~french \li sans masque, avec une image de fond \~english \li without mask, with background image
  * \~ \code
- * merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
+ * merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.png -i1 image1.png -i3 image3.png imageOut.tif
  * \endcode
  * \~french \li avec masque, sans image de fond \~english \li with mask, without background image
  * \~ \code
