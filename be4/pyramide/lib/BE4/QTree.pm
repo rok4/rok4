@@ -27,7 +27,7 @@
 # encouraged to load and test the software's suitability as regards their
 # requirements in conditions enabling the security of their systems and/or 
 # data to be ensured and,  more generally, to use and operate it in the 
-# same conditions as regards security. 
+# same conditions as regards security.
 # 
 # The fact that you are presently reading this means that you have had
 # 
@@ -1052,7 +1052,7 @@ Example:
 sub exportLevelsForScript {
     my $self = shift ;
 
-    my $code = sprintf ("# QTree levels\n");
+    my $code = sprintf ("\n# QTree levels\n");
     $code   .= sprintf ("TOP_LEVEL=\"%s\"\n", $self->{topID});
     $code   .= sprintf ("CUT_LEVEL=\"%s\"\n", $self->{cutLevelID});
     $code   .= sprintf ("BOTTOM_LEVEL=\"%s\"\n", $self->{bottomID});

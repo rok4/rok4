@@ -337,7 +337,7 @@ sub computeGlobalInfo {
         return FALSE ;
     }
 
-    my $GMLextent;
+    my $WKTextent;
 
     $self->{extent} =~ s/ //;
     my @limits = split (/,/,$self->{extent},-1);
@@ -360,12 +360,19 @@ sub computeGlobalInfo {
             return FALSE ;
         }
 
-        $GMLextent = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
+        $WKTextent = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
             $xmin,$ymin,
             $xmin,$ymax,
             $xmax,$ymax,
             $xmax,$ymin,
             $xmin,$ymin;
+
+#         $GMLextent = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
+#             $xmin,$ymin,
+#             $xmin,$ymax,
+#             $xmax,$ymax,
+#             $xmax,$ymin,
+#             $xmin,$ymin;
     }
     elsif (scalar @limits == 1) {
         # user supplied a file which contains bounding polygon
@@ -379,33 +386,33 @@ sub computeGlobalInfo {
             return FALSE;
         }
 
-        $GMLextent = '';
+        $WKTextent = '';
         while( defined( my $line = <SHAPE> ) ) {
-            $GMLextent .= $line;
+            $WKTextent .= $line;
         }
         close(SHAPE);
     } else {
-        ERROR(sprintf "The value for 'extent' is not valid (must be a BBOX or a file with a GML shape) : %s.",
+        ERROR(sprintf "The value for 'extent' is not valid (must be a BBOX or a file with a WKT shape) : %s.",
             $self->{extent});
         return FALSE;
     }
 
-    if (! defined $GMLextent) {
-        ERROR(sprintf "Cannot define the string from the parameter 'extent' (GML) => %s.",$self->{extent});
+    if (! defined $WKTextent) {
+        ERROR(sprintf "Cannot define the string from the parameter 'extent' (WKT) => %s.",$self->{extent});
         return FALSE;
     }
 
     # We use extent to define a GML string, Now, we store in this attribute the equivalent OGR Geometry
     $self->{extent} = undef;
 
-    eval { $self->{extent} = Geo::OGR::Geometry->create(GML=>$GMLextent); };
+    eval { $self->{extent} = Geo::OGR::Geometry->create(WKT=>$WKTextent); };
     if ($@) {
-        ERROR(sprintf "GML geometry (%s) is not valid : %s",$GMLextent,$@);
+        ERROR(sprintf "WKT geometry (%s) is not valid : %s",$WKTextent,$@);
         return FALSE;
     }
 
     if (! defined $self->{extent}) {
-        ERROR(sprintf "Cannot create a Geometry from the string : %s.",$GMLextent);
+        ERROR(sprintf "Cannot create a Geometry from the string : %s.",$WKTextent);
         return FALSE;
     }
 

@@ -69,7 +69,8 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     memcpy ( extension, pch + 1, 3 );
 
     // TIFF
-    if ( strncmp ( extension, "tif", 3 ) == 0 ) {
+    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ||
+         strncmp ( extension, "tiff", 3 ) == 0 || strncmp ( extension, "TIFF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to read : " << name );
 
         LibtiffImageFactory LTIF;
@@ -77,7 +78,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     }
 
     // PNG
-    else if ( strncmp ( extension, "png", 3 ) == 0 ) {
+    else if ( strncmp ( extension, "png", 3 ) == 0 || strncmp ( extension, "PNG", 3 ) == 0 ) {
         LOGGER_DEBUG ( "PNG image to read : " << name );
 
         LibpngImageFactory LPIF;
@@ -85,7 +86,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     }
 
     // JPEG 2000
-    else if ( strncmp ( extension, "jp2", 3 ) == 0 ) {
+    else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
         LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
         return NULL;
     }

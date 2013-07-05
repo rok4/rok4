@@ -143,7 +143,7 @@ Wms2work () {
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
             if [ "$fmt" == "png" ] ; then
-                if pngcheck -q $nameImg 1>/dev/null ; then break ; fi
+                if pngcheck $nameImg 1>/dev/null ; then break ; fi
             else
                 if tiffck $nameImg 1>/dev/null ; then break ; fi
             fi
@@ -166,11 +166,11 @@ Wms2work () {
         return
     fi
 
-    if [ "$fmt" == "png" ]||[ "$nbTiles" != "1x1" ] ; then
-        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.tif
+    if [ "$nbTiles" != "1x1" ] ; then
+        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.$fmt
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        mv $dir/img01.tif $dir.tif
+        mv $dir/img01.$fmt $dir.$fmt
     fi
 
     rm -rf $dir
@@ -435,7 +435,7 @@ sub wms2work {
     
     my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox;
     
-    my $cmd = $harvesting->getCommandWms2work({
+    my ($cmd, $format) = $harvesting->getCommandWms2work({
         inversion => $tms->getInversion,
         dir => "\${TMP_DIR}/".$nodeName,
         srs => $tms->getSRS,
@@ -443,6 +443,8 @@ sub wms2work {
         width => $imgSize[0],
         height => $imgSize[1]
     });
+
+    $node->setWorkExtension($format);
     
     return ($cmd,WGET_W);
 }

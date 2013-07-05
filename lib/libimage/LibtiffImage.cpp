@@ -523,7 +523,7 @@ int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
+        if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
@@ -531,7 +531,7 @@ int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
         buf_f = new float[height * width * channels];
         convert ( buf_f, buffer, height*width*channels );
         
-        if ( TIFFWriteScanline ( tif, buf_f + line * width * channels, line, 0 ) < 0 ) {
+        if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
@@ -552,12 +552,12 @@ int LibtiffImage::writeLine ( float* buffer, int line) {
         buf_u = new uint8_t[height * width * channels];
         convert ( buf_u, buffer, height*width*channels );
         
-        if ( TIFFWriteScanline ( tif, buf_u + line * width * channels, line, 0 ) < 0 ) {
+        if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
+        if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }

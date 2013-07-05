@@ -358,7 +358,8 @@ int parseCommandLine ( int argc, char* argv[] ) {
 
 /**
  * \~french
- * \brief Contrôle les caractéristiques d'une image (format des canaux, tailles) et de son éventuel masque. Si les composantes sont bonnes, le masque est attaché à l'image.
+ * \brief Contrôle les caractéristiques d'une image (format des canaux, tailles) et de son éventuel masque.
+ * \details Si les composantes sont bonnes, le masque est attaché à l'image.
  * \param[in] image image à contrôler
  * \param[in] mask précise éventuellement un masque de donnée
  * \return code de retour, 0 si réussi, -1 sinon
@@ -402,11 +403,12 @@ int checkComponents ( FileImage* image, FileImage* mask) {
             LOGGER_ERROR ( "Error : all input masks must have the same parameters (width, height, etc...) : " << mask->getFilename());
             return -1;
         }
-    }
 
-    if ( ! image->setMask(mask) ) {
-        LOGGER_ERROR ( "Cannot add associated mask to the input FileImage " << image->getFilename() );
-        return -1;
+        if ( ! image->setMask(mask) ) {
+            LOGGER_ERROR ( "Cannot add associated mask to the input FileImage " << image->getFilename() );
+            return -1;
+        }
+        
     }
 
     return 0;
@@ -426,8 +428,10 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
     FileImageFactory FIF;
 
     for ( int i = 0; i < 4; i++ ) {
+        LOGGER_DEBUG ( "Place " << i );
         // Initialisation
         if ( inputImages[i] == 0 ) {
+            LOGGER_DEBUG ( "No image" );
             INPUTI[i/2][i%2] = NULL;
             continue;
         }
@@ -450,6 +454,7 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
         }
 
         // Controle des composantes des images/masques et association
+        LOGGER_DEBUG ( "Check" );
         if ( checkComponents ( inputi, inputm ) < 0 ) {
             LOGGER_ERROR ( "Unvalid components for the image " << std::string ( inputImages[i] ) << " (or its mask)" );
             return -1;
@@ -619,8 +624,12 @@ int merge ( FileImage* BGI, FileImage* INPUTI[2][2], FileImage* OUTPUTI, FileIma
             // -- initialisation de la sortie avec le fond --
             memcpy ( line_outI,line_bgI,nbsamples*sizeof ( T ) );
             memcpy ( line_outM,line_bgM,width );
+            
+            memset ( line_1M,255,2*width );
+            memset ( line_2M,255,2*width );
 
             // ----------------- les images -----------------
+            // ------ et les éventuels masques --------------
             if ( INPUTI[y][0] ) {
                 if ( INPUTI[y][0]->getline( line_1I, 2*h ) == 0 ) {
                     LOGGER_ERROR ( "Unable to read data line" );
@@ -629,6 +638,17 @@ int merge ( FileImage* BGI, FileImage* INPUTI[2][2], FileImage* OUTPUTI, FileIma
                 if ( INPUTI[y][0]->getline( line_2I, 2*h+1 ) == 0 ) {
                     LOGGER_ERROR ( "Unable to read data line" );
                     return -1;
+                }
+
+                if ( INPUTI[y][0]->getMask() ) {
+                    if ( INPUTI[y][0]->getMask()->getline( line_1M, 2*h ) == 0 ) {
+                        LOGGER_ERROR ( "Unable to read data line" );
+                        return -1;
+                    }
+                    if ( INPUTI[y][0]->getMask()->getline( line_2M, 2*h+1 ) == 0 ) {
+                        LOGGER_ERROR ( "Unable to read data line" );
+                        return -1;
+                    }
                 }
             }
 
@@ -642,31 +662,16 @@ int merge ( FileImage* BGI, FileImage* INPUTI[2][2], FileImage* OUTPUTI, FileIma
                     LOGGER_ERROR ( "Unable to read data line" );
                     return -1;
                 }
-            }
 
-            // ----------------- les masques ----------------
-            memset ( line_1M,255,2*width );
-            memset ( line_2M,255,2*width );
-
-            if ( INPUTI[y][0]->getMask() ) {
-                if ( INPUTI[y][0]->getMask()->getline( line_1M, 2*h ) == 0 ) {
-                    LOGGER_ERROR ( "Unable to read data line" );
-                    return -1;
-                }
-                if ( INPUTI[y][0]->getMask()->getline( line_2M, 2*h+1 ) == 0 ) {
-                    LOGGER_ERROR ( "Unable to read data line" );
-                    return -1;
-                }
-            }
-
-            if ( INPUTI[y][1]->getMask() ) {
-                if ( INPUTI[y][1]->getMask()->getline( line_1M + width, 2*h ) == 0 ) {
-                    LOGGER_ERROR ( "Unable to read data line" );
-                    return -1;
-                }
-                if ( INPUTI[y][1]->getMask()->getline( line_2M + width, 2*h+1 ) == 0 ) {
-                    LOGGER_ERROR ( "Unable to read data line" );
-                    return -1;
+                if ( INPUTI[y][1]->getMask() ) {
+                    if ( INPUTI[y][1]->getMask()->getline( line_1M + width, 2*h ) == 0 ) {
+                        LOGGER_ERROR ( "Unable to read data line" );
+                        return -1;
+                    }
+                    if ( INPUTI[y][1]->getMask()->getline( line_2M + width, 2*h+1 ) == 0 ) {
+                        LOGGER_ERROR ( "Unable to read data line" );
+                        return -1;
+                    }
                 }
             }
 
@@ -746,7 +751,7 @@ int main ( int argc, char* argv[] ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator(DEBUG, acc);
+    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -802,20 +807,20 @@ int main ( int argc, char* argv[] ) {
         LOGGER_DEBUG ( "Merge images (uint8_t)" );
         uint8_t nodata[samplesperpixel];
         for ( int i = 0; i < samplesperpixel; i++ ) nodata[i] = ( uint8_t ) nodataInt[i];
-
         if ( merge ( BGI, INPUTI, OUTPUTI, OUTPUTM, nodata ) < 0 ) error ( "Unable to merge integer images",-1 );
     }
 
 
     LOGGER_DEBUG ( "Clean" );
+    
     if ( BGI ) delete BGI;
 
-    for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ )
+    for ( int i = 0; i < 2; i++ ) for ( int j = 0; j < 2; j++ ) {
         if ( INPUTI[i][j] ) delete INPUTI[i][j] ;
+    }
 
     delete OUTPUTI;
-    if ( OUTPUTM ) delete OUTPUTM;
-    
+
     delete acc;
 }
 
