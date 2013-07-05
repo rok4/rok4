@@ -584,7 +584,7 @@ int fillLine ( uint8_t* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line,
     if ( MASK ) {
         if ( TIFFReadScanline ( MASK, mask,line ) == -1 ) return 1;
         for ( int w = 0; w < width; w++ ) {
-            if ( mask[w] < 127 ) {
+            if ( mask[w] == 0 ) {
                 memcpy ( image + w*samplesperpixel,nodataUInt8,samplesperpixel );
             }
         }
@@ -613,7 +613,7 @@ int fillLine ( float* image, TIFF* IMAGE, uint8_t* mask, TIFF* MASK, int line, i
     if ( MASK ) {
         if ( TIFFReadScanline ( MASK, mask,line ) == -1 ) return 1;
         for ( int w = 0; w < width; w++ ) {
-            if ( mask[w] < 127 ) {
+            if ( mask[w] == 0 ) {
                 memcpy ( image + w*samplesperpixel,nodataFloat32,samplesperpixel*sizeof ( float ) );
             }
         }
@@ -762,22 +762,22 @@ int merge ( TIFF* BGI, TIFF* BGM, TIFF* INPUTI[2][2], TIFF* INPUTM[2][2], TIFF* 
                 memset ( pix,0,samplesperpixel*sizeof ( float ) );
                 nbData = 0;
 
-                if ( line_1M[pixIn] >= 127 ) {
+                if ( line_1M[pixIn] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_1I[sampleIn+c];
                 }
 
-                if ( line_1M[pixIn+1] >= 127 ) {
+                if ( line_1M[pixIn+1] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_1I[sampleIn+samplesperpixel+c];
                 }
 
-                if ( line_2M[pixIn] >= 127 ) {
+                if ( line_2M[pixIn] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_2I[sampleIn+c];
                 }
 
-                if ( line_2M[pixIn+1] >= 127 ) {
+                if ( line_2M[pixIn+1] ) {
                     nbData++;
                     for ( int c = 0; c < samplesperpixel; c++ ) pix[c] += line_2I[sampleIn+samplesperpixel+c];
                 }
