@@ -252,7 +252,7 @@ sub _init {
             ERROR(sprintf "Parameter 'wms_transparent' have to be 'TRUE' or 'FALSE' (%s).",$params->{wms_transparent});
             return FALSE ;
         }
-        $self->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_bgcolor});
+        $self->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_transparent});
     }
     
     if (! exists($params->{min_size}) || ! defined ($params->{min_size})) {
