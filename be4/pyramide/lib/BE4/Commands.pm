@@ -227,14 +227,18 @@ Work2cache () {
         
         if [ $workMskName ] ; then
 
-            dir=`dirname ${PYR_DIR}/$mskName`
-            
-            if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
-            if [ ! -d $dir ] ; then mkdir -p $dir ; fi
-            
-            tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
-            if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-            echo "0/$mskName" >> ${LIST_FILE}
+            if [ $mskName ] ; then
+
+                dir=`dirname ${PYR_DIR}/$mskName`
+
+                if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
+                if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+                tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${LIST_FILE}
+
+            fi
             
             if [ "$level" == "$TOP_LEVEL" ] ; then
                 rm $workDir/$workMskName
@@ -547,12 +551,16 @@ sub work2cache {
     $weight += TIFF2TILE_W;
     
     #### Export du masque, si voulu
+
+    if ($self->{useMasks}) {
+        $workName  = $node->getWorkName("M");
+        $cmd .= sprintf (" %s", $workName);
+    }
     
     if ( $self->{pyramid}->ownMasks() ) {
-        $workName  = $node->getWorkName("M");
         $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",FALSE),$node->getPyramidName);
         
-        $cmd .= sprintf (" %s %s", $workName, $pyrName);
+        $cmd .= sprintf (" %s", $pyrName);
         $weight += TIFF2TILE_W;
     }
     
