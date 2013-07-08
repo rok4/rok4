@@ -942,15 +942,16 @@ void Rok4Server::buildWMTSCapabilities() {
 }
 
 
-// get the number of decimal places
 int Rok4Server::GetDecimalPlaces ( double dbVal ) {
+    dbVal = fmod(dbVal, 1);
     static const int MAX_DP = 10;
-    static const double THRES = pow ( 0.1, MAX_DP );
+    double THRES = pow ( 0.1, MAX_DP );
     if ( dbVal == 0.0 )
         return 0;
     int nDecimal = 0;
-    while ( dbVal - floor ( dbVal ) > THRES && nDecimal < MAX_DP ) {
+    while ( dbVal - floor ( dbVal ) > THRES && nDecimal < MAX_DP && ceil(dbVal)-dbVal > THRES) {
         dbVal *= 10.0;
+        THRES *= 10.0;
         nDecimal++;
     }
     return nDecimal;
