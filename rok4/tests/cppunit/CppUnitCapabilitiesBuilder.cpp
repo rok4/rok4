@@ -47,11 +47,8 @@
 #include "CapabilitiesBuilder.cpp"
 #undef private // stops this crazy hack
 
-#include "Layer.cpp"
 #include "Layer.h"
-#include "Style.cpp"
 #include "Style.h"
-
 
 
 class CppUnitCapabilitiesBuilder : public CPPUNIT_NS::TestFixture {
@@ -234,8 +231,8 @@ void CppUnitCapabilitiesBuilder::setUp() {
     nbThread = 2; // 1st arg
     socket = "127.0.0.1:9000"; // 6th arg
     backlog = 0; // 7th arg
-    supportWMS = true; // 8th arg
-    supportWMTS = false; // If true -> seg fault for the test 9th arg
+    supportWMS = true; // 9th arg
+    supportWMTS = false; // If true -> seg fault for the test 8th arg
     myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS);
 
 }

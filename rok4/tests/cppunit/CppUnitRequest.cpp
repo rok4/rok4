@@ -187,7 +187,6 @@ void CppUnitRequest::testurl_decode() {
     marequete->url_decode(myword);
     CPPUNIT_ASSERT_MESSAGE ( "use url_decode :\n", mystring.compare(myword) == 0 ) ;
     delete myword;
-    delete marequete;
 }
 
 void CppUnitRequest::testtoLowerCase() {
