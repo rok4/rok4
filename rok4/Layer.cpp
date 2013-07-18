@@ -51,9 +51,9 @@ DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDa
     return dataPyramid->getTile ( x, y, tmId, errorDataSource );
 }
 
-Image* Layer::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
+Image* Layer::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error, std::vector<std::string> listofequalsCRS ) {
     error=0;
-    return dataPyramid->getbbox ( servicesConf, bbox, width, height, dst_crs, resampling, error );
+    return dataPyramid->getbbox (servicesConf, bbox, width, height, dst_crs, resampling, error, listofequalsCRS );
 }
 
 std::string Layer::getId() {

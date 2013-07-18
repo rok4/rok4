@@ -152,10 +152,11 @@ TileMatrixSet Pyramid::getTms() {
 }
 
 
-Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error, std::vector<std::string> listofequalsCRS ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
-    if ( tms.getCrs() == dst_crs ) {
+    LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+    if ( are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), listofequalsCRS ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
@@ -176,7 +177,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     }
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
-    if ( tms.getCrs() == dst_crs ) {
+    if ( are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), listofequalsCRS ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
         if ( dst_crs.validateBBox ( bbox ) ) {
@@ -228,5 +229,24 @@ Pyramid::~Pyramid() {
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
+}
+
+
+bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS ) {
+    transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
+    transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+    for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
+        std::string line = listofequalsCRS.at(line_number);
+        // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
+        std::size_t found1 = line.find(crs1);
+        if ( found1 != std::string::npos  )  {
+            std::size_t found2 = line.find(crs2);
+            if ( found2 != std::string::npos  )  {
+                LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
+                return true;
+            }
+        }
+    }
+    return false;
 }
 

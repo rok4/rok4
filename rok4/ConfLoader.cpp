@@ -48,6 +48,7 @@
 #include <dirent.h>
 #include <cstdio>
 #include "ConfLoader.h"
+#include "Rok4Server.h"
 #include "Pyramid.h"
 #include "tinyxml.h"
 #include "tinystr.h"
@@ -1868,4 +1869,20 @@ ServicesConf * ConfLoader::buildServicesConf ( std::string servicesConfigFile ) 
         return NULL;
     }
     return parseServicesConf ( &doc,servicesConfigFile );
+}
+
+// Build the list (vector of string) of equals CRS from a file given in parameter
+void Rok4Server::buildlistofequalsCRS (char* fileCRS) {
+    LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << fileCRS );
+    std::vector<std::string> buildinglistofequalsCRS;
+    std::ifstream input ( fileCRS );
+    // We test if the stream is empty
+    //   This can happen when the file can't be loaded or when the file is empty
+    if ( input.peek() == std::ifstream::traits_type::eof() ) {
+        LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << fileCRS << _ (" ou fichier vide")  );
+    }
+    for( std::string line; getline(input, line); ) {
+        buildinglistofequalsCRS.push_back( line );
+    }
+    listofequalsCRS = buildinglistofequalsCRS;
 }

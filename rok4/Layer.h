@@ -365,6 +365,7 @@ public:
      * \param [in] height hauteur de l'image demandé
      * \param [in] dst_crs système de coordonnées du rectangle englobant
      * \param [in,out] error code de retour d'erreur
+     * \param [in] listofequalsCRS
      * \return une image ou un poiteur nul
      * \~english
      * The resulting image is cropped on the coordinates system definition area.
@@ -375,9 +376,10 @@ public:
      * \param [in] height requested image height
      * \param [in] dst_crs bounding box coordinate system
      * \param [in,out] error error code
+     * \param [in] listofequalsCRS
      * \return an image or a null pointer
      */
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error, std::vector<std::string> listofequalsCRS );
     /**
     * \~french
     * \brief Retourne le résumé

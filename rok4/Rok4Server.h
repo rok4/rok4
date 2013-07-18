@@ -142,7 +142,11 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
-
+    /**
+     * \~french \brief Liste des CRS equivalents
+     * \~english \brief List of equals CRS
+     */
+    std::vector<std::string> listofequalsCRS;
     /**
      * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
      * \~english \brief Error response in case data tiel is not found (http 404)
@@ -186,6 +190,13 @@ private:
      * \brief Build the invariant fragments of the WMTS GetCapabilities
      */
     void buildWMTSCapabilities();
+    /**
+     * \~french
+     * \brief Construit la liste des CRS equivalents
+     * \~english
+     * \brief Build list of equals CRS
+     */
+    void buildlistofequalsCRS( char* fileCRS );
 
     /**
      * \~french
@@ -295,6 +306,13 @@ public:
      */
     std::vector<std::string>& getWmtsCapaFrag() {
         return wmtsCapaFrag;
+    }
+    /**
+     * \~french Retourne la liste des CRS equivalents
+     * \~english Return the list of equals CRS
+     */
+    std::vector<std::string>& getListOfEqualsCRS() {
+        return listofequalsCRS;
     }
 
     /**
