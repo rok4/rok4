@@ -159,8 +159,6 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
-    char * fileCRS = "../config/proj/listofequalscrs.txt";
-    buildlistofequalsCRS( fileCRS );
 }
 
 Rok4Server::~Rok4Server() {
@@ -286,7 +284,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     int error;
     Image* image;
     for ( int i = 0 ; i < layers.size(); i ++ ) {
-        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error, getListOfEqualsCRS() );
+        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
 
         LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 

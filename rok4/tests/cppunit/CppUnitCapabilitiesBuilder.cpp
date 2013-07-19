@@ -113,6 +113,8 @@ protected:
     std::string metadataMediaTypeWMS;
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
+    bool doweuselistofequalsCRS;
+    std::vector<std::string> listofequalsCRS;
     ServicesConf* services_conf;
 
 
@@ -188,7 +190,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
     // Load Layerlist - Rok4Server 3rd argument
     id0 = "zero";
     titles0.push_back("title0");

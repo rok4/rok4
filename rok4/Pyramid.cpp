@@ -152,11 +152,11 @@ TileMatrixSet Pyramid::getTms() {
 }
 
 
-Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error, std::vector<std::string> listofequalsCRS ) {
+Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
     LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
-    if ( are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), listofequalsCRS ) ) {
+    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
@@ -177,7 +177,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     }
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
-    if ( are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), listofequalsCRS ) ) {
+    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
         if ( dst_crs.validateBBox ( bbox ) ) {

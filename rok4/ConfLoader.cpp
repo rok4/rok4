@@ -1442,7 +1442,9 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string metadataMediaTypeWMS;
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
-
+    // CRS
+    bool doweuselistofequalsCRS = false;
+    std::vector<std::string> listofequalsCRS;
 
 
     pElem=hRoot.FirstChild ( "name" ).Element();
@@ -1691,6 +1693,38 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         }
     }
 
+    pElem=hRoot.FirstChild ( "doweuselistofequalsCRS" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
+        if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( _ ( "Utilisation du fichier qui liste les CRS equivalents d apres services.conf" ) );
+            doweuselistofequalsCRS = true;
+        }
+    }
+
+    // Build the list (vector of string) of equals CRS from a file given in parameter
+    char * fileCRS = "/listofequalscrs.txt";
+    char * dirCRS = getenv ( "PROJ_LIB" );
+    char namebuffer[100];
+    strcpy(namebuffer, dirCRS);
+    strcat(namebuffer, fileCRS);
+    if ( doweuselistofequalsCRS == true ) {
+        LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
+        std::vector<std::string> buildinglistofequalsCRS;
+        std::ifstream input ( namebuffer );
+        // We test if the stream is empty
+        //   This can happen when the file can't be loaded or when the file is empty
+        if ( input.peek() == std::ifstream::traits_type::eof() ) {
+            LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << namebuffer << _ (" ou fichier vide")  );
+        }
+        for( std::string line; getline(input, line); ) {
+            buildinglistofequalsCRS.push_back( line );
+        }
+        listofequalsCRS = buildinglistofequalsCRS;
+    } else {
+        LOGGER_INFO ( _ ( "Pas de construction demandee de la liste des CRS equivalents depuis " ) << namebuffer );
+        listofequalsCRS.push_back( "empty" );
+    }
 
     MetadataURL mtdMWS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
@@ -1699,7 +1733,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
     return servicesConf;
 }
 
@@ -1871,18 +1905,3 @@ ServicesConf * ConfLoader::buildServicesConf ( std::string servicesConfigFile ) 
     return parseServicesConf ( &doc,servicesConfigFile );
 }
 
-// Build the list (vector of string) of equals CRS from a file given in parameter
-void Rok4Server::buildlistofequalsCRS (char* fileCRS) {
-    LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << fileCRS );
-    std::vector<std::string> buildinglistofequalsCRS;
-    std::ifstream input ( fileCRS );
-    // We test if the stream is empty
-    //   This can happen when the file can't be loaded or when the file is empty
-    if ( input.peek() == std::ifstream::traits_type::eof() ) {
-        LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << fileCRS << _ (" ou fichier vide")  );
-    }
-    for( std::string line; getline(input, line); ) {
-        buildinglistofequalsCRS.push_back( line );
-    }
-    listofequalsCRS = buildinglistofequalsCRS;
-}
