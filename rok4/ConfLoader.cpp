@@ -1693,7 +1693,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         }
     }
 
-    pElem=hRoot.FirstChild ( "doweuselistofequalsCRS" ).Element();
+    pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
     if ( pElem && pElem->GetText() ) {
         std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
         if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
