@@ -58,5 +58,5 @@
         <url>http://www.geocatalogue.fr/api-public/servicesRest?SERVICE=CSW&amp;VERSION=2.0.2&amp;REQUEST=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&amp;elementSetName=full&amp;Id=IGNF_INSPIRE_WMTS.xml</url>
         <mediaType>application/vnd.ogc.csw.GetRecordByIdResponse_xml</mediaType>
     </metadataWMTS>
-
+    <avoidEqualsCRSReprojection>true</avoidEqualsCRSReprojection>
 </servicesConf>

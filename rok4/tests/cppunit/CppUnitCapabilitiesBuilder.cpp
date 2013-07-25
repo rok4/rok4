@@ -47,11 +47,8 @@
 #include "CapabilitiesBuilder.cpp"
 #undef private // stops this crazy hack
 
-#include "Layer.cpp"
 #include "Layer.h"
-#include "Style.cpp"
 #include "Style.h"
-
 
 
 class CppUnitCapabilitiesBuilder : public CPPUNIT_NS::TestFixture {
@@ -116,6 +113,8 @@ protected:
     std::string metadataMediaTypeWMS;
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
+    bool doweuselistofequalsCRS;
+    std::vector<std::string> listofequalsCRS;
     ServicesConf* services_conf;
 
 
@@ -191,7 +190,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
     // Load Layerlist - Rok4Server 3rd argument
     id0 = "zero";
     titles0.push_back("title0");
@@ -234,8 +233,8 @@ void CppUnitCapabilitiesBuilder::setUp() {
     nbThread = 2; // 1st arg
     socket = "127.0.0.1:9000"; // 6th arg
     backlog = 0; // 7th arg
-    supportWMS = true; // 8th arg
-    supportWMTS = false; // If true -> seg fault for the test 9th arg
+    supportWMS = true; // 9th arg
+    supportWMTS = false; // If true -> seg fault for the test 8th arg
     myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS);
 
 }

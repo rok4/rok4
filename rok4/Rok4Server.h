@@ -142,7 +142,6 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
-
     /**
      * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
      * \~english \brief Error response in case data tiel is not found (http 404)
