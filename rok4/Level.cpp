@@ -240,7 +240,10 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
     LOGGER_DEBUG ( "Top 2" );
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
-    imageout->setBbox ( BoundingBox<double> ( bbox_int ) );
+    if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
+        LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
+        return 0;
+    }
 
     return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, interpolation, false );
 }

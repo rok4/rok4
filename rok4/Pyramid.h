@@ -65,6 +65,7 @@ private:
 //    DataStream* nodatastream;
     Level* highestLevel;
     Level* lowestLevel;
+    bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
 public:
 
     Level* getFirstLevel();
@@ -87,7 +88,7 @@ public:
     }
 
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels );
     ~Pyramid();

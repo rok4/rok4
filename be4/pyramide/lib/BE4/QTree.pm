@@ -427,7 +427,7 @@ sub identifyBottomNodes {
                     $xmax,$ymax,
                     $xmax,$ymin,
                     $xmin,$ymin;
-                
+
                 my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
                 if ($OGRtile->Intersect($convertExtent)){
                     my $nodeKey = sprintf "%s_%s", $i, $j;

@@ -190,6 +190,29 @@ public:
 
     /**
      * \~french
+     * \brief Définit les dimensions de l'image, en vérifiant leurs cohérences
+     * \param[in] box Emprise rectangulaire de l'image
+     * \~english
+     * \brief Define the image's bounding box and calculate resolutions
+     * \param[in] box Image's bounding box
+     */
+    inline bool setDimensions ( int w, int h, BoundingBox<double> box, double rx, double ry ) {
+        double calcWidth = (box.xmax - box.xmin) / rx;
+        double calcHeight = (box.ymax - box.ymin) / ry;
+        
+        if ( abs(calcWidth - w) > 10E-3 || abs(calcHeight - h) > 10E-3) return false;
+        
+        width = w;
+        height = h;
+        resx = rx;
+        resy = ry;
+        bbox = box;
+
+        return true;
+    }
+
+    /**
+     * \~french
      * \brief Retourne l'emprise rectangulaire de l'image
      * \return emprise
      * \~english

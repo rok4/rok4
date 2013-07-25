@@ -119,6 +119,9 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <!-- Paramètre CRS -->
+                <!-- Activation du mode qui evite les reprojections lorsque le CRS source et le CRS de destination sont equivalents -->
+                <xs:element name="avoidEqualsCRSReprojection" type="xs:boolean" default="false">
             </xs:sequence>
         </xs:complexType>
     </xs:element>

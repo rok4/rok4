@@ -327,9 +327,9 @@ sub computeGlobalInfo {
         $ymin = $BBOX[1] if (! defined $ymin || $ymin > $BBOX[1]);
         $xmax = $BBOX[2] if (! defined $xmax || $xmax < $BBOX[2]);
         $ymax = $BBOX[3] if (! defined $ymax || $ymax < $BBOX[3]);
-        
+
         $self->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
-    }    
+    }
 
     # Bounding polygon
     if (! defined $self->{extent}) {
@@ -374,7 +374,7 @@ sub computeGlobalInfo {
             ERROR (sprintf "Shape file ('%s') doesn't exist !",$self->{extent});
             return FALSE;
         }
-        
+
         if (! open SHAPE, "<", $self->{extent} ){
             ERROR(sprintf "Cannot open the shape file %s.",$self->{extent});
             return FALSE;

@@ -142,7 +142,6 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
-
     /**
      * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
      * \~english \brief Error response in case data tiel is not found (http 404)
@@ -162,13 +161,13 @@ private:
     static void* thread_loop ( void* arg );
     /**
      * \~french
-     * \brief
-     * \param[in] arg pointeur vers l'instance de Rok4Server
-     * \return true si présent
+     * \brief Donne le nombre de chiffres après la virgule
+     * \param[in] arg un double
+     * \return int valeur
      * \~english
-     * \brief
-     * \param[in] arg pointer to the Rok4Server instance
-     * \return true if present
+     * \brief Give the number of decimal places
+     * \param[in] arg a double
+     * \return int value
      */
     int GetDecimalPlaces ( double number );
 
