@@ -69,9 +69,17 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     memcpy ( extension, pch + 1, 3 );
 
     // TIFF
-    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ||
-         strncmp ( extension, "tiff", 3 ) == 0 || strncmp ( extension, "TIFF", 3 ) == 0 ) {
+    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to read : " << name );
+
+        LibtiffImageFactory LTIF;
+        return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
+    }
+
+    // Les masques
+    else if ( strncmp ( extension, "msk", 3 ) == 0 || strncmp ( extension, "MSK", 3 ) == 0 ) {
+        /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront lus comme des images TIFF. */
+        LOGGER_DEBUG ( "TIFF mask to read : " << name );
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );

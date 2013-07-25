@@ -421,14 +421,14 @@ sub identifyBottomNodes {
             for (my $j = $jMin; $j <= $jMax; $j++) {
                 my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
-                my $GMLtile = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
+                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
                     $xmin,$ymin,
                     $xmin,$ymax,
                     $xmax,$ymax,
                     $xmax,$ymin,
                     $xmin,$ymin;
                 
-                my $OGRtile = Geo::OGR::Geometry->create(GML=>$GMLtile);
+                my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
                 if ($OGRtile->Intersect($convertExtent)){
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node

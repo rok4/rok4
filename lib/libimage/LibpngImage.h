@@ -68,6 +68,8 @@
  * \details Une image PNG est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format PNG.
  *
  * Cette classe va utiliser la librairie libpng afin de lire les données et de récupérer les informations sur les images.
+ * 
+ * \todo Lire au fur et à mesure l'image PNG et ne pas la charger intégralement en mémoire lors de la création de l'objet LibpngImage.
  */
 class LibpngImage : public FileImage {
 
@@ -77,7 +79,6 @@ private:
 
     /**
      * \~french \brief Stockage de l'image entière, décompressée
-     * \todo Lire au fur et à mesure l'image PNG
      * \~english \brief Full uncompressed image storage
      */
     png_bytep * row_pointers;

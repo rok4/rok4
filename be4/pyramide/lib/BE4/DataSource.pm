@@ -62,7 +62,7 @@ Using:
         "19",
         {
             srs => IGNF:WGS84G,
-            extent => /home/ign/SHAPE/GMLPolygon.txt,
+            extent => /home/ign/SHAPE/WKTPolygon.txt,
 
             wms_layer   => "tp:TRONCON_ROUTE",
             wms_url => "http://geoportail/wms/",
@@ -100,7 +100,7 @@ Attributes:
     topOrder - integer - Level order, to which data source is used. It is calculated in relation to other datasource.
 
     srs - string - SRS of the bottom extent (and ImageSource objects if exists).
-    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a GML geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
+    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
     imageSource - <ImageSource> - Georeferenced images' source.
@@ -308,7 +308,7 @@ Reads the srs, manipulates extent and bounding box.
 
 If an extent is supplied (no image source), 2 cases are possible :
     - extent is a bbox, as xmin,ymin,xmax,ymax
-    - extent is a file path, file contains a complex polygon, GML format.
+    - extent is a file path, file contains a complex polygon, WKT format.
 
 We generate an OGR Geometry from the supplied extent or the image source bounding box.
 =cut
@@ -367,12 +367,6 @@ sub computeGlobalInfo {
             $xmax,$ymin,
             $xmin,$ymin;
 
-#         $GMLextent = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
-#             $xmin,$ymin,
-#             $xmin,$ymax,
-#             $xmax,$ymax,
-#             $xmax,$ymin,
-#             $xmin,$ymin;
     }
     elsif (scalar @limits == 1) {
         # user supplied a file which contains bounding polygon
@@ -402,7 +396,7 @@ sub computeGlobalInfo {
         return FALSE;
     }
 
-    # We use extent to define a GML string, Now, we store in this attribute the equivalent OGR Geometry
+    # We use extent to define a WKT string, Now, we store in this attribute the equivalent OGR Geometry
     $self->{extent} = undef;
 
     eval { $self->{extent} = Geo::OGR::Geometry->create(WKT=>$WKTextent); };
