@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -72,7 +72,7 @@ private:
 public:
     /**
      * \~french
-     * \brief Crée un ResourceLocator à partir des ses éléments constitutifs
+     * \brief Crée un ResourceLocator à partir de ses éléments constitutifs
      * \param[in] format type mime du fichier référencé
      * \param[in] href lien vers le fichier sous la forme d'une URL
      * \~english

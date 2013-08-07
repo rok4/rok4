@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -38,9 +38,9 @@
 /**
  * \file TileMatrix.h
  * \~french
- * \brief Définition de la classe TileMatrix gérant une matrice de tuile représentant un niveau d'une pyramide (Cf TileMatrixSet)
+ * \brief Définition de la classe TileMatrix gérant une matrice de tuiles représentant un niveau d'une pyramide (Cf TileMatrixSet)
  * \~english
- * \brief Define the TileMatrix Class handling a matrix of tile reprensenting a level in a pyramid (See TileMatrixSet)
+ * \brief Define the TileMatrix Class handling a matrix of tiles reprensenting a level in a pyramid (See TileMatrixSet)
  */
 
 #ifndef TILEMATRIX_H
@@ -55,13 +55,13 @@
  * Cette matrice décrit un niveau d'une pyramide définit dans un TileMatrixSet
  *
  * Définition d'un TileMatrix en XML :
- * \brief Gestion d'une matrice de tuile
+ * \brief Gestion d'une matrice de tuiles
  * \~english
  * A TileMatrix represent a matrix of tiles.
- * This matrix is part of a pyramid define in a TileMatrixSet
+ * This matrix is part of a pyramid defined in a TileMatrixSet
  *
  * XML definition of a TileMatrix :
- * \brief Handle a matrix of tiles
+ * \brief Handles a matrix of tiles
  * \details \~ \code{.xml}
  * <tileMatrix>
  *    <id>Lvl 8</id>
@@ -108,13 +108,13 @@ private:
      */
     int tileH;
     /**
-     * \~french \brief Nombre de tuile dans la matrice en largeur
-     * \~english \brief Tile number in the matrix width
+     * \~french \brief Nombre de tuiles dans la matrice en largeur
+     * \~english \brief Tiles number in the matrix width
      */
     long int matrixW;
     /**
-     * \~french \brief Nombre de tuile dans la matrice en longueur
-     * \~english \brief Tile number in the matrix height
+     * \~french \brief Nombre de tuiles dans la matrice en longueur
+     * \~english \brief Tiles number in the matrix height
      */
     long int matrixH;
 public:
@@ -127,8 +127,8 @@ public:
      * \param[in] y0 ordonnée du point en haut à gauche dans le système de coordonnées associé.
      * \param[in] tileW largeur d'une tuile
      * \param[in] tileH longueur d'une tuile
-     * \param[in] matrixW nombre de tuile dans la matrice en largeur
-     * \param[in] matrixH nombre de tuile dans la matrice en longueur
+     * \param[in] matrixW nombre de tuiles dans la matrice en largeur
+     * \param[in] matrixH nombre de tuiles dans la matrice en longueur
      * \~english
      * \brief Create a TileMatrix
      * \param[in] id identifier
@@ -137,8 +137,8 @@ public:
      * \param[in] y0 y-coordinate of the top right corner in the linked coordinate system.
      * \param[in] tileW tile width
      * \param[in] tileH tile height
-     * \param[in] matrixW tile number in the matrix width
-     * \param[in] matrixH tile number in the matrix height
+     * \param[in] matrixW tiles number in the matrix width
+     * \param[in] matrixH tiles number in the matrix height
      */
     TileMatrix ( std::string id,double res,double x0,double y0,int tileW, int tileH,long int matrixW, long int matrixH ) :
         id ( id ), res ( res ), x0 ( x0 ), y0 ( y0 ), tileW ( tileW ), tileH ( tileH ), matrixW ( matrixW ), matrixH ( matrixH ) {};
@@ -235,20 +235,20 @@ public:
     int getTileH();
     /**
      * \~french
-     * \brief Retourne le nombre de tuile dans la largeur de la matrice
-     * \return nombre de tuile en largeur
+     * \brief Retourne le nombre de tuiles dans la largeur de la matrice
+     * \return nombre de tuiles en largeur
      * \~english
-     * \brief Return the number of tile in the matrix width
-     * \return number of tile in width
+     * \brief Return the number of tiles in the matrix width
+     * \return number of tiles in width
      */
     long int getMatrixW();
     /**
      * \~french
-     * \brief Retourne le nombre de tuile dans la longueur de la matrice
-     * \return nombre de tuile en longueur
+     * \brief Retourne le nombre de tuiles dans la longueur de la matrice
+     * \return nombre de tuiles en longueur
      * \~english
-     * \brief Return the number of tile in the matrix height
-     * \return number of tile in height
+     * \brief Return the number of tiles in the matrix height
+     * \return number of tiles in height
      */
     long int getMatrixH();
     /**

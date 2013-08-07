@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -40,8 +40,10 @@
  * \file ConfLoader.cpp
  * \~french
  * \brief Implémenation des fonctions de chargement de la configuration
+ * \brief pendant l'initialisation du serveur
  * \~english
- * \brief implements configuration loader functions
+ * \brief Implements configuration loader functions
+ * \brief during server initialization
  */
 
 
@@ -64,6 +66,7 @@
 #include "config.h"
 #include "Keyword.h"
 
+// Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
     LOGGER_INFO ( _ ( "     Ajout du Style " ) << fileName );
     std::string id ="";
@@ -515,6 +518,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
     return parseTileMatrixSet ( &doc,fileName );
 }//buildTileMatrixSet(std::string fileName)
 
+// Load a pyramid
 Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
@@ -1173,6 +1177,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
+// Load the server configuration (default is server.conf file) during server initialization
 bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -1386,6 +1391,7 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     return true;
 }//parseTechnicalParam
 
+// Load the services configuration (default is services.conf file) during server initialization
 ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -1443,8 +1449,8 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
     // CRS
-    bool doweuselistofequalsCRS = false;
-    std::vector<std::string> listofequalsCRS;
+    bool doweuselistofequalsCRS = false; // Option to avoid reprojecting data in equivalent CRS
+    std::vector<std::string> listofequalsCRS; // If the option is true, load the list of equals CRS
 
 
     pElem=hRoot.FirstChild ( "name" ).Element();
@@ -1704,7 +1710,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
 
     // Build the list (vector of string) of equals CRS from a file given in parameter
     char * fileCRS = "/listofequalscrs.txt";
-    char * dirCRS = getenv ( "PROJ_LIB" );
+    char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
     char namebuffer[100];
     strcpy(namebuffer, dirCRS);
     strcat(namebuffer, fileCRS);

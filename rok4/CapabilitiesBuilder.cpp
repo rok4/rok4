@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -89,6 +89,8 @@ TiXmlElement * buildTextNode ( std::string elementName, std::string value ) {
     return elem;
 }
 
+// Prepare WMS GetCapabilities fragments
+//   Done only 1 time (during server initialization)
 void Rok4Server::buildWMSCapabilities() {
     std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
@@ -523,6 +525,8 @@ void Rok4Server::buildWMSCapabilities() {
 }
 
 
+// Prepare WMTS GetCapabilities fragments
+//   Done only 1 time (during server initialization)
 void Rok4Server::buildWMTSCapabilities() {
     // std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
@@ -942,6 +946,10 @@ void Rok4Server::buildWMTSCapabilities() {
 }
 
 
+// Compute the number of decimals
+//  3.14 -> 2
+//  1.0001 -> 4
+// Maximum is 10
 int Rok4Server::GetDecimalPlaces ( double dbVal ) {
     dbVal = fmod(dbVal, 1);
     static const int MAX_DP = 10;

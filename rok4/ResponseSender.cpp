@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -55,7 +55,7 @@
 #include "config.h"
 /**
  * \~french
- * \brief Méthode commune pour générer l'entête HTTP en fonction du status code HTTP
+ * \brief Méthode commune pour générer l'en-tête HTTP en fonction du status code HTTP
  * \param[in] statusCode Code de status HTTP
  * \return élément status de l'en-tête HTTP
  * \~english

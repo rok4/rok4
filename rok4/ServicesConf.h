@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -86,7 +86,7 @@ private:
     MetadataURL metadataWMS;
     MetadataURL metadataWMTS;
     // List of equals CRS from file
-    bool doweuselistofequalsCRS;
+    bool doweuselistofequalsCRS; // if true we check if 2 CRS don't have the same name but are equals before reprojecting
     std::vector<std::string> listofequalsCRS;
 
 public:

@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -83,7 +83,7 @@ char hex2int ( unsigned char hex ) {
 
 /**
  * \~french
- * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \brief Découpe une chaîne de caractères selon un délimiteur
  * \param[in] s la chaîne à découper
  * \param[in] delim le délimiteur
  * \param[in,out] elems la liste contenant les parties de la chaîne
@@ -106,7 +106,7 @@ std::vector<std::string> &split ( const std::string &s, char delim, std::vector<
 
 /**
  * \~french
- * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \brief Découpe une chaîne de caractères selon un délimiteur
  * \param[in] s la chaîne à découper
  * \param[in] delim le délimiteur
  * \return la liste contenant les parties de la chaîne
@@ -168,10 +168,10 @@ void toLowerCase ( char* str ) {
 }
 /**
  * \~french
- * \brief Supprime l'espace de nom de la balise XML
+ * \brief Supprime l'espace de nom (la partie avant :) de la balise XML
  * \param[in,out] elementName le nom de la balise
  * \~english
- * \brief Remove the namespace in the XML element
+ * \brief Remove the namespace (before :) in the XML element
  * \param[in,out] elementName the element name
  */
 void removeNameSpace ( std::string& elementName ) {
@@ -723,7 +723,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https, std:
 
 Request::~Request() {}
 
-
+// Test if a parameter is part of the request
 bool Request::hasParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -732,6 +732,7 @@ bool Request::hasParam ( std::string paramName ) {
     return true;
 }
 
+// Get value for a parameter in the request
 std::string Request::getParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -818,7 +819,7 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
 
 /* *
  * \~french
- * \brief Découpe une chaîne de caractère selon un délimiteur
+ * \brief Découpe une chaîne de caractères selon un délimiteur
  * \param[in] str la chaîne à découper
  * \param[in] delim le délimiteur
  * \param[in,out] results la liste contenant les parties de la chaîne
@@ -1056,6 +1057,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     return NULL;
 }
 
+// Parameters for WMS GetCapabilities
 DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& version ) {
     if ( service.compare ( "wms" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wms" ) );
@@ -1066,7 +1068,8 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
         version = "1.3.0";
         return NULL;
     }
-    // Version number negotiation for WMS
+    // Version number negotiation for WMS (should not be done for WMTS)
+    // Ref: http://cite.opengeospatial.org/OGCTestData/wms/1.1.1/spec/wms1.1.1.html#basic_elements.version.negotiation
     // - Version higher than supported version: send the highest supported version
     // - Version lower than supported version: send the lowest supported version
     // We compare the different values of the version number (l=left, m=middle, r=right)
@@ -1075,7 +1078,7 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     int high_version_l = high_version[0]-48; //-48 is because of ASCII table, numbers start at position 48
     int high_version_m = high_version[2]-48;
     int high_version_r = high_version[4]-48;
-    std::string low_version = "1.3.0";
+    std::string low_version = "1.3.0"; // Currently high_version == low_version, ready to be changed later
     int low_version_l = low_version[0]-48;
     int low_version_m = low_version[2]-48;
     int low_version_r = low_version[4]-48;
@@ -1083,11 +1086,14 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     int request_l = version[0]-48;
     int request_m = version[2]-48;
     int request_r = version[4]-48;
+    // We check the numbers from left to right
     if (request_l > high_version_l || (request_l == high_version_l && request_m > high_version_m) || (request_l == high_version_l && request_m == high_version_m && request_r > high_version_r)) {
+        // Version asked is higher than supported version
         version = high_version;
         return NULL;
     }
     if (request_l < low_version_l || (request_l == low_version_l && request_m < low_version_m) || (request_l == low_version_l && request_m == low_version_m && request_r < low_version_r)) {
+        // Version asked is lower than supported version
         version = low_version;
         return NULL;
     }
@@ -1097,6 +1103,7 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     return NULL;
 }
 
+// Parameters for WMTS GetCapabilities
 DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& version ) {
     if ( service.compare ( "wmts" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wmts" ) );

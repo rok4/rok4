@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -54,7 +54,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance Style représente la façon d'afficher une couche et la métadonnées associée.
+ * Une instance Style représente la façon d'afficher une couche et la métadonnée associée.
  * Il est possible de définir une table de correspondance valeur/couleur ou un estompage.
  * Un style peut contenir uniquement des métadonnées ou définir plusieurs traitements.
  *
