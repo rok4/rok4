@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -38,7 +38,7 @@
 /**
  * \file MetadataURL.cpp
  * \~french
- * \brief Implémentation de la classe MetadataURL gérant les liens vers les méta-données dans les documents de capacités
+ * \brief Implémentation de la classe MetadataURL gérant les liens vers les métadonnées dans les documents de capacités
  * \~english
  * \brief Implement the MetadataURL Class handling capabilities metadata link elements
  */
@@ -55,15 +55,15 @@ MetadataURL::MetadataURL ( const MetadataURL& origMtdUrl ) : ResourceLocator ( o
 }
 
 MetadataURL& MetadataURL::operator= ( const MetadataURL& other ) {
-    if (this != &other) {
-        ResourceLocator::operator=(other);
+    if ( this != &other ) {
+        ResourceLocator::operator= ( other );
         this->type = other.type;
     }
     return *this;
 }
 
 bool MetadataURL::operator== ( const MetadataURL& other ) const {
-    return ( this->type.compare(other.type) == 0
+    return ( this->type.compare ( other.type ) == 0
              && this->getFormat().compare ( other.getFormat() ) == 0
              && this->getHRef().compare ( other.getHRef() ) == 0 );
 }

@@ -51,40 +51,40 @@ protected:
     int line;   // Ligne courante
 
 public:
-    TiffRawEncoder(Image *image) : image(image), line(-1) {}
+    TiffRawEncoder ( Image *image ) : image ( image ), line ( -1 ) {}
     ~TiffRawEncoder() {
         delete image;
     }
-    virtual size_t read(uint8_t *buffer, size_t size) {
-        size_t offset = 0, header_size=TiffHeader::headerSize(image->channels), linesize=image->width*image->channels;
-        if (line == -1) { // écrire le header tiff
-            if (image->channels==1)
-                if ( sizeof(T) == sizeof(float)) {
-                    memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_FLOAT32_GRAY, header_size);
+    virtual size_t read ( uint8_t *buffer, size_t size ) {
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels;
+        if ( line == -1 ) { // écrire le header tiff
+            if ( image->channels==1 )
+                if ( sizeof ( T ) == sizeof ( float ) ) {
+                    memcpy ( buffer, TiffHeader::TIFF_HEADER_RAW_FLOAT32_GRAY, header_size );
                 } else {
-                    memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_GRAY, header_size);
+                    memcpy ( buffer, TiffHeader::TIFF_HEADER_RAW_INT8_GRAY, header_size );
                 }
-            else if (image->channels==3)
-                memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGB, header_size);
-            else if (image->channels==4)
-                memcpy(buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGBA, header_size);
-            *((uint32_t*)(buffer+18))  = image->width;
-            *((uint32_t*)(buffer+30))  = image->height;
-            *((uint32_t*)(buffer+102)) = image->height;
-            *((uint32_t*)(buffer+114)) = image->height*linesize * sizeof(T) ;
+            else if ( image->channels==3 )
+                memcpy ( buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGB, header_size );
+            else if ( image->channels==4 )
+                memcpy ( buffer, TiffHeader::TIFF_HEADER_RAW_INT8_RGBA, header_size );
+            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
+            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
+            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
+            * ( ( uint32_t* ) ( buffer+114 ) ) = image->getHeight()*linesize * sizeof ( T ) ;
             offset = header_size;
             line = 0;
         }
-        linesize *= sizeof(T);
-        for (; line < image->height && offset + linesize <= size; line++) {
-            image->getline((T*)(buffer + offset), line);
+        linesize *= sizeof ( T );
+        for ( ; line < image->getHeight() && offset + linesize <= size; line++ ) {
+            image->getline ( ( T* ) ( buffer + offset ), line );
             offset += linesize;
         }
 
         return offset;
     }
     virtual bool eof() {
-        return (line>=image->height);
+        return ( line>=image->getHeight() );
     }
 };
 

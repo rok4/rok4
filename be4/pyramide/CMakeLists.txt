@@ -1,3 +1,5 @@
+#Récupère le nom du projet parent
+SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(pyramide)
 #définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
@@ -52,11 +54,11 @@ set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.$
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
 add_custom_command(OUTPUT install_be4 COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile COMMAND BE4_ENV="${CMAKE_CURRENT_BINARY_DIR}/install" make -f makefile install DEPENDS src/makefile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src)
-
 
 add_custom_target(be4-build ALL DEPENDS install_be4)
 
@@ -78,12 +80,20 @@ if(UNITTEST)
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
         # Exécution des tests unitaires PerlUnit
-        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/PerlUnit*.t" )
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/BE4/PerlUnit*.t")
         
         FOREACH(test ${UnitTests_SRCS})
             MESSAGE("  - adding test ${test}")
             GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME ${TestName} COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+            ADD_TEST(NAME "BE4::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+        ENDFOREACH(test)
+
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/JOINCACHE/PerlUnit*.t")
+
+        FOREACH(test ${UnitTests_SRCS})
+            MESSAGE("  - adding test ${test}")
+            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
+            ADD_TEST(NAME "JOINCACHE::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire
@@ -95,31 +105,20 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Documentation Doxygen
+#Documentation NaturalDocs
 #Utilisation du fichier 
 if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc ALL
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-  endif(DOXYGEN_FOUND)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(NaturalDocs)
+    find_package(NaturalDocs)
     if(NATURALDOCS_FOUND)
-	add_custom_target(doc ALL make doc
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src
-    COMMENT "Generating API documentation with NaturalDocs" VERBATIM
-    )
+        add_custom_target(doc ALL BE4_SRC="${CMAKE_CURRENT_SOURCE_DIR}" make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
+        #add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
+        INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
     endif(NATURALDOCS_FOUND)
-endif(BUILD_DOC)
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
 
+endif(BUILD_DOC)
+
+#Installe la documentation de base
+INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts
@@ -128,24 +127,7 @@ INSTALL(FILES LICENCE
 
 
 #Installe les différents fichers nécessaires
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/"
-  DESTINATION . USE_SOURCE_PERMISSIONS)
-
-#Installe la documentation
-INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME 
-  DESTINATION doc/${PROJECT_NAME})
-if(BUILD_DOC)
-  if(DOXYGEN_FOUND)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  endif(DOXYGEN_FOUND)
-  if(NATURALDOCS_FOUND)
-     INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/"
-             DESTINATION doc/${PROJECT_NAME})   
-  endif(NATURALDOCS_FOUND)
-endif(BUILD_DOC)
+INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/" DESTINATION . USE_SOURCE_PERMISSIONS)
 
 ########################################
 # Paramétrage de la gestion de package CPack

@@ -109,7 +109,7 @@ std::ostream& Logger::getLogger(LogLevel level) {
     char date[64];
     tm *now = localtime(&tim.tv_sec);
     sprintf(date, "%04d/%02d/%02d %02d:%02d:%02d.%06d\t", now->tm_year+1900, now->tm_mon+1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec, (int) (tim.tv_usec));
-    *L << date << (LogLevelText[level]) << "\t";
+    *L << date << "\t";
     return *L;
 }
 

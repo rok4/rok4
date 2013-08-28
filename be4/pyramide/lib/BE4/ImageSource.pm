@@ -33,6 +33,41 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: ImageSource.pm
+
+Class: BE4::ImageSource
+
+Define a data source, with georeferenced image directory.
+
+Using:
+    (start code)
+    use BE4::ImageSource;
+
+    # ImageSource object creation
+    my $objImageSource = BE4::XXX->new({
+        path_image => "/home/ign/DATA",
+        path_metadata=> "/home/ign/METADATA",
+    });
+    (end code)
+
+Attributes:
+    PATHIMG - string - Path to images directory.
+    PATHMTD - string - Path to metadata directory. NOT IMPLEMENTED.
+    images - <GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
+    srs - string - SRS of the georeferenced images
+    bestResX - double - Best X resolution among all images.
+    bestResY - double - Best Y resolution among all images.
+    pixel - <Pixel> - Pixel components of all images, have to be same for each one.
+
+Limitations:
+    Constraint on the input format of images : format TIFF (extensions .tif, .TIF, .tiff and .TIFF)
+=cut
+
+################################################################################
+
 package BE4::ImageSource;
 
 use strict;
@@ -64,54 +99,61 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * PATHIMG - path to images
-    * PATHMTD - path to metadata, not implemented
-    * images : array of BE4::GeoImage
-    * bestResX
-    * bestResY
-    * pixel : BE4::Pixel
+ImageSource constructor. Bless an instance.
+
+Parameters (hash):
+    path_image - string - Path to images' directory, to analyze.
+    srs - string - SRS of the georeferenced images
+
+See also:
+    <_init>, <computeImageSource>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $params = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    PATHIMG => undef,
-    PATHMTD => undef,
-    #
-    images  => [],
-    #
-    bestResX => undef,
-    bestResY => undef,
-    #
-    pixel => undef,
-  };
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+        PATHIMG => undef,
+        PATHMTD => undef,
+        #
+        images  => [],
+        #
+        bestResX => undef,
+        bestResY => undef,
+        #
+        pixel => undef,
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
+    bless($self, $class);
 
-  return undef if (! $self->computeImageSource());
-  
-  return $self;
+    TRACE;
+
+    # init. class
+    return undef if (! $self->_init($params));
+
+    return undef if (! $self->computeImageSource());
+
+    return $self;
 }
 
+=begin nd
+Function: _init
+
+Checks and stores informations.
+
+Parameters (hash):
+    path_image - string - Path to images' directory, to analyze.
+    srs - string - SRS of the georeferenced images
+=cut
 sub _init {
 
     my $self   = shift;
@@ -120,10 +162,15 @@ sub _init {
     TRACE;
     
     return FALSE if (! defined $params);
+    if (! exists($params->{srs}) || ! defined ($params->{srs})) {
+        ERROR ("We have to provide a SRS to create an ImageSource object");
+        return FALSE;
+    }
     
     # init. params    
     $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
     $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
+    $self->{srs} = $params->{srs};
     
     if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
         ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
@@ -140,16 +187,16 @@ sub _init {
 }
 
 ####################################################################################################
-#                                        IMAGES TREATMENTS                                         #
+#                                 Group: Images treatments                                         #
 ####################################################################################################
 
-# Group: images treatments
-
-#
 =begin nd
-method: computeImageSource
+Function: computeImageSource
 
-Load all images in a list of object BE4::GeoImage, determine the components of data and check them.
+Detects all TIFF files in *PATHIMG* and subdirectories and creates a corresponding <GeoImage> object. Determines data's components and check them.
+
+See also:
+    <getListImages>, <GeoImage::computeInfo>
 =cut
 sub computeImageSource {
     my $self = shift;
@@ -236,6 +283,7 @@ sub computeImageSource {
         $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
 
         push @$lstGeoImages, $objGeoImage;
+        $objGeoImage->setImageSource($self);
     }
 
     $self->{pixel} = $pixel;
@@ -250,56 +298,59 @@ sub computeImageSource {
     return TRUE;
 }
 
-#
 =begin nd
-method: getListImages
+Function: getListImages
 
-Get the list of all path data image (image tiff only !). Recursive to browse directories.
+Recursive method to browse a directory and list all TIFF file. Returns an hash containing the TIFF file path's array.
+| {
+|     images => [...],
+| };
+
+Parameters (list):
+    directory - string - Path to directory, to browse.
 =cut  
 sub getListImages {
-  my $self      = shift;
-  my $directory = shift;
+    my $self      = shift;
+    my $directory = shift;
 
-  TRACE();
-  
-  my $search = {
-    images => [],
-  };
+    TRACE();
 
-  if (! opendir (DIR, $directory)) {
-    ERROR("Can not open directory cache (%s) ?",$directory);
-    return undef;
-  }
+    my $search = {
+        images => [],
+    };
 
-  my $newsearch;
-  
-  foreach my $entry (readdir DIR) {
-    
-    next if ($entry =~ m/^\.{1,2}$/);
-    
-    if ( -d File::Spec->catdir($directory, $entry)) {
-      TRACE(sprintf "DIR:%s\n",$entry);      
-      # recursif
-      $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
-      push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+    if (! opendir (DIR, $directory)) {
+        ERROR("Can not open directory cache (%s) ?",$directory);
+        return undef;
     }
 
-    next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
-    
-    push @{$search->{images}}, File::Spec->catfile($directory, $entry);
-  }
-  
-  return $search;
+    my $newsearch;
+
+    foreach my $entry (readdir DIR) {
+        next if ($entry =~ m/^\.{1,2}$/);
+
+        # Si on a à faire à un dossier, on appelle récursivement la méthode pourle parcourir
+        if ( -d File::Spec->catdir($directory, $entry)) {
+            $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+            push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+        }
+
+        # Si le fichier n'a pas l'extension TIFF, on ne le traite pas
+        next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
+
+        # On a à faire à un fichier avec l'extension TIFF, on l'ajoute au tableau
+        push @{$search->{images}}, File::Spec->catfile($directory, $entry);
+    }
+
+    return $search;
 }
 
-#
 =begin nd
-method: computeBBox
+Function: computeBBox
 
 Calculate extrem limits of images, in the source SRS.
 
-Returns:
-    (xMin,yMin,xMax,yMax)
+Returns a double list : (xMin,yMin,xMax,yMax).
 =cut
 sub computeBBox {
     my $self = shift;
@@ -321,33 +372,45 @@ sub computeBBox {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getResolution
 sub getResolution {
-  my $self = shift;
-  return $self->{resolution};  
+    my $self = shift;
+    return $self->{resolution};  
 }
 
+# Function: getSRS
+sub getSRS {
+    my $self = shift;
+    return $self->{srs};
+}
+
+# Function: getImages
 sub getImages {
-  my $self = shift;
-  # copy !
-  my @images;
-  foreach (@{$self->{images}}) {
-    push @images, $_;
-  }
-  return @images; 
+    my $self = shift;
+    # copy !
+    my @images;
+    foreach (@{$self->{images}}) {
+        push @images, $_;
+    }
+    return @images;
 }
 
-
 ####################################################################################################
-#                                        EXPORT METHOD                                             #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export method
+=begin nd
+Function: exportForDebug
 
+Returns all image source's informations. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -368,76 +431,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::ImageSource - information about a source made up of georeferenced images
-
-=head1 SYNOPSIS
-
-    use BE4::ImageSource;
-  
-    # ImageSource object creation
-    my $objImageSource = BE4::XXX->new({
-        path_image => "/home/ign/DATA",
-        path_metadata=> "/home/ign/METADATA",
-    });
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item PATHIMG
-
-Directory which contains images
-
-=item PATHMTD
-
-Directory which contains metadata (not yet implemented)
-
-=item images
-
-Array of GeoImage objects
-
-=item bestResX, bestResY
-
-=item pixel
-
-Pixel object
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-GeoImage.html">BE4::GeoImage</A></li>
-<li><A HREF="./lib-BE4-Pixel.html">BE4::Pixel</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

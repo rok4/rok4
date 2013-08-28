@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file CapabilitiesBuilder.cpp
+ * \~french
+ * \brief Implémentation des fonctions de générations des GetCapabilities
+ * \~english
+ * \brief Implement the GetCapabilities generation function
+ */
+
 #include "Rok4Server.h"
 #include "tinyxml.h"
 #include "tinystr.h"
@@ -47,8 +55,10 @@
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
 #include "intl.h"
+
 /**
- * Conversion de int en std::string.
+ * \~french Conversion d'un entier en une chaîne de caractère
+ * \~english Convert an integer in a character string
  */
 std::string numToStr ( long int i ) {
     std::ostringstream strstr;
@@ -57,7 +67,8 @@ std::string numToStr ( long int i ) {
 }
 
 /**
- * Conversion de double en std::string.
+ * \~french Conversion d'un flottant en une chaîne de caractères
+ * \~english Convert a float in a character string
  */
 std::string doubleToStr ( long double d ) {
     std::ostringstream strstr;
@@ -68,7 +79,8 @@ std::string doubleToStr ( long double d ) {
 }
 
 /**
- * construit un noeud xml simple (de type text).
+ * \~french Construit un noeud xml simple (de type text)
+ * \~english Create a simple XML text node
  */
 TiXmlElement * buildTextNode ( std::string elementName, std::string value ) {
     TiXmlElement * elem = new TiXmlElement ( elementName );
@@ -77,9 +89,8 @@ TiXmlElement * buildTextNode ( std::string elementName, std::string value ) {
     return elem;
 }
 
-/**
- * Construit les fragments invariants du getCapabilities WMS (wmsCapaFrag).
- */
+// Prepare WMS GetCapabilities fragments
+//   Done only 1 time (during server initialization)
 void Rok4Server::buildWMSCapabilities() {
     std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
@@ -514,6 +525,8 @@ void Rok4Server::buildWMSCapabilities() {
 }
 
 
+// Prepare WMTS GetCapabilities fragments
+//   Done only 1 time (during server initialization)
 void Rok4Server::buildWMTSCapabilities() {
     // std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
@@ -815,7 +828,7 @@ void Rok4Server::buildWMTSCapabilities() {
         }
 
         // Contrainte : 1 layer = 1 pyramide = 1 format
-        layerEl->LinkEndChild ( buildTextNode ( "Format",format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
+        layerEl->LinkEndChild ( buildTextNode ( "Format",Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
 
         /* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
          *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
@@ -856,14 +869,14 @@ void Rok4Server::buildWMTSCapabilities() {
 
         TiXmlElement * tmsEl=new TiXmlElement ( "TileMatrixSet" );
         tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms.getId() ) );
-        if (!(tms.getTitle().empty())){
+        if ( ! ( tms.getTitle().empty() ) ) {
             tmsEl->LinkEndChild ( buildTextNode ( "ows:Title", tms.getTitle().c_str() ) );
         }
-        
-        if (!(tms.getAbstract().empty())){
+
+        if ( ! ( tms.getAbstract().empty() ) ) {
             tmsEl->LinkEndChild ( buildTextNode ( "ows:Abstract", tms.getAbstract().c_str() ) );
         }
-       
+
         if ( tms.getKeyWords()->size() != 0 ) {
             TiXmlElement * kwlEl = new TiXmlElement ( "ows:Keywords" );
             TiXmlElement * kwEl;
@@ -880,8 +893,8 @@ void Rok4Server::buildWMTSCapabilities() {
             //kwlEl->LinkEndChild ( buildTextNode ( "ows:Keyword", ROK4_INFO ) );
             tmsEl->LinkEndChild ( kwlEl );
         }
-        
-        
+
+
         tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms.getCrs().getRequestCode() ) );
         std::map<std::string, TileMatrix>* tmList = tms.getTmList();
 
@@ -933,15 +946,20 @@ void Rok4Server::buildWMTSCapabilities() {
 }
 
 
-// get the number of decimal places
+// Compute the number of decimals
+//  3.14 -> 2
+//  1.0001 -> 4
+// Maximum is 10
 int Rok4Server::GetDecimalPlaces ( double dbVal ) {
+    dbVal = fmod(dbVal, 1);
     static const int MAX_DP = 10;
-    static const double THRES = pow ( 0.1, MAX_DP );
+    double THRES = pow ( 0.1, MAX_DP );
     if ( dbVal == 0.0 )
         return 0;
     int nDecimal = 0;
-    while ( dbVal - floor ( dbVal ) > THRES && nDecimal < MAX_DP ) {
+    while ( dbVal - floor ( dbVal ) > THRES && nDecimal < MAX_DP && ceil(dbVal)-dbVal > THRES) {
         dbVal *= 10.0;
+        THRES *= 10.0;
         nDecimal++;
     }
     return nDecimal;

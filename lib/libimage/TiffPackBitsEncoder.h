@@ -60,39 +60,39 @@ protected:
     int line;   // Ligne courante
     T* rawBuffer;
     size_t rawBufferSize;
-    
+
     size_t pkbBufferSize;
     size_t pkbBufferPos;
     uint8_t* pkbBuffer;
 
 public:
-    TiffPackBitsEncoder ( Image *image ) : image ( image ), line ( -1 ),rawBufferSize( 0 ) , pkbBufferPos( 0 ), pkbBufferSize(0), pkbBuffer ( NULL ), rawBuffer( NULL ) {
+    TiffPackBitsEncoder ( Image *image ) : image ( image ), line ( -1 ),rawBufferSize ( 0 ) , pkbBufferPos ( 0 ), pkbBufferSize ( 0 ), pkbBuffer ( NULL ), rawBuffer ( NULL ) {
 
     }
     ~TiffPackBitsEncoder() {
         delete image;
-        if (rawBuffer) 
+        if ( rawBuffer )
             delete[] rawBuffer;
         if ( pkbBuffer )
             delete[] pkbBuffer;
     }
 
     virtual size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->width*image->channels, dataToCopy=0;
-        
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
+
         if ( !pkbBuffer ) {
-            pkbBuffer = new uint8_t[linesize* image->height * sizeof ( T ) *2];
+            pkbBuffer = new uint8_t[linesize* image->getHeight() * sizeof ( T ) *2];
             pkbBufferSize = 0;
             rawBuffer = new T[linesize];
             rawBufferSize = linesize * sizeof ( T );
             int lRead = 0;
             pkbEncoder encoder;
             uint8_t * pkbLine;
-            for ( ; lRead < image->height ; lRead++ ) {
-                image->getline (rawBuffer, lRead );
+            for ( ; lRead < image->getHeight() ; lRead++ ) {
+                image->getline ( rawBuffer, lRead );
                 size_t pkbLineSize = 0;
                 pkbLine =  encoder.encode ( ( uint8_t* ) rawBuffer,rawBufferSize, pkbLineSize );
-                memcpy(pkbBuffer+pkbBufferSize,pkbLine,pkbLineSize);
+                memcpy ( pkbBuffer+pkbBufferSize,pkbLine,pkbLineSize );
                 pkbBufferSize += pkbLineSize;
                 delete[] pkbLine;
             }
@@ -100,7 +100,7 @@ public:
             rawBuffer = NULL;
         }
 
-        
+
         if ( line == -1 ) { // écrire le header tiff
             if ( image->channels==1 )
                 if ( sizeof ( T ) == sizeof ( float ) ) {
@@ -112,9 +112,9 @@ public:
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_INT8_RGB, header_size );
             else if ( image->channels==4 )
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_PKB_INT8_RGBA, header_size );
-            * ( ( uint32_t* ) ( buffer+18 ) )  = image->width;
-            * ( ( uint32_t* ) ( buffer+30 ) )  = image->height;
-            * ( ( uint32_t* ) ( buffer+102 ) ) = image->height;
+            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
+            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
+            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
             * ( ( uint32_t* ) ( buffer+114 ) ) = pkbBufferSize ;
             offset = header_size;
             line = 0;

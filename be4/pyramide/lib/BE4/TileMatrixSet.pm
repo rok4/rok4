@@ -33,6 +33,64 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: TileMatrixSet.pm
+
+Class: BE4::TileMatrixSet
+
+Load and store all information about a Tile Matrix Set. A Tile Matrix Set is a XML file which describe a grid for several levels.
+
+(see TileMatrixSet.png)
+
+We tell the difference between :
+    - quad tree TMS : resolutions go by tows and borders are aligned. To generate a pyramid which is based on this kind of TMS, we use <QTree>
+    (see QTreeTMS.png)
+    - "nearest neighbour" TMS : centers are aligned (used for DTM generations, with a "nearest neighbour" interpolation). To generate a pyramid which is based on this kind of TMS, we use <Graph>
+    (see NNGraphTMS.png)
+
+Using:
+    (start code)
+    use BE4::TileMatrixSet;
+
+    my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
+    my $objTMS = BE4::TileMatrixSet->new($filepath);
+
+    $objTMS->getTileMatrixCount()};      # ie 19
+    $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
+    $objTMS->getSRS();                   # ie 'IGNF:LAMB93'
+    $objTMS->getName();                  # ie 'LAMB93_50cm'
+    $objTMS->getFile();                  # ie 'LAMB93_50cm.tms'
+    $objTMS->getPath();                  # ie '/home/ign/tms/'
+    (end code)
+
+Attributes:
+    PATHFILENAME - string - Complete file path : /path/to/SRS_RES.tms
+    name - string - Basename part of PATHFILENAME : SRS_RES
+    filename - string - Filename part of PATHFILENAME : SRS_RES.tms
+    filepath - string - Directory part of PATHFILENAME : /path/to
+
+    levelsBind - hash - Link between Tile matrix identifiants (string, the key) and order in ascending resolutions (integer, the value).
+    topID - string - Higher level ID.
+    topResolution - double - Higher level resolution.
+    bottomID - string - Lower level ID.
+    bottomResolution - double - Lower level resolution.
+
+    srs - string - Spatial Reference System, casted in uppercase (EPSG:4326).
+    coordinatesInversion - boolean - Precise if we have to reverse coordinates to harvest in this SRS. For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
+    tileMatrix - <TileMatrix> hash - Keys are Tile Matrix identifiant, values are <TileMatrix> objects.
+    isQTree - boolean - Precise if this TMS match with a quad tree. TRUE if this TMS describe a quad tree, FALSE otherwise.
+
+Limitations:
+    File name of tms must be with extension : tms or TMS.
+
+    All levels must be continuous (QuadTree) and unique.
+
+=cut
+
+################################################################################
+
 package BE4::TileMatrixSet;
 
 use strict;
@@ -61,96 +119,90 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
+
+BEGIN {}
+INIT {}
+END {}
+
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * PATHFILENAME
-    * name
-    * filename
-    * filepath
-    
-    * levelsBind - hash binding Tile matrix identifiants (string) and order (integer) in ascending resolutions
-    * topID
-    * topResolution
-    * bottomID
-    * bottomResolution
-    
-    * srs - casted in uppercase
-    * coordinatesInversion : boolean - to know if we have to reverse coordinates to harvest in this SRS
-    * tileMatrix : hash of BE4::TileMatrix
-    * isQTree : boolean
+TileMatrixSet constructor. Bless an instance. Fill file's informations.
+
+Parameters (list):
+    pathfile - string - Path to the Tile Matrix File (with extension .tms or .TMS)
+
+See also:
+    <_load>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
-  my $this = shift;
-
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    PATHFILENAME => undef,
-    name     => undef,
-    filename => undef,
-    filepath => undef,
-    #
-    levelsBind => undef,
-    topID => undef,
-    topResolution => undef,
-    bottomID => undef,
-    bottomResolution  => undef,
-    #
-    srs        => undef,
-    coordinatesInversion  => FALSE,
-    tileMatrix => {},
-    #
-    isQTree => undef,
-  };
-
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_init(@_));
-  # load 
-  return undef if (! $self->_load());
-  
-  return $self;
-}
-
-sub _init {
-    my $self     = shift;
+    my $this = shift;
     my $pathfile = shift;
 
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+        PATHFILENAME => undef,
+        name     => undef,
+        filename => undef,
+        filepath => undef,
+        #
+        levelsBind => undef,
+        topID => undef,
+        topResolution => undef,
+        bottomID => undef,
+        bottomResolution  => undef,
+        #
+        srs        => undef,
+        coordinatesInversion  => FALSE,
+        tileMatrix => {},
+        #
+        isQTree => undef,
+    };
+
+    bless($self, $class);
+
     TRACE;
-    
-    return FALSE if (! defined $pathfile);
-    
+
+    # init. class
+    return undef if (! defined $pathfile);
+
     if (! -f $pathfile) {
-      ERROR ("File TMS doesn't exist !");
-      return FALSE;
+        ERROR ("File TMS doesn't exist ($pathfile)!");
+        return undef;
     }
-    
-    # init. params    
-    $self->{PATHFILENAME}=$pathfile;
-    
-    #
+
+    # init. params
+    $self->{PATHFILENAME} = $pathfile;
     $self->{filepath} = File::Basename::dirname($pathfile);
     $self->{filename} = File::Basename::basename($pathfile);
-    $self->{name}     = File::Basename::basename($pathfile);
-    $self->{name}     =~ s/\.(tms|TMS)$//;
+    $self->{name} = File::Basename::basename($pathfile);
+    $self->{name} =~ s/\.(tms|TMS)$//;
     
-    TRACE (sprintf "name : %s", $self->{name});
-    
-    return TRUE;
+    # load
+    return undef if (! $self->_load());
+
+    return $self;
 }
 
+=begin nd
+Function: _load
+
+Read and parse the Tile Matrix Set XML file to create a TileMatrix object for each level.
+
+It determines if the TMS match with a quad tree:
+    - resolutions go by twos between two contigues levels
+    - top left corner coordinates and pixel dimensions are same for all levels
+
+If TMS is not a quad tree, we have to determine the lower source level for each level (used for the genaration).
+
+See also:
+    <computeTmSource>
+=cut
 sub _load {
     my $self = shift;
     
@@ -202,6 +254,7 @@ sub _load {
         }
         
         $self->{tileMatrix}->{$id} = $objTM;
+        $objTM->setTMS($self);
         undef $objTM;
     }
     
@@ -307,63 +360,75 @@ sub _load {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getPathFilename
 sub getPathFilename {
     my $self = shift;
     return $self->{PATHFILENAME};
 }
 
+# Function: getSRS
 sub getSRS {
   my $self = shift;
   return $self->{srs};
 }
+
+# Function: getInversion
 sub getInversion {
   my $self = shift;
   return $self->{coordinatesInversion};
 }
+
+# Function: getName
 sub getName {
   my $self = shift;
   return $self->{name};
 }
+
+# Function: getPath
 sub getPath {
   my $self = shift;
   return $self->{filepath};
 }
+
+# Function: getFile
 sub getFile {
   my $self = shift;
   return $self->{filename};
 }
 
-sub getLevelTop {
+# Function: getTopLevel
+sub getTopLevel {
   my $self = shift;
   return $self->{topID};
 }
 
-sub getLevelsBind {
-  my $self = shift;
-  return $self->{levelsBind};
-}
-
-sub getLevelBottom {
+# Function: getBottomLevel
+sub getBottomLevel {
   my $self = shift;
   return $self->{bottomID};
 }
 
-sub getLevelTopResolution {
+# Function: getTopResolution
+sub getTopResolution {
   my $self = shift;
   return $self->{topResolution};
 }
 
-sub getLevelBottomResolution {
+# Function: getBottomResolution
+sub getBottomResolution {
   my $self = shift;
   return $self->{bottomResolution};
 }
 
-# TileWidth TileHeight
+=begin nd
+Function: getTileWidth
+
+Parameters (list):
+    ID - string - Level identifiant whose tile pixel width we want.
+=cut
 sub getTileWidth {
   my $self = shift;
   my $levelID = shift;
@@ -373,33 +438,152 @@ sub getTileWidth {
   # size of tile in pixel !
   return $self->{tileMatrix}->{$levelID}->getTileWidth;
 }
+
+=begin nd
+Function: getTileHeight
+
+Parameters (list):
+    ID - string - Level identifiant whose tile pixel height we want.
+=cut
 sub getTileHeight {
   my $self = shift;
-  my $levelID = shift;
+  my $ID = shift;
   
-  $levelID = $self->{bottomID} if (! defined $levelID);
+  $ID = $self->{bottomID} if (! defined $ID);
   
   # size of tile in pixel !
-  return $self->{tileMatrix}->{$levelID}->getTileHeight;
+  return $self->{tileMatrix}->{$ID}->getTileHeight;
 }
 
+# Function: isQTree
 sub isQTree {
     my $self = shift;
     return $self->{isQTree};
 }
 
-####################################################################################################
-#                                    TILE MATRIX MANAGER                                           #
-####################################################################################################
-
-# Group: tile matrix manager
-
-#
 =begin nd
-method: computeTmSource
+Function: getTileMatrixByArray
 
-Parameters:
-    tmTarget - a BE4::TileMatrix object.
+Returns the tile matrix array in the ascending resolution order.
+=cut
+sub getTileMatrixByArray {
+    my $self = shift;
+
+    my @levels;
+
+    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tileMatrix}})) {
+        push @levels, $k;
+    }
+
+    return @levels;
+}
+
+=begin nd
+Function: getTileMatrix
+
+Returns the tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution order (integer). Returns undef if ID is undefined or if asked level doesn't exist.
+
+Parameters (list):
+    ID - string - Wanted level identifiant
+=cut
+sub getTileMatrix {
+    my $self = shift;
+    my $ID = shift;
+
+    if (! defined $ID || ! exists($self->{tileMatrix}->{$ID})) {
+        return undef;
+    }
+
+    return $self->{tileMatrix}->{$ID};
+}
+
+=begin nd
+Function: getCountTileMatrix
+
+Returns the count of tile matrix in the TMS.
+=cut
+sub getCountTileMatrix {
+    my $self = shift;
+    return scalar (keys %{$self->{tileMatrix}});
+}
+
+=begin nd
+Function: getIDfromOrder
+
+Returns the tile matrix ID from the ascending resolution order (integer).
+    - 0 (bottom level, smallest resolution)
+    - NumberOfTM-1 (top level, biggest resolution).
+
+Parameters (list):
+    order - integer - Level order, whose identifiant we want.
+=cut
+sub getIDfromOrder {
+    my $self = shift;
+    my $order= shift;
+
+    TRACE;
+
+    foreach my $k (keys %{$self->{levelsBind}}) {
+        if ($self->{levelsBind}->{$k} == $order) {return $k;}
+    }
+
+    return undef;
+}
+
+=begin nd
+Function: getBelowLevelID
+
+Returns the tile matrix ID below the given tile matrix (ID).
+
+Parameters (list):
+    ID - string - Level identifiant, whose below level ID we want.
+=cut
+sub getBelowLevelID {
+    my $self = shift;
+    my $ID= shift;
+
+    TRACE;
+
+    return undef if (! exists $self->{levelsBind}->{$ID});
+    my $order = $self->{levelsBind}->{$ID};
+    return undef if ($order == 0);
+    return $self->getIDfromOrder($order-1);
+}
+
+=begin nd
+Function: getOrderfromID
+
+Returns the tile matrix order from the ID.
+    - 0 (bottom level, smallest resolution)
+    - NumberOfTM-1 (top level, biggest resolution).
+
+Parameters (list):
+    ID - string - Level identifiant, whose order we want.
+=cut
+sub getOrderfromID {
+    my $self = shift;
+    my $ID= shift;
+
+    TRACE;
+
+    if (exists $self->{levelsBind}->{$ID}) {
+        return $self->{levelsBind}->{$ID};
+    } else {
+        return undef;
+    }
+}
+
+####################################################################################################
+#                             Group: Tile Matrix manager                                           #
+####################################################################################################
+
+=begin nd
+Function: computeTmSource
+
+Defines the tile matrix for the provided one. This method is only used for "nearest neighbour" TMS (Pixels between different level have the same centre).
+
+Parameters (list):
+    tmTarget - <TileMatrix> - Tile matrix whose source tile matrix we want to know.
 
 Returns:
     FALSE if there is no TM source for TM target (unless TM target is BotttomTM) 
@@ -420,10 +604,10 @@ sub computeTmSource {
   my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerX() + 0.5 * $tmTarget->getResolution();
   my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerY() - 0.5 * $tmTarget->getResolution();
 
-  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromID($self->getLevelBottom) ;$i--) {
+  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromID($self->getBottomLevel) ;$i--) {
       my $potentialTmSource = $self->getTileMatrix($self->getIDfromOrder($i));
       # la précision vaut 1/100 de la plus petit résolution du TMS
-      my $epsilon = $self->getTileMatrix($self->getLevelBottom())->getResolution() / 100;
+      my $epsilon = $self->getTileMatrix($self->getBottomLevel())->getResolution() / 100;
       my $rapport = $tmTarget->getResolution() / $potentialTmSource->getResolution() ;
       #on veut que le rapport soit (proche d') un entier
       next if ( abs( int( $rapport + 0.5) - $rapport) > $epsilon );
@@ -448,266 +632,101 @@ sub computeTmSource {
   return TRUE;
 }
 
-
-#
-=begin nd
-method: getTileMatrixByArray
-
-Returns:
-    The tile matrix array in the ascending resolution order.
-=cut
-sub getTileMatrixByArray {
-    my $self = shift;
-
-    TRACE("sort by Resolution...");
-    
-    my @levels;
-
-    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tileMatrix}})) {
-        push @levels, $k;
-    }
-
-    return @levels;
-}
-
-#
-=begin nd
-method: getTileMatrix
-
-Returns:
-    The tile matrix from the supplied ID. This ID is the TMS ID (string) and not the ascending resolution order (integer).
-=cut
-sub getTileMatrix {
-  my $self = shift;
-  my $level= shift; # id !
-  
-  if (! defined $level) {
-    return undef;
-  }
-  
-  return undef if (! exists($self->{tileMatrix}->{$level}));
-  
-  return $self->{tileMatrix}->{$level};
-}
-
-#
-=begin nd
-method: getCountTileMatrix
-
-Returns:
-    The count of tile matrix in the TMS.
-=cut
-sub getCountTileMatrix {
-  my $self = shift;
-
-  return scalar (keys %{$self->{tileMatrix}});
-}
-
-#
-=begin nd
-method: getIDfromOrder
-
-Return the tile matrix ID from the ascending resolution order (integer).  
-    - 0 (bottom level, smallest resolution)
-    - NumberOfTM (top level, biggest resolution).
-
-=cut
-sub getIDfromOrder {
-    my $self = shift;
-    my $order= shift; 
-
-    TRACE;
-
-    foreach my $k (keys %{$self->{levelsBind}}) {
-        if ($self->{levelsBind}->{$k} == $order) {return $k;}
-    }
-
-    return undef;
-}
-
-#
-=begin nd
-method: getBelowLevelID
-
-Return:
-    The tile matrix ID below the given tile matrix (ID).
-=cut
-sub getBelowLevelID {
-    my $self = shift;
-    my $ID= shift; 
-
-    TRACE;
-    
-    return undef if (! exists $self->{levelsBind}->{$ID});
-    my $order = $self->{levelsBind}->{$ID};
-    return undef if ($order == 0);
-    return $self->getIDfromOrder($order-1);
-}
-
-#
-=begin nd
-method: getOrderfromID
-
-Return the tile matrix order from the ID.
-    - 0 (bottom level, smallest resolution)
-    - NumberOfTM (top level, biggest resolution).
-=cut
-sub getOrderfromID {
-    my $self = shift;
-    my $ID= shift; 
-
-    TRACE;
-
-    if (exists $self->{levelsBind}->{$ID}) {
-        return $self->{levelsBind}->{$ID};
-    } else {
-        return undef;
-    }
-}
-
 ####################################################################################################
-#                                       DEBUG METHODS                                              #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: DEBUG METHODS
-
-#
 =begin nd
-method: exportForDebug
+Function: exportForDebug
 
-Print attributs of the TileMatrixSet
+Returns all informations about the tile matrix set. Useful for debug.
 
+Example:
+    (start code)
+    Object BE4::TileMatrixSet :
+         TMS file complete path : /home/ign/TMS/LAMB93_10cm.tms
+         Top level identifiant : 0
+         Top level resolution : 209715.2
+         Bottom level identifiant : 21
+         Bottom level resolution : 0.1
+         Spatial Reference System : IGNF:LAMB93
+         Coordinates have not to be inversed to harvest with WMS 1.3.0
+         This TMS is a quad tree
+         TileMatrix Array :
+                     ID    | Order |  Resolution
+                -----------+-------+------------------
+                        21 |  0    | 0.1
+                        20 |  1    | 0.2
+                        19 |  2    | 0.4
+                        18 |  3    | 0.8
+                        17 |  4    | 1.6
+                        16 |  5    | 3.2
+                        15 |  6    | 6.4
+                        14 |  7    | 12.8
+                        13 |  8    | 25.6
+                        12 |  9    | 51.2
+                        11 |  10   | 102.4
+                        10 |  11   | 204.8
+                         9 |  12   | 409.6
+                         8 |  13   | 819.2
+                         7 |  14   | 1638.4
+                         6 |  15   | 3276.8
+                         5 |  16   | 6553.6
+                         4 |  17   | 13107.2
+                         3 |  18   | 26214.4
+                         2 |  19   | 52428.8
+                         1 |  20   | 104857.6
+                         0 |  21   | 209715.2
+    (end code)
 =cut
 sub exportForDebug {
-    my $self = shift;
+    my $self = shift ;
+
+    my $export = "\nObject BE4::TileMatrixSet :\n";
+    $export .= sprintf "\t TMS file complete path : %s\n", $self->getPathFilename;
+    $export .= sprintf "\t Top level identifiant : %s\n", $self->getTopLevel;
+    $export .= sprintf "\t Top level resolution : %s\n", $self->getTopResolution;
+    $export .= sprintf "\t Bottom level identifiant : %s\n", $self->getBottomLevel;
+    $export .= sprintf "\t Bottom level resolution : %s\n", $self->getBottomResolution;
     
-    my $output = "";
-    
-    $output .= sprintf "\nObject BE4::TileMatrixSet :\n";
-    if (defined $self->getPathFilename() ) {
-        $output .= sprintf "\t %s : %s\n","PATHFILENAME",$self->getPathFilename();
-    };
-    if (defined $self->getName() ) {
-        $output .= sprintf "\t %s : %s\n","name",$self->getName();
-    };
-    if (defined $self->getPath() ) {
-        $output .= sprintf "\t %s : %s\n","filepath",$self->getPath();
-    };
-    if (defined $self->getFile() ) {
-        $output .= sprintf "\t %s : %s\n","filename",$self->getFile();
-    };
-    if (defined $self->getLevelTop() ) {
-        $output .= sprintf "\t %s : %s\n","topID",$self->getLevelTop();
-    };
-    if (defined $self->getLevelTopResolution() ) {
-        $output .= sprintf "\t %s : %s\n","topResolution",$self->getLevelTopResolution();
-    };
-    if (defined $self->getLevelBottom() ) {
-        $output .= sprintf "\t %s : %s\n","bottomID",$self->getLevelBottom();
-    };
-    if (defined $self->getLevelBottomResolution() ) {
-        $output .= sprintf "\t %s : %s\n","bottomResolution",$self->getLevelBottomResolution();
-    };
-    if (defined $self->getSRS() ) {
-        $output .= sprintf "\t %s : %s\n","SRS",$self->getSRS();
-    };
-    if (defined $self->getInversion() ) {
-        if ( $self->getInversion() ) {
-            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","TRUE";
-        } else {
-            $output .= sprintf "\t %s value is %s\n","coordinatesInversion","FALSE";
-        }
-    };
-    if (defined $self->isQTree() ) {
-        if ( $self->isQTree() ) {
-            $output .= sprintf "\t %s value is %s\n","isQTree","TRUE";
-        } else {
-            $output .= sprintf "\t %s value is %s\n","isQTree","FALSE";
-        }
-    };
-    $output .= sprintf "\t levelsBind hash :\n";
-    my %levelsBind = %{$self->{levelsBind}};
-    foreach my $key (keys %levelsBind ) {
-        $output .= sprintf "\t\t ID : %s ; Order : %s .\n",$key,$levelsBind{$key};
+    $export .= sprintf "\t Spatial Reference System : %s\n", $self->getSRS;
+    if ( $self->getInversion() ) {
+        $export .= sprintf "\t Coordinates have to be inversed to harvest with WMS 1.3.0\n";
+    } else {
+        $export .= sprintf "\t Coordinates have not to be inversed to harvest with WMS 1.3.0\n";
     }
-    $output .= sprintf "\t TileMatrix Array :\n";
+
+    if ( $self->isQTree() ) {
+        $export .= sprintf "\t This TMS is a quad tree\n";
+    } else {
+        $export .= sprintf "\t This TMS is not a quad tree\n";
+    }
+
+    $export .= sprintf "\t TileMatrix Array :\n";
+    $export .= sprintf "\t\t     ID    | Order |  Resolution\n";
+    $export .= sprintf "\t\t-----------+-------+------------------\n";
     foreach my $tm ( $self->getTileMatrixByArray ) {
-        $output .= sprintf "\t\t TM ID : %s, TM Resolution : %s .\n",$tm->getID(),$tm->getResolution();
-    }    
+        my $id = $tm->getID();
+        $export .= sprintf "\t\t %9s |  %-4s | %-14s \n", $id, $self->{levelsBind}->{$id}, $tm->getResolution();
+    }
     
-    return $output;
+    return $export;
 }
 
 1;
 __END__
 
-=head1 NAME
+=begin nd
 
-BE4::TileMatrixSet - load a file tile matrix set.
+Group: Details
 
-=head1 SYNOPSIS
+Details about TMS file.
 
-    use BE4::TileMatrixSet;
-    
-    my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
-    my $objTMS = BE4::TileMatrixSet->new($filepath);
-    
-    $objTMS->getTileMatrixCount()};      # ie 19
-    $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
-    $objTMS->getSRS();                   # ie 'IGNF:LAMB93'
-    $objTMS->getName();                  # ie 'LAMB93_50cm'
-    $objTMS->getFile();                  # ie 'LAMB93_50cm.tms'
-    $objTMS->getPath();                  # ie '/home/ign/tms/'
-    
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item PATHFILENAME
-
-Complete file path : /path/to/SRS_RES.tms
-
-=item name, filename, filepath
-
-Split PATHFILENAME : name : SRS_RES, filename : SRS_RES.tms, filepath : /path/to.
-
-=item levelsBind
-
-Hash binding Tile matrix identifiant (string) and order (integer) in ascending resolutions.
-
-=item topID, topResolution
-
-Higher level ID and its resolution.
-
-=item bottomID, bottomResolution
-
-Lower level ID and its resolution.
-
-=item srs
-
-=item isQTree
-
-TRUE if this TMS describe a quad tree, FALSE otherwise.
-
-=item coordinatesInversion
-
-For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
-
-=item tileMatrix
-
-Hash of TileMatrix objects : levelID => objTileMatrix
-
-=back
-
-=head1 SAMPLE
-
-Sample TMS file (F<LAMB93_50cm.tms>)
-
+Sample TMS file (LAMB93_50cm.tms):
+    (start code)
     <tileMatrixSet>
-	<crs>IGNF:LAMB93</crs>
-	<tileMatrix>
+        <crs>IGNF:LAMB93</crs>
+        <tileMatrix>
             <id>0</id>
             <resolution>131072</resolution>
             <topLeftCornerX> 0 </topLeftCornerX>
@@ -716,8 +735,8 @@ Sample TMS file (F<LAMB93_50cm.tms>)
             <tileHeight>256</tileHeight>
             <matrixWidth>1</matrixWidth>
             <matrixHeight>1</matrixHeight>
-	</tileMatrix>
-	<tileMatrix>
+        </tileMatrix>
+        <tileMatrix>
             <id>1</id>
             <resolution>65536</resolution>
             <topLeftCornerX> 0 </topLeftCornerX>
@@ -726,7 +745,7 @@ Sample TMS file (F<LAMB93_50cm.tms>)
             <tileHeight>256</tileHeight>
             <matrixWidth>1</matrixWidth>
             <matrixHeight>1</matrixHeight>
-	</tileMatrix>
+        </tileMatrix>
         .
         .
         .
@@ -740,7 +759,7 @@ Sample TMS file (F<LAMB93_50cm.tms>)
             <matrixWidth>5040</matrixWidth>
             <matrixHeight>42040</matrixHeight>
         </tileMatrix>
-	<tileMatrix>
+        <tileMatrix>
             <id>18</id>
             <resolution>0.5</resolution>
             <topLeftCornerX> 0 </topLeftCornerX>
@@ -751,41 +770,7 @@ Sample TMS file (F<LAMB93_50cm.tms>)
             <matrixHeight>84081</matrixHeight>
         </tileMatrix>
     </tileMatrixSet>
-
-=head1 LIMITATIONS AND BUGS
-
-File name of tms must be with extension : tms or TMS.
-
-All levels must be continuous (QuadTree) and unique.
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-TileMatrix.html">BE4::TileMatrix</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Bazonnais Jean Philippe
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
+    (end code)
 
 =cut
+

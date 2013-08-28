@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -38,7 +38,7 @@
 /**
  * \file MetadataURL.h
  * \~french
- * \brief Définition de la classe MetadataURL gérant les liens vers les méta-données dans les documents de capacités
+ * \brief Définition de la classe MetadataURL gérant les liens vers les métadonnées dans les documents de capacités
  * \~english
  * \brief Define the MetadataURL Class handling capabilities metadata link elements
  */
@@ -50,8 +50,8 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance MetadataURL représente un lien vers des méta-données dans les différents documents de capacités. 
- * \brief Gestion des éléments de méta-données des documents de capacités
+ * Une instance MetadataURL représente un lien vers des métadonnées dans les différents documents de capacités.
+ * \brief Gestion des éléments de métadonnées des documents de capacités
  * \~english
  * A MetadataURL represent a metadata link element in the differents capabilities documents.
  * \brief Metadata handler for the capabilities documents
@@ -59,7 +59,7 @@
 class MetadataURL : public ResourceLocator {
 private:
     /**
-     * \~french \brief Type de la méta-donnée
+     * \~french \brief Type de la métadonnée
      * \~english \brief Metadata type
      */
     std::string type;
@@ -70,7 +70,7 @@ public:
      * \brief Crée un MetadataURL à partir des ses éléments constitutifs
      * \param[in] format type mime du fichier référencé (cf ResourceLocator::format)
      * \param[in] href lien vers le fichier sous la forme d'une URL (cf ResourceLocator::href)
-     * \param[in] type type de la méta-donnée
+     * \param[in] type type de la métadonnée
      * \~english
      * \brief Create a MetadataURL
      * \param[in] format linked file mime type
@@ -80,7 +80,7 @@ public:
     MetadataURL ( std::string format, std::string href, std::string type );
     /**
      * \~french
-     * Crée un MetadataURL à partir d'un autre 
+     * Crée un MetadataURL à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] origMtdUrl MetadataURL à copier
      * \~english
@@ -95,7 +95,7 @@ public:
      * \~english
      * \brief Assignement
      */
-    MetadataURL& operator= (MetadataURL const& other);
+    MetadataURL& operator= ( MetadataURL const& other );
     /**
      * \~french
      * \brief Test d'egalite de 2 MetadataURLs
@@ -114,7 +114,7 @@ public:
      * \return true if one of their attributes is different
      */
     bool operator!= ( const MetadataURL& other ) const;
-    
+
     /**
      * \~french
      * \brief Retourne le type de la méta donnée
@@ -126,7 +126,7 @@ public:
     inline std::string getType() {
         return type;
     }
-    
+
     /**
      * \~french
      * \brief Destructeur par défaut

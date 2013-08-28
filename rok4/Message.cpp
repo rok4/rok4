@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -33,6 +33,14 @@
  * The fact that you are presently reading this means that you have had
  *
  * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
+/**
+ * \file Message.cpp
+ * \~french
+ * \brief Implémentation des classes gérant les messages utilisateurs
+ * \~english
+ * \brief Implement classes handling user messages
  */
 
 #include "Message.h"
@@ -72,8 +80,8 @@ std::string genSER ( ServiceException *sex ) {
  */
 std::string genSER ( std::vector<ServiceException*> *sexcp ) {
 
-   // LOGGER_DEBUG ( "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0] ) ;
-   // LOGGER_DEBUG ( "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]" ) ;
+    // LOGGER_DEBUG ( "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0] ) ;
+    // LOGGER_DEBUG ( "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]" ) ;
 
     //this->_init(&(sexcp->at(0)->getService())) ;
 
@@ -95,9 +103,9 @@ SERDataSource::SERDataSource ( std::vector<ServiceException*> *sexcp ) : Message
     this->message= genSER ( sexcp ) ;
     // le statut http est celui correspondant à la première exception
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sexcp->at ( 0 )->getCode() ) ;
-    for(int i = 0; i < sexcp->size(); ++i)
-        delete sexcp->at(i);
-    
+    for ( int i = 0; i < sexcp->size(); ++i )
+        delete sexcp->at ( i );
+
 }
 
 SERDataSource::SERDataSource ( ServiceException *sex ) : MessageDataSource ( "","text/xml" ) {
@@ -110,9 +118,9 @@ SERDataStream::SERDataStream ( std::vector<ServiceException*> *sexcp ) : Message
     this->message= genSER ( sexcp ) ;
     // le statut http est celui correspondant à la première exception
     this->httpStatus= ServiceException::getCodeAsStatusCode ( sexcp->at ( 0 )->getCode() ) ;
-    for(int i = 0; i < sexcp->size(); ++i)
-        delete sexcp->at(i);
-    
+    for ( int i = 0; i < sexcp->size(); ++i )
+        delete sexcp->at ( i );
+
 }
 
 SERDataStream::SERDataStream ( ServiceException *sex ) : MessageDataStream ( "","text/xml" ) {

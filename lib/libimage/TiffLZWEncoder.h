@@ -66,11 +66,11 @@ public:
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->width*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
         if ( !lzwBuffer ) {
-            rawBuffer = new T[image->height*image->width*image->channels];
+            rawBuffer = new T[image->getHeight()*image->getWidth()*image->channels];
             int lRead = 0;
-            for ( ; lRead < image->height ; lRead++ ) {
+            for ( ; lRead < image->getHeight() ; lRead++ ) {
                 image->getline ( rawBuffer + rawBufferSize, lRead );
                 rawBufferSize += linesize;
             }
@@ -96,9 +96,9 @@ public:
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, header_size );
             else if ( image->channels==4 )
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, header_size );
-            * ( ( uint32_t* ) ( buffer+18 ) )  = image->width;
-            * ( ( uint32_t* ) ( buffer+30 ) )  = image->height;
-            * ( ( uint32_t* ) ( buffer+102 ) ) = image->height;
+            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
+            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
+            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
             * ( ( uint32_t* ) ( buffer+114 ) ) = lzwBufferSize;
             offset = header_size;
             line = 0;

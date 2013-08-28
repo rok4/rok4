@@ -35,223 +35,206 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file MergeImage.cpp
+ ** \~french
+ * \brief Implémentation des classes MergeImage, MergeImageFactory et MergeMask et du namespace Merge
+ * \details
+ * \li MergeImage : image résultant de la fusion d'images semblables, selon différents modes de composition
+ * \li MergeImageFactory : usine de création d'objet MergeImage
+ * \li MergeMask : masque fusionné, associé à une image fusionnée
+ * \li Merge : énumère et manipule les différentes méthodes de fusion
+ ** \~english
+ * \brief Implement classes MergeImage, MergeImageFactory and MergeMask and the namespace Merge
+ * \details
+ * \li MergeImage : image merged with similar images, with different merge methods
+ * \li MergeImageFactory : factory to create MergeImage object
+ * \li MergeMask : merged mask, associated with a merged image
+ * \li Merge : enumerate and managed different merge methods
+ */
+
 #include "MergeImage.h"
+#include "Line.h"
 #include "Utils.h"
 #include "Logger.h"
 #include <cstring>
 
-static inline float Multiply(float Sca, float Sa, float Dca, float Da) {
-    return(Sca*Dca+Sca*(1.0-Da)+Dca*(1.0-Sa));
-}
+template <typename T>
+int MergeImage::_getline ( T* buffer, int line ) {
+    Line<T> aboveLine ( width );
+    T* imageLine = new T[width*4];
+    uint8_t* maskLine = new uint8_t[width];
+    memset ( maskLine, 0, width );
 
-static inline void composeMultiply( uint8_t * dest,int outchannels, Pixel back, Pixel front) {
-    //BUG
-    //return(Sca*Dca+Sca*(1.0-Da)+Dca*(1.0-Sa));
-    float gamma = back.Sa + front.Sa - back.Sa * front.Sa;
-    //gamma = back.a * front.a;
-    //gamma = gamma;
-    gamma = ( gamma < 0.0 ? 0.0 : gamma );
-    gamma = ( gamma > 1.0 ? 1.0 : gamma );
-    switch ( outchannels ) {
-        case 4:
-//             *(dest+3) = (uint8_t) (255 * (1.0-gamma));
-            *(dest+3) = (uint8_t) (255 * (1.0-back.Sa * front.Sa));
-        case 3:
-//             *(dest+2) = (uint8_t) ( 255 *255* gamma * Multiply(back.Sba/255 , back.Sa, front.Sba/255, front.Sa));
-//             *(dest+1) = (uint8_t) ( 255 *255* gamma * Multiply(back.Sga/255 , back.Sa, front.Sga/255, front.Sa));
-            *(dest+2) = (uint8_t) ( back.Sba * front.Sba/255 );
-            *(dest+1) = (uint8_t) ( back.Sga * front.Sga/255 );
-        case 1: 
-//             *dest = (uint8_t) ( 255 *255* gamma * Multiply(back.Sra/255 , back.Sa, front.Sra/255, front.Sa));
-            *dest     = (uint8_t) ( back.Sra * front.Sra/255 );
+    T bg[channels*width];
+    for ( int i = 0; i < channels*width; i++ ) {
+        bg[i] = ( T ) bgValue[i%channels];
     }
-}
+    Line<T> workLine ( bg, maskLine, channels, width );
 
-static inline void composeNormal( uint8_t * dest,int outchannels, Pixel back, Pixel front) {
-    //float gamma = back.a * front.a;
-    //gamma = back.a * front.a;
-    //gamma = gamma;
-    //gamma = ( gamma < 0.0 ? 0.0 : gamma );
-    //gamma = ( gamma > 1.0 ? 1.0 : gamma );
-    switch ( outchannels ) {
-        case 4:
-            *(dest+3) = (uint8_t) ( 255 * (1.0 - ( 1.0 - front.Sa ) * ( 1.0 - back.Sa ) ) );
-            
-        case 3:
-            *(dest+2) = (uint8_t) ( ( (1.0-front.Sa) * back.Sba +  front.Sba ) );
-            *(dest+1) = (uint8_t) ( ( (1.0-front.Sa) * back.Sga + front.Sga ) );
-        case 1: 
-            
-            *dest = (uint8_t) ( ( (1.0-front.Sa) * back.Sra + front.Sra ) );
-    }
-}
-
-
-void MergeImage::mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front ) {
-    size_t column = 0;
-    Pixel *backPix, *frontPix;
-    
-    while ( column < width ) {
-            switch (backImage->channels){
-                case 1:
-                    backPix = new Pixel(*(back+column));
-                    break;
-                case 3:
-                    backPix = new Pixel(*(back+column*3),*(back+1+column*3),*(back+2+column*3));
-                    break;
-                case 4:
-                    backPix = new Pixel(*(back+column*4),*(back+1+column*4),*(back+2+column*4),*(back+3+column*4));
-                    break;
-            }
-            switch (frontImage->channels){
-                case 1:
-                    frontPix = new Pixel(*(front+column));
-                    break;
-                case 3:
-                    frontPix = new Pixel(*(front+column*3),*(front+1+column*3),*(front+2+column*3));
-                    break;
-                case 4:
-                    frontPix = new Pixel(*(front+column*4),*(front+1+column*4),*(front+2+column*4),*(front+3+column*4));
-                    break;
+    T* transparent;
+    if ( transparentValue != NULL ) {
+        transparent = new T[3];
+        for ( int i = 0; i < 3; i++ ) {
+            transparent[i] = ( T ) transparentValue[i];
         }
+    }
+
+    for ( int i = 0; i < images.size(); i++ ) {
+
+        int srcSpp = images[i]->channels;
+        images[i]->getline ( imageLine,line );
+
+        if ( images[i]->getMask() == NULL ) {
+            memset ( maskLine, 255, width );
+        } else {
+            images[i]->getMask()->getline ( maskLine,line );
+        }
+
+        if ( transparentValue == NULL ) {
+            aboveLine.store ( imageLine, maskLine, srcSpp );
+        } else {
+            aboveLine.store ( imageLine, maskLine, srcSpp, transparent );
+        }
+
         switch ( composition ) {
-
-        case NORMAL:
-            composeNormal ( ( buffer + column * channels ), channels, *backPix, *frontPix );
+        case Merge::NORMAL:
+            workLine.useMask ( &aboveLine );
             break;
-        case MULTIPLY:
-            composeMultiply ( ( buffer + column * channels ), channels, *backPix, *frontPix );
+        case Merge::TOP:
+            workLine.useMask ( &aboveLine );
             break;
-        case LIGHTEN:
-        case DARKEN:
+        case Merge::MULTIPLY:
+            workLine.multiply ( &aboveLine );
+            break;
+        case Merge::ALPHATOP:
+            workLine.alphaBlending ( &aboveLine );
+            break;
+            //case Merge::LIGHTEN:
+            //case Merge::DARKEN:
         default:
-            composeNormal ( ( buffer + column * channels ), channels, *backPix, *frontPix );
+            workLine.useMask ( &aboveLine );
             break;
         }
 
-        delete frontPix;
-        delete backPix;
-        column++;
-            
-        }
-}
-    
-//    case MULTIPLYOLD:
-//         if ( backImage->channels == frontImage->channels ) {
-//             while ( column < width * channels ) {
-//                 * ( buffer+column ) = * ( back + column ) * * ( front + column ) * factor / 255;
-//                 column++;
-//             }
-//             break;
-//         }
-//         switch ( backImage->channels ) {
-//         case 1: {
-//             switch ( frontImage->channels ) {
-//             case 3:
-//                 while ( column < width * channels ) {
-//                     * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     column++;
-//                 }
-//                 break;
-//             case 4:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = 0;
-//                     } else {
-//                         * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
-//         break;
-//         case 3: {
-//             switch ( frontImage->channels ) {
-//             case 1:
-//                 while ( column < width * channels ) {
-//                     * ( buffer+column ) =( * ( back + column ) * * ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor )/ 255;
-//                     column++;
-//                 }
-//                 break;
-//             case 4:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = 0;
-//                     } else {
-//                         * ( buffer+column ) = * ( back + ( column - ( column % frontImage->channels ) ) /frontImage->channels ) * * ( front + column ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
-//         break;
-//         case 4: {
-//             switch ( frontImage->channels ) {
-//             case 1:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = ( * ( back + column ) ==255?* ( back + column ) :0 );
-//                     } else {
-//                         * ( buffer+column ) = * ( back + column ) * (* ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor + 255*factor) / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             case 3:
-//                 while ( column < width * channels ) {
-//                     if ( column%4 == 3 ) {
-//                         * ( buffer+column ) = ( * ( back + column ) ==255?* ( back + column ) :0 );
-//                     } else {
-//                         * ( buffer+column ) = * ( back + column ) * * ( front + ( column - ( column % backImage->channels ) ) /backImage->channels ) * factor / 255;
-//                     }
-//                     column++;
-//                 }
-//                 break;
-//             }
-//         }
+    }
 
+    // On repasse la ligne sur le nombre de canaux voulu
+    workLine.write ( buffer, channels );
 
-int MergeImage::getline ( float* buffer, int line ) {
-    uint8_t* backBuffer = new uint8_t[backImage->width* backImage->channels];
-    uint8_t* frontBuffer = new uint8_t[frontImage->width* frontImage->channels];
-    uint8_t* intBuffer = new uint8_t[width * channels];
-    frontImage->getline ( frontBuffer, line );
-    backImage->getline ( backBuffer, line );
+    if ( transparentValue != NULL ) {
+        delete [] transparent;
+    }
+    delete [] imageLine;
+    delete [] maskLine;
 
-    mergeline ( intBuffer,backBuffer,frontBuffer );
-    convert ( buffer, intBuffer, width*channels );
-    delete[] backBuffer;
-    delete[] frontBuffer;
-    delete[] intBuffer;
-    return width*channels;
+    return width*channels*sizeof ( T );
 }
 
+/* Implementation de getline pour les uint8_t */
 int MergeImage::getline ( uint8_t* buffer, int line ) {
-    uint8_t* backBuffer = new uint8_t[backImage->width * backImage->channels];
-    uint8_t* frontBuffer = new uint8_t[frontImage->width * frontImage->channels];
+    return _getline ( buffer, line );
+}
 
-    frontImage->getline ( frontBuffer, line );
-    backImage->getline ( backBuffer, line );
+/* Implementation de getline pour les float */
+int MergeImage::getline ( float* buffer, int line ) {
+    return _getline ( buffer, line );
+}
 
-    mergeline ( buffer,backBuffer,frontBuffer );
-    delete[] backBuffer;
-    delete[] frontBuffer;
+MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, int channels,
+        int* bgValue, int* transparentValue, Merge::MergeType composition ) {
+    if ( images.size() == 0 ) {
+        LOGGER_ERROR ( "No source images to defined merged image" );
+        return NULL;
+    }
+
+    int width = images.at ( 0 )->getWidth();
+    int height = images.at ( 0 )->getHeight();
+
+    for ( int i = 1; i < images.size(); i++ ) {
+        if ( images.at ( i )->getWidth() != width || images.at ( i )->getHeight() != height ) {
+            LOGGER_ERROR ( "All images must have same dimensions" );
+            images.at ( 0 )->print();
+            images.at ( i )->print();
+            return NULL;
+        }
+    }
+
+    if ( bgValue == NULL ) {
+        LOGGER_ERROR ( "We have to precise a value used as background in the MergeImage" );
+        return NULL;
+    }
+
+    return new MergeImage ( images, channels, bgValue, transparentValue, composition );
+}
+
+
+int MergeMask::_getline ( uint8_t* buffer, int line ) {
+
+    memset ( buffer,0,width );
+
+    uint8_t* buffer_m = new uint8_t[width];
+
+    for ( uint i = 0; i < MI->getImages()->size(); i++ ) {
+
+        if ( MI->getMask ( i ) == NULL ) {
+            /* L'image n'a pas de masque, on la considère comme pleine. Ca ne sert à rien d'aller voir plus loin,
+             * cette ligne du masque est déjà pleine */
+            memset ( buffer, 255, width );
+            delete [] buffer_m;
+            return width;
+        } else {
+            // Récupération du masque de l'image courante de l'MI.
+            MI->getMask ( i )->getline ( buffer_m,line );
+            // On ajoute au masque actuel (on écrase si la valeur est différente de 0)
+            for ( int j = 0; j < width; j++ ) {
+                if ( buffer_m[j] ) {
+                    memcpy ( &buffer[j],&buffer_m[j],1 );
+                }
+            }
+        }
+    }
+
+    delete [] buffer_m;
+    return width;
+}
+
+/* Implementation de getline pour les uint8_t */
+int MergeMask::getline ( uint8_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
+int MergeMask::getline ( float* buffer, int line ) {
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    getline ( buffer_t,line );
+    convert ( buffer,buffer_t,width*channels );
+    delete [] buffer_t;
     return width*channels;
 }
 
-MergeImage::MergeImage ( Image* backImage, Image* frontImage, MergeImage::MergeType composition, float factor ) :
-    Image ( backImage->width, backImage->height, ( backImage->channels>frontImage->channels?backImage->channels:frontImage->channels ), backImage->getbbox() ),
-    backImage ( backImage ), frontImage ( frontImage ), composition ( composition ), factor ( factor ) {
-    
-    LOGGER_DEBUG("Out   channels = "  << channels );
-    LOGGER_DEBUG("Back  channels = "  << backImage->channels );
-    LOGGER_DEBUG("Front channels = "  << frontImage->channels );
+namespace Merge {
+
+const char *mergeType_name[] = {
+    "UNKNOWN",
+    "NORMAL",
+    "LIGHTEN",
+    "DARKEN",
+    "MULTIPLY",
+    "ALPHATOP",
+    "TOP"
+};
+
+MergeType fromString ( std::string strMergeMethod ) {
+    int i;
+    for ( i = mergeType_size; i ; --i ) {
+        if ( strMergeMethod.compare ( mergeType_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<MergeType> ( i );
 }
 
-MergeImage::~MergeImage() {
-    delete backImage;
-    delete frontImage;
+std::string toString ( MergeType mergeMethod ) {
+    return std::string ( mergeType_name[mergeMethod] );
 }
-
+}

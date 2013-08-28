@@ -35,106 +35,131 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Kernel.h
+ * \~french
+ * \brief Définition de la classe Kernel, classe mère des différents noyaux d'interpolation
+ * \~english
+ * \brief Define the Kernel class, super class for different interpolation kernels
+ */
+
 #ifndef KERNEL_H
 #define KERNEL_H
 
 #include "Interpolation.h"
+#include <iostream>
 
 /**
- * Classe mère définissant l'interface d'appel d'un noyau de rééchantillonnage en 1 dimension.
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Gestion du noyau d'interpolation
+ * \details Afin de réechantillonner une images qui n'a pas les bonnes résolutions, ou les bonnes phases, on est amené à utiliser un mode d'interpolation, c'est-à-dire une façon de calculer la valeur d'un pixel à partir d'un ou plusieurs pixels sources.
  *
- * Les classe filles implémentant un noyau particulier de rééchantillonnage auront
- * à définir la taille du noyau (kernel_size), à déterminer si celle-ci dépend du ratio
- * de rééchantillonage (const_ratio) et la fonction de poids (kernel_function)
+ * Le calcul de réechantillonnage s'appuie sur un noyau d'interpolation, définissant les pixels sources à considérer dans le calcul et le \b poids qui leur est affecté (en fonction de la \b distance en pixel). En effet, une interpolation n'est rien d'autre qu'une moyenne pondérée. Ce sont ces deux caractéristiques qui vont varier d'un noyau à l'autre.
  *
- * Les rééchantillonages en 2D sont effectués en échantillonnant en 1D selon chaque dimension.
+ * Les noyaux sont gérés en 1 dimension. On y fera appel dans le sens des X puis dans le sens des Y pour obtenir une interpolation en deux dimensions.
+ *
+ * Les distances sont toujours exprimée en pixel source, et on considérera les centres des pixels.
  */
 class Kernel {
-    friend class NearestNeighbour;
+
 private:
-
-    float coeff[1025];
-
     /**
-     * Taille du noyau en nombre de pixels pour un ratio de 1.
-     * Pour calculer la valeur d'un pixel rééchantillonné x les pixels
-     * sources entre x - kernel_size et x + kernel_size seront utilisés.
+     * \~french \brief Rayon de base du noyau d'interpolation
+     * \details Chaque noyau a un rayon de base, qui va définir les pixels source de part et d'autre du pixel de destination qui vont compter dans le calcul (avoir un poids non nul). On peut imaginer un cercle autour du pixel final et considérer les pixels sources dans ce cercle.
+     *
+     * Le rayon est donc une distance exprimée en pixel source
+     *
+     * Ce rayon de base peut être modulé par le rapport des résolutions, c'est-à-dire le ratio :
+     *
+     * \b resolution destination / \b resolution source
+     *
+     * Et cela pour rendre possible les sur et sous échantillonnage.
+     *
+     * \~ \image html rayon_interpolation.png
      */
     const double kernel_size;
 
     /**
-     * Détermine si le ratio de rééchantillonnage influe sur la taille du noyau.
-     *
-     * Si const_ratio = true, la taille du noyau est kernel_size
-     * Si const_ratio = false la taille du noyeau est
-     *    - kernel_size pour ratio <= 1
-     *    - kernel_size * ratio pour ratio > 1
+     * \~french \brief Tableau des poids
+     * \details On ne veut pas calculer à la volée chaque poids à chaque utilisation du noyau (cela serait trop gourmand en calcul pour les noyaux dont la fonction de définition est trop complexe : sinus...). On va donc calculer 1025 poids, équitablement répartis pour des distances de 0 à kernel_size.
+     */
+    float coeff[1025];
+
+    /**
+     * \~french \brief Influence du rapport des résolutions sur la taille du noyau
+     * \details
+     * \li Si const_ratio est \b vrai, la taille du noyau kernel_size reste constante
+     * \li Si const_ratio est \b false la taille du noyeau est dépendante du ratio est vaut
+     *          - kernel_size pour un ratio inférieur 1
+     *          - kernel_size * ratio pour un ratio supérieur à 1
      */
     const bool const_ratio;
 
     /**
-     * Fonction du noyau définissant le poid d'un pixel en fonction de sa distance d au
-     * pixel rééchantillonné.
+     * \~french \brief Fonction caractéristique du noyau d'interpolation
+     * \details C'est une fonction qui détermine le poids d'un pixel source en fonction de sa distance au pixel à calculer.
+     * \param[in] d distance entre le pixel source et le pixel à calculer
+     * \return poids affecté au pixel source
      */
-    virtual double kernel_function(double d) = 0;
+    virtual double kernel_function ( double d ) = 0;
 
 protected:
 
     /**
-     * Initialise le tableau des coefficient avec en échantillonnant la fonction kernel_function.
-     * Cette fonction doit typiquement être apellée à la fin du constructeur des classe filles
+     * \~french \brief Initialise le tableau des poids
+     * \details On divise kernel_size en 1024 section et on calcule le poids pour chacun de ces points équitablement répartis.
+     *
+     * Cette fonction doit typiquement être apellée à la fin du constructeur des classes filles
      * (pour des raisons d'ordre d'initialisation des instances mère/fille).
      */
     void init() {
-        for (int i = 0; i <= 1024; i++) coeff[i] = kernel_function(i * kernel_size / 1024.);
+        for ( int i = 0; i <= 1024; i++ ) {
+            coeff[i] = kernel_function ( i * kernel_size / 1024. );
+        }
     }
 
     /**
-     * Constructeur de la classe mère
-     * Ne peux être appelé que par les constructeurs des classes filles.
+     * \~french \brief Crée un Kernel à partir de tous ses éléments constitutifs
+     * \details Ne peux être appelé que par les constructeurs des classes filles.
+     * \param[in] kernel_size rayon de base du noyau d'interpolation
+     * \param[in] const_ratio influence du rapport des résolutions sur le rayon du noyau
      */
-     Kernel(double kernel_size, bool const_ratio = false) : kernel_size(kernel_size), const_ratio(const_ratio) {}
+    Kernel ( double kernel_size, bool const_ratio = false ) : kernel_size ( kernel_size ), const_ratio ( const_ratio ) {}
 
 public:
 
     /**
-     * Factory permettant d'obtenir une instance d'un type de noyau donné.
+     * \~french \brief Usine d'instanciation d'un type de noyau
+     * \param[in] T type de noyau d'interpolation
+     * \return noyau d'interpolation
      */
-    static const Kernel& getInstance(Interpolation::KernelType T = Interpolation::LANCZOS_3);
+    static const Kernel& getInstance ( Interpolation::KernelType T = Interpolation::LANCZOS_3 );
 
     /**
-     * Calcule la taille du noyau en nombre de pixels sources requis sur une dimension
-     * en fonction du ratio de rééchantillonage.
-     *
-     *
-     * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
-     *        ratio = resolution source / résolution cible.
-     *
-     * @return nombre de pixels (non forcément entiers) requis. Pour interpoler
-     *           la coordonnées x, les pixels compris entre x-size et x+size seront utlisés.
+     * \~french \brief Calcule la taille effective du noyau en nombre de pixels sources
+     * \details On tient compte du ratio et de const_ratio
+     * \param[in] ratio rapport resolution destination / resolution source.
+     * \li si supérieur à 1 : sous-échantillonnage
+     * \li si inférieur à 1 : sur échantillonage
+     * \return rayon effectif du noyau d'interpolation
      */
-    inline double size(double ratio = 1.) const {
-        if (ratio <= 1 || const_ratio) return kernel_size;
+    inline double size ( double ratio = 1. ) const {
+        if ( const_ratio || ratio <= 1 ) return kernel_size;
         else return kernel_size * ratio;
     }
 
     /**
-     * Fonction calculant les poids à appliquer aux pixels sources en fonction
-     * du centre du pixel à calculer et du ratio de réchantillonage
-     *
-     * @param W Tableau de coefficients d'interpolation à calculer.
-     * @param length Taille max du tableau. Valeur modifiée en retour pour fixer le nombre de coefficient remplis dans W.
-     * @param x Valeur à interpoler
-     * @param ratio Ratio d'interpollation. >1 sous-échantillonnage. <1 sur échantillonage.
-     *
-     * @return xmin : première valeur entière avec coefficient non nul. le paramètre length est modifié pour
-     * indiquer le nombre réel de coefficients écrits dans W.
+     * \~french \brief Calcule les poids pour chaque pixel source
+     * \details On tient compte du ratio et de const_ratio
+     * \param[out] W tableau des poids à affecter aux pixels sources
+     * \param[in,out] length nombre de poids à calculer a priori, mais peut être réduit sur les bords
+     * \param[in] x coordonnée en pixel source du pixel à calculer (distance entre le centre du pixel source origine et le centre du pixel à calculer)
+     * \param[in] max coordonnée maximale à ne pas dépasser (largeur ou hauteur de l'image source)
+     * \return indice du premier pixel source comptant dans le calcul (poids non nul)
      */
-    virtual double weight(float* W, int &length, double x, double ratio) const;
+    virtual int weight ( float* W, int& length, double x, int max ) const;
 
 };
-
-
-
 
 #endif

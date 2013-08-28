@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -38,7 +38,7 @@
 /**
  * \file intl.h
  * \~french \brief Fonctions d'internationalisation
- * \todo internationalisation des messages clients 
+ * \todo internationalisation des messages clients
  * \~english \brief Internationalization functions
  * \todo handle internationalized messages
  */
@@ -56,7 +56,7 @@
 #define _(string) dgettext(DOMAINNAME,string)
 
 
-static std::string getMessage(std::string& message, std::string& locale) {
+static std::string getMessage ( std::string& message, std::string& locale ) {
     return message;
 }
 

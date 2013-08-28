@@ -33,6 +33,41 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Script.pm
+
+Class: BE4::Script
+
+Describe a script, its weight and allowed to write in.
+
+Using:
+    (start code)
+    use BE4::Script;
+
+    my $objC = BE4::Script->new({
+        id => "SCRIPT_1",
+        tempDir => "/home/ign/TMP/",
+        commonTempDir => "/home/ign/TMP/",
+        scriptDir => "/home/ign/SCRIPTS",
+        executedAlone => "FALSE"
+    });
+    (end code)
+
+Attributes:
+    id - string - Identifiant, like "SCRIPT_2". It used to name the file and temporary directories.
+    executedAlone - boolean - If we know a script will be executed ALONE. it can change some working.
+    filePath - string - Complete absolute script file path.
+    tempDir - string - Directory used to write temporary images.
+    commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
+    mntConfDir - string - Directory used to write mergeNtiff configuration files. *mntConfDir* is a subdirectory of *commonTempDir*.
+    weight - integer - Weight of the script, according to its content.
+    stream - stream - Stream to the script file, to write in.
+=cut
+
+################################################################################
+
 package BE4::Script;
 
 use strict;
@@ -63,46 +98,31 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
-=begin nd
-Group: variable
-
-variable: $self
-    * id
-    * filePath
-    * tempDir
-    * commonTempDir
-    * mntConfDir
-    * weight
-    * stream
-=cut
-
 ####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
+#                                        Group: Constructors                                       #
 ####################################################################################################
 
-# Group: constructor
-
-#
 =begin nd
-method: new
+Constructor: new
 
-Script constructor
+Script constructor. Bless an instance.
 
-Parameters (hash keys):
-    id - string ID, like 'SCRIPT_1', used to name the file.
-    scriptDir - directory, where to write the script.
-    tempDir - root directory, in which own temporary directory will be created.
-    commonTempDir - common temporary directory, to allowed scripts to share files
+Parameters (hash):
+    id - string - Identifiant, used to name the file, like 'SCRIPT_1'.
+    scriptDir - string - Directory path, where to write the script.
+    tempDir - string - Root directory, in which own temporary directory will be created.
+    commonTempDir - string - Common temporary directory, to allowed scripts to share files
+    executedAlone - boolean - Optionnal, FALSE by default.
 =cut
 sub new {
     my $this = shift;
     my $params = shift;
 
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         id => undef,
+        executedAlone => FALSE,
         filePath => undef,
         tempDir => undef,
         commonTempDir => undef,
@@ -123,6 +143,12 @@ sub new {
     }
     $self->{id} = $params->{id};
 
+    ########## Will be executed alone ?
+
+    if ( exists $params->{executedAlone} && defined $params->{executedAlone} && $params->{executedAlone}) {
+        $self->{executedAlone} = TRUE;
+    }
+
     ########## Chemin d'écriture du script
     
     if ( ! exists $params->{scriptDir} || ! defined $params->{scriptDir}) {
@@ -142,14 +168,14 @@ sub new {
     ########## Dossier commun à tous les scripts
 
     if ( ! exists $params->{commonTempDir} || ! defined $params->{commonTempDir}) {
-        ERROR ("'commonTempDir' mandatory to create a Script object !");
+        ERROR ("'commonTempDir mandatory to create a Script object !");
         return undef;
     }
     $self->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
 
     ########## Dossier des configurations des mergeNtiff pour ce script
     
-    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff",$self->{id});
+    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
     
@@ -206,31 +232,50 @@ sub new {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getID
+# Returns the script's identifiant
 sub getID {
     my $self = shift;
     return $self->{id};
 }
 
+# Function: isExecutedAlone
+sub isExecutedAlone {
+    my $self = shift;
+    return $self->{executedAlone};
+}
+
+# Function: getTempDir
+# Returns the script's temporary directories
 sub getTempDir {
     my $self = shift;
     return $self->{tempDir};
 }
 
+# Function: getMntConfDir
+# Returns the mergeNtiff configuration's directory
 sub getMntConfDir {
     my $self = shift;
     return $self->{mntConfDir};
 }
 
+# Function: getWeight
+# Returns the script's weight
 sub getWeight {
     my $self = shift;
     return $self->{weight};
 }
 
+=begin nd
+Function: addWeight
+Add provided weight to script's weight.
+
+Parameters (list):
+    weight - integer - weight to add to script's one.
+=cut
 sub addWeight {
     my $self = shift;
     my $weight = shift;
@@ -238,6 +283,13 @@ sub addWeight {
     $self->{weight} += $weight;
 }
 
+=begin nd
+Function: setWeight
+Define the script's weight.
+
+Parameters (list):
+    weight - integer - weight to set as script's one.
+=cut
 sub setWeight {
     my $self = shift;
     my $weight = shift;
@@ -246,50 +298,50 @@ sub setWeight {
 }
 
 ####################################################################################################
-#                                       STREAM METHODS                                             #
+#                                   Group: Stream methods                                          #
 ####################################################################################################
 
-# Group: stream methods
-
-#
 =begin nd
-method: prepare
+Function: prepare
 
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
-Parameters:
-    rootTempDir - root temporary directory, present in be4 configuration.
-    pyrDir - cache root directory.
-    functions - Configured functions, used in the script (mergeNtiff, wget...).
+Parameters (list):
+    pyrDir - string - Pyramid root directory.
+    listFile - string - Path to the list file.
+    functions - string - Configured functions, used in the script (mergeNtiff, wget...).
 
 Example:
-|   # Variables d'environnement
-|   SCRIPT_ID="SCRIPT_1"
-|   COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
-|   ROOT_TMP_DIR="/tmp/ORTHO/"
-|   TMP_DIR="/tmp/ORTHO/SCRIPT_1"
-|   MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
-|   PYR_DIR="/home/ign/PYR/ORTHO"
-|   LIST_FILE="/home/ign/PYR/ORTHO.list"
-|
-|   # fonctions de factorisation
-|   Wms2work () {
-|     local img_dst=$1
-|     local url=$2
-|     local count=0; local wait_delay=60
-|     while :
-|     do
-|       let count=count+1
-|       wget --no-verbose -O $img_dst $url 
-|       if tiffck $img_dst ; then break ; fi
-|       echo "Failure $count : wait for $wait_delay s"
-|       sleep $wait_delay
-|       let wait_delay=wait_delay*2
-|       if [ 3600 -lt $wait_delay ] ; then 
-|         let wait_delay=3600
-|       fi
-|     done
-|   }
+    (start code)
+    # Variables d'environnement
+    SCRIPT_ID="SCRIPT_1"
+    COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
+    ROOT_TMP_DIR="/tmp/ORTHO/"
+    TMP_DIR="/tmp/ORTHO/SCRIPT_1"
+    MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
+    PYR_DIR="/home/ign/PYR/ORTHO"
+    LIST_FILE="/home/ign/PYR/ORTHO.list"
+
+    # fonctions de factorisation
+    Wms2work () {
+      local img_dst=$1
+      local url=$2
+      local count=0; local wait_delay=60
+      while :
+      do
+        let count=count+1
+        wget --no-verbose -O $img_dst $url
+        if tiffck $img_dst ; then break ; fi
+        echo "Failure $count : wait for $wait_delay s"
+        sleep $wait_delay
+        let wait_delay=wait_delay*2
+        if [ 3600 -lt $wait_delay ] ; then
+          let wait_delay=3600
+        fi
+      done
+    }
+    (end code)
+
 =cut
 sub prepare {
     my $self = shift;
@@ -316,16 +368,23 @@ sub prepare {
     $code   .= "# Fonctions\n";
     $code   .= "$functions\n";
 
-    $code .= "# creation du repertoire de travail\n";
+    $code .= "# Création du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
 
-    $code .= "# creation de la liste temporaire\n";
+    $code .= "# Création de la liste temporaire\n";
     $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
 
-    $self->print($code);
+    $self->write($code);
 }
 
-sub print {
+=begin nd
+Function: write
+Print text in the script's file, using the opened stream.
+
+Parameters (list):
+    text - string - Text to write in file.
+=cut
+sub write {
     my $self = shift;
     my $text = shift;
     
@@ -333,17 +392,24 @@ sub print {
     printf $stream "%s", $text;
 }
 
+# Function: close
 sub close {
     my $self = shift;
     
     my $stream = $self->{stream};
 
+    if ($self->{weight} == 0) {
+        printf $stream "\necho \"No image to generate (null weight)\"\n";
+    } else {
+        printf $stream "\necho \"Theorical weight was : %s\"\n", $self->{weight};
+    }
+
     # On copie la liste temporaire de ce script vers le dossier commun
     printf $stream "\necho \"Temporary files list is moving to the common directory\"\n";
     printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
 
-    if ($self->{id} eq "SCRIPT_FINISHER") {
-        printf $stream "\necho \"Temporary files lists (list_<?>.txt in the common directory) are added to the global files list, then removed\"\n";
+    if ($self->{executedAlone}) {
+        printf $stream "\necho \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
         printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
     }
@@ -352,11 +418,26 @@ sub close {
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all informations about the script. Useful for debug.
+
+Example:
+    (start code)
+    Object BE4::Script :
+        ID : SCRIPT_2
+        Will NOT be executed alone
+        Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
+        Temporary directory : /home/IGN/TEMP/SCRIPT_2
+        Common temporary directory : /home/IGN/TEMP/COMMON
+        MergeNtiff configuration directory : /home/IGN/TEMP/COMMON/mergeNtiff
+        Weight : 59
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -364,10 +445,13 @@ sub exportForDebug {
     
     $export .= "\nObject BE4::Script :\n";
     $export .= sprintf "\t ID : %s\n", $self->{id};
+    
+    $export .= sprintf "\t Will NOT be executed alone\n" if (! $self->{executedAlone});
+    $export .= sprintf "\t Will be executed ALONE\n" if ($self->{executedAlone});
+    
     $export .= sprintf "\t Script path : %s\n", $self->{filePath};
     $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
     $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};
-    $export .= sprintf "\t Personnal temporary directory root : %s\n", File::Spec->dirname($self->{tempDir});
     $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $self->{mntConfDir};
     $export .= sprintf "\t Weight : %s\n", $self->{weight};
 
@@ -376,74 +460,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Script - Describe a script, its weight and allowed to write in.
-
-=head1 SYNOPSIS
-
-    use BE4::Script;
-  
-    my $objC = BE4::Script->new({
-        id => "SCRIPT_1",
-        tempDir => "/home/ign/TMP/",
-        commonTempDir => "/home/ign/TMP/",
-        scriptDir => "/home/ign/SCRIPTS",
-    });
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-item id
-
-item filePath
-
-Complete absolute file path.
-
-item tempDir
-
-Directory used to write temporary images.
-
-item commonTempDir
-
-Directory used to write temporary images which have to be shared between different scripts.
-
-item mntConfDir
-
-Directory used to write mergeNtiff configuration files.
-
-item weight
-
-Weight of the script, according to its content.
-
-item stream
-
-Stream to the script file, to write in.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,6 +35,35 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file main.cpp
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * Le serveur ROk4 peut fonctionner dans 2 modes distinct :
+ *  - autonome, en définissant l'adresse et le port d'écoute dans le fichier de configuration
+ *  - controlé, les paramètres d'écoute sont données par un processus maitre
+ *
+ * Paramètre d'entrée :
+ *  - le chemin vers le fichier de configuration du serveur
+ *
+ * Signaux écoutés :
+ *  - \b SIGHUP réinitialise la configuration du serveur
+ *  - \b SIGQUIT & \b SIGUSR1 éteint le serveur
+ * \brief Exécutable du serveur ROK4
+ * \~english
+ * The ROK4 server can be started in two mods :
+ *  - autonomous, by defining in the config files the adress and port to listen to
+ *  - managed, by letting a master process define the adress and port to liste to
+ *
+ * Command line parameter :
+ *  - path to the server configuration file
+ *
+ * Listened Signal :
+ *  - \b SIGHUP reinitialise the server configuration
+ *  - \b SIGQUIT & \b SIGUSR1 shut the server down
+ * \brief ROK4 Server executable
+ */
+
 #include "Rok4Server.h"
 #include "ConfLoader.h"
 #include <proj_api.h>
@@ -52,7 +81,7 @@ Rok4Server* W;
 bool reload;
 
 // Minimum time between two signal to be defered.
-// Earlier signal would be ignored. 
+// Earlier signal would be ignored.
 // in microseconds
 static const double signal_defering_min_time = 1000000LL;
 
@@ -60,33 +89,49 @@ volatile sig_atomic_t signal_pending;
 volatile sig_atomic_t defer_signal;
 volatile timeval signal_timestamp;
 
-
+/**
+ * \~french
+ * \brief Affiche les paramètres de la ligne de commande
+ * \~english
+ * \brief Display the command line parameters
+ */
 void usage() {
-    std::cerr<<_("Usage : rok4 [-f server_config_file]")<<std::endl;
+    std::cerr<<_ ( "Usage : rok4 [-f server_config_file]" ) <<std::endl;
 }
 
+/**
+ * \~french
+ * \brief Force le rechargement de la configuration
+ * \~english
+ * \brief Force configuration reload
+ */
 void reloadConfig ( int signum ) {
-    if (defer_signal) {
+    if ( defer_signal ) {
         timeval now;
-        gettimeofday(&now, NULL);
-        double delta = (now.tv_sec - signal_timestamp.tv_sec)*1000000LL + (now.tv_usec - signal_timestamp.tv_usec);
-        if ( delta > signal_defering_min_time){
+        gettimeofday ( &now, NULL );
+        double delta = ( now.tv_sec - signal_timestamp.tv_sec ) *1000000LL + ( now.tv_usec - signal_timestamp.tv_usec );
+        if ( delta > signal_defering_min_time ) {
             signal_pending = signum;
         }
     } else {
         defer_signal++;
         timeval begin;
-        gettimeofday(&begin, NULL);
+        gettimeofday ( &begin, NULL );
         signal_timestamp.tv_sec = begin.tv_sec;
         signal_timestamp.tv_usec = begin.tv_usec;
         reload = true;
         W->terminate();
     }
 }
-
+/**
+ * \~french
+ * \brief Force le servgeur à s'éteindre
+ * \~english
+ * \brief Force server shutdown
+ */
 void shutdownServer ( int signum ) {
-    if (defer_signal) {
-         // Do nothing because rok4 is going to shutdown...
+    if ( defer_signal ) {
+        // Do nothing because rok4 is going to shutdown...
     } else {
         defer_signal++;
         reload = false;
@@ -94,24 +139,33 @@ void shutdownServer ( int signum ) {
     }
 }
 
-
-std::string getlocalepath()
-  {
-  char result[ 4096 ];
-  char procPath[20];
-  sprintf(procPath,"/proc/%u/exe",getpid());
-  ssize_t count = readlink( procPath, result, 4096 );
-  std::string exePath( result, (count > 0) ? count : 0 );
-  std::string localePath(exePath.substr(0,exePath.rfind("/")));
-  localePath.append("/../share/locale");
-  return localePath;
-  }
-
+/**
+ * \~french
+ * \brief Retourne l'emplacement des fichier de tranduction
+ * \return repertoire des traductions
+ * \~english
+ * \brief Return the translation files path
+ * \return translation directory
+ */
+std::string getlocalepath() {
+    char result[ 4096 ];
+    char procPath[20];
+    sprintf ( procPath,"/proc/%u/exe",getpid() );
+    ssize_t count = readlink ( procPath, result, 4096 );
+    std::string exePath ( result, ( count > 0 ) ? count : 0 );
+    std::string localePath ( exePath.substr ( 0,exePath.rfind ( "/" ) ) );
+    localePath.append ( "/../share/locale" );
+    return localePath;
+}
 
 /**
-* @brief main
-* @return -1 en cas d'erreur, 0 sinon
-*/
+ * \~french
+ * \brief Fonction principale
+ * \return 1 en cas de problème, 0 sinon
+ * \~english
+ * \brief Main function
+ * \return 1 if error, else 0
+ */
 int main ( int argc, char** argv ) {
 
     bool firstStart = true;
@@ -121,7 +175,7 @@ int main ( int argc, char** argv ) {
 
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
-    sigemptyset(&sa.sa_mask);
+    sigemptyset ( &sa.sa_mask );
     sa.sa_flags = 0;
     sa.sa_handler = reloadConfig;
     sigaction ( SIGHUP, &sa,0 );
@@ -133,10 +187,10 @@ int main ( int argc, char** argv ) {
     sa.sa_handler = shutdownServer;
     sigaction ( SIGUSR1, &sa,0 );
 
-    setlocale(LC_ALL,"");
-  //  textdomain("Rok4Server");
-    bindtextdomain(DOMAINNAME, getlocalepath().c_str());
-    
+    setlocale ( LC_ALL,"" );
+    //  textdomain("Rok4Server");
+    bindtextdomain ( DOMAINNAME, getlocalepath().c_str() );
+
 
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
@@ -151,15 +205,15 @@ int main ( int argc, char** argv ) {
             switch ( argv[i][1] ) {
             case 'f': // fichier de configuration du serveur
                 if ( i++ >= argc ) {
-                    std::cerr<<_("Erreur sur l'option -f")<<std::endl;
+                    std::cerr<<_ ( "Erreur sur l'option -f" ) <<std::endl;
                     usage();
-                    return -1;
+                    return 1;
                 }
                 serverConfigFile.assign ( argv[i] );
                 break;
             default:
                 usage();
-                return -1;
+                return 1;
             }
         }
     }
@@ -167,9 +221,9 @@ int main ( int argc, char** argv ) {
     // Demarrage du serveur
     while ( reload ) {
         reload = false;
-        std::cout<< _("Lancement du serveur rok4") << "["<< getpid()<<"]" <<std::endl;
+        std::cout<< _ ( "Lancement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
         W=rok4InitServer ( serverConfigFile.c_str() );
-        if (!W) {
+        if ( !W ) {
             return 1;
         }
         if ( firstStart ) {
@@ -178,20 +232,20 @@ int main ( int argc, char** argv ) {
         } else {
             W->setFCGISocket ( sock );
         }
-        
+
         // Remove Event Lock
         defer_signal--;
-        
-        if (defer_signal == 0 && signal_pending != 0)
-         raise (signal_pending);
+
+        if ( defer_signal == 0 && signal_pending != 0 )
+            raise ( signal_pending );
         W->run();
 
         // Extinction du serveur
         if ( reload ) {
-            LOGGER_INFO ( _("Rechargement de la configuration") );
+            LOGGER_INFO ( _ ( "Rechargement de la configuration" ) );
             sock = W->getFCGISocket();
         } else {
-            LOGGER_INFO ( _("Extinction du serveur ROK4") );
+            LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
             W->killFCGI();
         }
 

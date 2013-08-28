@@ -71,11 +71,11 @@ protected:
         zstream.next_out  = deflateBuffer;
         zstream.avail_out = deflateBufferSize;
 
-        while ( rawLine >= 0 && rawLine < image->height && zstream.avail_out > 0 ) { // compresser les données dans des chunck idat
+        while ( rawLine >= 0 && rawLine < image->getHeight() && zstream.avail_out > 0 ) { // compresser les données dans des chunck idat
             if ( zstream.avail_in == 0 ) {                                    // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
                 image->getline ( linebuffer, rawLine++ );
                 zstream.next_in  = ( uint8_t* ) ( linebuffer );
-                zstream.avail_in = image->width * image->channels * sizeof ( T );
+                zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
             }
             error = deflate ( &zstream, Z_NO_FLUSH );
             switch (error){
@@ -104,7 +104,7 @@ protected:
 //             }
         }
 
-        if ( rawLine == image->height && zstream.avail_out > 6 ) { // plus d'entrée : il faut finaliser la compression
+        if ( rawLine == image->getHeight() && zstream.avail_out > 6 ) { // plus d'entrée : il faut finaliser la compression
             int r = deflate ( &zstream, Z_FINISH );
             if ( r == Z_STREAM_END ) rawLine++;                   // on indique que l'on a compressé fini en passant rawLine ) height+1
             else if ( r != Z_OK ) {
@@ -128,19 +128,19 @@ public:
 //         zstream.data_type = Z_BINARY;
 //         deflateInit ( &zstream, 6 ); // taux de compression zlib
 //         zstream.avail_in = 0;
-        linebuffer = new T[image->width * image->channels];
+        linebuffer = new T[image->getWidth() * image->channels];
     }
     ~TiffDeflateEncoder() {
         if ( linebuffer ) delete[] linebuffer;
         if ( deflateBuffer ) delete[] deflateBuffer;
 //         deflateEnd ( &zstream );
-        
+
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize(image->channels), linesize=image->width*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
         if ( !deflateBuffer ) {
-            deflateBufferSize = linesize * image->height * 2;
+            deflateBufferSize = linesize * image->getHeight() * 2 ;
             deflateBuffer = new uint8_t[deflateBufferSize];
             while ( !encode() ) {
                 deflateBufferSize *= 2;
@@ -165,9 +165,9 @@ public:
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size );
             else if ( image->channels==4 )
                 memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size );
-            * ( ( uint32_t* ) ( buffer+18 ) )  = image->width;
-            * ( ( uint32_t* ) ( buffer+30 ) )  = image->height;
-            * ( ( uint32_t* ) ( buffer+102 ) ) = image->height;
+            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
+            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
+            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
             * ( ( uint32_t* ) ( buffer+114 ) ) = deflateBufferSize;
             offset = header_size;
             line = 0;

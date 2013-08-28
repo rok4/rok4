@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -60,15 +60,13 @@
 #include <cfloat>
 #include <libintl.h>
 
+static bool loggerInitialised = false;
+//Keep the servicesConf for deletion
+static ServicesConf* sc = NULL;
 /**
 * \brief Initialisation d'une reponse a partir d'une source
 * \brief Les donnees source sont copiees dans la reponse
 */
-
-static bool loggerInitialised = false;
-//Keep the servicesConf for deletion
-static ServicesConf* sc = NULL;
-
 HttpResponse* initResponseFromSource ( DataSource* source ) {
     HttpResponse* response=new HttpResponse;
     response->status=source->getHttpStatus();
@@ -122,7 +120,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         log.precision ( 8 );
         log.setf ( std::ios::fixed,std::ios::floatfield );
 
-        std::cout<< _( "Envoi des messages dans la sortie du logger" ) << std::endl;
+        std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
         LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
         loggerInitialised=true;
     } else {
@@ -170,11 +168,11 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
 /**
 * \brief \~french Initialisation d'une requete \~english Initialize a request \~
-* \param[in] queryString 
+* \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName
 * \return Requete (memebres alloues ici, doivent etre desalloues ensuite)
-* 
+*
 * Requete HTTP, basee sur la terminologie des variables d'environnement Apache et completee par le type d'operation (au sens WMS/WMTS) de la requete
 * Exemple :
 * http://localhost/target/bin/rok4?SERVICE=WMTS&REQUEST=GetTile&tileCol=6424&tileRow=50233&tileMatrix=19&LAYER=ORTHO_RAW_IGNF_LAMB93&STYLES=&FORMAT=image/tiff&DPI=96&TRANSPARENT=TRUE&TILEMATRIXSET=LAMB93_10cm&VERSION=1.0.0
@@ -252,7 +250,7 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 
 /**
 * \brief Implementation de l'operation GetTile modifiee
-* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName
@@ -306,7 +304,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
 
-    format = format::toString ( layer->getDataPyramid()->getFormat() );
+    format = Format::toString ( layer->getDataPyramid()->getFormat() );
     tileRef->format= new char[format.length() +1];
     strcpy ( tileRef->format, format.c_str() );
 
@@ -325,7 +323,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
 /**
 * \brief Implementation de l'operation GetNoDataTile
-* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName
@@ -409,7 +407,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
     TiffHeader* header = new TiffHeader;
     RawImage* rawImage=new RawImage ( width,height,channels,0 );
-    DataStream* tiffStream = TiffEncoder::getTiffEncoder ( rawImage, TIFF_RAW_INT8 );
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder ( rawImage, Format::TIFF_RAW_INT8 );
     tiffStream->read ( header->data,128 );
     delete tiffStream;
     return header;
@@ -423,7 +421,7 @@ TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char*
     TiffHeader* header = new TiffHeader;
     size_t tiffHeaderSize;
     const uint8_t* tiffHeader;
-    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,format::fromString ( format ),channels,width,height,possize );
+    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,Format::fromString ( format ),channels,width,height,possize );
     tiffHeader = fullTiffDS->getData ( tiffHeaderSize );
     header->size = tiffHeaderSize;
     header->data = ( uint8_t* ) malloc ( tiffHeaderSize+1 );
@@ -572,15 +570,15 @@ void rok4KillLogger() {
  * \brief Fermeture des descripteurs de fichiers
  */
 void rok4ReloadLogger() {
-        Accumulator* acc = NULL;
+    Accumulator* acc = NULL;
     for ( int i=0; i<= nbLogLevel ; i++ )
         if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
             acc = Logger::getAccumulator ( ( LogLevel ) i );
             break;
         }
-        if(acc) {
-            acc->close();
-        }
+    if ( acc ) {
+        acc->close();
+    }
 }
 
 

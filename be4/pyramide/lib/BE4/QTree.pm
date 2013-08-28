@@ -33,6 +33,79 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: QTree.pm
+
+Class: BE4::QTree
+
+Representation of a quad tree image pyramid : pyramid's image = <Node>
+
+(see QTreeTMS.png)
+
+To generate this kind of graph, we use :
+    - *jobNumber* scripts : to generate and format image from the bottom level to the cut level.
+    - 1 script (finisher) : to generate and format image from the cut level to the top level.
+
+=> *jobNumber + 1* scripts
+
+Organization in the <Forest> scripts' array :
+
+(see script_QTree.png)
+
+As a tree, a node has just one parent. As a QUAD tree, the parent belong to the above level and a node has 4 children at most.
+
+Link between a node and his children or his father is trivial, and needn't to be store :
+    - To know parent's indices, we divide own indices by 2 (and keep floor), and the level is the just above one
+    - To know 4 possible chlidren's, in the just below level :
+|        i*2, j*2
+|        i*2, j*2 + 1
+|        i*2 + 1, j*2
+|        i*2 + 1, j*2 + 1
+
+Using:
+    (start code)
+    use BE4::QTree;
+
+    # QTree object creation
+    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+
+    ...
+
+    # Fill each node with computing code, weight, share job on scripts
+    $objQTree->computeYourself();
+    (end code)
+
+Attributes:
+    forest - <Forest> - Forest which this tree belong to.
+    pyramid - <Pyramid> - Pyramid linked to this tree.
+    commands - <Commands> - Command to use to generate images.
+    datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
+
+    bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
+    nodes - <Node> hash - Structure is:
+        (start code)
+        level1 => {
+           c1_r2 => n1,
+           c2_r2 => n2,
+           c3_r2 => n3, ...}
+        level2 => {
+           c1_r2 => n4,
+           c2_r2 => n5, ...}
+
+        cX : node's column
+        rX : node's row
+        nX : BE4::Node
+        (end code)
+
+    cutLevelID - string - Cut level identifiant. To parallelize work, split scripts will generate cache from the bottom to this level. Script finisher will be generate from this above, to top.
+    bottomID - string - Bottom level identifiant
+    topID - string - Top level identifiant
+=cut
+
+################################################################################
+
 package BE4::QTree;
 
 use strict;
@@ -60,7 +133,6 @@ our @EXPORT      = qw();
 
 ################################################################################
 # Constantes
-# Booleans
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -70,54 +142,29 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
-=begin nd
-Group: variable
-
-variable: $self
-    * forest : BE4::Forest
-    * pyramid : BE4::Pyramid
-    * commands : BE4::Commands
-    * datasource : BE4::DataSource
-    
-    * bbox - datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    * nodes : hash
-|   level1 => {
-|      x1_y2 => n1,
-|      x2_y2 => n2,
-|      x3_y2 => n3, ...}
-|   level2 => { 
-|      x1_y2 => n4,
-|      x2_y2 => n5, ...}
-|
-|   nX : BE4::Node
-
-    * cutLevelID : string
-    * bottomID : string
-    * topID : string
-=cut
-
 ####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
+#                                        Group: Constructors                                       #
 ####################################################################################################
 
-# Group: constructor
-
-#
 =begin nd
-method: new
+Constructor: new
 
-Parameters:
-    objForest - BE4::Forest in which this tree is.
-    objSrc - BE4::DataSource, used to defined nodes
-    objPyr - BE4::Pyramid
-    objCommands - BE4::Commands, used to compute tree
+QTree constructor. Bless an instance.
+
+Parameters (list):
+    objForest - <Forest> - Forest which this tree belong to
+    objSrc - <DataSource> - Datasource which determine bottom level nodes
+    objPyr - <Pyramid> - Pyramid linked to this tree
+    objCommands - <Commands> - Commands to use to generate pyramid's images
+
+See also:
+    <_init>, <_load>
 =cut
 sub new {
     my $this = shift;
 
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         # in
         forest    => undef,
@@ -145,15 +192,16 @@ sub new {
     return $self;
 }
 
-#
 =begin nd
-method: _init
+Function: _init
 
-Parameters:
-    objForest - BE4::Forest in which this tree is.
-    objSrc - BE4::DataSource, used to defined nodes
-    objPyr - BE4::Pyramid
-    objCommands - BE4::Commands, used to compute tree
+Checks and stores informations.
+
+Parameters (list):
+    objForest - <Forest> - Forest which this tree belong to
+    objSrc - <DataSource> - Data source which determine bottom level nodes
+    objPyr - <Pyramid> - Pyramid linked to this tree
+    objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
     my $self = shift;
@@ -191,11 +239,10 @@ sub _init {
     return TRUE;
 }
 
-#
 =begin nd
-method: _load
+Function: _load
 
-Determine all nodes from the bottom level to the top level, thanks to the dta source.
+Determines all nodes from the bottom level to the top level, thanks to the data source.
 =cut
 sub _load {
     my $self = shift;
@@ -261,19 +308,16 @@ sub _load {
 }
 
 ####################################################################################################
-#                                 NODES DETERMINATION METHODS                                      #
+#                          Group: Nodes determination methods                                      #
 ####################################################################################################
 
-# Group: nodes determination methods
-
-#
 =begin nd
-method: identifyBottomNodes
+Function: identifyBottomNodes
 
 Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent).
 
-Parameters:
-    ct - a Geo::OSR::CoordinateTransformation object, to convert data extent or images' bbox.
+Parameters (list):
+    ct - <Geo::OSR::CoordinateTransformation> - To convert data extent or images' bbox.
 =cut
 sub identifyBottomNodes {
     my $self = shift;
@@ -377,14 +421,14 @@ sub identifyBottomNodes {
             for (my $j = $jMin; $j <= $jMax; $j++) {
                 my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
-                my $GMLtile = sprintf "<gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>%s,%s %s,%s %s,%s %s,%s %s,%s</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon>",
+                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
                     $xmin,$ymin,
                     $xmin,$ymax,
                     $xmax,$ymax,
                     $xmax,$ymin,
                     $xmin,$ymin;
-                
-                my $OGRtile = Geo::OGR::Geometry->create(GML=>$GMLtile);
+
+                my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
                 if ($OGRtile->Intersect($convertExtent)){
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
@@ -408,11 +452,12 @@ sub identifyBottomNodes {
     return TRUE;  
 }
 
-#
 =begin nd
-method: identifyAboveNodes
+Function: identifyAboveNodes
 
-Calculate all nodes in above levels concerned by the datasource (tiles which touch the data source extent).
+Calculate all nodes in above levels. We generate a above level node if one or more children are generated.
+
+(see aboveNodes_QTree.png)
 =cut
 sub identifyAboveNodes {
     my $self = shift;
@@ -427,7 +472,7 @@ sub identifyAboveNodes {
         my $levelID = $tms->getIDfromOrder($i);
 
         # pyramid's limits update : we store data's limits in the pyramid's levels
-        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
+        $self->{pyramid}->updateTMLimits($levelID, @{$self->{bbox}});
 
         foreach my $node ($self->getNodesOfLevel($levelID)) {
             
@@ -462,39 +507,31 @@ sub identifyAboveNodes {
 }
 
 ####################################################################################################
-#                                          COMPUTE METHODS                                         #
+#                                   Group: Compute methods                                         #
 ####################################################################################################
 
-# Group: compute methods
-
-#
 =begin nd
-method: computeYourself
+Function: computeYourself
 
 Determine codes and weights for each node of the current QTree, and share work on scripts, so as to optimize execution time.
 
 Three steps:
-    - browse QTree : add weight and code to the nodes.
-    - determine the cut level, to distribute fairly work.
-    - browse the QTree once again: we write commands in different scripts.
-
-Parameter:
-    NEWLIST - stream to the cache's list, to add new images.
-    
-See Also:
-    <computeBranch>, <shareNodesOnJobs>, <writeBranchCode>, <writeTopCode>
+    - we add weights (own and accumulated) and commands for each node : <computeBranch>
+    (see weights.png)
+    - we determine the cut level, to distribute fairly work : <shareNodesOnJobs>
+    - we write commands in the script associated to the node : <writeBranchCode> and <writeTopCode>
 =cut
 sub computeYourself {
     my $self = shift;
 
     TRACE;
     
-    my @topLevelNodeList = $self->getNodesOfTopLevel;
+    my @topLevelNodes = $self->getNodesOfTopLevel;
     
-    # --------------------------- WEIGHT --------------------------------
-    # Pondération de l'arbre en fonction des opérations à réaliser.
-    foreach my $topNode (@topLevelNodeList) {
-        if (! $self->computeBranch($topNode,TRUE)) {
+    # ----------------------- WEIGHT AND CODE ---------------------------
+    # Pondération de l'arbre en fonction des opérations à réaliser et écriture des commandes dans les noeuds
+    foreach my $topNode (@topLevelNodes) {
+        if (! $self->computeBranch($topNode)) {
             ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName);
             return FALSE;
         }
@@ -512,68 +549,42 @@ sub computeYourself {
         return FALSE;
     }
     INFO (sprintf "CutLevel : %s", $self->{cutLevelID});
-    
-    # ----------------------- CODE GENERATION ---------------------------
-    # Création du code script (ajouté aux noeuds de l'arbre).
-    foreach my $topNode (@topLevelNodeList) {
-        # Top level nodes will be generated by the script finisher, if it is not the cut level too.
-        # Cut level nodes' scripts have been determined by shareJobsOnNodes.
-        if ($self->{cutLevelID} ne $self->{topID}) {
-            $topNode->setScript($self->getScriptFinisher);
-        }
 
-        if (! $self->computeBranch($topNode,FALSE)) {
-            ERROR(sprintf "Can not compute code for the node of the top level '%s'!", $topNode->getWorkBaseName);
-            return FALSE;
-        }
+    # ----------------- PRECISE LEVELS IN SCRIPTS -----------------------
+    my $levelsExport = $self->exportLevelsForScript();
+    for (my $i = 0; $i <= $self->{forest}->getSplitNumber(); $i++) {
+        $self->{forest}->getScript($i)->write($levelsExport);
     }
+
+    # -------------------------- WRITTING -------------------------------
     
-    # ---------------------------- WRITTING -----------------------------
-    # Split scripts
-    my @cutLevelNodes = $self->getNodesOfCutLevel();
-    foreach my $node (@cutLevelNodes) {
-        $node->getScript->print(
-            sprintf("echo \"NODE : LEVEL:%s X:%s Y:%s\"\n", $node->getLevel, $node->getCol, $node->getRow));
-        $self->writeBranchCode($node);
-    }
-    
-    # Final script
-    if ($self->getTopID eq $self->getCutLevelID){
-        INFO("Final script will be empty");
-        $self->printInFinisher("echo \"Final script have nothing to do.\" \n");
-    } else {
-        my @nodeList = $self->getNodesOfTopLevel;
-        foreach my $node (@nodeList) {
-            $self->writeTopCode($node);
+    foreach my $topNode (@topLevelNodes) {
+        if ($self->getTopID ne $self->getCutLevelID) {
+            $topNode->setScript($self->getScriptFinisher());
         }
+        
+        $self->writeCode($topNode);
     }
     
     return TRUE;
 }
 
-#
 =begin nd
-method: computeBranch
+Function: computeBranch
 
 Recursive method, which allow to browse tree downward.
 
 2 cases.
-    - the node belong to the bottom level -> computeBottomImage
-    - the node does not belong to the bottom level -> computeBranch on each child, then computeAboveImage
+    - the node belong to the bottom level -> <computeBottomImage>
+    - the node does not belong to the bottom level -> <computeBranch> on each child, then <computeAboveImage>
 
-Parameter:
-    node - BE4::Node, to treat.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
-    
-See Also:
-    <computeBottomImage>, <computeAboveImage>
+Parameters (list):
+    node - <Node> - Node to compute.
 =cut
 sub computeBranch {
     
     my $self = shift;
     my $node = shift;
-    my $justWeight = shift;
-    $justWeight = FALSE if (! defined $justWeight);
 
     my $weight = 0;
 
@@ -582,57 +593,50 @@ sub computeBranch {
     my $res = '';
     my @childList = $self->getChildren($node);
     if (scalar @childList == 0){
-        if (! $self->computeBottomImage($node,$justWeight)) {
+        if (! $self->computeBottomImage($node)) {
             ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkName);
             return FALSE;
         }
         return TRUE;
     }
     foreach my $n (@childList) {
-        # Children will be generated by the same script as their parent, except for cut level nodes.
-        # Cut level nodes' scripts have been determined by shareJobsOnNodes.
-        if (! $justWeight && ($n->getLevel ne $self->{cutLevelID})) {
-            $n->setScript($node->getScript);
-        }
         
-        if (! $self->computeBranch($n,$justWeight)) {
+        if (! $self->computeBranch($n)) {
             ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName);
             return FALSE;
         }
         $weight += $n->getAccumulatedWeight;
     }
 
-    if (! $self->computeAboveImage($node,$justWeight)) {
+    if (! $self->computeAboveImage($node)) {
         ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkName);
         return FALSE;
     }
 
-    $node->setAccumulatedWeight($weight) if $justWeight;
+    $node->setAccumulatedWeight($weight);
 
     return TRUE;
 }
 
-#
 =begin nd
-method: computeBottomImage
+Function: computeBottomImage
 
-Treat a bottom node : determine code or weight.
+Treats a bottom node : determine code or weight.
 
-2 cases.
-    - native projection, lossless compression and images as data -> mergeNtiff
-    - reprojection or lossy compression or just a WMS service as data -> wget
+2 cases:
+    - lossless compression and images as data -> <Commands::mergeNtiff>
+    - reprojection or lossy compression or just a WMS service as data -> <Commands::wms2work>
 
-Parameter:
-    node - bottom level's BE4::Node, to treat.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
+
+Parameters (list):
+    node - <Node> - Bottom level's node, to treat.
     
 =cut
 sub computeBottomImage {
     
     my $self = shift;
     my $node = shift;
-    my $justWeight = shift;
-    $justWeight = FALSE if (! defined $justWeight);
 
     TRACE;
     
@@ -644,16 +648,16 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,$justWeight);
+        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,"I");
         if (! defined $c) {
-            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName);
+            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName("I"));
             return FALSE;
         }
         
         $code .= $c;
         $weight += $w;
     } else {    
-        ($c,$w) = $self->{commands}->mergeNtiff($node,$justWeight);
+        ($c,$w) = $self->{commands}->mergeNtiff($node);
         if ($w == -1) {
             ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
             return FALSE;
@@ -662,46 +666,33 @@ sub computeBottomImage {
         $weight += $w;
     }
 
-    # copie de l'image de travail créée dans le rep temp vers l'image de cache dans la pyramide.
-    my $after = undef;
-    if (! $justWeight && $node->getLevel eq $self->getTopID) {
-        $after = "rm";
-    } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
-        # Work images have to be put in the final script temporary directory : the root
-        $after = "mv";
-    }
-    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}");
     $code .= $c;
     $weight += $w;
 
-    if ($justWeight) {
-        $node->setOwnWeight($weight);
-        $node->setAccumulatedWeight(0);
-    } else {
-        $node->setCode($code);
-    }
+    $node->setOwnWeight($weight);
+    $node->setAccumulatedWeight(0);
+    $node->setCode($code);
 
     return TRUE;
 }
 
-#
 =begin nd
-method: computeAboveImage
+Function: computeAboveImage
 
-Treat an above node (different to the bottom level) : determine code or weight.
+Treats an above node (different to the bottom level) : determine code or weight.
 
-To generate an above node, we use children (merge4tiff). If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
+To generate an above node, we use <Commands::merge4tiff> with children.
 
-Parameter:
-    node - above level's BE4::Node, to treat.
-    justWeight - boolean, if TRUE, we want to weight node, if FALSE, we want to compute code for the node.
+Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
+
+Parameters (list):
+    node - <Node> - Above level's node, to treat.
 =cut
 sub computeAboveImage {
     
     my $self = shift;
     my $node = shift;
-    my $justWeight = shift;
-    $justWeight = FALSE if (! defined $justWeight);
 
     TRACE;
 
@@ -712,7 +703,7 @@ sub computeAboveImage {
     my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à merge4tiff.
-    ($c,$w) = $self->{commands}->merge4tiff($node,$self->getDataSource->getHarvesting,$justWeight);
+    ($c,$w) = $self->{commands}->merge4tiff($node,$self->getDataSource->getHarvesting);
     if ($w == -1) {
         ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName);
         return FALSE;
@@ -720,107 +711,74 @@ sub computeAboveImage {
     $code .= $c;
     $weight += $w;
 
-    # Copie de l'image de travail crée dans le rep temp vers l'image de cache dans la pyramide.
-    my $after = undef;
-    if (! $justWeight && $node->getLevel eq $self->getTopID) {
-        $after = "rm";
-    } elsif (! $justWeight && $node->getLevel eq $self->getCutLevelID) {
-        # Work images have to be put in the final script temporary directory : the root
-        $after = "mv";
-    }
-    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}",$after);
+    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}");
     $code .= $c;
     $weight += $w;
-    
-    if ($justWeight) {
-        $node->setOwnWeight($weight);
-    } else {
-        $node->setCode($code);
-    }
+
+    $node->setOwnWeight($weight);
+    $node->setCode($code);
 
     return TRUE;
 }
 
 ####################################################################################################
-#                                          WRITER METHODS                                          #
+#                                   Group: Writer methods                                          #
 ####################################################################################################
 
-# Group: writer methods
-
-#
 =begin nd
-method: writeBranchCode
+Function: writeCode
 
-Recursive method, which allow to browse tree (downward) and concatenate node's commands.
+Recursive method, which allow to browse tree (downward) and write commands in associated node's script.
 
-Parameter:
-    node - BE4::Node whose code is written.
+Parameters (list):
+    node - <Node> - Node whose code is written.
 =cut
-sub writeBranchCode {
+sub writeCode {
     my $self = shift;
     my $node = shift;
 
     TRACE;
 
-    my $code = '';
+
     my @childList = $self->getChildren($node);
 
     # Le noeud est une feuille
     if (scalar @childList == 0){
-        $node->writeInScript;
+        $node->writeInScript();
         return TRUE;
     }
 
     # Le noeud a des enfants
-    foreach my $n (@childList){
-        $self->writeBranchCode($n);
+    foreach my $n (@childList) {
+        if ($n->getLevel() ne $self->getCutLevelID()) {
+            $n->setScript($node->getScript());
+        }
+        $self->writeCode($n);
     }
     
-    $node->writeInScript;
-
-    return TRUE;
-}
-
-#
-=begin nd
-method: writeTopCode
-
-Recursive method, which allow to browse downward the tree, from the top, to the cut level and write commands in the script finisher.
-
-Parameter:
-    node - BE4::Node whose code is written.
-=cut
-sub writeTopCode {
-    my $self = shift;
-    my $node = shift;
-
-    TRACE;
-
-    # Rien à faire, le niveau CutLevel est déjà fait et les images de travail sont déjà là. 
-    return TRUE if ($node->getLevel eq $self->getCutLevelID);
-
-    my @childList = $self->getChildren($node);
-    foreach my $n (@childList){
-        $self->writeTopCode($n);
-    }
-    
-    $node->writeInScript;
+    $node->writeInScript();
 
     return TRUE;
 }
 
 ####################################################################################################
-#                                         CUT LEVEL METHODS                                        #
+#                                  Group: Cut level methods                                        #
 ####################################################################################################
 
-# Group: cut level methods
-
-#
 =begin nd
-method: shareNodesOnJobs
+Function: shareNodesOnJobs
 
 Determine the cutLevel to optimize sharing into scripts and execution time.
+(see scripts.png)
 
+For each level:
+    - we sort nodes by descending accumulated weight
+    - we deal nodes on scripts. Not a round robin distribution, but we assign node generation to the lighter script.
+    - we add the heavier weight and the finisher weight : we obtain the worst weight and we memorized it to finally keep the smaller worst weight.
+
+The cut level could be the bottom level (splits only generate bottom level nodes) or the top level (finisher script do nothing).
+
+To manipulate weights array, we use the tool class <Array>.
 =cut
 sub shareNodesOnJobs {
     my $self = shift;
@@ -843,27 +801,22 @@ sub shareNodesOnJobs {
         $wholeTreeWeight += $node->getAccumulatedWeight;
     }
     
-    for (my $j = 0; $j <= $splitNumber; $j++) {
-        # On initialise les poids avec ceux des jobs
-        $INIT_WEIGHTS[$j] = $self->{forest}->getWeightOfScript($j);
-    }
-
-    for (my $i = $self->getTopOrder(); $i >= $self->getBottomOrder(); $i--) {
+    for (my $i = $self->getBottomOrder(); $i <= $self->getTopOrder(); $i++) {
         my $levelID = $tms->getIDfromOrder($i);
         my @levelNodeList = $self->getNodesOfLevel($levelID);
         
-        if ($levelID ne $self->{bottomID} && scalar @levelNodeList < $splitNumber) {
-            next;
-        }
-        
         @levelNodeList = sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
 
-        my @TMP_WEIGHTS = @INIT_WEIGHTS;
+        my @TMP_WEIGHTS;
+        for (my $j = 0; $j <= $splitNumber; $j++) {
+            # On initialise les poids avec ceux des scripts (peuvent ne pas être vides, si multi-sources)
+            $TMP_WEIGHTS[$j] = $self->{forest}->getWeightOfScript($j);
+        }
         
         my $finisherWeight = $wholeTreeWeight;
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $scriptInd = BE4::Array->minArrayIndex(1,@TMP_WEIGHTS);
+            my $scriptInd = BE4::Array::minArrayIndex(1,@TMP_WEIGHTS);
             my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
             $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
@@ -873,7 +826,7 @@ sub shareNodesOnJobs {
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
-        my $worstWeight = BE4::Array->maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
+        my $worstWeight = BE4::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
         
         DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 
@@ -895,87 +848,81 @@ sub shareNodesOnJobs {
     $self->{cutLevelID} = $cutLevelID;
 }
 
-
 ####################################################################################################
-#                                         GETTERS / SETTERS                                        #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
-sub getDataSource{
+# Function: getDataSource
+sub getDataSource {
     my $self = shift;
     return $self->{datasource};
 }
 
-sub getPyramid{
+# Function: getPyramid
+sub getPyramid {
     my $self = shift;
     return $self->{pyramid};
 }
 
+# Function: getCutLevelID
 sub getCutLevelID {
     my $self = shift;
     return $self->{cutLevelID};
 }
 
+# Function: getTopID
 sub getTopID {
     my $self = shift;
     return $self->{topID};
 }
 
+# Function: getTopOrder
 sub getTopOrder {
     my $self = shift;
     return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{topID});
 }
 
+# Function: getBottomOrder
 sub getBottomOrder {
     my $self = shift;
     return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{bottomID});
 }
 
+# Function: getScriptFinisher
 sub getScriptFinisher {
     my $self = shift;
     return $self->{forest}->getScript(0); 
 }
 
-sub printInFinisher {
-    my $self = shift;
-    my $text = shift;
-    
-    $self->{forest}->getScript(0)->print($text); 
-}
-
-#
 =begin nd
-method: containsNode
+Function: containsNode
 
-Parameters:
-    level - level of the node we want to know if it is in the qtree.
-    x - x coordinate of the node we want to know if it is in the qtree.
-    y - y coordinate of the node we want to know if it is in the qtree.
+Returns a boolean : TRUE if the node belong to this tree, FALSE otherwise (if a parameter is not defined too).
 
-Returns:
-    A boolean : TRUE if the node exists, FALSE otherwise.
+Parameters (list):
+    level - string - Level ID of the node we want to know if it is in the quad tree.
+    i - integer - Column of the node we want to know if it is in the quad tree.
+    j - integer - Row of the node we want to know if it is in the quad tree.
 =cut
 sub containsNode {
     my $self = shift;
     my $level = shift;
-    my $x = shift;
-    my $y = shift;
-  
-    return FALSE if (! defined $level);
+    my $i = shift;
+    my $j = shift;
+
+    return FALSE if (! defined $level || ! defined $i || ! defined $j);
     
-    my $nodeKey = $x."_".$y;
+    my $nodeKey = $i."_".$j;
     return (exists $self->{nodes}->{$level}->{$nodeKey});
 }
 
-#
 =begin nd
-method: updateBBox
+Function: updateBBox
 
-Compare old extrems coordinates and update values.
+Compare provided and stored extrems coordinates and update values.
 
-Parameters:
-    xmin, ymin, xmax, ymax - new coordinates to compare with current bbox.
+Parameters (list):
+    xmin, ymin, xmax, ymax - double - New coordinates to compare with current bbox.
 =cut
 sub updateBBox {
     my $self = shift;
@@ -989,15 +936,16 @@ sub updateBBox {
     if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
 }
 
-#
 =begin nd
-method: getPossibleChildren
+Function: getPossibleChildren
 
-Parameters:
-    node - BE4::Node whose we want to know children.
+Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
-Returns:
-    An array of the real children from a node (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Warning:
+    Do not mistake with <getChildren>
+
+Parameters (list):
+    node - <Node> - Node whose we want to know possible children.
 =cut
 sub getPossibleChildren {
     my $self = shift;
@@ -1024,15 +972,16 @@ sub getPossibleChildren {
     return @res;
 }
 
-#
 =begin nd
-method: getChildren
+Function: getChildren
 
-Parameters:
-    node - BE4::Node whose we want to know children.
+Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
-Returns:
-    An array of the real children from a node (max length = 4), an empty array if the node is a leaf.
+Warning:
+    Do not mistake with <getPossibleChildren>
+
+Parameters (list):
+    node - <Node> - Node whose we want to know children.
 =cut
 sub getChildren {
     my $self = shift;
@@ -1057,39 +1006,69 @@ sub getChildren {
     return @res;
 }
 
+=begin nd
+Function: getNodesOfLevel
+
+Returns a <Node> array, contaning all nodes of the provided level.
+
+Parameters (list):
+    level - string - Level ID whose we want all nodes.
+=cut
 sub getNodesOfLevel {
     my $self = shift;
-    my $levelID= shift;
+    my $level = shift;
     
-    if (! defined $levelID) {
+    if (! defined $level) {
         ERROR("Undefined Level");
         return undef;
     }
     
-    return values (%{$self->{nodes}->{$levelID}});
+    return values (%{$self->{nodes}->{$level}});
 }
 
+# Function: getNodesOfTopLevel
 sub getNodesOfTopLevel {
     my $self = shift;
     return $self->getNodesOfLevel($self->{topID});
 }
 
-sub getNodesOfCutLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{cutLevelID});
-}
-
-sub getNodesOfBottomLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{bottomID});
-}
-
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportLevelsForScript
 
+Define levels into bash varaiables
+
+Example:
+    (start code)
+    # QTree levels
+    TOP_LEVEL="0"
+    CUT_LEVEL="10"
+    BOTTOM_LEVEL="11"
+    (end code)
+=cut
+sub exportLevelsForScript {
+    my $self = shift ;
+
+    my $code = sprintf ("# QTree levels\n");
+    $code   .= sprintf ("TOP_LEVEL=\"%s\"\n", $self->{topID});
+    $code   .= sprintf ("CUT_LEVEL=\"%s\"\n", $self->{cutLevelID});
+    $code   .= sprintf ("BOTTOM_LEVEL=\"%s\"\n", $self->{bottomID});
+
+    return $code;
+}
+
+=begin nd
+Function: exportForDebug
+
+Returns all informations about the quad tree. Useful for debug.
+
+Example:
+    (start code)
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -1117,105 +1096,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::QTree - Representation of a quad tree cache : cache image = node
-
-=head1 SYNOPSIS
-
-    use BE4::QTree;
-
-    # QTree object creation
-    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
-    
-    ...
-    
-    # Fill each node with computing code, weight, share job on scripts
-    $objQTree->computeYourself();
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item forest
-
-A BE4::Forest object.
-
-=item pyramid
-
-A BE4::Pyramid object.
-
-=item commands
-
-A BE4::Commands object.
-
-=item datasource
-
-A BE4::Datasource object.
-
-=item bbox
-
-Array [xmin,ymin,xmax,ymax], bbox of datasource in the TMS' SRS.
-
-=item nodes
-
-An hash, composition of each node in the tree (code to generate the node, own weight, accumulated weight):
-
-    level1 => {
-        x1_y2 => n1,
-        x2_y2 => n2,
-        x3_y2 => n3, ...}
-    level2 => { 
-        x1_y2 => n4,
-        x2_y2 => n5, ...}
-        
-    nX : BE4::Node
-
-=item cutLevelID
-
-Split scripts will generate cache to this level. Script finisher will be generate above.
-
-=item bottomID, topID
-
-Extrem levels identifiants of the tree.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 POD documentation
-
-=begin html
-
-<ul>
-<li><A HREF="./lib-BE4-Forest.html">BE4::Forest</A></li>
-<li><A HREF="./lib-BE4-DataSource.html">BE4::DataSource</A></li>
-<li><A HREF="./lib-BE4-Pyramid.html">BE4::Pyramid</A></li>
-<li><A HREF="./lib-BE4-Commands.html">BE4::Commands</A></li>
-<li><A HREF="./lib-BE4-Node.html">BE4::Node</A></li>
-</ul>
-
-=end html
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -40,7 +40,7 @@
  * \~french
  * \brief Définition de la classe RessourceLocator gérant les liens vers les ressources externe dans les documents de capacités
  * \~english
- * \brief Define the LegendURL Class handling capabilities external link elements
+ * \brief Define the RessourceLocator Class handling capabilities external link elements
  */
 
 #ifndef RESOURCELOCATOR_H
@@ -51,11 +51,11 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * Une instance ResourceLocator représente un lien externe dans les différents documents de capacités. 
- * \brief Gestion des éléments de légendes des documents de capacités
+ * Une instance ResourceLocator représente un lien externe dans les différents documents de capacités.
+ * \brief Gestion des éléments des ressources externes des documents de capacités
  * \~english
  * A ResourceLocator represent an external link element in the differents capabilities documents.
- * \brief Legends handler for the capabilities documents
+ * \brief External ressources handler for the capabilities documents
  */
 class ResourceLocator {
 private:
@@ -67,12 +67,12 @@ private:
     /**
      * \~french \brief Lien vers le fichier sous la forme d'une URL
      * \~english \brief File link as a URL
-     */    
+     */
     std::string href;
 public:
     /**
      * \~french
-     * \brief Crée un ResourceLocator à partir des ses éléments constitutifs
+     * \brief Crée un ResourceLocator à partir de ses éléments constitutifs
      * \param[in] format type mime du fichier référencé
      * \param[in] href lien vers le fichier sous la forme d'une URL
      * \~english
@@ -83,7 +83,7 @@ public:
     ResourceLocator ( std::string format, std::string href );
     /**
      * \~french
-     * Crée un ResourceLocator à partir d'un autre 
+     * Crée un ResourceLocator à partir d'un autre
      * \brief Constructeur de copie
      * \param[in] origRL ResourceLocator à copier
      * \~english
@@ -98,7 +98,7 @@ public:
     * \~english
     * \brief Assignement
     */
-    ResourceLocator& operator= (ResourceLocator const& other);
+    ResourceLocator& operator= ( ResourceLocator const& other );
     /**
      * \~french
      * \brief Test d'egalite de 2 ResourceLocators
@@ -117,7 +117,7 @@ public:
      * \return true if one of their attributes is different
      */
     bool operator!= ( const ResourceLocator& other ) const;
-    
+
     /**
      * \~french
      * \brief Retourne le type mime du fichier référencé
@@ -129,7 +129,7 @@ public:
     inline const std::string getFormat() const {
         return format;
     }
-    
+
     /**
      * \~french
      * \brief Retourne le lien vers le fichier sous la forme d'une URL
@@ -141,7 +141,7 @@ public:
     inline const std::string getHRef() const {
         return href;
     }
-   
+
     /**
      * \~french
      * \brief Destructeur par défaut

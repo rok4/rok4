@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -42,7 +42,7 @@
 #include "Level.h"
 #include "TileMatrixSet.h"
 #include "CRS.h"
-#include "format.h"
+#include "Format.h"
 #include "ServicesConf.h"
 #include <Interpolation.h>
 
@@ -60,26 +60,27 @@ private:
     const TileMatrixSet tms;
 //    std::map<std::string, DataSource*> noDataSources;
     std::string best_level ( double resolution_x, double resolution_y );
-    const eformat_data format; //format d'image des tuiles
+    const Format::eformat_data format; //format d'image des tuiles
     const int     channels;
 //    DataStream* nodatastream;
     Level* highestLevel;
     Level* lowestLevel;
+    bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
 public:
-    
+
     Level* getFirstLevel();
-    Level* getHighestLevel(){
+    Level* getHighestLevel() {
         return highestLevel;
     }
-    Level* getLowestLevel(){
+    Level* getLowestLevel() {
         return lowestLevel;
     }
-    
+
     TileMatrixSet getTms();
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
-    eformat_data getFormat() {
+    Format::eformat_data getFormat() {
         return format;
     }
     int getChannels() {
@@ -89,7 +90,7 @@ public:
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
-    Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels );
+    Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels );
     ~Pyramid();
 };
 

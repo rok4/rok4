@@ -1,5 +1,8 @@
-#Défini le nom du projet 
+#Récupère le nom du projet parent
+SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
+#Défini le nom du projet
 project(merge4tiff)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
 if(NOT DEFINED BE4_VERSION)
@@ -49,18 +52,16 @@ endif(DEBUG_BUILD)
 
 set(${PROJECT_NAME}_SRCS merge4tiff.cpp )
 
-
-
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg)
+set(DEP_LIBRARY tiff logger proj image)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
@@ -95,23 +96,8 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Documentation Doxygen
-#Utilisation du fichier 
-if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc ALL
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-  endif(DOXYGEN_FOUND)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-endif(BUILD_DOC)
-
-
+#Installe la documentation de base
+INSTALL(FILES LICENCE README DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts
@@ -130,23 +116,6 @@ INSTALL(TARGETS ${PROJECT_NAME}
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
-
-#Installe la documentation
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-  INSTALL(FILES README 
-    DESTINATION doc/${PROJECT_NAME})
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README)
-if(BUILD_DOC)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-  if(DOXYGEN_FOUND)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-  endif(DOXYGEN_FOUND)
-endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-endif(BUILD_DOC)
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
-
 
 ########################################
 # Paramétrage de la gestion de package CPack

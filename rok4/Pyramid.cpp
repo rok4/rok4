@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -46,13 +46,14 @@
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
 #include "ExtendedCompoundImage.h"
+#include "Format.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
 #include "intl.h"
 #include "config.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
@@ -61,11 +62,11 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
         DataSource* noDataSource;
         DataStream* nodatastream;
 
-        if ( format==TIFF_JPG_INT8 ) {
+        if ( format==Format::TIFF_JPG_INT8 ) {
             nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==TIFF_PNG_INT8 ) {
+        } else if ( format==Format::TIFF_PNG_INT8 ) {
             nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==TIFF_RAW_FLOAT32 ) {
+        } else if ( format==Format::TIFF_RAW_FLOAT32 ) {
             nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
         } else {
             nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
@@ -75,7 +76,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, efo
             delete nodatastream;
             nodatastream = NULL;
         } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< format::toString ( format ) );
+            LOGGER_ERROR ( "Format non pris en charge : "<< Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
 
@@ -154,7 +155,8 @@ TileMatrixSet Pyramid::getTms() {
 Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
-    if ( tms.getCrs() == dst_crs ) {
+    LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
@@ -175,13 +177,13 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     }
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
-    if ( tms.getCrs() == dst_crs ) {
+    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
         if ( dst_crs.validateBBox ( bbox ) ) {
             return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
         } else {
-            extendedCompoundImageFactory facto;
+            ExtendedCompoundImageFactory facto;
             std::vector<Image*> images;
             LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
             BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
@@ -210,9 +212,10 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 images.push_back ( levels[l]->getNoDataTile ( bbox ) );
             }
             int ndvalue[this->channels];
-            memset(ndvalue,0,this->channels*sizeof(int));
-            levels[l]->getNoDataValue(ndvalue);
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,levels[l]->getSampleFormat(),0, false );
+            memset ( ndvalue,0,this->channels*sizeof ( int ) );
+            levels[l]->getNoDataValue ( ndvalue );
+
+            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
         }
 
     }
@@ -226,5 +229,27 @@ Pyramid::~Pyramid() {
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
+}
+
+// Check if two CRS are equivalent
+//   A list of equivalent CRS was created during server initialization
+// TODO: return false if servicesconf tells we don't check the equality
+bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS ) {
+    // Could have issues with lowercase name -> we put the CRS in upercase
+    transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
+    transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+    for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
+        std::string line = listofequalsCRS.at(line_number);
+        // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
+        std::size_t found1 = line.find(crs1);
+        if ( found1 != std::string::npos  )  {
+            std::size_t found2 = line.find(crs2);
+            if ( found2 != std::string::npos  )  {
+                LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
+                return true;
+            }
+        }
+    }
+    return false; // The 2 CRS were not found on the same line inside the list
 }
 

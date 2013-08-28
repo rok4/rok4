@@ -33,6 +33,51 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: TileMatrix.pm
+
+Class: BE4::TileMatrix
+
+A Tile Matrix defines a grid for a level. Informations are extracted from a XML file.
+
+Using:
+    (start code)
+    use BE4::TileMatrix;
+
+    my $params = {
+        id             => "18",
+        resolution     => 0.5,
+        topLeftCornerX => 0,
+        topLeftCornerY => 12000000,
+        tileWidth      => 256,
+        tileHeight     => 256,
+        matrixWidth    => 10080,
+        matrixHeight   => 84081,
+    };
+
+    my $objTM = BE4::TileMatrix->new($params);                # ie '/home/ign/tms/'
+    (end code)
+
+Attributes:
+    id - string - TM identifiant.
+    tms - <TileMatrixSet> - TMS to whom it belong
+    resolution - double - Ground size of a pixel, using unity of the SRS.
+    topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.
+    topLeftCornerY - double - Y coordinate of the upper left corner for the level, the grid's origin.
+    tileWidth - integer - Pixel width of a tile.
+    tileHeight - integer -  Pixel height of a tile.
+    matrixWidth - integer - Number of tile in the grid, widthwise.
+    matrixHeight - integer -  Number of tile in the grid, heightwise.
+    targetsTm - <TileMatrix> array - Determine other levels which use this one to be generated. Empty if this level belong to a quad tree <TileMatrixSet>.
+
+Limits:
+    Resolution have to be the same  X and Y wise.
+=cut
+
+################################################################################
+
 package BE4::TileMatrix;
 
 use strict;
@@ -61,58 +106,75 @@ BEGIN {}
 INIT {}
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * id
-    * resolution
-    * topLeftCornerX
-    * topLeftCornerY
-    * tileWidth
-    * tileHeight
-    * matrixWidth
-    * matrixHeight
-    * targetsTm : array of BE4::TileMatrix objects
+TileMatrix constructor. Bless an instance.
+
+Parameters (hash):
+    id - string - Level identifiant
+    resolution - double - X and Y wise resolution
+    topLeftCornerX - double - Origin easting
+    topLeftCornerY - double - Origin northing
+    tileWidth - integer -  Tile width, in pixel
+    tileHeight - integer - Tile height, in pixel
+    matrixWidth - integer - Grid width, in tile
+    matrixHeight - integer - Grid height, in tile
+
+See also:
+    <_init>
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $params = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-  my $self = {
-    id             => undef,
-    resolution     => undef,
-    topLeftCornerX => undef,
-    topLeftCornerY => undef,
-    tileWidth      => undef,
-    tileHeight     => undef,
-    matrixWidth    => undef,
-    matrixHeight   => undef,
-    targetsTm   => [],
-  };
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+        id             => undef,
+        tms             => undef,
+        resolution     => undef,
+        topLeftCornerX => undef,
+        topLeftCornerY => undef,
+        tileWidth      => undef,
+        tileHeight     => undef,
+        matrixWidth    => undef,
+        matrixHeight   => undef,
+        targetsTm   => [],
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  if (! $self->_init(@_)) {
-    ERROR ("One parameter is missing !");
-    return undef;
-  }
-  
-  return $self;
+    bless($self, $class);
+
+    TRACE;
+
+    # init. class
+    if (! $self->_init($params)) {
+        ERROR ("One parameter is missing !");
+        return undef;
+    }
+
+    return $self;
 }
 
+=begin nd
+Function: _init
+
+Check and store TileMatrix's informations.
+
+Parameters (hash):
+    id - string - Level identifiant
+    resolution - double - X and Y wise resolution
+    topLeftCornerX - double - Origin easting
+    topLeftCornerY - double - Origin northing
+    tileWidth - integer -  Tile width, in pixel
+    tileHeight - integer - Tile height, in pixel
+    matrixWidth - integer - Grid width, in tile
+    matrixHeight - integer - Grid height, in tile
+=cut
 sub _init {
     my $self   = shift;
     my $params = shift;
@@ -121,7 +183,7 @@ sub _init {
     
     return FALSE if (! defined $params);
     
-    # parameters mandatory !
+    # parameters mandatory !       
     return FALSE if (! exists($params->{id}) || ! defined ($params->{id}));
     return FALSE if (! exists($params->{resolution}) || ! defined ($params->{resolution}));
     return FALSE if (! exists($params->{topLeftCornerX}) || ! defined ($params->{topLeftCornerX}));
@@ -145,17 +207,16 @@ sub _init {
 }
 
 ####################################################################################################
-#                                   COORDINATES MANIPULATION                                       #
+#                                   Group: Coordinates manimulators                                #
 ####################################################################################################
 
-#
 =begin nd
-method: getImgGroundWidth
+Function: getImgGroundWidth
 
-Return the ground width of an image, whose number of tile (widthwise) can be provided.
+Returns the ground width of an image, whose number of tile (widthwise) can be provided.
 
-Parameters:
-    tilesPerWidth - Optionnal (1 if undefined) 
+Parameters (list):
+    tilesPerWidth - integer - Optionnal (1 if undefined)
 =cut
 sub getImgGroundWidth {
     my $self  = shift;
@@ -169,14 +230,13 @@ sub getImgGroundWidth {
     return $imgGroundWidth;
 }
 
-#
 =begin nd
-method: getImgGroundHeight
+Function: getImgGroundHeight
 
-Return the ground height of an image, whose number of tile (heightwise) can be provided.
+Returns the ground height of an image, whose number of tile (heightwise) can be provided.
 
-Parameters:
-    tilesPerHeight - Optionnal (1 if undefined) 
+Parameters (list):
+    tilesPerHeight - integer - Optionnal (1 if undefined) 
 =cut
 sub getImgGroundHeight {
     my $self  = shift;
@@ -190,15 +250,14 @@ sub getImgGroundHeight {
     return $imgGroundHeight;
 }
 
-#
 =begin nd
-method: columnToX
+Function: columnToX
 
-Return the X coordinate, in the TMS SRS, of the upper left corner, from the column indice and the number of tiles per width.
+Returns the X coordinate, in the TMS SRS, of the upper left corner, from the column indice and the number of tiles per width.
 
-Parameters:
-    col - Column indice
-    tilesPerWidth - Optionnal (1 if undefined) 
+Parameters (list):
+    col - integer - Column indice
+    tilesPerWidth - integer - Optionnal (1 if undefined) 
 =cut
 sub columnToX {
     my $self  = shift;
@@ -216,15 +275,14 @@ sub columnToX {
     return $x;
 }
 
-#
 =begin nd
-method: rowToY
+Function: rowToY
 
-Return the Y coordinate, in the TMS SRS, of the upper left corner, from the row indice and the number of tiles per height.
+Returns the Y coordinate, in the TMS SRS, of the upper left corner, from the row indice and the number of tiles per height.
 
-Parameters:
-    row - Row indice
-    tilesPerHeight - Optionnal (1 if undefined)
+Parameters (list):
+    row - integer - Row indice
+    tilesPerHeight - integer - Optionnal (1 if undefined)
 =cut
 sub rowToY {
     my $self  = shift;
@@ -242,15 +300,14 @@ sub rowToY {
     return $y;
 }
 
-#
 =begin nd
-method: xToColumn
+Function: xToColumn
 
-Return the column indice for the given X coordinate and the number of tiles per width.
+Returns the column indice for the given X coordinate and the number of tiles per width.
 
-Parameters:
-    x - x-axis coordinate
-    tilesPerWidth - Optionnal (1 if undefined) 
+Parameters (list):
+    x - double - x-axis coordinate
+    tilesPerWidth - integer - Optionnal (1 if undefined) 
 =cut
 sub xToColumn {
     my $self  = shift;
@@ -270,13 +327,13 @@ sub xToColumn {
 
 #
 =begin nd
-method: yToRow
+Function: yToRow
 
-Return the row indice for the given Y coordinate and the number of tiles per height.
+Returns the row indice for the given Y coordinate and the number of tiles per height.
 
-Parameters:
-    y - y-axis coordinate
-    tilesPerHeight - Optionnal (1 if undefined) 
+Parameters (list):
+    y - double - y-axis coordinate
+    tilesPerHeight - integer - Optionnal (1 if undefined) 
 =cut
 sub yToRow {
     my $self  = shift;
@@ -296,13 +353,15 @@ sub yToRow {
 
 #
 =begin nd
-method: indicesToBBox
+Function: indicesToBBox
 
-Return the BBox from image's indices in a list : (xMin,yMin,xMax,yMax).
+Returns the BBox from image's indices in a list : (xMin,yMin,xMax,yMax).
 
-Parameters:
-    i,j - Image indices.
-    tilesPerWidth,tilesPerHeight - Number of tile in the image, widthwise and heightwise.
+Parameters (list):
+    i - integer - Image's column
+    j - integer - Image's row
+    tilesPerWidth - integer - Number of tile in the image, widthwise
+    tilesPerHeight - integer - Number of tile in the image, heightwise
 =cut
 sub indicesToBBox {
     my $self  = shift;
@@ -324,16 +383,18 @@ sub indicesToBBox {
 
 #
 =begin nd
-method: bboxToIndices
+Function: bboxToIndices
 
-Return the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
+Returns the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
 
-Parameters:
+Parameters (list):
     xMin,yMin,xMax,yMax - bounding box
-    tilesPerWidth,tilesPerHeight - Number of tile in the image, widthwise and heightwise.
+    tilesPerWidth - integer - Number of tile in the image, widthwise
+    tilesPerHeight - integer - Number of tile in the image, heightwise
 =cut
 sub bboxToIndices {
     my $self = shift;
+    
     my $xMin = shift;
     my $yMin = shift;
     my $xMax = shift;
@@ -350,52 +411,87 @@ sub bboxToIndices {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getID
 sub getID {
     my $self = shift;
     return $self->{id}; 
 }
+
+# Function: setTMS
+sub setTMS {
+    my $self = shift;
+    my $tms = shift;
+    
+    if ( ! defined ($tms) || ref ($tms) ne "BE4::TileMatrixSet" ) {
+        ERROR("We expect to a BE4::TileMatrixSet object.");
+    } else {
+        $self->{tms} = $tms;
+    }
+}    
+
+# Function: getResolution
 sub getResolution {
     my $self = shift;
     return $self->{resolution}; 
 }
+
+# Function: getTileWidth
 sub getTileWidth {
     my $self = shift;
     return $self->{tileWidth}; 
 }
+
+# Function: getTileHeight
 sub getTileHeight {
     my $self = shift;
     return $self->{tileHeight}; 
 }
+
+# Function: getMatrixWidth
 sub getMatrixWidth {
     my $self = shift;
     return $self->{matrixWidth}; 
 }
+
+# Function: getMatrixHeight
 sub getMatrixHeight {
     my $self = shift;
     return $self->{matrixHeight}; 
 }
 
+# Function: getTopLeftCornerX
 sub getTopLeftCornerX {
     my $self = shift;
     return Math::BigFloat->new($self->{topLeftCornerX}); 
 }
 
+# Function: getTopLeftCornerY
 sub getTopLeftCornerY {
     my $self = shift;
-    TRACE ("getTopLeftCornerY");
     return Math::BigFloat->new($self->{topLeftCornerY}); 
 }
 
+# Function: getTargetsTm
 sub getTargetsTm {
     my $self = shift;
     return $self->{targetsTm}
 }
 
+# Function: getSRS
+sub getSRS {
+    my $self = shift;
+    return $self->{tms}->getSRS();
+}
+
+=begin nd
+Function: addTargetTm
+
+Parameters (list):
+    tm - <TileMatrix> - Tile Matrix to add to target ones
+=cut
 sub addTargetTm {
     my $self = shift;
     my $tm = shift;
@@ -403,132 +499,39 @@ sub addTargetTm {
 }
 
 ####################################################################################################
-#                                       EXPORT METHODS                                             #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: DEBUG METHODS
-
-#
 =begin nd
-method: exportForDebug
+Function: exportForDebug
 
-Export in a string the attributs of the TileMatrix
+Returns all informations about the tile matrix. Useful for debug.
 
+Example:
+    (start code)
+    (end code)
 =cut
 sub exportForDebug {
     my $self = shift;
     
-    my $output = "";
+    my $export = "";
     
-    $output .= sprintf "\nObject BE4::TileMatrix :\n";
-    if (defined $self->getID()) {
-        $output .= sprintf "\t id : %s \n",$self->getID();
-    };
-    if (defined $self->getResolution()) {
-        $output .= sprintf "\t resolution : %s \n",$self->getResolution();
-    };
-    if (defined $self->getTopLeftCornerX()) {
-        $output .= sprintf "\t topLeftCornerX : %s \n",$self->getTopLeftCornerX();
-    };
-    if (defined $self->getTopLeftCornerY()) {
-        $output .= sprintf "\t topLeftCornerY : %s \n",$self->getTopLeftCornerY();
-    };
-    if (defined $self->getTileWidth()) {
-        $output .= sprintf "\t tileWidth : %s \n",$self->getTileWidth();
-    };
-    if (defined $self->getTileHeight()) {
-        $output .= sprintf "\t tileHeight : %s \n",$self->getTileHeight();
-    };
-    if (defined $self->getMatrixWidth()) {
-        $output .= sprintf "\t matrixWidth : %s \n",$self->getMatrixWidth();
-    };
-    if (defined $self->getMatrixHeight()) {
-        $output .= sprintf "\t matrixHeight : %s \n",$self->getMatrixHeight();
-    };
-    $output .= sprintf "\t targetstm (size:%s) :\n",scalar(@{$self->getTargetsTm()});
+    $export .= sprintf "\nObject BE4::TileMatrix :\n";
+    $export .= sprintf "\t ID : %s \n", $self->getID();
+    $export .= sprintf "\t Resolution : %s \n", $self->getResolution();
+    $export .= sprintf "\t Top left corner : %s, %s \n", $self->getTopLeftCornerX(), $self->getTopLeftCornerY();
+    $export .= sprintf "\t Tile width : %s \n", $self->getTileWidth();
+    $export .= sprintf "\t Tile height : %s \n", $self->getTileHeight();
+    $export .= sprintf "\t Matrix width : %s \n", $self->getMatrixWidth();
+    $export .= sprintf "\t Matrix height : %s \n", $self->getMatrixHeight();
+    $export .= sprintf "\t Targets tile matrix IDs (size:%s) :\n", scalar(@{$self->getTargetsTm()});
     foreach my $tm (@{$self->getTargetsTm()}) {
-        $output .= sprintf "\t\t target tm id : %s \n",$tm->getID();
+        $export .= sprintf "\t\t -> %s \n",$tm->getID();
     };
     
-    return $output;  
+    return $export;  
 };
 
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::TileMatrix - one level of a TileMatrixSet.
-
-=head1 SYNOPSIS
-
-    use BE4::TileMatrix;
-    
-    my $params = {
-        id             => "18",
-        resolution     => 0.5,
-        topLeftCornerX => 0,
-        topLeftCornerY => 12000000,
-        tileWidth      => 256,
-        tileHeight     => 256,
-        matrixWidth    => 10080,
-        matrixHeight   => 84081,
-    };
-    
-    my $objTM = BE4::TileMatrix->new($params);
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item id
-
-Identifiant of the level, a string.
-
-=item resolution
-
-Ground size of a pixel, using unity of the SRS.
-
-=item topLeftCornerX, topLeftCornerY
-
-Coordinates of the upper left corner for the level, the grid's origin.
-
-=item tileWidth, tileHeight
-
-Pixel size of a tile (256 * 256).
-
-=item matrixWidth, matrixHeight
-
-Number of tile in the level, widthwise and heightwise.
-
-=item targetsTm
-
-Array of BE4::TileMatrix objects, determine other levels which use this one to be generated. Empty if in a quad tree TMS.
-
-=back
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Bazonnais Jean Philippe, E<lt>jean-philippe.bazonnais@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Bazonnais Jean Philippe
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut
-

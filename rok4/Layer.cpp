@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Layer.cpp
+ * \~french
+ * \brief Implémentation de la classe Layer modélisant les couches de données.
+ * \~english
+ * \brief Implement the Layer Class handling data layer.
+ */
+
 #include "Layer.h"
 #include "Pyramid.h"
 #include "Logger.h"
@@ -53,12 +61,12 @@ std::string Layer::getId() {
 }
 
 Layer::~Layer() {
-    
+
     /*for (int i = 0 ; i < WMSCRSList.size() ; i++) {
         CRS* tmp = WMSCRSList.at(i);
         delete tmp;
     }
     WMSCRSList.clear();*/
-    
+
     delete dataPyramid;
 }

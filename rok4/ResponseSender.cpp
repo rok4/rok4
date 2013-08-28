@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,6 +35,14 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file ResponseSender.cpp
+ * \~french
+ * \brief Implémentation des fonctions d'envoie de réponse sur le flux FCGI
+ * \~english
+ * \brief Implement response sender function for the FCGI link
+ */
+
 #include "ResponseSender.h"
 #include "ServiceException.h"
 #include "Message.h"
@@ -46,7 +54,14 @@
 #include "intl.h"
 #include "config.h"
 /**
- * Methode commune pour generer l'entete HTTP en fonction du status code HTTP
+ * \~french
+ * \brief Méthode commune pour générer l'en-tête HTTP en fonction du status code HTTP
+ * \param[in] statusCode Code de status HTTP
+ * \return élément status de l'en-tête HTTP
+ * \~english
+ * \brief Common function to generate HTTP headers using the HTTP status code
+ * \param[in] statusCode HTTP status code
+ * \return HTTP header status element
  */
 std::string genStatusHeader ( int statusCode ) {
     // Creation de l'en-tete
@@ -57,7 +72,14 @@ std::string genStatusHeader ( int statusCode ) {
 }
 
 /**
- * Methode commune pour generer le nom du fichier en fonction du type mime
+ * \~french
+ * \brief Méthode commune pour générer le nom du fichier en fonction du type mime
+ * \param[in] mime type mime
+ * \return nom du fichier
+ * \~english
+ * \brief Common function to generate file name using the mime type
+ * \param[in] mime mime type
+ * \return filename
  */
 std::string genFileName ( std::string mime ) {
     if ( mime.compare ( "image/tiff" ) ==0 )
@@ -76,29 +98,27 @@ std::string genFileName ( std::string mime ) {
 }
 
 /**
- * Methode commune pour afficher les codes d'erreur FCGI
+ * \~french
+ * \brief Méthode commune pour afficher les codes d'erreur FCGI
+ * \param[in] error code d'erreur
+ * \~english
+ * \brief Common function to display FCGI error code
+ * \param[in] error error code
  */
-
 void displayFCGIError ( int error ) {
     if ( error>0 )
-        LOGGER_ERROR ( _("Code erreur : ")<<error ); // Erreur errno(2) (Cf. manpage )
+        LOGGER_ERROR ( _ ( "Code erreur : " ) <<error ); // Erreur errno(2) (Cf. manpage )
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Version FCGI non supportee") );
+        LOGGER_ERROR ( _ ( "Version FCGI non supportee" ) );
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Erreur de protocole") );
+        LOGGER_ERROR ( _ ( "Erreur de protocole" ) );
     else if ( error==FCGX_CALL_SEQ_ERROR )
-        LOGGER_ERROR ( _("Erreur de parametre") );
+        LOGGER_ERROR ( _ ( "Erreur de parametre" ) );
     else if ( error==FCGX_UNSUPPORTED_VERSION )
-        LOGGER_ERROR ( _("Preconditions non remplies") );
+        LOGGER_ERROR ( _ ( "Preconditions non remplies" ) );
     else
-        LOGGER_ERROR ( _("Erreur inconnue") );
+        LOGGER_ERROR ( _ ( "Erreur inconnue" ) );
 }
-
-/**
- * Copie d'une source de données dans le flux de sortie de l'objet request de type FCGX_Request
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
 
 int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
     // Creation de l'en-tete
@@ -122,7 +142,7 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         // Taille ecrite dans le flux de sortie
         int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), buffer_size,request->out );
         if ( w < 0 ) {
-            LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
+            LOGGER_ERROR ( _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId );
             displayFCGIError ( FCGX_GetError ( request->out ) );
             delete source;
             //delete[] buffer;
@@ -131,16 +151,10 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         wr += w;
     }
     delete source;
-    LOGGER_DEBUG ( _("End of Response") );
+    LOGGER_DEBUG ( _ ( "End of Response" ) );
     return 0;
 }
 
-
-/**
- * Copie d'un flux d'entree dans le flux de sortie de l'objet request de type FCGX_Request
- * @return -1 en cas d'erreur
- * @return 0 sinon
- */
 int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
     // Creation de l'en-tete
     std::string statusHeader= genStatusHeader ( stream->getHttpStatus() );
@@ -171,7 +185,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             // Taille ecrite dans le flux de sortie
             int w = FCGX_PutStr ( ( char* ) ( buffer + wr ), read_size,request->out );
             if ( w < 0 ) {
-                LOGGER_ERROR ( _("Echec d'ecriture dans le flux de sortie de la requete FCGI ") << request->requestId );
+                LOGGER_ERROR ( _ ( "Echec d'ecriture dans le flux de sortie de la requete FCGI " ) << request->requestId );
                 displayFCGIError ( FCGX_GetError ( request->out ) );
                 delete stream;
                 delete[] buffer;
@@ -180,7 +194,7 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
             wr += w;
         }
         if ( wr != read_size ) {
-            LOGGER_DEBUG ( _("Nombre incorrect d'octets ecrits dans le flux de sortie") );
+            LOGGER_DEBUG ( _ ( "Nombre incorrect d'octets ecrits dans le flux de sortie" ) );
             delete stream;
             stream = 0;
             delete[] buffer;
@@ -189,12 +203,12 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
         }
         pos += read_size;
     }
-    if (stream) {
+    if ( stream ) {
         delete stream;
     }
-    if (buffer) {
+    if ( buffer ) {
         delete[] buffer;
     }
-    LOGGER_DEBUG ( _("End of Response") );
+    LOGGER_DEBUG ( _ ( "End of Response" ) );
     return 0;
 }

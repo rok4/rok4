@@ -35,60 +35,319 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "Image.h"
+/**
+ * \file MergeImage.h
+ ** \~french
+ * \brief Définition des classes MergeImage, MergeImageFactory et MergeMask et du namespace Merge
+ * \details
+ * \li MergeImage : image résultant de la fusion d'images semblables, selon différents modes de composition
+ * \li MergeImageFactory : usine de création d'objet MergeImage
+ * \li MergeMask : masque fusionné, associé à une image fusionnée
+ * \li Merge : énumère et manipule les différentes méthodes de fusion
+ ** \~english
+ * \brief Define classes MergeImage, MergeImageFactory and MergeMask and the namespace Merge
+ * \details
+ * \li MergeImage : image merged with similar images, with different merge methods
+ * \li MergeImageFactory : factory to create MergeImage object
+ * \li MergeMask : merged mask, associated with a merged image
+ * \li Merge : enumerate and managed different merge methods
+ */
 
 #ifndef MERGEIMAGE_H
 #define MERGEIMAGE_H
 
-class MergeImage : public Image {
-public:
-    enum MergeType {
-        UNKNOWN = 0,
-        NORMAL = 1,
-        LIGHTEN = 2,
-        DARKEN = 3,
-        MULTIPLY = 4,
-        MULTIPLYOLD = 5
-    };
+#include "Image.h"
+#include <string.h>
+#include "Format.h"
 
-
-private:
-    Image* backImage;
-    Image* frontImage;
-
-    MergeType composition;
-    float factor;
-    void mergeline ( uint8_t* buffer, uint8_t* back, uint8_t* front );
-    void mergeline ( float* buffer, uint8_t* back, uint8_t* front );
-
-public:
-    virtual int getline ( float* buffer, int line );
-    virtual int getline ( uint8_t* buffer, int line );
-    MergeImage ( Image* backImage,Image* frontImage, MergeType composition = NORMAL, float factor = 1 );
-    virtual ~MergeImage();
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées à la méthode de fusion
+ * \~english \brief Manage informations in connection with merge method
+ */
+namespace Merge {
+/**
+ * \~french \brief Énumération des méthodes de fusion disponibles
+ * \~english \brief Available merge methods enumeration
+ */
+enum MergeType {
+    UNKNOWN = 0,
+    NORMAL = 1,
+    LIGHTEN = 2,
+    DARKEN = 3,
+    MULTIPLY = 4,
+    ALPHATOP = 5,
+    TOP = 6
 };
 
-class Pixel {
-public: 
-    float Sr, Sg, Sb, Sa;
-    float Sra, Sga, Sba;
-    // 3 Chan + Alpha
-    Pixel ( uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255): 
-                    Sr(r), Sb(b), Sg(g)
-                    {
-                        Sa  = a/255.;
-                        Sra = r * Sa;
-                        Sga = g * Sa;
-                        Sba = b * Sa;
-                    }
-    // 1 Chan + Alpha
-    Pixel ( uint8_t x, uint8_t a = 255):
-                    Sr(x/255), Sb(x/255), Sg(x/255), Sa(a/255)
-                    {
-                        Sra = Sr * Sa;
-                        Sga = Sra;
-                        Sba = Sra;
-                    }
+/**
+ * \~french \brief Nombre de méthodes disponibles
+ * \~english \brief Number of available merge methods
+ */
+const int mergeType_size = 6;
+
+/**
+ * \~french \brief Conversion d'une chaîne de caractère vers une méthode de fusion de l'énumération
+ * \param[in] strMergeMethod chaîne de caractère à convertir
+ * \return la méthode de fusion correspondante, UNKNOWN (0) si la chaîne n'est pas reconnue
+ * \~english \brief Convert a string to a merge methods enumeration member
+ * \param[in] strMergeMethod string to convert
+ * \return the binding merge method, UNKNOWN (0) if string is not recognized
+ */
+MergeType fromString ( std::string strMergeMethod );
+
+/**
+ * \~french \brief Conversion d'une métthode de fusion vers une chaîne de caractère
+ * \param[in] mergeMethod méthode de fusion à convertir
+ * \return la chaîne de caractère nommant la méthode de fusion
+ * \~english \brief Convert a merge method to a string
+ * \param[in] mergeMethod merge method to convert
+ * \return string namming the merge method
+ */
+std::string toString ( MergeType mergeMethod );
+}
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Fusion d'images de mêmes dimensions
+ * \details On va manipuler un paquet d'images semblables comme si elles n'en étaient qu'une seule. On parle d'images semblables lorsqu'elles ont :
+ * \li les mêmes dimensions
+ * \li le format de canaux
+ *
+ * On va disposer de plusieurs manières de fusionner les images :
+ * \li MULTIPLY
+ * \li ALPHATOP
+ * \li TOP
+ * \li NORMAL
+ */
+class MergeImage : public Image {
+
+    friend class MergeImageFactory;
+
+private:
+
+    /**
+     * \~french \brief Images sources, toutes semblables, utilisée pour assembler l'image fusionnée
+     * \details L'image en première position est celle du dessous
+     * \~english \brief Source images, similar, to make the merged image
+     * \details First image is the bottom one
+     */
+    std::vector<Image*> images;
+
+    /**
+     * \~french \brief Méthode d'assemblage des images
+     * \~english \brief Way to merge images
+     */
+    Merge::MergeType composition;
+
+    /**
+     * \~french \brief Valeur de fond
+     * \details On a une valeur entière par canal. Tous les pixels de l'image fusionnée seront initialisés avec cette valeur.
+     * \~english \brief Background value
+     */
+    int* bgValue;
+
+    /**
+     * \~french \brief Valeur de transparence
+     * \details On a 3 valeurs entières. Tous les pixels de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
+     * \~english \brief Transparent value
+     */
+    int* transparentValue;
+
+    /** \~french
+     * \brief Retourne une ligne, flottante ou entière
+     * \param[in] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    template<typename T>
+    int _getline ( T* buffer, int line );
+
+protected:
+
+    /** \~french
+     * \brief Crée un objet MergeImage à partir de tous ses éléments constitutifs
+     * \details Ce constructeur est protégé afin de n'être appelé que par l'usine MergeImageFactory, qui fera différents tests et calculs.
+     * \param[in] images images sources
+     * \param[in] channel nombre de canaux par pixel en sortie
+     * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
+     * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
+     * \param[in] composition méthode de fusion à utiliser
+     ** \~english
+     * \brief Create an MergeImage object, from all attributes
+     * \param[in] images source images
+     * \param[in] channel number of samples per output pixel
+     * \param[in] bgValue pixel's value to use as background, one integer per output sample
+     * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
+     * \param[in] composition merge method to use
+     */
+    MergeImage ( std::vector< Image* >& images, int channels,
+                 int* bg, int* transparent, Merge::MergeType composition = Merge::NORMAL ) :
+        Image ( images.at ( 0 )->getWidth(),images.at ( 0 )->getHeight(), channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
+        images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ) {
+
+        if ( transparentValue != NULL ) {
+            transparentValue = new int[3];
+            memcpy ( transparentValue, transparent, 3*sizeof ( int ) );
+        }
+
+        bgValue = new int[channels];
+        memcpy ( bgValue, bg, channels*sizeof ( int ) );
+    }
+
+
+public:
+
+    virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line );
+
+    /**
+     * \~french
+     * \brief Retourne le tableau des images sources
+     * \return images sources
+     * \~english
+     * \brief Return the array of source images
+     * \return source images
+     */
+    std::vector<Image*>* getImages() {
+        return &images;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le masque de l'image source d'indice i
+     * \param[in] i indice de l'image source dont on veut le masque
+     * \return masque
+     * \~english
+     * \brief Return the mask of source images with indice i
+     * \param[in] i source image indice, whose mask is wanted
+     * \return mask
+     */
+    Image* getMask ( int i ) {
+        return images.at ( i )->getMask();
+    }
+
+    /**
+     * \~french
+     * \brief Destructeur par défaut
+     * \details Suppression de toutes les images composant la MergeImage
+     * \~english
+     * \brief Default destructor
+     */
+    virtual ~MergeImage() {
+        if (! isMask) {
+            for ( int i = 0; i < images.size(); i++ ) {
+                delete images[i];
+            }
+        }
+        delete [] bgValue;
+        if (transparentValue != NULL) delete [] transparentValue;
+    }
+
+    /** \~french
+     * \brief Sortie des informations sur l'image fusionnée
+     ** \~english
+     * \brief Merged image description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "------ MergeImage -------" );
+        Image::print();
+        LOGGER_INFO ( "\t- Number of images = " << images.size() );
+        LOGGER_INFO ( "\t- Merge method : " << toString ( composition ) << "\n" );
+        LOGGER_INFO ( "\t- Background value : " << bgValue << "\n" );
+    }
+};
+
+/** \~ \author Institut national de l'information géographique et forestière
+ ** \~french
+ * \brief Usine de création d'une image fusionnée
+ * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe MergeImage. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de MergeImage et de sortir en erreur en cas de problème.
+ */
+class MergeImageFactory {
+public:
+
+    /** \~french
+     * \brief Teste et calcule les caractéristiques d'une image fusionnée et crée un objet MergeImage
+     * \details Toutes les images sources doivent avoir les même dimensions pixel.
+     * \param[in] images images sources
+     * \param[in] channel nombre de canaux par pixel en sortie
+     * \param[in] bgValue valeur de pixel à utiliser comme fond, un entier par canal en sortie
+     * \param[in] transparentValue valeur de pixel à considérer comme transparent (peut être NULL), 3 valeurs entières
+     * \param[in] composition méthode de fusion à utiliser
+     ** \~english
+     * \brief Check and calculate compounded image components and create an MergeImage object
+     * \details All source images have to own same dimesions.
+     * \param[in] images source images
+     * \param[in] channel number of samples per output pixel
+     * \param[in] bgValue pixel's value to use as background, one integer per output sample
+     * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
+     * \param[in] composition merge method to use
+     */
+    MergeImage* createMergeImage ( std::vector< Image* >& images, int channels,
+                                   int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL );
+};
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'un masque fusionné, s'appuyant sur une image fusionné
+ */
+class MergeMask : public Image {
+
+private:
+    /**
+     * \~french \brief Image fusionnée, à laquelle le masque fusionné est associé
+     * \~english \brief Merged images, with which merged mask is associated
+     */
+    MergeImage* MI;
+
+    /** \~french
+     * \brief Retourne une ligne entière
+     * \details Lors ce que l'on veut récupérer une ligne d'un masque fusionné, on va se reporter sur tous les masques des images source de l'image fusionnée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
+     * \param[out] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    int _getline ( uint8_t* buffer, int line );
+
+public:
+    /** \~french
+     * \brief Crée un MergeMask
+     * \details Les caractéristiques du masque sont extraites de l'image fusionnée.
+     * \param[in] MI Image composée
+     ** \~english
+     * \brief Create a MergeMask
+     * \details Mask's components are extracted from the merged image.
+     * \param[in] MI Compounded image
+     */
+    MergeMask ( MergeImage*& MI ) :
+        Image ( MI->getWidth(), MI->getHeight(), 1,MI->getResX(), MI->getResY(),MI->getBbox() ),
+        MI ( MI ) {}
+
+    int getline ( uint8_t* buffer, int line );
+    int getline ( float* buffer, int line );
+
+    /**
+     * \~french
+     * \brief Destructeur par défaut
+     * \~english
+     * \brief Default destructor
+     */
+    virtual ~MergeMask() {}
+
+    /** \~french
+     * \brief Sortie des informations sur le masque fusionné
+     ** \~english
+     * \brief Merged mask description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "------ MergeMask -------" );
+        Image::print();
+    }
+
 };
 
 #endif // MERGEIMAGE_H

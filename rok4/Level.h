@@ -44,7 +44,7 @@
 #include "Data.h"
 #include "FileDataSource.h"
 #include "CRS.h"
-#include "format.h"
+#include "Format.h"
 #include "ServicesConf.h"
 #include "Interpolation.h"
 
@@ -57,7 +57,7 @@ private:
     std::string   baseDir;
     int           pathDepth;
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
-    const eformat_data format; //format d'image des tuiles
+    const Format::eformat_data format; //format d'image des tuiles
     const int     channels;
     const uint32_t maxTileRow;
     const uint32_t minTileRow;
@@ -82,13 +82,13 @@ protected:
      * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tilex.
      * Toutes les coordonnées sont entière depuis le coin haut gauche.
      */
-    Image* getwindow (ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
+    Image* getwindow ( ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 public:
     TileMatrix getTm() {
         return tm;
     }
-    eformat_data getFormat() {
+    Format::eformat_data getFormat() {
         return format;
     }
     int     getChannels() {
@@ -126,9 +126,9 @@ public:
 
     DataSource* getEncodedNoDataTile();
     DataSource* getDecodedNoDataTile();
-    
+
     Image* getnodatabbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
-    
+
     Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
     Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
@@ -148,10 +148,10 @@ public:
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
 
     Image* getNoDataTile ( BoundingBox<double> bbox );
-    
-    int* getNoDataValue( int* nodatavalue );
-    uint16_t getSampleFormat();
-    
+
+    int* getNoDataValue ( int* nodatavalue );
+    SampleType getSampleType();
+
     void setNoData ( const std::string& file ) ;
     void setNoDataSource ( DataSource* source );
 
@@ -159,7 +159,7 @@ public:
     Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, eformat_data format, std::string noDataFile );
+            int pathDepth, Format::eformat_data format, std::string noDataFile );
 
     /*
      * Destructeur

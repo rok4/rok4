@@ -33,6 +33,36 @@
 # 
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+################################################################################
+
+=begin nd
+File: Pixel.pm
+
+Class: BE4::Pixel
+
+Store all pixel's intrinsic components.
+
+Using:
+    (start code)
+    use BE4::Pixel;
+
+    my $objC = BE4::Pixel->new({
+        sampleformat => "uint",
+        photometric => "rgb",
+        samplesperpixel => 3,
+        bitspersample => 8,
+    });
+    (end code)
+
+Attributes:
+    photometric - string - Samples' interpretation.
+    sampleformat - string - Sample format, type.
+    bitspersample - integer - Number of bits per sample (the same for all samples).
+    samplesperpixel - integer - Number of channels.
+=cut
+
+################################################################################
+
 package BE4::Pixel;
 
 use strict;
@@ -55,48 +85,52 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-################################################################################
-# Global
+# Constant: PIXEL
+# Define allowed values for attributes bitspersample, sampleformat, photometric and samplesperpixel.
 my %PIXEL;
+
+# Constant: DEFAULT
+# Define default values for attribute photometric.
+my %DEFAULT;
 
 ################################################################################
 
 BEGIN {}
 INIT {
+    %PIXEL = (
+        bitspersample     => [8,32],
+        sampleformat      => ['uint','float'],
+        photometric       => ['rgb','gray','mask'],
+        samplesperpixel   => [1,3,4],
+    );
 
-%PIXEL = (
-    bitspersample     => [8,32],
-    sampleformat      => ['uint','float'],
-    photometric       => ['rgb','gray','mask'],
-    samplesperpixel   => [1,3,4],
-);
-
+    %DEFAULT = (
+        photometric => 'rgb',
+    );
 }
 END {}
 
-################################################################################
+####################################################################################################
+#                                        Group: Constructors                                       #
+####################################################################################################
+
 =begin nd
-Group: variable
+Constructor: new
 
-variable: $self
-    * photometric
-    * sampleformat
-    * bitspersample : integer
-    * samplesperpixel : integer
+Pixel constructor. Bless an instance. Check and store attributes values.
+
+Parameters (hash):
+    photometric - string - Samples' interpretation. Default value : "rgb".
+    sampleformat - string - Sample format, type.
+    bitspersample - integer - Number of bits per sample (the same for all samples).
+    samplesperpixel - integer - Number of channels.
 =cut
-
-####################################################################################################
-#                                       CONSTRUCTOR METHODS                                        #
-####################################################################################################
-
-# Group: constructor
-
 sub new {
     my $this = shift;
     my $params = shift;
 
     my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
+    # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         photometric => undef,
         sampleformat => undef,
@@ -110,45 +144,70 @@ sub new {
 
     # All attributes have to be present in parameters and defined
 
-    my $sampleformat = $params->{sampleformat};
-    if ( ! defined $sampleformat || ! $self->is_SampleFormat($sampleformat)) {
-        ERROR (sprintf "Unknown 'sampleformat' (%s) !",$sampleformat);
+    ### Sample format : REQUIRED
+    if (! exists $params->{sampleformat} || ! defined $params->{sampleformat}) {
+        ERROR ("'sampleformat' required !");
         return undef;
+    } else {
+        if (! $self->isSampleFormat($params->{sampleformat})) {
+            ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
+            return undef;
+        }
     }
-    $self->{sampleformat} = $sampleformat;
+    $self->{sampleformat} = $params->{sampleformat};
 
-    my $samplesperpixel = $params->{samplesperpixel};
-    if (! defined $samplesperpixel || ! $self->is_SamplesPerPixel($samplesperpixel)) {
-        ERROR (sprintf "Unknown 'samplesperpixel' (%s) !",$samplesperpixel);
+    ### Samples per pixel : REQUIRED
+    if (! exists $params->{samplesperpixel} || ! defined $params->{samplesperpixel}) {
+        ERROR ("'samplesperpixel' required !");
         return undef;
+    } else {
+        if (! $self->isSamplesPerPixel($params->{samplesperpixel})) {
+            ERROR (sprintf "Unknown 'samplesperpixel' : %s !",$params->{samplesperpixel});
+            return undef;
+        }
     }
-    $self->{samplesperpixel} = int($samplesperpixel);
+    $self->{samplesperpixel} = int($params->{samplesperpixel});
 
-    my $photometric = $params->{photometric};
-    if (! defined $photometric || ! $self->is_Photometric($photometric)) {
-        ERROR (sprintf "Unknown 'photometric' (%s) !",$photometric);
+    ### Photometric
+    if (! exists $params->{photometric} || ! defined $params->{photometric}) {
+        $params->{photometric} = $DEFAULT{photometric};
+        INFO(sprintf "Default value for 'photometric' : %s", $params->{photometric});
+    } else {
+        if (! $self->isPhotometric($params->{photometric})) {
+            ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
+            return undef;
+        }
+    }
+    $self->{photometric} = $params->{photometric};
+
+    ### Bits per sample : REQUIRED
+    if (! exists $params->{bitspersample} || ! defined $params->{bitspersample}) {
+        ERROR ("'bitspersample' required !");
         return undef;
+    } else {
+        if (! $self->isBitsPerSample($params->{bitspersample})) {
+            ERROR (sprintf "Unknown 'bitspersample' : %s !",$params->{bitspersample});
+            return undef;
+        }
     }
-    $self->{photometric} = $photometric;
-
-    my $bitspersample = $params->{bitspersample};
-    if (! defined $bitspersample || ! $self->is_BitsPerSample($bitspersample)) {
-        ERROR (sprintf "Unknown 'bitspersample' (%s) !",$bitspersample);
-        return undef;
-    }
-    $self->{bitspersample} = int($bitspersample);
-
+    $self->{bitspersample} = int($params->{bitspersample});
 
     return $self;
 }
 
 ####################################################################################################
-#                                     ATTRIBUTE TESTS                                              #
+#                             Group: Attributes' testers                                           #
 ####################################################################################################
 
-# Group: attribute tests
+=begin nd
+Function: isSampleFormat
 
-sub is_SampleFormat {
+Tests if sample format value is allowed.
+
+Parameters (list):
+    sampleformat - string - Sample format value to test
+=cut
+sub isSampleFormat {
     my $self = shift;
     my $sampleformat = shift;
 
@@ -162,7 +221,15 @@ sub is_SampleFormat {
     return FALSE;
 }
 
-sub is_BitsPerSample {
+=begin nd
+Function: isBitsPerSample
+
+Tests if bits per sample value is allowed.
+
+Parameters (list):
+    bitspersample - string - Bits per sample value to test
+=cut
+sub isBitsPerSample {
     my $self = shift;
     my $bitspersample = shift;
 
@@ -178,7 +245,15 @@ sub is_BitsPerSample {
     return FALSE;
 }
 
-sub is_Photometric {
+=begin nd
+Function: isPhotometric
+
+Tests if photometric value is allowed.
+
+Parameters (list):
+    photometric - string - Photometric value to test
+=cut
+sub isPhotometric {
     my $self = shift;
     my $photometric = shift;
 
@@ -192,7 +267,15 @@ sub is_Photometric {
     return FALSE;
 }
 
-sub is_SamplesPerPixel {
+=begin nd
+Function: isSamplesPerPixel
+
+Tests if samples per pixel value is allowed.
+
+Parameters (list):
+    samplesperpixel - string - Samples per pixel value to test
+=cut
+sub isSamplesPerPixel {
     my $self = shift;
     my $samplesperpixel = shift;
 
@@ -207,37 +290,51 @@ sub is_SamplesPerPixel {
 }
 
 ####################################################################################################
-#                                       GETTERS / SETTERS                                          #
+#                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Group: getters - setters
-
+# Function: getPhotometric
 sub getPhotometric {
     my $self = shift;
     return $self->{photometric};
 }
 
+# Function: getSampleFormat
 sub getSampleFormat {
     my $self = shift;
     return $self->{sampleformat};
 }
 
+# Function: getBitsPerSample
 sub getBitsPerSample {
     my $self = shift;
     return $self->{bitspersample};
 }
 
+# Function: getSamplesPerPixel
 sub getSamplesPerPixel {
     my $self = shift;
     return $self->{samplesperpixel};
 }
 
 ####################################################################################################
-#                                          EXPORT METHODS                                          #
+#                                Group: Export methods                                             #
 ####################################################################################################
 
-# Group: export methods
+=begin nd
+Function: exportForDebug
 
+Returns all pixel's components. Useful for debug.
+
+Example:
+    (start code)
+    Object BE4::Pixel :
+         Bits per sample : 8
+         Photometric : rgb
+         Sample format : uint
+         Samples per pixel : 1
+    (end code)
+=cut
 sub exportForDebug {
     my $self = shift ;
     
@@ -254,64 +351,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=head1 NAME
-
-BE4::Pixel - components of a pixel in output images
-
-=head1 SYNOPSIS
-
-    use BE4::Pixel;
-  
-    my $objC = BE4::Pixel->new({
-        sampleformat => "uint",
-        photometric => "rgb",
-        samplesperpixel => 3,
-        bitspersample => 8,
-    });
-
-=head1 DESCRIPTION
-
-=head2 ATTRIBUTES
-
-=over 4
-
-=item photometric
-
-Possible values : rgb, gray
-
-=item sampleformat
-
-Possible values : uint, float
-
-=item bitspersample
-
-Possible values : 8, 32
-
-=item samplesperpixel
-
-Possible values : 1, 3, 4
-
-=back
-
-=head1 SEE ALSO
-
-=head2 NaturalDocs
-
-=begin html
-
-<A HREF="../Natural/Html/index.html">Index</A>
-
-=end html
-
-=head1 AUTHOR
-
-Satabin Théo, E<lt>theo.satabin@ign.frE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (C) 2011 by Satabin Théo
-
-This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.1 or, at your option, any later version of Perl 5 you may have available.
-
-=cut

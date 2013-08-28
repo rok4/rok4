@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -33,6 +33,14 @@
  * The fact that you are presently reading this means that you have had
  *
  * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
+/**
+ * \file ServiceException.cpp
+ * \~french
+ * \brief Implémentation de la gestion des exceptions des services
+ * \~english
+ * \brief Implement services exceptions
  */
 
 #include <map>

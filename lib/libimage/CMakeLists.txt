@@ -31,9 +31,6 @@ endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
 
-
-
-
 #Build Type si les build types par défaut de CMake ne conviennent pas
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
@@ -50,11 +47,14 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(libimage_SRCS Palette.cpp CompoundImage.cpp Data.cpp TiffReader.cpp TiffWhiteManager.cpp TiledTiffWriter.cpp Decoder.cpp 
-ExtendedCompoundImage.cpp Grid.cpp Kernel.cpp LibtiffImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp TiffEncoder.cpp
-BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp format.cpp Interpolation.cpp
- TiffHeaderDataSource.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp)
-
+set(
+    libimage_SRCS Palette.cpp Data.cpp TiffReader.cpp TiledTiffWriter.cpp Decoder.cpp
+    ExtendedCompoundImage.cpp LibtiffImage.cpp CompoundImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp
+    Grid.cpp CRS.cpp TiffEncoder.cpp
+    Kernel.cpp Interpolation.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
+    Format.cpp TiffHeaderDataSource.cpp
+)
 
 add_library(image STATIC ${libimage_SRCS})
 
@@ -111,17 +111,10 @@ endif(UNITTEST)
 #Documentation Doxygen
 #Utilisation du fichier 
 if(BUILD_DOC)
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc ALL
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-endif(DOXYGEN_FOUND)
+    include(DoxygenConfig)
 endif(BUILD_DOC)
 
+INSTALL(FILES LICENCE README DESTINATION doc/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts
@@ -140,21 +133,6 @@ INSTALL(TARGETS image
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
-
-#Installe la documentation
-INSTALL(FILES README 
-  DESTINATION doc/${PROJECT_NAME})
-
-if(BUILD_DOC)
-if(DOXYGEN_FOUND)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
-
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
-
 
 ########################################
 # Paramétrage de la gestion de package CPack

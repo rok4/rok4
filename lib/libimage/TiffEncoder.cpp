@@ -42,25 +42,24 @@
 #include "TiffDeflateEncoder.h"
 #include "TiffPackBitsEncoder.h"
 
-DataStream* TiffEncoder::getTiffEncoder(Image* image, eformat_data format)
-{
-    switch (format) {
-    case TIFF_RAW_INT8 :
-        return new TiffRawEncoder<uint8_t>(image);
-    case TIFF_LZW_INT8 :
-        return new TiffLZWEncoder<uint8_t>(image);
-    case TIFF_ZIP_INT8 :
-        return new TiffDeflateEncoder<uint8_t>(image);
-    case TIFF_PKB_INT8 :
-        return new TiffPackBitsEncoder<uint8_t>(image);
-    case TIFF_RAW_FLOAT32 :
-        return new TiffRawEncoder<float>(image);
-    case TIFF_LZW_FLOAT32 :
-        return new TiffLZWEncoder<float>(image);
-    case TIFF_ZIP_FLOAT32 :
-        return new TiffDeflateEncoder<float>(image);
-    case TIFF_PKB_FLOAT32 : 
-        return new TiffPackBitsEncoder<float>(image);
+DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format ) {
+    switch ( format ) {
+    case Format::TIFF_RAW_INT8 :
+        return new TiffRawEncoder<uint8_t> ( image );
+    case Format::TIFF_LZW_INT8 :
+        return new TiffLZWEncoder<uint8_t> ( image );
+    case Format::TIFF_ZIP_INT8 :
+        return new TiffDeflateEncoder<uint8_t> ( image );
+    case Format::TIFF_PKB_INT8 :
+        return new TiffPackBitsEncoder<uint8_t> ( image );
+    case Format::TIFF_RAW_FLOAT32 :
+        return new TiffRawEncoder<float> ( image );
+    case Format::TIFF_LZW_FLOAT32 :
+        return new TiffLZWEncoder<float> ( image );
+    case Format::TIFF_ZIP_FLOAT32 :
+        return new TiffDeflateEncoder<float> ( image );
+    case Format::TIFF_PKB_FLOAT32 :
+        return new TiffPackBitsEncoder<float> ( image );
     default:
         return NULL;
     }

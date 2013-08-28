@@ -1,5 +1,5 @@
-#Défini le nom du projet 
-project(be4)
+#Défini le nom du projet
+project(Be4)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README
 if(NOT DEFINED BE4_VERSION)
@@ -27,26 +27,28 @@ endif(NOT DEFINED BUILD_DEPENDENCIES)
 if(NOT DEFINED BUILD_DOC)
   set(BUILD_DOC TRUE BOOL)
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+  include(DoxygenConfig)
 endif(NOT DEFINED BUILD_DOC)
 
 if(UNITTEST)
   enable_testing()
 endif(UNITTEST)
 
-
 include(ROK4Dependencies)
 
-MESSAGE(STATUS "Building Be4 generation toolchain")
 configure_file(be4version.h.in be4version.h ESCAPE_QUOTES @ONLY)
-add_subdirectory(overlayNtiff)
-add_subdirectory(mergeNtiff)
-add_subdirectory(merge4tiff)
-add_subdirectory(tiff2tile)
-add_subdirectory(tiff2gray)
-add_subdirectory(cache2work)
-add_subdirectory(removeWhite)
-add_subdirectory(removeFF)
-add_subdirectory(pyramide)
-add_subdirectory(tiffck)
 add_subdirectory(createNodata)
+add_subdirectory(manageNodata)
+add_subdirectory(merge4tiff)
+add_subdirectory(mergeNtiff)
+add_subdirectory(overlayNtiff)
+add_subdirectory(pyramide)
+add_subdirectory(tiff2gray)
+add_subdirectory(tiff2tile)
+add_subdirectory(tiffck)
 add_subdirectory(untile)
+
+# Documentation Doxygen
+if(BUILD_DOC)
+    include(DoxygenConfig)
+endif(BUILD_DOC)

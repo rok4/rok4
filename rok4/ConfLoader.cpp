@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -40,19 +40,22 @@
  * \file ConfLoader.cpp
  * \~french
  * \brief Implémenation des fonctions de chargement de la configuration
+ * \brief pendant l'initialisation du serveur
  * \~english
- * \brief implements configuration loader functions
+ * \brief Implements configuration loader functions
+ * \brief during server initialization
  */
 
 
 #include <dirent.h>
 #include <cstdio>
 #include "ConfLoader.h"
+#include "Rok4Server.h"
 #include "Pyramid.h"
 #include "tinyxml.h"
 #include "tinystr.h"
 #include "config.h"
-#include "format.h"
+#include "Format.h"
 #include "MetadataURL.h"
 #include "LegendURL.h"
 #include <malloc.h>
@@ -63,23 +66,7 @@
 #include "config.h"
 #include "Keyword.h"
 
-
-/**
- * \~french
- * \brief Création d'un Style à partir de sa représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
- * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new Style from its XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \param[in] inspire whether INSPIRE validity rules are enforced
- * \return pointer to the newly created Style, NULL if something went wrong
- */
-
-
+// Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
     LOGGER_INFO ( _ ( "     Ajout du Style " ) << fileName );
     std::string id ="";
@@ -344,21 +331,6 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
 }//parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire)
 
-
-/**
- * \~french
- * \brief Création d'un Style à partir d'un fichier
- * \param[in] fileName Nom du fichier, utilisé comme identifiant
- * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
- * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new Style from a file
- * \param[in] fileName filename, used as identifier
- * \param[in] inspire whether INSPIRE validity rules are enforced
- * \return pointer to the newly created Style, NULL if something went wrong
- */
-
-
 Style* ConfLoader::buildStyle ( std::string fileName,bool inspire ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
@@ -367,21 +339,6 @@ Style* ConfLoader::buildStyle ( std::string fileName,bool inspire ) {
     }
     return parseStyle ( &doc,fileName,inspire );
 }//buildStyle(std::string fileName,bool inspire)
-
-
-/**
- * \~french
- * \brief Création d'un TileMatrixSet à partir de sa représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new TileMatrixSet from its XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
- */
-
 
 TileMatrixSet* ConfLoader::parseTileMatrixSet ( TiXmlDocument* doc,std::string fileName ) {
     LOGGER_INFO ( _ ( "     Ajout du TMS " ) << fileName );
@@ -552,19 +509,6 @@ TileMatrixSet* ConfLoader::parseTileMatrixSet ( TiXmlDocument* doc,std::string f
 
 }//buildTileMatrixSet(std::string)
 
-
-/**
- * \~french
- * \brief Création d'un TileMatrixSet à partir d'un fichier
- * \param[in] fileName Nom du fichier, utilisé comme identifiant
- * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new TileMatrixSet from a file
- * \param[in] fileName filename, used as identifier
- * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
- */
-
-
 TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
@@ -574,23 +518,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
     return parseTileMatrixSet ( &doc,fileName );
 }//buildTileMatrixSet(std::string fileName)
 
-
-/**
- * \~french
- * \brief Création d'une Pyramide à partir de sa représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[in] tmsList liste des TileMatrixSets connus
- * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
- * \~english
- * \brief Create a new Pyramid from its XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \param[in] tmsList known TileMatrixSets
- * \return pointer to the newly created Pyramid, NULL if something went wrong
- */
-
-
+// Load a pyramid
 Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
@@ -605,7 +533,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     TileMatrixSet *tms;
     std::string formatStr="";
-    eformat_data format;
+    Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
 
@@ -659,7 +587,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 return NULL;
     }*/
 
-    format = format::fromString ( formatStr );
+    format = Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;
@@ -872,21 +800,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 }// buildPyramid()
 
-
-/**
- * \~french
- * \brief Création d'une Pyramide à partir d'un fichier
- * \param[in] fileName Nom du fichier, utilisé comme identifiant
- * \param[in] tmsList liste des TileMatrixSet connus
- * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
- * \~english
- * \brief Create a new Pyramid from a file
- * \param[in] fileName filename, used as identifier
- * \param[in] tmsList known TileMatrixSets
- * \return pointer to the newly created Pyramid, NULL if something went wrong
- */
-
-
 Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
@@ -895,30 +808,6 @@ Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, 
     }
     return parsePyramid ( &doc,fileName,tmsList );
 }
-
-
-
-/**
- * \~french
- * \brief Création d'un Layer à partir de sa représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[in] tmsList liste des TileMatrixSets connus
- * \param[in] stylesList liste des Styles connus
- * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
- * \param[in] servicesConf pointeur vers les configurations globales du services
- * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new Layer from its XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \param[in] tmsList known TileMatrixSets
- * \param[in] stylesList known Styles
- * \param[in] reprojectionCapability whether the server can handle reprojection
- * \param[in] servicesConf global service configuration pointer
- * \return pointer to the newly created Layer, NULL if something went wrong
- */
-
 
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf ) {
@@ -1279,27 +1168,6 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     return layer;
 }//buildLayer
 
-
-/**
- * \~french
- * \brief Création d'un Layer à partir d'un fichier
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[in] tmsList liste des TileMatrixSets connus
- * \param[in] stylesList liste des Styles connus
- * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
- * \param[in] servicesConf pointeur vers les configurations globales du services
- * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
- * \~english
- * \brief Create a new Layer from a file
- * \param[in] fileName original filename, used as identifier
- * \param[in] tmsList known TileMatrixSets
- * \param[in] stylesList known Styles
- * \param[in] reprojectionCapability whether the server can handle reprojection
- * \param[in] servicesConf global service configuration pointer
- * \return pointer to the newly created Layer, NULL if something went wrong
- */
-
-
 Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
@@ -1309,48 +1177,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
     return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
 }
 
-
-/**
- * \~french
- * \brief Chargement des paramètres du serveur à partir de sa représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[out] logOutput type d'enregistreur d'évenement
- * \param[out] logFilePrefix préfixe du fichier contenant le journal des évènements
- * \param[out] logFilePeriod période de rotation des fichiers du journal
- * \param[out] logLevel niveau de criticité des évènements
- * \param[out] nbThread nombre de processus léger concurrent
- * \param[out] supportWMTS support des requêtes de type WMTS
- * \param[out] supportWMS support des requêtes de type WMS
- * \param[out] reprojectionCapability support des requêtes avec reprojection
- * \param[out] servicesConfigFile chemin du fichier de configuration du service
- * \param[out] layerDir chemin du répertoire contenant les fichiers de Layer
- * \param[out] tmsDir chemin du répertoire contenant les fichiers de TileMatrixSet
- * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
- * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
- * \param[out] backlog profondeur de la file d'attente
- * \return faux en cas d'erreur
- * \~english
- * \brief Load server parameter from its XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \param[out] logOutput type of logger
- * \param[out] logFilePrefix log file prefix
- * \param[out] logFilePeriod log file rotation period
- * \param[out] logLevel log criticity level
- * \param[out] nbThread concurrent thread number
- * \param[out] supportWMTS support WMTS request
- * \param[out] supportWMS support WMS request
- * \param[out] reprojectionCapability support request with reprojection
- * \param[out] serverConfigFile path to service configuration file
- * \param[out] layerDir path to Layer directory
- * \param[out] tmsDir path to TileMatrixSet directory
- * \param[out] styleDir path to Style directory
- * \param[out] socket listening address and port, empty if defined by a FCGI call
- * \param[out] backlog listen queue depth
- * \return false if something went wrong
- */
-
+// Load the server configuration (default is server.conf file) during server initialization
 bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -1564,19 +1391,7 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     return true;
 }//parseTechnicalParam
 
-/**
- * \~french
- * \brief Chargement des paramètres des services à partir de leur représentation XML
- * \param[in] doc Racine du document XML
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \return un pointeur vers le ServicesConf nouvellement instanciée, NULL en cas d'erreur
- * \~english
- * \brief Load service parameters from their XML representation
- * \param[in] doc XML root
- * \param[in] fileName original filename, used as identifier
- * \return pointer to the newly created ServicesConf, NULL if something went wrong
- */
-
+// Load the services configuration (default is services.conf file) during server initialization
 ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -1633,7 +1448,9 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string metadataMediaTypeWMS;
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
-
+    // CRS
+    bool doweuselistofequalsCRS = false; // Option to avoid reprojecting data in equivalent CRS
+    std::vector<std::string> listofequalsCRS; // If the option is true, load the list of equals CRS
 
 
     pElem=hRoot.FirstChild ( "name" ).Element();
@@ -1882,6 +1699,38 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         }
     }
 
+    pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
+        if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( _ ( "Utilisation du fichier qui liste les CRS equivalents d apres services.conf" ) );
+            doweuselistofequalsCRS = true;
+        }
+    }
+
+    // Build the list (vector of string) of equals CRS from a file given in parameter
+    char * fileCRS = "/listofequalscrs.txt";
+    char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
+    char namebuffer[100];
+    strcpy(namebuffer, dirCRS);
+    strcat(namebuffer, fileCRS);
+    if ( doweuselistofequalsCRS == true ) {
+        LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
+        std::vector<std::string> buildinglistofequalsCRS;
+        std::ifstream input ( namebuffer );
+        // We test if the stream is empty
+        //   This can happen when the file can't be loaded or when the file is empty
+        if ( input.peek() == std::ifstream::traits_type::eof() ) {
+            LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << namebuffer << _ (" ou fichier vide")  );
+        }
+        for( std::string line; getline(input, line); ) {
+            buildinglistofequalsCRS.push_back( line );
+        }
+        listofequalsCRS = buildinglistofequalsCRS;
+    } else {
+        LOGGER_INFO ( _ ( "Pas de construction demandee de la liste des CRS equivalents depuis " ) << namebuffer );
+        listofequalsCRS.push_back( "empty" );
+    }
 
     MetadataURL mtdMWS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
@@ -1890,49 +1739,9 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, postMode, fullStyling, inspire );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
     return servicesConf;
 }
-
-
-/**
- * \~french
- * \brief Chargement des paramètres du serveur à partir d'un fichier
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \param[out] logOutput type d'enregistreur d'évenement
- * \param[out] logFilePrefix préfixe du fichier contenant le journal des évènements
- * \param[out] logFilePeriod période de rotation des fichiers du journal
- * \param[out] logLevel niveau de criticité des évènements
- * \param[out] nbThread nombre de processus léger concurrent
- * \param[out] supportWMTS support des requêtes de type WMTS
- * \param[out] supportWMS support des requêtes de type WMS
- * \param[out] reprojectionCapability support des requêtes avec reprojection
- * \param[out] servicesConfigFile chemin du fichier de configuration du service
- * \param[out] layerDir chemin du répertoire contenant les fichiers de Layer
- * \param[out] tmsDir chemin du répertoire contenant les fichiers de TileMatrixSet
- * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
- * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
- * \param[out] backlog profondeur de la file d'attente
- * \return faux en cas d'erreur
- * \~english
- * \brief Load server parameter from a file
- * \param[in] fileName original filename, used as identifier
- * \param[out] logOutput type of logger
- * \param[out] logFilePrefix log file prefix
- * \param[out] logFilePeriod log file rotation period
- * \param[out] logLevel log criticity level
- * \param[out] nbThread concurrent thread number
- * \param[out] supportWMTS support WMTS request
- * \param[out] supportWMS support WMS request
- * \param[out] reprojectionCapability support request with reprojection
- * \param[out] serverConfigFile path to service configuration file
- * \param[out] layerDir path to Layer directory
- * \param[out] tmsDir path to TileMatrixSet directory
- * \param[out] styleDir path to Style directory
- * \param[out] socket listening address and port, empty if defined by a FCGI call
- * \param[out] backlog listen queue depth
- * \return false if something went wrong
- */
 
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
@@ -1946,22 +1755,6 @@ bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& lo
     }
     return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
 }
-
-/**
- * \~french
- * \brief Charges les différents Styles présent dans le répertoire styleDir
- * \param[in] styleDir chemin du répertoire contenant les fichiers de Style
- * \param[out] stylesList ensemble des Styles disponibles
- * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
- * \return faux en cas d'erreur
- * \~english
- * \brief Load Styles from the styleDir directory
- * \param[in] styleDir path to Style directory
- * \param[out] stylesList set of available Styles.
- * \param[in] inspire whether INSPIRE validity rules are enforced
- * \return false if something went wrong
- */
-
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES STYLES" ) );
@@ -2013,20 +1806,6 @@ bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, 
     return true;
 }
 
-
-/**
- * \~french
- * \brief Charges les différents TileMatrixSet présent dans le répertoire tmsDir
- * \param[in] tmsDir chemin du répertoire contenant les fichiers de TileMatrixSet
- * \param[out] tmsList ensemble des TileMatrixSets disponibles
- * \return faux en cas d'erreur
- * \~english
- * \brief Load Styles from the styleDir directory
- * \param[in] tmsDir path to TileMatrixSet directory
- * \param[out] tmsList set of available TileMatrixSets
- * \return false if something went wrong
- */
-
 bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES TMS" ) );
 
@@ -2077,28 +1856,6 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
     return true;
 }
 
-
-/**
- * \~french
- * \brief Charges les différents Layers présent dans le répertoire layerDir
- * \param[in] layerDir chemin du répertoire contenant les fichiers de TileMatrixSet
- * \param[in] tmsList ensemble des TileMatrixSets disponibles
- * \param[in] stylesList ensemble des Styles disponibles
- * \param[out] layers ensemble des Layers disponibles
- * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
- * \param[in] servicesConf pointeur vers les configurations globales du services
- * \return faux en cas d'erreur
- * \~english
- * \brief Load Styles from the styleDir directory
- * \param[in] layerDir path to TileMatrixSet directory
- * \param[in] tmsList set of available TileMatrixSets
- * \param[in] stylesList set of available Styles
- * \param[out] layers set of available Layers
- * \param[in] reprojectionCapability whether the server can handle reprojection
- * \param[in] servicesConf global service configuration pointer
- * \return false if something went wrong
- */
-
 bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
@@ -2144,18 +1901,6 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     return true;
 }
 
-
-/**
- * \~french
- * \brief Chargement des paramètres des services à partir d'un fichier
- * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
- * \return un pointeur vers le ServicesConf nouvellement instanciée, NULL en cas d'erreur
- * \~english
- * \brief Load service parameters from a file
- * \param[in] fileName original filename, used as identifier
- * \return pointer to the newly created ServicesConf, NULL if something went wrong
- */
-
 ServicesConf * ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
     LOGGER_INFO ( _ ( "Construction de la configuration des services depuis " ) <<servicesConfigFile );
     TiXmlDocument doc ( servicesConfigFile );
@@ -2165,3 +1910,4 @@ ServicesConf * ConfLoader::buildServicesConf ( std::string servicesConfigFile ) 
     }
     return parseServicesConf ( &doc,servicesConfigFile );
 }
+

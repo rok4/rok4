@@ -1,0 +1,5 @@
+Title: Library JOINCACHE : global view
+
+Group: UML classes diagram
+
+(see joincache_classes.png)
