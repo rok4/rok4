@@ -273,8 +273,7 @@ sub computeImageSource {
             $badRefCtrl++;
         }
         if ($badRefCtrl>1){
-            ERROR ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
-            return FALSE;
+            WARN ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
         }
 
         my $xRes = $objGeoImage->getXres();
