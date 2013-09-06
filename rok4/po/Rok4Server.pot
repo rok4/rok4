@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-08-28 16:33+0200\n"
+"POT-Creation-Date: 2013-09-06 13:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -928,39 +928,39 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: Level.cpp:143 Level.cpp:186 Level.cpp:237
+#: Level.cpp:143 Level.cpp:191 Level.cpp:244
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:244
+#: Level.cpp:251
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:269
+#: Level.cpp:276
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:277
+#: Level.cpp:284
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:317
+#: Level.cpp:324
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:380 Level.cpp:398
+#: Level.cpp:387 Level.cpp:405
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:403
+#: Level.cpp:410
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:413
+#: Level.cpp:420
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:423 Level.cpp:436
+#: Level.cpp:430 Level.cpp:443
 msgid "GetTile Image"
 msgstr ""
 
@@ -1369,15 +1369,15 @@ msgstr ""
 msgid "Erreur inconnue"
 msgstr ""
 
-#: ResponseSender.cpp:145 ResponseSender.cpp:188
+#: ResponseSender.cpp:145 ResponseSender.cpp:187
 msgid "Echec d'ecriture dans le flux de sortie de la requete FCGI "
 msgstr ""
 
-#: ResponseSender.cpp:154 ResponseSender.cpp:212
+#: ResponseSender.cpp:154 ResponseSender.cpp:211
 msgid "End of Response"
 msgstr ""
 
-#: ResponseSender.cpp:197
+#: ResponseSender.cpp:196
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 

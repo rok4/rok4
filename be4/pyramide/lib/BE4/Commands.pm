@@ -709,37 +709,51 @@ sub merge4tiff {
     
     my @childList = $node->getChildren;
 
-    if ($self->{useMasks} || scalar @childList != 4) {
-        # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et 
-        # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à 
-        # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
-        # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
-
-        my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
-
-        my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
-        my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
+    # Gestion du fond : faut-il le récupérer, et si oui, comment ?
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
+    my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
+    if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
         
-        my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
+        # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
 
-        if (-f $imgPath) {
-            # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-                
-            my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
 
-            if ( $self->{useMasks} && -f $maskPath ) {
-                # On a en plus un masque associé à l'image de fond
-                ($c,$w) = $self->cache2work($node,TRUE);
-                $code .= $c;
-                $weight += $w;
-                $workBgM = $node->getWorkName("BgM");
+        if ( $self->{useMasks} && -f $maskPath ) {
+            # On a en plus un masque associé à l'image de fond
+            ($c,$w) = $self->cache2work($node,TRUE);
+            $code .= $c;
+            $weight += $w;
+            $workBgM = $node->getWorkName("BgM");
+        } else {
+            if (defined $harvesting) {
+                # On a un service WMS pour moissonner le fond, donc on l'utilise
+                # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et
+                # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à
+                # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
+                # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
+
+                my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
+
+                my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
+                my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
+
+                if (! $tooWide && ! $tooHigh) {
+                    ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
+                    if (! defined $c) {
+                        ERROR(sprintf "Cannot harvest the back ground image %s",$node->getWorkBaseName("BgI"));
+                        return ("",-1);
+                    }
+
+                    $code .= $c;
+                    $weight += $w;
+                    $workBgI = $node->getWorkName("BgI");
+                }
+
             } else {
                 ($c,$w) = $self->cache2work($node,FALSE);
                 $code .= $c;
                 $weight += $w;
+                $workBgI = $node->getWorkName("BgI");
             }
-
-            $workBgI = $node->getWorkName("BgI");
         }
     }
     
@@ -855,6 +869,16 @@ sub configureFunctions {
     ######## convert ########
 
     my $conf_convert = "-compress zip";
+    if ($spp == 4) {
+        $conf_convert .= " -type TrueColorMatte -background none";
+    } elsif ($spp == 3) {
+        $conf_convert .= " -type TrueColor";
+    } elsif ($spp == 1) {
+        $conf_convert .= " -type Grayscale";
+    }
+
+    $conf_convert .= " -depth $bps";
+    
     $configuredFunc =~ s/__conv__/$conf_convert/;
     
     ######## tiff2tile ########
