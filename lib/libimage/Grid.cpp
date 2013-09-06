@@ -64,7 +64,7 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
 
     /* On veut toujours que le dernier pixel reprojeté soit le dernier de la ligne, ou de la colonne.
      * On ajoute donc toujours le dernier pixel à ceux de la grille, même si celui ci y était déjà.
-     * On en ajoute donc un, quiaura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
+     * On en ajoute donc un, qui aura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
      * Il faudra donc faire attention à cette différence lors de l'interpolation d'une ligne
      */
     nbx = nbxReg + 1;

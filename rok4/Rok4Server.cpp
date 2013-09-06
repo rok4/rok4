@@ -379,7 +379,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         image = MIF.createMergeImage ( images, images.at ( 0 )->channels, white, NULL, Merge::TOP );
 
         if ( image == NULL ) {
-            LOGGER_ERROR ( "Impossible de fusionner les images des différentes couches" );
+            LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
         }
     }
