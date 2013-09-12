@@ -510,7 +510,20 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false) {}
+        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false) {
+
+            if ( resx > 0 && resy > 0 ) {
+                // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+                // Arrondi a la valeur entiere la plus proche
+                int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
+                int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
+                if ( calcWidth != width || calcHeight != height ) {
+                    LOGGER_ERROR ( "Resolutions, bounding box and pixels dimensions are not consistent" );
+                    LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
+                    LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+                }
+            }
+        }
 
     /**
      * \~french

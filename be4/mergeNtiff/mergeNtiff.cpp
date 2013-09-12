@@ -152,6 +152,8 @@ uint16_t compression;
 int type=-1;
 /** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
 Interpolation::KernelType interpolation;
+/** \~french Activation du niveau de log debug. Faux par défaut */
+bool debugLogger=false;
 
 /**
  * \~french
@@ -186,6 +188,7 @@ Interpolation::KernelType interpolation;
  *      -p photometric :
  *              gray    min is black
  *              rgb     for image with alpha too
+ *      -d debug logger activation
  *
  * Examples
  *      - for orthophotography
@@ -225,6 +228,7 @@ void usage() {
                   "    -p photometric :\n" <<
                   "            gray    min is black\n" <<
                   "            rgb     for image with alpha too\n\n" <<
+                  "    -d debug logger activation\n" <<
 
                   "Examples\n" <<
                   "    - for orthophotography\n" <<
@@ -269,6 +273,9 @@ int parseCommandLine ( int argc, char** argv ) {
             case 'h': // help
                 usage();
                 exit ( 0 );
+            case 'd': // debug logs
+                debugLogger = true;
+                break;
             case 'f': // fichier de liste des images source
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -f" );
@@ -752,7 +759,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     double phaseX = pImage->getPhaseX();
     double phaseY = pImage->getPhaseY();
 
-    LOGGER_DEBUG ( "        Bbox avant rephasage : " << bbox->toString() );
+    LOGGER_DEBUG ( "\t Bbox avant rephasage : " << bbox->toString() );
 
     // Mise en phase de xmin (sans que celui ci puisse être plus petit)
     phi = modf ( bbox->xmin/resx_dst, &intpart );
@@ -810,7 +817,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         bbox->ymax += phaseDiff*resy_dst;
     }
 
-    LOGGER_DEBUG ( "        Bbox après rephasage : " << bbox->toString() );
+    LOGGER_DEBUG ( "\t Bbox après rephasage : " << bbox->toString() );
 }
 
 /**
@@ -835,7 +842,7 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
 
     int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
 
-    LOGGER_DEBUG("        Mirror's size : " << mirrorSize);
+    LOGGER_DEBUG("\t Mirror's size : " << mirrorSize);
 
     // On mémorise la bbox d'origine, sans les miroirs
     BoundingBox<double> realBbox = pECI->getBbox();
@@ -862,8 +869,8 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
     makePhase(pImageOut, &bbox_dst );
 
     // Dimension de l'image reechantillonnee
-    int width_dst = int ( ( xmax_dst-xmin_dst ) / resx_dst + 0.5 );
-    int height_dst = int ( ( ymax_dst-ymin_dst ) / resy_dst + 0.5 );
+    int width_dst = int ( ( bbox_dst.xmax-bbox_dst.xmin ) / resx_dst + 0.5 );
+    int height_dst = int ( ( bbox_dst.ymax-bbox_dst.ymin ) / resy_dst + 0.5 );
 
     if (width_dst <= 0 || height_dst <= 0) {
         LOGGER_WARN("A ResampledImage's dimension would have been null");
@@ -1183,7 +1190,7 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
+
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -1197,11 +1204,13 @@ int main ( int argc, char **argv ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    LOGGER_DEBUG ( "Read parameters" );
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc, argv ) < 0 ) {
         error ( "Echec lecture ligne de commande",-1 );
     }
+
+    // On sait maintenant si on doit activer le niveau de log DEBUG
+    if (debugLogger) Logger::setAccumulator(DEBUG, acc);
 
     // Conversion string->int[] du paramètre nodata
     LOGGER_DEBUG ( "Nodata interpretation" );
