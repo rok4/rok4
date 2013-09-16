@@ -6,17 +6,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-09-06 14:27+0200\n"
-"PO-Revision-Date: 2013-02-18 17:48+0100\n"
+"POT-Creation-Date: 2013-09-16 11:44+0200\n"
+"PO-Revision-Date: 2013-09-16 11:52+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
-"Language-Team: French <geop_services@geoportail.fr>\n"
+"Language-Team: French <kde-i18n-doc@kde.org>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-Language: French\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Lokalize 1.4\n"
+"X-Generator: Lokalize 1.5\n"
 
 #: CapabilitiesBuilder.cpp:286
 msgid "Liste de layers vide"
@@ -841,7 +841,7 @@ msgstr "Construction de la configuration des services depuis "
 
 #: ConfLoader.cpp:1724
 msgid " ou fichier vide"
-msgstr ""
+msgstr " ou fichier vide"
 
 #: ConfLoader.cpp:1731
 #, fuzzy
@@ -994,39 +994,47 @@ msgstr "Rechargement de la configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:166
+#: Pyramid.cpp:167
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:172
+#: Pyramid.cpp:173
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:179
+#: Pyramid.cpp:180
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:179
+#: Pyramid.cpp:180
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:188
+#: Pyramid.cpp:189
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:192
+#: Pyramid.cpp:193 Pyramid.cpp:205
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:199
+#: Pyramid.cpp:200
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:199
+#: Pyramid.cpp:200
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:206
+#: Pyramid.cpp:201
+msgid "ratio_x = "
+msgstr "Ratio en X = "
+
+#: Pyramid.cpp:201
+msgid "ratio_y = "
+msgstr "Ratio en Y ="
+
+#: Pyramid.cpp:211
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 

@@ -80,11 +80,13 @@ TiffHeaderDataSource::TiffHeaderDataSource ( DataSource* dataSource,
             LOGGER_DEBUG ( "TIFF_HEADER_LZW_FLOAT32_GRAY" );
             memcpy ( data, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, header_size );
         }
+        break;
     case Format::TIFF_ZIP_FLOAT32:
         if ( channel == 1 ) {
             LOGGER_DEBUG ( "TIFF_HEADER_ZIP_FLOAT32_GRAY" );
             memcpy ( data, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size );
         }
+        break;
     case Format::TIFF_PKB_FLOAT32:
         if ( channel == 1 ) {
             LOGGER_DEBUG ( "TIFF_HEADER_PKB_FLOAT32_GRAY" );
