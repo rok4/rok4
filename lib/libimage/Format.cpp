@@ -78,7 +78,7 @@ const char *eformat_mime[] = {
     "image/tiff",
     "image/x-bil;bits=32",
     "image/tiff",
-    "image/tiff",
+    "image/x-bil;bits=32",
     "image/tiff"
 };
 
