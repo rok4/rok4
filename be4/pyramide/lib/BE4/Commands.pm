@@ -260,11 +260,11 @@ MergeNtiff () {
     rm -f ${MNT_CONF_DIR}/$config
     
     if [ $bgI ] ; then
-        rm -f $bgI
+        rm -f ${TMP_DIR}/$bgI
     fi
     
     if [ $bgM ] ; then
-        rm -f $bgM
+        rm -f ${TMP_DIR}/$bgM
     fi
 }
 
@@ -291,10 +291,10 @@ Merge4tiff () {
     local inM4T=''
     
     if [ $imgBg ] ; then
-        forRM="${TMP_DIR}/$imgBg"
+        forRM="$forRM ${TMP_DIR}/$imgBg"
         inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
         if [ $mskBg ] ; then
-            forRM="${TMP_DIR}/$mskBg"
+            forRM="$forRM ${TMP_DIR}/$mskBg"
             inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
         fi
     fi
@@ -613,20 +613,20 @@ sub mergeNtiff {
             $code .= $c;
             $weight += $w;
             
-            $workBgM = "?".$node->getWorkName("BgM");
+            $workBgM = $node->getWorkName("BgM");
         } else {
             ($c,$w) = $self->cache2work($node,FALSE);
             $code .= $c;
             $weight += $w;
         }
         
-        $workBgI = "?".$node->getWorkName("BgI");
+        $workBgI = $node->getWorkName("BgI");
     }
     
-    my $workImgPath = "?".$node->getWorkName("I");
+    my $workImgPath = $node->getWorkName("I");
     my $workMskPath = undef;
     if ($self->{useMasks}) {
-        $workMskPath = "?".$node->getWorkName("M");
+        $workMskPath = $node->getWorkName("M");
     }
     
     my $mNtConfFilename = $node->getWorkBaseName.".txt";
@@ -638,11 +638,12 @@ sub mergeNtiff {
     }
     
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    printf CFGF $node->exportForMntConf($workImgPath, $workMskPath);
+    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
+    printf CFGF $node->exportForMntConf($workImgPath, $workMskPath, "?");
 
     # Maintenant les dalles en entrée:
     #   - L'éventuelle image de fond (avec l'eventuel masque associé)
-    printf CFGF "%s", $node->exportForMntConf($workBgI, $workBgM) if (defined $workBgI);
+    printf CFGF "%s", $node->exportForMntConf($workBgI, $workBgM, "?") if (defined $workBgI);
 
     #   - Les images source (QTree)
     my $listGeoImg = $node->getGeoImages;
@@ -715,44 +716,45 @@ sub merge4tiff {
     if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
         
         # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
+        
+        if (defined $harvesting) {
+            # On a un service WMS pour moissonner le fond, donc on l'utilise
+            # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et
+            # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à
+            # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
+            # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
 
+            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
 
-        if ( $self->{useMasks} && -f $maskPath ) {
-            # On a en plus un masque associé à l'image de fond
-            ($c,$w) = $self->cache2work($node,TRUE);
-            $code .= $c;
-            $weight += $w;
-            $workBgM = $node->getWorkName("BgM");
-        } else {
-            if (defined $harvesting) {
-                # On a un service WMS pour moissonner le fond, donc on l'utilise
-                # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et
-                # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à
-                # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
-                # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
+            my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
+            my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
 
-                my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
-
-                my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
-                my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
-
-                if (! $tooWide && ! $tooHigh) {
-                    ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
-                    if (! defined $c) {
-                        ERROR(sprintf "Cannot harvest the back ground image %s",$node->getWorkBaseName("BgI"));
-                        return ("",-1);
-                    }
-
-                    $code .= $c;
-                    $weight += $w;
-                    $workBgI = $node->getWorkName("BgI");
+            if (! $tooWide && ! $tooHigh) {
+                ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
+                if (! defined $c) {
+                    ERROR(sprintf "Cannot harvest the back ground image %s",$node->getWorkBaseName("BgI"));
+                    return ("",-1);
                 }
 
+                $code .= $c;
+                $weight += $w;
+                $workBgI = $node->getWorkName("BgI");
+            }
+
+        } else {
+            # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
+            $workBgI = $node->getWorkName("BgI");
+
+            if ( $self->{useMasks} && -f $maskPath ) {
+                # On a en plus un masque associé à l'image de fond
+                ($c,$w) = $self->cache2work($node,TRUE);
+                $code .= $c;
+                $weight += $w;
+                $workBgM = $node->getWorkName("BgM");
             } else {
                 ($c,$w) = $self->cache2work($node,FALSE);
                 $code .= $c;
                 $weight += $w;
-                $workBgI = $node->getWorkName("BgI");
             }
         }
     }

@@ -47,6 +47,7 @@
 #include "BilEncoder.h"
 #include "ExtendedCompoundImage.h"
 #include "Format.h"
+#include "EmptyImage.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
@@ -214,14 +215,15 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
             }
             
             int ndvalue[this->channels];
-            memset ( ndvalue,0,this->channels*sizeof ( int ) );
-            levels[l]->getNoDataValue ( ndvalue );
+            memset(ndvalue,0,this->channels*sizeof(int));
+            levels[l]->getNoDataValue(ndvalue);
             
             if ( images.empty() ) {
                 EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
                 fond->setBbox(bbox);
                 return fond;
             }
+            
             return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
         }
 

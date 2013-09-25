@@ -518,24 +518,39 @@ Export attributes of the Node for mergeNtiff configuration file. Provided paths 
 Parameters (list):
     imagePath - string - Path to the image, have to be defined
     maskPath - string - Path to the associated mask, can be undefined
+    perfix - string - Path to the associated maskString to add before paths, can be undefined
 =cut
 sub exportForMntConf {
     my $self = shift;
     my $imagePath = shift;
     my $maskPath = shift;
+    my $prefix = shift;
 
     TRACE;
 
     my @Bbox = $self->getBBox;
+    my $output = "";
 
-    my $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $imagePath,
-        $self->{tm}->getSRS(),
-        $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+    if (defined $prefix) {
+        $output = sprintf "IMG %s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            $prefix, $imagePath,
+            $self->{tm}->getSRS(),
+            $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+            $self->getTM()->getResolution(), $self->getTM()->getResolution();
+    } else {
+        $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            $imagePath,
+            $self->{tm}->getSRS(),
+            $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+            $self->getTM()->getResolution(), $self->getTM()->getResolution();
+    }
 
     if (defined $maskPath) {
-        $output .= sprintf "MSK %s\n", $maskPath;
+        if (defined $prefix) {
+            $output .= sprintf "MSK %s%s\n", $prefix, $maskPath;
+        } else {
+            $output .= sprintf "MSK %s\n", $maskPath;
+        }
     }
 
     return $output;
