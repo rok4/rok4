@@ -196,6 +196,24 @@ public:
     double getDeltaY() { return deltaY; }
 
     /**
+     * \~french \brief Retourne le ratio dans le sens des X
+     * \details Le ratio dans le sens des X est une pseudo résolution : c'est la différence entre les valeurs en bout de ligne, divisée par la largeur #width. Ce calcul est effectué pour chaque ligne, et on conserve la valeur la plus grande.
+     * \return ratio X
+     * \~english \brief Return the X wise ratio
+     * \return X ratio
+     */
+    double getRatioX();
+
+    /**
+     * \~french \brief Retourne le ratio dans le sens des Y
+     * \details Le ratio dans le sens des Y est une pseudo résolution : c'est la différence entre les valeurs en bout de colonne, divisée par la hauteur #height. Ce calcul est effectué pour chaque colonne, et on conserve la valeur la plus grande.
+     * \return ratio Y
+     * \~english \brief Return the Y wise ratio
+     * \return Y ratio
+     */
+    double getRatioY();
+
+    /**
      * \~french \brief Reprojette les points de la grille
      * \details On fera particulièrement attentiotn à ce que les points de la grille appartiennent bien à la zone de définition du système spatial.
      * \param[in] from_srs système spatial source, celui de la grille initialement

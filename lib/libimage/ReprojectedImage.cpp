@@ -56,8 +56,8 @@
 
 void ReprojectedImage::initialize () {
         
-    ratioX = ( grid->bbox.xmax - grid->bbox.xmin ) / double ( width );
-    ratioY = ( grid->bbox.ymax - grid->bbox.ymin ) / double ( height );
+    ratioX = grid->getRatioX();
+    ratioY = grid->getRatioY();
 
     // On calcule le nombre de pixels sources à considérer dans l'interpolation, dans le sens des x et des y
     Kx = ceil ( 2 * K.size ( ratioX ) );
