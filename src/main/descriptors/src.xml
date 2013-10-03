@@ -21,7 +21,7 @@
                 <exclude>src/</exclude> <!-- Maven stuff -->
             </excludes>
             <outputDirectory>/rok4-${project.version}/</outputDirectory>
-            <fileMode>0750</fileMode>
+            <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 </assembly>
