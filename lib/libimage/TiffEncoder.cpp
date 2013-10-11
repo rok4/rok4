@@ -42,6 +42,22 @@
 #include "TiffDeflateEncoder.h"
 #include "TiffPackBitsEncoder.h"
 
+TiffEncoder::TiffEncoder(Image *image, int line): image(image), line(line){
+    tmpBuffer = NULL;
+    tmpBufferPos = 0;
+    tmpBufferSize = 0;
+    header = NULL;
+    sizeHeader = 0;
+}
+
+TiffEncoder::~TiffEncoder() {
+    delete image;
+    if ( tmpBuffer )
+      delete[] tmpBuffer;
+    if ( header )
+      delete[] header;
+}
+
 DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format ) {
     switch ( format ) {
     case Format::TIFF_RAW_INT8 :
@@ -64,4 +80,43 @@ DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data for
         return NULL;
     }
 }
+
+size_t TiffEncoder::read(uint8_t* buffer, size_t size) {
+    size_t offset = 0, dataToCopy=0;
+    
+    if ( !tmpBuffer ) {
+	LOGGER_DEBUG("TiffEncoder : préparation du buffer d'image");
+	prepareBuffer();
+    }
+    
+    if ( !header ) {
+	LOGGER_DEBUG("TiffEncoder : préparation de l'en-tete");
+	prepareHeader();
+    }
+    
+    // Si pas assez de place pour le header, ne rien écrire.
+    if ( size < sizeHeader ) return 0;
+      
+    if ( line == -1 ) { // écrire le header tiff
+	memcpy ( buffer, header, sizeHeader );
+	offset = sizeHeader;
+	line = 0;
+    }
+
+    if ( size - offset > 0 ) { // il reste de la place
+	if ( tmpBufferPos <= tmpBufferSize ) { // il reste de la donnée
+	    dataToCopy = std::min ( size-offset, tmpBufferSize - tmpBufferPos );
+	    memcpy ( buffer+offset, tmpBuffer+tmpBufferPos, dataToCopy );
+	    tmpBufferPos+=dataToCopy;
+	    offset+=dataToCopy;
+	}
+    }
+
+    return offset;
+}
+
+bool TiffEncoder::eof() {
+    return ( tmpBufferPos>=tmpBufferSize );
+}
+
 
