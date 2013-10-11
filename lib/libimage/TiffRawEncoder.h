@@ -70,13 +70,14 @@ protected:
   
     virtual void prepareBuffer(){
 	LOGGER_DEBUG("TiffRawEncoder : préparation du buffer d'image");
-	tmpBuffer = new uint8_t[image->getHeight()*image->getWidth()*image->channels];
+	tmpBuffer = new uint8_t[image->getHeight()*image->getWidth()*image->channels*sizeof ( T )];
 	int lRead = 0;
 	tmpBufferSize = 0;
 	int linesize = image->getWidth()*image->channels;
+	int linesizetmp = linesize * sizeof ( T );
 	for ( ; lRead < image->getHeight() ; lRead++ ) {
-	    image->getline ( tmpBuffer+tmpBufferSize, lRead );
-	    tmpBufferSize+=linesize;
+	    image->getline ( ( T* ) (tmpBuffer+tmpBufferSize), lRead );
+	    tmpBufferSize+=linesizetmp;
 	}
     }
 
