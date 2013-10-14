@@ -613,6 +613,8 @@ sub mergeImages {
                 ERROR(sprintf "Samplesperpixel ($spp) not supported ");
                 return FALSE;
             }
+        } elsif ($format =~ m/JPG/) {
+            $code .= sprintf "Cache2work %s $inImgName jpg\n", $sourceImage->{img};
         } else {
             $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
         }
