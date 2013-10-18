@@ -13,6 +13,37 @@
   <artifactId>rok4</artifactId>
   <version>0.15.6</version>
   <packaging>pom</packaging>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>maven-replacer-plugin</artifactId>
+        <version>1.4.0</version>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <file>README</file>
+          <replacements>
+            <replacement>
+              <token>ROK4 Version : 0.0.0</token>
+              <value>ROK4 Version : ${project.version}</value>
+            </replacement>
+            <replacement>
+              <token>BE4 Version :  0.0.0</token>
+              <value>BE4 Version :  ${project.version}</value>
+            </replacement>
+          </replacements>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <repositories>
     <repository>
