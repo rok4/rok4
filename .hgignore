@@ -11,3 +11,6 @@ syntax: regexp
 ~
 kdev4
 .orig
+target
+.vagrant
+.vagrant.d
