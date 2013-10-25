@@ -66,7 +66,7 @@ char *pj_get_def( PJ *P, int options )
     for (t = P->params; t; t = t->next)
     {
         /* skip unused parameters ... mostly appended defaults and stuff */
-        if (!t->used)
+        if (options != 666 && !t->used)
             continue;
 
         /* grow the resulting string if needed */
