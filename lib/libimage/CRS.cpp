@@ -355,7 +355,9 @@ std::string CRS::getProj4Def() {
        pj_ctx_free ( ctx );
        return "";
    }
-   std::string def( pj_get_def( pj, 666 ) ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
+   char * pjdef = pj_get_def( pj, 666 );
+   std::string def( pjdef ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
+   pj_dalloc(pjdef);
    //LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
    pj_free ( pj );
    pj_ctx_free ( ctx );
