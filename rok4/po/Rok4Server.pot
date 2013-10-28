@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-09-16 11:44+0200\n"
+"POT-Creation-Date: 2013-10-28 09:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -462,8 +462,8 @@ msgstr ""
 msgid "Aucun level n'a pu etre charge pour la pyramide "
 msgstr ""
 
-#: ConfLoader.cpp:806 ConfLoader.cpp:1174 ConfLoader.cpp:1724
-#: ConfLoader.cpp:1753 ConfLoader.cpp:1908
+#: ConfLoader.cpp:806 ConfLoader.cpp:1174 ConfLoader.cpp:1725
+#: ConfLoader.cpp:1754 ConfLoader.cpp:1909
 msgid "Ne peut pas charger le fichier "
 msgstr ""
 
@@ -793,138 +793,138 @@ msgstr ""
 msgid "Le maxTileY est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1593
+#: ConfLoader.cpp:1594
 msgid "le format d'image ["
 msgstr ""
 
-#: ConfLoader.cpp:1593
+#: ConfLoader.cpp:1594
 msgid "] n'est pas un type MIME"
 msgstr ""
 
-#: ConfLoader.cpp:1606
+#: ConfLoader.cpp:1607
 msgid "The CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:1606
+#: ConfLoader.cpp:1607
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:1630
+#: ConfLoader.cpp:1631
 msgid "Utilisation des styles pour tous les formats"
 msgstr ""
 
-#: ConfLoader.cpp:1645
+#: ConfLoader.cpp:1646
 msgid "Utilisation du mode Inspire"
 msgstr ""
 
-#: ConfLoader.cpp:1658 ConfLoader.cpp:1661 ConfLoader.cpp:1668
-#: ConfLoader.cpp:1671 ConfLoader.cpp:1684 ConfLoader.cpp:1687
-#: ConfLoader.cpp:1694 ConfLoader.cpp:1697
+#: ConfLoader.cpp:1659 ConfLoader.cpp:1662 ConfLoader.cpp:1669
+#: ConfLoader.cpp:1672 ConfLoader.cpp:1685 ConfLoader.cpp:1688
+#: ConfLoader.cpp:1695 ConfLoader.cpp:1698
 msgid "Metadata element incorrect"
 msgstr ""
 
-#: ConfLoader.cpp:1706
+#: ConfLoader.cpp:1707
 msgid ""
 "Utilisation du fichier qui liste les CRS equivalents d apres services.conf"
 msgstr ""
 
-#: ConfLoader.cpp:1718
+#: ConfLoader.cpp:1719
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:1724
+#: ConfLoader.cpp:1725
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:1731
+#: ConfLoader.cpp:1732
 msgid "Pas de construction demandee de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:1750
+#: ConfLoader.cpp:1751
 msgid "Chargement des parametres techniques depuis "
 msgstr ""
 
-#: ConfLoader.cpp:1760
+#: ConfLoader.cpp:1761
 msgid "CHARGEMENT DES STYLES"
 msgstr ""
 
-#: ConfLoader.cpp:1769
+#: ConfLoader.cpp:1770
 msgid "Le repertoire des Styles "
 msgstr ""
 
-#: ConfLoader.cpp:1769 ConfLoader.cpp:1818 ConfLoader.cpp:1867
+#: ConfLoader.cpp:1770 ConfLoader.cpp:1819 ConfLoader.cpp:1868
 msgid " n'est pas accessible."
 msgstr ""
 
-#: ConfLoader.cpp:1784
+#: ConfLoader.cpp:1785
 msgid "Aucun fichier *.stl dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:1795
+#: ConfLoader.cpp:1796
 msgid "Ne peut charger le style: "
 msgstr ""
 
-#: ConfLoader.cpp:1800
+#: ConfLoader.cpp:1801
 msgid "Aucun Style n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:1804
+#: ConfLoader.cpp:1805
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:1810
+#: ConfLoader.cpp:1811
 msgid "CHARGEMENT DES TMS"
 msgstr ""
 
-#: ConfLoader.cpp:1818
+#: ConfLoader.cpp:1819
 msgid "Le repertoire des TMS "
 msgstr ""
 
-#: ConfLoader.cpp:1834
+#: ConfLoader.cpp:1835
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:1845
+#: ConfLoader.cpp:1846
 msgid "Ne peut charger le tms: "
 msgstr ""
 
-#: ConfLoader.cpp:1850
+#: ConfLoader.cpp:1851
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:1854
+#: ConfLoader.cpp:1855
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:1860
+#: ConfLoader.cpp:1861
 msgid "CHARGEMENT DES LAYERS"
 msgstr ""
 
-#: ConfLoader.cpp:1867
+#: ConfLoader.cpp:1868
 msgid "Le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:1879
+#: ConfLoader.cpp:1880
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:1880
+#: ConfLoader.cpp:1881
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
-#: ConfLoader.cpp:1891
+#: ConfLoader.cpp:1892
 msgid "Ne peut charger le layer: "
 msgstr ""
 
-#: ConfLoader.cpp:1896
+#: ConfLoader.cpp:1897
 msgid "Aucun layer n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:1900
+#: ConfLoader.cpp:1901
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:1905
+#: ConfLoader.cpp:1906
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
@@ -985,47 +985,47 @@ msgstr ""
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
-#: Pyramid.cpp:167
+#: Pyramid.cpp:168
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:173
+#: Pyramid.cpp:174
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:180
+#: Pyramid.cpp:181
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:180
+#: Pyramid.cpp:181
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:189
+#: Pyramid.cpp:190
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:193 Pyramid.cpp:205
+#: Pyramid.cpp:194 Pyramid.cpp:206
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:200
+#: Pyramid.cpp:201
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:200
+#: Pyramid.cpp:201
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:202
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:202
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:211
+#: Pyramid.cpp:212
 msgid "Image decoupe valide"
 msgstr ""
 
@@ -1217,7 +1217,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:798 Rok4Server.cpp:451
+#: Request.cpp:798 Rok4Server.cpp:456
 msgid "Le format "
 msgstr ""
 
@@ -1341,11 +1341,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:519
+#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:519
+#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1423,16 +1423,16 @@ msgstr ""
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:465
+#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:470
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:496
+#: Rok4Api.cpp:457 Rok4Server.cpp:501
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:494 Rok4Server.cpp:496 Rok4Server.cpp:506
-#: Rok4Server.cpp:508
+#: Rok4Api.cpp:457 Rok4Server.cpp:499 Rok4Server.cpp:501 Rok4Server.cpp:511
+#: Rok4Server.cpp:513
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
@@ -1496,11 +1496,11 @@ msgstr ""
 msgid "Estompage"
 msgstr ""
 
-#: Rok4Server.cpp:451
+#: Rok4Server.cpp:456
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:471
+#: Rok4Server.cpp:476
 msgid "No data found"
 msgstr ""
 
