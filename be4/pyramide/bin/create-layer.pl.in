@@ -241,7 +241,7 @@ sub init {
 
     ############# layer directory : optionnal
 
-    if (defined $options{"tms-path"} && $options{"tms-path"} ne "") {
+    if (defined $options{"layer-path"} && $options{"layer-path"} ne "") {
         my $layerDir = File::Spec->rel2abs($options{"layer-path"});
 
         if (! -d $layerDir) {
