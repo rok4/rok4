@@ -55,7 +55,7 @@ protected:
     T* rawBuffer;
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffLZWEncoder : préparation de l'en-tete");
+	LOGGER_DEBUG("TiffLZWEncoder : preparation de l'en-tete");
 	sizeHeader = TiffHeader::headerSize ( image->channels );
 	header = new uint8_t[sizeHeader];
 	if ( image->channels==1 )
@@ -75,7 +75,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffLZWEncoder : préparation du buffer d'image");
+	LOGGER_DEBUG("TiffLZWEncoder : preparation du buffer d'image");
 	int linesize = image->getWidth()*image->channels;
 	rawBuffer = new T[image->getHeight()*image->getWidth()*image->channels];
 	rawBufferSize = 0;
@@ -92,7 +92,7 @@ protected:
     }
 
 public:
-    TiffLZWEncoder ( Image *image ) : TiffEncoder( image, -1 ) , rawBufferSize ( 0 ), rawBuffer ( NULL ) {}
+    TiffLZWEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) , rawBufferSize ( 0 ), rawBuffer ( NULL ) {}
     ~TiffLZWEncoder() {
     }
    

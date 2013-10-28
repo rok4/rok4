@@ -49,7 +49,7 @@ template <typename T>
 class TiffRawEncoder : public TiffEncoder {
 protected:
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffRawEncoder : préparation de l'en-tete");
+	LOGGER_DEBUG("TiffRawEncoder : preparation de l'en-tete");
 	sizeHeader = TiffHeader::headerSize ( image->channels );
 	header = new uint8_t[sizeHeader];
 	if ( image->channels==1 )
@@ -69,7 +69,7 @@ protected:
     }
   
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffRawEncoder : préparation du buffer d'image");
+	LOGGER_DEBUG("TiffRawEncoder : preparation du buffer d'image");
 	tmpBuffer = new uint8_t[image->getHeight()*image->getWidth()*image->channels*sizeof ( T )];
 	int lRead = 0;
 	tmpBufferSize = 0;
@@ -82,7 +82,7 @@ protected:
     }
 
 public:
-    TiffRawEncoder ( Image *image ) : TiffEncoder( image, -1 ) {}
+    TiffRawEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) {}
     ~TiffRawEncoder() {
     }
    

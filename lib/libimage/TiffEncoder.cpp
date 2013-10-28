@@ -42,7 +42,16 @@
 #include "TiffDeflateEncoder.h"
 #include "TiffPackBitsEncoder.h"
 
-TiffEncoder::TiffEncoder(Image *image, int line): image(image), line(line){
+
+TiffEncoder::TiffEncoder(Image *image, int line, bool isGeoTiff): image(image), line(line), isGeoTiff(isGeoTiff) {
+    tmpBuffer = NULL;
+    tmpBufferPos = 0;
+    tmpBufferSize = 0;
+    header = NULL;
+    sizeHeader = 0;
+}
+
+TiffEncoder::TiffEncoder(Image *image, int line ): image(image), line(line), isGeoTiff(false) {
     tmpBuffer = NULL;
     tmpBufferPos = 0;
     tmpBufferSize = 0;
@@ -58,40 +67,47 @@ TiffEncoder::~TiffEncoder() {
       delete[] header;
 }
 
-DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format ) {
+DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format, bool isGeoTiff ) {
     switch ( format ) {
     case Format::TIFF_RAW_INT8 :
-        return new TiffRawEncoder<uint8_t> ( image );
+        return new TiffRawEncoder<uint8_t> ( image, isGeoTiff );
     case Format::TIFF_LZW_INT8 :
-        return new TiffLZWEncoder<uint8_t> ( image );
+        return new TiffLZWEncoder<uint8_t> ( image, isGeoTiff );
     case Format::TIFF_ZIP_INT8 :
-        return new TiffDeflateEncoder<uint8_t> ( image );
+        return new TiffDeflateEncoder<uint8_t> ( image, isGeoTiff );
     case Format::TIFF_PKB_INT8 :
-        return new TiffPackBitsEncoder<uint8_t> ( image );
+        return new TiffPackBitsEncoder<uint8_t> ( image, isGeoTiff );
     case Format::TIFF_RAW_FLOAT32 :
-        return new TiffRawEncoder<float> ( image );
+        return new TiffRawEncoder<float> ( image, isGeoTiff );
     case Format::TIFF_LZW_FLOAT32 :
-        return new TiffLZWEncoder<float> ( image );
+        return new TiffLZWEncoder<float> ( image, isGeoTiff );
     case Format::TIFF_ZIP_FLOAT32 :
-        return new TiffDeflateEncoder<float> ( image );
+        return new TiffDeflateEncoder<float> ( image, isGeoTiff );
     case Format::TIFF_PKB_FLOAT32 :
-        return new TiffPackBitsEncoder<float> ( image );
+        return new TiffPackBitsEncoder<float> ( image, isGeoTiff );
     default:
         return NULL;
     }
+}
+
+DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format ) {
+    return getTiffEncoder( image, format, false );
 }
 
 size_t TiffEncoder::read(uint8_t* buffer, size_t size) {
     size_t offset = 0, dataToCopy=0;
     
     if ( !tmpBuffer ) {
-	LOGGER_DEBUG("TiffEncoder : préparation du buffer d'image");
-	prepareBuffer();
+        LOGGER_DEBUG("TiffEncoder : preparation du buffer d'image");
+        prepareBuffer();
     }
     
     if ( !header ) {
-	LOGGER_DEBUG("TiffEncoder : préparation de l'en-tete");
-	prepareHeader();
+        LOGGER_DEBUG("TiffEncoder : preparation de l'en-tete");
+        prepareHeader();
+        if ( isGeoTiff ){
+            this->header = TiffHeader::insertGeoTags(image, this->header, &(this->sizeHeader) );
+        }
     }
     
     // Si pas assez de place pour le header, ne rien écrire.

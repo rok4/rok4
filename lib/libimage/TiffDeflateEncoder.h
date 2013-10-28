@@ -116,7 +116,7 @@ protected:
     }
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffDeflateEncoder : préparation de l'en-tete");
+	LOGGER_DEBUG("TiffDeflateEncoder : preparation de l'en-tete");
 	sizeHeader = TiffHeader::headerSize ( image->channels );
 	header = new uint8_t[sizeHeader];
 	if ( image->channels==1 )
@@ -136,7 +136,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffDeflateEncoder : préparation du buffer d'image");
+	LOGGER_DEBUG("TiffDeflateEncoder : preparation du buffer d'image");
 	tmpBufferSize = image->getWidth() * image->channels * image->getHeight() * 2 ;
 	tmpBuffer = new uint8_t[tmpBufferSize];
 	while ( !encode() ) {
@@ -147,7 +147,7 @@ protected:
     }
 
 public:
-    TiffDeflateEncoder ( Image *image ) : TiffEncoder( image, -1 ) {
+    TiffDeflateEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) {
 //         zstream.zalloc = Z_NULL;
 //         zstream.zfree = Z_NULL;
 //         zstream.opaque = Z_NULL;

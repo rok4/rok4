@@ -62,7 +62,7 @@ protected:
     size_t rawBufferSize;
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffPackBitsEncoder : préparation de l'en-tete");
+	LOGGER_DEBUG("TiffPackBitsEncoder : preparation de l'en-tete");
 	sizeHeader = TiffHeader::headerSize ( image->channels );
 	header = new uint8_t[sizeHeader];
 	if ( image->channels==1 )
@@ -82,7 +82,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffPackBitsEncoder : préparation du buffer d'image");
+	LOGGER_DEBUG("TiffPackBitsEncoder : preparation du buffer d'image");
 	int linesize = image->getWidth()*image->channels;
 	tmpBuffer = new uint8_t[linesize* image->getHeight() * sizeof ( T ) *2];
 	tmpBufferSize = 0;
@@ -104,7 +104,7 @@ protected:
     }
 
 public:
-    TiffPackBitsEncoder ( Image *image ) : TiffEncoder( image, -1 ) , rawBufferSize ( 0 ), rawBuffer ( NULL ) {
+    TiffPackBitsEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) , rawBufferSize ( 0 ), rawBuffer ( NULL ) {
 
     }
     ~TiffPackBitsEncoder() {

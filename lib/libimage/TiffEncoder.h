@@ -47,6 +47,7 @@ class TiffEncoder : public DataStream {
 protected:
     Image *image;
     int line;   // Ligne courante
+    bool isGeoTiff;
     
     virtual void prepareHeader() = 0;
     uint8_t* header;
@@ -58,15 +59,21 @@ protected:
     uint8_t* tmpBuffer;
 
 public:
+    TiffEncoder(Image *image, int line, bool isGeoTiff);
     TiffEncoder(Image *image, int line);
     ~TiffEncoder();
   
+    static DataStream* getTiffEncoder ( Image* image, Format::eformat_data format, bool isGeoTiff );
     static DataStream* getTiffEncoder ( Image* image, Format::eformat_data format );
 
     virtual size_t read ( uint8_t *buffer, size_t size );
     virtual bool eof();
     std::string getType() {
-        return "image/tiff";
+	if ( isGeoTiff ) {
+	  return "image/geotiff";
+	} else {
+	  return "image/tiff";
+	}
     }
     int getHttpStatus() {
         return 200;
