@@ -158,6 +158,22 @@ double Grid::getRatioY()
 {
     double ratio = 0;
 
+    if (height == 1) {
+        /* Dans le cas d'une hauteur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la colonne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence ymax-ymin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridY[0];
+        double max = gridY[0];
+        for ( int x = 1 ; x < nbx; x++ ) {
+            min = std::min(min, gridY[x]);
+            max = std::max(max, gridY[x]);
+        }
+
+        double delta = max - min;
+
+        return (bbox.ymax - bbox.ymin - delta);
+    }
+
     for ( int x = 0 ; x < nbx; x++ ) {
         ratio = __max (ratio, fabs( gridY[x] - gridY[nbx*(nby-1) + x] ) / (double) (height - 1));
     }
@@ -168,7 +184,23 @@ double Grid::getRatioY()
 double Grid::getRatioX()
 {
     double ratio = 0;
-    
+
+    if (width == 1) {
+        /* Dans le cas d'une largeur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la ligne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence xmax-xmin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridX[0];
+        double max = gridX[0];
+        for ( int y = 1 ; y < nby; y++ ) {
+            min = std::min(min, gridX[y*nbx]);
+            max = std::max(max, gridX[y*nbx]);
+        }
+
+        double delta = max - min;
+
+        return (bbox.xmax - bbox.xmin - delta);
+    }
+
     for ( int y = 0 ; y < nby; y++ ) {
         ratio = __max (ratio, fabs( gridX[nbx*y] - gridX[nbx*(y+1) - 1] ) / (double) (width - 1));
     }
