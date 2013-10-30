@@ -457,8 +457,8 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
             }
         }
     } else {
-        for ( int pixel = 0; pixel < this->channels; pixel++ ) {
-            * ( nodatavalue + pixel )  = 0;
+        for (int pixel = 0; pixel < this->channels; pixel++) {
+            *(nodatavalue + pixel)  = 0;
         }
     }
     delete nd;

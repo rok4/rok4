@@ -108,5 +108,5 @@ void CppUnitFormat::formatToMime() {
     CPPUNIT_ASSERT_MESSAGE ( "TIFF_RAW_FLOAT32", Format::toMimeType ( trf32 ).compare ( "image/x-bil;bits=32" ) == 0 );
     CPPUNIT_ASSERT_MESSAGE ( "TIFF_LZW_FLOAT32", Format::toMimeType ( tlf32 ).compare ( "image/tiff" ) == 0 );
     CPPUNIT_ASSERT_MESSAGE ( "TIFF_ZIP_INT8", Format::toMimeType ( tzi8 ).compare ( "image/tiff" ) == 0 );
-    CPPUNIT_ASSERT_MESSAGE ( "TIFF_ZIP_FLOAT32", Format::toMimeType ( tzf32 ).compare ( "image/tiff" ) == 0 );
+    CPPUNIT_ASSERT_MESSAGE ( "TIFF_ZIP_FLOAT32", Format::toMimeType ( tzf32 ).compare ( "image/x-bil;bits=32" ) == 0 );
 }

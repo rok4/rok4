@@ -77,6 +77,20 @@ public:
                 delete images[y][x];
     }
 
+    /** \~french
+     * \brief Sortie des informations sur l'image composée simple
+     ** \~english
+     * \brief Simple compounded image description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "------ CompoundImage -------" );
+        Image::print();
+        LOGGER_INFO ( "\t- Number of images = " );
+        LOGGER_INFO ( "\t\t- heightwise = " << images.size());
+        LOGGER_INFO ( "\t\t- widthwise = " << images.at(0).size());
+    }
+
 };
 
 #endif

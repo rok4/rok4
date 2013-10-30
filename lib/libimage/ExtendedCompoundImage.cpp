@@ -212,7 +212,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     if ( otherbbox.xmin < bbox.xmin ) {
         nbPix = ( double ) ceil ( ( bbox.xmin - otherbbox.xmin ) / resx );
         LOGGER_DEBUG ( "Ajout de " << nbPix << " à gauche" );
-        width += nbPix;
+        width += (int) nbPix;
         newBbox.xmin -= nbPix * resx;
     }
 
@@ -220,7 +220,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     if ( otherbbox.xmax > bbox.xmax ) {
         nbPix = ( double ) ceil ( ( otherbbox.xmax - bbox.xmax ) / resx );
         LOGGER_DEBUG ( "Ajout de " << nbPix << " à droite" );
-        width += nbPix;
+        width += (int) nbPix;
         newBbox.xmax += nbPix * resx;
     }
 
@@ -228,7 +228,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     if ( otherbbox.ymin < bbox.ymin ) {
         nbPix = ( double ) ceil ( ( bbox.ymin - otherbbox.ymin ) / resy );
         LOGGER_DEBUG ( "Ajout de " << nbPix << " en bas" );
-        height += nbPix;
+        height += (int) nbPix;
         newBbox.ymin -= nbPix * resy;
     }
 
@@ -236,13 +236,14 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     if ( otherbbox.ymax > bbox.ymax ) {
         nbPix = ( double ) ceil ( ( otherbbox.ymax - bbox.ymax ) / resy );
         LOGGER_DEBUG ( "Ajout de " << nbPix << " en haut" );
-        width += nbPix;
+        height += (int) nbPix;
         newBbox.ymax += nbPix * resy;
     }
 
     /******************** ajout de pixels supplémentaires *****************/
 
     if ( morePix > 0 ) {
+        LOGGER_DEBUG("Ajout de " << morePix << " pixels de tous les côtés");
         width += 2*morePix;
         height += 2*morePix;
 
@@ -250,6 +251,19 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
         newBbox.ymin -= morePix * resy;
         newBbox.xmax += morePix * resx;
         newBbox.ymax += morePix * resy;
+    }
+
+    if ( resx > 0 && resy > 0 ) {
+        // Vérification de la cohérence entre les résolutions, la nouvelle bbox et les nouvelles dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        int calcWidth = lround ( ( newBbox.xmax - newBbox.xmin ) / ( resx ) );
+        int calcHeight = lround ( ( newBbox.ymax - newBbox.ymin ) / ( resy ) );
+        if ( calcWidth != width || calcHeight != height ) {
+            LOGGER_ERROR ( "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" );
+            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
+            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+            return false;
+        }
     }
 
     /*********************** mise à jour des attributs ********************/

@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -62,7 +62,7 @@
  * \author Institut national de l'information géographique et forestière
  * \~french
  * Un serveur Rok4 stocke les informations de configurations des services
- * Il définit aussi la boucle d'évènement nécessaire pour répondre aux requête transmises via FCGI
+ * Il définit aussi la boucle d'évènement nécessaire pour répondre aux requêtes transmises via FCGI
  * \brief Gestion du programme principal, lien entre les modules
  * \~english
  * The Rok4 Server stores services configuration.
@@ -98,7 +98,7 @@ private:
     volatile bool running;
     /**
      * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)
-     * \~english \brief Listening socket adress (empty if lauched in managed mode)
+     * \~english \brief Listening socket address (empty if lauched in managed mode)
      */
     std::string socket;
     /**
@@ -113,7 +113,7 @@ private:
     int sock;
 
     /**
-     * \~french \brief Configurations globales du services
+     * \~french \brief Configurations globales des services
      * \~english \brief Global services configuration
      */
     ServicesConf servicesConf;
@@ -150,7 +150,7 @@ private:
 
     /**
      * \~french
-     * \brief Boucle principale exécuté par chaque thread à l'écoute des requêtes des utilisateurs.
+     * \brief Boucle principale exécutée par chaque thread à l'écoute des requêtes des utilisateurs.
      * \param[in] arg pointeur vers l'instance de Rok4Server
      * \return true si présent
      * \~english
@@ -355,11 +355,11 @@ public:
 
     /**
      * \~french
-     * utilisé pour le rechargement de la configuration du serveur
+     * Utilisé pour le rechargement de la configuration du serveur
      * \brief Restaure le socket FastCGI
      * \param sockFCGI la représentation interne du socket
      * \~english
-     * usefull for configuration reloading
+     * Useful for configuration reloading
      * \brief Set the internal FastCGI socket representation
      * \param sockFCGI the internal FastCGI socket representation
      */

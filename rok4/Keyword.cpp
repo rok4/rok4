@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -36,7 +36,7 @@
  */
 
 /**
- * \file Keyword.cppp
+ * \file Keyword.cpp
  * \~french
  * \brief Implémentation de la classe Keyword gérant les mots-clés des documents de capacités
  * \~english

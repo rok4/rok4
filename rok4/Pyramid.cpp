@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -47,11 +47,13 @@
 #include "BilEncoder.h"
 #include "ExtendedCompoundImage.h"
 #include "Format.h"
+#include "EmptyImage.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>
 #include "intl.h"
 #include "config.h"
+#include "EmptyImage.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;
@@ -194,12 +196,16 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
 
                 double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-                int newWidth = width * ratio_x;
-                int newHeigth = height * ratio_y;
+                int newWidth = lround(width * ratio_x);
+                int newHeigth = lround(height * ratio_y);
                 LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
+                LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
                 Image* tmp = 0;
                 int cropError = 0;
-                if ( newWidth > 0 && newHeigth > 0 ) {
+                if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
+                    LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+                    tmp = 0;
+                } else if ( newWidth > 0 && newHeigth > 0 ) {
                     tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
                 }
                 if ( tmp != 0 ) {
@@ -207,14 +213,17 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                     images.push_back ( tmp );
                 }
             }
-
-            if ( images.empty() ) {
-                images.push_back ( levels[l]->getNoDataTile ( bbox ) );
-            }
+            
             int ndvalue[this->channels];
-            memset ( ndvalue,0,this->channels*sizeof ( int ) );
-            levels[l]->getNoDataValue ( ndvalue );
-
+            memset(ndvalue,0,this->channels*sizeof(int));
+            levels[l]->getNoDataValue(ndvalue);
+            
+            if ( images.empty() ) {
+                EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                fond->setBbox(bbox);
+                return fond;
+            }
+            
             return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
         }
 
@@ -231,8 +240,11 @@ Pyramid::~Pyramid() {
         delete ( *iLevel ).second;
 }
 
-
+// Check if two CRS are equivalent
+//   A list of equivalent CRS was created during server initialization
+// TODO: return false if servicesconf tells we don't check the equality
 bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS ) {
+    // Could have issues with lowercase name -> we put the CRS in upercase
     transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
     transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
     for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
@@ -247,6 +259,6 @@ bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::ve
             }
         }
     }
-    return false;
+    return false; // The 2 CRS were not found on the same line inside the list
 }
 

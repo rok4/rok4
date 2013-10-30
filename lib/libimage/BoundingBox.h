@@ -90,10 +90,10 @@ public:
      * \details Pour reprojeter la bounding box, on va découper chaque côté du rectangle en N, et identifier les extrema parmi ces 4*N points reprojetés.
      * \param[in] from_srs système spatial source, celui du rectangle englobant initialement
      * \param[in] to_srs système spatial de destination, celui dans lequel on veut le rectangle englobant
-     * \param[in] nbSegment nombre de points intérmédiaire à reprojeter sur chaque bord. 10 par défaut.
+     * \param[in] nbSegment nombre de points intérmédiaire à reprojeter sur chaque bord. 256 par défaut.
      * \return code de retour, 0 si succès, 1 sinon.
      */
-    int reproject ( std::string from_srs, std::string to_srs , int nbSegment = 10 ) {
+    int reproject ( std::string from_srs, std::string to_srs , int nbSegment = 256 ) {
 
         pthread_mutex_lock ( & mutex_proj );
 
@@ -135,10 +135,10 @@ public:
      * \details Pour reprojeter la bounding box, on va découper chaque côté du rectangle en N, et identifier les extrema parmi ces 4*N points reprojetés.
      * \param[in] pj_src système spatial source, celui du rectangle englobant initialement
      * \param[in] pj_dst système spatial de destination, celui dans lequel on veut le rectangle englobant
-     * \param[in] nbSegment nombre de points intérmédiaire à reprojeter sur chaque bord. 10 par défaut.
+     * \param[in] nbSegment nombre de points intérmédiaire à reprojeter sur chaque bord. 256 par défaut.
      * \return code de retour, 0 si succès, 1 sinon.
      */
-    int reproject ( projPJ pj_src, projPJ pj_dst, int nbSegment = 10 ) {
+    int reproject ( projPJ pj_src, projPJ pj_dst, int nbSegment = 256 ) {
 
         T stepX = ( xmax - xmin ) / T ( nbSegment );
         T stepY = ( ymax - ymin ) / T ( nbSegment );

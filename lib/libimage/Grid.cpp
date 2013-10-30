@@ -51,6 +51,13 @@
 
 #include <algorithm>
 
+#ifndef __max
+#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 // Définit dans BoundingBox
 //static pthread_mutex_t mutex_proj = PTHREAD_MUTEX_INITIALIZER;
 
@@ -64,7 +71,7 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
 
     /* On veut toujours que le dernier pixel reprojeté soit le dernier de la ligne, ou de la colonne.
      * On ajoute donc toujours le dernier pixel à ceux de la grille, même si celui ci y était déjà.
-     * On en ajoute donc un, quiaura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
+     * On en ajoute donc un, qui aura potentiellement un écart avec l'avant dernier plus petit (voir même 0).
      * Il faudra donc faire attention à cette différence lors de l'interpolation d'une ligne
      */
     nbx = nbxReg + 1;
@@ -146,6 +153,29 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
     deltaY = deltaY * fabs ( Ay );
     LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
 }
+
+double Grid::getRatioY()
+{
+    double ratio = 0;
+
+    for ( int x = 0 ; x < nbx; x++ ) {
+        ratio = __max (ratio, fabs( gridY[x] - gridY[nbx*(nby-1) + x] ) / (double) (height - 1));
+    }
+
+    return ratio;
+}
+
+double Grid::getRatioX()
+{
+    double ratio = 0;
+    
+    for ( int y = 0 ; y < nby; y++ ) {
+        ratio = __max (ratio, fabs( gridX[nbx*y] - gridX[nbx*(y+1) - 1] ) / (double) (width - 1));
+    }
+
+    return ratio;
+}
+
 
 bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     LOGGER_DEBUG ( from_srs<<" -> " <<to_srs );

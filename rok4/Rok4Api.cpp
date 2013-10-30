@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -250,7 +250,7 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 
 /**
 * \brief Implementation de l'operation GetTile modifiee
-* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName
@@ -323,7 +323,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
 /**
 * \brief Implementation de l'operation GetNoDataTile
-* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement(sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
+* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * \param[in] queryString
 * \param[in] hostName
 * \param[in] scriptName

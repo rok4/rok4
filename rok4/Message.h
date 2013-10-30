@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -38,7 +38,7 @@
 /**
  * \file Message.h
  * \~french
- * \brief Définition des classes de gérant les messages utilisateurs
+ * \brief Définition des classes gérant les messages utilisateurs
  * \~english
  * \brief Define classes handling user messages
  */
@@ -58,8 +58,8 @@
  * Le message est renvoyé comme un fichier.
  * \brief Gestion des messages sous forme de fichier
  * \~english
- * A MessageDataSource define a message send to the user.
- * The message is send as a file.
+ * A MessageDataSource defines a message sent to the user.
+ * The message is sent as a file.
  * \brief File messages handler
  * \~ \see MessageDataStream
  */
@@ -73,7 +73,7 @@ private:
 protected:
     /**
      * \~french Message à envoyer
-     * \~english Sended message
+     * \~english Sent message
      */
     std::string message;
 public:
@@ -164,7 +164,7 @@ public:
  * Le message est renvoyé sous forme de flux
  * \brief Gestion des messages sous forme de flux
  * \~english
- * A MessageDataStream define a message send to the user.
+ * A MessageDataStream defines a message sent to the user.
  * \brief Streamed messages handler
  * \~ \see MessageDataSource
  */

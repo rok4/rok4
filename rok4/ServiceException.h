@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -58,17 +58,17 @@
  */
 typedef enum {
     /**
-     * \~french L'operation demandé nécessite un paramètre supplémentaire, et celui-ci ne possède pas de valeur par défaut
+     * \~french L'operation demandés nécessite un paramètre supplémentaire, et celui-ci ne possède pas de valeur par défaut
      * \~english Operation request does not include a parameter value, and this server did not declare a default value for that parameter
      */
     OWS_MISSING_PARAMETER_VALUE = 0,
     /**
-     * \~french L'opération demandé inclue un paramètre avec une valeur invalide
+     * \~french L'opération demandée inclut un paramètre avec une valeur invalide
      * \~english Operation request includes a parameter with an invalid value
      */
     OWS_INVALID_PARAMETER_VALUE = 1,
     /**
-     * \~french La liste des versions dans le paramètre "AcceptVersions", de la requête "GetCapabilities", n'inclue pas de valeur supportée par ce serveur
+     * \~french La liste des versions dans le paramètre "AcceptVersions", de la requête "GetCapabilities", n'inclut pas de valeur supportée par ce serveur
      * \~english List of versions in “AcceptVersions” parameter value, in GetCapabilities operation request, did not include any version supported by this server.
      */
     OWS_VERSION_NEGOTIATION_FAILED= 2,
@@ -128,12 +128,12 @@ typedef enum {
      */
     WMS_INVALID_DIMENSION_VALUE= 13,
     /**
-     * \~french La requête porte sur une opération optionnelle non supporté par ce serveur
+     * \~french La requête porte sur une opération optionnelle non supportée par ce serveur
      * \~english Request is for an optional operation that is not supported by the server
      */
     OWS_OPERATION_NOT_SUPORTED= 14,
     /**
-     * \~french  L'indice et colone ou de ligne est en dehors de sa zone de définition
+     * \~french  L'indice de colonne ou de ligne est en dehors de sa zone de définition
      * \~english TileRow or TileCol out of range
      */
     WMTS_TILE_OUT_OF_RANGE= 15,
@@ -206,7 +206,7 @@ public:
      * \~french
      * \brief Retourne le code d'erreur sous forme de texte.
      * \param[in] code le code d'erreur énuméré
-     * \return réprésentation textuel
+     * \return réprésentation textuelle
      * \~english
      * \brief Return the string representation of the error code
      * \param[in] code the error code

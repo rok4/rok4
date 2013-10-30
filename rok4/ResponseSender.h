@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011) Institut national de l'information
+ * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -52,7 +52,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Gestions de l'envoie des réponse dans le flux FCGI
+ * \brief Gestions de l'envoie des réponses dans le flux FCGI
  * \~english
  * \brief FCGI response handler
  */
