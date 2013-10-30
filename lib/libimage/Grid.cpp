@@ -63,6 +63,10 @@
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
 
+    if (width == 0 || height == 0) {
+        LOGGER_ERROR("One grid's dimension is null");
+    }
+
     nbxReg = 1 + ( width-1 ) /stepInt;
     nbyReg = 1 + ( height-1 ) /stepInt;
 
@@ -170,7 +174,7 @@ double Grid::getRatioY()
         }
 
         double delta = max - min;
-
+        
         return (bbox.ymax - bbox.ymin - delta);
     }
 
@@ -200,7 +204,7 @@ double Grid::getRatioX()
 
         return (bbox.xmax - bbox.xmin - delta);
     }
-
+    
     for ( int y = 0 ; y < nby; y++ ) {
         ratio = __max (ratio, fabs( gridX[nbx*y] - gridX[nbx*(y+1) - 1] ) / (double) (width - 1));
     }
@@ -342,7 +346,7 @@ int Grid::getline ( int line, float* X, float* Y ) {
         Y[i] = ( 1-w )*LY[dx] + w*LY[dx+1];
     }
 
-    /* Interpolation dans le sens des X, sur la partie où ladistance entre les deux pixels de la grille est différente */
+    /* Interpolation dans le sens des X, sur la partie où la distance entre les deux pixels de la grille est différente */
     for ( int i = 1; i <= endX; i++ ) {
         double w = i /double ( endX );
         X[lastRegularPixel + i] = ( 1-w )*LX[nbxReg - 1] + w * LX[nbxReg];
