@@ -105,7 +105,7 @@ class TiledTiffWriter {
 private:
 
     uint32_t width;        // TIFFTAG_IMAGEWIDTH
-    uint32_t length;       // TIFFTAG_IMAGELENGTH
+    uint32_t height;       // TIFFTAG_IMAGELENGTH
 
     uint16_t photometric;  // TIFFTAG_PHOTOMETRIC
     uint16_t compression;  // TIFFTAG_COMPRESSION
@@ -114,7 +114,7 @@ private:
     int quality;           // compression quality (jpeg or zlib)
 
     uint32_t tilewidth;    // TIFFTAG_TILEWIDTH
-    uint32_t tilelength;   // TIFFTAG_TILELENGTH
+    uint32_t tileheight;   // TIFFTAG_TILELENGTH
 
     uint32_t bitspersample;
     uint16_t sampleformat;  // TIFFTAG_SAMPLEFORMAT

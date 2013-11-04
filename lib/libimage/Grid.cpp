@@ -63,6 +63,10 @@
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
 
+    if (width == 0 || height == 0) {
+        LOGGER_ERROR("One grid's dimension is null");
+    }
+
     nbxReg = 1 + ( width-1 ) /stepInt;
     nbyReg = 1 + ( height-1 ) /stepInt;
 
@@ -158,6 +162,22 @@ double Grid::getRatioY()
 {
     double ratio = 0;
 
+    if (height == 1) {
+        /* Dans le cas d'une hauteur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la colonne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence ymax-ymin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridY[0];
+        double max = gridY[0];
+        for ( int x = 1 ; x < nbx; x++ ) {
+            min = std::min(min, gridY[x]);
+            max = std::max(max, gridY[x]);
+        }
+
+        double delta = max - min;
+        
+        return (bbox.ymax - bbox.ymin - delta);
+    }
+
     for ( int x = 0 ; x < nbx; x++ ) {
         ratio = __max (ratio, fabs( gridY[x] - gridY[nbx*(nby-1) + x] ) / (double) (height - 1));
     }
@@ -168,6 +188,22 @@ double Grid::getRatioY()
 double Grid::getRatioX()
 {
     double ratio = 0;
+
+    if (width == 1) {
+        /* Dans le cas d'une largeur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la ligne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence xmax-xmin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridX[0];
+        double max = gridX[0];
+        for ( int y = 1 ; y < nby; y++ ) {
+            min = std::min(min, gridX[y*nbx]);
+            max = std::max(max, gridX[y*nbx]);
+        }
+
+        double delta = max - min;
+
+        return (bbox.xmax - bbox.xmin - delta);
+    }
     
     for ( int y = 0 ; y < nby; y++ ) {
         ratio = __max (ratio, fabs( gridX[nbx*y] - gridX[nbx*(y+1) - 1] ) / (double) (width - 1));
@@ -313,7 +349,7 @@ int Grid::getline ( int line, float* X, float* Y ) {
         Y[i] = ( 1-w ) *LY[dx] + w*LY[dx+1];
     }
 
-    /* Interpolation dans le sens des X, sur la partie où ladistance entre les deux pixels de la grille est différente */
+    /* Interpolation dans le sens des X, sur la partie où la distance entre les deux pixels de la grille est différente */
     for ( int i = 1; i <= endX; i++ ) {
         double w = i /double ( endX );
         X[lastRegularPixel + i] = ( 1-w ) *LX[nbxReg - 1] + w * LX[nbxReg];

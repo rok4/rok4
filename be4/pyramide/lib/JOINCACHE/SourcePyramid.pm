@@ -388,6 +388,20 @@ sub getFormatCode {
     return $self->{formatCode};
 }
 
+# Function: getBitsPerSample
+sub getBitsPerSample {
+    my $self = shift;
+
+    if ($self->{formatCode} =~ m/FLOAT32/) {
+        return 32;
+    } elsif ($self->{formatCode} =~ m/INT8/) {
+        return 8;
+    }
+
+    ERROR(sprintf "Unknown sample format, in the format code %s", $self->{formatCode});
+    return 0;
+}
+
 # Function: getSamplesPerPixel
 sub getSamplesPerPixel {
     my $self = shift;

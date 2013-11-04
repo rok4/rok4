@@ -35,27 +35,76 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file TiffReader.h
+ ** \~french
+ * \brief Définition de la classe TiffReader
+ * \details Image physique, attaché à un fichier. Utilise la librairie libtiff.
+ ** \~english
+ * \brief Define class TiffReader
+ * \details Physical image, linked to a file. Use libtiff library.
+ */
+
 #ifndef _TIFFREADER_
 #define _TIFFREADER_
 
 #include <stdint.h>
 #include "tiffio.h"
+#include "Logger.h"
 
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Manipulation d'une image TIFF
+ * \details Cette classe va utiliser la librairie TIFF afin de lire les données et de récupérer les informations sur les images.
+ *
+ * Les images tuilées sont gérées.
+ */
 class TiffReader {
 public:
-    TIFF *input;           // libtiff object
+    /**
+     * \~french \brief Image TIFF, servant d'interface entre le fichier et l'objet
+     * \~english \brief TIFF image, used as interface between file and object
+     */
+    TIFF *input;
 
-    uint32_t width;        // TIFFTAG_IMAGEWIDTH
-    uint32_t length;       // TIFFTAG_IMAGELENGTH
-    uint16_t photometric;  //
+    /**
+     * \~french \brief Largeur de l'image en pixel
+     * \~english \brief Image's width, in pixel
+     */
+    uint32_t width;
+    /**
+     * \~french \brief Hauteur de l'image en pixel
+     * \~english \brief Image's height, in pixel
+     */
+    uint32_t height;
+    /**
+     * \~french \brief Photométrie des données (rgb, gray...)
+     * \~english \brief Data photometric (rgb, gray...)
+     */
+    uint16_t photometric;
+    
+    /**
+     * \~french \brief Largeur d'une tuile de l'image en pixel
+     * \details 0 si l'image n'est pas tuilée.
+     * \~english \brief Image's tile width, in pixel
+     * \details 0 if image is not tiled.
+     */
+    uint32_t tileWidth;
+    /**
+     * \~french \brief Hauteur d'une tuile de l'image en pixel
+     * \details 0 si l'image n'est pas tuilée.
+     * \~english \brief Image's tile height, in pixel
+     * \details 0 if image is not tiled.
+     */
+    uint32_t tileHeight;
 
-    uint32_t tileWidth;    // TIFFTAG_IMAGELENGTH
-    uint32_t tileLength;   // TIFFTAG_IMAGEWIDTH
     uint16_t bitspersample;
+    uint16_t sampleperpixel;
 
     uint8_t *LineBuffer;   // temporary buffer
 
-    int sampleSize;        // Taille en octets d'un pixel (RGB = 3, Gray = 1)
+    int pixelSize;        // Taille en octets d'un pixel (RGB = 3, Gray = 1)
 
     int BufferSize;     // Nombre de lignes(tuiles) que peut contenir le Buffer.
     uint8_t **_Buffer;  // Contient un cache des lignes ou tuiles
@@ -73,22 +122,38 @@ public:
 
     TiffReader ( const char* filename );
     void close();
-    int getWindow ( int offsetx, int offsety, int width, int length, uint8_t *buffer );
+    int getWindow ( int offsetx, int offsety, int width, int height, uint8_t *buffer );
 
     uint32_t getWidth() {
         return width;
     }
-    uint32_t getLength() {
-        return length;
+    uint32_t getHeight() {
+        return height;
     }
     uint16_t getPhotometric() {
         return photometric;
     }
-    int getSampleSize() {
-        return sampleSize;
+    int getPixelSize() {
+        return pixelSize;
     }
     uint32_t getBitsPerSample() {
         return bitspersample;
+    }
+
+    /**
+     * \~french
+     * \brief Sortie des informations sur le lectuer d'image
+     * \~english
+     * \brief Reader description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "------ TiffReader -------" );
+        LOGGER_INFO ( "\t- width = " << width << ", height = " << height );
+        LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
+        LOGGER_INFO ( "\t- bits per sample = " << bitspersample );
+        LOGGER_INFO ( "\t- bytes per pixel = " << pixelSize );
+        LOGGER_INFO ( "\t- photometric = " << photometric );
     }
 };
 
