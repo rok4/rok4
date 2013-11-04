@@ -61,12 +61,12 @@ public:
     virtual int getline ( uint8_t *buffer, int line ) {
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
-                buffer[channels*i + c] = (uint8_t) color[c];
+                buffer[channels*i + c] = ( uint8_t ) color[c];
     };
     virtual int getline ( float *buffer, int line ) {
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
-                buffer[channels*i + c] = (float) color[c];
+                buffer[channels*i + c] = ( float ) color[c];
     };
 
     virtual ~EmptyImage() {

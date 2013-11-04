@@ -349,13 +349,13 @@ void Rok4Server::buildWMSCapabilities() {
             // BoundingBox
             if ( servicesConf.isInspire() ) {
                 for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    BoundingBox<double> bbox(0,0,0,0);
-                    if (childLayer->getWMSCRSList() [i].validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy )) {
+                    BoundingBox<double> bbox ( 0,0,0,0 );
+                    if ( childLayer->getWMSCRSList() [i].validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
                         bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
                     } else {
-                        bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ));
+                        bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                     }
-                    
+
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                     bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i].getRequestCode() );
                     int floatprecision = GetDecimalPlaces ( bbox.xmin );
@@ -381,13 +381,13 @@ void Rok4Server::buildWMSCapabilities() {
                     childLayerEl->LinkEndChild ( bbEl );
                 }
                 for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
-                    BoundingBox<double> bbox(0,0,0,0);
-                    if (servicesConf.getGlobalCRSList()->at ( i ).validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy )) {
+                    BoundingBox<double> bbox ( 0,0,0,0 );
+                    if ( servicesConf.getGlobalCRSList()->at ( i ).validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
                         bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
                     } else {
-                        bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ));
+                        bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                     }
-                    
+
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                     bbEl->SetAttribute ( "CRS",servicesConf.getGlobalCRSList()->at ( i ).getRequestCode() );
                     int floatprecision = GetDecimalPlaces ( bbox.xmin );

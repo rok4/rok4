@@ -64,7 +64,7 @@ JPEGEncoder::JPEGEncoder ( Image* image ) : image ( image ), status ( -1 ) {
 
     bufferLimit = std::max ( 1024, ( ( image->getWidth() * image->channels ) / 2 ) );
 
-    linebuffer = new uint8_t[image->getWidth()*image->channels];
+    linebuffer = new uint8_t[image->getWidth() *image->channels];
 }
 
 /**

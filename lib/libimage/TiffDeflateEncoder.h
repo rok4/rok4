@@ -78,25 +78,25 @@ protected:
                 zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
             }
             error = deflate ( &zstream, Z_NO_FLUSH );
-            switch (error){
-                case Z_OK : 
-                    break;
-                case Z_MEM_ERROR :
-                    LOGGER_DEBUG("MEM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_STREAM_ERROR :
-                    LOGGER_DEBUG("STREAM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_VERSION_ERROR :
-                    LOGGER_DEBUG("VERSION_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                default :
-                    LOGGER_DEBUG("OTHER_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
+            switch ( error ) {
+            case Z_OK :
+                break;
+            case Z_MEM_ERROR :
+                LOGGER_DEBUG ( "MEM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_STREAM_ERROR :
+                LOGGER_DEBUG ( "STREAM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_VERSION_ERROR :
+                LOGGER_DEBUG ( "VERSION_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            default :
+                LOGGER_DEBUG ( "OTHER_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
             }
 //             if ( error != Z_OK ) {
 //                 deflateReset ( &zstream );
@@ -138,7 +138,7 @@ public:
         delete image;
     }
     size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
+        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth() *image->channels, dataToCopy=0;
         if ( !deflateBuffer ) {
             deflateBufferSize = linesize * image->getHeight() * 2 ;
             deflateBuffer = new uint8_t[deflateBufferSize];

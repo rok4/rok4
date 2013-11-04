@@ -346,7 +346,7 @@ Example:
     );
     
     # $request =
-    # http://http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
+    # http://localhost/wmts/rok4?LAYERS=ORTHO_RAW_LAMB93_PARIS_OUEST&SERVICE=WMS&VERSION=1.3.0&
     # REQUEST=getMap&FORMAT=image/tiff&CRS=EPSG:4326&BBOX=47,5,48,6&WIDTH=4096&HEIGHT=4096&STYLES=
     (end code)
 =cut
@@ -394,6 +394,9 @@ Function: getCommandWms2work
 
 Compose the BBoxes' array and the Wms2work call (bash function), used to obtain wanted image.
 
+Returns:
+    a string list, the command and the harvested image format (tif, png...). (undef, undef) if an error is occured.
+
 Parameters:
     dir - string - directory, to know the final image location and where to write temporary images
     srs - string - Bounding box's SRS
@@ -411,7 +414,7 @@ Example:
         srs => "WGS84",
         bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
         width => 4096,
-        height =>4096
+        height => 4096
     );
 
     # $cmd =
@@ -442,16 +445,16 @@ sub getCommandWms2work {
 
     TRACE;
 
-    my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return undef );
-    my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return undef );
-    my $bbox = $args->{bbox} || ( ERROR ("'bbox' parameter required !") && return undef );
-    my $max_width = $args->{width} || ( ERROR ("'width' parameter required !") && return undef );
-    my $max_height = $args->{height} || ( ERROR ("'height' parameter required !") && return undef );
+    my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return (undef, undef) );
+    my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return (undef, undef) );
+    my $bbox = $args->{bbox} || ( ERROR ("'bbox' parameter required !") && return (undef, undef) );
+    my $max_width = $args->{width} || ( ERROR ("'width' parameter required !") && return (undef, undef) );
+    my $max_height = $args->{height} || ( ERROR ("'height' parameter required !") && return (undef, undef) );
     
     my $inversion = $args->{inversion};
     if (! defined $inversion) {
         ERROR ("'inversion' parameter required !");
-        return undef;
+        return (undef, undef);
     }
     
     my ($xmin, $ymin, $xmax, $ymax) = @$bbox;
@@ -467,7 +470,7 @@ sub getCommandWms2work {
         if ($max_width % $self->{max_width} != 0) {
             ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request."
                   ,$self->{max_width},$max_width);
-            return undef;
+            return (undef, undef);
         }
         $imagePerWidth = int($max_width/$self->{max_width});
         $groundWidth /= $imagePerWidth;
@@ -478,7 +481,7 @@ sub getCommandWms2work {
         if ($max_height % $self->{max_height} != 0) {
             ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request."
                   ,$self->{max_height},$max_height);
-            return undef;
+            return (undef, undef);
         }
         $imagePerHeight = int($max_height/$self->{max_height});
         $groundHeight /= $imagePerHeight;
@@ -508,11 +511,15 @@ sub getCommandWms2work {
     
     $cmd .= "Wms2work";
     $cmd .= " \"$dir\"";
+    
+    my $format = undef;
     if ($self->getFormat eq "image/png") {
-        $cmd .= " \"png\"";
+        $format = "png";
     } else {
-        $cmd .= " \"tif\"";
+        $format = "tif";
     }
+    $cmd .= " \"$format\"";
+    
     $cmd .= sprintf " \"%sx%s\"",$max_width,$max_height;
     $cmd .= sprintf " \"%sx%s\"",$imagePerWidth,$imagePerHeight;
 
@@ -521,7 +528,7 @@ sub getCommandWms2work {
     $cmd .= " \"$URL\"";
     $cmd .= " \$BBOXES\n";
     
-    return $cmd;
+    return ($cmd, $format);
 }
 
 ####################################################################################################

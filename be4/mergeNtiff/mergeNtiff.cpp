@@ -38,8 +38,8 @@
 /**
  * \file mergeNtiff.cpp
  * \author Institut national de l'information géographique et forestière
- * \~french \brief Création d'une image TIFF géoréférencée à partir de n images TIFF sources géoréférencées
- * \~english \brief Create one georeferenced TIFF image from several georeferenced TIFF images
+ * \~french \brief Création d'une image TIFF géoréférencée à partir de n images sources géoréférencées
+ * \~english \brief Create one georeferenced TIFF image from several georeferenced images
  * \~ \image html mergeNtiff.png \~french
  * \details Les images en entrée peuvent :
  * \li être de différentes résolutions
@@ -115,7 +115,7 @@
 #include "tiffio.h"
 #include "Logger.h"
 
-#include "LibtiffImage.h"
+#include "FileImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
 #include "ExtendedCompoundImage.h"
@@ -142,12 +142,14 @@ char outImagesRoot[256];
 char strnodata[256];
 /** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
 uint16_t samplesperpixel;
-/** \~french Type du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleType sampleType ( 0,0 );
+/** \~french Nombre de bits occupé par un canal */
+uint16_t bitspersample;
+/** \~french Format du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
+SampleFormat::eSampleFormat sampleformat;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
-uint16_t photometric;
+Photometric::ePhotometric photometric;
 /** \~french Compression de l'image de sortie */
-uint16_t compression;
+Compression::eCompression compression;
 /** \~french Type de donnée traitée : image (1) ou meta-donnée (0, non implémenté) */
 int type=-1;
 /** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
@@ -260,8 +262,6 @@ void error ( std::string message, int errorCode ) {
  */
 int parseCommandLine ( int argc, char** argv ) {
 
-    uint16_t bitspersample = 0, sampleformat = 0;
-
     if ( argc < 17 && argc != 2 ) {
         LOGGER_ERROR ( "Unvalid parameters number : is " << argc << " and have to be 17 or more (2 to request help)" );
         return -1;
@@ -341,8 +341,8 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error in option -a" );
                     return -1;
                 }
-                if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SAMPLEFORMAT_UINT ;
-                else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SAMPLEFORMAT_IEEEFP ;
+                if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SampleFormat::UINT ;
+                else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SampleFormat::FLOAT;
                 else {
                     LOGGER_ERROR ( "Unknown value for option -a : " << argv[i] );
                     return -1;
@@ -353,8 +353,8 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error in option -p" );
                     return -1;
                 }
-                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = PHOTOMETRIC_MINISBLACK;
-                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = PHOTOMETRIC_RGB;
+                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
+                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
                 else {
                     LOGGER_ERROR ( "Unknown value for option -p : " << argv[i] );
                     return -1;
@@ -365,12 +365,12 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error in option -c" );
                     return -1;
                 }
-                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = COMPRESSION_ADOBE_DEFLATE;
-                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = COMPRESSION_PACKBITS;
-                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = COMPRESSION_JPEG;
-                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = COMPRESSION_LZW;
+                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
+                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
+                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
+                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
                 else {
                     LOGGER_ERROR ( "Unknown value for option -c : " << argv[i] );
                     return -1;
@@ -385,10 +385,8 @@ int parseCommandLine ( int argc, char** argv ) {
 
     LOGGER_DEBUG ( "mergeNtiff -f " << imageListFilename );
 
-    sampleType = SampleType ( bitspersample,sampleformat );
-
-    if ( ! sampleType.isSupported() ) {
-        LOGGER_ERROR ( "Supported sample format are :\n" + sampleType.getHandledFormat() );
+    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
+        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample) for the output image" );
         return -1;
     }
 
@@ -398,7 +396,7 @@ int parseCommandLine ( int argc, char** argv ) {
 /**
  * \~french
  * \brief Enregistre une image TIFF, avec passage de ses composantes (pour le déboguage)
- * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction. Cette fonction est utilisée pour le déboguage pour enregistrer des images intermédiaires. Pour l'image finale, on utilisera la fonction d'enregistrement propre aux objets de la classe LibtiffImage
+ * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction. Cette fonction est utilisée pour le déboguage pour enregistrer des images intermédiaires. Pour l'image finale, on utilisera la fonction d'enregistrement propre aux objets de la classe FileImage
  * \param[in] pImage image à enregistrer
  * \param[in] pName chemin de l'image à écrire
  * \param[in] bps nombre de bits par canal de l'image TIFF
@@ -432,14 +430,14 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
     float* buf_f=0;
 
     // Ecriture de l'image
-    if ( sf==SAMPLEFORMAT_UINT ) {
+    if ( sf == SAMPLEFORMAT_UINT ) {
         buf_u = ( unsigned char* ) _TIFFmalloc ( pImage->getWidth() * pImage->channels * bps / 8 );
         for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_u,line );
             TIFFWriteScanline ( output, buf_u, line, 0 );
         }
-    } else if ( sf==SAMPLEFORMAT_IEEEFP ) {
-        buf_f = ( float* ) _TIFFmalloc ( pImage->getWidth()*pImage->channels*bps/8 );
+    } else if ( sf == SAMPLEFORMAT_IEEEFP ) {
+        buf_f = ( float* ) _TIFFmalloc ( pImage->getWidth() *pImage->channels*bps/8 );
         for ( int line = 0; line < pImage->getHeight(); line++ ) {
             pImage->getline ( buf_f,line );
             TIFFWriteScanline ( output, buf_f, line, 0 );
@@ -472,11 +470,11 @@ int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t 
  */
 int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, std::string* crs, BoundingBox<double>* bbox, double* resx, double* resy ) {
     std::string str;
-    char tmpPath[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+    char tmpPath[IMAGE_MAX_FILENAME_LENGTH];
     int rootLength = strlen ( outImagesRoot );
 
-    memset ( imageFileName, 0, LIBTIFFIMAGE_MAX_FILENAME_LENGTH );
-    memset ( maskFileName, 0, LIBTIFFIMAGE_MAX_FILENAME_LENGTH );
+    memset ( imageFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
+    memset ( maskFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
 
     while ( str.empty() ) {
         if ( file.eof() ) {
@@ -506,7 +504,7 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
         return 1;
     }
 
-    crs->assign(tmpCRS);
+    crs->assign ( tmpCRS );
 
     if ( ! strncmp ( tmpPath,"?",1 ) ) {
         strcpy ( imageFileName,outImagesRoot );
@@ -550,7 +548,7 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
 /**
  * \~french
  * \brief Charge les images en entrée et en sortie depuis le fichier de configuration
- * \details On va récupérer toutes les informations de toutes les images et masques présents dans le fichier de configuration et créer les objets LibtiffImage correspondant. Toutes les images ici manipulées sont de vraies images (physiques) dans ce sens où elles sont des fichiers soit lus, soit qui seront écrits.
+ * \details On va récupérer toutes les informations de toutes les images et masques présents dans le fichier de configuration et créer les objets FileImage correspondant. Toutes les images ici manipulées sont de vraies images (physiques) dans ce sens où elles sont des fichiers soit lus, soit qui seront écrits.
  *
  * Le chemin vers le fichier de configuration est stocké dans la variables globale imageListFilename et outImagesRoot va être concaténer au chemin vers les fichiers de sortie.
  * \param[out] ppImageOut image résultante de l'outil
@@ -558,15 +556,15 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vector<LibtiffImage*>* pImageIn ) {
-    char imageFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
-    char maskFileName[LIBTIFFIMAGE_MAX_FILENAME_LENGTH];
+int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<FileImage*>* pImageIn ) {
+    char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
+    char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
     BoundingBox<double> bbox ( 0.,0.,0.,0. );
     int width, height;
     bool hasMask;
     std::string stringCRS;
     double resx, resy;
-    LibtiffImageFactory factory;
+    FileImageFactory factory;
 
 
     // Ouverture du fichier texte listant les images
@@ -584,68 +582,66 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
         return -1;
     }
 
-    CRS crs(stringCRS);
-/*
-    if (! crs.validateBBox(bbox)) {
-        LOGGER_ERROR("The output image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
-        return -1;
-    }*/
+    CRS crs ( stringCRS );
 
     // Arrondi a la valeur entiere la plus proche
     width = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
     height = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
 
-    *ppImageOut = factory.createLibtiffImageToWrite ( imageFileName, bbox,resx, resy, width, height, samplesperpixel,
-                  sampleType, photometric,compression,16 );
-
-    (*ppImageOut)->setCRS(crs);
+    *ppImageOut = factory.createImageToWrite (
+                      imageFileName, bbox,resx, resy, width, height,
+                      samplesperpixel, sampleformat, bitspersample, photometric, compression
+                  );
 
     if ( *ppImageOut == NULL ) {
         LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
         return -1;
     }
 
+    ( *ppImageOut )->setCRS ( crs );
+
     if ( hasMask ) {
 
-        *ppMaskOut = factory.createLibtiffImageToWrite ( maskFileName, bbox,resx, resy, width, height, 1,
-                     SampleType ( 8,SAMPLEFORMAT_UINT ),
-                     PHOTOMETRIC_MINISBLACK,COMPRESSION_ADOBE_DEFLATE,16 );
-
-        (*ppMaskOut)->setCRS(crs);
+        *ppMaskOut = factory.createImageToWrite (
+                         maskFileName, bbox,resx, resy, width, height,
+                         1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
+                     );
 
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << maskFileName );
             return -1;
         }
+
+        ( *ppMaskOut )->setCRS ( crs );
     }
 
     // Lecture et creation des images sources
     int out=0;
     while ( ( out = readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS,&bbox,&resx,&resy ) ) == 0 ) {
 
-        crs.setRequestCode(stringCRS);
+        crs.setRequestCode ( stringCRS );
 
-        if (! crs.validateBBox(bbox)) {
+        if ( ! crs.validateBBox ( bbox ) ) {
             LOGGER_WARN("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
         }
 
-        LibtiffImage* pImage=factory.createLibtiffImageToRead ( imageFileName, bbox, resx, resy );
+        FileImage* pImage=factory.createImageToRead ( imageFileName, bbox, resx, resy );
         if ( pImage == NULL ) {
             LOGGER_ERROR ( "Impossible de creer une image a partir de " << imageFileName );
             return -1;
         }
-        pImage->setCRS(crs);
+        pImage->setCRS ( crs );
 
         if ( hasMask ) {
-            LibtiffImage* pMask=factory.createLibtiffImageToRead ( maskFileName, bbox, resx, resy );
+            FileImage* pMask=factory.createImageToRead ( maskFileName, bbox, resx, resy );
             if ( pMask == NULL ) {
                 LOGGER_ERROR ( "Impossible de creer un masque a partir de " << maskFileName );
                 return -1;
             }
-            pMask->setCRS(crs);
+            pMask->setCRS ( crs );
 
             if ( ! pImage->setMask ( pMask ) ) {
-                LOGGER_ERROR ( "Cannot add mask to the input LibtiffImage" );
+                LOGGER_ERROR ( "Cannot add mask to the input FileImage" );
                 return -1;
             }
         }
@@ -678,7 +674,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, std::vecto
  * \return code de retour, 0 si réussi, -1 sinon
  * \todo Contrôler les éventuels masques
  */
-int checkImages ( LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn ) {
+int checkImages ( FileImage* pImageOut, std::vector<FileImage*>& ImageIn ) {
     for ( unsigned int i=0; i < ImageIn.size(); i++ ) {
         if ( ImageIn.at ( i )->getResX() *ImageIn.at ( i )->getResY() == 0. ) {
             LOGGER_ERROR ( "Source image " << i+1 << " is not valid (resolutions)" );
@@ -716,14 +712,14 @@ int checkImages ( LibtiffImage* pImageOut, std::vector<LibtiffImage*>& ImageIn )
  * \param[out] pTabImageIn images en entrée, triées en paquets compatibles
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int sortImages ( std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn ) {
+int sortImages ( std::vector<FileImage*> ImageIn, std::vector<std::vector<Image*> >* pTabImageIn ) {
     std::vector<Image*> vTmpImg;
-    std::vector<LibtiffImage*>::iterator itiniImg = ImageIn.begin();
+    std::vector<FileImage*>::iterator itiniImg = ImageIn.begin();
 
     /* we create consistent images' vectors (X/Y resolution and X/Y phases)
      * Masks are moved in parallel with images
      */
-    for ( std::vector<LibtiffImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end()-1; itImg++ ) {
+    for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end()-1; itImg++ ) {
 
         if ( ! ( *itImg )->isCompatibleWith ( * ( itImg+1 ) ) ) {
             // two following images are not compatible, we split images' vector
@@ -751,7 +747,7 @@ int sortImages ( std::vector<LibtiffImage*> ImageIn, std::vector<std::vector<Ima
  */
 void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
     double resx_dst = pImage->getResX(), resy_dst = pImage->getResY();
-    
+
     double intpart;
     double phi = 0;
     double phaseDiff = 0;
@@ -829,10 +825,10 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
  * \param[in] ppRImage image réechantillonnée
  * \return VRAI si succès, FAUX sinon
  */
-bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, ResampledImage** ppRImage ) {
+bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, ResampledImage** ppRImage ) {
 
     double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
-    
+
     const Kernel& K = Kernel::getInstance ( interpolation );
 
     // Ajout des miroirs
@@ -840,7 +836,7 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
     int mirrorSizeX = ceil ( K.size ( resx_dst / pECI->getResX() ) ) + 1;
     int mirrorSizeY = ceil ( K.size ( resy_dst / pECI->getResY() ) ) + 1;
 
-    int mirrorSize = std::max(mirrorSizeX, mirrorSizeY);
+    int mirrorSize = std::max ( mirrorSizeX, mirrorSizeY );
 
     LOGGER_DEBUG("\t Mirror's size : " << mirrorSize);
 
@@ -859,33 +855,33 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
     double xmax_dst=__min ( realBbox.xmax,pImageOut->getXmax() );
     double ymin_dst=__max ( realBbox.ymin,pImageOut->getYmin() );
     double ymax_dst=__min ( realBbox.ymax,pImageOut->getYmax() );
-    
+
     BoundingBox<double> bbox_dst ( xmin_dst, ymin_dst, xmax_dst, ymax_dst );
 
     /* Nous avons maintenant les limites de l'image réechantillonée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
      * (phases égales en x et en y).
      */
-    makePhase(pImageOut, &bbox_dst );
+    makePhase ( pImageOut, &bbox_dst );
 
     // Dimension de l'image reechantillonnee
     int width_dst = int ( ( bbox_dst.xmax-bbox_dst.xmin ) / resx_dst + 0.5 );
     int height_dst = int ( ( bbox_dst.ymax-bbox_dst.ymin ) / resy_dst + 0.5 );
 
-    if (width_dst <= 0 || height_dst <= 0) {
-        LOGGER_WARN("A ResampledImage's dimension would have been null");
+    if ( width_dst <= 0 || height_dst <= 0 ) {
+        LOGGER_WARN ( "A ResampledImage's dimension would have been null" );
         return true;
     }
 
     // On réechantillonne le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
     ResampledImage* pRMask = new ResampledImage ( pECI->Image::getMask(), width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
-                                                  Interpolation::NEAREST_NEIGHBOUR, false );
+            Interpolation::NEAREST_NEIGHBOUR, false );
 
     // Reechantillonnage
     *ppRImage = new ResampledImage ( pECI, width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
-                                                   interpolation, pECI->useMasks() );
+                                     interpolation, pECI->useMasks() );
 
-    if ( ! (*ppRImage)->setMask ( pRMask ) ) {
+    if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
         LOGGER_ERROR ( "Cannot add mask to the ResampledImage" );
         return false;
     }
@@ -901,13 +897,13 @@ bool resampleImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Resa
  * L'image reprojetée doit être strictement incluse dans l'image source utilisée, c'est pourquoi on va artificiellement agrandir l'image source (avec du nodata) pour être sur de l'inclusion stricte.
  *
  * L'image reprojetée peut être nulle, dans le cas où l'image source ne recouvrait pas suffisemment l'image de sortie pour permettre le calcul d'une image (une dimensions de l'image reprojetée aurait été nulle).
- * 
+ *
  * \param[in] pImageOut image résultante de l'outil
  * \param[in] pECI paquet d'images compatibles, à reprojeter
  * \param[in] ppRImage image reprojetée
  * \return VRAI si succès, FAUX sinon
  */
-bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, ReprojectedImage** ppRImage ) {
+bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, ReprojectedImage** ppRImage ) {
 
     double resx_dst = pImageOut->getResX(), resy_dst = pImageOut->getResY();
     double resx_src = pECI->getResX(), resy_src = pECI->getResY();
@@ -953,37 +949,37 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     double xmax_dst = __min ( cropSourceBbox.xmax,cropFinalBbox.xmax );
     double ymin_dst = __max ( cropSourceBbox.ymin,cropFinalBbox.ymin );
     double ymax_dst = __min ( cropSourceBbox.ymax,cropFinalBbox.ymax );
-    
-    BoundingBox<double> BBOX_dst(xmin_dst,ymin_dst,xmax_dst,ymax_dst);
 
-    LOGGER_DEBUG("        BBOX dst (srs destination) : " << BBOX_dst.toString());
+    BoundingBox<double> BBOX_dst ( xmin_dst,ymin_dst,xmax_dst,ymax_dst );
+
+    LOGGER_DEBUG ( "        BBOX dst (srs destination) : " << BBOX_dst.toString() );
 
     /* Nous avons maintenant les limites de l'image reprojetée. N'oublions pas que celle ci doit être compatible
      * avec l'image de sortie. Il faut donc modifier la bounding box afin qu'elle remplisse les conditions de compatibilité
      * (phases égales en x et en y).
      */
-    makePhase(pImageOut, &BBOX_dst );
+    makePhase ( pImageOut, &BBOX_dst );
 
     // Dimension de l'image reechantillonnee
-    LOGGER_DEBUG("        Calculated destination width (float) : " << ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst);
-    LOGGER_DEBUG("        Calculated destination height (float) : " << ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst);
+    LOGGER_DEBUG ( "        Calculated destination width (float) : " << ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst );
+    LOGGER_DEBUG ( "        Calculated destination height (float) : " << ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst );
     int width_dst = int ( ( BBOX_dst.xmax - BBOX_dst.xmin ) / resx_dst + 0.5 );
     int height_dst = int ( ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst + 0.5 );
 
-    if (width_dst <= 0 || height_dst <= 0) {
-        LOGGER_WARN("A ReprojectedImage's dimension would have been null");
+    if ( width_dst <= 0 || height_dst <= 0 ) {
+        LOGGER_WARN ( "A ReprojectedImage's dimension would have been null" );
         return true;
     }
 
     tmpBbox = BBOX_dst;
 
-    if ( tmpBbox.reproject(to_srs, from_srs) ) {
+    if ( tmpBbox.reproject ( to_srs, from_srs ) ) {
         LOGGER_ERROR ( "Erreur reprojection bbox dst en srs src" );
         return false;
     }
 
-    LOGGER_DEBUG("        BBOX dst (srs source) : " << tmpBbox.toString());
-    LOGGER_DEBUG("        BBOX source : " << pECI->getBbox().toString());
+    LOGGER_DEBUG ( "        BBOX dst (srs source) : " << tmpBbox.toString() );
+    LOGGER_DEBUG ( "        BBOX source : " << pECI->getBbox().toString() );
 
     /************************ Ajout des miroirs *************************/
 
@@ -994,39 +990,39 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
     int mirrorSizeX = ceil ( K.size ( ratioX ) ) + 1;
     int mirrorSizeY = ceil ( K.size ( ratioY ) ) + 1;
 
-    int mirrorSize = 2 * std::max(mirrorSizeX, mirrorSizeY);
+    int mirrorSize = 2 * std::max ( mirrorSizeX, mirrorSizeY );
 
-    LOGGER_DEBUG("        Mirror's size : " << mirrorSize);
+    LOGGER_DEBUG ( "        Mirror's size : " << mirrorSize );
 
     if ( ! pECI->addMirrors ( mirrorSize ) ) {
         LOGGER_ERROR ( "Unable to add mirrors" );
         return false;
     }
 
-    LOGGER_DEBUG("        BBOX source avec miroir : " << pECI->getBbox().toString());
+    LOGGER_DEBUG ( "        BBOX source avec miroir : " << pECI->getBbox().toString() );
 
     /********************** Image source agrandie ***********************/
 
-    if (! pECI->getBbox().contains(tmpBbox)) {
+    if ( ! pECI->getBbox().contains ( tmpBbox ) ) {
         /* L'image à reprojeter n'est pas intégralement contenue dans l'image source. Cela va poser des problèmes lors de l'interpolation :
          * ReprojectedImage va vouloir accéder à des coordonnées pixel négatives -> segmentation fault.
          * Pour éviter cela, on va agrandir artificiellemnt l'étendue de l'image source (avec du nodata) */
-        if ( ! pECI->extendBbox(tmpBbox, mirrorSize) ) {
+        if ( ! pECI->extendBbox ( tmpBbox, mirrorSize ) ) {
             LOGGER_ERROR ( "Unable to extend the source image extent for the reprojection" );
             return false;
         }
-        LOGGER_DEBUG("        BBOX source agrandie : " << pECI->getBbox().toString());
+        LOGGER_DEBUG ( "        BBOX source agrandie : " << pECI->getBbox().toString() );
     }
 
     /********************** Grille de reprojection **********************/
-    
+
     Grid* grid = new Grid ( width_dst, height_dst, BBOX_dst );
-    
+
     if ( ! ( grid->reproject ( to_srs, from_srs ) ) ) {
         LOGGER_ERROR ( "Bbox image invalide" );
         return false;
     }
-    
+
     grid->affine_transform ( 1./resx_src, -pECI->getBbox().xmin/resx_src - 0.5,
                              -1./resy_src, pECI->getBbox().ymax/resy_src - 0.5 );
 
@@ -1034,7 +1030,7 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
 
     // On  reprojete le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
     ReprojectedImage* pRMask = new ReprojectedImage ( pECI->Image::getMask(), BBOX_dst, resx_dst, resy_dst, grid,
-                                                      Interpolation::NEAREST_NEIGHBOUR, false);
+            Interpolation::NEAREST_NEIGHBOUR, false );
 
     //saveImage(pRMask, "/home/theo/TEST/reprojection/reprojMask.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_ADOBE_DEFLATE);
 
@@ -1043,7 +1039,7 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
 
     //saveImage(pRImage, "/home/theo/TEST/reprojection/reprojImage.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
 
-    if ( ! (*ppRImage)->setMask ( pRMask ) ) {
+    if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
         LOGGER_ERROR ( "Cannot add mask to the ReprojectedImage" );
         return false;
     }
@@ -1073,11 +1069,11 @@ bool reprojectImages ( LibtiffImage* pImageOut, ExtendedCompoundImage* pECI, Rep
  * \param[in] nodata valeur de non-donnée
  * \return 0 en cas de succès, -1 en cas d'erreur
  */
-int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
+int mergeTabImages ( FileImage* pImageOut, // Sortie
                      std::vector<std::vector<Image*> >& TabImageIn, // Entrée
                      ExtendedCompoundImage** ppECIout, // Résultat du merge
                      int* nodata ) {
-    
+
     ExtendedCompoundImageFactory ECIF ;
     std::vector<Image*> pOverlayedImages;
 
@@ -1092,7 +1088,7 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
             LOGGER_ERROR ( "Impossible d'assembler les images" );
             return -1;
         }
-        pECI->setCRS(TabImageIn.at(i).at(0)->getCRS());
+        pECI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
 
         ExtendedCompoundMask* pECMI = new ExtendedCompoundMask ( pECI );
         if ( ! pECI->setMask ( pECMI ) ) {
@@ -1100,7 +1096,7 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
             return -1;
         }
 
-        pECMI->setCRS(TabImageIn.at(i).at(0)->getCRS());
+        pECMI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
 
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
             LOGGER_DEBUG ( "\t is compatible" );
@@ -1108,7 +1104,7 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back ( pECI );
 
-        } else if (pECI->getCRS() == pImageOut->getCRS()) {
+        } else if ( pECI->getCRS() == pImageOut->getCRS() ) {
 
             LOGGER_DEBUG ( "\t need a resampling" );
 
@@ -1124,9 +1120,9 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
             } else {
                 pOverlayedImages.push_back ( pResampledImage );
             }
-                
+
         } else {
-            
+
             LOGGER_DEBUG ( "\t need a reprojection" );
 
             ReprojectedImage* pReprojectedImage = NULL;
@@ -1135,7 +1131,7 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
                 LOGGER_ERROR ( "Cannot reproject images' pack" );
                 return -1;
             }
-             
+
             if ( pReprojectedImage == NULL ) {
                 LOGGER_WARN ( "No reprojected image to add" );
             } else {
@@ -1180,9 +1176,9 @@ int mergeTabImages ( LibtiffImage* pImageOut, // Sortie
  */
 int main ( int argc, char **argv ) {
 
-    LibtiffImage* pImageOut ;
-    LibtiffImage* pMaskOut = NULL;
-    std::vector<LibtiffImage*> ImageIn;
+    FileImage* pImageOut ;
+    FileImage* pMaskOut = NULL;
+    std::vector<FileImage*> ImageIn;
     std::vector<std::vector<Image*> > TabImageIn;
     ExtendedCompoundImage* pECI;
 
@@ -1260,10 +1256,10 @@ int main ( int argc, char **argv ) {
         error ( "Echec enregistrement de l image finale",-1 );
     }
 
-    if (pMaskOut != NULL) {
+    if ( pMaskOut != NULL ) {
         LOGGER_DEBUG ( "Save mask" );
         // Enregistrement du masque fusionné, si demandé
-        if (pMaskOut->writeImage ( pECI->Image::getMask() ) < 0 ) {
+        if ( pMaskOut->writeImage ( pECI->Image::getMask() ) < 0 ) {
             error ( "Echec enregistrement du masque final",-1 );
         }
     }

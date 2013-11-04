@@ -47,7 +47,7 @@ size_t BilEncoder::read ( uint8_t *buffer, size_t size ) {
     int linesize = image->getWidth() * image->channels * sizeof ( float );
 
     // Hypothese 2 : le pixel de l'image source est de type float
-    float* buf_f=new float[image->getWidth()*image->channels];
+    float* buf_f=new float[image->getWidth() *image->channels];
     for ( ; line < image->getHeight() && offset + linesize <= size; line++ ) {
 
         //	image->getline(buffer + offset, line);

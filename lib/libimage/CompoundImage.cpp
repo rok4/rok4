@@ -55,8 +55,8 @@ BoundingBox<double> CompoundImage::computeBbox ( std::vector<std::vector<Image*>
 
     double xmax = images[0][images[0].size()-1]->getBbox().xmax;
     double ymax = images[0][images[0].size()-1]->getBbox().ymax;
-    
-    return BoundingBox<double>(xmin, ymin, xmax, ymax);
+
+    return BoundingBox<double> ( xmin, ymin, xmax, ymax );
 }
 
 template<typename T>

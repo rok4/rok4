@@ -199,12 +199,12 @@ size_t PNGEncoder::read ( uint8_t *buffer, size_t size ) {
         colortype=6;
     if ( line == -1 ) pos += write_IHDR ( buffer, size, colortype );
     if ( line >= 0 && line <= image->getHeight() ) pos += write_IDAT ( buffer + pos, size - pos );
-    if ( line == image->getHeight()+1 ) pos += write_IEND ( buffer + pos, size - pos );
+    if ( line == image->getHeight() +1 ) pos += write_IEND ( buffer + pos, size - pos );
     return pos;
 }
 
 bool PNGEncoder::eof() {
-    return ( line > image->getHeight()+1 );
+    return ( line > image->getHeight() +1 );
 }
 
 PNGEncoder::PNGEncoder ( Image* image,Palette* palette ) : image ( image ), line ( -1 ), palette ( palette ) , stubpalette ( NULL ) {

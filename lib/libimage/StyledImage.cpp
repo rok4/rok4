@@ -66,7 +66,7 @@ StyledImage::~StyledImage() {
 
 
 int StyledImage::_getline ( uint8_t* buffer, int line ) {
-    float* source = new float[origImage->getWidth()*origImage->channels];
+    float* source = new float[origImage->getWidth() *origImage->channels];
     origImage->getline ( source, line );
     //TODO Optimize It
     int i = 0;
