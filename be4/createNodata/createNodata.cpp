@@ -144,7 +144,7 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 en cas de succès, -1 sinon
  ** \~english
  * \brief Main function for tool createNodata
- * \details All instrcutions are in this function.
+ * \details All instructions are in this function.
  * \param[in] argc parameters number
  * \param[in] argv parameters array
  * \return return code, 0 if success, -1 otherwise

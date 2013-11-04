@@ -227,8 +227,8 @@ void usage() {
                   "    -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
                   "    -p photometric :\n" <<
                   "            gray    min is black\n" <<
-                  "            rgb     for image with alpha too\n\n" <<
-                  "    -d debug logger activation\n" <<
+                  "            rgb     for image with alpha too\n" <<
+                  "    -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "    - for orthophotography\n" <<
@@ -1196,10 +1196,6 @@ int main ( int argc, char **argv ) {
     Logger::setAccumulator ( ERROR, acc );
     Logger::setAccumulator ( FATAL, acc );
 
-    std::ostream &logd = LOGGER ( DEBUG );
-    logd.precision ( 16 );
-    logd.setf ( std::ios::fixed,std::ios::floatfield );
-
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
@@ -1210,7 +1206,12 @@ int main ( int argc, char **argv ) {
     }
 
     // On sait maintenant si on doit activer le niveau de log DEBUG
-    if (debugLogger) Logger::setAccumulator(DEBUG, acc);
+    if (debugLogger) {
+        Logger::setAccumulator(DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
+    }
 
     // Conversion string->int[] du paramètre nodata
     LOGGER_DEBUG ( "Nodata interpretation" );

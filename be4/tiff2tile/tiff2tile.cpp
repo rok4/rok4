@@ -57,7 +57,7 @@ void usage() {
 
 int main ( int argc, char **argv ) {
     char* input = 0, *output = 0;
-    uint32_t tilewidth = 256, tilelength = 256;
+    uint32_t tilewidth = 256, tileheight = 256;
     uint16_t compression = COMPRESSION_NONE;
     uint16_t photometric = PHOTOMETRIC_RGB;
     uint32_t bitspersample = 8;
@@ -111,7 +111,7 @@ int main ( int argc, char **argv ) {
                     exit ( 2 );
                 }
                 tilewidth = atoi ( argv[++i] );
-                tilelength = atoi ( argv[++i] );
+                tileheight = atoi ( argv[++i] );
                 break;
             case 'a':
                 if ( ++i == argc ) {
@@ -179,7 +179,6 @@ int main ( int argc, char **argv ) {
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if ( crop ) {
-
         if (ST.isUInt8()) {
             TiffNodataManager<uint8_t> TNM ( samplesperpixel,white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
@@ -193,32 +192,31 @@ int main ( int argc, char **argv ) {
                 exit ( 2 );
             }
         }
-
     }
 
     TiffReader R ( input );
 
     uint32_t width = R.getWidth();
-    uint32_t length = R.getLength();
-    TiledTiffWriter W ( output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat );
+    uint32_t height = R.getHeight();
+    TiledTiffWriter W ( output, width, height, photometric, compression, quality, tilewidth, tileheight,bitspersample,samplesperpixel,sampleformat );
 
-    if ( width % tilewidth || length % tilelength ) {
+    if ( width % tilewidth || height % tileheight ) {
         std::cerr << "Image size must be a multiple of tile size" << std::endl;
         exit ( 2 );
     }
     int tilex = width / tilewidth;
-    int tiley = length / tilelength;
+    int tiley = height / tileheight;
 
-    size_t dataSize = tilelength*tilewidth*R.getSampleSize();
+    size_t dataSize = tileheight*tilewidth*R.getPixelSize();
     uint8_t* data = new uint8_t[dataSize];
 
     for ( int y = 0; y < tiley; y++ ) for ( int x = 0; x < tilex; x++ ) {
-            R.getWindow ( x*tilewidth, y*tilelength, tilewidth, tilelength, data );
-            if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
-                std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl;
-                return 2;
-            }
+        R.getWindow ( x*tilewidth, y*tileheight, tilewidth, tileheight, data );
+        if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
+            std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl;
+            return 2;
         }
+    }
 
     R.close();
     if ( W.close() < 0 ) {
