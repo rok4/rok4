@@ -185,7 +185,7 @@ void error ( std::string message, int errorCode ) {
 int main ( int argc, char **argv ) {
 
     char* input = 0, *output = 0;
-    uint32_t tilewidth = 256, tilelength = 256;
+    uint32_t tilewidth = 256, tileheight = 256;
     uint16_t compression = COMPRESSION_NONE;
     uint16_t photometric = PHOTOMETRIC_RGB;
     uint32_t bitspersample = 0;
@@ -250,7 +250,7 @@ int main ( int argc, char **argv ) {
             case 't':
                 if ( i+2 >= argc ) { error("Error in -t option", 2 ); }
                 tilewidth = atoi ( argv[++i] );
-                tilelength = atoi ( argv[++i] );
+                tileheight = atoi ( argv[++i] );
                 break;
             case 'a':
                 if ( ++i == argc ) { error( "Error in -a option", 2 ); }
@@ -316,21 +316,21 @@ int main ( int argc, char **argv ) {
     FileImage* sourceImage = FIF.createImageToRead(input);
 
     int width = sourceImage->getWidth();
-    int length = sourceImage->getHeight();
+    int height = sourceImage->getHeight();
 
-    if ( width % tilewidth || length % tilelength ) { error ( "Image size must be a multiple of tile size", 2 ); }
+    if ( width % tilewidth || height % tileheight ) { error ( "Image size must be a multiple of tile size", 2 ); }
 
-    TiledTiffWriter W ( output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat );
+    TiledTiffWriter W ( output, width, height, photometric, compression, quality, tilewidth, tileheight,bitspersample,samplesperpixel,sampleformat );
 
     int tilex = width / tilewidth;
-    int tiley = length / tilelength;
+    int tiley = height / tileheight;
 
-    size_t dataSize = tilelength*tilewidth*sourceImage->getPixelByteSize();
+    size_t dataSize = tileheight*tilewidth*sourceImage->getPixelByteSize();
     uint8_t* data = new uint8_t[dataSize];
 
     for ( int y = 0; y < tiley; y++ ) {
         for ( int x = 0; x < tilex; x++ ) {
-            sourceImage->getTile ( x*tilewidth, y*tilelength, tilewidth, tilelength, data );
+            sourceImage->getTile ( x*tilewidth, y*tileheight, tilewidth, tileheight, data );
             if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
                 std::stringstream sstm;
                 sstm << x << "," << y;
