@@ -59,15 +59,53 @@ char *pj_get_def( PJ *P, int options )
     int l;
     char *definition;
     int  def_max = 10;
+    int i;
 
     definition = (char *) pj_malloc(def_max);
     definition[0] = '\0';
+    
 
     for (t = P->params; t; t = t->next)
     {
         /* skip unused parameters ... mostly appended defaults and stuff */
         if (options != 666 && !t->used)
             continue;
+        
+        
+        if (options == 666 && (strstr(t->param, "ellps") != NULL) )
+        {
+            int ind = -1;
+            i = -1;
+            do {
+                i++;
+                if ( strstr(t->param, pj_get_ellps_ref()[i].id) != NULL )
+                {
+                        ind=i;
+                        break;
+                }
+            } while (pj_get_ellps_ref()[i].id != 0) ;
+            if (ind != -1 )
+            {
+                        /* grow the resulting string if needed */
+                        l = strlen(pj_get_ellps_ref()[ind].major) + 1 + strlen(pj_get_ellps_ref()[ind].ell) + 1;
+                        if( strlen(definition) + l + 5 > def_max )
+                        {
+                            char *def2;        
+                            def_max = def_max * 2 + l + 5;
+                            def2 = (char *) pj_malloc(def_max);
+                            strcpy( def2, definition );
+                            pj_dalloc( definition );
+                            definition = def2;
+                        }
+    
+                        /* append this parameter */
+                        strcat( definition, " +" );
+                        strcat( definition, pj_get_ellps_ref()[ind].major );
+                        strcat( definition, " +" );
+                        strcat( definition, pj_get_ellps_ref()[ind].ell );
+                        continue;
+            }
+        }
 
         /* grow the resulting string if needed */
         l = strlen(t->param) + 1;
