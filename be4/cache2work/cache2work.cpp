@@ -49,7 +49,7 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "TiffReader.h"
+#include "TiledTiffReader.h"
 #include "../be4version.h"
 
 /**
@@ -197,15 +197,14 @@ int main ( int argc, char **argv )
         error ("Argument must specify one input file and one output file", -1);
     }
 
-    TiffReader R ( input );
+    TiledTiffReader R ( input );
 
     R.print();
 
     uint8_t* tile;
 
-    tile = R.getEncodedTile(0);
-
-    LOGGER_DEBUG ("taille de la tuile " << sizeof(tile) );
+    int tileSize = R.getEncodedTile(tile, 1);
+    LOGGER_INFO("encoded tileSize " << tileSize);
 
     R.close();
 

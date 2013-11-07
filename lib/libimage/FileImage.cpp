@@ -68,7 +68,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     memcpy ( extension, pch + 1, 3 );
 
-    // TIFF
+    /********************* TIFF *********************/
     if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to read : " << name );
 
@@ -85,7 +85,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
         return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
     }
 
-    // PNG
+    /********************* PNG **********************/
     else if ( strncmp ( extension, "png", 3 ) == 0 || strncmp ( extension, "PNG", 3 ) == 0 ) {
         LOGGER_DEBUG ( "PNG image to read : " << name );
 
@@ -93,15 +93,15 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
         return LPIF.createLibpngImageToRead ( name, bbox, resx, resy );
     }
 
-    // JPEG 2000
+    /******************* JPEG 2000 ******************/
     else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
         LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
         return NULL;
     }
 
-    // Format inconnu en lecture
+    /* /!\ Format inconnu en lecture /!\ */
     else {
-        LOGGER_ERROR ( "Unknown image's extension (" << extension << "), in the file to read : " << name );
+        LOGGER_ERROR ( "Unhandled image's extension (" << extension << "), in the file to read : " << name );
         return NULL;
     }
 
@@ -119,7 +119,7 @@ FileImage* FileImageFactory::createImageToWrite (
 
     memcpy ( extension, pch + 1, 3 );
 
-    // TIFF
+    /********************* TIFF *********************/
     if ( strncmp ( extension, "tif", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to write : " << name );
 
@@ -130,9 +130,9 @@ FileImage* FileImageFactory::createImageToWrite (
                );
     }
 
-    // Format inconnu en écriture
+    /* /!\ Format inconnu en écriture /!\ */
     else {
-        LOGGER_ERROR ( "Unknown image's extension (" << extension << "), in the file to write : " << name );
+        LOGGER_ERROR ( "Unhandled image's extension (" << extension << "), in the file to write : " << name );
         return NULL;
     }
 

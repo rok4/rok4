@@ -68,7 +68,7 @@ class FileImage : public Image {
 protected:
     /**
      * \~french \brief Chemin du fichier image
-     * \~english \brief Path to th image file
+     * \~english \brief Path to the image file
      */
     char* filename;
     /**
@@ -235,7 +235,7 @@ public:
     /**
      * \~french
      * \brief Retourne la photométrie des données image (rgb, gray...)
-     * \return photométie
+     * \return photométrie
      * \~english
      * \brief Return data photometric (rgb, gray...)
      * \return photometric

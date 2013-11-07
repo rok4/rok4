@@ -42,6 +42,7 @@
 #include "Image.h"
 #include "lzwEncoder.h"
 #include "TiffHeader.h"
+#include "TiffEncoder.h"
 
 #include <iostream>
 #include <string.h> // Pour memcpy

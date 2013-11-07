@@ -132,7 +132,7 @@ private:
     std::ofstream output;  // tiff file output stream
 
     size_t BufferSize;
-    uint8_t* Buffer, *PNG_buffer;
+    uint8_t* Buffer, *zip_buffer;
     z_stream zstream;
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr       jerr;
