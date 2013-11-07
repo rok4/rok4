@@ -7,7 +7,7 @@ STRING(SUBSTRING ${version_line} 15 -1 version)
 if( ${version} STREQUAL "0.0.0" )
     if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
         FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml version_line REGEX "<!--TAG_VERSION-->")
-        STRING(REGEX REPLACE "<version>([0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?)</version><!--TAG_VERSION-->" "\\1" version "${version_line}" )
+        STRING(REGEX REPLACE "[ ]*<version>([0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?)</version>[ ]*<!--TAG_VERSION-->[ ]*" "\\1" version "${version_line}" )
     endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
 endif( ${version} STREQUAL "0.0.0" )
 
