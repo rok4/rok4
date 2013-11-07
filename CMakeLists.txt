@@ -2,30 +2,22 @@
 project(Rok4)
 #définit la version du projet
 #Lecture de la version de ROK4 dans le fichier du projet
-FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?")
 STRING(SUBSTRING ${version_line} 15 -1 version)
 if( ${version} STREQUAL "0.0.0" )
-        if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
-                EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" version ${pomversion})
-        endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
+    if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
+        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml version_line REGEX "<!--TAG_VERSION-->")
+        STRING(REGEX REPLACE "[ ]*<version>([0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?)</version>[ ]*<!--TAG_VERSION-->[ ]*" "\\1" version "${version_line}" )
+    endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
 endif( ${version} STREQUAL "0.0.0" )
+
 STRING(REPLACE "." ";" ROK4_VERSION ${version})
+STRING(REPLACE "." ";" BE4_VERSION ${version})
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-cmake_minimum_required(VERSION 2.6)
 
-#Lecture de la version de BE4 dans le fichier du projet
-FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README tmpbe4 REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-STRING(SUBSTRING ${tmpbe4} 15 -1 subtmpbe4)
-if( ${subtmpbe4} STREQUAL "0.0.0" )
-        if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
-                EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" subtmpbe4 ${pomversion})
-        endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
-endif( ${subtmpbe4} STREQUAL "0.0.0" )
-STRING(REPLACE "." ";" BE4_VERSION ${subtmpbe4})
+cmake_minimum_required(VERSION 2.6)
 
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 

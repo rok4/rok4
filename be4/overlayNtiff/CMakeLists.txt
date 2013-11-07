@@ -1,20 +1,10 @@
 #Récupère le nom du projet parent
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
+
 #Défini le nom du projet 
 project(overlayNtiff)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-#Lecture de la version dans le fichier README 
-if(NOT DEFINED BE4_VERSION)
-        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        if( ${subtmp} STREQUAL "0.0.0" )
-                if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-                        EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                        STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" subtmp ${pomversion})
-                endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-        endif( ${subtmp} STREQUAL "0.0.0" )
-        STRING(REPLACE "." ";" BE4_VERSION ${subtmp})
-endif(NOT DEFINED BE4_VERSION)
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
