@@ -44,7 +44,6 @@ endif(UNITTEST)
 include(ROK4Dependencies)
 
 configure_file(be4version.h.in be4version.h ESCAPE_QUOTES @ONLY)
-add_subdirectory(cache2work)
 add_subdirectory(createNodata)
 add_subdirectory(manageNodata)
 add_subdirectory(merge4tiff)
