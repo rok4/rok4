@@ -132,43 +132,6 @@ public:
 
     /**
      * \~french
-     * \brief Retourne une partie de l'image
-     * \details On définit la partie l'image en renseignant les coordonnées du pixel en haut à gauche, ainsi que les dimensions (en pixels) de la partie voulue.
-     * \param[in] offsetx coordonnée en X du pixel en haut à gauche de la partie de l'image voulue
-     * \param[in] offsety coordonnée en Y du pixel en haut à gauche de la partie de l'image voulue
-     * \param[in] w largeur en pixel de la partie de l'image voulue
-     * \param[in] l hauteur en pixel de la partie de l'image voulue
-     * \param[out] buffer buffer dans le quel stocké le résultat. Il doit être suffisemment grand.
-     * \return 0 en cas de succes, -1 sinon
-     */
-    int getTile ( int offsetx, int offsety, int w, int l, uint8_t* buffer ) {
-
-        int tileLineByteSize = w * getPixelByteSize();
-
-        if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-            uint8_t line[width * channels];
-            
-            for ( int y = 0; y < l; y++ ) {
-                getline (line, offsety + y);
-                memcpy ( buffer + y * tileLineByteSize, line + offsetx * channels, tileLineByteSize );
-            }
-
-        } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-
-            float line[width * channels];
-
-            for ( int y = 0; y < l; y++ ) {
-                getline (line, offsety + y);
-                memcpy ( buffer + y * tileLineByteSize, line + offsetx * channels, tileLineByteSize );
-            }
-
-        }
-        
-        return 1;
-    }
-
-    /**
-     * \~french
      * \brief Ecrit une image, à partir d'une image source
      * \details Toutes les informations nécessaires à l'écriture d'une image sont dans l'objet FileImage, sauf les données à écrire. On renseigne cela via une seconde image.
      * \param[in] pIn source des donnée de l'image à écrire

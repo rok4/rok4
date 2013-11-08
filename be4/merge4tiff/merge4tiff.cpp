@@ -522,7 +522,7 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
 
 /**
  * \~french
- * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé (cas flottant)
+ * \brief Remplit un buffer à partir d'une ligne d'une image et d'un potentiel masque associé
  * \details les pixels qui ne contiennent pas de donnée sont remplis avec la valeur de nodata
  * \param[in] BGI image de fond à lire
  * \param[out] image ligne de l'image en sortie

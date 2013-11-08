@@ -1,18 +1,16 @@
 #Défini le nom du projet 
 project(nom_projet)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 #Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
-	FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-	STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-	if( ${subtmp} STREQUAL "0.0.0" )
-                if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-                        EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                        STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" subtmp ${pomversion})
-                endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-        endif( ${subtmp} STREQUAL "0.0.0" )
-	STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?")
+STRING(SUBSTRING ${version_line} 15 -1 version)
+if( ${version} STREQUAL "0.0.0" )
+    if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
+        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml version_line REGEX "<!--TAG_VERSION-->")
+        STRING(REGEX REPLACE "<version>([0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?)</version><!--TAG_VERSION-->" "\\1" version "${version_line}" )
+    endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
+endif( ${version} STREQUAL "0.0.0" )
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
