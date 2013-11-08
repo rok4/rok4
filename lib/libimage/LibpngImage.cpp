@@ -228,7 +228,7 @@ template<typename T>
 int LibpngImage::_getline ( T* buffer, int line ) {
     
     for (int x = 0;  x < width * channels; x++) {
-            buffer[x] = (uint8_t) row_pointers[line][x];
+        buffer[x] = (uint8_t) row_pointers[line][x];
     }
     return width*channels;
 }
@@ -239,7 +239,7 @@ int LibpngImage::getline ( uint8_t* buffer, int line ) {
 
 int LibpngImage::getline ( float* buffer, int line ) {
     
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du PNG)
     uint8_t* buffer_t = new uint8_t[width*channels];
     getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );

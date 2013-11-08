@@ -92,7 +92,7 @@ void ReprojectedImage::initialize () {
 
                      /*   1024 possibilités de poids
                       * + poids pour 4 lignes, multiplexés
-                      * + extrait des 4 lignes sources, sur lesquelles appliqué les poids
+                      * + extrait des 4 lignes sources, sur lesquelles appliquer les poids
                       */
                      + kxSize * ( 1028 + 4*channels ) * sizeof ( float )
                      + kySize * ( 1028 + 4*channels ) * sizeof ( float );

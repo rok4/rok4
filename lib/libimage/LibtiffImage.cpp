@@ -399,7 +399,16 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
 }
 
 int LibtiffImage::getline ( uint8_t* buffer, int line ) {
-    return _getline ( buffer,line );
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        return _getline ( buffer,line );
+    } else { // float
+        /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
+         * On va copier le buffer flottant sur le buffer entier, de même taille*/
+        float floatline[width * channels];
+        _getline ( floatline, line );
+        memcpy ( buffer, floatline, width*channels*sizeof(float) );
+        return width*channels*sizeof(float);
+    }
 }
 
 int LibtiffImage::getline ( float* buffer, int line ) {
