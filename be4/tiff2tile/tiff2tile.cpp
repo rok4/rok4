@@ -63,7 +63,6 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "TiffReader.h"
 #include "FileImage.h"
 #include "TiledTiffWriter.h"
 #include "TiffNodataManager.h"

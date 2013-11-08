@@ -69,12 +69,6 @@ public:
      * \~english \brief Path to the image file
      */
     char* filename;
-    
-    /**
-     * \~french \brief Flux vers le fichier image, permettant la lecture des données
-     * \~english \brief Stream to image file, allowing to read data
-     */
-    FILE *input;
 
     /**
      * \~french \brief Largeur de l'image en pixel
@@ -144,33 +138,6 @@ public:
     int pixelSize;
 
     /**
-     * \~french \brief Indices des débuts des tuiles de l'image
-     * \~english \brief Image's tiles' indices
-     */
-    uint32_t *tilesOffsets;
-
-    /**
-     * \~french \brief Tailles des tuiles de l'image
-     * \~english \brief Image's tiles' sizes
-     */
-    uint32_t *tilesSizes;
-
-    /**
-     * \~french \brief Buffer temporaire pour une ligne
-     * \details Utilisé pour récupérer une ligne depuis les tuiles.
-     * \~english \brief Temporary buffer for a line
-     * \details Used to get line from tiles.
-     */
-    uint8_t *tmpLine;
-    /**
-     * \~french \brief Buffer temporaire pour une tuile
-     * \details Utilisé pour récupérer une tuile compressée et la décompresser.
-     * \~english \brief Temporary buffer for a tile
-     * \details Used to get a compressed line and uncompress it.
-     */
-    uint8_t *tmpTile;
-
-    /**
      * \~french \brief Nombre de tuiles mémorisées
      * \~english \brief Number of memorized tiles
      */
@@ -196,11 +163,14 @@ public:
      */
     int* memorizedIndex;
 
+    uint8_t* memorizeRawTile ( size_t& size, int tile );
+
 public:
     
-    int getRawTile ( uint8_t* buf, int tile );
-    int getEncodedTile ( uint8_t* buf, int tile );
-    int getLine ( uint8_t* buf, int line );
+    size_t getRawTile ( uint8_t* buf, int tile );
+    size_t getEncodedTile ( uint8_t* buf, int tile );
+    size_t getLine ( uint8_t* buf, int line );
+    size_t getLine ( float* buf, int line );
 
     TiledTiffReader ( const char* name );
 
@@ -270,9 +240,7 @@ public:
      * \brief Default destructor
      */
     ~TiledTiffReader() {
-        fclose ( input );
         for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
-        delete[] lineBuffer;
         delete[] memorizedTiles;
         delete[] memorizedIndex;
         delete[] filename;

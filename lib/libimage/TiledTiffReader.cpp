@@ -49,6 +49,12 @@
 #include <iostream>
 #include <string.h>
 #include "TiledTiffReader.h"
+#include "FileDataSource.h"
+#include "Decoder.h"
+
+static const uint8_t PNG_SIGNATURE[8] = {
+    137, 80, 78, 71, 13, 10, 26, 10
+}; 
 
 TiledTiffReader::TiledTiffReader ( const char* name ) {
 
@@ -83,48 +89,10 @@ TiledTiffReader::TiledTiffReader ( const char* name ) {
     tileWidthwise = width/tileWidth;
     tileHeightwise = height/tileHeight;
     tilesNumber = tileWidthwise * tileHeightwise;
-    
-    tilesOffsets = new uint32_t[tilesNumber];
-    tilesSizes = new uint32_t[tilesNumber];
-
-    /* La lecture de l'image se fera grâce aux index des tuiles, par un flux standard vers le fichier.
-     * On va pouvoir faire de nouveau contrôle pour vérifier qu'il s'agit bien d'une image type ROK
-     */
-    input = fopen ( filename,"rb" );
-    if ( input == NULL ) {
-        LOGGER_ERROR ( "Unable to open stream to the ROK4 image " << filename );
-    }
-
-    /* Contrôle de la taille du fichier : on sait qu'il y a au moins une en-tête de 2048 octets */
-    fseek ( input, 0, SEEK_END );
-    long file_size;
-    file_size=ftell ( input );
-    LOGGER_DEBUG ("ROK4 image's (" << filename << ") size '" << file_size );
-    if ( file_size < 2048 ) {
-        LOGGER_ERROR ( "The file is too short to be a ROK4 pyramid's image " << filename );
-    }
-    rewind ( input );
-
-    /* Récupération des indices et tailles de chaque tuile */
-    fseek ( input, ROK4_IMAGE_HEADER, SEEK_SET );
-    if ( fread ( tilesOffsets, sizeof ( uint32_t ), tilesNumber, input ) != tilesNumber ) {
-        LOGGER_ERROR ( "Cannot read tiles' offsets in the ROK4 image " << filename );
-    }
-    if ( fread ( tilesSizes  , sizeof ( uint32_t ), tilesNumber, input ) != tilesNumber ) {
-        LOGGER_ERROR ( "Cannot read tiles' sizes in the ROK4 image " << filename );
-    }
-
-    /* Contrôle de la cohhérences des index des tuiles et de la taille totale de l'image ROK4*/
-    if (tilesOffsets[tilesNumber-1] + tilesSizes[tilesNumber-1] != file_size) {
-        LOGGER_ERROR ( "ROK4 image '" << filename << "' is not valid : tiles' indices and sizes are not consistent");
-    }
 
     /* Initialisation des différents buffers : on choisit de mémoriser autant de tuile qu'il y en a dans le sens de la largeur
      * (pour faciliter la construction d'un ligne à partir des tuiles */
     memorySize = tileWidthwise;
-    
-    tmpLine = new uint8_t[pixelSize*width];
-    tmpTile = new uint8_t[pixelSize*tileWidth*tileHeight];
 
     memorizedTiles = new uint8_t*[memorySize];
     memset ( memorizedTiles, 0, memorySize*sizeof ( uint8_t* ) );
@@ -133,68 +101,150 @@ TiledTiffReader::TiledTiffReader ( const char* name ) {
     memset ( memorizedIndex, -1, memorySize*sizeof ( int ) );
 }
 
-int TiledTiffReader::getRawTile ( uint8_t* buf, int tile )
+uint8_t* TiledTiffReader::memorizeRawTile ( size_t& size, int tile )
 {
     if ( tile < 0 || tile >= tilesNumber ) {
         LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
-        return 0;
-    }
-    
-    int tileSize = tileWidth*tileHeight*pixelSize;
-    buf = new uint8_t[tileSize];
-    int index = tile%memorySize;
-    
-    if ( memorizedIndex[index] != tile ) {
-        /* la tuile n'est pas mémorisée, on doit la récupérer et la stocker dans memorizedTiles */
-        LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read and decompress it");
-        
-        if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[tileSize];
-        
-        int encodedSize = getEncodedTile ( tmpTile, tile );
-    }
-
-    memcpy(buf, memorizedTiles[tile%memorySize], tileSize );
-    
-    return tileSize;
-}
-    
-int TiledTiffReader::getEncodedTile ( uint8_t* buf, int tile )
-{
-    if ( tile < 0 || tile >= tilesNumber ) {
-        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
-        return 0;
-    }
-    
-    int tileSize = tilesSizes[tile];
-    buf = new uint8_t[tileSize];
-    
-    fseek ( input, tilesOffsets[tile], SEEK_SET );
-    if ( fread ( buf, sizeof ( uint8_t ), tileSize, input ) != tileSize ) {
-        LOGGER_ERROR ( "Cannot read tile number" << tile << " in the ROK4 image " << filename );
-        return 0;
-    }
-    
-    return tileSize;
-}
-
-int TiledTiffReader::getLine ( uint8_t* buf, int line )
-{/*
-    if ( offset > width ) offset = width;
-    if ( size > width - offset ) size = width - offset;
-
-    if (size == 0) {
+        size = 0;
         return NULL;
     }
+
+    size = tileWidth * tileHeight * pixelSize;
+
+    int index = tile%memorySize;
+
+    if ( memorizedIndex[index] != tile ) {
+        /* la tuile n'est pas mémorisée, on doit la récupérer et la stocker dans memorizedTiles */
+        LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read, decompress, and memorize it");
+
+        FileDataSource* encData = new FileDataSource(filename, ROK4_IMAGE_HEADER + tile*4, ROK4_IMAGE_HEADER + tilesNumber*4 + tile*4, "");
+
+        DataSource* decData;
+
+        if ( compression == COMPRESSION_NONE ) {
+            decData = encData;
+        }
+        else if ( compression == COMPRESSION_JPEG ) {
+            decData = new DataSourceDecoder<JpegDecoder> ( encData );
+        }
+        else if ( compression == COMPRESSION_LZW ) {
+            decData = new DataSourceDecoder<LzwDecoder> ( encData );
+        }
+        else if ( compression == COMPRESSION_PACKBITS ) {
+            decData = new DataSourceDecoder<PackBitsDecoder> ( encData );
+        }
+        else if ( compression == COMPRESSION_DEFLATE || compression == COMPRESSION_ADOBE_DEFLATE ) {
+            /* Avec une telle compression dans l'en-tête TIFF, on peut avoir :
+             *       - des tuiles compressée en deflate (format "officiel")
+             *       - des tuiles en PNG, format propre à ROK4
+             * Pour distinguer les deux cas (pas le même décodeur), on va tester la présence d'un en-tête PNG */
+            size_t tmpSize;
+            const uint8_t* header = encData->getData(tmpSize);
+            if (memcmp(PNG_SIGNATURE, header, 8)) {
+                decData = new DataSourceDecoder<DeflateDecoder> ( encData );
+            } else {
+                decData = new DataSourceDecoder<PngDecoder> ( encData );
+            }
+        }
+        else {
+            LOGGER_ERROR ( "Unhandled compression : " << compression );
+            return 0;
+        }
+
+        const uint8_t* data = decData->getData(size);
+
+        if (size == 0) {
+            LOGGER_ERROR("Unable to decompress tile " << tile);
+            return 0;
+        } else if (size != tileWidth * tileHeight * pixelSize) {
+            LOGGER_WARN("Raw tile size should have been " << tileWidth * tileHeight * pixelSize << ", and not " << size);
+        }
+
+        if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[tileWidth * tileHeight * pixelSize];
+        memcpy(memorizedTiles[index], data, size );
+        memorizedIndex[index] = tile;
+        
+        delete decData;
+    }
+
+    return memorizedTiles[index];
+}
+
+size_t TiledTiffReader::getRawTile ( uint8_t* buf, int tile )
+{
+    if ( tile < 0 || tile >= tilesNumber ) {
+        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
+        return 0;
+    }
+
+    size_t tileSize;
+
+    uint8_t* memoryPlace = memorizeRawTile(tileSize, tile);
+
+    buf = new uint8_t[tileSize];
+    memcpy(buf, memoryPlace, tileSize );
+
+    return tileSize;
+}
     
-    int xmin = offset / tileWidth;
-    int xmax = ( offset + size - 1 ) / tileWidth;
-    int firstTile = ( line / tileHeight ) * ( ( width + tileWidth - 1 ) / tileWidth ) + xmin; // tile number.
-    int tileLineSize = tileHeight*pixelSize;
-    int tileOffset = ( line % tileHeight ) * tileLineSize;
-    for ( int x = xmin; x <= xmax; x++ ) {
-        uint8_t *tile = getRawTile ( firstTile++ );
-        memcpy ( lineBuffer + tileLineSize*x, tile + tileOffset, tileLineSize );
-    }*/
-    return 0;
+size_t TiledTiffReader::getEncodedTile ( uint8_t* buf, int tile )
+{
+    if ( tile < 0 || tile >= tilesNumber ) {
+        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
+        return 0;
+    }
+    
+    FileDataSource encData(filename, ROK4_IMAGE_HEADER + tile*4, ROK4_IMAGE_HEADER + tilesNumber*4 + tile*4, "");
+    size_t tileSize = 0;
+
+    const uint8_t* data = encData.getData(tileSize);
+
+    if (tileSize == 0) {
+        LOGGER_ERROR("Unable to read encoded tile " << tile);
+        return 0;
+    }
+
+    buf = new uint8_t[tileSize];
+    memcpy(buf, data, tileSize);
+    
+    encData.releaseData();
+    
+    return tileSize;
+}
+
+size_t TiledTiffReader::getLine ( uint8_t* buf, int line )
+{    
+    int tileRow = line / tileHeight;
+    int tileLine = line % tileHeight;
+    int tileLineSize = tileWidth * pixelSize;
+    size_t tileSize;
+    
+    // le buffer est déjà alloue
+
+    // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
+    for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
+        uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
+        memcpy ( buf + tileCol * tileWidth * samplesperpixel, mem + tileLine * tileLineSize, tileLineSize );
+    }
+    
+    return width * pixelSize;
+}
+
+size_t TiledTiffReader::getLine ( float* buf, int line )
+{
+    int tileRow = line / tileHeight;
+    int tileLine = line % tileHeight;
+    int tileLineSize = tileWidth * pixelSize;
+    size_t tileSize;
+
+    // le buffer est déjà alloue
+
+    // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
+    for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
+        uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
+        memcpy ( buf + tileCol * tileWidth * samplesperpixel, mem + tileLine * tileLineSize, tileLineSize );
+    }
+
+    return width * pixelSize;
 }
 

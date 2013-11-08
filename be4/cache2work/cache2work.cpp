@@ -50,6 +50,7 @@
 #include "Format.h"
 #include "Logger.h"
 #include "TiledTiffReader.h"
+#include "FileImage.h"
 #include "../be4version.h"
 
 /**
@@ -129,7 +130,7 @@ void error ( std::string message, int errorCode ) {
 int main ( int argc, char **argv )
 {
     char* input = 0, *output = 0;
-    uint16_t compression = COMPRESSION_NONE;
+    Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
 
     /* Initialisation des Loggers */
@@ -160,15 +161,15 @@ int main ( int argc, char **argv )
                     error("Error in -c option", -1);
                 }
                 if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
-                    compression = COMPRESSION_NONE;
+                    compression = Compression::NONE;
                 } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
-                    compression = COMPRESSION_JPEG;
+                    compression = Compression::JPEG;
                 } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
-                    compression = COMPRESSION_LZW;
+                    compression = Compression::LZW;
                 } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
-                    compression = COMPRESSION_DEFLATE;
+                    compression = Compression::DEFLATE;
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
-                    compression = COMPRESSION_PACKBITS;
+                    compression = Compression::PACKBITS;
                 } else {
                     error ( "Unknown option : -" + argv[i][1], -1 );
                 }
@@ -198,15 +199,32 @@ int main ( int argc, char **argv )
     }
 
     TiledTiffReader R ( input );
+    SampleFormat::eSampleFormat sf;
 
-    R.print();
+    if (R.getBitsPerSample() == 32) {
+        sf = SampleFormat::FLOAT;
+    } else {
+        sf = SampleFormat::UINT;
+    }
 
-    uint8_t* tile;
+    FileImageFactory FIF;
+    FileImage* outputImage = FIF.createImageToWrite(output, BoundingBox<double>(0, 0, R.getWidth(), R.getHeight()), 1.0, 1.0, R.getWidth(), R.getHeight(), R.samplesperpixel, sf, R.bitspersample, Photometric::GRAY, compression);
 
-    int tileSize = R.getEncodedTile(tile, 1);
-    LOGGER_INFO("encoded tileSize " << tileSize);
+    if (outputImage == NULL) {
+        error (std::string("Cannot create image to write ") + output, -1);
+    }
 
-    R.close();
+    //uint8_t* buf = new uint8_t[R.height * R.width * R.getPixelSize()];
+    float* buff = new float[R.height * R.width * R.samplesperpixel];
+    size_t lineSize;
+
+    for (int lig = 0; lig < R.height; lig++) {
+        lineSize = R.getLine(buff + lig * R.width * R.samplesperpixel, lig);
+    }
+    
+    outputImage->writeImage(buff);
+
+    delete outputImage;
 
     return 0;
 }
