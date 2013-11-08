@@ -325,13 +325,25 @@ int main ( int argc, char **argv ) {
     int tilex = width / tilewidth;
     int tiley = height / tileheight;
 
-    size_t dataSize = tileheight*tilewidth*sourceImage->getPixelByteSize();
-    uint8_t* data = new uint8_t[dataSize];
+    int tileLineSize = tilewidth*sourceImage->getPixelByteSize();
+    int imageLineSize = width*sourceImage->getPixelByteSize();
+    
+    uint8_t lines[tileheight*imageLineSize];
+    uint8_t tile[tileheight*tileLineSize];
+    
 
     for ( int y = 0; y < tiley; y++ ) {
+        // On récupère toutes les lignes pour cette ligne de tuiles
+        for (int lig = 0; lig < tileheight; lig++) {
+            sourceImage->getline(lines + lig*imageLineSize, y*tileheight + lig);
+        }
         for ( int x = 0; x < tilex; x++ ) {
-            sourceImage->getTile ( x*tilewidth, y*tileheight, tilewidth, tileheight, data );
-            if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
+            // On constitue la tuile
+            for (int lig = 0; lig < tileheight; lig++) {
+                memcpy(tile + lig*tileLineSize, lines + lig*imageLineSize + x*tileLineSize, tileLineSize);
+            }
+            
+            if ( W.WriteTile ( x, y, tile, crop ) < 0 ) {
                 std::stringstream sstm;
                 sstm << x << "," << y;
                 error ( "Error while writting tile (" + sstm.str() + ")", 2);
