@@ -79,13 +79,14 @@ static uint16_t fromROK4SampleFormat ( SampleFormat::eSampleFormat sf ) {
     }
 }
 
-
 static Photometric::ePhotometric toROK4Photometric ( uint16_t ph ) {
     switch ( ph ) {
     case PHOTOMETRIC_MINISBLACK :
         return Photometric::GRAY;
     case PHOTOMETRIC_RGB :
         return Photometric::RGB;
+    case PHOTOMETRIC_YCBCR :
+        return Photometric::YCBCR;
     case PHOTOMETRIC_MASK :
         return Photometric::MASK;
     default :
@@ -99,6 +100,8 @@ static uint16_t fromROK4Photometric ( Photometric::ePhotometric ph ) {
         return PHOTOMETRIC_MINISBLACK;
     case Photometric::RGB :
         return PHOTOMETRIC_RGB;
+    case Photometric::YCBCR :
+        return PHOTOMETRIC_YCBCR;
     case Photometric::MASK :
         return PHOTOMETRIC_MINISBLACK;
     default :
@@ -158,7 +161,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         LOGGER_ERROR ( "Unable to open TIFF (to read) " << filename );
         return NULL;
     } else {
-        // Lecture de l'en-tête pour récupérer les informations sur l'image
+        /**************** DIMENSIONS GLOBALES ****************/
         if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
             LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
             return NULL;
@@ -169,6 +172,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             return NULL;
         }
 
+        /************ FORMAT DES PIXELS ET CANAUX ************/
         if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
             LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
             return NULL;
@@ -221,7 +225,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         }
     }
 
-    if ( tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG ) {
+    if ( planarconfig != PLANARCONFIG_CONTIG ) {
         LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
         return NULL;
     }
@@ -564,6 +568,5 @@ int LibtiffImage::writeLine ( float* buffer, int line) {
 
     return 0;
 }
-
 
 

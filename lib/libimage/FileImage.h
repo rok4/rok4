@@ -91,6 +91,12 @@ protected:
      * \~english \brief Number of bits per sample
      */
     int bitspersample;
+    
+    /**
+     * \~french \brief Taille d'un pixel en octet
+     * \~english \brief Byte pixel's size
+     */
+    int pixelSize;
 
     /** \~french
      * \brief Crée un objet FileImage à partir de tous ses éléments constitutifs
@@ -236,8 +242,8 @@ public:
      * \~english
      * \brief Return the pixel's byte size
      */
-    inline int getPixelByteSize () {
-        return bitspersample * channels / 8;
+    inline int getPixelSize () {
+        return pixelSize;
     }
 
     /**
@@ -334,4 +340,5 @@ public:
 
 
 #endif
+
 

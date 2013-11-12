@@ -42,7 +42,6 @@ add_subdirectory(pyramide)
 add_subdirectory(tiff2gray)
 add_subdirectory(tiff2tile)
 add_subdirectory(tiffck)
-add_subdirectory(untile)
 
 # Documentation Doxygen
 if(BUILD_DOC)

@@ -49,7 +49,7 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "TiledTiffReader.h"
+#include "Rok4Image.h"
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -97,7 +97,7 @@ void usage() {
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
-                  "     createNodata JpegTiled.tif -c zip ZipUntiled.tif\n" );
+                  "     cache2work JpegTiled.tif -c zip ZipUntiled.tif\n" );
 }
 
 /**
@@ -171,17 +171,17 @@ int main ( int argc, char **argv )
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
                     compression = Compression::PACKBITS;
                 } else {
-                    error ( "Unknown option : -" + argv[i][1], -1 );
+                    error ( "Unknown compression : " + argv[i][1], -1 );
                 }
                 break;
             default:
-                usage();
+                error ( "Unknown option : -" + argv[i][1] ,-1 );
             }
         } else {
             if ( input == 0 ) input = argv[i];
             else if ( output == 0 ) output = argv[i];
             else {
-                error ("Argument must specify one input file and one output file", -1);
+                error ("Argument must specify ONE input file and ONE output file", -1);
             }
         }
     }
@@ -198,32 +198,28 @@ int main ( int argc, char **argv )
         error ("Argument must specify one input file and one output file", -1);
     }
 
-    TiledTiffReader R ( input );
-    SampleFormat::eSampleFormat sf;
-
-    if (R.getBitsPerSample() == 32) {
-        sf = SampleFormat::FLOAT;
-    } else {
-        sf = SampleFormat::UINT;
+    Rok4ImageFactory R4IF;
+    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0.);
+    if (rok4image == NULL) {
+        error (std::string("Cannot create ROK4 image to read ") + input, -1);
     }
 
     FileImageFactory FIF;
-    FileImage* outputImage = FIF.createImageToWrite(output, BoundingBox<double>(0, 0, R.getWidth(), R.getHeight()), 1.0, 1.0, R.getWidth(), R.getHeight(), R.samplesperpixel, sf, R.bitspersample, Photometric::GRAY, compression);
+    FileImage* outputImage = FIF.createImageToWrite(
+        output, rok4image->getBbox(), rok4image->getResX(), rok4image->getResY(), rok4image->getWidth(), rok4image->getHeight(),
+        rok4image->channels, rok4image->getSampleFormat(), rok4image->getBitsPerSample(), rok4image->getPhotometric(), compression
+    );
 
     if (outputImage == NULL) {
         error (std::string("Cannot create image to write ") + output, -1);
     }
-
-    //uint8_t* buf = new uint8_t[R.height * R.width * R.getPixelSize()];
-    float* buff = new float[R.height * R.width * R.samplesperpixel];
-    size_t lineSize;
-
-    for (int lig = 0; lig < R.height; lig++) {
-        lineSize = R.getLine(buff + lig * R.width * R.samplesperpixel, lig);
-    }
     
-    outputImage->writeImage(buff);
+    LOGGER_DEBUG ( "Write" );
+    if (outputImage->writeImage(rok4image) < 0) {
+        error("Cannot write image", -1);
+    }
 
+    delete rok4image;
     delete outputImage;
 
     return 0;
