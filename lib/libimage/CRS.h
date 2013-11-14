@@ -432,6 +432,28 @@ public:
 
     /**
      * \~french
+     * \brief Retourne la définition complète du CRS dans la base proj4Code
+     * \return la définition du CRS
+     * \~english
+     * \brief Return the complete definition of the CRS from Proj registry
+     * \return CRS definition
+     */
+    std::string getProj4Def();
+    
+    /**
+     * \~french
+     * \brief Retourne la valeur d'un paramètre de la définition complète du CRS dans la base proj4Code
+     * \param[in] param le nom du paramètre
+     * \return la valeur du paramètre
+     * \~english
+     * \brief Return the value of a parameter in complete definition of the CRS from Proj registry
+     * \param[in] param parameter name
+     * \return parameter value
+     */
+    std::string getProj4Param( std::string paramName );
+    
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \~english
      * \brief Default destructor
