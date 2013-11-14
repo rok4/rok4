@@ -50,6 +50,8 @@ using namespace std;
 
 
 #include "Logger.h"
+#include "Format.h"
+#include "FileImage.h"
 #include <stdint.h>
 #include <tiff.h>
 #include "tiffio.h"
@@ -105,12 +107,12 @@ private:
      */
     uint16_t samplesperpixel;
 
-    
+
     /**
      * \~french \brief Nombre de canaux des couleurs du manager
      * \~english \brief Number of samples in manager colors
      */
-    uint16_t channels;
+    uint16_t maxChannels;
 
     /**
      * \~french \brief Couleur concerné par les modifications éventuelles
@@ -131,7 +133,7 @@ private:
      * \details Do we spread from image's edges to identify nodata pixels ?
      */
     bool touchEdges;
-    
+
     /**
      * \~french \brief Nouvelle couleur pour les pixels de donnée
      * \details Elle peut être la même que la couleur cible #targetValue. Dans ce cas, on ne touche pas aux pixels de donnée.
@@ -192,12 +194,12 @@ private:
      * \~french \brief Détermine si un pixel contient la valeur cible
      * \details Un pixel est considéré comme de la couleur cible s'il appartient à l'intervalle définit par #targetValue et #tolerance
      * \param[in] pix pixel à tester
-     * \return 
+     * \return
      *
      * \~english \brief Determine target value pixel
      * \param[in] pix pixel to test
      */
-    inline bool isTargetValue(T* pix);
+    inline bool isTargetValue ( T* pix );
 
     /**
      * \~french \brief Change la couleur des pixels de nodata
@@ -205,7 +207,7 @@ private:
      *
      * \param[in,out] IM image à modifier
      * \param[in] MSK masque à utiliser
-     * 
+     *
      * \~english \brief Switch color of nodata pixels
      * \param[in,out] IM image to modify
      * \param[in] MSK mask to use
@@ -290,29 +292,29 @@ public:
 
 template<typename T>
 TiffNodataManager<T>::TiffNodataManager ( uint16 channels, int* tv, bool touchEdges, int* dv, int* nv, int t ) :
-    channels ( channels ), touchEdges(touchEdges), tolerance(t) {
+    maxChannels ( channels ), touchEdges ( touchEdges ), tolerance ( t ) {
 
     targetValue = new T[channels];
     dataValue = new T[channels];
     nodataValue = new T[channels];
 
-    for (int i = 0; i < channels; i++) {
-        targetValue[i] = (T) tv[i];
-        dataValue[i] = (T) dv[i];
-        nodataValue[i] = (T) nv[i];
+    for ( int i = 0; i < channels; i++ ) {
+        targetValue[i] = ( T ) tv[i];
+        dataValue[i] = ( T ) dv[i];
+        nodataValue[i] = ( T ) nv[i];
     }
 
-    if ( memcmp ( tv,nv,channels*sizeof(int) ) ) {
+    if ( memcmp ( tv,nv,channels*sizeof ( int ) ) ) {
         newNodataValue = true;
     } else {
         // La nouvelle valeur de non-donnée est la même que la couleur cible : on ne change pas la couleur de non-donnée
         newNodataValue = false;
     }
 
-    if ( memcmp ( tv,dv,channels*sizeof(int) ) && touchEdges ) {
+    if ( touchEdges && memcmp ( tv,dv,channels*sizeof ( int ) ) ) {
         // Pour changer la couleur des données contenant la couleur cible, il faut avoir l'option "touche les bords".
         // Sinon, par définition, aucun pixel de la couleur cible est à considérer comme de la donnée.
-        newNodataValue = true;
+        removeTargetValue = true;
     } else {
         // La nouvelle valeur de donnée est la même que la couleur cible : on ne supprime donc pas la couleur cible des données
         removeTargetValue = false;
@@ -321,72 +323,65 @@ TiffNodataManager<T>::TiffNodataManager ( uint16 channels, int* tv, bool touchEd
 
 template<typename T>
 bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, char* outputMask ) {
-    if ( ! newNodataValue && ! removeTargetValue && ! outputMask) {
+    if ( ! newNodataValue && ! removeTargetValue && ! outputMask ) {
         LOGGER_INFO ( "Have nothing to do !" );
         return true;
     }
 
-    uint32 rowsperstrip;
-    uint16 bitspersample, photometric, compression , planarconfig, nb_extrasamples;
+    FileImageFactory FIF;
+    FileImage* sourceImage = FIF.createImageToRead(inputImage);
 
-    TIFF *TIFF_FILE = 0;
-
-    TIFF_FILE = TIFFOpen ( inputImage, "r" );
-    if ( !TIFF_FILE ) {
-        LOGGER_ERROR ( "Unable to open file for reading: " << inputImage );
+    if ( sourceImage == NULL )  {
+        LOGGER_ERROR ( "Cannot create the input image "<< inputImage );
         return false;
     }
-    if ( ! TIFFGetField ( TIFF_FILE, TIFFTAG_IMAGEWIDTH, &width )                            ||
-            ! TIFFGetField ( TIFF_FILE, TIFFTAG_IMAGELENGTH, &height )                       ||
-            ! TIFFGetField ( TIFF_FILE, TIFFTAG_BITSPERSAMPLE, &bitspersample )              ||
-            ! TIFFGetFieldDefaulted ( TIFF_FILE, TIFFTAG_PLANARCONFIG, &planarconfig )       ||
-            ! TIFFGetField ( TIFF_FILE, TIFFTAG_PHOTOMETRIC, &photometric )                  ||
-            ! TIFFGetFieldDefaulted ( TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel ) ||
-            ! TIFFGetField ( TIFF_FILE, TIFFTAG_COMPRESSION, &compression )                 ||
-            ! TIFFGetField ( TIFF_FILE, TIFFTAG_ROWSPERSTRIP, &rowsperstrip ) ) {
-        LOGGER_ERROR ( "Error reading file: " << inputImage );
-        return false;
-    }
+    
+    /* On mémorise certaines informations sur l'image en cours de traitement */
+    width = sourceImage->getWidth();
+    height = sourceImage->getHeight();
 
-    if ( planarconfig != 1 )  {
-        LOGGER_ERROR ( "Sorry : only single image plane as planar configuration is handled" );
-        return false;
-    }
-
-    if ( samplesperpixel > channels )  {
-        LOGGER_ERROR ( "The nodata manager is not adapted (samplesperpixel have to be " << channels <<
+    int bitspersample = sourceImage->getBitsPerSample();
+    Photometric::ePhotometric photometric = sourceImage->getPhotometric();
+    Compression::eCompression compression = sourceImage->getCompression();
+    SampleFormat::eSampleFormat sampleformat = sourceImage->getSampleFormat();
+    samplesperpixel = sourceImage->channels;
+    
+    if ( samplesperpixel > maxChannels )  {
+        LOGGER_ERROR ( "The nodata manager is not adapted (samplesperpixel have to be " << maxChannels <<
                        " or less) for the image " << inputImage << " (" << samplesperpixel << ")" );
         return false;
     }
+
+    sourceImage->print();
 
     /*************** Chargement de l'image ***************/
 
     T *IM  = new T[width * height * samplesperpixel];
 
+    LOGGER_DEBUG("We load input image into memory : " << width * height * samplesperpixel * sizeof(T) / 1024 << " kilobytes");
     for ( int h = 0; h < height; h++ ) {
-        if ( TIFFReadScanline ( TIFF_FILE, IM + width*samplesperpixel*h, h ) == -1 ) {
-            LOGGER_ERROR ( "Unable to read line to " + string ( inputImage ) );
-            return false;
-        }
+        sourceImage->getline(IM + width*samplesperpixel*h, h);
     }
 
-    TIFFClose ( TIFF_FILE );
+    delete sourceImage;
+
+    LOGGER_DEBUG("Premier pixel : " << (int)IM[0] << "," << (int)IM[1] << "," << (int)IM[2]);
 
     /************* Calcul du masque de données ***********/
 
     uint8_t *MSK = new uint8_t[width * height];
 
-    bool containNodata = identifyNodataPixels(IM, MSK);
+    bool containNodata = identifyNodataPixels ( IM, MSK );
 
     /*************** Modification des pixels *************/
 
-    // 'targetValue' data pixels are replaced by 'dataValue' pixels
     if ( removeTargetValue ) {
+        LOGGER_DEBUG("The 'targetValue' data pixels are replaced by 'dataValue' pixels");
         changeDataValue ( IM, MSK );
     }
 
-    // nodata pixels which touch edges are replaced by 'nodataValue' pixels
     if ( newNodataValue ) {
+        LOGGER_DEBUG("Nodata pixels which touch edges are replaced by 'nodataValue' pixels");
         changeNodataValue ( IM, MSK );
     }
 
@@ -394,76 +389,44 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 
     /* Seulement si on a modifié l'image. Si seule l'écriture du masque nous intéressait, on ne réecrit pas l'image,
      * même si un chemin d'image différent est fourni pour la sortie */
-    if (removeTargetValue || newNodataValue) {
+    if ( removeTargetValue || newNodataValue ) {
 
-        TIFF_FILE = TIFFOpen ( outputImage, "w" );
-        if ( !TIFF_FILE ) {
-            LOGGER_ERROR ( "Unable to open file for writting: " + string ( outputImage ) );
+        FileImage* destImage = FIF.createImageToWrite(
+            outputImage, BoundingBox<double>(0,0,0,0), -1, -1, width, height,
+            samplesperpixel, sampleformat, bitspersample, photometric, compression
+        );
+
+        if ( destImage == NULL )  {
+            LOGGER_ERROR ( "Cannot create the output image "<< outputImage );
             return false;
         }
-        if ( ! TIFFSetField ( TIFF_FILE, TIFFTAG_IMAGEWIDTH, width )                ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_IMAGELENGTH, height )              ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_BITSPERSAMPLE, bitspersample )     ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel ) ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_PHOTOMETRIC, photometric )         ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip )       ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig )       ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_COMPRESSION, compression ) ) {
-            LOGGER_ERROR ( "Error writting file: " +  string ( outputImage ) );
-            return false;
-        }
+        
+        LOGGER_DEBUG("We write the output image " << outputImage);
+        destImage->writeImage(IM);
 
-        T *LINEI = new T[width * samplesperpixel];
+        delete destImage;
 
-        // output image is written
-        for ( int h = 0; h < height; h++ ) {
-            memcpy ( LINEI, IM+h*width*samplesperpixel, width * samplesperpixel );
-            if ( TIFFWriteScanline ( TIFF_FILE, LINEI, h ) == -1 ) {
-                LOGGER_ERROR ( "Unable to write line to " + string ( outputImage ) );
-                return false;
-            }
-        }
-
-        TIFFClose ( TIFF_FILE );
-        delete[] LINEI;
     } else {
-        if (memcmp(inputImage, outputImage, sizeof(outputImage)))
-            LOGGER_WARN("The image have not be modified, the file '" << outputImage <<"' is not written");
+        if ( memcmp ( inputImage, outputImage, sizeof ( outputImage ) ) )
+            LOGGER_WARN ( "The image have not be modified, the file '" << outputImage <<"' is not written" );
     }
 
     /**************** Ecriture du masque ? ****************/
-    if (outputMask && containNodata) {
-        TIFF_FILE = TIFFOpen ( outputMask, "w" );
-        if ( !TIFF_FILE ) {
-            LOGGER_ERROR ( "Unable to open file for writting: " + string ( outputMask ) );
-            return false;
-        }
-        if ( ! TIFFSetField ( TIFF_FILE, TIFFTAG_IMAGEWIDTH, width )                ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_IMAGELENGTH, height )              ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_BITSPERSAMPLE, 8 )     ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_SAMPLESPERPIXEL, 1 ) ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT ) ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK )         ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_ROWSPERSTRIP, rowsperstrip )       ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_PLANARCONFIG, planarconfig )       ||
-             ! TIFFSetField ( TIFF_FILE, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE ) ) {
-            LOGGER_ERROR ( "Error writting file: " +  string ( outputMask ) );
+    if ( outputMask && containNodata ) {
+        FileImage* destMask = FIF.createImageToWrite(
+            outputMask, BoundingBox<double>(0,0,0,0), -1, -1, width, height,
+            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
+        );
+
+        if ( destMask == NULL )  {
+            LOGGER_ERROR ( "Cannot create the output mask "<< outputMask );
             return false;
         }
 
-        uint8_t *LINEM = new uint8_t[width];
+        LOGGER_DEBUG("We write the output mask " << outputMask);
+        destMask->writeImage(MSK);
 
-        // output image is written
-        for ( int h = 0; h < height; h++ ) {
-            memcpy ( LINEM, MSK+h*width, width);
-            if ( TIFFWriteScanline ( TIFF_FILE, LINEM, h ) == -1 ) {
-                LOGGER_ERROR ( "Unable to write line to " + string ( outputMask ) );
-                return false;
-            }
-        }
-        delete[] LINEM;
-
-        TIFFClose ( TIFF_FILE );
+        delete destMask;
     }
 
 
@@ -474,13 +437,13 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 }
 
 template<typename T>
-inline bool TiffNodataManager<T>::isTargetValue(T* pix) {
+inline bool TiffNodataManager<T>::isTargetValue ( T* pix ) {
     int pixint;
     int tvint;
-    for (int i = 0; i < samplesperpixel; i++) {
-        pixint = (int) pix[i];
-        tvint = (int) targetValue[i];
-        if (pixint < tvint - tolerance || pixint > tvint + tolerance) {
+    for ( int i = 0; i < samplesperpixel; i++ ) {
+        pixint = ( int ) pix[i];
+        tvint = ( int ) targetValue[i];
+        if ( pixint < tvint - tolerance || pixint > tvint + tolerance ) {
             return false;
         }
     }
@@ -488,39 +451,39 @@ inline bool TiffNodataManager<T>::isTargetValue(T* pix) {
 }
 
 template<typename T>
-bool TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
+bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
 
-    LOGGER_DEBUG("Identify nodata pixels...");
+    LOGGER_DEBUG ( "Identify nodata pixels..." );
     memset ( MSK, 255, width * height );
 
     bool containNodata = false;
 
-    if (touchEdges) {
-        LOGGER_DEBUG("\t...which touch edges");
+    if ( touchEdges ) {
+        LOGGER_DEBUG ( "\t...which touch edges" );
         // On utilise la couleur targetValue et on part des bords
         queue<int> Q;
 
-        // Initialisation : we identify front pixels which are lightGray
+        // Initialisation : we identify front pixels which are 'targetValue'
         for ( int pos = 0; pos < width; pos++ ) { // top
-            if ( isTargetValue( IM + samplesperpixel * pos ) ) {
+            if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
         for ( int pos = width* ( height-1 ); pos < width*height; pos++ ) { // bottom
-            if ( isTargetValue( IM + samplesperpixel * pos ) ) {
+            if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
         for ( int pos = 0; pos < width*height; pos += width ) { // left
-            if ( isTargetValue( IM + samplesperpixel * pos ) ) {
+            if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
         for ( int pos = width -1; pos < width*height; pos+= width ) { // right
-            if ( isTargetValue( IM + samplesperpixel * pos ) ) {
+            if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
@@ -540,28 +503,28 @@ bool TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
             int newpos;
             if ( pos % width > 0 ) {
                 newpos = pos - 1;
-                if ( MSK[newpos] && isTargetValue( IM + newpos*samplesperpixel ) ) {
+                if ( MSK[newpos] && isTargetValue ( IM + newpos*samplesperpixel ) ) {
                     MSK[newpos] = 0;
                     Q.push ( newpos );
                 }
             }
             if ( pos % width < width - 1 ) {
                 newpos = pos + 1;
-                if ( MSK[newpos] && isTargetValue( IM + newpos*samplesperpixel) ) {
+                if ( MSK[newpos] && isTargetValue ( IM + newpos*samplesperpixel ) ) {
                     MSK[newpos] = 0;
                     Q.push ( newpos );
                 }
             }
             if ( pos / width > 0 ) {
                 newpos = pos - width;
-                if ( MSK[newpos] && isTargetValue(IM + newpos*samplesperpixel) ) {
+                if ( MSK[newpos] && isTargetValue ( IM + newpos*samplesperpixel ) ) {
                     MSK[newpos] = 0;
                     Q.push ( newpos );
                 }
             }
             if ( pos / width < height - 1 ) {
                 newpos = pos + width;
-                if ( MSK[newpos] && isTargetValue(IM + newpos*samplesperpixel) ) {
+                if ( MSK[newpos] && isTargetValue ( IM + newpos*samplesperpixel ) ) {
                     MSK[newpos] = 0;
                     Q.push ( newpos );
                 }
@@ -569,11 +532,11 @@ bool TiffNodataManager<T>::identifyNodataPixels( T* IM, uint8_t* MSK ) {
         }
 
     } else {
-        LOGGER_DEBUG("\t..., all pixels in 'target color'");
+        LOGGER_DEBUG ( "\t..., all pixels in 'target color'" );
         // Tous les pixels de la couleur targetValue sont à considérer comme du nodata
 
         for ( int i = 0; i < width * height; i++ ) {
-            if ( isTargetValue( IM+i*samplesperpixel ) ) {
+            if ( isTargetValue ( IM+i*samplesperpixel ) ) {
                 containNodata = true;
                 MSK[i] = 0;
             }
@@ -589,7 +552,7 @@ void TiffNodataManager<T>::changeNodataValue ( T* IM, uint8_t* MSK ) {
 
     for ( int i = 0; i < width * height; i ++ ) {
         if ( ! MSK[i] ) {
-            memcpy ( IM+i*samplesperpixel,nodataValue,samplesperpixel*sizeof(T) );
+            memcpy ( IM+i*samplesperpixel,nodataValue,samplesperpixel*sizeof ( T ) );
         }
     }
 }
@@ -598,8 +561,8 @@ template<typename T>
 void TiffNodataManager<T>::changeDataValue ( T* IM, uint8_t* MSK ) {
 
     for ( int i = 0; i < width * height; i ++ ) {
-        if ( MSK[i] && isTargetValue(IM+i*samplesperpixel) ) {
-            memcpy ( IM+i*samplesperpixel,dataValue,samplesperpixel*sizeof(T) );
+        if ( MSK[i] && isTargetValue ( IM+i*samplesperpixel ) ) {
+            memcpy ( IM+i*samplesperpixel,dataValue,samplesperpixel*sizeof ( T ) );
         }
     }
 }

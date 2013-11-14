@@ -73,25 +73,25 @@ protected:
                 zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
             }
             error = deflate ( &zstream, Z_NO_FLUSH );
-            switch (error){
-                case Z_OK : 
-                    break;
-                case Z_MEM_ERROR :
-                    LOGGER_DEBUG("MEM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_STREAM_ERROR :
-                    LOGGER_DEBUG("STREAM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_VERSION_ERROR :
-                    LOGGER_DEBUG("VERSION_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                default :
-                    LOGGER_DEBUG("OTHER_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
+            switch ( error ) {
+            case Z_OK :
+                break;
+            case Z_MEM_ERROR :
+                LOGGER_DEBUG ( "MEM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_STREAM_ERROR :
+                LOGGER_DEBUG ( "STREAM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_VERSION_ERROR :
+                LOGGER_DEBUG ( "VERSION_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            default :
+                LOGGER_DEBUG ( "OTHER_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
             }
 //             if ( error != Z_OK ) {
 //                 deflateReset ( &zstream );

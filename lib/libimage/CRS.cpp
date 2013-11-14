@@ -84,10 +84,10 @@ bool isCrsProj4Compatible ( std::string crs ) {
     bool isCompatible;
     if ( pj ) isCompatible=true;
     else isCompatible=false;
-    
+
     pj_free ( pj );
     pj_ctx_free ( ctx );
-    
+
     return isCompatible;
 }
 
@@ -237,8 +237,8 @@ bool CRS::operator!= ( const CRS& crs ) const {
 
 
 BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geographicBBox ) {
-    BoundingBox<double> bbox(geographicBBox);
-    bbox.reproject("epsg:4326", proj4Code, 256);
+    BoundingBox<double> bbox ( geographicBBox );
+    bbox.reproject ( "epsg:4326", proj4Code, 256 );
     return bbox;
 }
 
@@ -249,8 +249,8 @@ BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny,
 
 
 BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > projectedBBox ) {
-    BoundingBox<double> bbox(projectedBBox);
-    bbox.reproject(proj4Code, "epsg:4326", 256);
+    BoundingBox<double> bbox ( projectedBBox );
+    bbox.reproject ( proj4Code, "epsg:4326", 256 );
     return bbox;
 }
 
@@ -319,29 +319,29 @@ BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, dou
 
 BoundingBox< double > CRS::cropBBoxGeographic ( BoundingBox< double > BBox ) {
     double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
-    if (BBox.xmin < definitionArea.xmin) {
+    if ( BBox.xmin < definitionArea.xmin ) {
         minx = definitionArea.xmin;
-    } 
-    if (BBox.xmax > definitionArea.xmax) {
+    }
+    if ( BBox.xmax > definitionArea.xmax ) {
         maxx = definitionArea.xmax;
     }
-    if (BBox.xmin > definitionArea.xmax || BBox.xmax < definitionArea.xmin) {
+    if ( BBox.xmin > definitionArea.xmax || BBox.xmax < definitionArea.xmin ) {
         minx = maxx = 0;
     }
-    if (BBox.ymin < definitionArea.ymin) {
+    if ( BBox.ymin < definitionArea.ymin ) {
         miny = definitionArea.ymin;
     }
-    if (BBox.ymax > definitionArea.ymax) {
+    if ( BBox.ymax > definitionArea.ymax ) {
         maxy = definitionArea.ymax;
     }
-    if (BBox.ymin > definitionArea.ymax || BBox.ymax < definitionArea.ymin) {
+    if ( BBox.ymin > definitionArea.ymax || BBox.ymax < definitionArea.ymin ) {
         miny = maxy = 0;
     }
     return BoundingBox<double> ( minx,miny,maxx,maxy );
 }
 
 BoundingBox< double > CRS::cropBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
-    return cropBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+    return cropBBoxGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
 std::string CRS::getProj4Def() {

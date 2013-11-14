@@ -71,15 +71,15 @@ protected:
 
             //On part sur une image source de largeur 100
             double x = -0.5 + 100 * double ( rand() ) / double ( RAND_MAX );
-            
+
             int xmin = K.weight ( W, l, x, 100 );
 
             double sum = 0;
             for ( int i = 0; i < l; i++ ) sum += W[i];
 
             int xmax = xmin + l - 1;
-            double nb_min = abs(x - xmin);
-            double nb_max = abs(x - xmax);
+            double nb_min = abs ( x - xmin );
+            double nb_max = abs ( x - xmax );
 
 
 //             cerr << sum - 1 << " " << l << " " << l2 << " " << x << " " << xmin << " " << ratio << endl ;

@@ -60,6 +60,8 @@
  * \~ \code
  * createNodata version X.X.X
  *
+ * Create an TIFF image, containing one monochrome tile
+ *
  * Usage: createNodata -n <VAL> [-c <VAL>] -p <VAL> [-t <VAL> <VAL>] -a <VAL> -s <VAL> -b <VAL> <OUTPUT FILE>
  *
  * Parameters:
@@ -92,7 +94,7 @@ void usage() {
 
     LOGGER_INFO ( "\ncreateNodata version " << BE4_VERSION << "\n\n" <<
 
-                  "Create an image, containing one monochrome tile\n\n" <<
+                  "Create an TIFF image, containing one monochrome tile\n\n" <<
 
                   "Usage: createNodata -n <VAL> [-c <VAL>] -p <VAL> [-t <VAL> <VAL>] -a <VAL> -s <VAL> -b <VAL> <OUTPUT FILE>\n\n" <<
 
@@ -144,7 +146,7 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 en cas de succès, -1 sinon
  ** \~english
  * \brief Main function for tool createNodata
- * \details All instrcutions are in this function.
+ * \details All instructions are in this function.
  * \param[in] argc parameters number
  * \param[in] argv parameters array
  * \return return code, 0 if success, -1 otherwise
@@ -261,12 +263,6 @@ int main ( int argc, char* argv[] ) {
     if ( photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG ) error ( "Gray jpeg not supported",-1 );
     if ( samplesperpixel == 4 && compression == COMPRESSION_JPEG ) error ( "Jpeg with alpha is unconsistent",-1 );
 
-    SampleType ST = SampleType ( bitspersample, sampleformat );
-
-    if ( ! ST.isSupported() ) {
-        error ( "Supported sample format are :\n" + ST.getHandledFormat(),-1 );
-    }
-
     // Conversion string->int[] du paramètre nodata
     int nodata[samplesperpixel];
     char* charValue = strtok ( strnodata,"," );
@@ -286,20 +282,22 @@ int main ( int argc, char* argv[] ) {
     int bytesperpixel = samplesperpixel*bitspersample/8;
     uint8_t data[imageheight*imagewidth*bytesperpixel];
 
-    if ( ST.isFloat() ) {
+    if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
         // Case float32
         float nodataFloat32[samplesperpixel];
         for ( int i = 0; i < samplesperpixel; i++ ) nodataFloat32[i] = ( float ) nodata[i];
 
         for ( int i = 0; i<imageheight*imagewidth; i++ )
             memcpy ( data+i*bytesperpixel, nodataFloat32, bytesperpixel );
-    } else if ( ST.isUInt8() ) {
+    } else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
         // Case int8
         uint8_t nodataUInt8[samplesperpixel];
         for ( int i = 0; i < samplesperpixel; i++ ) nodataUInt8[i] = ( uint8_t ) nodata[i];
 
         for ( int i = 0; i<imageheight*imagewidth; i++ )
             memcpy ( data+i*bytesperpixel, nodataUInt8, bytesperpixel );
+    } else {
+        error ( "Unknown sample type (sample format + bits per sample)",-1 );
     }
 
     TiledTiffWriter W ( output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,samplesperpixel,sampleformat );

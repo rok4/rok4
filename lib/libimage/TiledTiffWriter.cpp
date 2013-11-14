@@ -82,22 +82,23 @@ static const uint8_t PNG_HEADER[33] = {
 
 
 TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_t length, uint16_t photometric = PHOTOMETRIC_RGB,
-                                   uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t tilewidth = 256, uint32_t tilelength = 256, uint32_t bitspersample = 8, uint16_t samplesperpixel = 3, uint16_t sampleformat = SAMPLEFORMAT_UINT ) :
-    width ( width ), length ( length ), photometric ( photometric ), compression ( compression ), quality ( _quality ), tilewidth ( tilewidth ), tilelength ( tilelength ), bitspersample ( bitspersample ), samplesperpixel ( samplesperpixel ), sampleformat ( sampleformat ) {
-// input control
-    if ( width % tilewidth || length % tilelength ) std::cerr << "Image size must be a multiple of tile size" << std::endl;
+                                   uint16_t compression = COMPRESSION_NONE, int _quality = -1, uint32_t _tilewidth = 256, uint32_t _tileheight = 256, uint32_t bitspersample = 8, uint16_t samplesperpixel = 3, uint16_t sampleformat = SAMPLEFORMAT_UINT ) :
+    width ( width ), height ( length ), photometric ( photometric ), compression ( compression ), quality ( _quality ), tilewidth ( _tilewidth ), tileheight ( _tileheight ), bitspersample ( bitspersample ), samplesperpixel ( samplesperpixel ), sampleformat ( sampleformat )
+{
+    // input control
+    if ( width % _tilewidth || length % _tileheight ) std::cerr << "Image size must be a multiple of tile size" << std::endl;
     if ( photometric != PHOTOMETRIC_RGB && photometric != PHOTOMETRIC_MINISBLACK ) std::cerr << "Only Gray, RGB photometric is supported" << std::endl;
     if ( compression != COMPRESSION_NONE && compression != COMPRESSION_JPEG && compression != COMPRESSION_PNG && compression != COMPRESSION_LZW  && compression != COMPRESSION_DEFLATE  && compression != COMPRESSION_PACKBITS ) std::cerr << "Compression not supported" << std::endl;
 
     if ( photometric == PHOTOMETRIC_RGB && compression == COMPRESSION_JPEG ) photometric = PHOTOMETRIC_YCBCR;
 
-// output opening
+    // output opening
     output.open ( filename, std::ios_base::trunc | std::ios::binary );
     if ( !output ) std::cerr << "Unable to open output file" << std::endl;
 
-// numbers of tiles
-    tilex = width / tilewidth;
-    tiley = length / tilelength;
+    // numbers of tiles
+    tilex = width / _tilewidth;
+    tiley = length / _tileheight;
 
     // Choose default quality valu according to compression
     if ( compression == COMPRESSION_JPEG && ( quality < 0 || quality > 100 ) ) quality = 75;
@@ -111,7 +112,7 @@ TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_
     * ( ( uint16_t* ) ( p += 2 ) ) = 42;         // Tiff specification
     * ( ( uint32_t* ) ( p += 2 ) ) = 16;         // Offset of the IFD
 
-// write the number of entries in the IFD
+    // write the number of entries in the IFD
 
     // We can have 4 samples per pixel, each sample with the same size
     * ( ( uint16_t* ) ( p += 4 ) ) = bitspersample;
@@ -124,7 +125,7 @@ TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_
     else
         * ( ( uint16_t* ) ( p += 2 ) ) = 11;
 
-//  Offset of the IFD is here
+    //  Offset of the IFD is here
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFFTAG_IMAGEWIDTH; //
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;        //
     * ( ( uint32_t* ) ( p += 2 ) ) = 1;                //
@@ -171,12 +172,12 @@ TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_
     * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILEWIDTH;
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
     * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = tilewidth;
+    * ( ( uint32_t* ) ( p += 4 ) ) = _tilewidth;
 
     * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILELENGTH;
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
     * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = tilelength;
+    * ( ( uint32_t* ) ( p += 4 ) ) = _tileheight;
 
     * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILEOFFSETS;
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
@@ -212,22 +213,22 @@ TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_
     * ( ( uint32_t* ) ( p += 4 ) ) = 0;                // end of IFD
     output.write ( header, sizeof ( header ) );
 
-// variables initalizations
+    // variables initalizations
     TileOffset = new uint32_t[tilex*tiley];
     TileByteCounts = new uint32_t[tilex*tiley];
     memset ( TileOffset, 0, tilex*tiley*4 );
     memset ( TileByteCounts, 0, tilex*tiley*4 );
     position = sizeof ( header ) + 8*tilex*tiley;
 
-    tilelinesize = tilewidth*samplesperpixel*bitspersample/8;
-    rawtilesize = tilelinesize*tilelength;
+    tilelinesize = _tilewidth*samplesperpixel*bitspersample/8;
+    rawtilesize = tilelinesize*_tileheight;
 
     BufferSize = 2*rawtilesize;
     Buffer = new uint8_t[BufferSize];
 
-//  z compression initalization
+    //  z compression initalization
     if ( compression == COMPRESSION_PNG || compression == COMPRESSION_DEFLATE ) {
-        PNG_buffer = new uint8_t[rawtilesize + tilelength];
+        PNG_buffer = new uint8_t[rawtilesize + _tileheight];
         zstream.zalloc = Z_NULL;
         zstream.zfree  = Z_NULL;
         zstream.opaque = Z_NULL;
@@ -244,8 +245,8 @@ TiledTiffWriter::TiledTiffWriter ( const char *filename, uint32_t width, uint32_
         cinfo.dest->empty_output_buffer = empty_output_buffer;
         cinfo.dest->term_destination = term_destination;
 
-        cinfo.image_width  = tilewidth;
-        cinfo.image_height = tilelength;
+        cinfo.image_width  = _tilewidth;
+        cinfo.image_height = _tileheight;
         cinfo.input_components = 3;
         cinfo.in_color_space = JCS_RGB; // TODO : Jpeg gris
 
@@ -299,13 +300,13 @@ size_t TiledTiffWriter::computeLzwTile ( uint8_t *buffer, uint8_t *data ) {
 
 size_t TiledTiffWriter::computePackbitsTile ( uint8_t *buffer, uint8_t *data ) {
 
-    uint8_t* pkbBuffer = new uint8_t[tilelinesize*tilelength*2];
+    uint8_t* pkbBuffer = new uint8_t[tilelinesize*tileheight*2];
     size_t pkbBufferSize = 0;
     uint8_t* rawLine = new uint8_t[tilelinesize];
     int lRead = 0;
     pkbEncoder encoder;
     uint8_t * pkbLine;
-    for ( ; lRead < tilelength ; lRead++ ) {
+    for ( ; lRead < tileheight ; lRead++ ) {
         memcpy ( rawLine,data+lRead*tilelinesize,tilelinesize );
         size_t pkbLineSize = 0;
         pkbLine = encoder.encode ( rawLine, tilelinesize, pkbLineSize );
@@ -323,7 +324,7 @@ size_t TiledTiffWriter::computePackbitsTile ( uint8_t *buffer, uint8_t *data ) {
 
 size_t TiledTiffWriter::computePngTile ( uint8_t *buffer, uint8_t *data ) {
     uint8_t *B = PNG_buffer;
-    for ( unsigned int h = 0; h < tilelength; h++ ) {
+    for ( unsigned int h = 0; h < tileheight; h++ ) {
         *B++ = 0; // on met un 0 devant chaque ligne (spec png -> mode de filtrage simple)
         memcpy ( B, data + h*tilelinesize, tilelinesize );
         B += tilelinesize;
@@ -331,7 +332,7 @@ size_t TiledTiffWriter::computePngTile ( uint8_t *buffer, uint8_t *data ) {
 
     memcpy ( buffer, PNG_HEADER, sizeof ( PNG_HEADER ) );
     * ( ( uint32_t* ) ( buffer+16 ) ) = bswap_32 ( tilewidth );
-    * ( ( uint32_t* ) ( buffer+20 ) ) = bswap_32 ( tilelength );
+    * ( ( uint32_t* ) ( buffer+20 ) ) = bswap_32 ( tileheight );
     if ( samplesperpixel == 1 ) {
         buffer[25] = 0;    // gray
     } else if ( samplesperpixel == 3 ) {
@@ -347,7 +348,7 @@ size_t TiledTiffWriter::computePngTile ( uint8_t *buffer, uint8_t *data ) {
     zstream.next_out  = buffer + sizeof ( PNG_HEADER ) + 8;
     zstream.avail_out = 2*rawtilesize - 12 - sizeof ( PNG_HEADER ) - sizeof ( PNG_IEND );
     zstream.next_in   = PNG_buffer;
-    zstream.avail_in  = rawtilesize + tilelength;
+    zstream.avail_in  = rawtilesize + tileheight;
 
     if ( deflateReset ( &zstream ) != Z_OK ) return -1;
     if ( deflate ( &zstream, Z_FINISH ) != Z_STREAM_END ) return -1;
@@ -368,14 +369,14 @@ size_t TiledTiffWriter::computePngTile ( uint8_t *buffer, uint8_t *data ) {
 
 size_t TiledTiffWriter::computeDeflateTile ( uint8_t *buffer, uint8_t *data ) {
     uint8_t *B = PNG_buffer;
-    for ( unsigned int h = 0; h < tilelength; h++ ) {
+    for ( unsigned int h = 0; h < tileheight; h++ ) {
         memcpy ( B, data + h*tilelinesize, tilelinesize );
         B += tilelinesize;
     }
     zstream.next_out  = buffer;
     zstream.avail_out = 2*rawtilesize;
     zstream.next_in   = PNG_buffer;
-    zstream.avail_in  = rawtilesize + tilelength;
+    zstream.avail_in  = rawtilesize + tileheight;
 
     if ( deflateReset ( &zstream ) != Z_OK ) return -1;
     if ( deflate ( &zstream, Z_FINISH ) != Z_STREAM_END ) return -1;
@@ -393,9 +394,9 @@ size_t TiledTiffWriter::computeJpegTile ( uint8_t *buffer, uint8_t *data, bool c
     uint8_t* buffheight = new uint8_t[jpegBlockWidth*tilelinesize];
     int numLine = 0;
 
-    while ( numLine < tilelength ) {
+    while ( numLine < tileheight ) {
         if ( numLine % jpegBlockWidth == 0 ) {
-            int l = std::min ( ( uint32_t ) jpegBlockWidth,tilelength-numLine );
+            int l = std::min ( ( uint32_t ) jpegBlockWidth,tileheight-numLine );
             memcpy ( buffheight,data + numLine*tilelinesize,tilelinesize*l );
             if ( crop ) {
                 emptyWhiteBlock ( buffheight,l );

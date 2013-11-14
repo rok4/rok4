@@ -35,6 +35,16 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file TiffReader.cpp
+ ** \~french
+ * \brief Implémentation de la classe TiffReader
+ * \details Image physique, attaché à un fichier. Utilise la librairie libtiff.
+ ** \~english
+ * \brief Implement class TiffReader
+ * \details Physical image, linked to a file. Use libtiff library.
+ */
+
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
@@ -48,30 +58,29 @@ TiffReader::TiffReader ( const char* filename ) {
     }
 
     TIFFGetField ( input, TIFFTAG_IMAGEWIDTH, &width );
-    TIFFGetField ( input, TIFFTAG_IMAGELENGTH, &length );
+    TIFFGetField ( input, TIFFTAG_IMAGELENGTH, &height );
     TIFFGetField ( input, TIFFTAG_PHOTOMETRIC, &photometric );
 
-    uint16_t sampleperpixel;
     TIFFGetField ( input, TIFFTAG_BITSPERSAMPLE, &bitspersample );
     TIFFGetFieldDefaulted ( input, TIFFTAG_SAMPLESPERPIXEL, &sampleperpixel );
 
-    sampleSize = ( bitspersample * sampleperpixel ) / 8;
+    pixelSize = ( bitspersample * sampleperpixel ) / 8;
 
     if ( TIFFIsTiled ( input ) ) {
         TIFFGetField ( input, TIFFTAG_TILEWIDTH, &tileWidth );
-        TIFFGetField ( input, TIFFTAG_TILELENGTH, &tileLength );
-        BufferSize = 2*length/tileLength;
-        LineBuffer = new uint8_t[sampleSize*length];
+        TIFFGetField ( input, TIFFTAG_TILELENGTH, &tileHeight );
+        BufferSize = 2*height/tileHeight;
+        LineBuffer = new uint8_t[pixelSize*height];
     } else {
         BufferSize = 512;
-        tileWidth = tileLength = 0;
+        tileWidth = tileHeight = 0;
         LineBuffer = 0;
     }
 
     _Buffer = new uint8_t*[BufferSize];
     memset ( _Buffer, 0, BufferSize*sizeof ( uint8_t* ) );
-    Buffer = new uint8_t*[length];
-    memset ( Buffer, 0, length*sizeof ( uint8_t* ) );
+    Buffer = new uint8_t*[height];
+    memset ( Buffer, 0, height*sizeof ( uint8_t* ) );
     BIndex = new int[BufferSize];
     memset ( BIndex, -1, BufferSize*sizeof ( int ) );
     Buffer_pos = 0;
@@ -79,7 +88,7 @@ TiffReader::TiffReader ( const char* filename ) {
 
 uint8_t* TiffReader::getRawLine ( uint32_t line ) {
     if ( !Buffer[line] ) {
-        if ( !_Buffer[Buffer_pos] ) _Buffer[Buffer_pos] = new uint8_t[width*sampleSize];
+        if ( !_Buffer[Buffer_pos] ) _Buffer[Buffer_pos] = new uint8_t[width*pixelSize];
         if ( BIndex[Buffer_pos] != -1 ) Buffer[BIndex[Buffer_pos]] = 0;
         BIndex[Buffer_pos] = line;
         Buffer[line] = _Buffer[Buffer_pos];
@@ -94,7 +103,7 @@ uint8_t* TiffReader::getRawLine ( uint32_t line ) {
 
 uint8_t* TiffReader::getRawTile ( uint32_t tile ) {
     if ( !Buffer[tile] ) {
-        uint32_t tileSize = tileWidth*tileLength*sampleSize;
+        uint32_t tileSize = tileWidth*tileHeight*pixelSize;
         if ( !_Buffer[Buffer_pos] ) _Buffer[Buffer_pos] = new uint8_t[tileSize];
         if ( BIndex[Buffer_pos] != -1 ) Buffer[BIndex[Buffer_pos]] = 0;
         BIndex[Buffer_pos] = tile;
@@ -125,29 +134,29 @@ uint8_t* TiffReader::getEncodedTile ( uint32_t tile ) {
 }
 
 uint8_t* TiffReader::getLine ( uint32_t line, uint32_t offset, uint32_t size ) {
-    if ( offset > length ) offset = length;
-    if ( size > length - offset ) size = length - offset;
-    if ( tileWidth ) { // tilled tiff
+    if ( offset > height ) offset = height;
+    if ( size > height - offset ) size = height - offset;
+    if ( tileWidth ) { // tiled tiff
         int xmin = offset / tileWidth;
         int xmax = ( offset + size - 1 ) / tileWidth;
-        int n = ( line / tileLength ) * ( ( width + tileWidth - 1 ) / tileWidth ) + xmin; // tile number.
-        int tileLineSize = tileLength*sampleSize;
-        int tileOffset = ( line % tileLength ) * tileLineSize;
+        int n = ( line / tileHeight ) * ( ( width + tileWidth - 1 ) / tileWidth ) + xmin; // tile number.
+        int tileLineSize = tileHeight*pixelSize;
+        int tileOffset = ( line % tileHeight ) * tileLineSize;
         for ( int x = xmin; x <= xmax; x++ ) {
             uint8_t *tile = getRawTile ( n++ );
             memcpy ( LineBuffer + tileLineSize*x, tile + tileOffset, tileLineSize );
         }
-        return LineBuffer + offset*sampleSize;
+        return LineBuffer + offset*pixelSize;
     } else { // scanline tiff
-        return getRawLine ( line ) + offset*sampleSize;
+        return getRawLine ( line ) + offset*pixelSize;
     }
 }
 
-int TiffReader::getWindow ( int offsetx, int offsety, int w, int l, uint8_t *buffer ) {
-    for ( int y = 0; y < l; y++ ) {
-        uint8_t* data = getLine ( offsety + y, offsetx, w );
+int TiffReader::getWindow ( int offsetx, int offsety, int width, int height, uint8_t* buffer ) {
+    for ( int y = 0; y < height; y++ ) {
+        uint8_t* data = getLine ( offsety + y, offsetx, width );
         if ( !data ) return -1;
-        memcpy ( buffer + y*w*sampleSize, data, w*sampleSize );
+        memcpy ( buffer + y*width*pixelSize, data, width*pixelSize );
     }
     return 1;
 }

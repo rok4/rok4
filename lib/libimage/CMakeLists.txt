@@ -1,23 +1,10 @@
 #Défini le nom du projet 
 project(libimage)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-#Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
-        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        if( ${subtmp} STREQUAL "0.0.0" )
-                if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-                        EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                        STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" subtmp ${pomversion})
-                endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-        endif( ${subtmp} STREQUAL "0.0.0" )
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins
@@ -55,9 +42,11 @@ endif(DEBUG_BUILD)
 
 set(
     libimage_SRCS Palette.cpp Data.cpp TiffReader.cpp TiledTiffWriter.cpp Decoder.cpp
-    ExtendedCompoundImage.cpp LibtiffImage.cpp CompoundImage.cpp MirrorImage.cpp ReprojectedImage.cpp ResampledImage.cpp StyledImage.cpp EstompageImage.cpp MergeImage.cpp
+    FileImage.cpp LibtiffImage.cpp LibpngImage.cpp
+    ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp
+    MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
+    ExtendedCompoundImage.cpp CompoundImage.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
-    Kernel.cpp Interpolation.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp
 )
@@ -68,11 +57,12 @@ add_library(image STATIC ${libimage_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PKB_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR}  ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
+
 #Listes des bibliothèques à liées avec l'éxecutable
-set(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb)
+set(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png)
 target_link_libraries(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 ########################################
@@ -89,8 +79,7 @@ if(UNITTEST)
     ENABLE_TESTING()
 
     # Exécution des tests unitaires CppUnit
-    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} 
-  "tests/cppunit/CppUnit*.cpp" )
+    FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
     TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

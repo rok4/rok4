@@ -232,7 +232,7 @@ public:
      * \return CRS identifier
      */
     bool inline isDefine() {
-        return ( proj4Code.compare(NO_PROJ4_CODE) == 0);
+        return ( proj4Code.compare ( NO_PROJ4_CODE ) == 0 );
     }
 
     /**
@@ -258,7 +258,7 @@ public:
     std::string inline getProj4Code() {
         return proj4Code;
     }
-    
+
     /**
      * \~french
      * \brief Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
@@ -400,7 +400,7 @@ public:
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBox ( double minx, double miny, double maxx, double maxy );
-    
+
     /**
      * \~french
      * \brief Calcule la BoundingBox incluse dans le domaine de définition du CRS courant
@@ -429,7 +429,7 @@ public:
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBoxGeographic ( double minx, double miny, double maxx, double maxy );
-    
+
     /**
      * \~french
      * \brief Retourne la définition complète du CRS dans la base proj4Code

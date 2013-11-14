@@ -61,12 +61,10 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
 
     ratioX = resx / resX_src;
     ratioY = resy / resY_src;
-    
-    // Pour considérer les valeurs comme celles aux centres des pixels, on ramène les coordonnées au centre
 
-    
-    left = ( (bbox.xmin + 0.5*resx) - (image->getBbox().xmin + 0.5*resX_src) ) / resX_src;
-    top = ( (image->getBbox().ymax - 0.5*resY_src) - (bbox.ymax - 0.5*resy) ) / resY_src;
+    // Pour considérer les valeurs comme celles aux centres des pixels, on ramène les coordonnées au centre
+    left = ( ( bbox.xmin + 0.5*resx ) - ( image->getBbox().xmin + 0.5*resX_src ) ) / resX_src;
+    top = ( ( image->getBbox().ymax - 0.5*resY_src ) - ( bbox.ymax - 0.5*resy ) ) / resY_src;
 
     // On calcule le nombre de pixels sources à considérer dans l'interpolation, dans le sens des x et des y
     Kx = ceil ( 2 * K.size ( ratioX )-1E-7 );
@@ -85,7 +83,7 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
     /* -------------------- PLACE MEMOIRE ------------------- */
 
     // nombre d'éléments d'une ligne de l'image source arrondie au multiple de 4 supérieur.
-    int srcImgSize = 4* ( ( sourceImage->getWidth()*channels + 3 ) /4 );
+    int srcImgSize = 4* ( ( sourceImage->getWidth() *channels + 3 ) /4 );
     int srcMskSize = 4* ( ( sourceImage->getWidth() + 3 ) /4 );
 
     // nombre d'éléments d'une ligne de l'image calculée arrondie au multiple de 4 supérieur.
@@ -219,7 +217,7 @@ int ResampledImage::resampleSourceLine ( int line ) {
      */
     multiplex ( mux_src_image_buffer,
                 src_image_buffer[0], src_image_buffer[1], src_image_buffer[2], src_image_buffer[3],
-                sourceImage->getWidth()*sourceImage->channels );
+                sourceImage->getWidth() *sourceImage->channels );
 
 
     if ( useMask ) {
@@ -268,7 +266,7 @@ int ResampledImage::resampleSourceLine ( int line ) {
 }
 
 int ResampledImage::getline ( float* buffer, int line ) {
-    
+
     float weights[Ky];
 
     // On calcule les coefficient d'interpolation

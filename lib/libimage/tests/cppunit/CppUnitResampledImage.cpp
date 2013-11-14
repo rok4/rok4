@@ -70,22 +70,22 @@ protected:
             int channels = 1 + rand() %4;
             for ( int c = 0; c < channels; c++ ) color[c] = rand() %256;
             Image* image = new EmptyImage ( width, height, channels, color );
-            
+
             double xmin   = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
             double ymin    = 50 + 50 * double ( rand() ) /double ( RAND_MAX );
             double xmax  = width - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
             double ymax = height - 50 - 50 * double ( rand() ) /double ( RAND_MAX );
-            
+
             int rwidth = int ( ( xmax - xmin ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
             int rheight = int ( ( ymax - ymin ) * ( 0.5 + double ( rand() ) /double ( RAND_MAX ) ) );
 
-            double resx = (xmax - xmin) / (double) rwidth;
-            double resy = (ymax - xmin) / (double) rheight;
+            double resx = ( xmax - xmin ) / ( double ) rwidth;
+            double resy = ( ymax - xmin ) / ( double ) rheight;
 
             ResampledImage* R = new ResampledImage ( image, rwidth, rheight,
-                                                     resx, resy, BoundingBox<double>(xmin, ymin, xmax, ymax),
-                                                     Interpolation::CUBIC, false );
-            float buffer[R->getWidth()*R->channels];
+                    resx, resy, BoundingBox<double> ( xmin, ymin, xmax, ymax ),
+                    Interpolation::CUBIC, false );
+            float buffer[R->getWidth() *R->channels];
             for ( int i = 0; i < rheight; i++ ) {
                 R->getline ( buffer, i );
                 for ( int j = 0; j < rwidth; j++ )
@@ -128,8 +128,8 @@ protected:
         gettimeofday ( &BEGIN, NULL );
         for ( int i = 0; i < nb_iteration; i++ ) {
             Image* image = new EmptyImage ( 1300, 1000, channels, color );
-            ResampledImage* R = new ResampledImage ( image, 800, 600, 0.5, 0.5, BoundingBox<double>(0., 0., 800., 600.),
-                                                     Interpolation::KernelType ( kernel_type ), false );
+            ResampledImage* R = new ResampledImage ( image, 800, 600, 0.5, 0.5, BoundingBox<double> ( 0., 0., 800., 600. ),
+                    Interpolation::KernelType ( kernel_type ), false );
             for ( int l = 0; l < 600; l++ ) R->getline ( buffer, l );
             delete R;
         }

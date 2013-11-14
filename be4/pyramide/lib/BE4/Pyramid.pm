@@ -1274,7 +1274,7 @@ sub writeListPyramid {
             my ($level,$x,$y);
 
             if (! $self->ownMasks() && $directories[1] eq $self->{dir_mask}) {
-                # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceus de l'ancienne pyramide
+                # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
                 next;
             }            
             

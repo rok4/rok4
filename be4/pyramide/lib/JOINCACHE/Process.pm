@@ -137,7 +137,7 @@ Cache2work () {
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -rf ${TMP_DIR}/Untiled_PNG
     elif [  "$type" == "jpg"  ] ; then
-        convert $imgSrc __conv__ ${TMP_DIR}/$imgDst
+        convert $imgSrc __conv__ $opt ${TMP_DIR}/$imgDst
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi  
     else
         tiffcp __tcpI__ $imgSrc ${TMP_DIR}/$imgDst
@@ -503,22 +503,32 @@ sub transformImage {
     my $sourceImage = $node->getSource(0);
     my $format = $sourceImage->{sourcePyramid}->getFormatCode();
     my $sppSource = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
+    my $bps = $sourceImage->{sourcePyramid}->getBitsPerSample();
     my $LIST = $self->{list};
 
     #### Pretreatment
     if ($format =~ m/PNG/) {
         if ($sppSource == 4) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte -background none\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
         } elsif ($sppSource == 3) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColor\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
         } elsif ($sppSource == 1) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type Grayscale\"\n", $sourceImage->{img};
+            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
         } else {
             ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
             return FALSE;
         }
     } elsif ($format =~ m/JPG/) {
-        $code .= sprintf "Cache2work %s tmp_$outImgName %s jpg\n", $sourceImage->{img};
+        if ($sppSource == 4) {
+            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
+        } elsif ($sppSource == 3) {
+            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
+        } elsif ($sppSource == 1) {
+            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
+        } else {
+            ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
+            return FALSE;
+        }
     } else {
         $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
     }
@@ -601,20 +611,30 @@ sub mergeImages {
         # Pretreatment
         my $format = $sourceImage->{sourcePyramid}->getFormatCode();
         my $spp = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
+        my $bps = $sourceImage->{sourcePyramid}->getBitsPerSample();
 
         if ($format =~ m/PNG/) {
             if ($spp == 4) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-background none\"\n", $sourceImage->{img};
+                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
             } elsif ($spp == 3) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColor\"\n", $sourceImage->{img};
+                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
             } elsif ($spp == 1) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type Grayscale\"\n", $sourceImage->{img};
+                $code .= sprintf "Cache2work %s $inImgName png \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
             } else {
                 ERROR(sprintf "Samplesperpixel ($spp) not supported ");
                 return FALSE;
             }
         } elsif ($format =~ m/JPG/) {
-            $code .= sprintf "Cache2work %s $inImgName jpg\n", $sourceImage->{img};
+            if ($spp == 4) {
+                $code .= sprintf "Cache2work %s $inImgName jpg \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
+            } elsif ($spp == 3) {
+                $code .= sprintf "Cache2work %s $inImgName jpg \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
+            } elsif ($spp == 1) {
+                $code .= sprintf "Cache2work %s $inImgName jpg \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
+            } else {
+                ERROR (sprintf "Samplesperpixel (%s) not supported ", $spp);
+                return FALSE;
+            }
         } else {
             $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
         }

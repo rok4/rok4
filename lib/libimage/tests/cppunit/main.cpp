@@ -47,11 +47,10 @@
 #include "TimedTestListener.h"
 #include "XmlTimedTestOutputterHook.h"
 
-int main( int argc, char* argv[] )
-{
-  // Create the event manager and test controller
-  CPPUNIT_NS::TestResult controller;
-  TimedTestListener ttlistener;
+int main ( int argc, char* argv[] ) {
+    // Create the event manager and test controller
+    CPPUNIT_NS::TestResult controller;
+    TimedTestListener ttlistener;
 
     // Add a listener that colllects test result
     CPPUNIT_NS::TestResultCollector result;

@@ -3,18 +3,6 @@ SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(createNodata)
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-#Lecture de la version dans le fichier README 
-if(NOT DEFINED BE4_VERSION)
-        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "BE4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        if( ${subtmp} STREQUAL "0.0.0" )
-                if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-                        EXECUTE_PROCESS(COMMAND "mvn" "-f" "${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml" "help:evaluate" "-Dexpression=project.version" OUTPUT_VARIABLE pomversion)
-                        STRING(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?" subtmp ${pomversion})
-                endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../pom.xml )
-        endif( ${subtmp} STREQUAL "0.0.0" )
-        STRING(REPLACE "." ";" BE4_VERSION ${subtmp})
-endif(NOT DEFINED BE4_VERSION)
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
@@ -63,10 +51,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg proj logger lzw image)
+set(DEP_LIBRARY tiff zlib png jpeg proj logger lzw image)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

@@ -35,7 +35,8 @@ ELSE (USE_SYSTEM_LIB)
     NO_CMAKE_PATH
     NO_SYSTEM_ENVIRONMENT_PATH
     NO_CMAKE_SYSTEM_PATH
-    ) 
+    )
+  
 ENDIF (USE_SYSTEM_LIB)
 
 INCLUDE( "FindPackageHandleStandardArgs" )

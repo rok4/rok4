@@ -63,6 +63,10 @@
 
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
 
+    if (width == 0 || height == 0) {
+        LOGGER_ERROR("One grid's dimension is null");
+    }
+
     nbxReg = 1 + ( width-1 ) /stepInt;
     nbyReg = 1 + ( height-1 ) /stepInt;
 
@@ -77,8 +81,8 @@ Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width )
     nbx = nbxReg + 1;
     nby = nbyReg + 1;
 
-    endX = width - 1 - (nbxReg-1) * stepInt;
-    endY = height - 1 - (nbyReg-1) * stepInt;
+    endX = width - 1 - ( nbxReg-1 ) * stepInt;
+    endY = height - 1 - ( nbyReg-1 ) * stepInt;
 
     double resX = ( bbox.xmax - bbox.xmin ) / double ( width );
     double resY = ( bbox.ymax - bbox.ymin ) / double ( height );
@@ -118,8 +122,8 @@ inline void Grid::calculateDeltaY() {
     double min = gridY[0];
     double max = gridY[0];
     for ( int x = 1 ; x < nbx; x++ ) {
-        min = std::min(min, gridY[x]);
-        max = std::max(max, gridY[x]);
+        min = std::min ( min, gridY[x] );
+        max = std::max ( max, gridY[x] );
     }
 
     deltaY = max - min;
@@ -132,7 +136,7 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
     }
 
     // Mise à jour de la bbox
-    if (Ax > 0) {
+    if ( Ax > 0 ) {
         bbox.xmin = bbox.xmin*Ax + Bx;
         bbox.xmax = bbox.xmax*Ax + Bx;
     } else {
@@ -141,7 +145,7 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
         bbox.xmax = xmintmp*Ax + Bx;
     }
 
-    if (Ay > 0) {
+    if ( Ay > 0 ) {
         bbox.ymin = bbox.ymin*Ay + By;
         bbox.ymax = bbox.ymax*Ay + By;
     } else {
@@ -150,13 +154,29 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
         bbox.ymax = ymintmp*Ay + By;
     }
 
-    deltaY = deltaY * fabs(Ay);
+    deltaY = deltaY * fabs ( Ay );
     LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
 }
 
 double Grid::getRatioY()
 {
     double ratio = 0;
+
+    if (height == 1) {
+        /* Dans le cas d'une hauteur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la colonne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence ymax-ymin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridY[0];
+        double max = gridY[0];
+        for ( int x = 1 ; x < nbx; x++ ) {
+            min = std::min(min, gridY[x]);
+            max = std::max(max, gridY[x]);
+        }
+
+        double delta = max - min;
+        
+        return (bbox.ymax - bbox.ymin - delta);
+    }
 
     for ( int x = 0 ; x < nbx; x++ ) {
         ratio = __max (ratio, fabs( gridY[x] - gridY[nbx*(nby-1) + x] ) / (double) (height - 1));
@@ -168,6 +188,22 @@ double Grid::getRatioY()
 double Grid::getRatioX()
 {
     double ratio = 0;
+
+    if (width == 1) {
+        /* Dans le cas d'une largeur nulle, on ne peut pas faire la différence entre le premier et le dernier pixel de la ligne.
+         * On va donc utiliser la bbox. On doit cependant retrancher à la différence xmax-xmin les écarts dûs à la déformation engendrée par la reprojection
+         */
+        double min = gridX[0];
+        double max = gridX[0];
+        for ( int y = 1 ; y < nby; y++ ) {
+            min = std::min(min, gridX[y*nbx]);
+            max = std::max(max, gridX[y*nbx]);
+        }
+
+        double delta = max - min;
+
+        return (bbox.xmax - bbox.xmin - delta);
+    }
     
     for ( int y = 0 ; y < nby; y++ ) {
         ratio = __max (ratio, fabs( gridX[nbx*y] - gridX[nbx*(y+1) - 1] ) / (double) (width - 1));
@@ -256,7 +292,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
      * aux centres des pixels, et non au bords. On va donc reprojeter la bbox indépendemment.
      * On divise chaque côté de la bbox en la dimensions la plus grande.
      */
-    if ( bbox.reproject(pj_src, pj_dst) ) {
+    if ( bbox.reproject ( pj_src, pj_dst ) ) {
         LOGGER_ERROR ( "Erreur reprojection bbox" );
         pj_free ( pj_src );
         pj_free ( pj_dst );
@@ -283,9 +319,12 @@ int Grid::getline ( int line, float* X, float* Y ) {
     int dy = line / stepInt;
     double w = 0;
 
-    if ( dy == nbyReg - 1) {
-        if (endY == 0) {w = 0;}
-        else {w = ( (line%stepInt) ) / double ( endY );}
+    if ( dy == nbyReg - 1 ) {
+        if ( endY == 0 ) {
+            w = 0;
+        } else {
+            w = ( ( line%stepInt ) ) / double ( endY );
+        }
     } else {
         w = ( line%stepInt ) / double ( stepInt );
     }
@@ -294,27 +333,27 @@ int Grid::getline ( int line, float* X, float* Y ) {
 
     // Interpolation dans les sens des Y
     for ( int i = 0; i < nbx; i++ ) {
-        LX[i] = (1-w)*gridX[dy*nbx + i] + w*gridX[(dy+1) * nbx + i];
-        LY[i] = (1-w)*gridY[dy*nbx + i] + w*gridY[(dy+1) * nbx + i];
+        LX[i] = ( 1-w ) *gridX[dy*nbx + i] + w*gridX[ ( dy+1 ) * nbx + i];
+        LY[i] = ( 1-w ) *gridY[dy*nbx + i] + w*gridY[ ( dy+1 ) * nbx + i];
     }
 
     // Indice dans la grille du dernier pixel reprojetée car respecte le pas de base (dans le sens des x)
-    int lastRegularPixel = (nbxReg-1)*stepInt;
+    int lastRegularPixel = ( nbxReg-1 ) *stepInt;
 
     /* Interpolation dans le sens des X, sur la partie où la répartition des pixels reprojetés
      * est régulière (tous les stepInt pixels */
     for ( int i = 0; i <= lastRegularPixel; i++ ) {
         int dx = i / stepInt;
         double w = ( i%stepInt ) /double ( stepInt );
-        X[i] = ( 1-w )*LX[dx] + w*LX[dx+1];
-        Y[i] = ( 1-w )*LY[dx] + w*LY[dx+1];
+        X[i] = ( 1-w ) *LX[dx] + w*LX[dx+1];
+        Y[i] = ( 1-w ) *LY[dx] + w*LY[dx+1];
     }
 
-    /* Interpolation dans le sens des X, sur la partie où ladistance entre les deux pixels de la grille est différente */
+    /* Interpolation dans le sens des X, sur la partie où la distance entre les deux pixels de la grille est différente */
     for ( int i = 1; i <= endX; i++ ) {
         double w = i /double ( endX );
-        X[lastRegularPixel + i] = ( 1-w )*LX[nbxReg - 1] + w * LX[nbxReg];
-        Y[lastRegularPixel + i] = ( 1-w )*LY[nbxReg - 1] + w * LY[nbxReg];
+        X[lastRegularPixel + i] = ( 1-w ) *LX[nbxReg - 1] + w * LX[nbxReg];
+        Y[lastRegularPixel + i] = ( 1-w ) *LY[nbxReg - 1] + w * LY[nbxReg];
     }
 
     return width;
