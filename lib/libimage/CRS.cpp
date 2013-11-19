@@ -344,6 +344,39 @@ BoundingBox< double > CRS::cropBBoxGeographic ( double minx, double miny, double
     return cropBBoxGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
 }
 
+std::string CRS::getProj4Def() {
+   buildProj4Code();
+   projCtx ctx = pj_ctx_alloc();
+   projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + getProj4Code() +" +wktext" ).c_str() );
+   if ( !pj ) {
+       int err = pj_ctx_get_errno ( ctx );
+       char *msg = pj_strerrno ( err );
+       LOGGER_DEBUG("erreur d initialisation " << getProj4Code() << " " << msg);
+       pj_ctx_free ( ctx );
+       return "";
+   }
+   char * pjdef = pj_get_def( pj, 666 );
+   std::string def( pjdef ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
+   pj_dalloc(pjdef);
+   LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
+   pj_free ( pj );
+   pj_ctx_free ( ctx );
+   
+   return def;
+}
+
+std::string CRS::getProj4Param ( std::string paramName ) {
+    std::size_t pos = 0, find = 1, find_equal = 0;
+    pos = toLowerCase( getProj4Def() ).find( "+" + toLowerCase( paramName ) + "=" );
+    if ( pos <0 || pos >getProj4Def().size() ) {
+      return "";
+    }
+    find_equal = toLowerCase( getProj4Def() ).find( "=", pos );
+    find = toLowerCase( getProj4Def() ).find( " ", pos );
+    LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
+    return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
+}
+
 
 
 CRS::~CRS() {

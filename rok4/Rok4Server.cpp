@@ -383,6 +383,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
         }
     }
+    
+    image->setCRS(crs);
+    image->setBbox(bbox);
 
     if ( format=="image/png" ) {
         if ( layers.size() == 1 ) {
@@ -391,7 +394,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             return new PNGEncoder ( image,NULL );
         }
 
-    } else if ( format == "image/tiff" ) { // Handle compression option
+    } else if ( format == "image/tiff" || format == "image/geotiff" ) { // Handle compression option
+	bool isGeoTiff = (format == "image/geotiff");
+
         switch ( pyrType ) {
 
         case Format::TIFF_RAW_FLOAT32 :
@@ -399,46 +404,46 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         case Format::TIFF_LZW_FLOAT32 :
         case Format::TIFF_PKB_FLOAT32 :
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_FLOAT32, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, pyrType );
+            return TiffEncoder::getTiffEncoder ( image, pyrType, isGeoTiff );
         case Format::TIFF_RAW_INT8 :
         case Format::TIFF_ZIP_INT8 :
         case Format::TIFF_LZW_INT8 :
         case Format::TIFF_PKB_INT8 :
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, pyrType );
+            return TiffEncoder::getTiffEncoder ( image, pyrType, isGeoTiff );
         default:
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8 );
+            return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8, isGeoTiff );
         }
     } else if ( format == "image/jpeg" ) {
         return new JPEGEncoder ( image );

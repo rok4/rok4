@@ -51,74 +51,51 @@
 template <typename T>
 class TiffLZWEncoder : public TiffEncoder {
 protected:
-    Image *image;
-    int line;   // Ligne courante
-
     size_t rawBufferSize;
     T* rawBuffer;
-    size_t lzwBufferSize;
-    size_t lzwBufferPos;
-    uint8_t* lzwBuffer;
+    
+    virtual void prepareHeader(){
+	LOGGER_DEBUG("TiffLZWEncoder : preparation de l'en-tete");
+	sizeHeader = TiffHeader::headerSize ( image->channels );
+	header = new uint8_t[sizeHeader];
+	if ( image->channels==1 )
+	    if ( sizeof ( T ) == sizeof ( float ) ) {
+		memcpy( header, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, sizeHeader);
+	    } else {
+		memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_GRAY, sizeHeader);
+	    }
+	else if ( image->channels==3 )
+	    memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, sizeHeader);
+	else if ( image->channels==4 )
+	    memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, sizeHeader);
+	* ( ( uint32_t* ) ( header+18 ) )  = image->getWidth();
+	* ( ( uint32_t* ) ( header+30 ) )  = image->getHeight();
+	* ( ( uint32_t* ) ( header+102 ) ) = image->getHeight();
+	* ( ( uint32_t* ) ( header+114 ) ) = tmpBufferSize ;
+    }
+    
+    virtual void prepareBuffer(){
+	LOGGER_DEBUG("TiffLZWEncoder : preparation du buffer d'image");
+	int linesize = image->getWidth()*image->channels;
+	rawBuffer = new T[image->getHeight()*image->getWidth()*image->channels];
+	rawBufferSize = 0;
+	int lRead = 0;
+	for ( ; lRead < image->getHeight() ; lRead++ ) {
+	    image->getline ( rawBuffer + rawBufferSize, lRead );
+	    rawBufferSize += linesize;
+	}
+	rawBufferSize *= sizeof ( T );
+	lzwEncoder encoder;
+	tmpBuffer = encoder.encode ( ( uint8_t* ) rawBuffer,rawBufferSize, tmpBufferSize );
+	delete[] rawBuffer;
+	rawBuffer = NULL;
+    }
 
 public:
-    TiffLZWEncoder ( Image *image ) : image ( image ), line ( -1 ), rawBufferSize ( 0 ), lzwBufferSize ( 0 ),lzwBufferPos ( 0 ) , lzwBuffer ( NULL ), rawBuffer ( NULL ) {}
+    TiffLZWEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) , rawBufferSize ( 0 ), rawBuffer ( NULL ) {}
     ~TiffLZWEncoder() {
-        if ( lzwBuffer ) delete[] lzwBuffer;
-        delete image;
     }
-    size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth() *image->channels, dataToCopy=0;
-        if ( !lzwBuffer ) {
-            rawBuffer = new T[image->getHeight() *image->getWidth() *image->channels];
-            int lRead = 0;
-            for ( ; lRead < image->getHeight() ; lRead++ ) {
-                image->getline ( rawBuffer + rawBufferSize, lRead );
-                rawBufferSize += linesize;
-            }
-            rawBufferSize *= sizeof ( T );
-            lzwEncoder encoder;
-            lzwBuffer = encoder.encode ( ( uint8_t* ) rawBuffer,rawBufferSize, lzwBufferSize );
-            delete[] rawBuffer;
-            rawBuffer = NULL;
-        }
-
-        if ( line == -1 ) { // écrire le header tiff
-            // Si pas assez de place pour le header, ne rien écrire.
-            if ( size < header_size ) return 0;
-
-            // Ceci est du tiff avec une seule strip.
-            if ( image->channels==1 )
-                if ( sizeof ( T ) == sizeof ( float ) ) {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, header_size );
-                } else {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_GRAY, header_size );
-                }
-            else if ( image->channels==3 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, header_size );
-            else if ( image->channels==4 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, header_size );
-            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
-            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
-            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
-            * ( ( uint32_t* ) ( buffer+114 ) ) = lzwBufferSize;
-            offset = header_size;
-            line = 0;
-        }
-
-        if ( size - offset > 0 ) { // il reste de la place
-            if ( lzwBufferPos <= lzwBufferSize ) { // il reste de la donnée
-                dataToCopy = std::min ( size-offset, lzwBufferSize -lzwBufferPos );
-                memcpy ( buffer+offset,lzwBuffer+lzwBufferPos,dataToCopy );
-                lzwBufferPos+=dataToCopy;
-                offset+=dataToCopy;
-            }
-        }
-
-        return offset;
-    }
-    bool eof() {
-        return ( lzwBufferPos>=lzwBufferSize );
-    }
+   
 };
 
 #endif
