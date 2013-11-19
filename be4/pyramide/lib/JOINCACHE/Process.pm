@@ -126,23 +126,9 @@ my $BASHFUNCTIONS   = <<'FUNCTIONS';
 Cache2work () {
     local imgSrc=$1
     local imgDst=$2
-    local type=$3
-    local opt=$4
 
-    if [  "$type" == "png"  ] ; then
-        mkdir ${TMP_DIR}/Untiled_PNG
-        untile $imgSrc ${TMP_DIR}/Untiled_PNG/
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        montage __montageIn__ ${TMP_DIR}/Untiled_PNG/*.png __montageOut__ $opt ${TMP_DIR}/$imgDst
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        rm -rf ${TMP_DIR}/Untiled_PNG
-    elif [  "$type" == "jpg"  ] ; then
-        convert $imgSrc __conv__ $opt ${TMP_DIR}/$imgDst
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi  
-    else
-        tiffcp __tcpI__ $imgSrc ${TMP_DIR}/$imgDst
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    fi
+    work2cache __w2c__ $imgSrc ${TMP_DIR}/$imgDst
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
 OverlayNtiff () {
@@ -180,7 +166,7 @@ Work2cache () {
 
         tiff2tile ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        rm -f tiff2tile ${TMP_DIR}/$workMskName
+        rm -f ${TMP_DIR}/$workMskName
     fi
 }
 
@@ -507,31 +493,7 @@ sub transformImage {
     my $LIST = $self->{list};
 
     #### Pretreatment
-    if ($format =~ m/PNG/) {
-        if ($sppSource == 4) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
-        } elsif ($sppSource == 3) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
-        } elsif ($sppSource == 1) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName png \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
-        } else {
-            ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
-            return FALSE;
-        }
-    } elsif ($format =~ m/JPG/) {
-        if ($sppSource == 4) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
-        } elsif ($sppSource == 3) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
-        } elsif ($sppSource == 1) {
-            $code .= sprintf "Cache2work %s tmp_$outImgName jpg \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
-        } else {
-            ERROR (sprintf "Samplesperpixel (%s) not supported ", $sppSource);
-            return FALSE;
-        }
-    } else {
-        $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
-    }
+    $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
 
     my $sppFinal = $self->{pyramid}->getSamplesPerPixel();
 
@@ -613,31 +575,7 @@ sub mergeImages {
         my $spp = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
         my $bps = $sourceImage->{sourcePyramid}->getBitsPerSample();
 
-        if ($format =~ m/PNG/) {
-            if ($spp == 4) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
-            } elsif ($spp == 3) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
-            } elsif ($spp == 1) {
-                $code .= sprintf "Cache2work %s $inImgName png \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
-            } else {
-                ERROR(sprintf "Samplesperpixel ($spp) not supported ");
-                return FALSE;
-            }
-        } elsif ($format =~ m/JPG/) {
-            if ($spp == 4) {
-                $code .= sprintf "Cache2work %s $inImgName jpg \"-type TrueColorMatte -background none -depth %s\"\n", $sourceImage->{img}, $bps;
-            } elsif ($spp == 3) {
-                $code .= sprintf "Cache2work %s $inImgName jpg \"-type TrueColor -depth %s\"\n", $sourceImage->{img}, $bps;
-            } elsif ($spp == 1) {
-                $code .= sprintf "Cache2work %s $inImgName jpg \"-type Grayscale -depth %s\"\n", $sourceImage->{img}, $bps;
-            } else {
-                ERROR (sprintf "Samplesperpixel (%s) not supported ", $spp);
-                return FALSE;
-            }
-        } else {
-            $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
-        }
+        $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
 
         my $inMskPath = undef;
         if (exists $sourceImage->{msk}) {
@@ -701,7 +639,7 @@ sub configureFunctions {
     my $conf_oNt = "-c zip -m $mm -s $spp -p $ph -b $nd ";
 
     if ($mm eq "TRANSPARENCY") {
-        $conf_oNt .= "-t 0,255,0 ";
+        $conf_oNt .= "-t 255,255,255 ";
     }
 
     $configuredFunc =~ s/__oNt__/$conf_oNt/;
@@ -713,45 +651,22 @@ sub configureFunctions {
 
     my $imgHeight = $pyr->getTilesPerHeight * $tileHeight;
 
-    ######## tiffcp ########
+    ######## work2cache ########
 
-    my $conf_tcp = "-s -c zip";
-    $configuredFunc =~ s/__tcpI__/$conf_tcp/;
-
-    ######## convert ########
-
-    my $conf_convert = "-compress zip";
-    $configuredFunc =~ s/__conv__/$conf_convert/;
-
-    ######## configure montage ########
-    my $conf_montageIn = "";
-
-    $conf_montageIn .= sprintf "-geometry %sx%s ",$tileWidth, $tileHeight;
-    $conf_montageIn .= sprintf "-tile %sx%s",$pyr->getTilesPerWidth, $pyr->getTilesPerHeight;
-
-    $configuredFunc =~ s/__montageIn__/$conf_montageIn/g;
-
-    my $conf_montageOut = "";
-
-    $conf_montageOut .= sprintf "-depth %s ", $pyr->getBitsPerSample;
-
-    $conf_montageOut .= "-define tiff:rows-per-strip=$imgHeight -compress Zip";
-
-    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
+    my $conf_w2c = "-c zip";
+    $configuredFunc =~ s/__w2c__/$conf_w2c/;
 
     ######## congigure tiff2tile ########
     my $conf_t2t = "";
 
     # pour les images
     $conf_t2t .= sprintf "-c %s ", $pyr->getCompression();
-    $conf_t2t .= "-p $ph -t $tileWidth $tileHeight -s $spp ";
-    $conf_t2t .= sprintf "-b %s ", $pyr->getBitsPerSample();
-    $conf_t2t .= sprintf "-a %s ", $pyr->getSampleFormat();
+    $conf_t2t .= "-t $tileWidth $tileHeight";
 
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
 
     # pour les masques
-    $conf_t2t = "-c zip -p gray -t $tileWidth $tileHeight -b 8 -a uint -s 1";
+    $conf_t2t = "-c zip -t $tileWidth $tileHeight";
     $configuredFunc =~ s/__t2tM__/$conf_t2t/;
 
     return $configuredFunc;

@@ -100,13 +100,11 @@ use constant MERGE4TIFF_W => 1;
 # Constant: MERGENTIFF_W
 use constant MERGENTIFF_W => 4;
 # Constant: CACHE2WORK_PNG_W
-use constant CACHE2WORK_PNG_W => 3;
+use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
 use constant WGET_W => 35;
 # Constant: TIFF2TILE_W
-use constant TIFF2TILE_W => 0;
-# Constant: TIFFCP_W
-use constant TIFFCP_W => 0;
+use constant TIFF2TILE_W => 1;
 
 =begin nd
 Constant: BASHFUNCTIONS
@@ -179,24 +177,9 @@ Wms2work () {
 Cache2work () {
     local imgSrc=$1
     local workName=$2
-    local type=$3
-    
-    if [  "$type" == "png"  ] ; then
-        cp $imgSrc $workName.tif
-        mkdir $workName
-        untile $workName.tif $workName/
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        montage __montageIn__ $workName/*.png __montageOut__ $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        rm -rf $workName/
-    elif [  "$type" == "jpg"  ] ; then
-        convert $imgSrc __conv__ $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi        
-    else
-        tiffcp __tcpI__ $imgSrc $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    fi
 
+    cache2work __c2w__ $imgSrc $workName.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
 Work2cache () {
@@ -492,18 +475,8 @@ sub cache2work {
     my $cmd = "";
     my $weight = 0;
     
-    if ($self->{pyramid}->getCompression eq 'png') {
-        # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
-        #       - la copie du fichier dans le dossier temporaire
-        #       - le détuilage (untile)
-        #       - la fusion de tous les png en un tiff
-        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $fileName , $workBaseName);
-        $weight = CACHE2WORK_PNG_W;
-        
-    } else {
-        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s %s\n", $fileName, $workBaseName, $self->{pyramid}->getCompression);
-        $weight = TIFFCP_W;
-    }
+    $cmd = sprintf "Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName, $workBaseName;
+    $weight = CACHE2WORK_W;
     
     #### Rappatriement du masque de donnée (si présent) ####
     
@@ -513,7 +486,7 @@ sub cache2work {
         $workBaseName = $node->getWorkBaseName("BgM");
         
         $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $workBaseName);
-        $weight += TIFFCP_W;
+        $weight += CACHE2WORK_W;
     }
     
     return ($cmd,$weight);
@@ -845,12 +818,6 @@ sub configureFunctions {
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
 
     ######## montage ########
-    my $conf_montageIn = "";
-
-    $conf_montageIn .= sprintf "-geometry %sx%s",$self->{pyramid}->getTileWidth,$self->{pyramid}->getTileHeight;
-    $conf_montageIn .= sprintf " -tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
-    
-    $configuredFunc =~ s/__montageIn__/$conf_montageIn/;
     
     my $conf_montageOut = "";
     
@@ -867,25 +834,10 @@ sub configureFunctions {
 
     $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
 
-    ######## tiffcp ########
+    ######## cache2work ########
     
-    my $conf_tcp = "-s -c zip";
-    $configuredFunc =~ s/__tcpI__/$conf_tcp/;
-
-    ######## convert ########
-
-    my $conf_convert = "-compress zip";
-    if ($spp == 4) {
-        $conf_convert .= " -type TrueColorMatte -background none";
-    } elsif ($spp == 3) {
-        $conf_convert .= " -type TrueColor";
-    } elsif ($spp == 1) {
-        $conf_convert .= " -type Grayscale";
-    }
-
-    $conf_convert .= " -depth $bps";
-    
-    $configuredFunc =~ s/__conv__/$conf_convert/;
+    my $conf_c2w = "-c zip";
+    $configuredFunc =~ s/__c2w__/$conf_c2w/;
     
     ######## tiff2tile ########
     my $conf_t2t = "";
@@ -898,13 +850,12 @@ sub configureFunctions {
         $conf_t2t .= "-crop ";
     }
 
-    $conf_t2t .= "-p $ph -b $bps -a $sf -s $spp ";
     $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
     
     # pour les masques
-    $conf_t2t = sprintf "-c zip -p gray -t %s %s -b 8 -a uint -s 1",
+    $conf_t2t = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
     $configuredFunc =~ s/__t2tM__/$conf_t2t/;
     
