@@ -262,9 +262,6 @@ public:
      * \brief File image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------------ FileImage -------------" );
-        Image::print();
         LOGGER_INFO ( "\t- File name : " << filename );
         LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );

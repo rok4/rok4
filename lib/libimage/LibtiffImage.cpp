@@ -267,6 +267,12 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, uint16_t rowsperstrip ) {
 
+    if (compression == Compression::JPEG && photometric == Photometric::RGB)
+        photometric = Photometric::YCBCR;
+
+    if (compression != Compression::JPEG && photometric == Photometric::YCBCR)
+        photometric = Photometric::RGB;
+
     if ( width <= 0 || height <= 0 ) {
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
         return NULL;

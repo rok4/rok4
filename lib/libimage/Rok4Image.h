@@ -288,7 +288,18 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image ROK4, à partir d'une image source
+     * \details Toutes les informations nécessaires à l'écriture d'une image sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image. Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs contenant un pixel blanc.
+     * \param[in] pIn source des donnée de l'image à écrire
+     * \param[in] crop option de cropage, pour le jpeg
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( Image* pIn, bool crop );
+
+    /**
+     * \~french
      * \brief Ecrit une image ROK4, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture par buffer au format ROK4, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
@@ -300,6 +311,7 @@ public:
     /**
      * \~french
      * \brief Ecrit une image ROK4, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture par buffer au format ROK4, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
@@ -311,6 +323,7 @@ public:
     /**
      * \~french
      * \brief Ecrit une ligne d'image ROK4, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture par ligne au format ROK4, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \param[in] line ligne de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
@@ -323,6 +336,7 @@ public:
     /**
      * \~french
      * \brief Ecrit une ligne d'image ROK4, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture par ligne au format ROK4, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \param[in] line ligne de l'image à écrire
      * \return 0 en cas de succes, -1 sinon

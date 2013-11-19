@@ -37,6 +37,7 @@
 
 #ifndef LZWDECODER_H
 #define LZWDECODER_H
+
 #include <cstddef>
 #include <climits>
 #include <stdint.h>

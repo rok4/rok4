@@ -321,8 +321,30 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
         return NULL;
     }
 
+    if (compression == Compression::JPEG) {
+        if (photometric == Photometric::GRAY) {
+            LOGGER_ERROR("Gray JPEG is not handled");
+            return NULL;
+        }
+
+        if (sampleformat != SampleFormat::UINT || bitspersample != 8) {
+            LOGGER_ERROR("JPEG compression just handle 8-bits integer samples");
+            return NULL;
+        }
+    }
+    
     if (compression == Compression::JPEG && photometric == Photometric::RGB)
-        photometric == Photometric::YCBCR;
+        photometric = Photometric::YCBCR;
+
+    if (compression != Compression::JPEG && photometric == Photometric::YCBCR)
+        photometric = Photometric::RGB;
+
+    if (compression == Compression::PNG) {
+        if (sampleformat != SampleFormat::UINT || bitspersample != 8) {
+            LOGGER_ERROR("PNG compression just handle 8-bits integer samples");
+            return NULL;
+        }
+    }
 
     return new Rok4Image (
         width, height, resx, resy, channels, bbox, filename,
@@ -366,14 +388,14 @@ Rok4Image::Rok4Image (
 /* ------------------------------------------------------------------------------------------------ */
 
 uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
-{
+{    
     if ( tile < 0 || tile >= tilesNumber ) {
         LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
         size = 0;
         return NULL;
     }
 
-    size = tileWidth * tileHeight * pixelSize;
+    size = rawTileSize;
 
     int index = tile%memorySize;
 
@@ -384,6 +406,7 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         FileDataSource* encData = new FileDataSource(filename, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "");
 
         DataSource* decData;
+        size_t tmpSize;
 
         if ( compression == Compression::NONE ) {
             decData = encData;
@@ -402,11 +425,11 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
              *       - des tuiles compressée en deflate (format "officiel")
              *       - des tuiles en PNG, format propre à ROK4
              * Pour distinguer les deux cas (pas le même décodeur), on va tester la présence d'un en-tête PNG */
-            size_t tmpSize;
             const uint8_t* header = encData->getData(tmpSize);
             if (memcmp(PNG_HEADER, header, 8)) {
                 decData = new DataSourceDecoder<DeflateDecoder> ( encData );
             } else {
+                compression = Compression::PNG;
                 decData = new DataSourceDecoder<PngDecoder> ( encData );
             }
         }
@@ -415,17 +438,19 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
             return NULL;
         }
 
-        const uint8_t* data = decData->getData(size);
+        const uint8_t* data = decData->getData(tmpSize);
 
-        if (size == 0) {
+        if (tmpSize == 0) {
             LOGGER_ERROR("Unable to decompress tile " << tile);
             return NULL;
-        } else if (size != tileWidth * tileHeight * pixelSize) {
-            LOGGER_WARN("Raw tile size should have been " << tileWidth * tileHeight * pixelSize << ", and not " << size);
+        } else if (tmpSize != rawTileSize) {
+            /* Pour la compression deflate, la taille fait systématiquement 256 de plus que la taille théorique,
+             * on ne gardera donc pas les 256 DERNIERS octets de data */
+            // LOGGER_WARN("Raw tile size should have been " << rawTileSize << ", and not " << size);
         }
 
-        if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[tileWidth * tileHeight * pixelSize];
-        memcpy(memorizedTiles[index], data, size );
+        if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[rawTileSize];
+        memcpy(memorizedTiles[index], data, rawTileSize );
         memorizedIndex[index] = tile;
 
         delete decData;
@@ -444,6 +469,10 @@ int Rok4Image::getRawTile ( uint8_t* buf, int tile )
     size_t tileSize;
 
     uint8_t* memoryPlace = memorizeRawTile(tileSize, tile);
+    if (memoryPlace == NULL) {
+        LOGGER_ERROR ( "Cannot read raw tile " << tilesNumber );
+        return 0;
+    }
 
     buf = new uint8_t[tileSize];
     memcpy(buf, memoryPlace, tileSize );
@@ -479,7 +508,6 @@ int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
 int Rok4Image::getline ( uint8_t* buffer, int line ) {
     int tileRow = line / tileHeight;
     int tileLine = line % tileHeight;
-    int tileLineSize = tileWidth * pixelSize;
     size_t tileSize;
 
     // le buffer est déjà alloue
@@ -487,7 +515,7 @@ int Rok4Image::getline ( uint8_t* buffer, int line ) {
     // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
     for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
         uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
-        memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * tileLineSize, tileLineSize );
+        memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * rawTileLineSize, rawTileLineSize );
     }
 
     return width * pixelSize;
@@ -496,7 +524,6 @@ int Rok4Image::getline ( uint8_t* buffer, int line ) {
 int Rok4Image::getline ( float* buffer, int line ) {
     int tileRow = line / tileHeight;
     int tileLine = line % tileHeight;
-    int tileLineSize = tileWidth * pixelSize;
 
     // le buffer est déjà alloue
 
@@ -513,7 +540,11 @@ int Rok4Image::getline ( float* buffer, int line ) {
         size_t tileSize;
         for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
             uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
-            memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * tileLineSize, tileLineSize );
+            if (mem == NULL) {
+                LOGGER_ERROR ( "Cannot read raw tile " << tilesNumber );
+                return 0;
+            }
+            memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * rawTileLineSize, rawTileLineSize );
         }
     }
 
@@ -525,19 +556,25 @@ int Rok4Image::getline ( float* buffer, int line ) {
 /* ------------------------------------------------------------------------------------------------ */
 
 /** \todo Écriture d'images ROK4 en JPEG gris */
-int Rok4Image::writeImage ( Image* pIn )
-{    
+int Rok4Image::writeImage ( Image* pIn, bool crop )
+{
+    if (compression != Compression::JPEG && crop) {
+        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        crop = false;
+    }
+    
     if (! prepare()) {
         LOGGER_ERROR("Cannot write the ROK4 images header for " << filename);
         return -1;
     }
 
     int imageLineSize = width * channels;
+    int tileLineSize = tileWidth * channels;
     uint8_t tile[tileHeight*rawTileLineSize];
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        uint8_t lines[tileHeight*imageLineSize];
+        uint8_t* lines = new uint8_t[tileHeight*imageLineSize];
 
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
@@ -547,19 +584,20 @@ int Rok4Image::writeImage ( Image* pIn )
             for ( int x = 0; x < tileWidthwise; x++ ) {
                 // On constitue la tuile
                 for (int lig = 0; lig < tileHeight; lig++) {
-                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*rawTileLineSize, rawTileLineSize);
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
+                int tileInd = y*tileWidthwise + x;
 
-                    int tileInd = y*tileWidthwise + x;
-
-                    if (! writeTile(tileInd, tile, true)) {
-                        LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
-                        return -1;
-                    }
+                if (! writeTile(tileInd, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    return -1;
                 }
             }
         }
+        
+        delete [] lines;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        float lines[tileHeight*imageLineSize];
+        float* lines = new float[tileHeight*imageLineSize];
 
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
@@ -569,23 +607,29 @@ int Rok4Image::writeImage ( Image* pIn )
             for ( int x = 0; x < tileWidthwise; x++ ) {
                 // On constitue la tuile
                 for (int lig = 0; lig < tileHeight; lig++) {
-                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*rawTileLineSize, rawTileLineSize);
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
 
-                    int tileInd = y*tileWidthwise + x;
+                int tileInd = y*tileWidthwise + x;
 
-                    if (! writeTile(tileInd, tile, true)) {
-                        LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
-                        return -1;
-                    }
+                if (! writeTile(tileInd, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    return -1;
                 }
             }
         }
+        delete [] lines;
     }
 
     if (! close()) {
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
         return -1;
     }
+}
+
+int Rok4Image::writeImage ( Image* pIn )
+{
+    return writeImage(pIn, false);
 }
 
 bool Rok4Image::prepare()
@@ -685,7 +729,7 @@ bool Rok4Image::prepare()
     * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_SAMPLEFORMAT;
     * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
     * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = sampleformat;
+    * ( ( uint32_t* ) ( p += 4 ) ) = fromROK4SampleFormat(sampleformat);
 
     if ( photometric == Photometric::YCBCR ) {
         * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_YCBCRSUBSAMPLING;
@@ -739,7 +783,10 @@ bool Rok4Image::prepare()
     return true;
 }
 
-bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop ) {
+bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
+{
+    LOGGER_DEBUG("Ecriture de la tuile " << tileInd);
+    
     if ( tileInd > tilesNumber || tileInd < 0 ) {
         LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );
         return false;

@@ -51,7 +51,8 @@
  * \li PNG. Cette compression a la particularité de ne pas être un standard du TIFF. Une image dans ce format, propre à ROK4, contient des tuiles qui sont des images PNG indépendantes, avec les en-têtes PNG. Cela permet de renvoyer sans traitement une tuile au format PNG. Ce fonctionnement est calqué sur le format TIFF/JPEG.
  *
  * On va également définir la taille des tuiles, qui doit être cohérente avec la taille de l'image entière (on veut un nombre de tuiles entier).
- * 
+ *
+ * Vision libimage : FileImage -> Rok4Image
  * \~ \code
  * tiff2tile input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
  * \endcode
@@ -93,11 +94,8 @@ int white[4] = {255,255,255,255};
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
- * 
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
- * 
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
- *
  *      -d debug logger activation
  * 
  * Examples
@@ -123,12 +121,10 @@ void usage() {
                   "             lzw     Lempel-Ziv & Welch encoding\n" <<
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
-                  "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n\n" <<
-                  "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n\n" <<
-
-                  "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n\n" <<
-                  
-                  "     -d debug logger activation\n\n" <<
+                  "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
+                  "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
+                  "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
+                  "     -d : debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<
@@ -202,8 +198,9 @@ int main ( int argc, char **argv ) {
                 break;
             case 'c': // compression
                 if ( ++i == argc ) { error ( "Error in -c option", -1 ); }
-                if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
-                else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
+                if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
+                    compression = Compression::NONE;
+                } else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
                     compression = Compression::PNG;
                 } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
                     compression = Compression::JPEG;
@@ -246,33 +243,41 @@ int main ( int argc, char **argv ) {
 
     FileImageFactory FIF;
 
-    // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
-    if ( crop ) {
-        FileImage* tmpSourceImage = FIF.createImageToRead(input);
+    if (crop && compression != Compression::JPEG) {
+        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        crop = false;
+    }
 
-        if ( tmpSourceImage->getBitsPerSample() == 8 && tmpSourceImage->getSampleFormat() == SampleFormat::UINT ) {
-            TiffNodataManager<uint8_t> TNM ( tmpSourceImage->channels, white, true, fastWhite,white );
+    // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
+    /*if ( crop ) {
+        // On récupère les informations nécessaires pour appeler le nodata manager
+        FileImage* tmpSourceImage = FIF.createImageToRead(input);
+        int spp = tmpSourceImage->channels;
+        int bps = tmpSourceImage->getBitsPerSample();
+        SampleFormat::eSampleFormat sf = tmpSourceImage->getSampleFormat();
+        delete tmpSourceImage;
+
+        if ( bps == 8 && sf == SampleFormat::UINT ) {
+            TiffNodataManager<uint8_t> TNM ( spp, white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
                 error ( "Unable to treat white pixels in this image : " + std::string(input), -1 );
             }
         } else {
             LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " + std::string(input));
         }
-        
-        delete tmpSourceImage;
-    }
+    }*/
     
     FileImage* sourceImage = FIF.createImageToRead(input);
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
         output, BoundingBox<double>(0.,0.,0.,0.), 0., 0., sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->channels,
-        sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), sourceImage->getCompression(),
+        sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
         tileWidth, tileHeight
     );
 
     LOGGER_DEBUG ( "Write" );
-    if (rok4Image->writeImage(sourceImage) < 0) {
+    if (rok4Image->writeImage(sourceImage, crop) < 0) {
         error("Cannot write ROK4 image", -1);
     }
     

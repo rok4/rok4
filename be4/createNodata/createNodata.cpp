@@ -41,6 +41,7 @@
  * \~french \brief Création d'une image contenant une tuile monochrome
  * \~english \brief Create an image, containing one monochrome tile
  * \~french \details Cet outil est utilisé afin de mettre à disposition du serveur WMS/WMTS des tuiles de non-donnée, au même format que les dalles de données. Toutes les composantes de l'images doivent être fournies.
+ * Vision libimage : EmptyImage -> Rok4Image
  */
 
 #include "Rok4Image.h"
@@ -82,6 +83,7 @@
  *      -a sample format : uint (unsigned integer) or float
  *      -s samples per pixel : 1, 3 or 4
  *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
+ *      -d debug logger activation
  *
  * Examples
  *      - for orthophotography
@@ -115,7 +117,8 @@ void usage() {
                   "     -t tile size : width and height. Sizes are tile and image ones. Default value : 256 256.\n" <<
                   "     -a sample format : uint (unsigned integer) or float\n" <<
                   "     -s samples per pixel : 1, 3 or 4\n" <<
-                  "     -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n\n" <<
+                  "     -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
+                  "     -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<
@@ -185,8 +188,6 @@ int main ( int argc, char* argv[] ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-//  Nodata image dimensions are precised in parameters and image contains a single tile
-
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
@@ -230,19 +231,23 @@ int main ( int argc, char* argv[] ) {
                 else error ( "Unknown sample format : " + argv[i][1], -1 );
                 break;
             case 'b': // bitspersample
-                if ( i++ >= argc ) error ( "Error in option -b",-1 );
-                bitspersample = atoi ( argv[++i] );
+                if ( ++i >= argc ) error ( "Error in option -b",-1 );
+                bitspersample = atoi ( argv[i] );
                 break;
             case 's':
                 if ( ++i == argc ) error ( "Error in option -s",-1 );
-                samplesperpixel = atoi ( argv[++i] );
+                samplesperpixel = atoi ( argv[i] );
                 break;
             default:
                 error ( "Unknown option",-1 );
             }
         } else {
             if ( output == 0 ) output = argv[i];
-            else error ( "We have to specify only one output file path. What is " + std::string ( argv[i] ),-1 );
+            else error (
+                "We have to specify only one output file path (which is " +
+                std::string (output) + "). What is " + std::string ( argv[i] ),
+                -1
+            );
         }
     }
 
@@ -257,9 +262,9 @@ int main ( int argc, char* argv[] ) {
     if ( output == 0 ) error ( "Missing output file",-1 );
     if ( strnodata == 0 ) error ( "Missing nodata value",-1 );
 
-    if ( bitspersample == -1 ) error ( "Missing bits per sample",-1 );
+    if ( bitspersample <= 0 ) error ( "Missing bits per sample",-1 );
     if ( sampleformat == SampleFormat::UNKNOWN ) error ( "Missing sample format",-1 );
-    if ( samplesperpixel == -1 ) error ( "Missing samples per pixel",-1 );
+    if ( samplesperpixel <= 0 ) error ( "Missing samples per pixel",-1 );
     if ( photometric == Photometric::UNKNOWN ) error ( "Missing photometric",-1 );
 
     // Conversion string->int[] du paramètre nodata
@@ -277,23 +282,23 @@ int main ( int argc, char* argv[] ) {
         nodata[i] = atoi ( charValue );
     }
 
-    EmptyImage* nodataTile = new EmptyImage(width, height, samplesperpixel, nodata);
+    EmptyImage* nodataImage = new EmptyImage(width, height, samplesperpixel, nodata);
 
     Rok4ImageFactory R4IF;
-    Rok4Image* rok4tile = R4IF.createRok4ImageToWrite(
+    Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
         output, BoundingBox<double>(0.,0.,0.,0.), 0., 0., width, height, samplesperpixel,
         sampleformat, bitspersample, photometric, compression,
         width, height
     );
 
     LOGGER_DEBUG ( "Write" );
-    if (rok4tile->writeImage(nodataTile) < 0) {
+    if (nodataTile->writeImage(nodataImage) < 0) {
         error("Cannot write nodata tile", -1);
     }
 
     delete acc;
-    delete rok4tile;
     delete nodataTile;
+    delete nodataImage;
 
     return 0;
 }

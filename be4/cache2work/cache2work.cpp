@@ -40,6 +40,7 @@
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Convertit une image d'une pyramide ROK4 (TIFF tuilé) en une image TIFF, lisible avec LibtiffImage
  * \~french \details Certains formats sont propres aux spécifications d'une pyramide d'images ROK4 (format PNG).
+ * Vision libimage : Rok4Image -> FileImage
  * \~english \brief Convert a ROK4 pyramide's image (tiled TIFF) to a TIFF image, readable with LibtiffImage
  */
 
@@ -201,6 +202,7 @@ int main ( int argc, char **argv )
     Rok4ImageFactory R4IF;
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0.);
     if (rok4image == NULL) {
+        delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, -1);
     }
 
@@ -211,16 +213,22 @@ int main ( int argc, char **argv )
     );
 
     if (outputImage == NULL) {
+        delete rok4image;
+        delete acc;
         error (std::string("Cannot create image to write ") + output, -1);
     }
     
     LOGGER_DEBUG ( "Write" );
     if (outputImage->writeImage(rok4image) < 0) {
+        delete rok4image;
+        delete outputImage;
+        delete acc;
         error("Cannot write image", -1);
     }
 
     delete rok4image;
     delete outputImage;
+    delete acc;
 
     return 0;
 }
