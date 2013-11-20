@@ -74,6 +74,17 @@ void term_destination ( jpeg_compress_struct *cinfo ) {
 }
 
 /* ------------------------------------------------------------------------------------------------ */
+/* ------------------------- Fonctions pour écrire des TIFFTAG dans l'en-tête --------------------- */
+
+static inline void writeTIFFTAG (char** p,  uint16_t tag, uint16_t tagFormat, uint32_t card, uint32_t value ) {
+    * ( ( uint16_t* ) *p ) = tag;
+    * ( ( uint16_t* ) (*p + 2) ) = tagFormat;
+    * ( ( uint32_t* ) (*p + 4) ) = card;
+    * ( ( uint32_t* ) (*p + 8) ) = value;
+    *p += 12;
+}
+
+/* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------ CONSTANTES ------------------------------------------ */
 
 static const uint8_t PNG_IEND[12] = {
@@ -646,100 +657,67 @@ bool Rok4Image::prepare()
     memset ( header, 0, sizeof ( header ) );
 
     * ( ( uint16_t* ) ( p ) )      = 0x4949;    // Little Endian
-    * ( ( uint16_t* ) ( p += 2 ) ) = 42;        // Tiff specification
-    * ( ( uint32_t* ) ( p += 2 ) ) = 16;        // Offset of the IFD
+    * ( ( uint16_t* ) ( p + 2 ) ) = 42;        // Tiff specification
+    * ( ( uint32_t* ) ( p + 4 ) ) = 16;        // Offset of the IFD
+    p += 8;
 
     // write the number of entries in the IFD
 
     // We can have 4 samples per pixel, each sample with the same size
-    * ( ( uint16_t* ) ( p += 4 ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p += 2 ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p += 2 ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p += 2 ) ) = (uint16_t) bitspersample;
+    * ( ( uint16_t* ) ( p ) ) = (uint16_t) bitspersample;
+    * ( ( uint16_t* ) ( p + 2 ) ) = (uint16_t) bitspersample;
+    * ( ( uint16_t* ) ( p + 4 ) ) = (uint16_t) bitspersample;
+    * ( ( uint16_t* ) ( p + 6 ) ) = (uint16_t) bitspersample;
+    p += 8;
 
     if ( photometric == Photometric::YCBCR ) // Number of tags
-        * ( ( uint16_t* ) ( p += 2 ) ) = 12;
+        * ( ( uint16_t* ) p ) = 12;
     else
-        * ( ( uint16_t* ) ( p += 2 ) ) = 11;
+        * ( ( uint16_t* ) p ) = 11;
+    p += 2;
 
     //  Offset of the IFD is here
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFFTAG_IMAGEWIDTH;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) width;
+    writeTIFFTAG(&p, TIFFTAG_IMAGEWIDTH, TIFF_LONG, 1, width);
+    writeTIFFTAG(&p, TIFFTAG_IMAGELENGTH, TIFF_LONG, 1, height);
 
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_IMAGELENGTH;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) height;
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_BITSPERSAMPLE;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
     if ( channels == 1 ) {
-        * ( ( uint32_t* ) ( p += 2 ) ) = ( uint32_t ) 1;
-        * ( ( uint32_t* ) ( p += 4 ) ) = ( uint32_t ) bitspersample; // 8/32 = value for 1 sample per pixel
+        writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, 1, bitspersample);
     } else {
-        * ( ( uint32_t* ) ( p += 2 ) ) = channels;
-        * ( ( uint32_t* ) ( p += 4 ) ) = ( uint32_t ) 8; // 8 = pointer for 3 or 4 samples per pixel
+        writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, channels, 8);
     }
 
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_COMPRESSION;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) fromROK4Compression(compression);
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_PHOTOMETRIC;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) fromROK4Photometric(photometric);
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_SAMPLESPERPIXEL;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) channels;
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILEWIDTH;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) tileWidth;
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILELENGTH;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) tileHeight;
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILEOFFSETS;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = (uint32_t) tilesNumber;
+    writeTIFFTAG(&p, TIFFTAG_COMPRESSION, TIFF_SHORT, 1, fromROK4Compression(compression));
+    writeTIFFTAG(&p, TIFFTAG_PHOTOMETRIC, TIFF_SHORT, 1, fromROK4Photometric(photometric));
+    writeTIFFTAG(&p, TIFFTAG_SAMPLESPERPIXEL, TIFF_SHORT, 1, channels);
+    writeTIFFTAG(&p, TIFFTAG_TILEWIDTH, TIFF_LONG, 1, tileWidth);
+    writeTIFFTAG(&p, TIFFTAG_TILELENGTH, TIFF_LONG, 1, tileHeight);
+    
     if ( tilesNumber == 1 ) {
         /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
          * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
          * Voilà pourquoi on ajoute 8 à ROK4_IMAGE_HEADER_SIZE : 4 pour le TileOffset et 4 pour le TileByteCount.
          */
-        * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) ROK4_IMAGE_HEADER_SIZE + 8;
+        writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 8);
     } else {
-        * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) ROK4_IMAGE_HEADER_SIZE;
+        writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE);
     }
 
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_TILEBYTECOUNTS;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_LONG;
-    * ( ( uint32_t* ) ( p += 2 ) ) = (uint32_t) tilesNumber;
-    * ( ( uint32_t* ) ( p += 4 ) ) = (uint32_t) ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber;
-
-    * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_SAMPLEFORMAT;
-    * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
-    * ( ( uint32_t* ) ( p += 2 ) ) = 1;
-    * ( ( uint32_t* ) ( p += 4 ) ) = fromROK4SampleFormat(sampleformat);
+    // Dans le cas d'un tuile unique, on vidra écraser la valeur mise ici avec directement sa taille
+    writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
+    
+    writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
 
     if ( photometric == Photometric::YCBCR ) {
-        * ( ( uint16_t* ) ( p += 4 ) ) = TIFFTAG_YCBCRSUBSAMPLING;
-        * ( ( uint16_t* ) ( p += 2 ) ) = TIFF_SHORT;
-        * ( ( uint32_t* ) ( p += 2 ) ) = 2;
-        * ( ( uint16_t* ) ( p += 4 ) ) = 2;
-        * ( ( uint16_t* ) ( p + 2 ) )  = 2;
+        * ( ( uint16_t* ) ( p ) ) = TIFFTAG_YCBCRSUBSAMPLING;
+        * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
+        * ( ( uint32_t* ) ( p + 4 ) ) = 2;
+        * ( ( uint16_t* ) ( p + 8 ) ) = 2;
+        * ( ( uint16_t* ) ( p + 10 ) )  = 2;
+        p += 12;
     }
 
-    * ( ( uint32_t* ) ( p += 4 ) ) = 0;                // end of IFD
+    * ( ( uint32_t* ) ( p ) ) = 0;                // end of IFD
+    p += 4;
     output.write ( header, sizeof ( header ) );
 
     // variables initalizations
@@ -817,6 +795,7 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     if ( size == 0 ) return false;
 
     if ( tilesNumber == 1 ) {
+        // On écrit la taille de la tuile unique directemet dans l'en-tête, après le tag TIFFTAG_TILEBYTECOUNTS
         output.seekp ( 134 );
         uint32_t Size[1];
         Size[0] = ( uint32_t ) size;
