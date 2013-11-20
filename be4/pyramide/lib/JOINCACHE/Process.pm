@@ -127,7 +127,7 @@ Cache2work () {
     local imgSrc=$1
     local imgDst=$2
 
-    work2cache __w2c__ $imgSrc ${TMP_DIR}/$imgDst
+    cache2work __c2w__ $imgSrc ${TMP_DIR}/$imgDst
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -342,7 +342,7 @@ Function: treatImage
 
 3 possibilities:
     - the node owns just one source image and is compatible with the final cache -> we write a symbolic link : <makeLink>.
-    - the node owns just one source image and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts : <transformImage>.
+    - the node owns just one source image and is not compatible with the final cache -> we have just to convert image : compression and samples per pixel, commands are written in scripts : <mergeImages>.
     - the node owns several source images -> we use tool 'overlayNtiff', commands are written in scripts : <mergeImages>.
 
 Parameters (list):
@@ -381,7 +381,7 @@ sub treatImage {
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it.
-            if ( ! $self->transformImage($node) ) {
+            if ( ! $self->mergeImages($node) ) {
                 ERROR(sprintf "Cannot transform the image");
                 return FALSE;
             }
@@ -470,59 +470,11 @@ sub makeLink {
 }
 
 =begin nd
-Function: transformImage
-
-Write commands in the current script to transform an image in an other format, in the final cache. Can change, compression and samples per pixel. Mask is not treated. Code is store into the node.
-
-Returns:
-    A boolean, TRUE if success, FALSE otherwise.
-
-Parameters (list):
-    node - <Node> - Node to treat    
-=cut
-sub transformImage {
-    my $self = shift;
-    my $node = shift;
-
-    my $code = '';
-    my $outImgName = $node->getWorkName("I");
-    my $sourceImage = $node->getSource(0);
-    my $format = $sourceImage->{sourcePyramid}->getFormatCode();
-    my $sppSource = $sourceImage->{sourcePyramid}->getSamplesPerPixel();
-    my $bps = $sourceImage->{sourcePyramid}->getBitsPerSample();
-    my $LIST = $self->{list};
-
-    #### Pretreatment
-    $code .= sprintf "Cache2work %s tmp_$outImgName %s\n", $sourceImage->{img};
-
-    my $sppFinal = $self->{pyramid}->getSamplesPerPixel();
-
-    #### We transform image with the samples per pixel of the final cache
-    if ($sppFinal == 3) {
-        $code .= "tiff2rgba -c none -n \${TMP_DIR}/tmp_$outImgName \${TMP_DIR}/$outImgName\n";
-    }
-    elsif ($sppFinal == 4) {
-        $code .= "tiff2rgba -c none \${TMP_DIR}/tmp_$outImgName \${TMP_DIR}/$outImgName\n";
-    }
-    elsif ($sppFinal == 1) {
-        $code .= "convert \${TMP_DIR}/tmp_$outImgName -colors 256 -colorspace gray -depth 8 \${TMP_DIR}/$outImgName\n";
-    }
-    
-    #### Final location writting
-    my $imgCacheName =
-        File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
-    $code .= sprintf ("Work2cache $outImgName $imgCacheName\n\n");
-    
-    printf ($LIST "0/%s\n", $imgCacheName);
-
-    $node->setCode($code);
-    return TRUE;
-}
-
-=begin nd
 Function: mergeImages
 
-Write commands in the current script to merge N images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
+Write commands in the current script to merge N (N could be 1) images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
+
+If just one input image, overlayNtiff is used to change the image's properties (samples per pixel for example). Mask is not treated (masks have always the same properties and a symbolic link have been created).
 
 Returns:
     A boolean, TRUE if success, FALSE otherwise.
@@ -537,6 +489,7 @@ sub mergeImages {
     my $code = "";
     my $LIST = $self->{list};
     my $nodeName = $node->getWorkBaseName();
+    my $inNumber = $node->getSourcesNumber();
 
     #### Fichier de configuration ####
     my $oNtConfFilename = "$nodeName.txt";
@@ -553,7 +506,8 @@ sub mergeImages {
     my $outImgPath = File::Spec->catfile($node->getScript->getTempDir, $outImgName);
     
     my $outMskPath = undef;
-    if ($self->{pyramid}->ownMasks()) {
+    if ($self->{pyramid}->ownMasks() && $inNumber != 1) {
+        # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
         $outMskPath = File::Spec->catfile($node->getScript->getTempDir, $node->getWorkName("M"));
     }
     
@@ -562,9 +516,9 @@ sub mergeImages {
     #### Entrées ####
     my $inTemplate = $node->getWorkName("*_*");
     
-    for (my $i = $node->getSourcesNumber() - 1; $i >= 0; $i--) {
+    for (my $i = $inNumber - 1; $i >= 0; $i--) {
         # Les images sont dans l'ordre suivant : du dessus vers le dessous
-        # Dans le fichier de configuration de overlayNtiff, elles doivent êtredans l'autre sens, d'où la lecture depuis la fin.
+        # Dans le fichier de configuration de overlayNtiff, elles doivent être dans l'autre sens, d'où la lecture depuis la fin.
         my $sourceImage = $node->getSource($i);
 
         my $inImgName = $node->getWorkName($i."_I");
@@ -592,15 +546,14 @@ sub mergeImages {
     $code .= "OverlayNtiff $oNtConfFilename $inTemplate\n";
 
     # Final location writting
-    my $imgCacheName =
-        File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
+    my $imgCacheName = File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
     $code .= sprintf ("Work2cache $outImgName $imgCacheName");
     printf ($LIST "0/%s\n", $imgCacheName);
     
-    if (defined $outMskPath) {
+    if (defined $outMskPath && $inNumber != 1) {
+        # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
         my $outMskName = $node->getWorkName("M");
-        my $mskCacheName =
-            File::Spec->catfile($self->{pyramid}->getRootPerType('mask', FALSE, $node->getLevel()), $node->getPyramidName());
+        my $mskCacheName = File::Spec->catfile($self->{pyramid}->getRootPerType('mask', FALSE, $node->getLevel()), $node->getPyramidName());
         $code .= sprintf (" $outMskName $mskCacheName");
         printf ($LIST "0/%s\n", $mskCacheName);
     }
@@ -653,8 +606,8 @@ sub configureFunctions {
 
     ######## work2cache ########
 
-    my $conf_w2c = "-c zip";
-    $configuredFunc =~ s/__w2c__/$conf_w2c/;
+    my $conf_c2w = "-c zip";
+    $configuredFunc =~ s/__c2w__/$conf_c2w/;
 
     ######## congigure tiff2tile ########
     my $conf_t2t = "";
