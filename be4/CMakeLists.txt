@@ -32,6 +32,7 @@ endif(UNITTEST)
 include(ROK4Dependencies)
 
 configure_file(be4version.h.in be4version.h ESCAPE_QUOTES @ONLY)
+add_subdirectory(cache2work)
 add_subdirectory(createNodata)
 add_subdirectory(manageNodata)
 add_subdirectory(merge4tiff)
@@ -41,7 +42,6 @@ add_subdirectory(pyramide)
 add_subdirectory(tiff2gray)
 add_subdirectory(tiff2tile)
 add_subdirectory(tiffck)
-add_subdirectory(untile)
 
 # Documentation Doxygen
 if(BUILD_DOC)

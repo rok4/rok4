@@ -87,6 +87,7 @@ const char *photometric_name[] = {
     "UNKNOWN",
     "GRAY",
     "RGB",
+    "YCBCR",
     "MASK"
 };
 

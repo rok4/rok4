@@ -68,7 +68,7 @@ class FileImage : public Image {
 protected:
     /**
      * \~french \brief Chemin du fichier image
-     * \~english \brief Path to th image file
+     * \~english \brief Path to the image file
      */
     char* filename;
     /**
@@ -91,6 +91,12 @@ protected:
      * \~english \brief Number of bits per sample
      */
     int bitspersample;
+    
+    /**
+     * \~french \brief Taille d'un pixel en octet
+     * \~english \brief Byte pixel's size
+     */
+    int pixelSize;
 
     /** \~french
      * \brief Crée un objet FileImage à partir de tous ses éléments constitutifs
@@ -198,7 +204,7 @@ public:
     /**
      * \~french
      * \brief Retourne la photométrie des données image (rgb, gray...)
-     * \return photométie
+     * \return photométrie
      * \~english
      * \brief Return data photometric (rgb, gray...)
      * \return photometric
@@ -236,8 +242,8 @@ public:
      * \~english
      * \brief Return the pixel's byte size
      */
-    inline int getPixelByteSize () {
-        return bitspersample * channels / 8;
+    inline int getPixelSize () {
+        return pixelSize;
     }
 
     /**
@@ -256,9 +262,6 @@ public:
      * \brief File image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------------ FileImage -------------" );
-        Image::print();
         LOGGER_INFO ( "\t- File name : " << filename );
         LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
@@ -334,4 +337,5 @@ public:
 
 
 #endif
+
 

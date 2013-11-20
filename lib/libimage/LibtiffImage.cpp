@@ -79,13 +79,14 @@ static uint16_t fromROK4SampleFormat ( SampleFormat::eSampleFormat sf ) {
     }
 }
 
-
 static Photometric::ePhotometric toROK4Photometric ( uint16_t ph ) {
     switch ( ph ) {
     case PHOTOMETRIC_MINISBLACK :
         return Photometric::GRAY;
     case PHOTOMETRIC_RGB :
         return Photometric::RGB;
+    case PHOTOMETRIC_YCBCR :
+        return Photometric::YCBCR;
     case PHOTOMETRIC_MASK :
         return Photometric::MASK;
     default :
@@ -99,6 +100,8 @@ static uint16_t fromROK4Photometric ( Photometric::ePhotometric ph ) {
         return PHOTOMETRIC_MINISBLACK;
     case Photometric::RGB :
         return PHOTOMETRIC_RGB;
+    case Photometric::YCBCR :
+        return PHOTOMETRIC_YCBCR;
     case Photometric::MASK :
         return PHOTOMETRIC_MINISBLACK;
     default :
@@ -158,7 +161,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         LOGGER_ERROR ( "Unable to open TIFF (to read) " << filename );
         return NULL;
     } else {
-        // Lecture de l'en-tête pour récupérer les informations sur l'image
+        /**************** DIMENSIONS GLOBALES ****************/
         if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
             LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
             return NULL;
@@ -169,6 +172,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             return NULL;
         }
 
+        /************ FORMAT DES PIXELS ET CANAUX ************/
         if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
             LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
             return NULL;
@@ -221,7 +225,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         }
     }
 
-    if ( tif != NULL && width*height*channels != 0 && planarconfig != PLANARCONFIG_CONTIG ) {
+    if ( planarconfig != PLANARCONFIG_CONTIG ) {
         LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
         return NULL;
     }
@@ -262,6 +266,12 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, uint16_t rowsperstrip ) {
+
+    if (compression == Compression::JPEG && photometric == Photometric::RGB)
+        photometric = Photometric::YCBCR;
+
+    if (compression != Compression::JPEG && photometric == Photometric::YCBCR)
+        photometric = Photometric::RGB;
 
     if ( width <= 0 || height <= 0 ) {
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
@@ -435,13 +445,9 @@ int LibtiffImage::writeImage ( Image* pIn ) {
         return -1;
     }
 
-    // Initialisation du buffer
-    unsigned char* buf_u=0;
-    float* buf_f=0;
-
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
+        uint8_t* buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
             //LOGGER_INFO("line " << line);
             pIn->getline ( buf_u,line );
@@ -450,8 +456,10 @@ int LibtiffImage::writeImage ( Image* pIn ) {
                 return -1;
             }
         }
+        _TIFFfree ( buf_u );
+        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        buf_f = ( float* ) _TIFFmalloc ( width * channels * getBitsPerSample() /8 );
+        float* buf_f = ( float* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
             pIn->getline ( buf_f,line );
             if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
@@ -459,18 +467,13 @@ int LibtiffImage::writeImage ( Image* pIn ) {
                 return -1;
             }
         }
+        _TIFFfree ( buf_f );
     }
-
-    // Liberation
-    if ( buf_u ) _TIFFfree ( buf_u );
-    if ( buf_f ) _TIFFfree ( buf_f );
 
     return 0;
 }
 
 int LibtiffImage::writeImage ( uint8_t* buffer) {
-    // Initialisation du buffer
-    float* buf_f = 0;
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
@@ -480,8 +483,9 @@ int LibtiffImage::writeImage ( uint8_t* buffer) {
                 return -1;
             }
         }
+        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        buf_f = new float[height * width * channels];
+        float* buf_f = new float[height * width * channels];
         convert ( buf_f, buffer, height*width*channels );
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buf_f + line * width * channels, line, 0 ) < 0 ) {
@@ -489,21 +493,18 @@ int LibtiffImage::writeImage ( uint8_t* buffer) {
                 return -1;
             }
         }
-    }
 
-    // Liberation
-    if ( buf_f ) delete []  buf_f ;
+        delete []  buf_f ;
+    }
 
     return 0;
 }
 
 int LibtiffImage::writeImage ( float* buffer) {
-    // Initialisation du buffer
-    unsigned char* buf_u=0;
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        buf_u = new uint8_t[height * width * channels];
+        uint8_t* buf_u = new uint8_t[height * width * channels];
         convert ( buf_u, buffer, height*width*channels );
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buf_u + line * width * channels, line, 0 ) < 0 ) {
@@ -511,6 +512,9 @@ int LibtiffImage::writeImage ( float* buffer) {
                 return -1;
             }
         }
+        
+        delete [] buf_u;
+        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
@@ -520,15 +524,10 @@ int LibtiffImage::writeImage ( float* buffer) {
         }
     }
 
-    // Liberation
-    if ( buf_u ) delete [] buf_u;
-
     return 0;
 }
 
 int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
-    // Initialisation du buffer
-    float* buf_f = 0;
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
@@ -536,35 +535,36 @@ int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
+        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        buf_f = new float[height * width * channels];
+        float* buf_f = new float[height * width * channels];
         convert ( buf_f, buffer, height*width*channels );
         
         if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
-    }
 
-    // Liberation
-    if ( buf_f ) delete []  buf_f ;
+        delete []  buf_f ;
+    }
 
     return 0;
 }
 
 int LibtiffImage::writeLine ( float* buffer, int line) {
-    // Initialisation du buffer
-    unsigned char* buf_u=0;
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        buf_u = new uint8_t[height * width * channels];
+        uint8_t* buf_u = new uint8_t[height * width * channels];
         convert ( buf_u, buffer, height*width*channels );
         
         if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
             return -1;
         }
+
+        delete [] buf_u;
+        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {
             LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
@@ -572,11 +572,7 @@ int LibtiffImage::writeLine ( float* buffer, int line) {
         }
     }
 
-    // Liberation
-    if ( buf_u ) delete [] buf_u;
-
     return 0;
 }
-
 
 

@@ -41,10 +41,12 @@
  * \~french \brief Création d'une image contenant une tuile monochrome
  * \~english \brief Create an image, containing one monochrome tile
  * \~french \details Cet outil est utilisé afin de mettre à disposition du serveur WMS/WMTS des tuiles de non-donnée, au même format que les dalles de données. Toutes les composantes de l'images doivent être fournies.
+ * Vision libimage : EmptyImage -> Rok4Image
  */
 
-#include "TiledTiffWriter.h"
+#include "Rok4Image.h"
 #include "Logger.h"
+#include "EmptyImage.h"
 #include "Image.h"
 #include "Format.h"
 #include <cstdlib>
@@ -81,6 +83,7 @@
  *      -a sample format : uint (unsigned integer) or float
  *      -s samples per pixel : 1, 3 or 4
  *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
+ *      -d debug logger activation
  *
  * Examples
  *      - for orthophotography
@@ -114,7 +117,8 @@ void usage() {
                   "     -t tile size : width and height. Sizes are tile and image ones. Default value : 256 256.\n" <<
                   "     -a sample format : uint (unsigned integer) or float\n" <<
                   "     -s samples per pixel : 1, 3 or 4\n" <<
-                  "     -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n\n" <<
+                  "     -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
+                  "     -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<
@@ -156,22 +160,21 @@ int main ( int argc, char* argv[] ) {
     char* output = 0;
     char* strnodata = 0;
 
-    int photometric = -1;
+    bool debugLogger=false;
+
+    Photometric::ePhotometric photometric = Photometric::UNKNOWN;
     int bitspersample = -1;
-    int sampleformat = -1;
+    SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
     int samplesperpixel = -1;
 
     // Valeurs par défaut
-    int imagewidth = 256, imageheight = 256;
-    int compression = COMPRESSION_NONE;
-
-    int quality = -1;
+    int width = 256, height = 256;
+    Compression::eCompression compression = Compression::NONE;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
@@ -185,28 +188,26 @@ int main ( int argc, char* argv[] ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-//  Nodata image dimensions are precised in parameters and image contains a single tile
-
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
             case 'h': // help
                 usage();
                 exit ( 0 );
+                break;
+            case 'd': // debug logs
+                debugLogger = true;
+                break;
             case 'c': // compression
                 if ( ++i == argc ) error ( "Error in option -c",-1 );
-                if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = COMPRESSION_LZW;
-                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = COMPRESSION_DEFLATE;
-                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = COMPRESSION_PACKBITS;
-                else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
-                    compression = COMPRESSION_PNG;
-                    if ( argv[i][3] == ':' ) quality = atoi ( argv[i]+4 );
-                } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
-                    compression = COMPRESSION_JPEG;
-                    if ( argv[i][4] == ':' ) quality = atoi ( argv[i]+5 );
-                } else error ( "Unknown value for option -c : " + std::string ( argv[i] ),-1 );
+                if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
+                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
+                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
+                else if ( strncmp ( argv[i], "png",3 ) == 0 ) compression = Compression::PNG;
+                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
+                else error ( "Unknown compression : " + argv[i][1], -1 );
                 break;
             case 'n': // nodata
                 if ( ++i == argc ) error ( "Error in option -n",-1 );
@@ -214,54 +215,57 @@ int main ( int argc, char* argv[] ) {
                 break;
             case 'p': // photomètrie
                 if ( ++i == argc ) error ( "Error in option -p",-1 );
-                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = PHOTOMETRIC_MINISBLACK;
-                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = PHOTOMETRIC_RGB;
-                else error ( "Unknown value for option -p : " + std::string ( argv[i] ),-1 );
+                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
+                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
+                else error ( "Unknown photometric : " + argv[i][1], -1 );
                 break;
             case 't': // dimension de la tuile de nodata
                 if ( i+2 >= argc ) error ( "Error in option -t",-1 );
-                imagewidth = atoi ( argv[++i] );
-                imageheight = atoi ( argv[++i] );
+                width = atoi ( argv[++i] );
+                height = atoi ( argv[++i] );
                 break;
             case 'a': // format des canaux
                 if ( ++i == argc ) error ( "Error in option -a",-1 );
-                if ( strncmp ( argv[i],"uint",4 ) ==0 ) sampleformat = SAMPLEFORMAT_UINT;
-                else if ( strncmp ( argv[i],"float",5 ) ==0 ) sampleformat = SAMPLEFORMAT_IEEEFP;
-                else error ( "Unknown value for option -a : " + std::string ( argv[i] ),-1 );
+                if ( strncmp ( argv[i],"uint",4 ) ==0 ) sampleformat = SampleFormat::UINT;
+                else if ( strncmp ( argv[i],"float",5 ) ==0 ) sampleformat = SampleFormat::FLOAT;
+                else error ( "Unknown sample format : " + argv[i][1], -1 );
                 break;
             case 'b': // bitspersample
-                if ( i++ >= argc ) error ( "Error in option -b",-1 );
-                if ( strncmp ( argv[i], "8",1 ) == 0 ) bitspersample = 8 ;
-                else if ( strncmp ( argv[i], "32",2 ) == 0 ) bitspersample = 32 ;
-                else error ( "Unknown value for option -b : " + std::string ( argv[i] ),-1 );
+                if ( ++i >= argc ) error ( "Error in option -b",-1 );
+                bitspersample = atoi ( argv[i] );
                 break;
             case 's':
                 if ( ++i == argc ) error ( "Error in option -s",-1 );
-                if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
-                else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
-                else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
-                else error ( "Unknown value for option -s : " + std::string ( argv[i] ),-1 );
+                samplesperpixel = atoi ( argv[i] );
                 break;
             default:
                 error ( "Unknown option",-1 );
             }
         } else {
             if ( output == 0 ) output = argv[i];
-            else error ( "We have to specify only one output file path. What is " + std::string ( argv[i] ),-1 );
+            else error (
+                "We have to specify only one output file path (which is " +
+                std::string (output) + "). What is " + std::string ( argv[i] ),
+                -1
+            );
         }
+    }
+
+    if (debugLogger) {
+        // le niveau debug du logger est activé
+        Logger::setAccumulator ( DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
     if ( output == 0 ) error ( "Missing output file",-1 );
     if ( strnodata == 0 ) error ( "Missing nodata value",-1 );
 
-    if ( bitspersample == -1 ) error ( "Missing bits per sample",-1 );
-    if ( sampleformat == -1 ) error ( "Missing sample format",-1 );
-    if ( samplesperpixel == -1 ) error ( "Missing samples per pixel",-1 );
-    if ( photometric == -1 ) error ( "Missing photometric",-1 );
-
-    // Contrôle des compatibilité format <-> compression
-    if ( photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG ) error ( "Gray jpeg not supported",-1 );
-    if ( samplesperpixel == 4 && compression == COMPRESSION_JPEG ) error ( "Jpeg with alpha is unconsistent",-1 );
+    if ( bitspersample <= 0 ) error ( "Missing bits per sample",-1 );
+    if ( sampleformat == SampleFormat::UNKNOWN ) error ( "Missing sample format",-1 );
+    if ( samplesperpixel <= 0 ) error ( "Missing samples per pixel",-1 );
+    if ( photometric == Photometric::UNKNOWN ) error ( "Missing photometric",-1 );
 
     // Conversion string->int[] du paramètre nodata
     int nodata[samplesperpixel];
@@ -278,34 +282,23 @@ int main ( int argc, char* argv[] ) {
         nodata[i] = atoi ( charValue );
     }
 
-    // input data creation : the same value (nodata) everywhere
-    int bytesperpixel = samplesperpixel*bitspersample/8;
-    uint8_t data[imageheight*imagewidth*bytesperpixel];
+    EmptyImage* nodataImage = new EmptyImage(width, height, samplesperpixel, nodata);
 
-    if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
-        // Case float32
-        float nodataFloat32[samplesperpixel];
-        for ( int i = 0; i < samplesperpixel; i++ ) nodataFloat32[i] = ( float ) nodata[i];
+    Rok4ImageFactory R4IF;
+    Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
+        output, BoundingBox<double>(0.,0.,0.,0.), 0., 0., width, height, samplesperpixel,
+        sampleformat, bitspersample, photometric, compression,
+        width, height
+    );
 
-        for ( int i = 0; i<imageheight*imagewidth; i++ )
-            memcpy ( data+i*bytesperpixel, nodataFloat32, bytesperpixel );
-    } else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
-        // Case int8
-        uint8_t nodataUInt8[samplesperpixel];
-        for ( int i = 0; i < samplesperpixel; i++ ) nodataUInt8[i] = ( uint8_t ) nodata[i];
-
-        for ( int i = 0; i<imageheight*imagewidth; i++ )
-            memcpy ( data+i*bytesperpixel, nodataUInt8, bytesperpixel );
-    } else {
-        error ( "Unknown sample type (sample format + bits per sample)",-1 );
+    LOGGER_DEBUG ( "Write" );
+    if (nodataTile->writeImage(nodataImage) < 0) {
+        error("Cannot write nodata tile", -1);
     }
 
-    TiledTiffWriter W ( output, imagewidth, imageheight, photometric, compression, quality, imagewidth, imageheight,bitspersample,samplesperpixel,sampleformat );
-
-    if ( W.WriteTile ( 0, 0, data ) < 0 ) error ( "Error while writting tile of nodata",-1 );
-    if ( W.close() < 0 ) error ( "Error while writting index",-1 );
-
     delete acc;
+    delete nodataTile;
+    delete nodataImage;
 
     return 0;
 }
