@@ -506,8 +506,8 @@ sub mergeImages {
     my $outImgPath = File::Spec->catfile($node->getScript->getTempDir, $outImgName);
     
     my $outMskPath = undef;
+    # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
     if ($self->{pyramid}->ownMasks() && $inNumber != 1) {
-        # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
         $outMskPath = File::Spec->catfile($node->getScript->getTempDir, $node->getWorkName("M"));
     }
     
@@ -550,8 +550,8 @@ sub mergeImages {
     $code .= sprintf ("Work2cache $outImgName $imgCacheName");
     printf ($LIST "0/%s\n", $imgCacheName);
     
+    # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
     if (defined $outMskPath && $inNumber != 1) {
-        # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
         my $outMskName = $node->getWorkName("M");
         my $mskCacheName = File::Spec->catfile($self->{pyramid}->getRootPerType('mask', FALSE, $node->getLevel()), $node->getPyramidName());
         $code .= sprintf (" $outMskName $mskCacheName");
