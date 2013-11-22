@@ -181,23 +181,173 @@ private:
      */
     uint32_t *tilesByteCounts;
 
-    std::ofstream output;  // tiff file output stream
+    /**
+     * \~french \brief Flux d'écriture de l'image ROK4
+     * \~english \brief Stream used to write the ROK4 image
+     */
+    std::ofstream output;
 
+    /**
+     * \~french \brief Taille du buffer #Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
+     * \~english \brief Temporary buffer #Buffer size, containing the compressed tile to write
+     */
     size_t BufferSize;
-    uint8_t* Buffer, *zip_buffer;
+    
+    /**
+     * \~french \brief Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
+     * \~english \brief Buffer size, containing the compressed tile to write
+     */
+    uint8_t* Buffer;
+
+    /**
+     * \~french \brief Buffer utilisé par la zlib
+     * \details Pour les compressions PNG et DEFLATE uniquement
+     * \~english \brief Buffer used by zlib
+     */
+    uint8_t* zip_buffer;
+    /**
+     * \~french \brief Flux utilisé par la zlib
+     * \details Pour les compressions PNG et DEFLATE uniquement
+     * \~english \brief Stream used by zlib
+     */
     z_stream zstream;
+    
+    /**
+     * \~french \brief Structure d'informations, utilisée par la libjpeg
+     * \details Pour la compression JPEG uniquement
+     * \~english \brief Informations structure used by libjpeg
+     */
     struct jpeg_compress_struct cinfo;
+    /**
+     * \~french \brief Structure d'erreur utilisée par la libjpeg
+     * \details Pour la compression JPEG uniquement
+     * \~english \brief Error structure used by libjpeg
+     */
     struct jpeg_error_mgr jerr;
 
+    /**
+     * \~french \brief Écrit l'en-tête TIFF de l'image ROK4
+     * \details L'en-tête est de taille fixe (ROK4_IMAGE_HEADER_SIZE) et contient toutes les métadonnées sur l'image. Elle ne sera pas lue par le serveur ROK4 (c'est pourquoi sa taille doit être fixe), mais permet de lire l'image avec un logiciel autre (avoir une image TIFF respectant les spécifications).
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write the ROK4 image's TIFF header
+     * \return TRUE if success, FALSE otherwise
+     */
     bool prepare();
+    /**
+     * \~french \brief Écrit une tuile de l'image ROK4
+     * \details L'écriture tiendra compte de la compression voulue #compression. Les tuiles doivent être écrites dans l'ordre (de gauche à droite, de haut en bas).
+     * \param[in] tileInd indice de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write a ROK4 image's tile
+     * \param[in] tileInd tile indice
+     * \param[in] data raw data (no compression) to write
+     * \param[in] crop jpeg option (see #emptyWhiteBlock)
+     * \return TRUE if success, FALSE otherwise
+     */
     bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
+    /**
+     * \~french \brief Finalise l'écriture de l'image ROK4
+     * \details Cela comprend l'écriture des index et tailles des tuiles, ainsi que le nettoyage des buffers utilisés
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief End the ROK4 image's writting
+     * \return TRUE if success, FALSE otherwise
+     */
     bool close();
+
+    /**
+     * \~french \brief Compresse les données brutes en RAW
+     * \details Consiste en une simple copie.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into RAW compression
+     * \details A simple copy
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computeRawTile ( uint8_t *buffer, uint8_t *data );
+
+     /**
+     * \~french \brief Compresse les données brutes en JPEG
+     * \details Utilise la libjpeg.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \param[in] crop option pour le jpeg (voir #writeImage)
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into JPEG compression
+     * \details Use libjpeg
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \param[in] crop jpeg option (see #writeImage)
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computeJpegTile ( uint8_t *buffer, uint8_t *data, bool crop );
-    void emptyWhiteBlock ( uint8_t *buffheight, int l );
+
+    /**
+     * \~french \brief Remplit les blocs qui contiennent un pixel blanc de blanc
+     * \details Le JPEG  utilise des blocs de 16 sur 16 pour compresser. Si le blanc est réservé pour le nodata, et qu'on ne veut pas qu'il soit "sali" lors de la compression, on doit identifier les blocs contenant du blanc (nodata) et les remplir de cette couleur.
+     * \param[in,out] buffer données brutes à croper
+     * \param[in] l nombre de ligne de la tuile (buffer) à considérer (16 ou moins quand le bas de la tuile est atteint)
+     * \~english \brief Fill blocs, which contains a white pixel, with white
+     * \param[in,out] buffer raw data to crop
+     * \param[in] l number of tile's line (in buffer) to consider (16 or less when tile's bottom is reached)
+     */
+    void emptyWhiteBlock ( uint8_t *buffer, int l );
+    
+    /**
+     * \~french \brief Compresse les données brutes en LZW
+     * \details Utilise la liblzw.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into LZW compression
+     * \details Use liblzw.
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computeLzwTile ( uint8_t *buffer, uint8_t *data );
+    /**
+     * \~french \brief Compresse les données brutes en PACKBITS
+     * \details Utilise la libpkb.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into PACKBITS compression
+     * \details Use libpkb.
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computePackbitsTile ( uint8_t *buffer, uint8_t *data );
+    /**
+     * \~french \brief Compresse les données brutes en PNG
+     * \details Utilise la zlib. Les données retournées contiennent l'en-tête PNG.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into PNG compression
+     * \details Use zlib. Returned data contains PNG header.
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computePngTile ( uint8_t *buffer, uint8_t *data );
+    /**
+     * \~french \brief Compresse les données brutes en DEFLATE
+     * \details Utilise la zlib.
+     * \param[out] buffer buffer de stockage des données compressées. Doit être alloué.
+     * \param[in] data données brutes (sans compression) à compresser
+     * \return taille utile du buffer, 0 si erreur
+     * \~english \brief Compress raw data into DEFLATE compression
+     * \details Use zlib.
+     * \param[out] buffer Storage buffer for compressed data. Have to be allocated.
+     * \param[in] data raw data (no compression) to write
+     * \return data' size in buffer, 0 if failure
+     */
     size_t computeDeflateTile ( uint8_t *buffer, uint8_t *data );
 
 protected:
@@ -269,9 +419,23 @@ public:
     }
 
     /**************************** Pour la lecture ****************************/
-
+    /**
+     * \~french
+     * \brief Retourne une tuile décompressée
+     * \param[out] buf buffer contenant la tuile. Doit être alloué.
+     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
+     * \return taille utile du buffer, 0 si erreur
+     */
     int getRawTile ( uint8_t* buf, int tile );
+    /**
+     * \~french
+     * \brief Retourne une tuile compressée
+     * \param[out] buf buffer contenant la tuile. Doit être alloué.
+     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
+     * \return taille utile du buffer, 0 si erreur
+     */
     int getEncodedTile ( uint8_t* buf, int tile );
+    
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );
 
@@ -289,7 +453,7 @@ public:
     /**
      * \~french
      * \brief Ecrit une image ROK4, à partir d'une image source
-     * \details Toutes les informations nécessaires à l'écriture d'une image sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image. Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs contenant un pixel blanc.
+     * \details Toutes les informations nécessaires à l'écriture d'une image sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image. Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs (16x16 pixels) contenant un pixel blanc.
      * \param[in] pIn source des donnée de l'image à écrire
      * \param[in] crop option de cropage, pour le jpeg
      * \return 0 en cas de succes, -1 sinon

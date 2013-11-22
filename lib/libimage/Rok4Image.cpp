@@ -828,6 +828,7 @@ bool Rok4Image::close() {
         deflateEnd ( &zstream );
     }
     if ( compression == Compression::JPEG ) {
+        delete cinfo.dest;
         jpeg_destroy_compress ( &cinfo );
     }
     
@@ -853,6 +854,7 @@ size_t Rok4Image::computeLzwTile ( uint8_t *buffer, uint8_t *data ) {
         Buffer = new uint8_t[BufferSize];
     }
     memcpy ( buffer,temp,outSize );
+    delete [] temp;
 
     return outSize;
 }
@@ -950,30 +952,26 @@ size_t Rok4Image::computeJpegTile ( uint8_t *buffer, uint8_t *data, bool crop ) 
     cinfo.dest->free_in_buffer = 2*rawTileSize;
     jpeg_start_compress ( &cinfo, true );
 
-    uint8_t* buffheight = new uint8_t[JPEG_BLOC_SIZE*rawTileLineSize];
     int numLine = 0;
 
     while ( numLine < tileHeight ) {
-        if ( numLine % JPEG_BLOC_SIZE == 0 ) {
+        if ( numLine % JPEG_BLOC_SIZE == 0 && crop ) {
             int l = std::min ( JPEG_BLOC_SIZE,tileHeight-numLine );
-            memcpy ( buffheight,data + numLine*rawTileLineSize,rawTileLineSize*l );
-            if ( crop ) {
-                emptyWhiteBlock ( buffheight,l );
-            }
+            emptyWhiteBlock ( data + numLine*rawTileLineSize, l );
         }
 
-        uint8_t *line = buffheight + ( numLine % JPEG_BLOC_SIZE ) *rawTileLineSize;
+        uint8_t* line = data + numLine*rawTileLineSize;
+
         if ( jpeg_write_scanlines ( &cinfo, &line, 1 ) != 1 ) return 0;
         numLine++;
     }
 
     jpeg_finish_compress ( &cinfo );
-    delete[] buffheight;
 
     return 2*rawTileSize - cinfo.dest->free_in_buffer;
 }
 
-void Rok4Image::emptyWhiteBlock ( uint8_t *buffheight, int l ) {
+void Rok4Image::emptyWhiteBlock ( uint8_t *buffer, int l ) {
 
     int I = 0;
     int J = 0;
@@ -983,12 +981,12 @@ void Rok4Image::emptyWhiteBlock ( uint8_t *buffheight, int l ) {
 
     while ( J<rawTileLineSize ) {
         while ( I<l ) {
-            if ( !memcmp ( buffheight + I*rawTileLineSize + J, white, channels ) ) {
+            if ( !memcmp ( buffer + I*rawTileLineSize + J, white, channels ) ) {
                 int jdeb = ( J/blocklinesize ) *blocklinesize;
                 int jfin = std::min ( jdeb+blocklinesize,rawTileLineSize );
                 for ( int i = 0; i<l; i++ ) {
                     for ( int j = jdeb; j<jfin; j+=channels ) {
-                        memcpy ( buffheight + i*rawTileLineSize + j, white, channels );
+                        memcpy ( buffer + i*rawTileLineSize + j, white, channels );
                     }
                 }
                 I = 0;
