@@ -489,6 +489,7 @@ void rok4DeleteRequest ( HttpRequest* request ) {
 
 void rok4DeleteResponse ( HttpResponse* response ) {
     delete[] response->type;
+    delete[] response->encoding;
     delete[] response->content;
     delete response;
 }
@@ -501,6 +502,7 @@ void rok4DeleteResponse ( HttpResponse* response ) {
 void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->filename;
     delete[] tileRef->type;
+    delete[] tileRef->encoding;
     delete[] tileRef->format;
 }
 
