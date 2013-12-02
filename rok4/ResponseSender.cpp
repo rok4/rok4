@@ -128,6 +128,10 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
     FCGX_PutStr ( statusHeader.data(),statusHeader.size(),request->out );
     FCGX_PutStr ( "Content-Type: ",14,request->out );
     FCGX_PutStr ( source->getType().c_str(), strlen ( source->getType().c_str() ),request->out );
+    if ( !source->getEncoding().empty() ){
+        FCGX_PutStr ( "\r\nContent-Encoding: ",20,request->out );
+        FCGX_PutStr ( source->getEncoding().c_str(), strlen ( source->getEncoding().c_str() ),request->out );
+    }
     FCGX_PutStr ( "\r\nContent-Disposition: filename=\"",33,request->out );
     FCGX_PutStr ( filename.data(),filename.size(), request->out );
     FCGX_PutStr ( "\"",1,request->out );

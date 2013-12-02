@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-10-28 09:53+0100\n"
+"POT-Creation-Date: 2013-12-02 10:06+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1382,15 +1382,15 @@ msgstr ""
 msgid "Erreur inconnue"
 msgstr ""
 
-#: ResponseSender.cpp:145 ResponseSender.cpp:188
+#: ResponseSender.cpp:149 ResponseSender.cpp:192
 msgid "Echec d'ecriture dans le flux de sortie de la requete FCGI "
 msgstr ""
 
-#: ResponseSender.cpp:154 ResponseSender.cpp:212
+#: ResponseSender.cpp:158 ResponseSender.cpp:216
 msgid "End of Response"
 msgstr ""
 
-#: ResponseSender.cpp:197
+#: ResponseSender.cpp:201
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 

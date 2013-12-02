@@ -75,6 +75,9 @@ public:
     std::string getType() {
         return "image/png";
     }
+    std::string getEncoding() {
+        return "";
+    }
 
     int getHttpStatus() {
         return 200;

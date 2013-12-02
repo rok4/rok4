@@ -299,6 +299,8 @@ std::string toString ( eformat_data format );
  */
 std::string toMimeType ( eformat_data format );
 
+std::string toEncoding ( eformat_data format );
+
 }
 
 #endif //FORMAT_H

@@ -159,6 +159,20 @@ const char *eformat_mime[] = {
     "image/tiff"
 };
 
+const char *eformat_encoding[] = {
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "deflate",
+    ""
+};
+
 eformat_data fromString ( std::string strFormat ) {
     int i;
     for ( i=eformat_size; i ; --i ) {
@@ -174,6 +188,10 @@ std::string toString ( eformat_data format ) {
 
 std::string toMimeType ( eformat_data format ) {
     return std::string ( eformat_mime[format] );
+}
+
+std::string toEncoding ( eformat_data format ) {
+    return std::string ( eformat_encoding[format] );
 }
 
 }

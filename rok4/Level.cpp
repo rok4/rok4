@@ -360,7 +360,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
     std::string path=getFilePath ( x, y );
     LOGGER_DEBUG ( path );
-    return new FileDataSource ( path.c_str(),posoff,possize,Format::toMimeType ( format ) );
+    return new FileDataSource ( path.c_str(),posoff,possize,Format::toMimeType ( format ), Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {

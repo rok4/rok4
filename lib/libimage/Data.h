@@ -84,6 +84,11 @@ public:
      * Indique le statut Http associé à la donnée source.
      */
     virtual int getHttpStatus() = 0;
+    
+    /**
+     * Indique l'encodage Http associé à la donnée source.
+     */
+    virtual std::string getEncoding() = 0;
 };
 
 
@@ -129,6 +134,11 @@ public:
      * Indique le statut Http associé au flux.
      */
     virtual int getHttpStatus() = 0;
+    
+    /**
+     * Indique l'encodage associé au flux.
+     */
+    virtual std::string getEncoding() = 0;
 };
 
 
@@ -183,6 +193,9 @@ public:
     inline int getHttpStatus()                  {
         return getDataSource().getHttpStatus();
     }
+    inline std::string getEncoding()                  {
+        return getDataSource().getEncoding();
+    }
 };
 
 
@@ -195,6 +208,7 @@ public:
 class BufferedDataSource : public DataSource {
 private:
     std::string type;
+    std::string encoding;
     int httpStatus;
     size_t dataSize;
     uint8_t* data;
@@ -232,6 +246,11 @@ public:
     /** @return le status du dataStream */
     int getHttpStatus() {
         return httpStatus;
+    }
+    
+     /** @return l'encodage du dataStream */
+    std::string getEncoding() {
+        return encoding;
     }
 };
 

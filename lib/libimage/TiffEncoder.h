@@ -69,14 +69,17 @@ public:
     virtual size_t read ( uint8_t *buffer, size_t size );
     virtual bool eof();
     std::string getType() {
-	if ( isGeoTiff ) {
-	  return "image/geotiff";
-	} else {
-	  return "image/tiff";
-	}
+        if ( isGeoTiff ) {
+            return "image/geotiff";
+        } else {
+            return "image/tiff";
+        }
     }
     int getHttpStatus() {
         return 200;
+    }
+    std::string getEncoding() {
+        return "";
     }
 };
 
