@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2013-12-02 10:20+0100\n"
+"POT-Creation-Date: 2013-12-02 10:55+0100\n"
 "PO-Revision-Date: 2013-09-16 11:52+0200\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -989,8 +989,8 @@ msgstr "Lancement du serveur ROK4"
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:248 Rok4Api.cpp:134 Rok4Api.cpp:142 Rok4Api.cpp:150
-#: Rok4Api.cpp:159 Rok4Api.cpp:529
+#: main.cpp:248 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: Rok4Api.cpp:161 Rok4Api.cpp:533
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
@@ -1404,7 +1404,7 @@ msgstr "Fin de la réponse"
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr "Nombre incorrect d'octets écrits dans le flux de sortie"
 
-#: Rok4Api.cpp:98
+#: Rok4Api.cpp:100
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
@@ -1412,43 +1412,43 @@ msgstr ""
 "ERREUR FATALE : Impossible d'interpréter le fichier de configuration du "
 "serveur "
 
-#: Rok4Api.cpp:123
+#: Rok4Api.cpp:125
 msgid "Envoi des messages dans la sortie du logger"
 msgstr "Envoi des messages dans la sortie du logger"
 
-#: Rok4Api.cpp:124
+#: Rok4Api.cpp:126
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 
-#: Rok4Api.cpp:127
+#: Rok4Api.cpp:129
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr "*** NOUVEAU CLIENT DU LOGGER ***"
 
-#: Rok4Api.cpp:133
+#: Rok4Api.cpp:135
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr "Impossible d'interpréter le fichier de conf "
 
-#: Rok4Api.cpp:141
+#: Rok4Api.cpp:143
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr "Impossible de charger la configuration des TileMatrix"
 
-#: Rok4Api.cpp:149
+#: Rok4Api.cpp:151
 msgid "Impossible de charger la conf des Styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:158
+#: Rok4Api.cpp:160
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:277 Rok4Api.cpp:349 Rok4Server.cpp:470
+#: Rok4Api.cpp:279 Rok4Api.cpp:353 Rok4Server.cpp:470
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:501
+#: Rok4Api.cpp:461 Rok4Server.cpp:501
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Api.cpp:457 Rok4Server.cpp:499 Rok4Server.cpp:501 Rok4Server.cpp:511
+#: Rok4Api.cpp:461 Rok4Server.cpp:499 Rok4Server.cpp:501 Rok4Server.cpp:511
 #: Rok4Server.cpp:513
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."

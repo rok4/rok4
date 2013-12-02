@@ -72,6 +72,8 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
     response->status=source->getHttpStatus();
     response->type=new char[source->getType().length() +1];
     strcpy ( response->type,source->getType().c_str() );
+    response->encoding=new char[source->getEncoding().length() +1];
+    strcpy(response->encoding, source->getEncoding().c_str() );
     size_t buffer_size;
     const uint8_t *buffer = source->getData ( buffer_size );
     // TODO : tester sans copie memoire (attention, la source devrait etre supprimee plus tard)
@@ -266,7 +268,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format;
+    std::string tmId,mimeType,format,encoding;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -316,7 +318,9 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         palette->size = 0;
         palette->data = NULL;
     }
-
+    
+    tileRef->encoding = new char[Format::toEncoding( level->getFormat() ).length() +1];
+    strcpy( tileRef->encoding, Format::toEncoding( level->getFormat() ).c_str() );
     delete request;
     return 0;
 }
