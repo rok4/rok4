@@ -1045,6 +1045,9 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             if ( !crs.isProj4Compatible() ) {
                 LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) );
                 crsOk = false;
+            } else if ( inspire && !crs.isLongLat() ) {
+                LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas un CRS geographique et n est donc par ajoute aux CRS de la couche (mode INSPIRE)" ) );
+                crsOk = false;
             } else {
                 //Test if already define in Global CRS
 
@@ -1596,49 +1599,8 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             formatList.push_back ( format );
         }
     }
-
-    //Global CRS List
-    for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
-        if ( ! ( pElem->GetText() ) )
-            continue;
-        std::string crsStr ( pElem->GetTextStr() );
-        CRS crs ( crsStr );
-        if ( !crs.isProj4Compatible() ) {
-            LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
-        } else {
-            globalCRSList.push_back ( crs );
-        }
-    }
-
-    //Add CRS:84 if not defined in services.config
-    {
-        bool crs84Found = false;
-        for ( int i =0 ; i < globalCRSList.size(); i++ ) {
-            if ( globalCRSList.at ( i ).getRequestCode().compare ( "CRS:84" ) ==0 ) {
-                crs84Found = true;
-                break;
-            }
-        }
-        if ( !crs84Found ) {
-            globalCRSList.push_back ( CRS ( "CRS:84" ) );
-        }
-    }
-
-    pElem=hRoot.FirstChild ( "fullStylingCapability" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string styleStr = pElem->GetTextStr();
-        if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
-            fullStyling = true;
-        }
-    }
-
-
-    pElem=hRoot.FirstChild ( "serviceType" ).Element();
-    if ( pElem && pElem->GetText() ) serviceType = pElem->GetTextStr();
-    pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();
-    if ( pElem && pElem->GetText() ) serviceTypeVersion = pElem->GetTextStr();
-
+    
+    //Checking inspire mode
     pElem=hRoot.FirstChild ( "inspire" ).Element();
     if ( pElem && pElem->GetText() ) {
         std::string inspirestr = pElem->GetTextStr();
@@ -1699,6 +1661,52 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             }
         }
     }
+
+    //Global CRS List
+    for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
+        if ( ! ( pElem->GetText() ) )
+            continue;
+        std::string crsStr ( pElem->GetTextStr() );
+        CRS crs ( crsStr );
+        if ( !crs.isProj4Compatible() ) {
+            LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
+        } else if ( inspire && !crs.isLongLat() ) {
+            LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not geographical CRS (Inspire mode enable)" ) );
+        } else {
+            globalCRSList.push_back ( crs );
+        }
+    }
+
+    //Add CRS:84 if not defined in services.config
+    {
+        bool crs84Found = false;
+        for ( int i =0 ; i < globalCRSList.size(); i++ ) {
+            if ( globalCRSList.at ( i ).getRequestCode().compare ( "CRS:84" ) ==0 ) {
+                crs84Found = true;
+                break;
+            }
+        }
+        if ( !crs84Found ) {
+            globalCRSList.push_back ( CRS ( "CRS:84" ) );
+        }
+    }
+
+    pElem=hRoot.FirstChild ( "fullStylingCapability" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string styleStr = pElem->GetTextStr();
+        if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
+            fullStyling = true;
+        }
+    }
+
+
+    pElem=hRoot.FirstChild ( "serviceType" ).Element();
+    if ( pElem && pElem->GetText() ) serviceType = pElem->GetTextStr();
+    pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();
+    if ( pElem && pElem->GetText() ) serviceTypeVersion = pElem->GetTextStr();
+
+    
 
     pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
     if ( pElem && pElem->GetText() ) {
