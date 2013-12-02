@@ -319,8 +319,9 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         palette->data = NULL;
     }
     
-    tileRef->encoding = new char[Format::toEncoding( level->getFormat() ).length() +1];
-    strcpy( tileRef->encoding, Format::toEncoding( level->getFormat() ).c_str() );
+    encoding = Format::toEncoding( level->getFormat() );
+    tileRef->encoding = new char[encoding.length() +1];
+    strcpy( tileRef->encoding, encoding.c_str() );
     delete request;
     return 0;
 }
@@ -342,7 +343,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,format;
+    std::string tmId,format,encoding;
     int x,y;
     Style* style =0;
     bool errorNoData;
@@ -384,6 +385,10 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
     tileRef->type=new char[format.length() +1];
     strcpy ( tileRef->type,format.c_str() );
+    
+    encoding = Format::toEncoding( level->getFormat() );
+    tileRef->encoding = new char[encoding.length() +1];
+    strcpy( tileRef->encoding, encoding.c_str() );
 
     tileRef->width=level->getTm().getTileW();
     tileRef->height=level->getTm().getTileH();
