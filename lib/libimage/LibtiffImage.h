@@ -96,7 +96,7 @@ private:
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
      */
-    uint8_t* strip_buffer;
+    uint32_t* strip_buffer;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long

@@ -378,8 +378,8 @@ LibtiffImage::LibtiffImage (
     tif ( tif ), rowsperstrip ( rowsperstrip ) {
 
     current_strip = -1;
-    strip_size = width*channels*rowsperstrip;
-    strip_buffer = new uint8_t[strip_size];
+    strip_size = width*rowsperstrip;
+    strip_buffer = new uint32_t[strip_size];
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -390,21 +390,25 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
     // le buffer est déjà alloue
     // Cas RGB : canaux entrelaces (TIFFTAG_PLANARCONFIG=PLANARCONFIG_CONTIG)
 
-    if ( compression == Compression::NONE || ( compression != Compression::NONE && rowsperstrip == 1 ) ) {
+    /*if ( compression == Compression::NONE || ( compression != Compression::NONE && rowsperstrip == 1 ) ) {
         // Cas Non compresse ou (compresse et 1 ligne/bande)
         if ( TIFFReadScanline ( tif,buffer,line,0 ) < 0 ) {
             LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
         }
-    } else {
+    } else {*/
         // Cas compresse et > 1 ligne /bande
         if ( line / rowsperstrip != current_strip ) {
             current_strip = line / rowsperstrip;
-            if ( TIFFReadEncodedStrip ( tif,current_strip,strip_buffer,strip_size ) < 0 ) {
+            /*if ( TIFFReadEncodedStrip ( tif,current_strip,strip_buffer,strip_size ) < 0 ) {
+                LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
+            }*/
+            
+            if ( TIFFReadRGBAStrip ( tif, current_strip, (uint32_t*) strip_buffer ) < 0 ) {
                 LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
             }
         }
         memcpy ( buffer,&strip_buffer[ ( line%rowsperstrip ) *width*channels],width*channels*sizeof ( uint8_t ) );
-    }
+    //}
     return width*channels;
 }
 
@@ -413,7 +417,7 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
         return _getline ( buffer,line );
     } else { // float
         /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
-         * On va copier le buffer flottant sur le buffer entier, de même taille*/
+         * On va copier le buffer flottant sur le buffer entier, de même taille */
         float floatline[width * channels];
         _getline ( floatline, line );
         memcpy ( buffer, floatline, width*channels*sizeof(float) );
