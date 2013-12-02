@@ -69,7 +69,7 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
     minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
@@ -83,7 +83,7 @@ Level::~Level() {
 
 void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     if ( noDataTileSource ) {
         delete noDataTileSource;
     }
@@ -102,7 +102,7 @@ void Level::setNoData ( const std::string& file ) {
 void Level::setNoDataSource ( DataSource* source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     }
     noDataSource=source;
     noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
