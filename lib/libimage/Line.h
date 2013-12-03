@@ -53,13 +53,13 @@
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
  * \brief Représentation d'une ligne entière ou flottante
- * \details Cette classe stocke une ligne d'image sur 4 canaux, 3 pour la couleur et un canal alpha associé (prémultiplié aux couleurs). Ce fonctionnement est toujours le même, que les canaux sources soient entiers ou flottants. En stockant toujours les informations dans ce format de travail, on va faciliter les calculs de fusion de plusieurs lignes, dont les caractéristiques étaient différentes. Le formattage final sera également facilité.
+ * \details Cette classe stocke une ligne d'image sur 4 canaux, 3 pour la couleur et un canal alpha non-associé (pas prémultiplié aux couleurs). Ce fonctionnement est toujours le même, que les canaux sources soient entiers ou flottants. En stockant toujours les informations dans ce format de travail, on va faciliter les calculs de fusion de plusieurs lignes, dont les caractéristiques étaient différentes. Le formattage final sera également facilité.
  *
  * Cette classe gère les données, que ce soit comme sources ou comme sortie, sur :
  * \li 1 canal : niveau de gris
- * \li 2 canaux : niveau de gris + alpha associé
+ * \li 2 canaux : niveau de gris + alpha non-associé
  * \li 3 canaux : vraie couleur
- * \li 4 canaux : vraie couleur + alpha associé
+ * \li 4 canaux : vraie couleur + alpha non-associé
  *
  * Les données peuvent possédé un masque associé, auquel cas il sera stocké en parallèle des données. Quelque soit le mode de fusion utilisé par la suite, on tiendra toujours compte de ce masque.
  *
@@ -78,8 +78,8 @@ class Line {
 
 public:
     /**
-     * \~french \brief Canaux de couleur, prémultiplié par alpha
-     * \~english \brief Color's samples, premultiplied with alpha
+     * \~french \brief Canaux de couleur, sans tenir compte de l'alpha
+     * \~english \brief Color's samples, ignoring alpha
      */
     T* samples;
     /**
@@ -164,15 +164,15 @@ public:
 
     /** \~french
      * \brief Stockage des données, avec précision d'une valeur de transparence
-     * \details Les données sont sockées en convertissant le nombre de canaux si besoin est. L'alpha lui est potentiellement converti en flottant entre 0 et 1. Les pixels dont la couleur est celle précisée comme transparent sont "annulés" (alpha = 0, et donc les canaux = 0). Cette fonction est un template mais n'est implémentée (spécifiée) que pour les entiers sur 8 bits et les flottant.
+     * \details Les données sont sockées en convertissant le nombre de canaux si besoin est. L'alpha lui est potentiellement converti en flottant entre 0 et 1. Les pixels dont la couleur est celle précisée comme transparent sont "annulés" (alpha = 0). Cette fonction est un template mais n'est implémentée (spécifiée) que pour les entiers sur 8 bits et les flottant.
      * \param[in] imageIn données en entrée
      * \param[in] maskIn masque associé aux données en entrée
-     * \param[in] srcSpp nombre de canux dans les données sources
+     * \param[in] srcSpp nombre de canaux dans les données sources
      * \param[in] width largeur de la ligne en pixel
      * \param[in] transparent valeur des pixels à considéré comme transparent
      ** \~english
      * \brief Data storage, with transparent value
-     * \details Data are stored, converting number of samples per pixel if needed. Alpha is stored as a float between 0 and 1. Pixels whose value is the transparent one are "cancelled" (alpha = 0, so samples = 0). This function is a template but is implemented (specified) only for 8-bit integers and floats.
+     * \details Data are stored, converting number of samples per pixel if needed. Alpha is stored as a float between 0 and 1. Pixels whose value is the transparent one are "cancelled" (alpha = 0). This function is a template but is implemented (specified) only for 8-bit integers and floats.
      * \param[in] imageIn data to store
      * \param[in] maskIn associated mask
      * \param[in] srcSpp number of samples per pixel in input data
@@ -214,6 +214,7 @@ public:
     /** \~french
      * \brief Fusionne deux lignes par transparence (alpha blending)
      * \details La ligne courante est fusionnée avec une ligne par dessus, et le résultat est stocké dans la ligne courante.
+     * Rappelons que les valeurs de transparence ne sont pas prémultipliée sur les canaux (en entrée et en sortie).
      * \image html merge_transparency.png
      * \param[in] above ligne du dessus, avec laquelle fusionner
      ** \~english
@@ -274,28 +275,41 @@ public:
 
 template<typename T>
 void Line<T>::alphaBlending ( Line<T>* above ) {
-    for ( int i = 0; i < width; i++ ) {
-        if ( above->alpha[i] == 0. || ! above->mask[i] ) {
+    // Initialisation des pointeurs courants sur les pixels et l'alpha (final et above)
+    T* pix = samples;
+    float* al = alpha;
+    T* pixAb = above->samples;
+    float* alAb = above->alpha;
+    for ( int i = 0; i < width; i++, pix += 3, pixAb += 3, al++, alAb++ ) {
+        if ( *alAb == 0. || ! above->mask[i] ) {
             // Le pixel de la ligne du dessus est transparent, ou n'est pas de la donnée, il ne change donc pas le pixel du dessous.
             continue;
         }
 
-        alpha[i] = above->alpha[i] + alpha[i] * ( 1. - above->alpha[i] );
+        if ( *al == 0. ) {
+            // Le pixel de la ligne du dessous est complètement transparent, le résultat est donc égal au pixel du dessus
+            *al = *alAb;
+            memcpy(pix, pixAb, 3*sizeof(T));
+            continue;
+        }
 
-        samples[3*i] = ( T ) ( above->samples[3*i] + samples[3*i] * ( 1 - above->alpha[i] ) );
-        samples[3*i+1] = ( T ) ( above->samples[3*i+1] + samples[3*i+1] * ( 1 - above->alpha[i] ) );
-        samples[3*i+2] = ( T ) ( above->samples[3*i+2] + samples[3*i+2] * ( 1 - above->alpha[i] ) );
+        float a = *alAb + *al * ( 1. - *alAb );
+
+        pix[0] = ( T ) (( *alAb * pixAb[0] + *al * pix[0] * ( 1 - *alAb ) ) / a);
+        pix[1] = ( T ) (( *alAb * pixAb[1] + *al * pix[1] * ( 1 - *alAb ) ) / a);
+        pix[2] = ( T ) (( *alAb * pixAb[2] + *al * pix[2] * ( 1 - *alAb ) ) / a);
+        *al = a;
     }
 }
 
 template<typename T>
 void Line<T>::useMask ( Line<T>* above ) {
-    for ( int i = 0; i < width; i++ ) {
+    T* pix = samples;
+    T* pixAb = above->samples;
+    for ( int i = 0; i < width; i++, pix += 3, pixAb += 3 ) {
         if ( above->mask[i] ) {
             alpha[i] = above->alpha[i];
-            samples[3*i] = above->samples[3*i];
-            samples[3*i+1] = above->samples[3*i+1];
-            samples[3*i+2] = above->samples[3*i+2];
+            memcpy(pix, pixAb, 3 * sizeof(T));
         }
     }
 }
@@ -313,7 +327,6 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
         for ( int i = 0; i < width; i++ ) {
             samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
-                memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = 1.0;
@@ -324,10 +337,9 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
         for ( int i = 0; i < width; i++ ) {
             samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
-                memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
-                alpha[i] = ( float ) imageIn[2*i+1] / 255;
+                alpha[i] = ( float ) imageIn[2*i+1] / 255.;
             }
         }
         break;
@@ -335,7 +347,6 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
         memcpy ( samples, imageIn, 3*width );
         for ( int i = 0; i < width; i++ ) {
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
-                memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = 1.0;
@@ -346,7 +357,6 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp, uint8
         for ( int i = 0; i < width; i++ ) {
             memcpy ( samples+i*3,imageIn+i*4,3 );
             if ( ! memcmp ( samples+3*i, transparent, 3 ) ) {
-                memset ( samples+3*i, 0, 3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = ( float ) imageIn[i*4+3] / 255.;
@@ -370,7 +380,7 @@ void Line<uint8_t>::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp ) {
     case 2:
         for ( int i = 0; i < width; i++ ) {
             samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
-            alpha[i] = ( float ) imageIn[2*i+1] / 255;
+            alpha[i] = ( float ) imageIn[2*i+1] / 255.;
         }
         break;
     case 3:
@@ -393,7 +403,7 @@ void Line<uint8_t>::write ( uint8_t* buffer, int outChannels ) {
     switch ( outChannels ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
-            buffer[i] = ( uint8_t ) ( 0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2] );
+            buffer[i] = ( 0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2] ) * alpha[i] * 255. ;
         }
         break;
     case 2:
@@ -404,9 +414,9 @@ void Line<uint8_t>::write ( uint8_t* buffer, int outChannels ) {
         break;
     case 3:
         for ( int i = 0; i < width; i++ ) {
-            buffer[3*i] = samples[3*i];
-            buffer[3*i+1] = samples[3*i+1];
-            buffer[3*i+2] = samples[3*i+2];
+            buffer[3*i] =  alpha[i] * 255. * samples[3*i];
+            buffer[3*i+1] = alpha[i] * 255. * samples[3*i+1];
+            buffer[3*i+2] = alpha[i] * 255. * samples[3*i+2];
         }
         break;
     case 4:
@@ -445,7 +455,6 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
         for ( int i = 0; i < width; i++ ) {
             samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[i];
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
-                memset ( samples+3*i, 0, sizeof ( float ) *3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = 1.0;
@@ -457,7 +466,6 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
             samples[3*i] = samples[3*i+1] = samples[3*i+2] = imageIn[2*i];
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
                 alpha[i] = 0.0;
-                memset ( samples+3*i, 0, sizeof ( float ) *3 );
             } else {
                 alpha[i] = imageIn[2*i+1];
             }
@@ -468,7 +476,6 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
         for ( int i = 0; i < width; i++ ) {
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
                 alpha[i] = 0.0;
-                memset ( samples+3*i, 0, sizeof ( float ) *3 );
             } else {
                 alpha[i] = 1.0;
             }
@@ -478,7 +485,6 @@ void Line<float>::store ( float* imageIn, uint8_t* maskIn, int srcSpp, float* tr
         for ( int i = 0; i < width; i++ ) {
             memcpy ( samples+i*3, imageIn+i*4, sizeof ( float ) *3 );
             if ( ! memcmp ( samples+3*i, transparent, 3*sizeof ( float ) ) ) {
-                memset ( samples+3*i, 0, sizeof ( float ) *3 );
                 alpha[i] = 0.0;
             } else {
                 alpha[i] = imageIn[i*4+3];
@@ -524,7 +530,7 @@ void Line<float>::write ( float* buffer, int outChannels ) {
     switch ( outChannels ) {
     case 1:
         for ( int i = 0; i < width; i++ ) {
-            buffer[i] = 0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2];
+            buffer[i] = (0.2125*samples[3*i] + 0.7154*samples[3*i+1] + 0.0721*samples[3*i+2]) * alpha[i];
         }
         break;
     case 2:
@@ -535,9 +541,9 @@ void Line<float>::write ( float* buffer, int outChannels ) {
         break;
     case 3:
         for ( int i = 0; i < width; i++ ) {
-            buffer[3*i] = samples[3*i];
-            buffer[3*i+1] = samples[3*i+1];
-            buffer[3*i+2] = samples[3*i+2];
+            buffer[3*i] = samples[3*i] * alpha[i];
+            buffer[3*i+1] = samples[3*i+1] * alpha[i];
+            buffer[3*i+2] = samples[3*i+2] * alpha[i];
         }
         break;
     case 4:

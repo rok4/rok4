@@ -77,6 +77,13 @@ protected:
      */
     Photometric::ePhotometric photometric;
     /**
+     * \~french \brief le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
+     * \details En écriture ou dans les traitement, on considère que les canaux ne sont pas prémultipliés par la valeur d'alpha.
+     * En lecture, on accepte des images pour lesquelles l'alpha est associé. On doit donc mémoriser cette information et convertir à la volée lors de la lecture des données.
+     * \~english \brief Alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     */
+    bool associatedalpha;
+    /**
      * \~french \brief Compression des données (jpeg, packbits...)
      * \~english \brief Data compression (jpeg, packbits...)
      */
@@ -112,6 +119,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
+     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
      ** \~english
      * \brief Create a FileImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -125,10 +133,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
+     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
      */
     FileImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
+        bool associatedalpha = false
     );
 
 public:

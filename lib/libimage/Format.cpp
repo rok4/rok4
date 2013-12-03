@@ -38,17 +38,21 @@
 /**
  * \file Format.cpp
  ** \~french
- * \brief Implémentation de la classe SampleType et des namespaces Format et Compression
+ * \brief Implémentation des namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li SampleFormat : gère les types de canaux acceptés par les classes d'Image
  * \li Compression : énumère et manipule les différentes compressions
  * \li Format : énumère et manipule les différentes format d'image
+ * \li Photometric : énumère et manipule les différentes photométries
+ * \li ExtraSample : énumère et manipule les différents type de canal supplémentaire
  ** \~english
- * \brief Implement class SampleType and the namespaces Format and Compression
+ * \brief Implement the namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : managed sample type accepted by Image classes
+ * \li SampleFormat : managed sample type accepted by Image classes
  * \li Compression : enumerate and managed different compressions
  * \li Format : enumerate and managed different formats
+ * \li Photometric : enumerate and managed different photometrics
+ * \li ExtraSample : enumerate and managed different extra sample types
  */
 
 #include "Format.h"
@@ -102,6 +106,29 @@ ePhotometric fromString ( std::string strPh ) {
 
 std::string toString ( ePhotometric ph ) {
     return std::string ( photometric_name[ph] );
+}
+
+}
+
+namespace ExtraSample {
+
+const char *extraSample_name[] = {
+    "UNKNOWN",
+    "ASSOCIATED ALPHA",
+    "UNASSOCIATED ALPHA"
+};
+
+eExtraSample fromString ( std::string strPh ) {
+    int i;
+    for ( i = extraSample_size; i ; --i ) {
+        if ( strPh.compare ( extraSample_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eExtraSample> ( i );
+}
+
+std::string toString ( eExtraSample es ) {
+    return std::string ( extraSample_name[es] );
 }
 
 }

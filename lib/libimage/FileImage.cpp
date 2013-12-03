@@ -125,9 +125,9 @@ FileImage* FileImageFactory::createImageToWrite (
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToWrite (
-                   name, bbox, resx, resy, width, height, channels,
-                   sampleformat, bitspersample, photometric, compression, 16
-               );
+            name, bbox, resx, resy, width, height, channels,
+            sampleformat, bitspersample, photometric, compression, 16
+        );
     }
 
     /* /!\ Format inconnu en écriture /!\ */
@@ -143,10 +143,11 @@ FileImage* FileImageFactory::createImageToWrite (
 
 FileImage::FileImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
-    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression ) :
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, bool associatedalpha ) :
 
     Image ( width,height,channels,resx,resy,bbox ),
-    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ) {
+    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ),
+    associatedalpha(associatedalpha) {
 
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );

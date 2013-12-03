@@ -116,7 +116,7 @@ Merge::eMergeType mergeMethod = Merge::UNKNOWN;
 
 /** \~french Couleur à considérer comme transparent dans le images en entrée. Vrai couleur (sur 3 canaux). Peut ne pas être définie */
 int* transparent;
-/** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il doit également être prémultiplié aux autres canaux */
+/** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il ne doit pas être prémultiplié aux autres canaux */
 int* background;
 
 /**
@@ -127,7 +127,7 @@ int* background;
  * overlayNtiff version X.X.X
  *
  * Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.
- * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one
+ * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one
  *
  * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
  * Parameters:
@@ -140,7 +140,7 @@ int* background;
  *             pkb     PackBits encoding
  *             zip     Deflate encoding
  *     -t value to consider as transparent, 3 integers, separated with comma. Optionnal
- *     -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
+ *     -b value to use as background, one integer per output sample, separated with comma.
  *     -m merge method : used to merge input images, associated masks are always used if provided :
  *             ALPHATOP       images are merged by alpha blending
  *             MULTIPLY       samples are multiplied one by one
@@ -161,7 +161,7 @@ void usage() {
     LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
 
                   "Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.\n" <<
-                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
+                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n" <<
 
                   "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
 
@@ -175,13 +175,13 @@ void usage() {
                   "            pkb     PackBits encoding\n" <<
                   "            zip     Deflate encoding\n" <<
                   "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n" <<
-                  "    -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
+                  "    -b value to use as background, one integer per output sample, separated with comma\n" <<
                   "    -m merge method : used to merge input images, associated masks are always used if provided :\n" <<
                   "            ALPHATOP       images are merged by alpha blending\n" <<
                   "            MULTIPLY       samples are multiplied one by one\n" <<
                   "            TOP            only the top data pixel is kept\n" <<
-                  "    -s samples per pixel : 1, 2, 3 or 4\n" <<
-                  "    -p photometric :\n" <<
+                  "    -s output samples per pixel : 1, 2, 3 or 4\n" <<
+                  "    -p output photometric :\n" <<
                   "            gray    min is black\n" <<
                   "            rgb     for image with alpha too\n\n" <<
 
