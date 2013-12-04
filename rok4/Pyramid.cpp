@@ -53,6 +53,7 @@
 #include <cfloat>
 #include "intl.h"
 #include "config.h"
+#include "EmptyImage.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;

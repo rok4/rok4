@@ -41,6 +41,7 @@
 #include "Data.h"
 #include "Image.h"
 #include "TiffHeader.h"
+#include "TiffEncoder.h"
 #include <zlib.h>
 #include <iostream>
 #include <string.h> // Pour memcpy
@@ -49,14 +50,8 @@
 template <typename T>
 class TiffDeflateEncoder : public TiffEncoder {
 protected:
-    Image *image;
-    int line;   // Ligne courante
-
     T* linebuffer;
 
-    size_t deflateBufferSize;
-    size_t deflateBufferPos;
-    uint8_t* deflateBuffer;
 
     z_stream zstream;
     bool encode() {
@@ -68,8 +63,8 @@ protected:
         zstream.data_type = Z_BINARY;
         deflateInit ( &zstream, 6 ); // taux de compression zlib
         zstream.avail_in = 0;
-        zstream.next_out  = deflateBuffer;
-        zstream.avail_out = deflateBufferSize;
+        zstream.next_out  = tmpBuffer;
+        zstream.avail_out = tmpBufferSize;
 
         while ( rawLine >= 0 && rawLine < image->getHeight() && zstream.avail_out > 0 ) { // compresser les données dans des chunck idat
             if ( zstream.avail_in == 0 ) {                                    // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
@@ -78,25 +73,25 @@ protected:
                 zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
             }
             error = deflate ( &zstream, Z_NO_FLUSH );
-            switch (error){
-                case Z_OK : 
-                    break;
-                case Z_MEM_ERROR :
-                    LOGGER_DEBUG("MEM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_STREAM_ERROR :
-                    LOGGER_DEBUG("STREAM_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                case Z_VERSION_ERROR :
-                    LOGGER_DEBUG("VERSION_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
-                default :
-                    LOGGER_DEBUG("OTHER_ERROR");
-                    deflateEnd ( &zstream );
-                    return false;              // return 0 en cas d'erreur.
+            switch ( error ) {
+            case Z_OK :
+                break;
+            case Z_MEM_ERROR :
+                LOGGER_DEBUG ( "MEM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_STREAM_ERROR :
+                LOGGER_DEBUG ( "STREAM_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            case Z_VERSION_ERROR :
+                LOGGER_DEBUG ( "VERSION_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
+            default :
+                LOGGER_DEBUG ( "OTHER_ERROR" );
+                deflateEnd ( &zstream );
+                return false;              // return 0 en cas d'erreur.
             }
 //             if ( error != Z_OK ) {
 //                 deflateReset ( &zstream );
@@ -116,12 +111,43 @@ protected:
         if ( deflateEnd ( &zstream ) != Z_OK ) return false;
 
         uint32_t length = zstream.total_out;   // taille des données écritres
-        deflateBufferSize = length;
+        tmpBufferSize = length;
         return true;
+    }
+    
+    virtual void prepareHeader(){
+	LOGGER_DEBUG("TiffDeflateEncoder : preparation de l'en-tete");
+	sizeHeader = TiffHeader::headerSize ( image->channels );
+	header = new uint8_t[sizeHeader];
+	if ( image->channels==1 )
+	    if ( sizeof ( T ) == sizeof ( float ) ) {
+		memcpy( header, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, sizeHeader);
+	    } else {
+		memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, sizeHeader);
+	    }
+	else if ( image->channels==3 )
+	    memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, sizeHeader);
+	else if ( image->channels==4 )
+	    memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, sizeHeader);
+	* ( ( uint32_t* ) ( header+18 ) )  = image->getWidth();
+	* ( ( uint32_t* ) ( header+30 ) )  = image->getHeight();
+	* ( ( uint32_t* ) ( header+102 ) ) = image->getHeight();
+	* ( ( uint32_t* ) ( header+114 ) ) = tmpBufferSize ;
+    }
+    
+    virtual void prepareBuffer(){
+	LOGGER_DEBUG("TiffDeflateEncoder : preparation du buffer d'image");
+	tmpBufferSize = image->getWidth() * image->channels * image->getHeight() * 2 ;
+	tmpBuffer = new uint8_t[tmpBufferSize];
+	while ( !encode() ) {
+	    tmpBufferSize *= 2;
+	    delete[] tmpBuffer;
+	    tmpBuffer = new uint8_t[tmpBufferSize];
+	}
     }
 
 public:
-    TiffDeflateEncoder ( Image *image ) : image ( image ), line ( -1 ), deflateBufferSize ( 0 ),deflateBufferPos ( 0 ) , deflateBuffer ( NULL ) {
+    TiffDeflateEncoder ( Image *image, bool isGeoTiff = false ) : TiffEncoder( image, -1, isGeoTiff ) {
 //         zstream.zalloc = Z_NULL;
 //         zstream.zfree = Z_NULL;
 //         zstream.opaque = Z_NULL;
@@ -132,62 +158,13 @@ public:
     }
     ~TiffDeflateEncoder() {
         if ( linebuffer ) delete[] linebuffer;
-        if ( deflateBuffer ) delete[] deflateBuffer;
 //         deflateEnd ( &zstream );
-
-        delete image;
     }
-    size_t read ( uint8_t *buffer, size_t size ) {
-        size_t offset = 0, header_size=TiffHeader::headerSize ( image->channels ), linesize=image->getWidth()*image->channels, dataToCopy=0;
-        if ( !deflateBuffer ) {
-            deflateBufferSize = linesize * image->getHeight() * 2 ;
-            deflateBuffer = new uint8_t[deflateBufferSize];
-            while ( !encode() ) {
-                deflateBufferSize *= 2;
-                delete[] deflateBuffer;
-                deflateBuffer = new uint8_t[deflateBufferSize];
-            }
-
-        }
-
-        if ( line == -1 ) {
-            // Si pas assez de place pour le header, ne rien écrire.
-            if ( size < header_size ) return 0;
-
-            // Ceci est du tiff avec une seule strip.
-            if ( image->channels==1 )
-                if ( sizeof ( T ) == sizeof ( float ) ) {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, header_size );
-                } else {
-                    memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, header_size );
-                }
-            else if ( image->channels==3 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, header_size );
-            else if ( image->channels==4 )
-                memcpy ( buffer, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, header_size );
-            * ( ( uint32_t* ) ( buffer+18 ) )  = image->getWidth();
-            * ( ( uint32_t* ) ( buffer+30 ) )  = image->getHeight();
-            * ( ( uint32_t* ) ( buffer+102 ) ) = image->getHeight();
-            * ( ( uint32_t* ) ( buffer+114 ) ) = deflateBufferSize;
-            offset = header_size;
-            line = 0;
-        }
-
-        if ( size - offset > 0 ) { // il reste de la place
-            if ( deflateBufferPos <= deflateBufferSize ) { // il reste de la donnée
-                dataToCopy = std::min ( size-offset, deflateBufferSize -deflateBufferPos );
-                memcpy ( buffer+offset,deflateBuffer+deflateBufferPos,dataToCopy );
-                deflateBufferPos+=dataToCopy;
-                offset+=dataToCopy;
-            }
-        }
-
-        return offset;
+    
+    std::string getEncoding() {
+        return "deflate";
     }
 
-    bool eof() {
-        return ( deflateBufferPos>=deflateBufferSize );
-    }
 };
 
 #endif

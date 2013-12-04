@@ -38,19 +38,123 @@
 /**
  * \file Format.cpp
  ** \~french
- * \brief Implémentation de la classe SampleType du namespace Format
+ * \brief Implémentation des namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li SampleFormat : gère les types de canaux acceptés par les classes d'Image
+ * \li Compression : énumère et manipule les différentes compressions
  * \li Format : énumère et manipule les différentes format d'image
+ * \li Photometric : énumère et manipule les différentes photométries
+ * \li ExtraSample : énumère et manipule les différents type de canal supplémentaire
  ** \~english
- * \brief Implement class SampleType and the namespace Format
+ * \brief Implement the namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : managed sample type accepted by Image classes
+ * \li SampleFormat : managed sample type accepted by Image classes
+ * \li Compression : enumerate and managed different compressions
  * \li Format : enumerate and managed different formats
+ * \li Photometric : enumerate and managed different photometrics
+ * \li ExtraSample : enumerate and managed different extra sample types
  */
 
 #include "Format.h"
 #include <string.h>
+
+namespace Compression {
+
+const char *compression_name[] = {
+    "UNKNOWN",
+    "NONE",
+    "DEFLATE",
+    "JPEG",
+    "PNG",
+    "LZW",
+    "PACKBITS"
+};
+
+eCompression fromString ( std::string strComp ) {
+    int i;
+    for ( i = compression_size; i ; --i ) {
+        if ( strComp.compare ( compression_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eCompression> ( i );
+}
+
+std::string toString ( eCompression comp ) {
+    return std::string ( compression_name[comp] );
+}
+
+}
+
+namespace Photometric {
+
+const char *photometric_name[] = {
+    "UNKNOWN",
+    "GRAY",
+    "RGB",
+    "YCBCR",
+    "MASK"
+};
+
+ePhotometric fromString ( std::string strPh ) {
+    int i;
+    for ( i = photometric_size; i ; --i ) {
+        if ( strPh.compare ( photometric_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<ePhotometric> ( i );
+}
+
+std::string toString ( ePhotometric ph ) {
+    return std::string ( photometric_name[ph] );
+}
+
+}
+
+namespace ExtraSample {
+
+const char *extraSample_name[] = {
+    "UNKNOWN",
+    "ASSOCIATED ALPHA",
+    "UNASSOCIATED ALPHA"
+};
+
+eExtraSample fromString ( std::string strPh ) {
+    int i;
+    for ( i = extraSample_size; i ; --i ) {
+        if ( strPh.compare ( extraSample_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eExtraSample> ( i );
+}
+
+std::string toString ( eExtraSample es ) {
+    return std::string ( extraSample_name[es] );
+}
+
+}
+
+namespace SampleFormat {
+
+const char *sampleformat_name[] = {
+    "UNKNOWN",
+    "UINT",
+    "FLOAT"
+};
+
+eSampleFormat fromString ( std::string strSF ) {
+    int i;
+    for ( i = sampleformat_size; i ; --i ) {
+        if ( strSF.compare ( sampleformat_name[i] ) == 0 )
+            break;
+    }
+    return static_cast<eSampleFormat> ( i );
+}
+
+std::string toString ( eSampleFormat sf ) {
+    return std::string ( sampleformat_name[sf] );
+}
+
+}
 
 namespace Format {
 
@@ -82,6 +186,20 @@ const char *eformat_mime[] = {
     "image/tiff"
 };
 
+const char *eformat_encoding[] = {
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "deflate",
+    ""
+};
+
 eformat_data fromString ( std::string strFormat ) {
     int i;
     for ( i=eformat_size; i ; --i ) {
@@ -99,14 +217,8 @@ std::string toMimeType ( eformat_data format ) {
     return std::string ( eformat_mime[format] );
 }
 
-SampleType toSampleType ( eformat_data format ) {
-    if ( format >= Format::eformat_float ) {
-        // Canaux flottants
-        return SampleType ( 32,SAMPLEFORMAT_IEEEFP );
-    } else {
-        // Canaux entiers
-        return SampleType ( 8,SAMPLEFORMAT_UINT );
-    }
+std::string toEncoding ( eformat_data format ) {
+    return std::string ( eformat_encoding[format] );
 }
 
 }

@@ -804,7 +804,7 @@ For more informations about properties, see <BE4::Harvesting>.
 
     max_width, max_height - If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
 
-    min_size - Used to remove too short harvested images. Optionnal.
+    min_size - Used to remove too small harvested images (filled with nodata), in byte. Optionnal.
 
     wms_bgcolor - Format : 0xFFFFFF. Optionnal.
 

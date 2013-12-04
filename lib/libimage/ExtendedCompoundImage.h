@@ -152,10 +152,10 @@ protected:
         Image ( width, height,channels,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),bbox ),
         sourceImages ( images ),
         mirrorsNumber ( mirrors ) {
-            
-            nodata = new int[channels];
-            memcpy(nodata,nd,channels*sizeof(int));
-        }
+
+        nodata = new int[channels];
+        memcpy ( nodata,nd,channels*sizeof ( int ) );
+    }
 
 public:
     /**
@@ -279,7 +279,7 @@ public:
      */
     virtual ~ExtendedCompoundImage() {
         delete[] nodata;
-        if (! isMask) {
+        if ( ! isMask ) {
             for ( uint i=0; i < sourceImages.size(); i++ ) {
                 delete sourceImages[i];
             }

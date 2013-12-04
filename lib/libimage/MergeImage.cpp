@@ -61,7 +61,7 @@
 
 template <typename T>
 int MergeImage::_getline ( T* buffer, int line ) {
-    Line<T> aboveLine ( width );
+    Line aboveLine ( width, sizeof(T) );
     T* imageLine = new T[width*4];
     uint8_t* maskLine = new uint8_t[width];
     memset ( maskLine, 0, width );
@@ -70,7 +70,7 @@ int MergeImage::_getline ( T* buffer, int line ) {
     for ( int i = 0; i < channels*width; i++ ) {
         bg[i] = ( T ) bgValue[i%channels];
     }
-    Line<T> workLine ( bg, maskLine, channels, width );
+    Line workLine ( bg, maskLine, channels, width );
 
     T* transparent;
     if ( transparentValue != NULL ) {
@@ -142,7 +142,7 @@ int MergeImage::getline ( float* buffer, int line ) {
 }
 
 MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, int channels,
-        int* bgValue, int* transparentValue, Merge::MergeType composition ) {
+        int* bgValue, int* transparentValue, Merge::eMergeType composition ) {
     if ( images.size() == 0 ) {
         LOGGER_ERROR ( "No source images to defined merged image" );
         return NULL;
@@ -225,16 +225,16 @@ const char *mergeType_name[] = {
     "TOP"
 };
 
-MergeType fromString ( std::string strMergeMethod ) {
+eMergeType fromString ( std::string strMergeMethod ) {
     int i;
     for ( i = mergeType_size; i ; --i ) {
         if ( strMergeMethod.compare ( mergeType_name[i] ) == 0 )
             break;
     }
-    return static_cast<MergeType> ( i );
+    return static_cast<eMergeType> ( i );
 }
 
-std::string toString ( MergeType mergeMethod ) {
+std::string toString ( eMergeType mergeMethod ) {
     return std::string ( mergeType_name[mergeMethod] );
 }
 }

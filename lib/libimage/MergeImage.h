@@ -70,7 +70,7 @@ namespace Merge {
  * \~french \brief Énumération des méthodes de fusion disponibles
  * \~english \brief Available merge methods enumeration
  */
-enum MergeType {
+enum eMergeType {
     UNKNOWN = 0,
     NORMAL = 1,
     LIGHTEN = 2,
@@ -87,24 +87,24 @@ enum MergeType {
 const int mergeType_size = 6;
 
 /**
- * \~french \brief Conversion d'une chaîne de caractère vers une méthode de fusion de l'énumération
+ * \~french \brief Conversion d'une chaîne de caractères vers une méthode de fusion de l'énumération
  * \param[in] strMergeMethod chaîne de caractère à convertir
  * \return la méthode de fusion correspondante, UNKNOWN (0) si la chaîne n'est pas reconnue
  * \~english \brief Convert a string to a merge methods enumeration member
  * \param[in] strMergeMethod string to convert
  * \return the binding merge method, UNKNOWN (0) if string is not recognized
  */
-MergeType fromString ( std::string strMergeMethod );
+eMergeType fromString ( std::string strMergeMethod );
 
 /**
- * \~french \brief Conversion d'une métthode de fusion vers une chaîne de caractère
+ * \~french \brief Conversion d'une méthode de fusion vers une chaîne de caractères
  * \param[in] mergeMethod méthode de fusion à convertir
  * \return la chaîne de caractère nommant la méthode de fusion
  * \~english \brief Convert a merge method to a string
  * \param[in] mergeMethod merge method to convert
  * \return string namming the merge method
  */
-std::string toString ( MergeType mergeMethod );
+std::string toString ( eMergeType mergeMethod );
 }
 
 /**
@@ -139,7 +139,7 @@ private:
      * \~french \brief Méthode d'assemblage des images
      * \~english \brief Way to merge images
      */
-    Merge::MergeType composition;
+    Merge::eMergeType composition;
 
     /**
      * \~french \brief Valeur de fond
@@ -183,7 +183,7 @@ protected:
      * \param[in] composition merge method to use
      */
     MergeImage ( std::vector< Image* >& images, int channels,
-                 int* bg, int* transparent, Merge::MergeType composition = Merge::NORMAL ) :
+                 int* bg, int* transparent, Merge::eMergeType composition = Merge::NORMAL ) :
         Image ( images.at ( 0 )->getWidth(),images.at ( 0 )->getHeight(), channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
         images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ) {
 
@@ -236,13 +236,13 @@ public:
      * \brief Default destructor
      */
     virtual ~MergeImage() {
-        if (! isMask) {
+        if ( ! isMask ) {
             for ( int i = 0; i < images.size(); i++ ) {
                 delete images[i];
             }
         }
         delete [] bgValue;
-        if (transparentValue != NULL) delete [] transparentValue;
+        if ( transparentValue != NULL ) delete [] transparentValue;
     }
 
     /** \~french
@@ -286,7 +286,7 @@ public:
      * \param[in] composition merge method to use
      */
     MergeImage* createMergeImage ( std::vector< Image* >& images, int channels,
-                                   int* bgValue, int* transparentValue, Merge::MergeType composition = Merge::NORMAL );
+                                   int* bgValue, int* transparentValue, Merge::eMergeType composition = Merge::NORMAL );
 };
 
 /**
@@ -351,3 +351,4 @@ public:
 };
 
 #endif // MERGEIMAGE_H
+

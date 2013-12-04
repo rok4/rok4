@@ -84,10 +84,10 @@ bool isCrsProj4Compatible ( std::string crs ) {
     bool isCompatible;
     if ( pj ) isCompatible=true;
     else isCompatible=false;
-    
+
     pj_free ( pj );
     pj_ctx_free ( ctx );
-    
+
     return isCompatible;
 }
 
@@ -237,8 +237,8 @@ bool CRS::operator!= ( const CRS& crs ) const {
 
 
 BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geographicBBox ) {
-    BoundingBox<double> bbox(geographicBBox);
-    bbox.reproject("epsg:4326", proj4Code, 256);
+    BoundingBox<double> bbox ( geographicBBox );
+    bbox.reproject ( "epsg:4326", proj4Code, 256 );
     return bbox;
 }
 
@@ -249,8 +249,8 @@ BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny,
 
 
 BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > projectedBBox ) {
-    BoundingBox<double> bbox(projectedBBox);
-    bbox.reproject(proj4Code, "epsg:4326", 256);
+    BoundingBox<double> bbox ( projectedBBox );
+    bbox.reproject ( proj4Code, "epsg:4326", 256 );
     return bbox;
 }
 
@@ -319,29 +319,62 @@ BoundingBox< double > CRS::cropBBox ( double minx, double miny, double maxx, dou
 
 BoundingBox< double > CRS::cropBBoxGeographic ( BoundingBox< double > BBox ) {
     double minx = BBox.xmin, miny = BBox.ymin, maxx = BBox.xmax, maxy = BBox.ymax;
-    if (BBox.xmin < definitionArea.xmin) {
+    if ( BBox.xmin < definitionArea.xmin ) {
         minx = definitionArea.xmin;
-    } 
-    if (BBox.xmax > definitionArea.xmax) {
+    }
+    if ( BBox.xmax > definitionArea.xmax ) {
         maxx = definitionArea.xmax;
     }
-    if (BBox.xmin > definitionArea.xmax || BBox.xmax < definitionArea.xmin) {
+    if ( BBox.xmin > definitionArea.xmax || BBox.xmax < definitionArea.xmin ) {
         minx = maxx = 0;
     }
-    if (BBox.ymin < definitionArea.ymin) {
+    if ( BBox.ymin < definitionArea.ymin ) {
         miny = definitionArea.ymin;
     }
-    if (BBox.ymax > definitionArea.ymax) {
+    if ( BBox.ymax > definitionArea.ymax ) {
         maxy = definitionArea.ymax;
     }
-    if (BBox.ymin > definitionArea.ymax || BBox.ymax < definitionArea.ymin) {
+    if ( BBox.ymin > definitionArea.ymax || BBox.ymax < definitionArea.ymin ) {
         miny = maxy = 0;
     }
     return BoundingBox<double> ( minx,miny,maxx,maxy );
 }
 
 BoundingBox< double > CRS::cropBBoxGeographic ( double minx, double miny, double maxx, double maxy ) {
-    return cropBBoxGeographic( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+    return cropBBoxGeographic ( BoundingBox<double> ( minx,miny,maxx,maxy ) );
+}
+
+std::string CRS::getProj4Def() {
+   buildProj4Code();
+   projCtx ctx = pj_ctx_alloc();
+   projPJ pj=pj_init_plus_ctx ( ctx, ( "+init=" + getProj4Code() +" +wktext" ).c_str() );
+   if ( !pj ) {
+       int err = pj_ctx_get_errno ( ctx );
+       char *msg = pj_strerrno ( err );
+       LOGGER_DEBUG("erreur d initialisation " << getProj4Code() << " " << msg);
+       pj_ctx_free ( ctx );
+       return "";
+   }
+   char * pjdef = pj_get_def( pj, 666 );
+   std::string def( pjdef ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
+   pj_dalloc(pjdef);
+   LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
+   pj_free ( pj );
+   pj_ctx_free ( ctx );
+   
+   return def;
+}
+
+std::string CRS::getProj4Param ( std::string paramName ) {
+    std::size_t pos = 0, find = 1, find_equal = 0;
+    pos = toLowerCase( getProj4Def() ).find( "+" + toLowerCase( paramName ) + "=" );
+    if ( pos <0 || pos >getProj4Def().size() ) {
+      return "";
+    }
+    find_equal = toLowerCase( getProj4Def() ).find( "=", pos );
+    find = toLowerCase( getProj4Def() ).find( " ", pos );
+    LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
+    return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
 }
 
 

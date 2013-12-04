@@ -115,6 +115,17 @@ public:
     }
     /**
      * \~french
+     * \brief Retourne l'encodage message
+     * \return type
+     * \~english
+     * \brief Return the message's encoding
+     * \return type
+     */
+    std::string getEncoding() {
+        return "";
+    }
+    /**
+     * \~french
      * \brief Libère les données mémoire allouées.
      * \return true en cas de succès
      * \~english
@@ -175,6 +186,7 @@ private:
      * \~english MIME type
      */
     std::string type;
+    
     /**
      * \~french Position courante dans le flux
      * \~english Current stream position
@@ -201,6 +213,9 @@ public:
     }
     std::string getType() {
         return type.c_str();
+    }
+    std::string getEncoding() {
+        return "";
     }
     int getHttpStatus() {
         return 200;

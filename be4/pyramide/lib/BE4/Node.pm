@@ -64,13 +64,14 @@ Attributes:
     i - integer - Column, according to the TMS grid.
     j - integer - Row, according to the TMS grid.
     pyramidName - string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
+    workExtension - string - extension of the temporary work image, lower case. Default value : tif.
     tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
     graph - <Graph> or <QTree> - Graph which contains the node.
     w - integer - Own node's weight
     W - integer - Accumulated weight (own weight + childs' accumulated weights sum)
     code - string - Commands to execute to generate this node (to write in a script)
     script - <Script> - Script in which the node will be generated
-    nodeSources - <Node> array - Nodes from which this node is generated (working for <Graph>)
+    nodeSources - <Node> array - Nodes from which this node is generated (working for <NNGraph>)
     geoImages - <GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <QTree>)
 =cut
 
@@ -135,6 +136,7 @@ sub new {
         i => undef,
         j => undef,
         pyramidName => undef,
+        workExtension => "tif",
         tm => undef,
         graph => undef,
         w => 0,
@@ -261,7 +263,7 @@ sub isBboxIntersectingNodeBbox {
 # Function: getScript
 sub getScript {
     my $self = shift;
-    return $self->{script}
+    return $self->{script};
 }
 
 =begin nd
@@ -317,6 +319,14 @@ sub getPyramidName {
     return $self->{pyramidName};
 }
 
+# Function: setWorkExtension
+sub setWorkExtension {
+    my $self = shift;
+    my $ext = shift;
+    
+    $self->{workExtension} = lc($ext);
+}
+
 =begin nd
 Function: getWorkBaseName
 
@@ -338,7 +348,7 @@ sub getWorkBaseName {
 =begin nd
 Function: getWorkName
 
-Returns the work image name : "level_col_row.tif", or "level_col_row_suffix.tif" if defined.
+Returns the work image name : "level_col_row.workExtension", or "level_col_row_suffix.workExtension" if defined.
 
 Parameters (list):
     prefix - string - Optionnal, suffix to add to the work name
@@ -348,9 +358,9 @@ sub getWorkName {
     my $suffix = shift;
     
     # si un prefixe est précisé
-    return (sprintf "%s_%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
+    return (sprintf "%s_%s_%s_%s.%s", $self->getLevel, $self->{i}, $self->{j}, $suffix, $self->{workExtension}) if (defined $suffix);
     # si pas de prefixe
-    return (sprintf "%s_%s_%s.tif", $self->getLevel, $self->{i}, $self->{j});
+    return (sprintf "%s_%s_%s.%s", $self->getLevel, $self->{i}, $self->{j}, $self->{workExtension});
 }
 
 # Function: getLevel

@@ -1055,10 +1055,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                         break;
                     }
                 // Test if the current layer bounding box is compatible with the current CRS
-                if(inspire && !crs.validateBBoxGeographic(geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy)) {
-                    BoundingBox<double> cropBBox = crs.cropBBox (geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy);
+                if ( inspire && !crs.validateBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy ) ) {
+                    BoundingBox<double> cropBBox = crs.cropBBox ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
                     // Test if the remaining bbox contain useful data
-                    if (cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0) {
+                    if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
                         LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
                         crsOk = false;
                     }
@@ -1588,6 +1588,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         if ( format != "image/jpeg" &&
                 format != "image/png"  &&
                 format != "image/tiff" &&
+                format != "image/geotiff" &&
                 format != "image/x-bil;bits=32" &&
                 format != "image/gif" ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME" ) );

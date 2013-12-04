@@ -240,16 +240,16 @@ void CppUnitCapabilitiesBuilder::setUp() {
 }
 
 void CppUnitCapabilitiesBuilder::testnumToStr() {
-    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr(1) == "1" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr(10000) == "10000" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr(-10000) == "-10000" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr ( 1 ) == "1" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr ( 10000 ) == "10000" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion numToStr :\n", numToStr ( -10000 ) == "-10000" ) ;
 }
 
 void CppUnitCapabilitiesBuilder::testdoubleToStr() {
     // TODO: Results of approximations depend on the processor (32-bit, 64-bit...)
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(101e-02).erase(5, std::string::npos) == "1.010" || doubleToStr(101e-02).erase(5, std::string::npos) == "1.009" ) ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(1.001).erase(6, std::string::npos) == "1.0010" || doubleToStr(1.001).erase(6, std::string::npos) == "1.0009") ;
-    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr(100.001).erase(8, std::string::npos) == "100.0010" || doubleToStr(100.001).erase(7, std::string::npos) == "100.0009") ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr ( 101e-02 ).erase ( 5, std::string::npos ) == "1.010" || doubleToStr ( 101e-02 ).erase ( 5, std::string::npos ) == "1.009" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr ( 1.001 ).erase ( 6, std::string::npos ) == "1.0010" || doubleToStr ( 1.001 ).erase ( 6, std::string::npos ) == "1.0009" ) ;
+    CPPUNIT_ASSERT_MESSAGE ( "conversion doubleToStr :\n", doubleToStr ( 100.001 ).erase ( 8, std::string::npos ) == "100.0010" || doubleToStr ( 100.001 ).erase ( 7, std::string::npos ) == "100.0009" ) ;
 }
 
 void CppUnitCapabilitiesBuilder::testGetDecimalPlaces() {

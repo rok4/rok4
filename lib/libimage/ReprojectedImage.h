@@ -317,7 +317,9 @@ public:
      * \param[in] KT interpolation kernel to use for reprojecting
      * \param[in] bUseMask precise if reprojecting use masks
      */
-    ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {initialize();}
+    ReprojectedImage ( Image *image, BoundingBox<double> bbox, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask ( bMask ) {
+        initialize();
+    }
 
     /** \~french
      * \brief Crée un objet ReprojectedImage à partir de tous ses éléments constitutifs
@@ -338,7 +340,9 @@ public:
      * \param[in] KT interpolation kernel to use for reprojecting
      * \param[in] bUseMask precise if reprojecting use masks
      */
-    ReprojectedImage ( Image *image, BoundingBox<double> bbox, double resx, double resy, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, resx, resy, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask(bMask) {initialize();}
+    ReprojectedImage ( Image *image, BoundingBox<double> bbox, double resx, double resy, Grid* grid, Interpolation::KernelType KT = Interpolation::LANCZOS_2, bool bMask = false ) : Image ( grid->width, grid->height,image->channels, resx, resy, bbox ),sourceImage ( image ), grid ( grid ), K ( Kernel::getInstance ( KT ) ), useMask ( bMask ) {
+        initialize();
+    }
 
     /** \~french
      * \brief Initialise les buffers de calcul
@@ -359,7 +363,7 @@ public:
      * \li des buffers #src_image_buffer et #src_mask_buffer
      *
      * Et suppression de #sourceImage.
-     * 
+     *
      * \~english \brief Default destructor
      * \details Desallocate global :
      * \li buffer #__buffer
@@ -373,10 +377,12 @@ public:
 
         delete[] src_image_buffer;
         delete[] src_line_index;
-        
-        if ( useMask ) {delete[] src_mask_buffer;}
 
-        if (! isMask) {
+        if ( useMask ) {
+            delete[] src_mask_buffer;
+        }
+
+        if ( ! isMask ) {
             // Le masque utilise la même grille, c'est pourquoi seule l'image de données supprime la grille.
             delete grid;
             delete sourceImage;

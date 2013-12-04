@@ -35,37 +35,154 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file tiff2tile.cpp
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Formattage d'une image, respectant les spécifications d'une pyramide de données ROK4
+ * \~english \brief Image formatting, according to ROK4 specifications
+ * \~french \details Le serveur ROK4 s'attend à trouver dans une pyramide d'images des images au format TIFF, tuilées, potentiellement compressées, avec une en-tête de taille fixe (2048 octets). C'est cet outil, via l'utilisation de la classe TiledTiffWriter, qui va "mettre au normes" les images.
+ *
+ * Les compressions disponibles sont :
+ * \li Aucune
+ * \li JPEG
+ * \li Deflate
+ * \li PackBits
+ * \li LZW
+ * \li PNG. Cette compression a la particularité de ne pas être un standard du TIFF. Une image dans ce format, propre à ROK4, contient des tuiles qui sont des images PNG indépendantes, avec les en-têtes PNG. Cela permet de renvoyer sans traitement une tuile au format PNG. Ce fonctionnement est calqué sur le format TIFF/JPEG.
+ *
+ * On va également définir la taille des tuiles, qui doit être cohérente avec la taille de l'image entière (on veut un nombre de tuiles entier).
+ *
+ * Vision libimage : FileImage -> Rok4Image
+ * \~ \code
+ * tiff2tile input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
+ * \endcode
+ */
+
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "TiffReader.h"
-#include "TiledTiffWriter.h"
+#include "FileImage.h"
+#include "Rok4Image.h"
 #include "TiffNodataManager.h"
 #include "../be4version.h"
 
+/** \~french Presque blanc, en RGBA. Utilisé pour supprimer le blanc pur des données quand l'option "crop" est active */
 int fastWhite[4] = {254,254,254,255};
+/** \~french Blanc, en RGBA. Utilisé pour supprimer le blanc pur des données quand l'option "crop" est active */
 int white[4] = {255,255,255,255};
 
+/**
+ * \~french
+ * \brief Affiche l'utilisation et les différentes options de la commande tiff2tile
+ * \details L'affichage se fait dans le niveau de logger INFO
+ * \~ \code
+ * tiff2tile version X.Y.Z
+ * 
+ * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
+ * 
+ * Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]
+ * 
+ * Parameters:
+ *      -c output compression :
+ *              raw     no compression
+ *              none    no compression
+ *              jpg     Jpeg encoding
+ *              lzw     Lempel-Ziv & Welch encoding
+ *              pkb     PackBits encoding
+ *              zip     Deflate encoding
+ *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
+ *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
+ *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
+ *      -d debug logger activation
+ * 
+ * Examples
+ *      - for orthophotography
+ *      tiff2tile input.tif -c png -t 256 256 output.tif
+ *      - for DTM
+ *      tiff2tile input.tif -c zip -t 256 256 output.tif
+ * 
+ * \endcode
+ */
 void usage() {
-    std::cerr << "tiff2tile version "<< BE4_VERSION << std::endl;
-    std::cerr << "usage : tiff2tile input_file -c [none/raw/png/jpg/lzw/zip/pkb] -p [gray/rgb] -t [sizex] [sizey] -b [8/32] -a [uint/float] output_file" << std::endl;
-    std::cerr << "\t-crop : the blocks (used by jpeg compression) which contain a nodata pixel are fill with nodata (to keep stright nodata)" << std::endl;
+    LOGGER_INFO ( "\ttiff2tile version " << BE4_VERSION << "\n\n" <<
+
+                  "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n" <<
+
+                  "Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]\n\n" <<
+
+                  "Parameters:\n" <<
+                  "     -c output compression :\n" <<
+                  "             raw     no compression\n" <<
+                  "             none    no compression\n" <<
+                  "             jpg     Jpeg encoding\n" <<
+                  "             lzw     Lempel-Ziv & Welch encoding\n" <<
+                  "             pkb     PackBits encoding\n" <<
+                  "             zip     Deflate encoding\n" <<
+                  "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
+                  "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
+                  "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
+                  "     -d : debug logger activation\n\n" <<
+
+                  "Examples\n" <<
+                  "     - for orthophotography\n" <<
+                  "     tiff2tile input.tif -c png -t 256 256 output.tif\n" <<
+                  "     - for DTM\n" <<
+                  "     tiff2tile input.tif -c zip -t 256 256 output.tif\n\n" );
 }
 
-int main ( int argc, char **argv ) {
-    char* input = 0, *output = 0;
-    uint32_t tilewidth = 256, tilelength = 256;
-    uint16_t compression = COMPRESSION_NONE;
-    uint16_t photometric = PHOTOMETRIC_RGB;
-    uint32_t bitspersample = 8;
-    uint16_t samplesperpixel = 3;
-    bool crop = false;
-    uint16_t sampleformat = SAMPLEFORMAT_UINT; // Autre possibilite : SAMPLEFORMAT_IEEEFP
-    int quality = -1;
+/**
+ * \~french
+ * \brief Affiche un message d'erreur, l'utilisation de la commande et sort en erreur
+ * \param[in] message message d'erreur
+ * \param[in] errorCode code de retour
+ */
+void error ( std::string message, int errorCode ) {
+    LOGGER_ERROR ( message );
+    usage();
+    sleep ( 1 );
+    exit ( errorCode );
+}
 
+/**
+ ** \~french
+ * \brief Fonction principale de l'outil createNodata
+ * \details Tout est contenu dans cette fonction. Le "cropage" se fait grâce à la classe TiffNodataManager, et le tuilage / compression est géré par TiledTiffWriter
+ * \param[in] argc nombre de paramètres
+ * \param[in] argv tableau des paramètres
+ * \return code de retour, 0 en cas de succès, -1 sinon
+ ** \~english
+ * \brief Main function for tool createNodata
+ * \details All instrcutions are in this function. the crop is handled by the class TiffNodataManager and TiledTiffWriter make image tiled and compressed.
+ * \param[in] argc parameters number
+ * \param[in] argv parameters array
+ * \return return code, 0 if success, -1 otherwise
+ */
+int main ( int argc, char **argv ) {
+
+    char* input = 0, *output = 0;
+    int tileWidth = 256, tileHeight = 256;
+    Compression::eCompression compression = Compression::NONE;
+    bool crop = false;
+    bool debugLogger=false;
+
+    /* Initialisation des Loggers */
+    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
+
+    Accumulator* acc = new StreamAccumulator();
+    Logger::setAccumulator ( INFO , acc );
+    Logger::setAccumulator ( WARN , acc );
+    Logger::setAccumulator ( ERROR, acc );
+    Logger::setAccumulator ( FATAL, acc );
+
+    std::ostream &logw = LOGGER ( WARN );
+    logw.precision ( 16 );
+    logw.setf ( std::ios::fixed,std::ios::floatfield );
+
+    LOGGER_DEBUG ( "Read parameters" );
+    // Récupération des paramètres
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-crop" ) ) {
             crop = true;
@@ -73,158 +190,105 @@ int main ( int argc, char **argv ) {
         }
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
-            case 'c': // compression
-                if ( ++i == argc ) {
-                    std::cerr << "Error in -c option" << std::endl;
-                    exit ( 2 );
-                }
-                if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) compression = COMPRESSION_NONE;
-                else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
-                    compression = COMPRESSION_PNG;
-                    if ( argv[i][3] == ':' ) quality = atoi ( argv[i]+4 );
-                } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
-                    compression = COMPRESSION_JPEG;
-                    if ( argv[i][4] == ':' ) quality = atoi ( argv[i]+5 );
-                } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
-                    compression = COMPRESSION_LZW;
-                } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
-                    compression = COMPRESSION_DEFLATE;
-                } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
-                    compression = COMPRESSION_PACKBITS;
-                } else {
-                    std::cerr << "Error : unknown compression ("<< argv[i] <<")." << std::endl;
-                    exit ( 2 );
-                }
+            case 'h': // help
+                usage();
+                exit ( 0 );
+            case 'd': // debug logs
+                debugLogger = true;
                 break;
-            case 'p': // photometric
-                if ( ++i == argc ) {
-                    std::cerr << "Error in -p option" << std::endl;
-                    exit ( 2 );
+            case 'c': // compression
+                if ( ++i == argc ) { error ( "Error in -c option", -1 ); }
+                if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
+                    compression = Compression::NONE;
+                } else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
+                    compression = Compression::PNG;
+                } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
+                    compression = Compression::JPEG;
+                } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
+                    compression = Compression::LZW;
+                } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
+                    compression = Compression::DEFLATE;
+                } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
+                    compression = Compression::PACKBITS;
+                } else {
+                    error ( "Unknown compression : " + argv[i][1], -1 );
                 }
-                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = PHOTOMETRIC_MINISBLACK;
-                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = PHOTOMETRIC_RGB;
-                else photometric = PHOTOMETRIC_RGB;
                 break;
             case 't':
-                if ( i+2 >= argc ) {
-                    std::cerr << "Error in -t option" << std::endl;
-                    exit ( 2 );
-                }
-                tilewidth = atoi ( argv[++i] );
-                tilelength = atoi ( argv[++i] );
-                break;
-            case 'a':
-                if ( ++i == argc ) {
-                    std::cerr << "Error in -a option" << std::endl;
-                    exit ( 2 );
-                }
-                if ( strncmp ( argv[i],"uint",4 ) ==0 ) {
-                    sampleformat = SAMPLEFORMAT_UINT;
-                } else if ( strncmp ( argv[i],"float",5 ) ==0 ) {
-                    sampleformat = SAMPLEFORMAT_IEEEFP;
-                } else {
-                    std::cerr << "Error in -a option. Possibilities are uint or float." << std::endl;
-                    exit ( 2 );
-                }
-                break;
-            case 's': // samplesperpixel
-                if ( ++i == argc ) {
-                    std::cerr << "Error in -s option" << std::endl;
-                    exit ( 2 );
-                }
-                if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
-                else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
-                else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
-                else {
-                    std::cerr << "Error in -s option. Possibilities are 1,3 or 4." << std::endl;
-                    exit ( 2 );
-                }
-                break;
-            case 'b':
-                if ( i+1 >= argc ) {
-                    std::cerr << "Error in -b option" << std::endl;
-                    exit ( 2 );
-                }
-                bitspersample = atoi ( argv[++i] );
+                if ( i+2 >= argc ) { error("Error in -t option", -1 ); }
+                tileWidth = atoi ( argv[++i] );
+                tileHeight = atoi ( argv[++i] );
                 break;
             default:
-                usage();
+                error ( "Unknown option : -" + argv[i][1] ,-1 );
             }
         } else {
             if ( input == 0 ) input = argv[i];
             else if ( output == 0 ) output = argv[i];
-            else {
-                std::cerr << "Argument must specify one input file and one output file" << std::endl;
-                usage();
-                exit ( 2 );
-            }
+            else { error ( "Argument must specify ONE input file and ONE output file", 2 ); }
         }
     }
 
-    if ( output == 0 ) {
-        std::cerr << "Argument must specify one input file and one output file" << std::endl;
-        exit ( 2 );
-    }
-    if ( photometric == PHOTOMETRIC_MINISBLACK && compression == COMPRESSION_JPEG ) {
-        std::cerr << "Gray jpeg not supported" << std::endl;
-        exit ( 2 );
+    if (debugLogger) {
+        // le niveau debug du logger est activé
+        Logger::setAccumulator ( DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
-    SampleType ST = SampleType ( bitspersample,sampleformat );
+    if ( input == 0 || output == 0 ) {
+        error ("Argument must specify one input file and one output file", -1);
+    }
 
-    if ( ! ST.isSupported() ) {
-        std::cerr << "Supported sample format are :\n" << ST.getHandledFormat() << std::endl ;
-        exit ( 2 );
+    FileImageFactory FIF;
+
+    if (crop && compression != Compression::JPEG) {
+        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        crop = false;
     }
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
-    if ( crop ) {
+    /*if ( crop ) {
+        // On récupère les informations nécessaires pour appeler le nodata manager
+        FileImage* tmpSourceImage = FIF.createImageToRead(input);
+        int spp = tmpSourceImage->channels;
+        int bps = tmpSourceImage->getBitsPerSample();
+        SampleFormat::eSampleFormat sf = tmpSourceImage->getSampleFormat();
+        delete tmpSourceImage;
 
-        if (ST.isUInt8()) {
-            TiffNodataManager<uint8_t> TNM ( samplesperpixel,white, true, fastWhite,white );
+        if ( bps == 8 && sf == SampleFormat::UINT ) {
+            TiffNodataManager<uint8_t> TNM ( spp, white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
-                std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
-                exit ( 2 );
+                error ( "Unable to treat white pixels in this image : " + std::string(input), -1 );
             }
-        } else if (ST.isFloat()) {
-            TiffNodataManager<float> TNM ( samplesperpixel,white, true, fastWhite,white );
-            if ( ! TNM.treatNodata ( input,input ) ) {
-                std::cerr << "Unable to treat white pixels in this image : " << input << std::endl;
-                exit ( 2 );
-            }
+        } else {
+            LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " + std::string(input));
         }
-
+    }*/
+    
+    FileImage* sourceImage = FIF.createImageToRead(input);
+    if (sourceImage == NULL) {
+        error("Cannot read the source image", -1);
     }
 
-    TiffReader R ( input );
+    Rok4ImageFactory R4IF;
+    Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
+        output, BoundingBox<double>(0.,0.,0.,0.), 0., 0., sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->channels,
+        sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
+        tileWidth, tileHeight
+    );
 
-    uint32_t width = R.getWidth();
-    uint32_t length = R.getLength();
-    TiledTiffWriter W ( output, width, length, photometric, compression, quality, tilewidth, tilelength,bitspersample,samplesperpixel,sampleformat );
-
-    if ( width % tilewidth || length % tilelength ) {
-        std::cerr << "Image size must be a multiple of tile size" << std::endl;
-        exit ( 2 );
+    LOGGER_DEBUG ( "Write" );
+    if (rok4Image->writeImage(sourceImage, crop) < 0) {
+        error("Cannot write ROK4 image", -1);
     }
-    int tilex = width / tilewidth;
-    int tiley = length / tilelength;
-
-    size_t dataSize = tilelength*tilewidth*R.getSampleSize();
-    uint8_t* data = new uint8_t[dataSize];
-
-    for ( int y = 0; y < tiley; y++ ) for ( int x = 0; x < tilex; x++ ) {
-            R.getWindow ( x*tilewidth, y*tilelength, tilewidth, tilelength, data );
-            if ( W.WriteTile ( x, y, data, crop ) < 0 ) {
-                std::cerr << "Error while writting tile (" << x << "," << y << ")" << std::endl;
-                return 2;
-            }
-        }
-
-    R.close();
-    if ( W.close() < 0 ) {
-        std::cerr << "Error while writting index" << std::endl;
-        return 2;
-    }
+    
+    LOGGER_DEBUG ( "Clean" );
+    // Nettoyage
+    delete acc;
+    delete sourceImage;
+    delete rok4Image;
 
     return 0;
 }

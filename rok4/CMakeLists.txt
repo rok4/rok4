@@ -54,12 +54,12 @@ add_executable(test_api ${rok4apitest_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff) 
+set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rok4 rok4core)

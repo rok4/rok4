@@ -72,6 +72,8 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
     response->status=source->getHttpStatus();
     response->type=new char[source->getType().length() +1];
     strcpy ( response->type,source->getType().c_str() );
+    response->encoding=new char[source->getEncoding().length() +1];
+    strcpy(response->encoding, source->getEncoding().c_str() );
     size_t buffer_size;
     const uint8_t *buffer = source->getData ( buffer_size );
     // TODO : tester sans copie memoire (attention, la source devrait etre supprimee plus tard)
@@ -266,7 +268,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format;
+    std::string tmId,mimeType,format,encoding;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -316,7 +318,10 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         palette->size = 0;
         palette->data = NULL;
     }
-
+    
+    encoding = Format::toEncoding( level->getFormat() );
+    tileRef->encoding = new char[encoding.length() +1];
+    strcpy( tileRef->encoding, encoding.c_str() );
     delete request;
     return 0;
 }
@@ -338,7 +343,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,format;
+    std::string tmId,format,encoding;
     int x,y;
     Style* style =0;
     bool errorNoData;
@@ -380,6 +385,10 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
     tileRef->type=new char[format.length() +1];
     strcpy ( tileRef->type,format.c_str() );
+    
+    encoding = Format::toEncoding( level->getFormat() );
+    tileRef->encoding = new char[encoding.length() +1];
+    strcpy( tileRef->encoding, encoding.c_str() );
 
     tileRef->width=level->getTm().getTileW();
     tileRef->height=level->getTm().getTileH();
@@ -480,6 +489,7 @@ void rok4DeleteRequest ( HttpRequest* request ) {
 
 void rok4DeleteResponse ( HttpResponse* response ) {
     delete[] response->type;
+    delete[] response->encoding;
     delete[] response->content;
     delete response;
 }
@@ -492,6 +502,7 @@ void rok4DeleteResponse ( HttpResponse* response ) {
 void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->filename;
     delete[] tileRef->type;
+    delete[] tileRef->encoding;
     delete[] tileRef->format;
 }
 

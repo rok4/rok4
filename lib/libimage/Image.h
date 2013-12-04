@@ -92,7 +92,7 @@ protected:
      * \~english \brief Image's height, in pixel
      */
     int height;
-    
+
     /**
      * \~french \brief L'image est-ell un masque ?
      * \~english \brief Is this image a mask ?
@@ -104,7 +104,7 @@ protected:
      * \~english \brief Image's bounding box
      */
     BoundingBox<double> bbox;
-    
+
     /**
      * \~french \brief CRS du rectangle englobant de l'image
      * \~english \brief Bounding box's CRS
@@ -336,6 +336,11 @@ public:
      * \param[in] newMask Masque de donnée
      */
     inline bool setMask ( Image* newMask ) {
+        if (mask != NULL) {
+            // On a déjà un masque associé : on le supprime pour le remplacer par le nouveau
+            delete mask;
+        }
+        
         if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->channels != 1 ) {
             LOGGER_ERROR ( "Unvalid mask" );
             LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->channels );
@@ -343,10 +348,10 @@ public:
             LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->getHeight() );
             return false;
         }
-        
+
         mask = newMask;
         mask->makeMask();
-        
+
         return true;
     }
 
@@ -465,26 +470,26 @@ public:
      */
     bool isCompatibleWith ( Image* pImage ) {
 
-        if (crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS()) return false;
-        
+        if ( crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS() ) return false;
+
         double epsilon_x=__min ( getResX(), pImage->getResX() ) /1000.;
         double epsilon_y=__min ( getResY(), pImage->getResY() ) /1000.;
 
         if ( fabs ( getResX()-pImage->getResX() ) > epsilon_x ) {
-            LOGGER_DEBUG("Different X resolutions");
+            LOGGER_DEBUG ( "Different X resolutions" );
             return false;
         }
         if ( fabs ( getResY()-pImage->getResY() ) > epsilon_y ) {
-            LOGGER_DEBUG("Different Y resolutions");
+            LOGGER_DEBUG ( "Different Y resolutions" );
             return false;
         }
 
         if ( fabs ( getPhaseX()-pImage->getPhaseX() ) > 0.01 && fabs ( getPhaseX()-pImage->getPhaseX() ) < 0.99 ) {
-            LOGGER_DEBUG("Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX());
+            LOGGER_DEBUG ( "Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX() );
             return false;
         }
         if ( fabs ( getPhaseY()-pImage->getPhaseY() ) > 0.01 && fabs ( getPhaseY()-pImage->getPhaseY() ) < 0.99 ) {
-            LOGGER_DEBUG("Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY());
+            LOGGER_DEBUG ( "Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY() );
             return false;
         }
 
@@ -538,7 +543,7 @@ public:
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
      */
-    Image ( int width, int height, int channels ) : width ( width ), height ( height ), channels ( channels ), resx ( 1.), resy (1.), bbox (BoundingBox<double>(0., 0., (double) width, (double) height)), mask ( NULL ), isMask(false) {}
+    Image ( int width, int height, int channels ) : width ( width ), height ( height ), channels ( channels ), resx ( 1. ), resy ( 1. ), bbox ( BoundingBox<double> ( 0., 0., ( double ) width, ( double ) height ) ), mask ( NULL ), isMask ( false ) {}
 
     /**
      * \~french
@@ -556,7 +561,7 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ), isMask(false) {
+        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ), isMask ( false ) {
         computeResolutions();
     }
 
@@ -576,10 +581,10 @@ public:
      * \param[in] resx X wise resolution
      * \param[in] resy Y wise resolution
      */
-    Image ( int width, int height, int channels, double resx, double resy) :
+    Image ( int width, int height, int channels, double resx, double resy ) :
         width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ),
-        bbox (BoundingBox<double>(0., 0., resx * (double) width, resy * (double) height)),
-        mask ( NULL ), isMask(false) {}
+        bbox ( BoundingBox<double> ( 0., 0., resx * ( double ) width, resy * ( double ) height ) ),
+        mask ( NULL ), isMask ( false ) {}
 
     /**
      * \~french
@@ -609,7 +614,7 @@ public:
      * \brief Default destructor
      */
     virtual ~Image() {
-        if (mask != NULL) delete mask;
+        if ( mask != NULL ) delete mask;
     }
 
     /**

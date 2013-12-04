@@ -63,7 +63,9 @@ Attributes:
     pixel - <Pixel> - Pixel components of all images, have to be same for each one.
 
 Limitations:
-    Constraint on the input format of images : format TIFF (extensions .tif, .TIF, .tiff and .TIFF)
+    Constraint on the input format of images :
+        TIFF (extensions .tif, .TIF, .tiff and .TIFF)
+        PNG (extensions .png, .PNG)
 =cut
 
 ################################################################################
@@ -335,8 +337,8 @@ sub getListImages {
             push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
         }
 
-        # Si le fichier n'a pas l'extension TIFF, on ne le traite pas
-        next if ($entry!~/.*\.(tif|TIF|tiff|TIFF)$/);
+        # Si le fichier n'a pas l'extension TIFF ou PNG, on ne le traite pas
+        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/);
 
         # On a à faire à un fichier avec l'extension TIFF, on l'ajoute au tableau
         push @{$search->{images}}, File::Spec->catfile($directory, $entry);

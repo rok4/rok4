@@ -232,7 +232,7 @@ public:
      * \return CRS identifier
      */
     bool inline isDefine() {
-        return ( proj4Code.compare(NO_PROJ4_CODE) == 0);
+        return ( proj4Code.compare ( NO_PROJ4_CODE ) == 0 );
     }
 
     /**
@@ -258,7 +258,7 @@ public:
     std::string inline getProj4Code() {
         return proj4Code;
     }
-    
+
     /**
      * \~french
      * \brief Calcule la BoundingBox dans le CRS courant à partir de la BoundingBox Géographique
@@ -400,7 +400,7 @@ public:
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBox ( double minx, double miny, double maxx, double maxy );
-    
+
     /**
      * \~french
      * \brief Calcule la BoundingBox incluse dans le domaine de définition du CRS courant
@@ -429,6 +429,28 @@ public:
      * \return the cropped BoundingBox
      */
     BoundingBox<double> cropBBoxGeographic ( double minx, double miny, double maxx, double maxy );
+
+    /**
+     * \~french
+     * \brief Retourne la définition complète du CRS dans la base proj4Code
+     * \return la définition du CRS
+     * \~english
+     * \brief Return the complete definition of the CRS from Proj registry
+     * \return CRS definition
+     */
+    std::string getProj4Def();
+    
+    /**
+     * \~french
+     * \brief Retourne la valeur d'un paramètre de la définition complète du CRS dans la base proj4Code
+     * \param[in] param le nom du paramètre
+     * \return la valeur du paramètre
+     * \~english
+     * \brief Return the value of a parameter in complete definition of the CRS from Proj registry
+     * \param[in] param parameter name
+     * \return parameter value
+     */
+    std::string getProj4Param( std::string paramName );
     
     /**
      * \~french

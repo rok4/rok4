@@ -69,7 +69,7 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
     minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
@@ -83,7 +83,7 @@ Level::~Level() {
 
 void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     if ( noDataTileSource ) {
         delete noDataTileSource;
     }
@@ -102,7 +102,7 @@ void Level::setNoData ( const std::string& file ) {
 void Level::setNoDataSource ( DataSource* source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ), Format::toEncoding ( format ) );
     }
     noDataSource=source;
     noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
@@ -145,7 +145,7 @@ Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > 
     }
 
     LOGGER_DEBUG ( "Top 1" );
-    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false);
+    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false );
 }
 
 
@@ -196,7 +196,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
 
 Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
-    
+
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
     bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
     bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
@@ -211,8 +211,8 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
                                     ceil ( bbox.ymax - EPS ) );
 
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
-         bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
-         bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
+            bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
+            bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
         /* L'image demandée est en phase et à les mêmes résolutions que les images du niveau
          *   => pas besoin de réechantillonnage */
         return getwindow ( servicesConf, bbox_int, error );
@@ -237,14 +237,14 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    
+
     LOGGER_DEBUG ( "Top 2" );
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
         LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
         return 0;
     }
-    
+
     return new ResampledImage ( imageout, width, height, ratio_x, ratio_y, bbox, interpolation, false );
 }
 
@@ -360,7 +360,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
     std::string path=getFilePath ( x, y );
     LOGGER_DEBUG ( path );
-    return new FileDataSource ( path.c_str(),posoff,possize,Format::toMimeType ( format ) );
+    return new FileDataSource ( path.c_str(),posoff,possize,Format::toMimeType ( format ), Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
@@ -444,16 +444,16 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     DataSource *nd =  getDecodedNoDataTile();
 
     size_t size;
-    const uint8_t * buffer = nd->getData(size);
-    if ( buffer ) { 
-        if ( format == Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32) {
-            const float* fbuf =  (const float*) buffer;
-            for (int pixel = 0; pixel < this->channels; pixel++) {
-                *(nodatavalue + pixel)  = (int) *(fbuf + pixel);
+    const uint8_t * buffer = nd->getData ( size );
+    if ( buffer ) {
+        if ( format == Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 ) {
+            const float* fbuf = ( const float* ) buffer;
+            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+                * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );
             }
         } else {
-            for (int pixel = 0; pixel < this->channels; pixel++) {
-                *(nodatavalue + pixel)  = *(buffer + pixel);
+            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
+                * ( nodatavalue + pixel )  = * ( buffer + pixel );
             }
         }
     } else {
@@ -463,10 +463,6 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     }
     delete nd;
     return nodatavalue;
-}
-
-SampleType Level::getSampleType() {
-    return Format::toSampleType ( format );
 }
 
 
