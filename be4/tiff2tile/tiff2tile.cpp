@@ -268,6 +268,9 @@ int main ( int argc, char **argv ) {
     }*/
     
     FileImage* sourceImage = FIF.createImageToRead(input);
+    if (sourceImage == NULL) {
+        error("Cannot read the source image", -1);
+    }
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
