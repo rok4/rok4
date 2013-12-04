@@ -219,7 +219,7 @@ Work2cache () {
 
                 tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${LIST_FILE}
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
 
             fi
             
