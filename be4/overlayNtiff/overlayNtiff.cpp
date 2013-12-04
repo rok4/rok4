@@ -119,6 +119,9 @@ int* transparent;
 /** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il ne doit pas être prémultiplié aux autres canaux */
 int* background;
 
+/** \~french Activation du niveau de log debug. Faux par défaut */
+bool debugLogger=false;
+
 /**
  * \~french
  * \brief Affiche l'utilisation et les différentes options de la commande overlayNtiff
@@ -149,6 +152,7 @@ int* background;
  *     -p photometric :
  *             gray    min is black
  *             rgb     for image with alpha too
+ *      -d debug logger activation
  *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
@@ -183,7 +187,8 @@ void usage() {
                   "    -s output samples per pixel : 1, 2, 3 or 4\n" <<
                   "    -p output photometric :\n" <<
                   "            gray    min is black\n" <<
-                  "            rgb     for image with alpha too\n\n" <<
+                  "            rgb     for image with alpha too\n" <<
+                  "    -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "    - for gray orthophotography, with transparency (white is transparent)\n" <<
@@ -226,6 +231,9 @@ int parseCommandLine ( int argc, char** argv ) {
             case 'h': // help
                 usage();
                 exit ( 0 );
+            case 'd': // debug logs
+                debugLogger = true;
+                break;
             case 'f': // Images' list file
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error with images' list file (option -f)" );
@@ -325,7 +333,7 @@ int parseCommandLine ( int argc, char** argv ) {
         return -1;
     }
 
-    if ( strlen ( strTransparent ) != 0 ) {
+    if (mergeMethod == Merge::ALPHATOP && strlen ( strTransparent ) != 0 ) {
         transparent = new int[3];
 
         // Transparent interpretation
@@ -567,15 +575,10 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
     Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logd = LOGGER ( DEBUG );
-    logd.precision ( 16 );
-    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
@@ -585,6 +588,14 @@ int main ( int argc, char **argv ) {
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
         error ( "Cannot parse command line",-1 );
+    }
+
+    // On sait maintenant si on doit activer le niveau de log DEBUG
+    if (debugLogger) {
+        Logger::setAccumulator(DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
     LOGGER_DEBUG ( "Load" );
