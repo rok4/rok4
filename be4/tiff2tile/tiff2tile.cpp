@@ -249,7 +249,7 @@ int main ( int argc, char **argv ) {
     }
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
-    /*if ( crop ) {
+    if ( crop ) {
         // On récupère les informations nécessaires pour appeler le nodata manager
         FileImage* tmpSourceImage = FIF.createImageToRead(input);
         int spp = tmpSourceImage->channels;
@@ -265,9 +265,12 @@ int main ( int argc, char **argv ) {
         } else {
             LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " + std::string(input));
         }
-    }*/
+    }
     
     FileImage* sourceImage = FIF.createImageToRead(input);
+    if (sourceImage == NULL) {
+        error("Cannot read the source image", -1);
+    }
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(

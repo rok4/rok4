@@ -68,6 +68,8 @@
  * \details Une image PNG est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format PNG.
  *
  * Cette classe va utiliser la librairie libpng afin de lire les données et de récupérer les informations sur les images.
+ *
+ * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications PNG). Il n'y a donc pas besoin de préciser #associatedalpha
  * 
  * \todo Lire au fur et à mesure l'image PNG et ne pas la charger intégralement en mémoire lors de la création de l'objet LibpngImage.
  */

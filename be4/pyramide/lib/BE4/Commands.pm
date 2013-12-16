@@ -134,7 +134,7 @@ Wms2work () {
 
     for i in `seq 1 $#`;
     do
-        nameImg=`printf "$dir/img%.2d.$fmt" $i`
+        nameImg=`printf "$dir/img%.5d.$fmt" $i`
         local count=0; local wait_delay=1
         while :
         do
@@ -168,7 +168,7 @@ Wms2work () {
         montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.$fmt
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        mv $dir/img01.$fmt $dir.$fmt
+        mv $dir/img00001.$fmt $dir.$fmt
     fi
 
     rm -rf $dir
@@ -219,7 +219,7 @@ Work2cache () {
 
                 tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${LIST_FILE}
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
 
             fi
             
@@ -580,22 +580,26 @@ sub mergeNtiff {
     my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
     
     if ( -f $imgPath ) {
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
+        my $clonedNodeBg = $node->clone();
+        
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$clonedNodeBg->getPyramidName);
         
         if ( $self->{useMasks} && -f $maskPath ) {
             # On a en plus un masque associé à l'image de fond
-            ($c,$w) = $self->cache2work($node,TRUE);
+            ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
             $code .= $c;
             $weight += $w;
             
-            $workBgM = $node->getWorkName("BgM");
+            $workBgM = $clonedNodeBg->getWorkName("BgM");
         } else {
-            ($c,$w) = $self->cache2work($node,FALSE);
+            ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
             $code .= $c;
             $weight += $w;
         }
         
-        $workBgI = $node->getWorkName("BgI");
+        $workBgI = $clonedNodeBg->getWorkName("BgI");
+
+        undef $clonedNodeBg;
     }
     
     my $workImgPath = $node->getWorkName("I");
@@ -691,6 +695,7 @@ sub merge4tiff {
     my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
     my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
     if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
+        my $clonedNodeBg = $node->clone();
         
         # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
         
@@ -701,39 +706,41 @@ sub merge4tiff {
             # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
             # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
 
-            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
+            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($clonedNodeBg->getLevel);
 
             my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
             my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
 
             if (! $tooWide && ! $tooHigh) {
-                ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
+                ($c,$w) = $self->wms2work($clonedNodeBg,$harvesting,"BgI");
                 if (! defined $c) {
-                    ERROR(sprintf "Cannot harvest the back ground image %s",$node->getWorkBaseName("BgI"));
+                    ERROR(sprintf "Cannot harvest the back ground image %s",$clonedNodeBg->getWorkBaseName("BgI"));
                     return ("",-1);
                 }
 
                 $code .= $c;
                 $weight += $w;
-                $workBgI = $node->getWorkName("BgI");
+                $workBgI = $clonedNodeBg->getWorkName("BgI");
             }
 
         } else {
             # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
-            $workBgI = $node->getWorkName("BgI");
+            $workBgI = $clonedNodeBg->getWorkName("BgI");
 
             if ( $self->{useMasks} && -f $maskPath ) {
                 # On a en plus un masque associé à l'image de fond
-                ($c,$w) = $self->cache2work($node,TRUE);
+                ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
                 $code .= $c;
                 $weight += $w;
-                $workBgM = $node->getWorkName("BgM");
+                $workBgM = $clonedNodeBg->getWorkName("BgM");
             } else {
-                ($c,$w) = $self->cache2work($node,FALSE);
+                ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
                 $code .= $c;
                 $weight += $w;
             }
         }
+
+        undef $clonedNodeBg;
     }
     
     # We compose the 'Merge4tiff' call
@@ -823,7 +830,7 @@ sub configureFunctions {
     
     $conf_montageOut .= "-depth $bps ";
     
-    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s -compress Zip ",$self->{pyramid}->getCacheImageHeight;
+    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=16 -compress Zip ";
     if ($spp == 4) {
         $conf_montageOut .= "-type TrueColorMatte -background none ";
     } elsif ($spp == 3) {
