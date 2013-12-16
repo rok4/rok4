@@ -168,7 +168,7 @@ Wms2work () {
         montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.$fmt
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        mv $dir/img01.$fmt $dir.$fmt
+        mv $dir/img00001.$fmt $dir.$fmt
     fi
 
     rm -rf $dir
