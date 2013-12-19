@@ -900,8 +900,6 @@ Group: Externals tools
 
 Scripts' execution needs following tools:
 
-    - montage (imagemagick)
     - pngcheck
-    - tiffcp (libtiff)
     
 =cut

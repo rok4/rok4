@@ -270,15 +270,16 @@ int parseCommandLine ( int argc, char** argv ) {
  * \param[out] ppCompoundIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages ( FileImage** ppImageOut, CompoundImage* pCompoundIn ) {
+int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
 
-    std::vector< std::vector<Image*> > ImagesIn;
-    BoundingBox<double> fakeBbox ( 0.,0.,0.,0. );
+    std::vector< std::string > imagesNames;
+    
+    std::vector< std::vector<Image*> > imagesIn;
 
-    // Dimensionnement de ImagesIn
-    ImagesIn.resize(heightwiseImage);
+    // Dimensionnement de imagesIn
+    imagesIn.resize(heightwiseImage);
     for (int row = 0; row < heightwiseImage; row++)
-        ImagesIn.at(row).resize(widthwiseImage);
+        imagesIn.at(row).resize(widthwiseImage);
 
     int width, height;
     int samplesperpixel, bitspersample;
@@ -286,6 +287,9 @@ int loadImages ( FileImage** ppImageOut, CompoundImage* pCompoundIn ) {
     Photometric::ePhotometric photometric;
 
     FileImageFactory FIF;
+
+
+    /********* Parcours du dossier ************/
 
     // Ouverture et test du répertoire source
     DIR * rep = opendir(inputDir);
@@ -297,23 +301,44 @@ int loadImages ( FileImage** ppImageOut, CompoundImage* pCompoundIn ) {
     
     struct dirent * ent;
 
-    int i = 0, j = 0;
-
-    /* Parcours du dossier
-     * On doit connaître les dimensions des images en entrée pour pouvoir créer les images de sortie
-     * Lecture et création des images sources */
+     // On récupère tous les fichiers, puis on les trie
     while ((ent = readdir(rep)) != NULL) {
         if (ent->d_name[0] == '.') continue;
-        
-        if (i == heightwiseImage) {
-            LOGGER_WARN("We have too much images in the input directory (reagrding to the provided geometry). Only ");
-            LOGGER_WARN("Only " << widthwiseImage*heightwiseImage << " first images will be used");
-            break;
-        }
-        
-        FileImage* pImage = FIF.createImageToRead (ent->d_name, fakeBbox, -1., -1. );
+        imagesNames.push_back(std::string(ent->d_name));
+    }
+
+    closedir(rep);
+    
+    LOGGER_DEBUG(imagesNames.size() << " files in the provided directory");
+    if (imagesNames.size() > widthwiseImage*heightwiseImage) {
+        LOGGER_WARN("We have too much images in the input directory (regarding to the provided geometry).");
+        LOGGER_WARN("Only " << widthwiseImage*heightwiseImage << " first images will be used");
+    }
+
+    if (imagesNames.size() < widthwiseImage*heightwiseImage) {
+        LOGGER_ERROR("Not enough images, we need " << widthwiseImage*heightwiseImage << ", and we find " << imagesNames.size());
+        return -1;
+    }
+
+    std::sort(imagesNames.begin(), imagesNames.end());
+
+    /********* Chargement des images ************/
+    
+    /* On doit connaître les dimensions des images en entrée pour pouvoir créer les images de sortie
+     * Lecture et création des images sources */
+    for (int k = 0; k < widthwiseImage*heightwiseImage; k++) {
+
+        int i = k/widthwiseImage;
+        int j = k%widthwiseImage;
+
+        std::string str = inputDir + imagesNames.at(k);
+        char filename[256];
+        memset(filename, 0, 256);
+        memcpy(filename, str.c_str(), str.length());
+
+        FileImage* pImage = FIF.createImageToRead (filename, BoundingBox<double>(0,0,0,0), -1., -1. );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Cannot create a FileImage from the file " << ent->d_name );
+            LOGGER_ERROR ( "Cannot create a FileImage from the file " << filename );
             return -1;
         }
 
@@ -334,38 +359,25 @@ int loadImages ( FileImage** ppImageOut, CompoundImage* pCompoundIn ) {
                  width != pImage->getWidth() ||
                  height != pImage->getHeight() )
             {
-                LOGGER_ERROR ( "All input images must have same dimensions and sample type" );
+                LOGGER_ERROR ( "All input images must have same dimensions and sample type : error for image " << filename );
                 return -1;
             }
         }
-        ImagesIn[i][j] = pImage;
-        j++;
-        if (j == widthwiseImage) {
-            j = 0;
-            i++;
-        }        
+        
+        imagesIn[i][j] = pImage;
+        
     }
-
-    closedir(rep);
-
-    if (j != widthwiseImage || i != heightwiseImage) {
-        LOGGER_ERROR ( "Images missing in the input directory. We need " << widthwiseImage*heightwiseImage );
-        return -1;
-    }
-
-    return 0;
 
     if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
         LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
         return -1;
     }
 
-    pCompoundIn = new CompoundImage(ImagesIn);
-
+    *ppCompoundIn = new CompoundImage(imagesIn);
 
     // Création de l'image de sortie
     *ppImageOut = FIF.createImageToWrite (
-        outputImage, fakeBbox, -1., -1., width*widthwiseImage, height*heightwiseImage, samplesperpixel,
+        outputImage, BoundingBox<double>(0., 0., 0., 0.), -1., -1., width*widthwiseImage, height*heightwiseImage, samplesperpixel,
         sampleformat, bitspersample, photometric,compression
     );
 
@@ -423,7 +435,7 @@ int main ( int argc, char **argv ) {
 
     LOGGER_DEBUG ( "Load" );
     // Chargement des images
-    if ( loadImages ( &pImageOut, pCompoundIn ) < 0 ) {
+    if ( loadImages ( &pImageOut, &pCompoundIn ) < 0 ) {
         error ( "Cannot load images from the input directory",-1 );
     }
 
