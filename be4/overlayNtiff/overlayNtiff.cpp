@@ -73,11 +73,11 @@
  *
  * Les méthodes de fusion disponibles sont :
  * \~
- * \li TRANSPARENCY
+ * \li ALPHATOP
  * \image html merge_transparency.png
  * \li MULTIPLY
  * \image html merge_multiply.png
- * \li MASK
+ * \li TOP
  * \image html merge_mask.png
  * \~french
  */
