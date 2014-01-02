@@ -363,6 +363,8 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
                 return -1;
             }
         }
+
+        pImage->setBbox(BoundingBox<double>(j * width, (heightwiseImage - i - 1) * height, (j+1) * width, (heightwiseImage - i) * height));
         
         imagesIn[i][j] = pImage;
         

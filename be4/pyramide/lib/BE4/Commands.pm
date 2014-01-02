@@ -438,18 +438,14 @@ sub wms2work {
 =begin nd
 Function: cache2work
 
-Copy image from cache to work directory and transform (work format : untiles, uncompressed). Use the 'Cache2work' bash function.
+Copy image from cache to work directory and transform (work format : untiled, zip-compression). Use the 'Cache2work' bash function.
 
 (see cache2work.png)
-
-2 cases:
-    - legal tiff compression -> tiffcp
-    - png -> untile + montage
     
 Examples:
     (start code)
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI
-    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI png
+    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgM
     (end code)
     
 Parameters (list):
