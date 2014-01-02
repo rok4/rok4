@@ -61,7 +61,6 @@ This tool write scripts, to execute to obtain the pyramid.
     - images
     - WMS service
 
-If reprojection or lossy compression for an update, we need a WMS service.
 =cut
 
 ################################################################################
@@ -813,7 +812,7 @@ For more informations about properties, see <BE4::Harvesting>.
 Examples:
     (start code)
     [ 14 ]
-    ; Georeferenced images, but we have to reproject them : we need a WMS service to harvest
+    ; We use a WMS service and we have to know extent to harvest. Georeferenced images are used to define this extent.
     path_image          = /home/IGN/DATA/ORTHO_LAMB93
     srs                 = IGNF:LAMB93
 
@@ -840,7 +839,7 @@ Examples:
     max_height = 1024
 
     [ 19 ]
-    ; Georeferenced images, in the final SRS
+    ; Georeferenced images
     srs = EPSG:3857
     path_image = /home/IGN/DATA/ORTHO_PM
     (end code)
@@ -853,10 +852,10 @@ No specific configuration file for data sources. All parameters regarding THE da
     - Image source parameters (*path_image* and *srs*) are in the *datasource* section (see <For an image source> for meanings).
     - Possibly WMS service parameters (*wms_layer*, ...) are in a *harvesting* section (see <For a WMS source> for options and meanings).
 
-Examples:
+Example:
     (start code)
     
-    ; Georeferenced images, but we have to reproject them : we need a WMS service to harvest
+    ; Georeferenced images + WMS
     [ datasource ]
     path_image          = /home/IGN/DATA/ORTHO_LAMB93
     srs                 = IGNF:LAMB93
@@ -867,6 +866,7 @@ Examples:
     wms_version = 1.3.0
     wms_request = getMap
     wms_format  = image/tiff
+    
 
     [ pyramid ]
     pyr_data_path = /home/IGN/PYRAMIDS
@@ -902,6 +902,6 @@ Scripts' execution needs following tools:
 
     - montage (imagemagick)
     - pngcheck
-    - tiffcp (libtiff)
+    - wget
     
 =cut
