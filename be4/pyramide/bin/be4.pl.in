@@ -900,7 +900,6 @@ Group: Externals tools
 
 Scripts' execution needs following tools:
 
-    - montage (imagemagick)
     - pngcheck
     - wget
     
