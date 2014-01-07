@@ -207,7 +207,7 @@ int main ( int argc, char* argv[] ) {
                 else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
                 else if ( strncmp ( argv[i], "png",3 ) == 0 ) compression = Compression::PNG;
                 else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
-                else error ( "Unknown compression : " + argv[i][1], -1 );
+                else error ( "Unknown compression : " + std::string(argv[i]), -1 );
                 break;
             case 'n': // nodata
                 if ( ++i == argc ) error ( "Error in option -n",-1 );
@@ -217,7 +217,7 @@ int main ( int argc, char* argv[] ) {
                 if ( ++i == argc ) error ( "Error in option -p",-1 );
                 if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
                 else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
-                else error ( "Unknown photometric : " + argv[i][1], -1 );
+                else error ( "Unknown photometric : " + std::string(argv[i]), -1 );
                 break;
             case 't': // dimension de la tuile de nodata
                 if ( i+2 >= argc ) error ( "Error in option -t",-1 );
@@ -239,15 +239,12 @@ int main ( int argc, char* argv[] ) {
                 samplesperpixel = atoi ( argv[i] );
                 break;
             default:
-                error ( "Unknown option",-1 );
+                error ( "Unknown option : " + std::string(argv[i]) ,-1 );
             }
         } else {
             if ( output == 0 ) output = argv[i];
             else error (
-                "We have to specify only one output file path (which is " +
-                std::string (output) + "). What is " + std::string ( argv[i] ),
-                -1
-            );
+                "We have to specify only one output file path (which is " + std::string (output) + "). What is " + std::string ( argv[i] ), -1);
         }
     }
 
