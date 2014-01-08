@@ -181,7 +181,6 @@ int main ( int argc, char **argv ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    LOGGER_DEBUG ( "Read parameters" );
     // Récupération des paramètres
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-crop" ) ) {
@@ -190,37 +189,37 @@ int main ( int argc, char **argv ) {
         }
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
-            case 'h': // help
-                usage();
-                exit ( 0 );
-            case 'd': // debug logs
-                debugLogger = true;
-                break;
-            case 'c': // compression
-                if ( ++i == argc ) { error ( "Error in -c option", -1 ); }
-                if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
-                    compression = Compression::NONE;
-                } else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
-                    compression = Compression::PNG;
-                } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
-                    compression = Compression::JPEG;
-                } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
-                    compression = Compression::LZW;
-                } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
-                    compression = Compression::DEFLATE;
-                } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
-                    compression = Compression::PACKBITS;
-                } else {
-                    error ( "Unknown compression : " + argv[i][1], -1 );
-                }
-                break;
-            case 't':
-                if ( i+2 >= argc ) { error("Error in -t option", -1 ); }
-                tileWidth = atoi ( argv[++i] );
-                tileHeight = atoi ( argv[++i] );
-                break;
-            default:
-                error ( "Unknown option : -" + argv[i][1] ,-1 );
+                case 'h': // help
+                    usage();
+                    exit ( 0 );
+                case 'd': // debug logs
+                    debugLogger = true;
+                    break;
+                case 'c': // compression
+                    if ( ++i == argc ) { error ( "Error in -c option", -1 ); }
+                    if ( strncmp ( argv[i], "none",4 ) == 0 || strncmp ( argv[i], "raw",3 ) == 0 ) {
+                        compression = Compression::NONE;
+                    } else if ( strncmp ( argv[i], "png",3 ) == 0 ) {
+                        compression = Compression::PNG;
+                    } else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) {
+                        compression = Compression::JPEG;
+                    } else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) {
+                        compression = Compression::LZW;
+                    } else if ( strncmp ( argv[i], "zip",3 ) == 0 ) {
+                        compression = Compression::DEFLATE;
+                    } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
+                        compression = Compression::PACKBITS;
+                    } else {
+                        error ( "Unknown compression : " + string(argv[i]), -1 );
+                    }
+                    break;
+                case 't':
+                    if ( i+2 >= argc ) { error("Error in -t option", -1 ); }
+                    tileWidth = atoi ( argv[++i] );
+                    tileHeight = atoi ( argv[++i] );
+                    break;
+                default:
+                    error ( "Unknown option : " + string(argv[i]) ,-1 );
             }
         } else {
             if ( input == 0 ) input = argv[i];
@@ -249,7 +248,8 @@ int main ( int argc, char **argv ) {
     }
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
-    /*if ( crop ) {
+    if ( crop ) {
+        LOGGER_DEBUG ( "Open image to read" );
         // On récupère les informations nécessaires pour appeler le nodata manager
         FileImage* tmpSourceImage = FIF.createImageToRead(input);
         int spp = tmpSourceImage->channels;
@@ -260,13 +260,14 @@ int main ( int argc, char **argv ) {
         if ( bps == 8 && sf == SampleFormat::UINT ) {
             TiffNodataManager<uint8_t> TNM ( spp, white, true, fastWhite,white );
             if ( ! TNM.treatNodata ( input,input ) ) {
-                error ( "Unable to treat white pixels in this image : " + std::string(input), -1 );
+                error ( "Unable to treat white pixels in this image : " + string(input), -1 );
             }
         } else {
-            LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " + std::string(input));
+            LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " << input);
         }
-    }*/
-    
+    }
+
+    LOGGER_DEBUG ( "Open image to read" );
     FileImage* sourceImage = FIF.createImageToRead(input);
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
