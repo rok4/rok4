@@ -67,7 +67,7 @@
  * \brief Manipulation d'une image PNG
  * \details Une image PNG est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format PNG.
  *
- * Cette classe va utiliser la librairie libpng afin de lire les données et de récupérer les informations sur les images.
+ * Cette classe va utiliser la librairie libpng afin de lire les données et de récupérer les informations sur les images. L'utilisation de la librairie permet de lire des PNG ayant une palette, ayant un canal (gris) sur 1, 2 ou 4 bits. La conversion sera faite à la volée au moment de la lecture, afin de récupérer une ligne dans un format lisible par la libimage (entier sur 8 bits, gris ou rgb, avec ou sans alpha non associé).
  *
  * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications PNG). Il n'y a donc pas besoin de préciser #associatedalpha
  * 

@@ -682,6 +682,13 @@ bool Rok4Image::prepare()
 
     if ( channels == 1 ) {
         writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, 1, bitspersample);
+    } else if ( channels == 2 ) {
+        * ( ( uint16_t* ) ( p ) ) = TIFFTAG_BITSPERSAMPLE;
+        * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
+        * ( ( uint32_t* ) ( p + 4 ) ) = 2;
+        * ( ( uint16_t* ) ( p + 8 ) ) = 8;
+        * ( ( uint16_t* ) ( p + 10 ) )  = 8;
+        p += 12;
     } else {
         writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, channels, 8);
     }
